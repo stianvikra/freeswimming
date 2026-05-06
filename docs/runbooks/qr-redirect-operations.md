@@ -52,6 +52,8 @@ When users report a QR not working:
 - Admin update emits `qr_link_updated`.
 - Status transitions emit `qr_link_status_changed`.
 - Redirect fallback logs include `[QrRedirect] Redirecting to fallback` with structured `reason` and `slug`.
+- Service owner, redaction, retry, and rollback expectations live in
+  `docs/architecture/external-service-contract-matrix.md` under `qr_redirects`.
 
 ## Verification Commands
 

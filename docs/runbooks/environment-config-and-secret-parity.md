@@ -4,6 +4,9 @@
 
 Keep `local`, `preview`, and `production` environment configuration deterministic so admin access and critical flows behave the same way.
 
+External service/provider secret boundaries are registered in
+`docs/architecture/external-service-contract-matrix.md`.
+
 ## Guardrails
 
 - Never store secret values in git, screenshots, or PR comments.

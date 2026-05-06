@@ -94,6 +94,19 @@ Add these checks when incident scope is locale-specific:
 3. If issue is isolated and safe:
    - keep deploy and ship hotfix PR with explicit negative-path tests.
 
+## External Service Overlay
+
+When the incident touches checkout, portal, webhooks, contact/email delivery, Admin Messages,
+analytics, QR redirects, exports, Supabase diagnostics, or future AI/provider calls, open
+`docs/architecture/external-service-contract-matrix.md` before choosing containment.
+
+Required checks:
+
+- confirm the affected `service key`,
+- confirm whether app data or provider data is canonical for the failed step,
+- record only redacted diagnostics named by the matrix,
+- pick the documented disable/swap/rollback action before hot-patching provider behavior.
+
 ## Communication Contract
 
 - Open one incident note with:

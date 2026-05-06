@@ -4,6 +4,9 @@
 
 Diagnose and contain Supabase egress spikes before they cause plan restrictions or `402` responses.
 
+Canonical service contract: `docs/architecture/external-service-contract-matrix.md`,
+service key `supabase_operational_diag`.
+
 ## Immediate Triage
 
 1. Open Supabase Dashboard -> project -> `Usage` -> `Egress`.

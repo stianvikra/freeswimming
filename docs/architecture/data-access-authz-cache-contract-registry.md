@@ -16,6 +16,8 @@ Inventory baseline:
 - Operational runbooks: `docs/runbooks/supabase-egress-response.md`,
   `docs/runbooks/auth-account-support.md`, `docs/runbooks/gdpr-data-rights.md`,
   `docs/runbooks/qr-redirect-operations.md`, and `docs/runbooks/core-flow-incident-response.md`.
+- External service/provider matrix:
+  `docs/architecture/external-service-contract-matrix.md`.
 
 ## Route Classes
 
@@ -176,6 +178,7 @@ New or changed routes must explicitly choose one:
 | Admin content, notes, and support capture  | `docs/runbooks/admin-content-parity-triage.md`, `docs/runbooks/admin-notes-recovery.md` | Admin route label/action/recovery changes require route-label/support sweep.                               |
 | QR redirects                               | `docs/runbooks/qr-redirect-operations.md`                                               | Redirect destinations must be parsed URLs with exact protocol/hostname validation.                         |
 | Core service/commerce incidents            | `docs/runbooks/core-flow-incident-response.md`, finance reconciliation script           | Stripe/session/customer/entitlement IDs must stay reconcilable and redacted in support artifacts.          |
+| External service/provider incidents        | `docs/architecture/external-service-contract-matrix.md`                                 | Provider delivery, retries, diagnostics, disable/swap, and rollback must follow the service contract.      |
 
 ## Change Gate
 
@@ -189,6 +192,7 @@ Before changing or adding a route handler:
    - runbook evidence when the route is operational/provider-facing.
 4. If the change renames a route, label, workflow action, support path, Help/Guide assertion, or recovery behavior, run the route-label/support sweep.
 5. For any route that introduces service-role access, document why user-scoped RLS is insufficient and where the gate/signature/idempotency proof lives.
+6. For any route that introduces or changes a provider side effect, update the external service matrix for service key, docs baseline, secret boundary, retry/idempotency, diagnostics, and rollback.
 
 ## Deferred Runtime Enforcement
 

@@ -13,6 +13,8 @@ Use this weekly to confirm commerce/entitlement/reporting consistency for curren
 - Public sales surface: `/plans`.
 - Stripe dashboard export/report for the same date range.
 - App operational notes/checkpoint entry for recorded anomalies.
+- External service contract:
+  `docs/architecture/external-service-contract-matrix.md` (`stripe_commerce`).
 
 ## Weekly Checks
 
@@ -96,3 +98,4 @@ npm run finance:reconcile -- \
 1. Log incident/checkpoint entry with severity and owner.
 2. Link failing case to a task brief when structural fix is needed.
 3. Keep reconciliation notes for audit traceability.
+4. If the root cause changes Stripe provider behavior, update the external service matrix before closing the fix PR.
