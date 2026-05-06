@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-delivery-provider-contract-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -149,7 +149,7 @@ Critical target categories for `10/10` claim:
 ## Route Label Support Surface Impact Sweep
 
 - Sweep identifiers searched:
-  - `docs/task-briefs/planned/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
+  - `docs/task-briefs/done/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
   - `MESSAGE_DELIVERY_`
   - `message_delivery`
   - `accepted_by_provider`
@@ -198,8 +198,45 @@ Critical target categories for `10/10` claim:
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Completion Record
+
+- `merged_pr`: `#621`
+- `merge_commit`: `ea6c66c`
+- `completed`: `2026-05-06`
+- `validation`: targeted unit/static checks PASS; `npm run verify:pre-pr` PASS full lane; `npm run verify:pre-merge` PASS full lane; GitHub required checks PASS.
+- `screenshot_handoff`: N/A because this provider-contract slice changed no rendered UI, print, layout, branding, or export surface.
+- `perf_budget_decision`: `hold` after tighten recommendation because this slice is server-only provider plumbing with no public route payload/layout budget change.
+- `10/10 claim`: yes for this Admin Messages delivery provider-contract child slice.
+
+Critical target categories for `10/10` claim all achieved `5/5`:
+
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                              | Remaining Gap                                      |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Provider-independent contract separates app-canonical messages/replies from external email provider acceptance.                                       | Later child briefs wire runtime callers.           |
+| UX flow clarity                               | `5/5`          | Typed statuses distinguish disabled, queued, provider accepted, retryable failure, and final failure without exposing provider internals.             | Later visible admin UI owns presentation.          |
+| Business logic correctness and data integrity | `5/5`          | Attempt records are deterministic, append-friendly, provider IDs are optional, and raw message body/subject are excluded from diagnostics.            | DB-backed attempts belong to later child briefs.   |
+| Performance (CWV + payloads)                  | `5/5`          | Provider calls are server-only, bounded by configured timeout, no-store, and not connected to public route rendering in this slice.                   | None for provider boundary.                        |
+| Data placement and sync boundaries            | `5/5`          | Contract defines server-canonical attempt/result state, provider-canonical message IDs, and no local-only delivery state.                             | Persistence schema remains a later child concern.  |
+| Caching and invalidation strategy             | `5/5`          | Provider fetch is no-store and admin delivery state remains private/server-side; later admin status refresh is explicitly owned by UI children.       | None in non-visual slice.                          |
+| Reliability and failure handling              | `5/5`          | Tests cover disabled/missing config, provider rejection, retryable 429, SMTP auth failure, invalid payload, and deterministic redaction.              | Real-provider smoke intentionally deferred.        |
+| Security and authz                            | `5/5`          | Server-only env resolver, no client boundary, no secret persistence, and redaction for tokens/passwords/auth/provider payloads.                       | Route-level admin retry authz is later child work. |
+| Privacy and compliance                        | `5/5`          | Redaction strips email addresses, subject/body/message text, raw provider payloads, and sensitive diagnostic fields from attempts/log payloads.       | None for this boundary.                            |
+| Analytics and KPI observability               | `5/5`          | Stable status/error keys and safe attempt record shape support later typed events without message free text.                                          | Event emission is later child work.                |
+| Incident response and support operations      | `5/5`          | Env matrix, secret checklist, status labels, provider keys, and redacted diagnostics give operators misconfig/outage/retry evidence without secrets.  | Runbook workflow content closes in ops child.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused fetch for Resend API and added `nodemailer` only for SMTP protocol handling; no hand-rolled SMTP or broad provider dependency.                 | None.                                              |
+| Testing and QA automation                     | `5/5`          | 12 focused unit tests plus lint/typecheck/env parity/quality gates, full `verify:pre-pr`, full `verify:pre-merge`, and green GitHub CI.               | None for provider contract.                        |
+| Scalability and cost efficiency               | `5/5`          | Timeout, retryable status, 429 handling, deterministic attempts, and disabled provider mode bound provider cost/retry behavior.                       | Rate-limit persistence belongs to later DB slice.  |
+| DevOps and rollback readiness                 | `5/5`          | Provider can be disabled or swapped by env; rollback is `git revert ea6c66c`; env/runbook/checklist docs describe config and secret rotation posture. | None.                                              |
+
 ## Checkpoint Log
 
+- `2026-05-06 | done | PR #621 merged as ea6c66c after green local verify:pre-pr, green local verify:pre-merge, and green required GitHub CI; post-merge preflight requested repo-managed docs-only closeout, moved this brief to done, and recorded achieved score/evidence | next: commit closeout PR, merge it, sync main, rerun post-merge preflight`
 - `2026-05-06 | pre-pr-pass | npm run verify:pre-pr passed full lane with branch current against origin/main, 931 unit tests, build, perf budgets, and 82 e2e passed / 374 skipped; verify log artifact artifacts/test-runs/20260506-175931/verify.log; npm audit --omit=dev --audit-level=high passed with no high/critical runtime advisories, while existing moderate Next/PostCSS advisory remains outside this slice; perf trend recommended tighten after 4 weekly green runs, decision: hold because this slice adds server-only provider plumbing and no public route payload/layout budget change, and prompt owner to tighten one stretch target in the next perf-governance or performance-relevant slice | next: inspect diff, commit, push, open PR`
 - `2026-05-06 | targeted-validation | implemented lib/admin/message-delivery.ts with Resend API + SMTP provider contract, env/address resolvers, redaction, attempt-record shape, nodemailer dependency, env/runbook/checklist updates, and child-brief path sweep; targeted unit test passed (tests/unit/admin-message-delivery.test.ts, 12 tests) and npm run typecheck passed | next: run lint/brief gates, route/support sweep, then npm run verify:pre-pr`
 - `2026-05-06 | in-progress | branch admin-message-delivery-provider-contract-10-10 opened from clean synced main after PR #620 closeout; implementation scoped to server-only provider contract/types/config/redaction/tests with no visible UI or real provider smoke call | next: inspect existing contact/email code, implement adapter contract, run targeted tests`
