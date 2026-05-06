@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
-- `updated`: `2026-05-05`
+- `updated`: `2026-05-06`
 
 ## Goal
 
@@ -22,6 +22,27 @@ The platform architecture audit found release-safe service usage, but no single 
 - QR redirect and export artifacts,
 - Supabase diagnostics and egress response,
 - future AI/provider boundaries for swim session/program generation.
+
+This brief is now also a prerequisite for the Admin Message Management parent:
+
+- `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
+
+The message-management driver makes the Resend/email-service contract concrete: the platform must support One.com/SMTP or another delivery provider without making provider delivery the source of truth for inbound messages, admin replies, or support diagnostics.
+
+## Admin Message Delivery Dependency
+
+- The external-service matrix must include a `message_delivery` service entry before Admin Messages v1 implementation starts.
+- The `message_delivery` entry must define:
+  - current provider choice (`smtp`/One.com-compatible, Resend, or another provider),
+  - official docs baseline for the selected provider,
+  - server-only secret boundary,
+  - provider adapter contract,
+  - timeout and retry rules,
+  - redacted error/log fields,
+  - support-visible diagnostics,
+  - disable/swap/rollback behavior.
+- Provider delivery must not be the only copy of any inbound request or admin reply.
+- User-facing copy must distinguish "request stored in the platform" from "email accepted by provider".
 
 Stripe review used the repo's Stripe best-practice skill guidance: one-time web checkout should prefer Checkout Sessions, webhook fulfillment should verify signatures, and finance/reconciliation paths should remain explicit.
 
@@ -75,8 +96,10 @@ Critical target categories for `10/10` claim:
 - Stripe:
   - keep one-time checkout on Checkout Sessions unless a later brief justifies another Stripe API,
   - keep webhook signature verification and entitlement reconciliation explicit.
-- Resend:
-  - keep email calls server-side and rate-limited.
+- Resend / SMTP / message delivery:
+  - keep email calls server-side and rate-limited,
+  - treat provider delivery as an adapter behind app-canonical messages/replies,
+  - allow provider swap without data migration for historical messages.
 - Analytics:
   - keep first-party typed event names before adding vendors.
 - AI:
@@ -87,7 +110,7 @@ Critical target categories for `10/10` claim:
 - Provider-canonical:
   - Stripe payment/customer/session/invoice records and provider email delivery status.
 - Server-canonical:
-  - entitlements, product mapping, analytics records, download resend attempts, QR/export state, and accepted AI outputs when future AI is implemented.
+  - entitlements, product mapping, analytics records, download resend attempts, Admin Message inbound/reply records, delivery attempts, QR/export state, and accepted AI outputs when future AI is implemented.
 - Local-only:
   - transient UI state and client event dispatch attempts before server acceptance.
 - Sync policy:
@@ -108,13 +131,14 @@ Critical target categories for `10/10` claim:
 
 ## Scope
 
-- Service matrix for Stripe, Resend, analytics, QR/export, Supabase diagnostics, and future AI providers.
+- Service matrix for Stripe, Resend/SMTP/message delivery, analytics, QR/export, Supabase diagnostics, and future AI providers.
 - Runtime tests only where the matrix identifies an immediate high-risk gap.
 - Runbook/checklist updates for launch-critical services.
 
 ## Out Of Scope
 
-- Replacing Stripe or Resend.
+- Replacing Stripe or Resend as part of this architecture brief.
+- Implementing Admin Messages runtime behavior; that belongs to the Admin Message Management child briefs.
 - Adding a new analytics or AI vendor.
 - Redesigning checkout, contact, or export UI.
 - Schema changes unless a child implementation slice explicitly owns them.
@@ -123,7 +147,7 @@ Critical target categories for `10/10` claim:
 
 1. A canonical external-service matrix exists with owner, docs baseline, secrets, idempotency/retry, observability, support, finance, and rollback fields.
 2. Stripe/commerce paths have explicit reconciliation and failure-mode evidence.
-3. Resend/contact/download resend paths have explicit rate-limit, fallback, and privacy rules.
+3. Resend/contact/download resend/message-delivery paths have explicit rate-limit, fallback, provider-swap, and privacy rules.
 4. Future AI provider work cannot start without prompt/data/cost/rollback entries in the matrix.
 
 ## Validation
@@ -134,4 +158,5 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for provider-independent message delivery; service matrix must include message_delivery before contact intake/reply implementation | next: execute this architecture slice before Admin Messages runtime work`
 - `2026-05-05 | planned | created by platform architecture audit to consolidate service integration contracts before launch scope, finance ops, and future AI provider work expand | next: execute after or alongside pre-live secrets/config governance`
