@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-delivery-provider-contract-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -16,7 +16,7 @@ Define and implement the provider-independent delivery contract for admin messag
 
 - Parent: `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 - Must follow or be executed with:
-  - `docs/task-briefs/planned/2026-05-05-external-service-contract-observability-hardening-10-10.md`
+  - `docs/task-briefs/done/2026-05-05-external-service-contract-observability-hardening-10-10.md`
 - Must finish before:
   - `docs/task-briefs/planned/2026-05-06-contact-intake-message-storage-10-10.md`
   - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
@@ -131,6 +131,52 @@ Critical target categories for `10/10` claim:
 - Delivery attempt state model.
 - Redacted diagnostics and retry contract.
 
+## Implementation Slice
+
+- Add `lib/admin/message-delivery.ts` as the server-side provider boundary for Admin Messages v1.
+- Define:
+  - provider keys, delivery targets, statuses, error codes, payload, result, provider, config, and attempt-record types,
+  - env resolver for `disabled`, `resend_api`, `resend_smtp`, and `smtp_one_com_compatible`,
+  - sender default resolver for `MESSAGE_DELIVERY_FROM_EMAIL` / `MESSAGE_DELIVERY_REPLY_TO_EMAIL`,
+  - Resend API delivery with attempt-scoped idempotency key and no-store fetch,
+  - SMTP delivery through a small `nodemailer` dependency with deterministic `Message-ID` from attempt ID,
+  - redacted diagnostics that strip secrets, email addresses, subject/body/message fields, and raw provider payloads.
+- Keep this slice non-visual and do not change `/api/contact` runtime behavior; DB-first intake belongs to the next child brief.
+- Update `docs/architecture/external-service-contract-matrix.md`, `docs/runbooks/environment-config-and-secret-parity.md`, and `docs/checklists/admin-access-and-secret-rotation.md` with the runtime env contract.
+- Screenshot handoff: `N/A` because no rendered UI, copy, layout, or product export surface changes in this provider-contract slice.
+- New dependency justification: `nodemailer` is a small server-side SMTP transport dependency needed to support One.com-compatible SMTP without hand-rolling SMTP protocol behavior.
+
+## Route Label Support Surface Impact Sweep
+
+- Sweep identifiers searched:
+  - `docs/task-briefs/planned/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
+  - `MESSAGE_DELIVERY_`
+  - `message_delivery`
+  - `accepted_by_provider`
+  - `failed_retryable`
+  - `failed_final`
+  - `smtp_one_com_compatible`
+  - `resend_api`
+  - `resend_smtp`
+  - `CONTACT_TO_EMAIL`
+  - `RESEND_API_KEY`
+- Directories/surfaces checked:
+  - `app/`
+  - `components/`
+  - `lib/`
+  - `tests/`
+  - `docs/architecture/`
+  - `docs/runbooks/`
+  - `docs/checklists/`
+  - Admin Messages parent/child briefs in `docs/task-briefs/`
+- Fallout handled:
+  - moved provider child references from `planned/` to `in-progress/`,
+  - updated external-service matrix with runtime env names and provider status contract,
+  - updated environment parity runbook with message-delivery config rows,
+  - updated admin access/secret rotation checklist with Admin Messages delivery secret group.
+- Help/Guide impact:
+  - `N/A` because no active admin labels, user/admin workflow actions, recovery copy, visible tab, or Help/Guide content changes in this provider-only slice.
+
 ## Out Of Scope
 
 - Admin inbox UI.
@@ -154,4 +200,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | pre-pr-pass | npm run verify:pre-pr passed full lane with branch current against origin/main, 931 unit tests, build, perf budgets, and 82 e2e passed / 374 skipped; verify log artifact artifacts/test-runs/20260506-175931/verify.log; npm audit --omit=dev --audit-level=high passed with no high/critical runtime advisories, while existing moderate Next/PostCSS advisory remains outside this slice; perf trend recommended tighten after 4 weekly green runs, decision: hold because this slice adds server-only provider plumbing and no public route payload/layout budget change, and prompt owner to tighten one stretch target in the next perf-governance or performance-relevant slice | next: inspect diff, commit, push, open PR`
+- `2026-05-06 | targeted-validation | implemented lib/admin/message-delivery.ts with Resend API + SMTP provider contract, env/address resolvers, redaction, attempt-record shape, nodemailer dependency, env/runbook/checklist updates, and child-brief path sweep; targeted unit test passed (tests/unit/admin-message-delivery.test.ts, 12 tests) and npm run typecheck passed | next: run lint/brief gates, route/support sweep, then npm run verify:pre-pr`
+- `2026-05-06 | in-progress | branch admin-message-delivery-provider-contract-10-10 opened from clean synced main after PR #620 closeout; implementation scoped to server-only provider contract/types/config/redaction/tests with no visible UI or real provider smoke call | next: inspect existing contact/email code, implement adapter contract, run targeted tests`
 - `2026-05-06 | planned | created as child of admin message management parent to own provider-independent One.com/SMTP/Resend delivery before contact intake and admin replies are implemented | next: execute after external-service contract hardening`
