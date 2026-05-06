@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-05-external-service-contract-observability-hardening-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
 - `updated`: `2026-05-06`
@@ -158,5 +158,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | validation | external service matrix and runbook/registry links added; npm run verify:pre-pr PASS via docs-only lane with artifact artifacts/test-runs/20260506-123545/verify.log; no runtime behavior changed and no targeted route/unit tests were required | next: commit, push, open PR, then run pre-merge validation`
+- `2026-05-06 | in-progress | moved brief from planned to in-progress on branch external-service-contract-observability-hardening; implementation scope is docs/governance only unless validation exposes a runtime contract gap | next: add canonical external-service matrix, connect runbooks/registry, run docs-only validation`
 - `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for provider-independent message delivery; service matrix must include message_delivery before contact intake/reply implementation | next: execute this architecture slice before Admin Messages runtime work`
 - `2026-05-05 | planned | created by platform architecture audit to consolidate service integration contracts before launch scope, finance ops, and future AI provider work expand | next: execute after or alongside pre-live secrets/config governance`
