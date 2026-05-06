@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-contact-intake-message-storage-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -229,6 +229,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | done | PR #624 merged to main as b06fb78; post-merge preflight surfaced repo-managed closeout, so brief moved to done and dependent brief path references updated | next: complete docs-only closeout PR`
 - `2026-05-06 | pre-pr-ready | owner approved screenshot handoff; no product-rendering files changed after capture; tightened local_verify fail-closed handling for Vercel preview/production and production runtime; npm run verify:pre-pr passed full lane with lint/quality/admin/env/pr-body/typecheck/build/perf/e2e green, 175 unit files / 940 tests passed, and 82 e2e passed / 374 skipped; evidence: artifacts/test-runs/20260506-200635/verify.log; perf ratchet decision: hold despite automatic tighten recommendation because docs/runbooks/maintenance-cadence.md says no new stretch-target step until at least two weekly green cycles after the 2026-05-04 tightening | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-05-06 | screenshot-handoff | captured after-state contact success screenshots in output/contact-intake-message-storage-2026-05-06-195022 after targeted unit tests, typecheck, contact API Playwright, env parity lint, and quality gate passed; no product-rendering files changed after capture yet | next: owner visual approval before verify:pre-pr`
 - `2026-05-06 | in-progress | branch contact-intake-message-storage-10-10 opened from clean synced main; brief moved to in-progress; implementation scoped to DB-first /api/contact intake, provider-attempt diagnostics, no admin inbox UI, and honest success copy | next: run targeted unit/e2e checks and screenshot handoff for changed contact success copy`
