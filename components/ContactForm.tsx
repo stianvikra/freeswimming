@@ -236,7 +236,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       exampleTitle: "",
       exampleLines: [] as string[],
 
-      successTitle: "Message sent",
+      successTitle: "Message received",
       successBody: "Thanks! We’ve received your message and will reply by email when we can.",
       successHint: "You can safely close this page — or tap X to send another message.",
 
@@ -409,7 +409,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       : "Send";
   const intro = isPreviewNotify ? (
     <div className="pt-1">
-      <h1 className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+      <h1 className="text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
         Apply for early access
       </h1>
       <BrandImage
@@ -427,7 +427,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
         sizes="(max-width: 640px) 260px, 340px"
         priority
       />
-      <h1 className="mt-5 text-[30px] font-semibold leading-[1.04] tracking-[-0.02em] text-slate-900 sm:text-[34px]">
+      <h1 className="mt-5 text-[30px] leading-[1.04] font-semibold tracking-[-0.02em] text-slate-900 sm:text-[34px]">
         Contact
       </h1>
       <p className="mt-3 max-w-[30ch] text-[16px] leading-7 text-slate-700">
@@ -448,7 +448,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
           <PressButton
             tier="icon"
             onClick={reset}
-            className={`${btnIcon} absolute right-3 top-3`}
+            className={`${btnIcon} absolute top-3 right-3`}
             aria-label="Close"
             title="Send another message"
           >
@@ -505,7 +505,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       <div
         className={`relative ${formCardTopMargin} overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6`}
       >
-        <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
         {showFormIntro ? (
           <div className={isPreviewNotify ? "text-left" : "text-center"}>
             {copy.formTitle ? (
@@ -713,7 +713,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
             />
 
             {showExampleCard ? (
-              <div className="bg-white/78 mt-3 rounded-2xl border border-blue-100/70 p-4">
+              <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/78 p-4">
                 <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
                 <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
                   {copy.exampleLines.map((line) => (

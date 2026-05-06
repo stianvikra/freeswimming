@@ -17,7 +17,7 @@ Build the admin inbox for stored platform messages so admin can read, filter, se
 - Parent: `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 - Must follow:
   - `docs/task-briefs/done/2026-05-05-admin-workspace-contract-decomposition-10-10.md`, which established the admin message module boundary.
-  - `docs/task-briefs/planned/2026-05-06-contact-intake-message-storage-10-10.md`
+  - `docs/task-briefs/in-progress/2026-05-06-contact-intake-message-storage-10-10.md`
 - Feeds:
   - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
 

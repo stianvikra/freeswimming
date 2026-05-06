@@ -22,6 +22,8 @@ const supabaseAnonKey = useConfiguredSupabase
 const supabaseServiceRoleKey = useConfiguredSupabase
   ? (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "playwright-service-role-key")
   : "playwright-service-role-key";
+const contactIntakeStorage =
+  process.env.CONTACT_INTAKE_STORAGE ?? (useConfiguredSupabase ? "supabase" : "local_verify");
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -48,6 +50,7 @@ export default defineConfig({
       `NEXT_PUBLIC_SUPABASE_URL=${shellQuote(supabaseUrl)}`,
       `NEXT_PUBLIC_SUPABASE_ANON_KEY=${shellQuote(supabaseAnonKey)}`,
       `SUPABASE_SERVICE_ROLE_KEY=${shellQuote(supabaseServiceRoleKey)}`,
+      `CONTACT_INTAKE_STORAGE=${shellQuote(contactIntakeStorage)}`,
       `npm run dev -- ${nextDevBundlerArg}--hostname 127.0.0.1 --port ${port}`,
     ].join(" "),
     // Use a cheap static route that stays accessible under site-lock so readiness

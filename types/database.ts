@@ -694,6 +694,113 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_messages: {
+        Row: {
+          created_at: string;
+          id: string;
+          message_body: string;
+          notification_error_code:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata: Json;
+          source_variant: Database["public"]["Enums"]["admin_message_source"];
+          status: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake: Json;
+          submitter_email: string;
+          submitter_name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message_body?: string;
+          notification_error_code?:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata?: Json;
+          source_variant: Database["public"]["Enums"]["admin_message_source"];
+          status?: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake?: Json;
+          submitter_email: string;
+          submitter_name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message_body?: string;
+          notification_error_code?:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata?: Json;
+          source_variant?: Database["public"]["Enums"]["admin_message_source"];
+          status?: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake?: Json;
+          submitter_email?: string;
+          submitter_name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      admin_message_delivery_attempts: {
+        Row: {
+          attempt_metadata: Json;
+          created_at: string;
+          error_code: Database["public"]["Enums"]["admin_message_delivery_error_code"] | null;
+          id: string;
+          message_id: string;
+          provider_key: Database["public"]["Enums"]["admin_message_delivery_provider"];
+          provider_message_id: string | null;
+          redacted_error_message: string | null;
+          reply_id: string | null;
+          retry_after_seconds: number | null;
+          status: Database["public"]["Enums"]["admin_message_delivery_status"];
+          target: Database["public"]["Enums"]["admin_message_delivery_target"];
+          updated_at: string;
+        };
+        Insert: {
+          attempt_metadata?: Json;
+          created_at?: string;
+          error_code?: Database["public"]["Enums"]["admin_message_delivery_error_code"] | null;
+          id?: string;
+          message_id: string;
+          provider_key?: Database["public"]["Enums"]["admin_message_delivery_provider"];
+          provider_message_id?: string | null;
+          redacted_error_message?: string | null;
+          reply_id?: string | null;
+          retry_after_seconds?: number | null;
+          status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          target: Database["public"]["Enums"]["admin_message_delivery_target"];
+          updated_at?: string;
+        };
+        Update: {
+          attempt_metadata?: Json;
+          created_at?: string;
+          error_code?: Database["public"]["Enums"]["admin_message_delivery_error_code"] | null;
+          id?: string;
+          message_id?: string;
+          provider_key?: Database["public"]["Enums"]["admin_message_delivery_provider"];
+          provider_message_id?: string | null;
+          redacted_error_message?: string | null;
+          reply_id?: string | null;
+          retry_after_seconds?: number | null;
+          status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          target?: Database["public"]["Enums"]["admin_message_delivery_target"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_message_delivery_attempts_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       admin_note_attachments: {
         Row: {
           created_at: string;
@@ -1367,6 +1474,31 @@ export type Database = {
     };
     Enums: {
       admin_role: "admin" | "editor" | "viewer";
+      admin_message_source: "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
+      admin_message_status: "new" | "triaged" | "archived" | "deleted";
+      admin_message_delivery_target: "inbound_notification" | "admin_reply" | "system_notice";
+      admin_message_delivery_status:
+        | "queued"
+        | "accepted_by_provider"
+        | "failed_retryable"
+        | "failed_final"
+        | "disabled";
+      admin_message_delivery_provider:
+        | "smtp_one_com_compatible"
+        | "resend_api"
+        | "resend_smtp"
+        | "disabled";
+      admin_message_delivery_error_code:
+        | "provider_disabled"
+        | "provider_invalid"
+        | "provider_config_missing"
+        | "payload_invalid"
+        | "provider_timeout"
+        | "provider_auth_failed"
+        | "provider_rejected"
+        | "provider_rate_limited"
+        | "provider_request_failed"
+        | "provider_response_invalid";
       admin_email_template_status: "draft" | "review" | "published" | "archived";
       admin_content_status: "draft" | "review" | "published" | "archived";
       admin_content_type:
