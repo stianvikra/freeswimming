@@ -21,6 +21,7 @@ Legend:
 
 - `required`: must be set for that environment.
 - `optional`: set only if that feature is used in that environment.
+- `conditional`: required only when the named provider/feature mode is enabled.
 - `no`: should not be set in that environment.
 - `recommended`: optional but strongly advised for hardening.
 - `auto`: provided by platform.
@@ -43,6 +44,18 @@ Legend:
 | `CONTACT_TO_EMAIL`                        | server config        | `optional`    | `required`    | `required`    | Contact destination mailbox.                                                                               |
 | `CONTACT_FROM_EMAIL`                      | server config        | `optional`    | `optional`    | `optional`    | Defaults to Resend dev sender if empty.                                                                    |
 | `CONTACT_ALLOWED_ORIGINS`                 | server config        | `optional`    | `required`    | `required`    | CSRF/origin allowlist for contact route.                                                                   |
+| `MESSAGE_DELIVERY_PROVIDER`               | server config        | `optional`    | `required`    | `required`    | Admin Messages v1 provider key: `disabled`, `resend_api`, `resend_smtp`, or `smtp_one_com_compatible`.     |
+| `MESSAGE_DELIVERY_TIMEOUT_MS`             | server config        | `optional`    | `optional`    | `optional`    | Provider timeout; defaults to `10000` and hard-caps at `15000`.                                            |
+| `MESSAGE_DELIVERY_FROM_EMAIL`             | server config        | `optional`    | `required`    | `required`    | Default sender for Admin Messages v1 notifications/replies; may use `Name <email>` format.                 |
+| `MESSAGE_DELIVERY_REPLY_TO_EMAIL`         | server config        | `optional`    | `optional`    | `optional`    | Default reply-to mailbox when the payload does not provide a submitter/reply address.                      |
+| `MESSAGE_DELIVERY_RESEND_API_KEY`         | server secret        | `optional`    | `conditional` | `conditional` | Required only when `MESSAGE_DELIVERY_PROVIDER=resend_api`; falls back to `RESEND_API_KEY` if omitted.      |
+| `MESSAGE_DELIVERY_RESEND_API_URL`         | server config        | `optional`    | `optional`    | `optional`    | Optional Resend API endpoint override; default is the official Resend email API.                           |
+| `MESSAGE_DELIVERY_SMTP_HOST`              | server config        | `optional`    | `conditional` | `conditional` | Required when `MESSAGE_DELIVERY_PROVIDER` is `smtp_one_com_compatible` or `resend_smtp`.                   |
+| `MESSAGE_DELIVERY_SMTP_PORT`              | server config        | `optional`    | `conditional` | `conditional` | SMTP port; defaults to `465` for One.com-compatible SMTP and `587` for Resend SMTP.                        |
+| `MESSAGE_DELIVERY_SMTP_SECURE`            | server config        | `optional`    | `optional`    | `optional`    | Override TLS mode; defaults to secure when port is `465`.                                                  |
+| `MESSAGE_DELIVERY_SMTP_USER`              | server secret        | `optional`    | `conditional` | `conditional` | Required for SMTP providers.                                                                               |
+| `MESSAGE_DELIVERY_SMTP_PASSWORD`          | server secret        | `optional`    | `conditional` | `conditional` | Required for SMTP providers.                                                                               |
+| `MESSAGE_DELIVERY_MESSAGE_ID_DOMAIN`      | server config        | `optional`    | `optional`    | `optional`    | Optional domain used in deterministic SMTP `Message-ID` headers; defaults to `freeswimming.app`.           |
 | `UPSTASH_REDIS_REST_URL`                  | server secret        | `optional`    | `optional`    | `optional`    | Enables production-grade rate limiting.                                                                    |
 | `UPSTASH_REDIS_REST_TOKEN`                | server secret        | `optional`    | `optional`    | `optional`    | Pair with Upstash URL.                                                                                     |
 | `ADMIN_EMAIL_ALLOWLIST`                   | server config        | `optional`    | `optional`    | `optional`    | Bootstrap fallback for admin visibility only.                                                              |
