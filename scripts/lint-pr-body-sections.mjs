@@ -10,6 +10,27 @@ const SUMMARY_PLACEHOLDERS = new Set([
   "user-visible changes: describe the concrete user/admin behavior changed in this pr.",
   "technical changes: describe key files/services/contracts changed.",
 ]);
+const PLAIN_LANGUAGE_SUMMARY_PLACEHOLDERS = new Set([
+  "what changed and why it matters?",
+  "what changed and why this matters?",
+  "what changed and why it matters in owner-readable language",
+  "tbd",
+  "todo",
+  "n/a",
+  "na",
+  "<fill-in>",
+]);
+const RECOMMENDED_NEXT_STEP_PLACEHOLDERS = new Set([
+  "tbd",
+  "todo",
+  "n/a",
+  "na",
+  "none",
+  "no next step",
+  "one concrete action, or `no next step: <rationale>`",
+  "one concrete action, or no next step: <rationale>",
+  "<fill-in>",
+]);
 const POLICY_IMPACT_PLACEHOLDERS = new Set(["yes/no", "tbd", "todo", "<fill-in>"]);
 const POLICY_VERSION_PLACEHOLDERS = new Set(["tbd", "todo", "<fill-in>"]);
 const SCOPE_IN_PLACEHOLDERS = new Set([
@@ -216,6 +237,11 @@ function fieldValue(content, label) {
   return match?.[1]?.trim() ?? "";
 }
 
+function fieldValues(content, label) {
+  const regex = new RegExp(`^-\\s*${label}\\s*:\\s*(.+)$`, "gim");
+  return [...content.matchAll(regex)].map((match) => match?.[1]?.trim() ?? "").filter(Boolean);
+}
+
 function escapedRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -326,6 +352,16 @@ function isBareNa(rawValue) {
   return normalized === "n/a" || normalized === "na";
 }
 
+function isTooShortForOwnerSummary(rawValue) {
+  return normalizeFieldValue(rawValue).length < 24;
+}
+
+function hasNoNextStepRationale(rawValue) {
+  const normalized = normalizeFieldValue(rawValue);
+  const match = normalized.match(/^no next step\s*(?::|-|because)\s*(.*)$/);
+  return Boolean(match && match[1].trim().length >= 12);
+}
+
 function listChangedFilesForPullRequest(pullRequest) {
   if (!pullRequest) return [];
 
@@ -434,10 +470,34 @@ export function validatePullRequestBody(body, options = {}) {
     errors.push('Section "## Summary" has no informative content.');
   }
   if (summary) {
+    const plainLanguageSummaries = fieldValues(summary, "Plain-language done summary");
+    const recommendedNextSteps = fieldValues(summary, "Recommended next step");
     const userVisible = fieldValue(summary, "User-visible changes");
     const technical = fieldValue(summary, "Technical changes");
     const policyImpactRaw = fieldValue(summary, "Policy impact");
     policyVersionNote = fieldValue(summary, "Policy version note");
+    if (plainLanguageSummaries.length !== 1) {
+      errors.push(
+        'Section "## Summary" must include exactly one `Plain-language done summary` line explaining what changed and why it matters.'
+      );
+    } else if (
+      isPlaceholderValue(plainLanguageSummaries[0], PLAIN_LANGUAGE_SUMMARY_PLACEHOLDERS) ||
+      isTooShortForOwnerSummary(plainLanguageSummaries[0])
+    ) {
+      errors.push('Section "## Summary" has placeholder or too-thin content in `Plain-language done summary`.');
+    }
+    if (recommendedNextSteps.length !== 1) {
+      errors.push(
+        'Section "## Summary" must include exactly one `Recommended next step` line, or one `No next step: <rationale>` line.'
+      );
+    } else if (
+      isPlaceholderValue(recommendedNextSteps[0], RECOMMENDED_NEXT_STEP_PLACEHOLDERS) &&
+      !hasNoNextStepRationale(recommendedNextSteps[0])
+    ) {
+      errors.push(
+        'Section "## Summary" has placeholder content in `Recommended next step`; use one concrete action or `No next step: <rationale>`.'
+      );
+    }
     if (!userVisible) {
       errors.push('Section "## Summary" is missing a filled `User-visible changes` line.');
     } else if (

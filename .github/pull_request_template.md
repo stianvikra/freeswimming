@@ -1,6 +1,8 @@
 ## Summary
 
 - What changed and why?
+- Plain-language done summary: what changed and why it matters in owner-readable language
+- Recommended next step: one concrete action, or `No next step: <rationale>`
 - User-visible changes:
 - Technical changes:
 - Policy impact: yes/no (short rationale)

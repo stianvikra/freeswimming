@@ -29,6 +29,15 @@ Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when th
 - repo scripts handle `gh` resolution and repo-standard Node bootstrap.
 - `verify:pre-pr`, `verify:pre-merge`, and merge preflight stay SHA-aware and aligned.
 
+## Closeout Summary Contract
+
+Every final implementation handoff and generated PR body must include two owner-readable fields:
+
+- `Plain-language done summary`: what changed and why it matters, without requiring code knowledge.
+- `Recommended next step`: exactly one concrete next action, or `No next step: <rationale>` when the workstream is fully closed.
+
+Keep technical validation, CI status, rollback, and risk in the operator sections after those fields so the owner can understand the outcome before reading command evidence.
+
 ## New-Chat Rule
 
 Start a new chat or provide a carry-forward prompt when that is the best way to preserve momentum and reduce risk. Heavy context is one trigger, not the only trigger.

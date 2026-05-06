@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildPlainLanguageDoneSummary,
   buildCommandChecklist,
+  buildRecommendedNextStep,
   buildVerifyDocsOnlyLine,
   buildPreMergeEvidenceLine,
   buildVerifyPrePrLine,
@@ -109,5 +111,55 @@ describe("generate-pr-body verification lane evidence", () => {
     expect(evidence.line).toContain("**PENDING**");
     expect(evidence.line).toContain("last green marker");
     expect(evidence.line).not.toContain("latest PASS was");
+  });
+
+  it("builds an owner-readable plain-language done summary from the active brief goal", () => {
+    const summary = buildPlainLanguageDoneSummary({
+      changedFiles: ["docs/runbooks/pr-flow-and-chat-handoff.md", "scripts/generate-pr-body.mjs"],
+      brief: {
+        goal: "Make every completed workstream end with a plain-language done summary.",
+      },
+    });
+
+    expect(summary).toContain("project closeouts easier to understand");
+    expect(summary).toContain("plain-language done summary");
+  });
+
+  it("recommends pre-merge when pre-PR passed but pre-merge is still pending", () => {
+    const nextStep = buildRecommendedNextStep({
+      verifyRun: {
+        status: "PASS",
+        lane: "docs-only",
+        runDir: "artifacts/test-runs/latest",
+        summaryLines: [],
+      },
+      verifyPreMergeEvidence: {
+        checked: false,
+        line: "pending",
+      },
+    });
+
+    expect(nextStep).toBe(
+      "Monitor required GitHub checks, then run `npm run verify:pre-merge` on the current HEAD before merge."
+    );
+  });
+
+  it("recommends merge only after current-head pre-merge evidence is green", () => {
+    const nextStep = buildRecommendedNextStep({
+      verifyRun: {
+        status: "PASS",
+        lane: "docs-only",
+        runDir: "artifacts/test-runs/latest",
+        summaryLines: [],
+      },
+      verifyPreMergeEvidence: {
+        checked: true,
+        line: "pass",
+      },
+    });
+
+    expect(nextStep).toBe(
+      "Owner can merge this PR after required GitHub checks and any listed QA are complete."
+    );
   });
 });
