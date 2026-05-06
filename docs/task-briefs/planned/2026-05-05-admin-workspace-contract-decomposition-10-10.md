@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-05`
-- `updated`: `2026-05-05`
+- `updated`: `2026-05-06`
 
 ## Goal
 
@@ -23,6 +23,24 @@ The platform architecture audit found large admin UI concentration:
 - `components/admin/AdminEmailTemplatesManager.tsx` at `1151` lines.
 
 The workflows are mature and well covered, but additional admin features should not continue to accumulate state and rendering in the same client managers.
+
+This brief is now also a prerequisite for the Admin Message Management parent:
+
+- `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
+
+The message inbox/reply workflow must not be added as another large route-local admin manager. This architecture slice should establish a narrow admin message module boundary before inbox UI implementation.
+
+## Admin Message Module Dependency
+
+- Define where Admin Messages v1 enters the admin workspace navigation and route/module tree.
+- Define the typed boundary between:
+  - admin message orchestration state,
+  - admin message route/API mutations,
+  - admin message presentational list/detail/reply panels.
+- The decomposition can be intentionally narrow:
+  - it does not need to refactor all mature admin managers before Admin Messages work,
+  - it must create enough pattern/evidence that the inbox and reply UI do not increase existing admin-manager concentration.
+- Screenshot handoff is required if admin navigation, tabs, or workspace layout changes.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -67,7 +85,8 @@ Critical target categories for `10/10` claim:
 ## Stack / Architecture Best-Practice Gate
 
 - React/Next.js:
-  - split admin client managers into typed hooks/view-models and presentational panels.
+  - split admin client managers into typed hooks/view-models and presentational panels,
+  - establish the Admin Messages module boundary before inbox/reply UI is implemented.
 - TypeScript/domain:
   - keep admin entity schemas and mutation contracts in `lib/admin/*`.
 - Supabase:
@@ -104,11 +123,13 @@ Critical target categories for `10/10` claim:
 - Admin content manager decomposition.
 - Admin notes manager/context panel decomposition.
 - Admin QR/email/product/operations manager extraction only where needed to establish shared patterns.
+- Admin Messages module boundary preparation for inbox/reply implementation.
 - Help/Guide/runbook impact for any label, action, or recovery behavior change.
 
 ## Out Of Scope
 
-- New admin products or content models.
+- Full Admin Messages inbox/reply runtime implementation; that belongs to the Admin Message Management child briefs.
+- New admin products or content models outside the Admin Messages module boundary.
 - Broad admin redesign.
 - Schema/RLS changes unless explicitly split into a child slice.
 
@@ -118,6 +139,7 @@ Critical target categories for `10/10` claim:
 2. Admin route negative paths remain covered.
 3. Changed admin UI has screenshot handoff and Help/Guide impact review.
 4. No unrelated admin workflow labels/actions change without the route-label-support sweep.
+5. Admin Messages has a documented module boundary before inbox/reply UI implementation starts.
 
 ## Validation
 
@@ -128,4 +150,5 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for a narrow admin message module boundary before inbox/reply UI is implemented | next: execute this architecture slice after external-service contract hardening or as a scoped prerequisite to Admin Messages v1`
 - `2026-05-05 | planned | created by platform architecture audit to own mature admin workspace decomposition without mixing it into feature work | next: execute only after owner chooses an admin-maintenance slice`
