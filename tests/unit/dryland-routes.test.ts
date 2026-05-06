@@ -248,6 +248,112 @@ describe("dryland routes", () => {
     );
   });
 
+  it("rejects invalid dryland update payloads before persistence", async () => {
+    const from = vi.fn();
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandSession(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            draft: buildDrylandDraft({
+              title: "",
+            }),
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          sessionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain("Dryland session title");
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when an owner update targets a missing dryland session", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: null,
+    });
+    const select = vi.fn(() => ({ maybeSingle }));
+    const eqId = vi.fn(() => ({ select }));
+    const eqUser = vi.fn(() => ({ eq: eqId }));
+    const update = vi.fn(() => ({ eq: eqUser }));
+    const from = vi.fn().mockReturnValue({ update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandSession(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            draft: buildDrylandDraft({
+              title: "Missing dryland session",
+            }),
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          sessionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(404);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Dryland session not found.");
+  });
+
+  it("rejects invalid dryland session ids before delete auth work", async () => {
+    const response = await deleteDrylandSession(
+      new Request("http://127.0.0.1:3000/api/my-library/dryland/not-a-session-id", {
+        method: "DELETE",
+      }),
+      {
+        params: Promise.resolve({
+          sessionId: "not-a-session-id",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Invalid dryland session id.");
+    expect(createRouteHandlerSupabaseClientMock).not.toHaveBeenCalled();
+  });
+
   it("deletes a dryland session for the authenticated owner", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: { id: "11111111-1111-4111-8111-111111111111" },

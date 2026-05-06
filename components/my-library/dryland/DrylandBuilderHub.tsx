@@ -163,21 +163,21 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
     <section
       data-testid="dryland-builder-hub"
       data-client-ready={clientReady ? "true" : "false"}
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className={browseOnly ? "rounded-2xl border border-slate-200 bg-white p-5" : "space-y-6"}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">
-            {browseOnly ? "Dryland Sessions" : "Dryland builder"}
-          </h2>
-          <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-            {browseOnly
-              ? "Browse saved strength and stretching sessions here first, then open one focused session whenever you want the full builder and execution view."
-              : savedSession
-                ? "Keep one dryland form front and center while you edit or execute it. Use the saved-session list only when you want to switch back to older work."
+        {browseOnly || !savedSession ? (
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {browseOnly ? "Dryland Sessions" : "Dryland builder"}
+            </h2>
+            <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+              {browseOnly
+                ? "Browse saved strength and stretching sessions here first, then open one focused session whenever you want the full builder and execution view."
                 : "Create a new strength or stretching session first, or open a saved one when you want to continue older work."}
-          </p>
-        </div>
+            </p>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           {!browseOnly && recentSessions.length > 0 ? (
             <Link
@@ -187,7 +187,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
               Dryland Sessions
             </Link>
           ) : null}
-          {drylandLibrary.schemaReady ? (
+          {drylandLibrary.schemaReady && (browseOnly || !savedSession) ? (
             <>
               <CreateManualDrylandSessionButton
                 sessionKind="strength"
@@ -206,21 +206,31 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
             </>
           ) : null}
           {!browseOnly && savedSession ? (
-            <button
-              type="button"
-              data-testid="dryland-delete-current-session"
-              onClick={() => {
-                setPendingDeleteSessionId((current) =>
-                  current === savedSession.id ? null : savedSession.id
-                );
-                setError("");
-                setSuccess("");
-              }}
-              disabled={deletingSessionId === savedSession.id}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {deletingSessionId === savedSession.id ? "Deleting..." : "Delete current session"}
-            </button>
+            <details className="relative">
+              <summary
+                data-testid="dryland-session-more"
+                className="inline-flex h-10 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                More
+              </summary>
+              <div className="absolute right-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_16px_40px_rgba(15,23,42,0.14)]">
+                <button
+                  type="button"
+                  data-testid="dryland-delete-current-session"
+                  onClick={() => {
+                    setPendingDeleteSessionId((current) =>
+                      current === savedSession.id ? null : savedSession.id
+                    );
+                    setError("");
+                    setSuccess("");
+                  }}
+                  disabled={deletingSessionId === savedSession.id}
+                  className="flex min-h-10 w-full items-center rounded-xl px-3 text-left text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingSessionId === savedSession.id ? "Deleting..." : "Delete current session"}
+                </button>
+              </div>
+            </details>
           ) : null}
         </div>
       </div>
@@ -301,7 +311,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-lg font-semibold text-slate-900">{session.title}</h3>
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                             {getDrylandSessionKindLabel(session.sessionKind)}
                           </span>
                         </div>

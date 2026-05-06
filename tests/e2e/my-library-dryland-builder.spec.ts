@@ -92,9 +92,12 @@ test.describe("my library dryland builder", () => {
     await expect(page).toHaveURL(targetUrl);
     await waitForDrylandBuilderClientReady(page);
 
+    await expect(page.getByTestId("dryland-mode-train")).toHaveAttribute("aria-selected", "true");
+    await page.getByTestId("dryland-mode-build").click();
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);
     await page.getByTestId("dryland-draft-start-timer").click();
     await page.getByTestId("dryland-add-custom-exercise").click();
+    await page.getByTestId("dryland-mode-train").click();
     await page.getByTestId("dryland-set-chip-0-0").click();
     const saveResponsePromise = page.waitForResponse(
       (response) =>
@@ -113,6 +116,7 @@ test.describe("my library dryland builder", () => {
       "All dryland changes are saved"
     );
 
+    await page.getByTestId("dryland-session-more").click();
     await page.getByTestId("dryland-delete-current-session").click();
 
     const deleteResponsePromise = page.waitForResponse(

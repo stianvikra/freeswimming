@@ -427,6 +427,52 @@ export function buildDrylandSetChipLabel(
   return `${main}${pause}`;
 }
 
+export type DrylandExecutionSummary = ReturnType<typeof buildDrylandSummary> & {
+  remainingSetCount: number;
+  progressPercent: number;
+  nextSet: {
+    exerciseId: string;
+    exerciseIndex: number;
+    exerciseTitle: string;
+    setId: string;
+    setIndex: number;
+    label: string;
+  } | null;
+};
+
+export function buildDrylandExecutionSummary(draft: DrylandSessionDraft): DrylandExecutionSummary {
+  const summary = buildDrylandSummary(draft);
+  const remainingSetCount = Math.max(0, summary.setCount - summary.completedSetCount);
+  const progressPercent =
+    summary.setCount > 0 ? Math.round((summary.completedSetCount / summary.setCount) * 100) : 0;
+  let nextSet: DrylandExecutionSummary["nextSet"] = null;
+
+  for (const [exerciseIndex, exercise] of draft.exercises.entries()) {
+    const setIndex = exercise.sets.findIndex((set) => !set.isCompleted);
+    if (setIndex < 0) continue;
+
+    const set = exercise.sets[setIndex];
+    if (!set) continue;
+
+    nextSet = {
+      exerciseId: exercise.id,
+      exerciseIndex,
+      exerciseTitle: exercise.title,
+      setId: set.id,
+      setIndex,
+      label: buildDrylandSetChipLabel(set, draft.sessionKind),
+    };
+    break;
+  }
+
+  return {
+    ...summary,
+    remainingSetCount,
+    progressPercent,
+    nextSet,
+  };
+}
+
 export function buildDrylandSessionSummarySubtitle(summary: DrylandSessionSummary) {
   const parts = [
     getDrylandSessionKindLabel(summary.sessionKind),
