@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandBuilderHub from "@/components/my-library/dryland/DrylandBuilderHub";
 import type {
@@ -149,6 +149,39 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("dryland-session-kind-locked")).toHaveTextContent("Strength session");
+    expect(screen.queryByTestId("dryland-draft-kind")).not.toBeInTheDocument();
+    expect(screen.getByTestId("dryland-mode-train")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("dryland-train-mode")).toBeInTheDocument();
+    expect(screen.getByText("Workout player")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Execution progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "0"
+    );
+    expect(screen.getByTestId("dryland-next-set-label")).toHaveTextContent("Air squat · Set 1");
+    expect(screen.getByTestId("dryland-set-chip-0-0")).toHaveTextContent("Now");
+
+    fireEvent.click(screen.getByTestId("dryland-complete-next-set"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-next-set-label")).toHaveTextContent("All sets complete");
+    });
+    expect(screen.getByRole("progressbar", { name: "Execution progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "100"
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-mode-build"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-build-mode")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(within(screen.getByTestId("dryland-exercise-card-0")).getByText("Edit"));
+
+    expect(screen.getByText("Common mistake")).toBeInTheDocument();
+
     fireEvent.change(screen.getByTestId("dryland-draft-title"), {
       target: { value: "Updated dryland session" },
     });
@@ -156,7 +189,6 @@ describe("DrylandBuilderHub", () => {
       target: { value: "18" },
     });
     fireEvent.click(screen.getByTestId("dryland-add-custom-exercise"));
-    fireEvent.click(screen.getByTestId("dryland-set-chip-0-0"));
 
     expect(screen.getByTestId("dryland-editor-save-state")).toHaveTextContent(
       "Unsaved changes stay local until you save"
