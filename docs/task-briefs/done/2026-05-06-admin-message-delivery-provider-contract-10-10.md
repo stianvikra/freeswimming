@@ -18,7 +18,7 @@ Define and implement the provider-independent delivery contract for admin messag
 - Must follow or be executed with:
   - `docs/task-briefs/done/2026-05-05-external-service-contract-observability-hardening-10-10.md`
 - Must finish before:
-  - `docs/task-briefs/in-progress/2026-05-06-contact-intake-message-storage-10-10.md`
+  - `docs/task-briefs/done/2026-05-06-contact-intake-message-storage-10-10.md`
   - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
 
 ## Target Provider Strategy
