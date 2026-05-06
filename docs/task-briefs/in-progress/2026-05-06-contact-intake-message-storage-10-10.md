@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-contact-intake-message-storage-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-06`
@@ -130,6 +130,81 @@ Critical target categories for `10/10` claim:
 - Supabase message storage schema and RLS.
 - Notification attempt creation through provider contract.
 
+## Implementation Slice
+
+- Add `admin_messages` and `admin_message_delivery_attempts` Supabase schema with fail-closed RLS:
+  - public route writes use service-role only after origin/content/rate/spam validation,
+  - authenticated admin roles can read later; editor/admin update; admin delete,
+  - no anonymous DB reads or writes are granted.
+- Add `lib/admin/contact-intake.ts` for contact-intake storage, privacy-safe request metadata, local no-egress verify storage, and provider payload construction.
+- Change `/api/contact` to:
+  - validate and rate-limit first,
+  - insert the server-canonical message before user success,
+  - create/update a provider-independent delivery attempt,
+  - return user success when storage succeeds, even if notification is disabled/failed,
+  - return retryable user error when storage fails,
+  - emit safe analytics without name, email, message body, IP, or user-agent text.
+- Preserve existing form layout and variants; only update contact success title from `Message sent` to `Message received` so user copy means platform intake, not provider delivery.
+- Add local Playwright `CONTACT_INTAKE_STORAGE=local_verify` only for no-egress verification when configured Supabase is intentionally dummy/example.
+- Screenshot handoff required because visible success copy changes.
+
+## Failure-Mode Evidence
+
+- Expected storage failure mode:
+  - `/api/contact` returns `500` with retryable copy `Could not save right now. Please try again.`
+  - no delivery provider call happens before durable message storage.
+  - evidence: `tests/unit/contact-api-route.test.ts` covers storage failure and asserts `deliverMessage` is not called.
+- Expected provider failure mode:
+  - app message remains stored,
+  - delivery attempt records `disabled`, `failed_retryable`, or `failed_final`,
+  - user response remains `ok: true` because platform intake succeeded and no email-delivery claim is made.
+  - evidence: `tests/unit/contact-api-route.test.ts` covers missing `CONTACT_TO_EMAIL` and provider rate-limit failure.
+- No unexpected 500 contract:
+  - validation/origin/content/rate errors return deterministic `400`/`403`/`415`/`429`,
+  - only app-storage failure returns `500`.
+
+## Route-Label-Support-Surface Impact Sweep
+
+- Sweep identifiers searched:
+  - `/api/contact`
+  - `CONTACT_TO_EMAIL`
+  - `CONTACT_FROM_EMAIL`
+  - `CONTACT_INTAKE_STORAGE`
+  - `Message sent`
+  - `Message received`
+  - `preview_access_notify`
+  - `admin_messages`
+  - `admin_message_delivery_attempts`
+  - `contact_intake_`
+- Directories/surfaces checked:
+  - `app/`
+  - `components/`
+  - `lib/`
+  - `tests/`
+  - `docs/architecture/`
+  - `docs/runbooks/`
+  - `docs/checklists/`
+  - `docs/task-briefs/`
+- Fallout handled:
+  - updated data-access route registry for `/api/contact`,
+  - updated external-service matrix for DB-first contact notification,
+  - updated environment parity runbook for contact/message-delivery env semantics and local verify storage,
+  - updated parent/child brief path references after moving this child to `in-progress`,
+  - preserved site-lock `/contact` and `/api/contact` bypass references,
+  - no Help/Guide product content changes required because this slice changes storage/copy only and adds no admin-visible action yet.
+
+## UI Reference Surface And Screenshot Handoff
+
+- Reference surface:
+  - existing `components/ContactForm.tsx` success panel is reused directly,
+  - no new layout, component, or visual treatment was introduced,
+  - only the contact success title changes from `Message sent` to `Message received`.
+- Screenshot artifact handoff:
+  - `output/contact-intake-message-storage-2026-05-06-195022`
+  - Captured: `2026-05-06 19:50`
+  - owner screenshot approval stop passed in chat on `2026-05-06`.
+  - comparison naming is `after-contact-success-desktop.png` and `after-contact-success-mobile.png`; this is a standalone after-state handoff because the visual delta is one copy string on the existing success component.
+
 ## Out Of Scope
 
 - Admin inbox UI.
@@ -154,4 +229,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-06 | pre-pr-ready | owner approved screenshot handoff; no product-rendering files changed after capture; tightened local_verify fail-closed handling for Vercel preview/production and production runtime; npm run verify:pre-pr passed full lane with lint/quality/admin/env/pr-body/typecheck/build/perf/e2e green, 175 unit files / 940 tests passed, and 82 e2e passed / 374 skipped; evidence: artifacts/test-runs/20260506-200635/verify.log; perf ratchet decision: hold despite automatic tighten recommendation because docs/runbooks/maintenance-cadence.md says no new stretch-target step until at least two weekly green cycles after the 2026-05-04 tightening | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-06 | screenshot-handoff | captured after-state contact success screenshots in output/contact-intake-message-storage-2026-05-06-195022 after targeted unit tests, typecheck, contact API Playwright, env parity lint, and quality gate passed; no product-rendering files changed after capture yet | next: owner visual approval before verify:pre-pr`
+- `2026-05-06 | in-progress | branch contact-intake-message-storage-10-10 opened from clean synced main; brief moved to in-progress; implementation scoped to DB-first /api/contact intake, provider-attempt diagnostics, no admin inbox UI, and honest success copy | next: run targeted unit/e2e checks and screenshot handoff for changed contact success copy`
 - `2026-05-06 | planned | created after preview access/contact triage showed current email-only delivery can return success without configured recipient; this child owns DB-first intake and honest public success states | next: execute after provider contract child`

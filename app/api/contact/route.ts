@@ -1,5 +1,18 @@
 // app/api/contact/route.ts
 import { NextResponse } from "next/server";
+import {
+  buildContactNotificationPayload,
+  buildPrivacySafeRequestMetadata,
+  createContactNotificationAttempt,
+  storeContactIntakeMessage,
+  updateContactNotificationAttempt,
+  type ContactIntakeStructuredFields,
+} from "@/lib/admin/contact-intake";
+import { deliverMessage } from "@/lib/admin/message-delivery";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type Payload = {
   variant?: "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
@@ -31,6 +44,21 @@ type RateLimitResult =
       resetAt: number;
       retryAfterMs: number;
     };
+
+function noStoreJson(
+  body: Record<string, unknown>,
+  init?: {
+    status?: number;
+    headers?: HeadersInit;
+  }
+) {
+  const headers = new Headers(init?.headers);
+  headers.set("Cache-Control", "no-store");
+  return NextResponse.json(body, {
+    status: init?.status ?? 200,
+    headers,
+  });
+}
 
 function splitHeaderValue(value: string | null) {
   return (value ?? "")
@@ -200,42 +228,16 @@ function isValidDateString(value: string | null | undefined): value is string {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-async function sendWithResend(params: { to: string; from: string; subject: string; text: string }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { ok: false as const, error: "RESEND_API_KEY not set" };
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: params.from,
-      to: [params.to],
-      subject: params.subject,
-      text: params.text,
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    return { ok: false as const, error: `Resend error: ${res.status} ${t}` };
-  }
-
-  return { ok: true as const };
-}
-
 export async function POST(req: Request) {
   // 1) Same-origin check (basic CSRF protection)
   if (!isAllowedOrigin(req)) {
-    return NextResponse.json({ ok: false, error: "Invalid origin." }, { status: 403 });
+    return noStoreJson({ ok: false, error: "Invalid origin." }, { status: 403 });
   }
 
   // 2) Content-type check
   const ct = req.headers.get("content-type") || "";
   if (!ct.includes("application/json")) {
-    return NextResponse.json({ ok: false, error: "Unsupported content type." }, { status: 415 });
+    return noStoreJson({ ok: false, error: "Unsupported content type." }, { status: 415 });
   }
 
   // 3) Rate limit
@@ -248,7 +250,15 @@ export async function POST(req: Request) {
   };
   if (!rl.ok) {
     const retrySeconds = Math.max(1, Math.ceil(rl.retryAfterMs / 1000));
-    return NextResponse.json(
+    trackAnalyticsEvent({
+      eventName: "contact_intake_rate_limited",
+      channel: "server",
+      payload: {
+        sourceVariant: "unknown",
+        outcome: "rate_limited",
+      },
+    });
+    return noStoreJson(
       { ok: false, error: "Too many requests. Try again shortly." },
       { status: 429, headers: { ...rateHeaders, "Retry-After": String(retrySeconds) } }
     );
@@ -259,7 +269,7 @@ export async function POST(req: Request) {
   try {
     body = (await req.json()) as Payload;
   } catch {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: "Invalid JSON." },
       { status: 400, headers: rateHeaders }
     );
@@ -267,14 +277,13 @@ export async function POST(req: Request) {
 
   // Honeypot: silently accept
   if (body?.company && String(body.company).trim().length > 0) {
-    return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
+    return noStoreJson({ ok: true }, { status: 200, headers: rateHeaders });
   }
 
   // Bot timing: silently accept
   if (typeof body?.startedAt === "number") {
     const elapsed = Date.now() - body.startedAt;
-    if (elapsed < 900)
-      return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
+    if (elapsed < 900) return noStoreJson({ ok: true }, { status: 200, headers: rateHeaders });
   }
 
   const variant =
@@ -291,25 +300,25 @@ export async function POST(req: Request) {
   const goalsCoaching = body?.goalsCoaching;
 
   if (name.length < 2) {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: "Please enter your name." },
       { status: 400, headers: rateHeaders }
     );
   }
   if (!isValidEmail(email)) {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: "Please enter a valid email." },
       { status: 400, headers: rateHeaders }
     );
   }
   if (variant !== "goals_coaching" && variant !== "preview_access_notify" && message.length < 10) {
-    return NextResponse.json(
+    return noStoreJson(
       { ok: false, error: "Please write a short message." },
       { status: 400, headers: rateHeaders }
     );
   }
 
-  let goalsLines = "";
+  let structuredIntake: ContactIntakeStructuredFields = {};
   if (variant === "goals_coaching") {
     const primaryGoal = clampString(String(goalsCoaching?.primaryGoal || ""), 160);
     const level = String(goalsCoaching?.level || "");
@@ -327,14 +336,14 @@ export async function POST(req: Request) {
     };
 
     if (primaryGoal.length < 3) {
-      return NextResponse.json(
+      return noStoreJson(
         { ok: false, error: "Please enter your primary goal." },
         { status: 400, headers: rateHeaders }
       );
     }
 
     if (!Object.prototype.hasOwnProperty.call(levelMap, level)) {
-      return NextResponse.json(
+      return noStoreJson(
         { ok: false, error: "Please choose your current level." },
         { status: 400, headers: rateHeaders }
       );
@@ -345,62 +354,120 @@ export async function POST(req: Request) {
       trainingDaysPerWeek < 1 ||
       trainingDaysPerWeek > 7
     ) {
-      return NextResponse.json(
+      return noStoreJson(
         { ok: false, error: "Please choose training days per week." },
         { status: 400, headers: rateHeaders }
       );
     }
 
     if (weeklyVolume.length < 2) {
-      return NextResponse.json(
+      return noStoreJson(
         { ok: false, error: "Please enter your current weekly volume." },
         { status: 400, headers: rateHeaders }
       );
     }
 
-    goalsLines =
-      `Primary goal: ${primaryGoal}\n` +
-      `Current level: ${levelMap[level]}\n` +
-      `Training days/week: ${trainingDaysPerWeek}\n` +
-      `Current weekly volume: ${weeklyVolume}\n` +
-      `Target date: ${targetDate ?? "Not provided"}\n`;
+    structuredIntake = {
+      primaryGoal,
+      level,
+      levelLabel: levelMap[level],
+      trainingDaysPerWeek,
+      weeklyVolume,
+      targetDate,
+    };
   }
 
-  // 5) Deliver via env vars
-  const to = process.env.CONTACT_TO_EMAIL || "";
-  const from = process.env.CONTACT_FROM_EMAIL || "Freeswimming <onboarding@resend.dev>";
+  const requestMetadata = buildPrivacySafeRequestMetadata(req, ip);
+  const stored = await storeContactIntakeMessage({
+    sourceVariant: variant,
+    submitterName: name,
+    submitterEmail: email,
+    messageBody: message,
+    structuredIntake,
+    requestMetadata,
+  });
 
-  const subject =
-    variant === "analysis"
-      ? `Freeswimming — Video analysis request (${name})`
-      : variant === "goals_coaching"
-        ? `Freeswimming — Goals coaching intake (${name})`
-        : variant === "preview_access_notify"
-          ? `Freeswimming — Preview notify request (${name})`
-          : `Freeswimming — New contact message (${name})`;
-
-  const text =
-    `Variant: ${variant}\n` +
-    `Name: ${name}\n` +
-    `Email: ${email}\n` +
-    `IP: ${ip}\n` +
-    (variant === "goals_coaching" ? `\nGoals intake:\n${goalsLines}` : "") +
-    `\nMessage:\n${message || "(No additional message)"}\n`;
-
-  // If not configured yet: log in dev, still return ok
-  if (!to) {
-    console.log("[ContactForm] Missing CONTACT_TO_EMAIL. Message captured:\n" + text);
-    return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
-  }
-
-  const sendRes = await sendWithResend({ to, from, subject, text });
-  if (!sendRes.ok) {
-    console.error("[ContactForm] Email send failed:", sendRes.error);
-    return NextResponse.json(
-      { ok: false, error: "Could not send right now. Please try again." },
+  if (!stored.ok) {
+    console.error("[ContactForm] Contact intake storage failed.", {
+      errorCode: stored.errorCode,
+      message: stored.redactedErrorMessage,
+    });
+    trackAnalyticsEvent({
+      eventName: "contact_intake_failed",
+      channel: "server",
+      payload: {
+        sourceVariant: variant,
+        reason: stored.errorCode,
+      },
+    });
+    return noStoreJson(
+      { ok: false, error: "Could not save right now. Please try again." },
       { status: 500, headers: rateHeaders }
     );
   }
 
-  return NextResponse.json({ ok: true }, { status: 200, headers: rateHeaders });
+  const attempt = await createContactNotificationAttempt({
+    messageId: stored.messageId,
+    requestMetadata,
+  });
+  let notificationStatus = "attempt_not_recorded";
+  let notificationErrorCode: string | null = attempt.ok ? null : attempt.errorCode;
+
+  if (attempt.ok) {
+    const payloadResult = buildContactNotificationPayload({
+      messageId: stored.messageId,
+      attemptId: attempt.attemptId,
+      sourceVariant: variant,
+      submitterName: name,
+      submitterEmail: email,
+      messageBody: message,
+      structuredIntake,
+      requestMetadata,
+    });
+    const deliveryResult = payloadResult.ok
+      ? await deliverMessage(payloadResult.payload)
+      : payloadResult.result;
+    notificationStatus = deliveryResult.status;
+    notificationErrorCode = deliveryResult.errorCode ?? null;
+
+    const updateResult = await updateContactNotificationAttempt({
+      messageId: stored.messageId,
+      attemptId: attempt.attemptId,
+      result: deliveryResult,
+    });
+    if (!updateResult.ok) {
+      console.error("[ContactForm] Contact notification attempt update failed.", {
+        message: updateResult.redactedErrorMessage,
+      });
+    }
+  } else {
+    console.error("[ContactForm] Contact notification attempt insert failed.", {
+      errorCode: attempt.errorCode,
+      message: attempt.redactedErrorMessage,
+    });
+  }
+
+  trackAnalyticsEvent({
+    eventName: "contact_intake_accepted",
+    channel: "server",
+    payload: {
+      sourceVariant: variant,
+      storageMode: stored.storageMode,
+      notificationStatus,
+    },
+  });
+
+  if (notificationStatus !== "accepted_by_provider") {
+    trackAnalyticsEvent({
+      eventName: "contact_intake_notification_failed",
+      channel: "server",
+      payload: {
+        sourceVariant: variant,
+        status: notificationStatus,
+        errorCode: notificationErrorCode,
+      },
+    });
+  }
+
+  return noStoreJson({ ok: true }, { status: 200, headers: rateHeaders });
 }
