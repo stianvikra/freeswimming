@@ -92,11 +92,19 @@ test.describe("my library dryland builder", () => {
     await expect(page).toHaveURL(targetUrl);
     await waitForDrylandBuilderClientReady(page);
 
-    await expect(page.getByTestId("dryland-mode-train")).toHaveAttribute("aria-selected", "true");
-    await page.getByTestId("dryland-mode-build").click();
+    await expect(page.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("dryland-manual-exercises")).toBeVisible();
+    await expect(page.getByTestId("dryland-advanced-bank")).toBeVisible();
+    await expect(page.getByTestId("dryland-bank-add-strength-air-squat")).not.toBeVisible();
+
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);
+    await page.getByTestId("dryland-manual-exercise-name-0").fill("Single-leg squat");
+    await page.getByTestId("dryland-manual-exercise-set-count-0").fill("2");
+    await page.getByTestId("dryland-manual-exercise-target-0").fill("6");
+    await page.getByTestId("dryland-manual-exercise-rest-0").fill("75");
+    await page.getByTestId("dryland-manual-exercise-load-0").fill("12.5");
+    await page.getByTestId("dryland-manual-exercise-notes-0").fill("Control the knee line.");
     await page.getByTestId("dryland-draft-start-timer").click();
-    await page.getByTestId("dryland-add-custom-exercise").click();
     await page.getByTestId("dryland-mode-train").click();
     await page.getByTestId("dryland-set-chip-0-0").click();
     const saveResponsePromise = page.waitForResponse(
@@ -110,11 +118,44 @@ test.describe("my library dryland builder", () => {
     const saveResponse = await saveResponsePromise;
     const saveResponseBody = (await saveResponse.json()) as {
       ok?: boolean;
+      session?: {
+        draft?: {
+          exercises?: Array<{
+            source?: string;
+            bankExerciseId?: string | null;
+            title?: string;
+            sets?: Array<{
+              reps?: number | null;
+              loadKg?: number | null;
+              restSeconds?: number | null;
+            }>;
+          }>;
+        };
+      };
     };
     expect(saveResponseBody.ok).toBe(true);
+    const savedExercise = saveResponseBody.session?.draft?.exercises?.[0];
+    expect(savedExercise?.source).toBe("custom");
+    expect(savedExercise?.bankExerciseId).toBeNull();
+    expect(savedExercise?.title).toBe("Single-leg squat");
+    expect(savedExercise?.sets).toHaveLength(2);
+    expect(
+      savedExercise?.sets?.every(
+        (set) => set.reps === 6 && set.loadKg === 12.5 && set.restSeconds === 75
+      )
+    ).toBe(true);
     await expect(page.getByTestId("dryland-editor-save-state")).toHaveText(
       "All dryland changes are saved"
     );
+
+    await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
+    await waitForDrylandBuilderClientReady(page);
+    await page.getByTestId("dryland-mode-build").click();
+    await expect(page.getByTestId("dryland-manual-exercise-name-0")).toHaveValue(
+      "Single-leg squat"
+    );
+    await expect(page.getByTestId("dryland-manual-exercise-set-count-0")).toHaveValue("2");
+    await page.getByTestId("dryland-mode-train").click();
 
     await page.getByTestId("dryland-session-more").click();
     await page.getByTestId("dryland-delete-current-session").click();

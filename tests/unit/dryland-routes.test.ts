@@ -13,7 +13,7 @@ import {
   PATCH as patchDrylandSession,
 } from "@/app/api/my-library/dryland/[sessionId]/route";
 import { POST as postDrylandSession } from "@/app/api/my-library/dryland/route";
-import type { DrylandSessionDraft } from "@/lib/dryland/shared";
+import { DRYLAND_MAX_SETS_PER_EXERCISE, type DrylandSessionDraft } from "@/lib/dryland/shared";
 import type { Database } from "@/types/database";
 
 type DrylandRow = Database["public"]["Tables"]["dryland_sessions"]["Row"];
@@ -285,6 +285,65 @@ describe("dryland routes", () => {
     expect(response.status).toBe(400);
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("Dryland session title");
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("rejects manual dryland exercises with too many sets before persistence", async () => {
+    const from = vi.fn();
+    const draft = buildDrylandDraft();
+    const exercise = draft.exercises[0];
+    if (!exercise) throw new Error("Expected fixture exercise.");
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandSession(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            draft: {
+              ...draft,
+              exercises: [
+                {
+                  ...exercise,
+                  source: "custom",
+                  bankExerciseId: null,
+                  sets: Array.from({ length: DRYLAND_MAX_SETS_PER_EXERCISE + 1 }, (_, index) => ({
+                    id: `set-${index + 1}`,
+                    reps: 8,
+                    holdSeconds: null,
+                    loadKg: null,
+                    restSeconds: 60,
+                    isCompleted: false,
+                    completedAt: null,
+                  })),
+                },
+              ],
+            },
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          sessionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toContain(`at most ${DRYLAND_MAX_SETS_PER_EXERCISE} sets`);
     expect(from).not.toHaveBeenCalled();
   });
 

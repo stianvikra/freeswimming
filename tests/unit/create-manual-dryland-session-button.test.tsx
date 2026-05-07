@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
+import type { DrylandSessionDraft } from "@/lib/dryland/shared";
 
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
@@ -49,12 +50,55 @@ describe("CreateManualDrylandSessionButton", () => {
       );
     });
 
+    const createBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: DrylandSessionDraft;
+      sessionKind: string;
+    };
+    expect(createBody.sessionKind).toBe("strength");
+    expect(createBody.draft.exercises[0]?.source).toBe("custom");
+    expect(createBody.draft.exercises[0]?.bankExerciseId).toBeNull();
+
     await waitFor(() => {
       expect(navigationState.push).toHaveBeenCalledWith(
         "/my-library/dryland/11111111-1111-4111-8111-111111111111"
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
+  });
+
+  it("creates a stretching session with a custom-only starter draft", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        session: {
+          id: "22222222-2222-4222-8222-222222222222",
+        },
+      }),
+    } as Response);
+
+    render(
+      <CreateManualDrylandSessionButton
+        sessionKind="stretching"
+        label="Create stretching session"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create stretching session" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const createBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: DrylandSessionDraft;
+      sessionKind: string;
+    };
+
+    expect(createBody.sessionKind).toBe("stretching");
+    expect(createBody.draft.exercises[0]?.source).toBe("custom");
+    expect(createBody.draft.exercises[0]?.bankExerciseId).toBeNull();
+    expect(createBody.draft.exercises[0]?.sets.every((set) => set.holdSeconds === 30)).toBe(true);
   });
 
   it("shows an inline error when dryland creation fails", async () => {
