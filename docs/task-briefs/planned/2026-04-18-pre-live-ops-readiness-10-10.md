@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
-- `updated`: `2026-04-18`
+- `updated`: `2026-05-07`
 
 ## Goal
 
@@ -31,11 +31,17 @@ Establish a lean but real 10/10 pre-live operations baseline so the app can laun
   - nightly E2E and performance jobs,
   - branch protection docs,
   - private gate and admin runbooks.
+- Control-plane checkpoint on `2026-05-07`:
+  - `rate_limit_store` is configured for both Vercel Preview and Production.
+  - Preview and Production `/api/contact` bounded probes returned deterministic validation errors with rate-limit headers, no app `500`, and no Upstash `401` error log after redeploy.
+  - The current Upstash free tier permits one Redis database, so Preview and Production temporarily share the same Redis store.
 - Current ops gaps to close:
   - no single canonical pre-live release checklist,
   - no one brief that defines backup/restore scope and proof expectations,
   - no unified owner matrix for launch-critical operational checks,
-  - no one operational dry-run that proves the launch path works end to end.
+  - no one operational dry-run that proves the launch path works end to end,
+  - rate-limit store isolation remains a growth-readiness decision: shared free-tier Redis is acceptable pre-live/low traffic only, but must be revisited before external customer growth or public launch campaigns,
+  - Vercel secret rows marked `Needs Attention` still require a focused control-plane triage before external customers.
 
 ## Recommended Execution Order
 
@@ -73,6 +79,16 @@ This brief should normally start after the maintenance baseline and secrets/conf
 - Prove one backup/restore or equivalent recovery path for server-canonical data.
 - Confirm alerting/monitoring/support diagnostics for launch-critical routes/jobs.
 - Close any blocker found by the dry run before first public launch.
+- Confirm the `rate_limit_store` launch posture:
+  - keep shared Preview/Production Upstash only while traffic is low and test windows are controlled,
+  - either add an environment prefix to Redis rate-limit keys or move Production to an isolated Upstash database before broad external customer intake,
+  - record the decision in the launch checklist with non-sensitive evidence only.
+- Run Vercel env secret attention triage:
+  - review all `Needs Attention` rows,
+  - mark actual secrets as `Sensitive`,
+  - confirm server-secret scope is intentional and avoids `All Environments` unless Development truly needs it,
+  - assess whether Stripe and Supabase should use separate Preview/Production values,
+  - redeploy affected environments and smoke only with non-sensitive evidence.
 
 ## Ongoing Cadence
 
@@ -80,9 +96,13 @@ This brief should normally start after the maintenance baseline and secrets/conf
   - run the current release checklist.
 - Monthly:
   - review runbooks and operational owners.
+  - review whether the shared free-tier `rate_limit_store` remains acceptable for current traffic and support risk.
 - Quarterly:
   - rehearse restore/rollback on a suitable safe environment,
   - update owner matrix and escalation paths.
+- Immediately before a public campaign, larger test cohort, or first external customer growth push:
+  - re-evaluate Upstash usage, rate-limit false positives, and whether Production needs isolated Redis or environment-prefixed keys.
+  - re-run Vercel env secret attention triage for high-risk server secrets and provider keys.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -162,6 +182,8 @@ Critical target categories for a `10/10` claim in this brief:
 - Rollback path and post-rollback validation.
 - Support/incident diagnostics and escalation path.
 - One dry-run protocol to prove the operating model before launch.
+- Rate-limit store launch/growth posture for the current Upstash free-tier constraint.
+- Vercel env secret attention triage for sensitive server-side runtime variables.
 
 ## Out Of Scope
 
@@ -178,6 +200,8 @@ Critical target categories for a `10/10` claim in this brief:
 3. Backup/restore scope is documented with clear inclusions/exclusions.
 4. Rollback procedure and post-rollback validation exist for launch-critical deploys.
 5. At least one dry run is executed and any blockers are recorded before launch.
+6. Shared Preview/Production `rate_limit_store` usage is either explicitly accepted for the current low-traffic phase or replaced by environment-prefixed keys / isolated Production Redis before customer growth.
+7. Vercel env variables marked `Needs Attention` are reviewed, actual secrets are marked `Sensitive`, server-secret scopes are intentional, and any changed environment is redeployed/smoked before customer growth.
 
 ## Validation
 
@@ -211,6 +235,7 @@ Critical target categories for a `10/10` claim in this brief:
 - Do not invent enterprise-heavy process where a lightweight explicit checklist is sufficient.
 - Do not leave launch-critical checks ownerless.
 - Keep this brief dependent on, but not duplicative of, the maintenance and secret-governance briefs.
+- Do not store Upstash URL/token values, request IPs, cookies, auth headers, or raw provider responses in repo docs, screenshots, PRs, or chat.
 
 ## 10/10 Quality Bar
 
@@ -263,3 +288,7 @@ Critical target categories for a `10/10` claim in this brief:
   - one dry run completed, one canonical checklist and rollback path documented.
 - Help/Guide and operator training documentation
   - update ops/support runbooks and any operator-facing release docs in the same PRs that change operational flow.
+
+## Checkpoint Log
+
+- 2026-05-07 | rate-limit-store-repair | Owner configured `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for both Vercel Preview and Production using the same Upstash free-tier Redis database; Preview deployment `dpl_9TNH868djacsEysKjLaTmmXuRFBi` and Production deployment `dpl_CExFVpRshcGF98D3T7GAiBVbhFVg` both returned deterministic `/api/contact` validation responses with rate-limit headers, no app `500`, and no Upstash `401` error logs after redeploy | next: keep shared Redis accepted only for pre-live/low traffic, then add environment-prefixed keys or isolated Production Redis before broader external customer growth
