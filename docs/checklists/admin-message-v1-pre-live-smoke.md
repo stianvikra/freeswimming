@@ -18,10 +18,10 @@ Dashboard reply composition, inbound email ingestion, CRM assignment, SLA automa
 
 Record one row per environment. Keep values non-sensitive.
 
-| Date (UTC) | Environment  | Operator | Provider key | Contact allowed origin | Recipient configured | Sender configured | Result | Notes |
-| ---------- | ------------ | -------- | ------------ | ---------------------- | -------------------- | ----------------- | ------ | ----- |
-| TBD        | `preview`    | TBD      | TBD          | TBD                    | TBD                  | TBD               | TBD    | TBD   |
-| TBD        | `production` | TBD      | TBD          | TBD                    | TBD                  | TBD               | TBD    | TBD   |
+| Date (UTC)       | Environment  | Operator         | Provider key              | Contact allowed origin | Recipient configured | Sender configured | Result  | Notes                                                                                                                                                                                                                                                                                                    |
+| ---------------- | ------------ | ---------------- | ------------------------- | ---------------------- | -------------------- | ----------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-07 07:58 | `preview`    | Codex automation | `smtp_one_com_compatible` | present                | present              | present           | partial | Preview contact, goals coaching, and preview notify submissions returned `200`; admin API/browser smoke showed rows, redacted diagnostics, delivery attempts, and reversible status workflow; owner mailbox receipt/reply confirmation still pending.                                                    |
+| 2026-05-07 08:22 | `production` | Codex automation | `smtp_one_com_compatible` | present                | present              | present           | pass    | Production redeploy `dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA` is `READY`; contact, goals coaching, and preview notify returned `200`, admin rows show `accepted_by_provider`, reversible status workflow passed, owner confirmed One.com receipt, and admin API confirmed the real Production row is `Replied`. |
 
 ## Smoke Steps
 

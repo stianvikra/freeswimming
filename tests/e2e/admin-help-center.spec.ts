@@ -135,6 +135,7 @@ test.describe("admin help center", () => {
       page.getByText("Move to Review / Move to Published / Move to Archived / Move to Draft:")
     ).toBeVisible();
     await expect(page.getByText("Status filters / Source / Search:")).toBeVisible();
+    await expect(page.getByText("Open hello inbox:")).toBeVisible();
     await expect(page.getByText("Move to deleted / Confirm delete:")).toBeVisible();
     await expect(
       page.getByText("Messages are stored in the platform before user success.")

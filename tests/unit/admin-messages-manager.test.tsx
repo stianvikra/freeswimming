@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminMessagesManager from "@/components/admin/AdminMessagesManager";
+import type { AdminRole } from "@/lib/admin/access";
 import type { AdminMessageItem } from "@/lib/admin/messages";
 
 const baseItem: AdminMessageItem = {
@@ -40,12 +41,12 @@ const baseItem: AdminMessageItem = {
   ],
 };
 
-function listResponse(items: AdminMessageItem[] = [baseItem]) {
+function listResponse(items: AdminMessageItem[] = [baseItem], role: AdminRole = "admin") {
   return {
     ok: true,
     json: async () => ({
       ok: true,
-      role: "admin",
+      role,
       items,
       schemaReady: true,
       warning: null,
@@ -105,6 +106,41 @@ describe("AdminMessagesManager", () => {
       action: "needs_reply",
     });
     expect(screen.getAllByText("Needs reply").length).toBeGreaterThan(0);
+  });
+
+  it.each(["admin", "editor"] as const)(
+    "shows the One.com inbox shortcut for %s role",
+    async (role) => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(listResponse([baseItem], role));
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(<AdminMessagesManager adminRole={role} />);
+
+      await screen.findByText("Test Swimmer");
+
+      const webmailLink = screen.getByRole("link", {
+        name: "Open hello@freeswimming.org inbox in a new tab",
+      });
+      expect(webmailLink).toHaveAttribute("href", "https://mail.one.com/");
+      expect(webmailLink).toHaveAttribute("target", "_blank");
+      expect(webmailLink).toHaveAttribute("rel", "noreferrer");
+      expect(screen.getByText("Open hello inbox")).toBeInTheDocument();
+    }
+  );
+
+  it("hides the One.com inbox shortcut for viewer role", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(listResponse([baseItem], "viewer"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="viewer" />);
+
+    await screen.findByText("Test Swimmer");
+
+    expect(
+      screen.queryByRole("link", {
+        name: "Open hello@freeswimming.org inbox in a new tab",
+      })
+    ).not.toBeInTheDocument();
   });
 
   it("requires confirmation before moving a message to deleted", async () => {
