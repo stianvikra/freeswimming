@@ -103,9 +103,9 @@
 2. Client posts JSON to `POST /api/contact`.
 3. API validates origin, content type, and request rate.
 4. API validates payload and applies anti-spam checks.
-5. API sends email via Resend (or logs in dev fallback if recipient is missing).
-6. Admin Messages v1 must move inbound request persistence to an app-canonical message record
-   before provider delivery, following the `message_delivery` service contract.
+5. API stores the inbound request as an app-canonical `admin_messages` row before provider delivery.
+6. The `message_delivery` adapter attempts the admin notification email and records provider status as diagnostic evidence.
+7. Admin Messages v1 is the form-submission safety net and triage surface; the normal email inbox remains the daily reply workspace.
 
 ## Technical Constraints
 

@@ -1,6 +1,6 @@
 # Admin Workspace Module Contracts
 
-Last updated: 2026-05-06
+Last updated: 2026-05-07
 
 ## Purpose
 
@@ -24,7 +24,7 @@ Current active tabs:
 
 ## Active Admin Messages Boundary
 
-Admin Messages v1 enters the dashboard through `/admin?tab=messages`. The inbox child activates the tab for stored public intake messages, status triage, archive/delete/restore, and provider-independent notification diagnostics. Reply composition and outbound logs remain owned by the later reply child brief.
+Admin Messages v1 enters the dashboard through `/admin?tab=messages`. The inbox child activates the tab for stored public intake messages, status triage, archive/delete/restore, and provider-independent notification diagnostics. Dashboard reply composition and outbound logs are explicitly deferred; the normal email inbox remains the daily reply workspace for v1.
 
 Typed source of truth:
 
@@ -41,11 +41,12 @@ Boundary contract:
 
 Activation owner:
 
-- `docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md`
+- `docs/task-briefs/done/2026-05-06-admin-message-inbox-10-10.md`
 
 ## Guardrails
 
-- Do not add Admin Messages inbox/reply state to existing large admin managers.
+- Do not fold Admin Messages state into existing large admin managers.
+- Do not add dashboard reply state until the deferred reply/outbound brief is reprioritized from product evidence.
 - Do not let client panels call email or delivery providers directly.
 - Do not treat provider delivery as the message source of truth.
 - Help/Guide and screenshot handoff are required for visible Admin Messages workflow changes.

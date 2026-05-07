@@ -19,7 +19,7 @@ Define and implement the provider-independent delivery contract for admin messag
   - `docs/task-briefs/done/2026-05-05-external-service-contract-observability-hardening-10-10.md`
 - Must finish before:
   - `docs/task-briefs/done/2026-05-06-contact-intake-message-storage-10-10.md`
-  - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
+  - `docs/task-briefs/deferred/2026-05-06-admin-message-reply-outbound-log-10-10.md`
 
 ## Target Provider Strategy
 
@@ -54,7 +54,7 @@ Critical target categories for `10/10` claim:
 | UX flow clarity                               | `target`     | Delivery statuses distinguish stored, queued, accepted by provider, failed, and retryable states.                             | status/error matrix                        | `5/5`                   |
 | Visual design quality                         | `N/A`        | N/A because this child defines provider plumbing and service state, not visible UI beyond later status consumers.             | explicit scope rationale                   | `N/A`                   |
 | Business logic correctness and data integrity | `target`     | Provider attempts are append-only/auditable and never overwrite canonical message/reply content.                              | unit tests + DB contract review            | `5/5`                   |
-| Admin editor ergonomics                       | `supporting` | Supporting only: admin status labels must be understandable when later surfaced in inbox/reply UI.                            | label/status review                        | `4/5`                   |
+| Admin editor ergonomics                       | `supporting` | Supporting only: admin status labels must be understandable when surfaced in inbox UI or any future reply UI.                 | label/status review                        | `4/5`                   |
 | Accessibility (a11y)                          | `supporting` | Supporting only: later visible delivery status UI must use accessible alert/status semantics.                                 | UI child requirements                      | `4/5`                   |
 | Performance (CWV + payloads)                  | `target`     | Provider calls are server-side, bounded, and never block public page rendering beyond submit response requirements.           | route timing/code review                   | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Provider config, app message records, and delivery attempt records have explicit ownership and sync rules.                    | data contract + migration review           | `5/5`                   |

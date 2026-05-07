@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-inbox-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
-- `updated`: `2026-05-06`
+- `updated`: `2026-05-07`
 
 ## Goal
 
@@ -19,7 +19,7 @@ Build the admin inbox for stored platform messages so admin can read, filter, se
   - `docs/task-briefs/done/2026-05-05-admin-workspace-contract-decomposition-10-10.md`, which established the admin message module boundary.
   - `docs/task-briefs/done/2026-05-06-contact-intake-message-storage-10-10.md`
 - Feeds:
-  - `docs/task-briefs/planned/2026-05-06-admin-message-reply-outbound-log-10-10.md`
+  - `docs/task-briefs/deferred/2026-05-06-admin-message-reply-outbound-log-10-10.md`
 
 ## Admin Workflow Target
 
@@ -216,6 +216,7 @@ tests/e2e/admin-help-center.spec.ts --project=desktop-chromium` -> passed
 
 ## Checkpoint Log
 
+- `2026-05-07 | scope-corrected | downstream dashboard reply/outbound child moved to deferred so this inbox remains a form-submission safety net and triage surface while email stays the v1 reply workspace | next: execute e-mail-first ops/tests/runbook closeout`
 - `2026-05-06 | merge-readiness cleanup | PR #626 opened, screenshot handoff approved, implementation commit 421653f pushed, required GitHub checks passed, and local verify:pre-merge passed; this checkpoint fixes stale brief handoff text before final gate rerun | next: run verify:pre-pr, push cleanup, confirm CI, then run verify:pre-merge on updated HEAD`
 - `2026-05-06 | screenshot-review | inbox implementation, docs, route support sweep, targeted unit/type/lint/e2e checks, and after-only screenshot artifacts completed; no slice commit yet because visual review stop precedes pre-pr gate | next: owner review of screenshot artifacts, then run npm run verify:pre-pr after approval`
 - `2026-05-06 | in-progress | branch admin-message-inbox-10-10 opened from clean synced main after contact intake storage and closeout PRs merged; brief moved to in-progress and scoped to dashboard inbox/read/status/archive/delete workflows without reply sending | next: inspect admin workspace/message storage contracts and implement bounded inbox route/module`

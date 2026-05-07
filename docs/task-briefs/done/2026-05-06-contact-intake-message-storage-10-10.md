@@ -18,7 +18,7 @@ Change public contact and early-access intake so submissions are stored in the a
 - Should follow:
   - `docs/task-briefs/done/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
 - Feeds:
-  - `docs/task-briefs/planned/2026-05-06-admin-message-inbox-10-10.md`
+  - `docs/task-briefs/done/2026-05-06-admin-message-inbox-10-10.md`
 
 ## Current Problem
 
