@@ -22,6 +22,30 @@ Use this as the canonical repo path for PR sync, merge readiness, and baton pass
 
 Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when the repo entrypoint is blocked by credentials or sandbox limits.
 
+## Post-Merge Closeout Auto-Merge
+
+Explicit owner approval to merge a workstream PR carries through to exactly one repo-managed docs-only post-merge closeout PR for the same workstream. Use this only for the closeout that `npm run post-merge:preflight` surfaced immediately after the approved workstream merge.
+
+Required sequence:
+
+1. Merge the approved workstream PR.
+2. Sync local `main` and run `npm run post-merge:preflight`.
+3. If preflight surfaces exactly one repo-managed docs-only closeout for the same workstream, create the closeout branch and apply the reported lifecycle/update steps.
+4. Confirm the diff contains only docs/brief lifecycle or closeout evidence updates.
+5. Run `npm run lint:briefs:all` when task briefs changed.
+6. Run `npm run verify:pre-pr`, commit, push, open/update the closeout PR, and wait for required CI.
+7. Run `npm run verify:pre-merge` on the closeout branch.
+8. Auto-merge the closeout PR with the repo's normal squash/delete-branch flow.
+9. Sync `main`, prune deleted refs, rerun `npm run post-merge:preflight`, then do the mandatory chat-handoff assessment.
+
+Stop and ask for explicit owner approval when any of these are true:
+
+- preflight surfaces zero, multiple, or ambiguous closeouts,
+- the closeout is not tied to the just-merged workstream,
+- the diff touches runtime code, scripts, tests, configs, workflows, migrations, assets, or product UI,
+- local gates or required CI fail,
+- the closeout needs a product/scope decision, visual approval, credentials, or conflict resolution.
+
 ## Why This Is The One True Path
 
 - `npm run pr:create:safari` keeps PR body generation on the same canonical source as the linter.
@@ -46,7 +70,7 @@ Start a new chat or provide a carry-forward prompt when that is the best way to 
 
 This gate is required after each merge + local sync and before any new implementation branch, new active brief, or major workstream pivot.
 
-If `npm run post-merge:preflight` surfaces a repo-managed docs-only closeout for the just-merged workstream, do that closeout in the same chat first. It is part of the current workstream's closeout, not a reason to start a new chat.
+If `npm run post-merge:preflight` surfaces a repo-managed docs-only closeout for the just-merged workstream, do that closeout in the same chat first. It is part of the current workstream's closeout, not a reason to start a new chat. When the auto-merge conditions above are met, complete and merge that closeout before this assessment.
 
 Assessment:
 

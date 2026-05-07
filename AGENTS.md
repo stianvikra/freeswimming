@@ -197,6 +197,8 @@ This file defines how coding agents should collaborate in this repository.
 - Mandatory chat-handoff gate:
   - After every merge + local sync, and before creating a new implementation branch or starting a new active brief, assistant must explicitly assess whether to continue in the current chat or start a new chat.
   - If `npm run post-merge:preflight` surfaces a repo-managed docs-only closeout for the just-merged workstream, complete that closeout PR in the same chat before making the chat-handoff assessment. Treat the closeout as part of the same workstream, not as a new implementation slice.
+  - If the owner explicitly approved merging the just-merged workstream, that approval also authorizes exactly one repo-managed docs-only post-merge closeout PR for the same workstream to be created, validated, merged, synced, and pruned automatically when all closeout gates pass.
+  - Stop for explicit owner approval instead when the closeout is not exactly one repo-managed docs-only lifecycle/update diff, is not for the just-merged workstream, touches runtime code/scripts/config/tests/workflows, conflicts, fails local or CI gates, or needs a product/scope decision.
   - The post-merge handoff must include exactly one of:
     - `Chat: continue here` with a short rationale, or
     - `Chat: start new chat` with a ready-to-use carry-forward prompt.
@@ -261,6 +263,10 @@ This file defines how coding agents should collaborate in this repository.
   - run `npm run verify:pre-merge`
   - this gate must also confirm the branch is current with latest `origin/main`
   - ensure required CI checks are green
+- Post-merge closeout auto-merge exception:
+  - after explicit owner approval to merge a workstream PR, the assistant may automatically merge one follow-up PR only when `npm run post-merge:preflight` surfaced it as a repo-managed docs-only closeout for that same just-merged workstream,
+  - the closeout PR must contain only docs/brief lifecycle or closeout evidence updates, must use the docs-only lane, must have green required CI, and must pass `npm run verify:pre-merge` on the closeout branch,
+  - after auto-merging the closeout PR, sync `main`, prune deleted refs, rerun `npm run post-merge:preflight`, then do the mandatory chat-handoff assessment.
 - Gate selection policy:
   - pure docs/governance diffs may use the docs-only lane automatically through `verify:pre-pr` / `verify:pre-merge`
   - any diff touching runtime code, scripts, tests, configs, workflows, or other non-docs files must run the full lane
