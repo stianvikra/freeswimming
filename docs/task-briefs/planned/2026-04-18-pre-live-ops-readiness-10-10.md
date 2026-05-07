@@ -40,7 +40,8 @@ Establish a lean but real 10/10 pre-live operations baseline so the app can laun
   - no one brief that defines backup/restore scope and proof expectations,
   - no unified owner matrix for launch-critical operational checks,
   - no one operational dry-run that proves the launch path works end to end,
-  - rate-limit store isolation remains a growth-readiness decision: shared free-tier Redis is acceptable pre-live/low traffic only, but must be revisited before external customer growth or public launch campaigns.
+  - rate-limit store isolation remains a growth-readiness decision: shared free-tier Redis is acceptable pre-live/low traffic only, but must be revisited before external customer growth or public launch campaigns,
+  - Vercel secret rows marked `Needs Attention` still require a focused control-plane triage before external customers.
 
 ## Recommended Execution Order
 
@@ -82,6 +83,12 @@ This brief should normally start after the maintenance baseline and secrets/conf
   - keep shared Preview/Production Upstash only while traffic is low and test windows are controlled,
   - either add an environment prefix to Redis rate-limit keys or move Production to an isolated Upstash database before broad external customer intake,
   - record the decision in the launch checklist with non-sensitive evidence only.
+- Run Vercel env secret attention triage:
+  - review all `Needs Attention` rows,
+  - mark actual secrets as `Sensitive`,
+  - confirm server-secret scope is intentional and avoids `All Environments` unless Development truly needs it,
+  - assess whether Stripe and Supabase should use separate Preview/Production values,
+  - redeploy affected environments and smoke only with non-sensitive evidence.
 
 ## Ongoing Cadence
 
@@ -95,6 +102,7 @@ This brief should normally start after the maintenance baseline and secrets/conf
   - update owner matrix and escalation paths.
 - Immediately before a public campaign, larger test cohort, or first external customer growth push:
   - re-evaluate Upstash usage, rate-limit false positives, and whether Production needs isolated Redis or environment-prefixed keys.
+  - re-run Vercel env secret attention triage for high-risk server secrets and provider keys.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -175,6 +183,7 @@ Critical target categories for a `10/10` claim in this brief:
 - Support/incident diagnostics and escalation path.
 - One dry-run protocol to prove the operating model before launch.
 - Rate-limit store launch/growth posture for the current Upstash free-tier constraint.
+- Vercel env secret attention triage for sensitive server-side runtime variables.
 
 ## Out Of Scope
 
@@ -192,6 +201,7 @@ Critical target categories for a `10/10` claim in this brief:
 4. Rollback procedure and post-rollback validation exist for launch-critical deploys.
 5. At least one dry run is executed and any blockers are recorded before launch.
 6. Shared Preview/Production `rate_limit_store` usage is either explicitly accepted for the current low-traffic phase or replaced by environment-prefixed keys / isolated Production Redis before customer growth.
+7. Vercel env variables marked `Needs Attention` are reviewed, actual secrets are marked `Sensitive`, server-secret scopes are intentional, and any changed environment is redeployed/smoked before customer growth.
 
 ## Validation
 
