@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-04-18-secrets-and-config-governance-pre-live-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
 - `updated`: `2026-05-07`
@@ -289,6 +289,7 @@ Critical target categories for a `10/10` claim in this brief:
 
 ## Checkpoint Log
 
-- `2026-05-07 | PR #637 merge readiness | latest implementation commit b2b6ab1; docs-only PR opened and pushed with CI green, npm run verify:pre-merge PASS, and actual Upstash value repair still deferred to a control-plane step without repo secret evidence | next: owner explicit merge approval for PR #637 or hold for control-plane repair follow-up`
+- `2026-05-07 | done | PR #637 merged to main as 6cd1136; first slice is closed as docs/governance-only inventory baseline, and actual Upstash value repair remains a later control-plane step without repo secret evidence | next: post-merge closeout PR lifecycle only`
+- `2026-05-07 | PR #637 merge readiness | latest implementation commit b5ec0f6; docs-only PR opened and pushed with CI green, npm run verify:pre-merge PASS, and actual Upstash value repair still deferred to a control-plane step without repo secret evidence | next: owner explicit merge approval for PR #637 or hold for control-plane repair follow-up`
 - `2026-05-07 | validation | first slice docs/governance changes are in place; targeted checks passed: npm run lint:briefs:all, npm run lint:quality-gates, npm run lint:env-parity, and final npm run verify:pre-pr via docs-only lane with artifact artifacts/test-runs/latest/verify.log | next: commit, push, open PR, and keep actual Upstash value repair as a later control-plane step`
 - `2026-05-07 | in-progress | started first implementation slice from clean main on branch secrets-config-governance-inventory-10-10; scope is docs/governance only: canonical secret/config inventory, env/runbook links, rotation checklist mapping, and non-secret Upstash repair readiness | next: run docs/env/quality gates, commit, push, open PR, and keep actual Upstash value repair as a later control-plane step`
