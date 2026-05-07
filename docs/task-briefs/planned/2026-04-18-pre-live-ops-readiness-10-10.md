@@ -35,13 +35,14 @@ Establish a lean but real 10/10 pre-live operations baseline so the app can laun
   - `rate_limit_store` is configured for both Vercel Preview and Production.
   - Preview and Production `/api/contact` bounded probes returned deterministic validation errors with rate-limit headers, no app `500`, and no Upstash `401` error log after redeploy.
   - The current Upstash free tier permits one Redis database, so Preview and Production temporarily share the same Redis store.
+  - Vercel env secret-attention baseline is owner-confirmed: high-risk server secrets/provider keys were marked `Sensitive`, runtime scope was narrowed to Production and Preview, and both environments were redeployed/smoked without app `500`.
 - Current ops gaps to close:
   - no single canonical pre-live release checklist,
   - no one brief that defines backup/restore scope and proof expectations,
   - no unified owner matrix for launch-critical operational checks,
   - no one operational dry-run that proves the launch path works end to end,
   - rate-limit store isolation remains a growth-readiness decision: shared free-tier Redis is acceptable pre-live/low traffic only, but must be revisited before external customer growth or public launch campaigns,
-  - Vercel secret rows marked `Needs Attention` still require a focused control-plane triage before external customers.
+  - Vercel env secret attention must be re-run before external customer growth or public launch campaigns.
 
 ## Recommended Execution Order
 
@@ -83,11 +84,11 @@ This brief should normally start after the maintenance baseline and secrets/conf
   - keep shared Preview/Production Upstash only while traffic is low and test windows are controlled,
   - either add an environment prefix to Redis rate-limit keys or move Production to an isolated Upstash database before broad external customer intake,
   - record the decision in the launch checklist with non-sensitive evidence only.
-- Run Vercel env secret attention triage:
-  - review all `Needs Attention` rows,
-  - mark actual secrets as `Sensitive`,
-  - confirm server-secret scope is intentional and avoids `All Environments` unless Development truly needs it,
-  - assess whether Stripe and Supabase should use separate Preview/Production values,
+- Maintain Vercel env secret attention hygiene:
+  - keep actual secrets marked `Sensitive`,
+  - keep runtime scope intentional and avoid `All Environments` unless Development truly needs the value,
+  - assess whether Stripe and Supabase should use separate Preview/Production values before customer growth,
+  - re-run the triage before external customer growth or public launch campaigns,
   - redeploy affected environments and smoke only with non-sensitive evidence.
 
 ## Ongoing Cadence
@@ -183,7 +184,7 @@ Critical target categories for a `10/10` claim in this brief:
 - Support/incident diagnostics and escalation path.
 - One dry-run protocol to prove the operating model before launch.
 - Rate-limit store launch/growth posture for the current Upstash free-tier constraint.
-- Vercel env secret attention triage for sensitive server-side runtime variables.
+- Vercel env secret attention baseline and periodic re-triage for sensitive server-side runtime variables.
 
 ## Out Of Scope
 
@@ -292,3 +293,4 @@ Critical target categories for a `10/10` claim in this brief:
 ## Checkpoint Log
 
 - 2026-05-07 | rate-limit-store-repair | Owner configured `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for both Vercel Preview and Production using the same Upstash free-tier Redis database; Preview deployment `dpl_9TNH868djacsEysKjLaTmmXuRFBi` and Production deployment `dpl_CExFVpRshcGF98D3T7GAiBVbhFVg` both returned deterministic `/api/contact` validation responses with rate-limit headers, no app `500`, and no Upstash `401` error logs after redeploy | next: keep shared Redis accepted only for pre-live/low traffic, then add environment-prefixed keys or isolated Production Redis before broader external customer growth
+- 2026-05-07 | vercel-env-secret-attention-triage | Owner confirmed Vercel env rows were narrowed to Production and Preview and actual high-risk secrets/provider keys were marked `Sensitive`; Preview deployment `dpl_71jMMqcBFMzbfbwMrdYKcFiFzZ7t` and Production deployment `dpl_j9WAGUkXSraHzgueho59J2AuGuQ3` both returned deterministic `/api/contact` validation responses with rate-limit headers, no app `500`, and no Vercel error/500 logs after redeploy | next: re-run before external customer growth or public launch campaigns, and decide whether Stripe/Supabase should split Preview and Production credentials
