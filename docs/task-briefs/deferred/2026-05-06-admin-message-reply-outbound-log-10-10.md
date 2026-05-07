@@ -3,21 +3,29 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-reply-outbound-log-10-10`
-- `status`: `planned`
+- `status`: `deferred`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
-- `updated`: `2026-05-06`
+- `updated`: `2026-05-07`
 
 ## Goal
 
-Allow admin to reply to stored messages from the dashboard while saving replies and outbound delivery attempts in the app before provider delivery, with honest status and retry handling.
+Deferred future slice: allow admin to reply to stored messages from the dashboard while saving replies and outbound delivery attempts in the app before provider delivery, with honest status and retry handling.
+
+## Deferral Rationale
+
+- Current product phase needs one operational inbox, not two.
+- For first test swimmers, email remains the daily reply surface.
+- Admin Messages v1 remains valuable as a form-submission safety net and delivery diagnostic tool.
+- Building dashboard replies now risks turning `/admin?tab=messages` into a second support inbox before the operational need exists.
+- This slice should resume only after message volume, team workflow, or provider evidence needs justify replying from the dashboard.
 
 ## Dependency Order
 
 - Parent: `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 - Must follow:
   - `docs/task-briefs/done/2026-05-06-admin-message-delivery-provider-contract-10-10.md`
-  - `docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md`
+  - `docs/task-briefs/done/2026-05-06-admin-message-inbox-10-10.md`
 
 ## Reply Truth Contract
 
@@ -115,10 +123,10 @@ Critical target categories for `10/10` claim:
 
 ## Scope
 
-- Admin reply composer and outbound log.
-- Reply save/send/retry/cancel routes.
-- Provider adapter integration for reply delivery.
-- Reply status copy and diagnostics.
+- Future admin reply composer and outbound log.
+- Future reply save/send/retry/cancel routes.
+- Future provider adapter integration for reply delivery.
+- Future reply status copy and diagnostics.
 
 ## Out Of Scope
 
@@ -145,4 +153,6 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | deferred | owner raised the operational risk that dashboard replies create a second inbox alongside email; scope corrected so Admin Messages v1 stays a form-submission safety net and email remains the daily reply surface for test swimmers | next: execute Admin Message Ops, Tests, And Runbook Closeout as e-mail-first v1`
+- `2026-05-07 | in-progress | branch admin-message-reply-outbound-log-10-10 opened from clean synced main after Admin Message Inbox PR #626 and closeout PR #627 merged; scope is bounded to dashboard reply compose/save/send/retry/cancel plus outbound log using the existing provider adapter and message module boundary | next: inspect message storage/provider contracts and implement reply schema/routes/UI with targeted tests before screenshot handoff`
 - `2026-05-06 | planned | created as child of admin message management parent to own dashboard replies and outbound delivery log after provider contract and inbox exist | next: execute after admin inbox child`

@@ -29,7 +29,7 @@ This brief is now also a prerequisite for the Admin Message Management parent:
 
 - `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 
-The message inbox/reply workflow must not be added as another large route-local admin manager. This architecture slice should establish a narrow admin message module boundary before inbox UI implementation.
+The Admin Messages workflow must not be added as another large route-local admin manager. This architecture slice should establish a narrow admin message module boundary before inbox UI implementation and any future reply UI.
 
 ## Admin Message Module Dependency
 
@@ -37,10 +37,10 @@ The message inbox/reply workflow must not be added as another large route-local 
 - Define the typed boundary between:
   - admin message orchestration state,
   - admin message route/API mutations,
-  - admin message presentational list/detail/reply panels.
+  - admin message presentational list/detail panels and any future reply panels.
 - The decomposition can be intentionally narrow:
   - it does not need to refactor all mature admin managers before Admin Messages work,
-  - it must create enough pattern/evidence that the inbox and reply UI do not increase existing admin-manager concentration.
+  - it must create enough pattern/evidence that the inbox UI and any future reply UI do not increase existing admin-manager concentration.
 - Screenshot handoff is required if admin navigation, tabs, or workspace layout changes.
 
 ## Platform 10/10 Scorecard Mapping
@@ -66,7 +66,7 @@ Critical target categories for `10/10` claim:
 
 Plain-language done summary:
 
-- The admin area now has a cleaner internal contract for the future Messages workspace, so the upcoming inbox/reply work can plug into a known shape instead of becoming another oversized admin screen.
+- The admin area now has a cleaner internal contract for the future Messages workspace, so inbox work and any future reply work can plug into a known shape instead of becoming another oversized admin screen.
 - The existing Notes admin screen still behaves the same for operators, but some of its hidden form and response wiring now lives in a smaller shared admin helper file.
 - No visible admin layout, labels, actions, routes, or Help/Guide text changed in this slice.
 
@@ -125,7 +125,7 @@ Plain-language done summary:
 
 - React/Next.js:
   - split admin client managers into typed hooks/view-models and presentational panels,
-  - establish the Admin Messages module boundary before inbox/reply UI is implemented.
+  - establish the Admin Messages module boundary before inbox UI and any future reply UI are implemented.
 - TypeScript/domain:
   - keep admin entity schemas and mutation contracts in `lib/admin/*`.
 - Supabase:
@@ -162,12 +162,12 @@ Plain-language done summary:
 - Admin content manager decomposition.
 - Admin notes manager/context panel decomposition.
 - Admin QR/email/product/operations manager extraction only where needed to establish shared patterns.
-- Admin Messages module boundary preparation for inbox/reply implementation.
+- Admin Messages module boundary preparation for inbox implementation and any future reply implementation.
 - Help/Guide/runbook impact for any label, action, or recovery behavior change.
 
 ## Out Of Scope
 
-- Full Admin Messages inbox/reply runtime implementation; that belongs to the Admin Message Management child briefs.
+- Full Admin Messages runtime implementation; that belongs to the Admin Message Management child briefs.
 - New admin products or content models outside the Admin Messages module boundary.
 - Broad admin redesign.
 - Schema/RLS changes unless explicitly split into a child slice.
@@ -178,7 +178,7 @@ Plain-language done summary:
 2. Admin route negative paths remain covered.
 3. Changed admin UI has screenshot handoff and Help/Guide impact review.
 4. No unrelated admin workflow labels/actions change without the route-label-support sweep.
-5. Admin Messages has a documented module boundary before inbox/reply UI implementation starts.
+5. Admin Messages has a documented module boundary before inbox UI and any future reply UI implementation starts.
 
 ## Validation
 
@@ -207,5 +207,5 @@ Plain-language done summary:
 - `2026-05-06 | pre-pr-pass | implemented typed planned Admin Messages module boundary, documented admin workspace module contracts, and moved Notes form/response/label helpers into lib/admin/notes-manager.ts; targeted vitest passed (3 files, 16 tests), npm run lint:briefs:all passed, npm run typecheck passed, route/support sweep confirmed tab=messages is not active UI, and npm run verify:pre-pr passed full lane (912 unit tests, build, perf budgets, 82 e2e passed / 374 skipped); perf trend recommended tighten after 4 weekly green runs, decision: hold in this non-performance admin contract slice and prompt owner in PR summary to tighten one stretch target in the next perf-governance or performance-relevant slice | next: inspect diff, commit, push, open PR`
 - `2026-05-06 | quality-gate-adjustment | first npm run verify:pre-pr stopped in lint:quality-gates because AdminNotesManager.tsx is classified as UI and the brief lacked explicit screenshot N/A evidence; no rendered UI changed, so screenshot artifact handoff, owner screenshot approval stop, and comparison naming are now documented as N/A | next: rerun quality gate and verify:pre-pr`
 - `2026-05-06 | in-progress | branch admin-workspace-contract-decomposition-10-10 opened from clean synced main; implementation scoped to a non-visible Admin Messages workspace boundary plus Notes-manager typed helper extraction, with no admin tab/layout/copy activation planned | next: implement contracts and targeted tests`
-- `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for a narrow admin message module boundary before inbox/reply UI is implemented | next: execute this architecture slice after external-service contract hardening or as a scoped prerequisite to Admin Messages v1`
+- `2026-05-06 | planned-update | Admin Message Management parent and child briefs now depend on this brief for a narrow admin message module boundary before inbox UI and any future reply UI is implemented | next: execute this architecture slice after external-service contract hardening or as a scoped prerequisite to Admin Messages v1`
 - `2026-05-05 | planned | created by platform architecture audit to own mature admin workspace decomposition without mixing it into feature work | next: execute only after owner chooses an admin-maintenance slice`
