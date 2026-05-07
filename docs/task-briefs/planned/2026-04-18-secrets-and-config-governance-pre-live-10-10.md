@@ -34,7 +34,8 @@ Establish a pre-live 10/10 secrets and configuration governance baseline: every 
   - no single repo-native inventory for active secret/config families,
   - no canonical owner/rotation table across local, GitHub, Vercel, Supabase, and future live environments,
   - no dedicated leak/rotation runbook tied to actual secret classes used by this app,
-  - no explicit “must now / before live / ongoing” cadence for config hygiene.
+  - no explicit “must now / before live / ongoing” cadence for config hygiene,
+  - Admin Messages pre-live smoke found deployed Upstash Redis rate limiting returning `401` and falling back to in-memory limiting; repair the Upstash REST URL/token pair in the relevant control plane before broader public launch or higher-volume intake, without recording secret values in repo evidence.
 
 ## Recommended Execution Order
 

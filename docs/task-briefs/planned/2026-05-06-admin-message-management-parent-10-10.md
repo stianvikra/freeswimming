@@ -203,6 +203,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | lifecycle-upstash-closeout | Admin Messages v1 child briefs are in done after PR #633 and #634; contact intake, SMTP acceptance, admin diagnostics, One.com Production receipt/reply, and inbox shortcut are closed for v1, while Upstash shared-rate-limit repair is explicitly deferred to secrets/config governance before broader public launch | next: execute secrets/config governance or another owner-approved planned workstream from clean main`
 - `2026-05-07 | pre-live-smoke-started | started Contact Email Pre-Live Smoke on branch contact-email-pre-live-smoke-10-10; Vercel Preview/Production env listings currently lack the required contact/message-delivery group, so live smoke is blocked until env values are configured and redeployed | next: configure env group, run smoke, then update parent lifecycle`
 - `2026-05-07 | closeout-done | Admin Message Ops, Tests, And Runbook Closeout merged as PR #629 / a7d0c0f and moved to done by post-merge closeout; Admin Messages v1 is e-mail-first with dashboard replies/outbound log deferred | next: reassess parent lifecycle after docs-only closeout merge`
 - `2026-05-07 | closeout-started | Admin Message Ops, Tests, And Runbook Closeout moved to in-progress on branch admin-message-ops-tests-runbook-closeout-10-10; scope remains e-mail-first v1 safety net plus diagnostics | next: finish closeout child and return parent lifecycle after merge`
