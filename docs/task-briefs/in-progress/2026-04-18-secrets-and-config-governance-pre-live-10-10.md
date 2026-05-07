@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-04-18-secrets-and-config-governance-pre-live-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-04-18`
-- `updated`: `2026-04-18`
+- `updated`: `2026-05-07`
 
 ## Goal
 
@@ -52,6 +52,23 @@ This brief should be implemented as small safe PRs:
    - add runbook/checklist for rotation,
    - define breach/leak workflow,
    - separate prod vs dev/test/bypass credentials explicitly.
+
+## Active Slice
+
+Current slice: `Secret and config inventory + Upstash repair readiness`.
+
+Scope for this slice:
+
+- create `docs/architecture/secret-config-inventory.md` as the canonical repo-native family register,
+- link the inventory from the environment parity runbook, service matrix, and rotation checklist,
+- add non-secret Upstash repair evidence rules,
+- keep runtime behavior unchanged,
+- do not edit Vercel, Upstash, GitHub, Supabase, Stripe, SMTP, mailbox, or local `.env.local` values.
+
+Explicitly deferred to a later/manual control-plane step:
+
+- actual `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` value repair in Vercel,
+- live redeploy/smoke that proves Upstash `401` is gone.
 
 ## Must Now
 
@@ -269,3 +286,9 @@ Critical target categories for a `10/10` claim in this brief:
   - `100%` of active secret families inventoried and owned.
 - Help/Guide and operator training documentation
   - update runbooks/operator docs for any changed rotation or config recovery workflow.
+
+## Checkpoint Log
+
+- `2026-05-07 | PR #637 merge readiness | latest implementation commit b2b6ab1; docs-only PR opened and pushed with CI green, npm run verify:pre-merge PASS, and actual Upstash value repair still deferred to a control-plane step without repo secret evidence | next: owner explicit merge approval for PR #637 or hold for control-plane repair follow-up`
+- `2026-05-07 | validation | first slice docs/governance changes are in place; targeted checks passed: npm run lint:briefs:all, npm run lint:quality-gates, npm run lint:env-parity, and final npm run verify:pre-pr via docs-only lane with artifact artifacts/test-runs/latest/verify.log | next: commit, push, open PR, and keep actual Upstash value repair as a later control-plane step`
+- `2026-05-07 | in-progress | started first implementation slice from clean main on branch secrets-config-governance-inventory-10-10; scope is docs/governance only: canonical secret/config inventory, env/runbook links, rotation checklist mapping, and non-secret Upstash repair readiness | next: run docs/env/quality gates, commit, push, open PR, and keep actual Upstash value repair as a later control-plane step`

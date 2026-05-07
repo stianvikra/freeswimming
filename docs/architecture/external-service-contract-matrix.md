@@ -16,6 +16,10 @@ runbook that touches:
 The route-level auth/cache registry stays canonical for individual route handlers:
 `docs/architecture/data-access-authz-cache-contract-registry.md`.
 
+The secret/config family inventory stays canonical for environment ownership, storage boundaries,
+sensitivity, and rotation cadence:
+`docs/architecture/secret-config-inventory.md`.
+
 ## Official Docs Baseline
 
 Verified on `2026-05-06`. Re-check the linked official docs before changing provider behavior,
@@ -153,6 +157,7 @@ Before changing a service in this matrix:
 
 1. Re-check official provider docs and record any changed baseline in the active brief.
 2. Update the service row for owner, canonical state, idempotency/retry, diagnostics, finance/support impact, and rollback.
-3. Update the route registry if a route handler changes.
-4. Add or update the cheapest matching tests for success, deny, invalid input, duplicate/retry, and provider failure.
-5. For UI/print/export-visible changes, follow the screenshot handoff rule before PR/gate continuation.
+3. Update `docs/architecture/secret-config-inventory.md` if the change adds, removes, renames, or repurposes a secret/config family.
+4. Update the route registry if a route handler changes.
+5. Add or update the cheapest matching tests for success, deny, invalid input, duplicate/retry, and provider failure.
+6. For UI/print/export-visible changes, follow the screenshot handoff rule before PR/gate continuation.

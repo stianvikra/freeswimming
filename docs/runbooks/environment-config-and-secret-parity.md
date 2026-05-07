@@ -4,7 +4,10 @@
 
 Keep `local`, `preview`, and `production` environment configuration deterministic so admin access and critical flows behave the same way.
 
-External service/provider secret boundaries are registered in
+Canonical secret/config families are registered in
+`docs/architecture/secret-config-inventory.md`.
+
+External service/provider behavior is registered in
 `docs/architecture/external-service-contract-matrix.md`.
 
 ## Guardrails
@@ -45,6 +48,7 @@ Legend:
 | `CONTACT_FROM_EMAIL`                      | server config        | `optional`    | `optional`    | `optional`    | Temporary sender fallback for `MESSAGE_DELIVERY_FROM_EMAIL`; no longer creates a default dev sender.                     |
 | `CONTACT_ALLOWED_ORIGINS`                 | server config        | `optional`    | `required`    | `required`    | CSRF/origin allowlist for contact route.                                                                                 |
 | `CONTACT_INTAKE_STORAGE`                  | local/test config    | `optional`    | `no`          | `no`          | `local_verify` is allowed only for no-egress local/Playwright verification outside production; production uses Supabase. |
+| `CONTACT_INTAKE_LOCAL_FILE`               | local/test config    | `optional`    | `no`          | `no`          | Optional local-only file path for `CONTACT_INTAKE_STORAGE=local_verify`; never deployed.                                 |
 | `MESSAGE_DELIVERY_PROVIDER`               | server config        | `optional`    | `required`    | `required`    | Admin Messages v1 provider key: `disabled`, `resend_api`, `resend_smtp`, or `smtp_one_com_compatible`.                   |
 | `MESSAGE_DELIVERY_TIMEOUT_MS`             | server config        | `optional`    | `optional`    | `optional`    | Provider timeout; defaults to `10000` and hard-caps at `15000`.                                                          |
 | `MESSAGE_DELIVERY_FROM_EMAIL`             | server config        | `optional`    | `required`    | `required`    | Default sender for Admin Messages v1 notifications; dashboard replies are deferred and normal email remains reply inbox. |
@@ -88,6 +92,8 @@ Legend:
 | `VERCEL_TOKEN`                 | `.github/workflows/vercel-preview.yml` | required for preview deploy workflow |
 | `VERCEL_ORG_ID`                | `.github/workflows/vercel-preview.yml` | required for preview deploy workflow |
 | `VERCEL_PROJECT_ID`            | `.github/workflows/vercel-preview.yml` | required for preview deploy workflow |
+| `CI_SUPABASE_URL`              | CI verify/admin workflows              | required                             |
+| `CI_SUPABASE_ANON_KEY`         | CI verify/admin workflows              | required                             |
 | `CI_SUPABASE_SERVICE_ROLE_KEY` | CI verify workflows                    | required                             |
 | `CI_STRIPE_SECRET_KEY`         | CI verify workflows                    | required                             |
 | `CI_STRIPE_WEBHOOK_SECRET`     | CI verify workflows                    | required                             |
@@ -131,6 +137,14 @@ Legend:
 
 Upstash is the hosted Redis-backed shared rate-limit store used by public abuse controls. It is not message storage, email delivery, or admin workflow state.
 
+Secret/config family: `rate_limit_store` in `docs/architecture/secret-config-inventory.md`.
+
+Official baseline checked on `2026-05-07`:
+
+- Upstash Redis REST uses the database HTTPS REST URL plus bearer token authentication.
+- Upstash REST `401` means authentication failed because the token is missing or invalid.
+- Vercel env changes apply only to new deployments, so a repaired URL/token pair is not runtime-active until redeploy.
+
 If deployed logs show Upstash `401`:
 
 1. Treat the configured `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` pair as unauthorized, expired, copied from the wrong Upstash database, or mismatched across environments.
@@ -138,6 +152,11 @@ If deployed logs show Upstash `401`:
 3. For low-volume pre-live smoke, this can be accepted only when the target flow also proves durable app storage and the relevant provider/admin workflow.
 4. Before broader public launch or higher-volume intake, repair the Upstash pair in the control plane, redeploy, and confirm logs no longer show `401`.
 5. Record only presence/status and log outcome. Never paste URL/token values into repo docs, PRs, screenshots, or chat.
+
+Repair evidence must be non-sensitive:
+
+- allowed: affected environment, redeploy ID, route name, status class, and whether `401` disappeared;
+- not allowed: Upstash URL, token, request IP, email, cookies, auth headers, or full provider response.
 
 ## Admin Messages V1 Provider Parity
 
@@ -162,6 +181,10 @@ Use `docs/checklists/admin-message-v1-pre-live-smoke.md` for non-sensitive evide
 Use checklist:
 
 - `docs/checklists/admin-access-and-secret-rotation.md`
+
+Every rotation must also confirm the relevant family row in
+`docs/architecture/secret-config-inventory.md` still has the right owner, storage boundary,
+sensitivity class, cadence, and failure-mode contract.
 
 ## Brief Closeout Gate
 
