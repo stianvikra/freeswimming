@@ -127,6 +127,18 @@ Legend:
    - include `preview` and `production` rows with timestamp + operator.
 5. If smoke fails, rollback by restoring previous env values and redeploy.
 
+## Upstash Rate-Limit Drift
+
+Upstash is the hosted Redis-backed shared rate-limit store used by public abuse controls. It is not message storage, email delivery, or admin workflow state.
+
+If deployed logs show Upstash `401`:
+
+1. Treat the configured `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` pair as unauthorized, expired, copied from the wrong Upstash database, or mismatched across environments.
+2. Confirm the affected environment falls back to deterministic in-memory rate limiting.
+3. For low-volume pre-live smoke, this can be accepted only when the target flow also proves durable app storage and the relevant provider/admin workflow.
+4. Before broader public launch or higher-volume intake, repair the Upstash pair in the control plane, redeploy, and confirm logs no longer show `401`.
+5. Record only presence/status and log outcome. Never paste URL/token values into repo docs, PRs, screenshots, or chat.
+
 ## Admin Messages V1 Provider Parity
 
 Admin Messages v1 is e-mail-first:

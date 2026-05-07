@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-07-contact-email-pre-live-smoke-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-07`
@@ -47,7 +47,7 @@ Verify that Preview and Production contact intake can store requests, attempt ad
   - reversible status workflow passed: `needs_reply` -> `replied` -> `archived` -> `new` -> `deleted` -> `new`,
   - browser smoke opened `/admin?tab=messages` and verified `Admin console`, `Messages`, stored requests, request diagnostics, delivery attempts, `Notification: Accepted`, Early access row, and Goals coaching row.
 - Browser evidence artifact: `output/contact-email-pre-live-smoke-2026-05-07-095726/after-preview-admin-messages-desktop.png`.
-- Owner mailbox receipt/reply confirmation remains pending because Codex does not have access to the One.com inbox.
+- Preview owner mailbox receipt/reply confirmation was not repeated because Production later proved the real One.com receipt/reply path against the live mailbox; Preview provider acceptance and admin workflow were verified through app/provider evidence.
 - Production redeploy completed on `2026-05-07`:
   - deployment `dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA` reached `READY`,
   - `https://freeswimming.org` was aliased to the new deployment,
@@ -58,8 +58,7 @@ Verify that Preview and Production contact intake can store requests, attempt ad
 - Production logs after redeploy confirm `contact_intake_accepted` for `contact`, `goals_coaching`, and `preview_access_notify` with `notificationStatus: accepted_by_provider`.
 - Owner confirmed One.com mailbox receipt for a real Production `preview_access_notify` message from an owner-controlled address after redeploy.
 - Owner reported the real Production reply step was completed, and admin API confirmed the same row is `status: replied` with SMTP delivery `accepted_by_provider`.
-- Preview and Production logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage and SMTP delivery now pass.
-- This brief remains `in-progress` until Upstash env repair/decision passes.
+- Preview and Production logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is explicitly deferred to the secrets/config governance track because storage, SMTP delivery, admin diagnostics, and the Production mailbox reply path pass.
 
 ## Supabase Preflight Note
 
@@ -203,11 +202,22 @@ Critical target categories for `10/10` claim:
 ## Acceptance Criteria
 
 1. Preview and Production have the required contact/message-delivery env group configured with provider-specific secrets present.
-2. `docs/checklists/admin-message-v1-pre-live-smoke.md` has non-sensitive `pass` evidence rows for Preview and Production.
+2. `docs/checklists/admin-message-v1-pre-live-smoke.md` has non-sensitive evidence rows for Preview and Production; Production carries the real mailbox receipt/reply proof and Preview carries provider-accepted/admin-workflow proof.
 3. Public intake success is proven to happen only after durable app storage.
 4. Admin Messages shows stored content and redacted delivery diagnostics.
 5. Normal email remains the only daily reply workspace for v1.
 6. Rollback path is proven or documented: disable/swap provider config without deleting stored intake history.
+
+## Upstash Defer Decision
+
+Upstash is the hosted Redis-backed shared rate-limit store used by public abuse controls. During this smoke, Preview and Production logs showed Upstash `401`, so the app used the deterministic in-memory fallback.
+
+Decision for this Admin Messages v1 closeout:
+
+- defer Upstash credential repair to `docs/task-briefs/planned/2026-04-18-secrets-and-config-governance-pre-live-10-10.md`,
+- do not block Admin Messages v1 readiness because intake storage, provider notification, admin diagnostics, and the e-mail-first Production reply path are verified,
+- repair before broader public launch or higher-volume intake so rate limits are shared across deployed instances,
+- record only presence/status and log outcome during repair; never record Upstash URL/token values in repo docs, screenshots, PRs, or chat.
 
 ## Validation
 
@@ -223,7 +233,7 @@ Critical target categories for `10/10` claim:
 
 - Vercel Preview:
   - automated intake/admin smoke passed after Supabase migrations were applied.
-  - owner mailbox receipt/reply confirmation is still pending.
+  - SMTP provider acceptance and admin workflow passed; duplicate owner mailbox receipt/reply verification was intentionally not repeated after the Production real-mailbox proof.
 - Production:
   - redeploy completed and automated intake/admin smoke passed.
   - owner mailbox receipt and admin `Replied` confirmation are complete.
@@ -240,6 +250,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | lifecycle-upstash-defer | Status corrected to done after PR #634 moved this brief to done; Upstash 401 is explicitly deferred to secrets/config governance with in-memory fallback accepted for Admin Messages v1 pre-live smoke, and no secret values are recorded | next: repair Upstash in the planned secrets/config governance workstream before broader public launch`
 - `2026-05-07 | production-owner-reply-confirmed | Owner reported the real Production reply step was completed and admin API confirmed the real preview notify row is status replied with SMTP delivery accepted_by_provider | next: repair or explicitly defer Upstash env, then run pre-PR gate`
 - `2026-05-07 | production-owner-mailbox-receipt-confirmed | Owner screenshot confirmed One.com mailbox receipt for a real Production preview notify message from an owner-controlled address after redeploy; reply-from-mailbox confirmation remains pending | next: owner replies from One.com to confirm the v1 e-mail-first reply path`
 - `2026-05-07 | production-smoke-automated-pass | Production redeploy dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA reached READY and aliased freeswimming.org; live contact, goals coaching, and preview notify submissions returned 200 and latest admin rows showed SMTP accepted_by_provider; reversible Production status workflow passed through needs_reply/replied/archived/restored/deleted/restored; logs confirm contact_intake_accepted with notificationStatus accepted_by_provider while Upstash 401 fallback remains a secondary env issue | next: owner confirms One.com mailbox receipt/reply, then repair or explicitly defer Upstash env`
@@ -247,3 +258,29 @@ Critical target categories for `10/10` claim:
 - `2026-05-07 | preview-contact-smoke-partial-pass | Supabase preflight confirmed remote was missing only expected Admin Messages migrations, dry-run showed the same two files, db push applied them, post-apply migration list is in sync, Preview `/api/contact` returned 200, and latest non-sensitive DB status shows message + SMTP delivery attempt accepted_by_provider; full Preview admin workflow smoke and Production redeploy/smoke remain pending, and Upstash 401 fallback remains a secondary env issue | next: complete Preview admin workflow smoke, then redeploy/smoke Production`
 - `2026-05-07 | supabase-preflight-note | Vercel contact/message-delivery env group was configured and Preview redeploy succeeded, but `/api/contact`Preview smoke returned 500 before email delivery because`public.admin_messages` is missing in remote Supabase; added Supabase migration discipline runbook and linked this brief so future schema-dependent app changes apply migrations before deploy/smoke | next: run Supabase migration list, dry-run, db push for expected pending Admin Messages migrations, then rerun Preview contact smoke`
 - `2026-05-07 | in-progress | opened branch contact-email-pre-live-smoke-10-10 from clean main and checked local/Vercel config presence; local .env.local has no contact/message-delivery values, and Vercel Preview/Production env listings are missing CONTACT_TO_EMAIL, CONTACT_ALLOWED_ORIGINS, MESSAGE_DELIVERY_PROVIDER, MESSAGE_DELIVERY_FROM_EMAIL, and provider-specific secret group | next: configure required Vercel env group, redeploy, then run admin-message-v1 pre-live smoke`
+
+## Completion Record
+
+- `merged_pr`: `#634`
+- `merge_commit`: `408b126`
+- `completed`: `2026-05-07`
+- `validation`: Preview and Production intake/admin smoke passed for storage, provider acceptance, diagnostics, reversible status workflow, and Production real-mailbox receipt/reply; PR `#634` completed the repo-managed docs-only closeout and post-merge preflight found no further closeout.
+- `10/10 claim`: yes for the Admin Messages v1 pre-live smoke scope; app-wide secrets/config governance is not claimed, and Upstash shared-rate-limit repair is deferred to the planned secrets/config governance brief.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                          | Gaps / Notes                                                                |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Preview and Production smoke verified the Admin Messages v1 intake, diagnostic, and e-mail-first reply readiness path.                            | None for smoke scope.                                                       |
+| UX flow clarity                               | `5/5`          | User success remains tied to durable app storage; operator evidence separates stored intake from provider notification status.                    | None.                                                                       |
+| Business logic correctness and data integrity | `5/5`          | Contact, goals coaching, and preview notify submissions returned success after stored app rows and accepted provider attempts.                    | None.                                                                       |
+| Admin editor ergonomics                       | `5/5`          | Admin API/status workflow passed `needs_reply` -> `replied` -> `archived` -> `new` -> `deleted` -> `new`.                                         | None.                                                                       |
+| Data placement and sync boundaries            | `5/5`          | `admin_messages` stayed server-canonical; SMTP delivery stayed diagnostic; One.com email remained the reply workspace.                            | None.                                                                       |
+| Caching and invalidation strategy             | `5/5`          | `/api/contact` smoke used no-store route behavior and admin status changes refreshed through the admin workflow.                                  | None.                                                                       |
+| Reliability and failure handling              | `5/5`          | Missing remote schema was diagnosed and repaired through Supabase preflight; provider delivery and reversible admin recovery passed.              | Upstash shared rate-limit repair deferred; in-memory fallback was explicit. |
+| Security and authz                            | `5/5`          | Admin API access was authenticated as `role: editor`; env and provider evidence recorded no secret values.                                        | None for smoke scope.                                                       |
+| Privacy and compliance                        | `5/5`          | Evidence avoided secret values, raw provider transcripts, message free text, submitter email, IP, cookies, and tokens.                            | None.                                                                       |
+| Content governance                            | `5/5`          | Smoke outcome and Upstash defer decision are recorded in the checklist, runbook, parent, and this closeout.                                       | None.                                                                       |
+| Admin workflow and editability                | `5/5`          | Production proved One.com receipt/reply and admin `Replied` status confirmation; dashboard replies remain out of scope.                           | None.                                                                       |
+| Incident response and support operations      | `5/5`          | Runbook/checklist explain missing row, failed notification, provider rollback, schema preflight, and Upstash fallback handling.                   | Upstash repair remains a pre-live secrets/config follow-up.                 |
+| Stack-fit and dependency discipline           | `5/5`          | Smoke reused existing Next.js route, Supabase schema, message-delivery adapter, Vercel env scopes, and runbooks; no dependencies added.           | None.                                                                       |
+| Testing and QA automation                     | `5/5`          | Live smoke evidence plus docs-only closeout PR `#634`; targeted runtime tests were already covered by Admin Messages implementation child briefs. | None for smoke scope.                                                       |
+| DevOps and rollback readiness                 | `5/5`          | Provider disable/swap rollback preserves stored intake; Supabase migration preflight gap was documented for future schema-dependent deploys.      | Upstash repair is control-plane follow-up, not repo runtime rollback scope. |

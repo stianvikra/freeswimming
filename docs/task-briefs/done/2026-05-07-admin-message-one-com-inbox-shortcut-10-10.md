@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-07-admin-message-one-com-inbox-shortcut-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-07`
@@ -18,7 +18,7 @@ Add a role-gated Admin Messages shortcut that opens One.com inbox for `hello@fre
   - `docs/task-briefs/planned/2026-05-06-admin-message-management-parent-10-10.md`
 - Builds on:
   - `docs/task-briefs/done/2026-05-06-admin-message-inbox-10-10.md`
-  - `docs/task-briefs/in-progress/2026-05-07-contact-email-pre-live-smoke-10-10.md`
+  - `docs/task-briefs/done/2026-05-07-contact-email-pre-live-smoke-10-10.md`
 - Related support surface:
   - `docs/runbooks/admin-message-inbox.md`
   - `components/admin/AdminHelpCenter.tsx`
@@ -30,7 +30,6 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 Critical target categories for `10/10` claim:
 
 - `Admin workflow and editability`
-- `Accessibility (a11y)`
 - `Security and authz`
 - `Testing and QA automation`
 
@@ -193,6 +192,33 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | done | PR #633 merged as d727be4 and PR #634 moved this brief to done; metadata now matches lifecycle folder and closeout evidence is explicit | next: keep Admin Messages v1 e-mail-first until a separate accepted brief reopens dashboard replies`
 - `2026-05-07 | pre-pr-pass | Full npm run verify:pre-pr passed before commit; perf budgets passed and recommended a stretch-target tighten, held for this admin-only shortcut slice and recorded follow-up recommendation | next: commit, push, open/update PR, then rerun verify:pre-pr on committed branch state`
 - `2026-05-07 | screenshot-approved | Implemented the role-gated Open hello inbox shortcut with no extra explanatory copy in the Messages surface beyond the button itself; Help/Guide/runbook carry only minimal support-surface notes; targeted lint/unit checks passed and owner approved screenshot handoff | next: run verify:pre-pr, commit, push, and open/update PR`
 - `2026-05-07 | in-progress | Started from contact email smoke branch after owner confirmed One.com receipt/reply path and requested a logged-in admin shortcut to the One.com inbox | next: implement shortcut, help/runbook updates, targeted tests, and screenshot handoff`
+
+## Completion Record
+
+- `merged_pr`: `#633`
+- `merge_commit`: `d727be4`
+- `completed`: `2026-05-07`
+- `validation`: targeted lint/unit checks passed, owner approved screenshot handoff, `npm run verify:pre-pr` passed full lane before PR update, required GitHub checks passed before merge, and PR `#634` completed the repo-managed docs-only closeout.
+- `10/10 claim`: yes for the Admin Message One.com Inbox Shortcut scope; dashboard replies, inbound email ingestion, and mailbox credential handling remain out of scope.
+
+| Category                                 | Achieved Score | Evidence                                                                                                                               | Gaps / Notes |
+| ---------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                     | `5/5`          | Shortcut keeps one operator job: inspect stored intake in Admin Messages, then open the normal mailbox for replies.                    | None.        |
+| UX flow clarity                          | `5/5`          | Screenshot handoff and unit coverage verified the new-tab One.com shortcut without replacing the admin context.                        | None.        |
+| Visual design quality                    | `5/5`          | Desktop/mobile screenshot artifacts showed matching admin button spacing, wrapping, icon treatment, and no overlap.                    | None.        |
+| Admin editor ergonomics                  | `5/5`          | Admin/editor can reach the One.com inbox in one click and return to Messages for status updates.                                       | None.        |
+| Accessibility (a11y)                     | `5/5`          | Shortcut is a semantic link with clear label, new-tab behavior, and tested `target`/`rel` attributes.                                  | None.        |
+| Data placement and sync boundaries       | `5/5`          | No app/browser/database state was added; replies remain external to One.com and status remains manual in Admin Messages.               | None.        |
+| Reliability and failure handling         | `5/5`          | One.com session ownership remains outside app state; the dashboard stays open and stored messages remain the fallback source of truth. | None.        |
+| Security and authz                       | `5/5`          | Unit coverage verifies admin/editor visibility and viewer hiding; link uses `target="_blank"` with `rel="noreferrer"`.                 | None.        |
+| Privacy and compliance                   | `5/5`          | Link embeds no submitter data, message body, token, provider secret, mailbox password, or session state.                               | None.        |
+| Content governance                       | `5/5`          | Help/Guide and runbook state the shortcut is navigation only and does not create dashboard replies.                                    | None.        |
+| Admin workflow and editability           | `5/5`          | E-mail-first v1 workflow is preserved: mark `Needs reply`, reply in email, then mark `Replied`.                                        | None.        |
+| Incident response and support operations | `5/5`          | Runbook explains One.com/browser owns mailbox session state while Admin Messages remains the intake diagnostic source.                 | None.        |
+| Stack-fit and dependency discipline      | `5/5`          | Reused existing admin manager, role helper, lucide pattern, Tailwind tokens, and tests; no dependency or API added.                    | None.        |
+| Testing and QA automation                | `5/5`          | `lint:briefs`, `lint:briefs:all`, targeted Vitest, targeted ESLint, screenshot approval, and full `verify:pre-pr` passed.              | None.        |
+| DevOps and rollback readiness            | `5/5`          | Rollback is a normal revert/redeploy with no env, schema, RLS, provider, or migration dependency.                                      | None.        |
