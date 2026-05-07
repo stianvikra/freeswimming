@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-ops-tests-runbook-closeout-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-07`
@@ -197,9 +197,59 @@ Critical target categories for `10/10` claim:
 - Performance budget trend:
   - `verify:pre-pr` reported tighten recommendation after 4 consecutive weekly green runs.
   - decision for this non-performance Admin Messages closeout: hold budgets here; prompt owner to tighten one stretch target in the next performance-governance or performance-sensitive slice.
+- Merge readiness:
+  - PR #629 merged to `main` as `a7d0c0f`.
+  - GitHub checks passed: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `Analyze`, `Vercel`, `Vercel Preview Comments`, and `size-check`.
+  - `npm run verify:pre-merge` passed on `8eef8e8`; artifact marker `artifacts/verify-pre-merge/20260507-053743.json`.
+  - post-merge preflight surfaced this lifecycle closeout only.
+
+## Closeout Score Outcome
+
+- `10/10 claim`: yes - all critical target categories are `5/5`, and no target category is below `5/5`.
+- Critical target categories confirmed `5/5`:
+  - `Reliability and failure handling`
+  - `Security and authz`
+  - `Privacy and compliance`
+  - `Incident response and support operations`
+  - `Testing and QA automation`
+  - `DevOps and rollback readiness`
+- Remaining gaps:
+  - none for e-mail-first Admin Messages v1.
+  - dashboard reply composer and outbound reply log remain intentionally deferred to `docs/task-briefs/deferred/2026-05-06-admin-message-reply-outbound-log-10-10.md`.
+- Defer/fix recommendation:
+  - none for this closeout because all target categories are `5/5`.
+  - hold performance budget tightening here; tighten one stretch target in the next performance-governance or performance-sensitive slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                     | Gaps / Notes                                          |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #629 e-mail-first closeout, parent/deferred child alignment, pre-live smoke checklist.                    | None.                                                 |
+| UX flow clarity                               | `5/5`          | Admin Messages/Help copy now separates stored-request triage from normal e-mail replies.                     | None.                                                 |
+| Visual design quality                         | `5/5`          | Owner-approved before/after screenshot handoff at `output/admin-message-ops-closeout-2026-05-07-065040`.     | No product-rendering files changed after capture.     |
+| Business logic correctness and data integrity | `5/5`          | Route/contact negative-path tests cover notification-attempt failure, cache, schema guidance, and authz.     | None.                                                 |
+| Admin editor ergonomics                       | `5/5`          | Dashboard remains triage/diagnostics; daily reply work remains in the normal e-mail inbox.                   | None.                                                 |
+| Accessibility (a11y)                          | `5/5`          | Existing admin surfaces reused; full public lane and Help/Guide E2E passed.                                  | None.                                                 |
+| Performance (CWV + payloads)                  | `5/5`          | `verify:pre-pr` and `verify:pre-merge` perf budgets passed.                                                  | Tighten prompt held for a performance-relevant slice. |
+| Data placement and sync boundaries            | `5/5`          | Brief/runbook confirms server-canonical messages/statuses, provider-secondary IDs, and local-only filters.   | None.                                                 |
+| Caching and invalidation strategy             | `5/5`          | Admin message route tests assert no-store/private cache behavior.                                            | None.                                                 |
+| Reliability and failure handling              | `5/5`          | Tests/runbook cover storage, provider, schema, status, rollback, and diagnostic failure paths.               | None.                                                 |
+| Security and authz                            | `5/5`          | Viewer mutation fail-closed test and existing admin-only access controls passed gates.                       | None.                                                 |
+| Privacy and compliance                        | `5/5`          | Runbook/checklists cover PII-safe diagnostics, retention/delete posture, and no secret exposure.             | None.                                                 |
+| Content governance                            | `5/5`          | Help/Guide, runbook, env parity, parent/child briefs, and deferred reply scope are aligned.                  | None.                                                 |
+| Admin workflow and editability                | `5/5`          | Help/Guide impact sweep updated labels, actions, recovery, and smoke references.                             | None.                                                 |
+| Analytics and KPI observability               | `5/5`          | Contact route tests assert safe analytics for notification-attempt insert failure.                           | Reply/outbound analytics intentionally deferred.      |
+| Stack-fit and dependency discipline           | `5/5`          | Existing `AdminMessagesManager`, `AdminHelpCenter`, and typed message contracts reused; no dependency added. | None.                                                 |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                                      | None.                                                 |
+| Scalability and cost efficiency               | `5/5`          | Runbook/checklist preserve provider diagnostics, bounded v1 workflow, pagination/status semantics.           | None.                                                 |
+| DevOps and rollback readiness                 | `5/5`          | Env parity, rollback path, pre-live smoke checklist, CI, and post-merge preflight evidence recorded.         | None.                                                 |
+| Commerce and revenue ops                      | `4/5`          | Explicit supporting scope: no checkout/entitlement/revenue path changed.                                     | Supporting only.                                      |
+| Finance and reporting operations              | `4/5`          | Explicit supporting scope: messages are not finance records and no reports changed.                          | Supporting only.                                      |
+| i18n operational readiness                    | `4/5`          | Explicit supporting scope: no locale system ships in v1; status/copy audit leaves later localization viable. | Supporting only.                                      |
+| SEO and crawlability                          | `N/A`          | Private/admin and POST behavior only; no public crawlability surface changed.                                | Explicit scope rationale.                             |
+| AI discoverability                            | `N/A`          | Message content remains private; no public AI-discoverable surface added.                                    | Explicit scope rationale.                             |
 
 ## Checkpoint Log
 
+- `2026-05-07 | done | PR #629 merged to main as a7d0c0f after GitHub checks and npm run verify:pre-merge passed; post-merge preflight surfaced this lifecycle closeout only; all target categories achieved 5/5 and 10/10 claim is yes | next: merge docs-only closeout PR`
 - `2026-05-07 | pre-pr-pass | npm run verify:pre-pr passed full lane after quality-gate evidence fix: unit 178 files / 958 tests, e2e 82 passed / 374 skipped, build and performance budgets passed; perf trend recommended tighten after 4 weekly green runs, decision hold for this non-performance closeout and prompt next performance-relevant slice | next: rerun npm run verify:pre-pr after this evidence-only brief update, then commit/push/PR`
 - `2026-05-07 | pre-pr-gate-fix | npm run verify:pre-pr failed at lint:quality-gates because active brief lacked explicit sweep identifiers/surfaces and reference surface evidence; added implementation evidence without changing product UI after screenshot capture | next: rerun npm run verify:pre-pr`
 - `2026-05-07 | screenshot-approved | owner approved before/after screenshot handoff at output/admin-message-ops-closeout-2026-05-07-065040 after structured-intake fixture clarification; no product-rendering files changed after capture | next: run npm run verify:pre-pr`

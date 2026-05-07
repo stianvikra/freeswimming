@@ -28,7 +28,7 @@ Create the parent contract for a provider-independent admin message management s
    - `docs/task-briefs/done/2026-05-06-contact-intake-message-storage-10-10.md`
    - `docs/task-briefs/done/2026-05-06-admin-message-inbox-10-10.md`
    - `docs/task-briefs/deferred/2026-05-06-admin-message-reply-outbound-log-10-10.md`
-   - `docs/task-briefs/in-progress/2026-05-06-admin-message-ops-tests-runbook-closeout-10-10.md`
+   - `docs/task-briefs/done/2026-05-06-admin-message-ops-tests-runbook-closeout-10-10.md`
 
 ## Core Architecture Decision
 
@@ -203,6 +203,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | closeout-done | Admin Message Ops, Tests, And Runbook Closeout merged as PR #629 / a7d0c0f and moved to done by post-merge closeout; Admin Messages v1 is e-mail-first with dashboard replies/outbound log deferred | next: reassess parent lifecycle after docs-only closeout merge`
 - `2026-05-07 | closeout-started | Admin Message Ops, Tests, And Runbook Closeout moved to in-progress on branch admin-message-ops-tests-runbook-closeout-10-10; scope remains e-mail-first v1 safety net plus diagnostics | next: finish closeout child and return parent lifecycle after merge`
 - `2026-05-07 | scope-corrected | owner identified that dashboard replies would create a second operational inbox alongside email; parent now treats Admin Messages v1 as form-submission safety net and diagnostics, with dashboard reply/outbound log deferred | next: execute ops/tests/runbook closeout as e-mail-first v1`
 - `2026-05-06 | planned | created parent brief after dryland closeout and contact-intake triage showed Vercel mail env was absent and current /api/contact could return success without delivery; owner chose a 10/10 admin message-management foundation before test swimmers | next: create child briefs and update external-service/admin-workspace architecture dependencies`
