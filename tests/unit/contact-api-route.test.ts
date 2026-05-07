@@ -236,4 +236,39 @@ describe("/api/contact route", () => {
       },
     });
   });
+
+  it("keeps stored intake as success when notification attempt insert fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    createContactNotificationAttemptMock.mockResolvedValueOnce({
+      ok: false,
+      errorCode: "attempt_insert_failed",
+      redactedErrorMessage: "Diagnostics insert failed.",
+    });
+
+    const response = await POST(buildRequest(validPayload(), "203.0.113.16"));
+    const payload = (await response.json()) as { ok?: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(deliverMessageMock).not.toHaveBeenCalled();
+    expect(updateContactNotificationAttemptMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith({
+      eventName: "contact_intake_accepted",
+      channel: "server",
+      payload: {
+        sourceVariant: "contact",
+        storageMode: "supabase",
+        notificationStatus: "attempt_not_recorded",
+      },
+    });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith({
+      eventName: "contact_intake_notification_failed",
+      channel: "server",
+      payload: {
+        sourceVariant: "contact",
+        status: "attempt_not_recorded",
+        errorCode: "attempt_insert_failed",
+      },
+    });
+  });
 });

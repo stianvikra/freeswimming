@@ -126,7 +126,42 @@ describe("admin messages routes", () => {
     const payload = (await response.json()) as { ok?: boolean; error?: string };
 
     expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(payload).toEqual({ ok: false, error: "Unauthorized." });
+  });
+
+  it("returns setup guidance instead of throwing when message schema is not ready", async () => {
+    const listChain = buildQueryChain({
+      data: null,
+      error: {
+        code: "42P01",
+        message: 'relation "admin_messages" does not exist',
+      },
+    });
+    const from = vi.fn().mockImplementationOnce(() => ({ select: listChain.select }));
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await listMessages(
+      new Request("https://freeswimming.test/api/admin/messages")
+    );
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      warning?: string | null;
+      items?: unknown[];
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: false,
+      items: [],
+    });
+    expect(payload.warning).toContain("Admin messages");
   });
 
   it("lists messages with bounded filters and redacted diagnostics", async () => {
@@ -158,6 +193,7 @@ describe("admin messages routes", () => {
     };
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(payload.ok).toBe(true);
     expect(payload.items?.[0]).toMatchObject({
       id: baseMessage.id,
@@ -207,6 +243,34 @@ describe("admin messages routes", () => {
 
     expect(response.status).toBe(400);
     expect(payload).toEqual({ ok: false, error: "Unsupported message action." });
+  });
+
+  it("fails closed when a viewer attempts to mutate message workflow", async () => {
+    requireAdminRoleFromSupabaseMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: "Forbidden.",
+    });
+    const from = vi.fn();
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchMessage(
+      new Request(`https://freeswimming.test/api/admin/messages/${baseMessage.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "needs_reply" }),
+      }),
+      routeContext(baseMessage.id)
+    );
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toEqual({ ok: false, error: "Forbidden." });
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("updates workflow status and tracks a safe analytics event", async () => {

@@ -233,7 +233,7 @@ const MESSAGE_WORKFLOW = [
   {
     title: "Start from stored app state",
     detail:
-      "Messages are stored in the platform before user success. Use the inbox as the source of truth; email is only a notification channel.",
+      "Messages are stored in the platform before user success. Use Messages to confirm receipt and diagnose notification state; the normal email inbox remains the v1 reply workspace.",
   },
   {
     title: "Triage without changing content",
@@ -248,7 +248,7 @@ const MESSAGE_WORKFLOW = [
   {
     title: "Diagnose notification issues",
     detail:
-      "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed.",
+      "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed. A failed notification never means the stored request is lost.",
   },
 ];
 
@@ -410,7 +410,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Needs reply / Mark replied",
         meaning:
-          "Keeps manual reply intent visible until the reply/outbound-log child adds composed reply sending.",
+          "Flags that the normal email inbox should handle the response, then records that the email reply is done. Dashboard reply compose/outbound log is deferred in v1.",
       },
       {
         label: "Archive / Restore",
@@ -603,7 +603,7 @@ const CONNECTED_SERVICES = [
     purpose:
       "Sends admin notifications after a message is stored; provider status is shown as diagnostics, not as message identity.",
     caution:
-      "A disabled or failed notification does not mean the platform lost the request; check the Messages inbox first.",
+      "A disabled or failed notification does not mean the platform lost the request; check Messages first.",
   },
 ];
 
@@ -667,7 +667,8 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Open Messages and scan New first.",
       "Use Source and Search to find the relevant intake request.",
       "Open detail and confirm stored content plus notification diagnostics.",
-      "Move to Needs reply when a human response is required, or Archive when no action is needed.",
+      "Move to Needs reply when a human response is required, reply from the normal email inbox, then return and Mark replied.",
+      "Archive when no action is needed.",
       "Use Deleted only for intentionally removed workflow items; restore if the message was moved by mistake.",
     ],
   },
@@ -678,6 +679,7 @@ const RUNBOOK_LINKS = [
   "docs/runbooks/site-lock-operations.md",
   "docs/runbooks/admin-notes-recovery.md",
   "docs/runbooks/admin-message-inbox.md",
+  "docs/checklists/admin-message-v1-pre-live-smoke.md",
   "docs/runbooks/admin-email-template-governance.md",
   "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",
@@ -818,8 +820,8 @@ export default function AdminHelpCenter() {
       <section id="messages" className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-semibold text-slate-900">How Messages work</h3>
         <p className="mt-2 text-sm text-slate-700">
-          Messages is the source-of-truth inbox for stored public intake requests and notification
-          diagnostics.
+          Messages is the source-of-truth safety net for stored public intake requests and
+          notification diagnostics. The normal email inbox remains the v1 reply workspace.
         </p>
         <div className="mt-3 space-y-3">
           {MESSAGE_WORKFLOW.map((item) => (
@@ -1010,8 +1012,9 @@ export default function AdminHelpCenter() {
               Message exists but notification failed
             </p>
             <p className="mt-1 text-sm text-amber-800">
-              Treat the inbox row as received. Check delivery attempts for disabled config,
-              retryable provider failure, or final provider rejection before escalating.
+              Treat the message row as received. Check delivery attempts for disabled config,
+              retryable provider failure, or final provider rejection before escalating. If a
+              response is needed, reply from the normal email inbox and mark the row replied.
             </p>
           </article>
           <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
