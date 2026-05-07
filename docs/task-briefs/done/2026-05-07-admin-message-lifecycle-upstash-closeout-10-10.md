@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-07-admin-message-lifecycle-upstash-closeout-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-07`
@@ -35,6 +35,30 @@ Critical target categories for `10/10` claim:
 - `Incident response and support operations`
 - `Testing and QA automation`
 - `DevOps and rollback readiness`
+
+## Completion Record
+
+- `completed`: `2026-05-07`
+- `merged_pr`: `#635`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/635`
+- `squash_commit`: `56d5fc1`
+- `implementation_commit`: `64e1812`
+- `10/10 claim`: yes - all critical target categories are scored `5/5` for this docs-only closeout scope, with Upstash documented as a non-secret external rate-limit service and no runtime, credential, UI, schema, or provider behavior changes.
+
+Plain-language done summary:
+
+- Admin Messages v1 closeout docs now match the merged repo state after PRs `#633` and `#634`.
+- Upstash is explicitly listed as the `rate_limit_store` external service with secret boundaries, fallback behavior, diagnostics, and rollback/repair ownership.
+- The remaining Upstash `401` repair is deferred to secrets/config governance, while message storage, delivery evidence, and operator workflow stay closed for Admin Messages v1.
+
+| Category                                 | Achieved Score | Evidence                                                                                                                       | Gaps / Notes                                                                                      |
+| ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Reliability and failure handling         | `5/5`          | Upstash `401`, timeout, network, and command failures are documented as deterministic in-memory fallback, not app `500` paths. | Shared rate-limit repair remains deferred to the planned secrets/config governance track.         |
+| Security and authz                       | `5/5`          | Docs name only env variable keys and official docs; no URL, token, SMTP, Supabase, cookie, or admin auth secret is recorded.   | Control-plane rotation still requires owner credentials outside git.                              |
+| Privacy and compliance                   | `5/5`          | Closeout evidence avoids message body text, submitter email, raw provider transcript, IP, cookie, token, and secret values.    | No privacy runtime changed.                                                                       |
+| Incident response and support operations | `5/5`          | Env/runbook and external-service matrix explain fallback interpretation, safe diagnostics, and repair/defer path.              | Operational repair remains a follow-up owner track, not a blocker for Admin Messages v1 closeout. |
+| Testing and QA automation                | `5/5`          | `npm run lint:briefs`, `npm run lint:briefs:all`, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed.          | Docs-only lane by design.                                                                         |
+| DevOps and rollback readiness            | `5/5`          | PR #635 merged as `56d5fc1`; rollback is `git revert 56d5fc1`; docs-only scope is isolated.                                    | No runtime rollback needed.                                                                       |
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                        | Evidence                                       | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------- |
@@ -148,9 +172,13 @@ Critical target categories for `10/10` claim:
 ## Validation Evidence
 
 - `2026-05-07`: `npm run lint:briefs:all` passed.
-- `2026-05-07`: `npm run verify:pre-pr` passed docs-only lane with artifact log `artifacts/test-runs/20260507-115423/verify.log`.
+- `2026-05-07`: `npm run verify:pre-pr` passed docs-only lane with artifact log `artifacts/test-runs/20260507-120629/verify.log`.
+- `2026-05-07`: PR #635 CI passed: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `CodeQL`, Vercel, and preview comments.
+- `2026-05-07`: `npm run verify:pre-merge` passed docs-only lane with marker `artifacts/verify-pre-merge/20260507-100911.json`.
 
 ## Checkpoint Log
 
+- `2026-05-07 | 56d5fc1 | PR #635 squash-merged, local main synced, and post-merge preflight surfaced this single repo-managed docs-only lifecycle closeout | next: move this brief to done, validate, open/monitor closeout PR, run pre-merge, auto-merge, sync main, rerun post-merge preflight, then chat-handoff assessment`
+- `2026-05-07 | 64e1812 | Upstash added to the external-service matrix and PR #635 updated; local pre-pr, CI, and pre-merge gates passed before squash merge | next: merge PR #635 and run post-merge preflight`
 - `2026-05-07 | pre-pr-pass | docs-only verify:pre-pr passed and quality gates classified the slice as docs/governance with external-service and support-surface impact only | next: commit, push, open PR, then run pre-merge validation`
 - `2026-05-07 | in-progress | started from clean main after PR #633 and #634 merged; scope is docs-only lifecycle consistency plus non-secret Upstash defer documentation | next: update done briefs, parent checkpoint, env runbook, then run docs-only gates`
