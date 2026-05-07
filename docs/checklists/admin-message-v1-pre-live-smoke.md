@@ -18,10 +18,10 @@ Dashboard reply composition, inbound email ingestion, CRM assignment, SLA automa
 
 Record one row per environment. Keep values non-sensitive.
 
-| Date (UTC) | Environment  | Operator | Provider key | Contact allowed origin | Recipient configured | Sender configured | Result | Notes |
-| ---------- | ------------ | -------- | ------------ | ---------------------- | -------------------- | ----------------- | ------ | ----- |
-| TBD        | `preview`    | TBD      | TBD          | TBD                    | TBD                  | TBD               | TBD    | TBD   |
-| TBD        | `production` | TBD      | TBD          | TBD                    | TBD                  | TBD               | TBD    | TBD   |
+| Date (UTC)       | Environment  | Operator                             | Provider key | Contact allowed origin | Recipient configured | Sender configured | Result  | Notes                                                                                                                                            |
+| ---------------- | ------------ | ------------------------------------ | ------------ | ---------------------- | -------------------- | ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-05-07 06:53 | `preview`    | Codex via `vercel env ls preview`    | missing      | missing                | missing              | missing           | blocked | Vercel project is linked, but Admin Messages v1 contact/provider env group is absent. Configure env group, redeploy, then replace with pass row. |
+| 2026-05-07 06:53 | `production` | Codex via `vercel env ls production` | missing      | missing                | missing              | missing           | blocked | Vercel project is linked, but Admin Messages v1 contact/provider env group is absent. Configure env group, redeploy, then replace with pass row. |
 
 ## Smoke Steps
 
