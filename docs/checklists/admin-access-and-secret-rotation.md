@@ -101,6 +101,26 @@ auth headers, or full provider response.
 | 2026-05-07 11:09 | `preview`    | `dpl_9TNH868djacsEysKjLaTmmXuRFBi` | `/api/contact` | yes                       | yes               | not needed      | Bounded validation probe returned deterministic `400` with rate-limit headers; Preview and Production temporarily share one free-tier Redis. |
 | 2026-05-07 11:24 | `production` | `dpl_CExFVpRshcGF98D3T7GAiBVbhFVg` | `/api/contact` | yes                       | yes               | not needed      | Bounded validation probe returned deterministic `400` with rate-limit headers; `freeswimming.org` was aliased to the redeployed runtime.     |
 
+## Vercel Env Secret Attention Evidence
+
+When repairing Vercel env rows marked `Needs Attention`, record only non-sensitive evidence:
+
+- impacted environment,
+- redeploy ID,
+- high-risk variable groups reviewed,
+- whether `Sensitive` and runtime scope were corrected,
+- route checked,
+- whether the route avoided app `500`,
+- rollback status if any variable had to be unset.
+
+Never record raw env values, provider tokens, webhook secrets, request IP, cookies,
+auth headers, or full provider responses.
+
+| Date (UTC)       | Environment  | Deployment ID                      | Variable groups reviewed                           | Sensitive/scope corrected | Route checked  | App `500` avoided | Rollback status | Notes                                                                                                 |
+| ---------------- | ------------ | ---------------------------------- | -------------------------------------------------- | ------------------------- | -------------- | ----------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| 2026-05-07 14:52 | `preview`    | `dpl_71jMMqcBFMzbfbwMrdYKcFiFzZ7t` | Supabase, Stripe, private gate, public runtime IDs | yes                       | `/api/contact` | yes               | not needed      | Owner-confirmed Vercel UI triage; bounded validation probe returned deterministic `400` with headers. |
+| 2026-05-07 14:52 | `production` | `dpl_j9WAGUkXSraHzgueho59J2AuGuQ3` | Supabase, Stripe, private gate, public runtime IDs | yes                       | `/api/contact` | yes               | not needed      | Owner-confirmed Vercel UI triage; `freeswimming.org` was aliased to the redeployed runtime.           |
+
 ## Rollback (If Smoke Fails)
 
 1. Restore last known-good env values in affected environment.
