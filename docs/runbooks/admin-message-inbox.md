@@ -18,7 +18,7 @@ Use this runbook when an operator needs to confirm whether a public intake reque
 1. Open `/admin?tab=messages`.
 2. Start with the `New` filter, then use `Source` and search by submitter or message excerpt.
 3. Open the message detail and verify stored content, structured intake, and request diagnostics.
-4. If a response is needed, set `Needs reply` and reply from the normal email inbox.
+4. If a response is needed, set `Needs reply`, use `Open hello inbox` to open the One.com inbox in a new tab, and reply from email.
 5. After replying in email, mark the row `Replied`.
 6. If no response is needed, use `Archive`.
 7. Use `Move to deleted` only for intentionally removed workflow items; restore returns the row to `New`.
@@ -27,6 +27,8 @@ Use this runbook when an operator needs to confirm whether a public intake reque
 
 - Do not compose, send, or log replies inside `/admin?tab=messages` for v1.
 - Use the normal support mailbox as the single daily reply inbox.
+- `Open hello inbox` is a navigation shortcut only; it does not send, log, or sync replies.
+- One.com/browser owns the mailbox session. If the session is active, the shortcut opens the inbox directly; if it has expired, sign in through One.com and continue in the inbox.
 - Use `Needs reply` only to make response intent visible in the dashboard.
 - Use `Replied` only after the response was sent from email.
 - If an email thread is missing, keep the app row as the intake source of truth and reply from email using the stored submitter address.

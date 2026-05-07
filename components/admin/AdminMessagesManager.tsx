@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  ExternalLink,
   Inbox,
   Mail,
   RefreshCcw,
@@ -39,6 +40,7 @@ type PendingConfirmation = {
 };
 
 const PAGE_SIZE = 25;
+const ADMIN_MESSAGE_INBOX_URL = "https://mail.one.com/";
 
 function formatDateTime(value: string): string {
   const date = new Date(value);
@@ -304,14 +306,29 @@ export default function AdminMessagesManager({ adminRole }: Props) {
               email inbox in v1.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadMessages()}
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {canMutate ? (
+              <a
+                href={ADMIN_MESSAGE_INBOX_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Open hello@freeswimming.org inbox in a new tab"
+                title="Open hello@freeswimming.org inbox in One.com"
+                className="inline-flex h-9 max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                Open hello inbox
+              </a>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void loadMessages()}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">

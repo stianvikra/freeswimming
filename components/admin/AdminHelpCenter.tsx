@@ -18,7 +18,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-05-06";
+const LAST_UPDATED = "2026-05-07";
 
 const QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -411,6 +411,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Needs reply / Mark replied",
         meaning:
           "Flags that the normal email inbox should handle the response, then records that the email reply is done. Dashboard reply compose/outbound log is deferred in v1.",
+      },
+      {
+        label: "Open hello inbox",
+        meaning:
+          "Opens the One.com inbox for hello@freeswimming.org in a new tab using the browser's One.com session. It is navigation only; send the reply in email, then return to Messages and mark the row replied.",
       },
       {
         label: "Archive / Restore",
