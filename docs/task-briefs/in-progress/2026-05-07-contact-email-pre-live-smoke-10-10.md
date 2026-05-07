@@ -57,8 +57,9 @@ Verify that Preview and Production contact intake can store requests, attempt ad
   - reversible Production status workflow passed: `needs_reply` -> `replied` -> `archived` -> `new` -> `deleted` -> `new`.
 - Production logs after redeploy confirm `contact_intake_accepted` for `contact`, `goals_coaching`, and `preview_access_notify` with `notificationStatus: accepted_by_provider`.
 - Owner confirmed One.com mailbox receipt for a real Production `preview_access_notify` message from an owner-controlled address after redeploy.
+- Owner reported the real Production reply step was completed, and admin API confirmed the same row is `status: replied` with SMTP delivery `accepted_by_provider`.
 - Preview and Production logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage and SMTP delivery now pass.
-- This brief remains `in-progress` until owner reply confirmation and Upstash env repair/decision pass.
+- This brief remains `in-progress` until Upstash env repair/decision passes.
 
 ## Supabase Preflight Note
 
@@ -225,7 +226,7 @@ Critical target categories for `10/10` claim:
   - owner mailbox receipt/reply confirmation is still pending.
 - Production:
   - redeploy completed and automated intake/admin smoke passed.
-  - owner mailbox receipt is confirmed; owner reply confirmation is still pending.
+  - owner mailbox receipt and admin `Replied` confirmation are complete.
 - Local:
   - no real-provider smoke possible from current `.env.local` because the contact/message-delivery env group is absent.
 
@@ -239,6 +240,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | production-owner-reply-confirmed | Owner reported the real Production reply step was completed and admin API confirmed the real preview notify row is status replied with SMTP delivery accepted_by_provider | next: repair or explicitly defer Upstash env, then run pre-PR gate`
 - `2026-05-07 | production-owner-mailbox-receipt-confirmed | Owner screenshot confirmed One.com mailbox receipt for a real Production preview notify message from an owner-controlled address after redeploy; reply-from-mailbox confirmation remains pending | next: owner replies from One.com to confirm the v1 e-mail-first reply path`
 - `2026-05-07 | production-smoke-automated-pass | Production redeploy dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA reached READY and aliased freeswimming.org; live contact, goals coaching, and preview notify submissions returned 200 and latest admin rows showed SMTP accepted_by_provider; reversible Production status workflow passed through needs_reply/replied/archived/restored/deleted/restored; logs confirm contact_intake_accepted with notificationStatus accepted_by_provider while Upstash 401 fallback remains a secondary env issue | next: owner confirms One.com mailbox receipt/reply, then repair or explicitly defer Upstash env`
 - `2026-05-07 | preview-admin-smoke-automated-pass | Preview contact, goals coaching, and preview notify submissions returned 200, latest admin message rows showed SMTP accepted_by_provider with privacy-safe diagnostics, authenticated admin API listed messages as role editor with schemaReady true, reversible status workflow passed through needs_reply/replied/archived/restored/deleted/restored, and browser smoke verified /admin?tab=messages with screenshot evidence at output/contact-email-pre-live-smoke-2026-05-07-095726/after-preview-admin-messages-desktop.png | next: owner confirms One.com mailbox receipt/reply, then Production redeploy/smoke`
