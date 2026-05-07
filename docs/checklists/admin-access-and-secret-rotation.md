@@ -96,6 +96,11 @@ When repairing `rate_limit_store`, record only non-sensitive evidence:
 Never record `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, request IP, email, cookies,
 auth headers, or full provider response.
 
+| Date (UTC)       | Environment  | Deployment ID                      | Route checked  | Upstash `401` disappeared | App `500` avoided | Rollback status | Notes                                                                                                                                        |
+| ---------------- | ------------ | ---------------------------------- | -------------- | ------------------------- | ----------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-07 11:09 | `preview`    | `dpl_9TNH868djacsEysKjLaTmmXuRFBi` | `/api/contact` | yes                       | yes               | not needed      | Bounded validation probe returned deterministic `400` with rate-limit headers; Preview and Production temporarily share one free-tier Redis. |
+| 2026-05-07 11:24 | `production` | `dpl_CExFVpRshcGF98D3T7GAiBVbhFVg` | `/api/contact` | yes                       | yes               | not needed      | Bounded validation probe returned deterministic `400` with rate-limit headers; `freeswimming.org` was aliased to the redeployed runtime.     |
+
 ## Rollback (If Smoke Fails)
 
 1. Restore last known-good env values in affected environment.
