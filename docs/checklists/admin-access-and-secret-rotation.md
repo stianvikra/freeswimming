@@ -4,11 +4,14 @@
 
 Provide a short, repeatable procedure for rotating sensitive config and confirming admin access still works.
 
+Canonical family inventory: `docs/architecture/secret-config-inventory.md`.
+
 ## Before Rotation
 
 - Confirm change window and owner.
 - Confirm rollback owner and previous values are available in secure secret manager.
 - Identify impacted environments: `local`, `preview`, `production`.
+- Identify the impacted family ID from `docs/architecture/secret-config-inventory.md`.
 
 ## Rotation Steps
 
@@ -44,14 +47,16 @@ Closeout rule:
 
 ## Secret Groups (Recommended Order)
 
-1. Contact + rate-limit:
+1. Contact + rate-limit (`contact_public_intake`, `message_delivery`, `rate_limit_store`):
    - `RESEND_API_KEY`
    - `CONTACT_TO_EMAIL`
    - `CONTACT_FROM_EMAIL`
    - `CONTACT_ALLOWED_ORIGINS`
+   - `CONTACT_INTAKE_STORAGE`
+   - `CONTACT_INTAKE_LOCAL_FILE`
    - `UPSTASH_REDIS_REST_URL`
    - `UPSTASH_REDIS_REST_TOKEN`
-2. Admin Messages delivery (only when Admin Messages v1 is enabled):
+2. Admin Messages delivery (only when Admin Messages v1 is enabled, `message_delivery`):
    - `MESSAGE_DELIVERY_PROVIDER`
    - `MESSAGE_DELIVERY_FROM_EMAIL`
    - `MESSAGE_DELIVERY_REPLY_TO_EMAIL`
@@ -62,17 +67,34 @@ Closeout rule:
    - `MESSAGE_DELIVERY_SMTP_USER`
    - `MESSAGE_DELIVERY_SMTP_PASSWORD`
    - `MESSAGE_DELIVERY_MESSAGE_ID_DOMAIN`
-3. Supabase:
+3. Supabase (`supabase_app_access`, `supabase_egress_guard`):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-4. Stripe:
+   - `FS_SUPABASE_ENV`
+   - `FS_ALLOW_PROD_SUPABASE`
+   - `FS_PRODUCTION_SUPABASE_URL`
+4. Stripe (`stripe_commerce`):
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
    - price IDs
-5. Private gate (only if used):
+5. Private gate (only if used, `site_lock_private_gate`):
    - `SITE_LOCK_PASSWORD_HASH`
    - `SITE_LOCK_BYPASS_TOKEN`
+
+## Upstash Repair Evidence
+
+When repairing `rate_limit_store`, record only non-sensitive evidence:
+
+- impacted environment,
+- redeploy ID,
+- route checked,
+- whether Upstash `401` disappeared,
+- whether the route avoided app `500`,
+- rollback status if the pair had to be unset.
+
+Never record `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, request IP, email, cookies,
+auth headers, or full provider response.
 
 ## Rollback (If Smoke Fails)
 
