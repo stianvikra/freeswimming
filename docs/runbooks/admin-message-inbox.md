@@ -44,7 +44,7 @@ Escalate with message ID, source, status, notification status, delivery error co
 ## Recovery
 
 - Wrong status: use the matching action to move it back, or restore archived/deleted rows.
-- Missing row: confirm the public submit path returned success after storage, then check `/api/contact` and Supabase migration/env readiness.
+- Missing row: confirm the public submit path returned success after storage, then check `/api/contact` and Supabase migration/env readiness using `docs/runbooks/supabase-migration-discipline.md`.
 - Notification failed: keep the message row as received, fix provider config or follow the ops closeout recovery path. Do not create a dashboard reply workflow in v1.
 
 ## Env Parity

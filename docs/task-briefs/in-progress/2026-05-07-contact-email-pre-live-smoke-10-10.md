@@ -25,18 +25,30 @@ Verify that Preview and Production contact intake can store requests, attempt ad
   - `docs/checklists/admin-message-v1-pre-live-smoke.md`
   - `docs/runbooks/admin-message-inbox.md`
   - `docs/runbooks/environment-config-and-secret-parity.md`
+  - `docs/runbooks/supabase-migration-discipline.md`
 
 ## Current State
 
-- Local `.env.local` has no contact/message-delivery provider values.
 - Vercel CLI auth is available for `stianvikra-2409`.
-- `vercel env ls preview` and `vercel env ls production` on `2026-05-07 06:53 UTC` show the project is linked, but the Admin Messages v1 contact/provider group is absent from both scopes:
-  - `CONTACT_TO_EMAIL`
-  - `CONTACT_ALLOWED_ORIGINS`
-  - `MESSAGE_DELIVERY_PROVIDER`
-  - `MESSAGE_DELIVERY_FROM_EMAIL`
-  - provider-specific secret group for `resend_api`, `resend_smtp`, or `smtp_one_com_compatible`
+- The Admin Messages v1 contact/provider env group was added to Vercel Preview and Production on `2026-05-07`.
+- Preview redeploy `https://freeswimming-1fg66r89s-stian-vikras-projects.vercel.app` is `READY`.
+- Preview `/api/contact` smoke reached runtime but returned `500` before email delivery because Supabase schema is not ready:
+  - `public.admin_messages` is missing in the linked remote schema cache,
+  - Vercel log evidence shows `storage_insert_failed` with PostgREST `PGRST205`.
+- Preview logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage failure is the hard blocker.
 - This brief remains `in-progress` until the environment group exists and both smoke rows pass.
+
+## Supabase Preflight Note
+
+The first Preview smoke exposed a sequencing gap: app/provider env was ready, but the remote Supabase schema had not received the Admin Messages migrations. Before continuing live smoke, follow `docs/runbooks/supabase-migration-discipline.md`:
+
+1. Confirm linked Supabase project with `supabase projects list`.
+2. Read migration status with `supabase migration list --linked`.
+3. Run `supabase db push --dry-run --linked`.
+4. Apply only expected pending migrations with `supabase db push --linked`.
+5. Re-check migration status and rerun `/api/contact` smoke.
+
+For future schema-dependent app changes, this runbook must run before Vercel deploy/smoke when deployed code depends on the new schema.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -89,7 +101,7 @@ Critical target categories for `10/10` claim:
   - reuse existing contact-intake and message-delivery contracts,
   - do not add a second provider status model or reply workflow.
 - Supabase/data:
-  - no schema changes are expected,
+  - no new schema changes are expected in this smoke slice, but pending existing Admin Messages migrations must be applied to the linked remote project before deployed smoke can pass,
   - smoke confirms server-canonical `admin_messages` and `admin_message_delivery_attempts` behavior in deployed environments.
 - External services:
   - use Vercel environment scopes for Preview and Production,
@@ -144,6 +156,7 @@ Critical target categories for `10/10` claim:
 ## Scope
 
 - Verify Vercel Preview and Production contact/message-delivery env presence.
+- Apply pending existing Supabase migrations if the linked remote project is behind the repo migration history.
 - Record non-sensitive environment evidence in `docs/checklists/admin-message-v1-pre-live-smoke.md`.
 - Run Preview and Production smoke once env is configured:
   - contact submit,
@@ -161,7 +174,7 @@ Critical target categories for `10/10` claim:
 - Inbound email ingestion.
 - CRM assignment, SLA automation, marketing email, or newsletter tooling.
 - Changing public contact UI copy/layout.
-- Changing Supabase schema or RLS unless smoke exposes a deterministic defect.
+- Creating new Supabase schema or RLS beyond applying already-versioned pending migrations unless smoke exposes a deterministic defect that needs a separate scoped implementation patch.
 - Recording or committing secret values.
 
 ## Acceptance Criteria
@@ -178,6 +191,7 @@ Critical target categories for `10/10` claim:
 - `npm run lint:briefs`
 - `npm run lint:briefs:all`
 - `npm run lint:env-parity`
+- Supabase migration preflight from `docs/runbooks/supabase-migration-discipline.md`
 - targeted contact/admin message tests if code changes are required
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
@@ -197,7 +211,9 @@ Critical target categories for `10/10` claim:
 - Do not use `CONTACT_INTAKE_STORAGE=local_verify` in Preview or Production.
 - Keep real-provider smoke submissions minimal and clearly test-labeled.
 - If provider smoke fails, preserve stored app messages, disable or restore provider config, redeploy, and re-run smoke.
+- If schema smoke fails, stop and run Supabase migration preflight before retrying provider/email diagnosis.
 
 ## Checkpoint Log
 
+- `2026-05-07 | supabase-preflight-note | Vercel contact/message-delivery env group was configured and Preview redeploy succeeded, but `/api/contact`Preview smoke returned 500 before email delivery because`public.admin_messages` is missing in remote Supabase; added Supabase migration discipline runbook and linked this brief so future schema-dependent app changes apply migrations before deploy/smoke | next: run Supabase migration list, dry-run, db push for expected pending Admin Messages migrations, then rerun Preview contact smoke`
 - `2026-05-07 | in-progress | opened branch contact-email-pre-live-smoke-10-10 from clean main and checked local/Vercel config presence; local .env.local has no contact/message-delivery values, and Vercel Preview/Production env listings are missing CONTACT_TO_EMAIL, CONTACT_ALLOWED_ORIGINS, MESSAGE_DELIVERY_PROVIDER, MESSAGE_DELIVERY_FROM_EMAIL, and provider-specific secret group | next: configure required Vercel env group, redeploy, then run admin-message-v1 pre-live smoke`
