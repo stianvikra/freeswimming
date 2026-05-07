@@ -32,15 +32,23 @@ Verify that Preview and Production contact intake can store requests, attempt ad
 - Vercel CLI auth is available for `stianvikra-2409`.
 - The Admin Messages v1 contact/provider env group was added to Vercel Preview and Production on `2026-05-07`.
 - Preview redeploy `https://freeswimming-1fg66r89s-stian-vikras-projects.vercel.app` is `READY`.
-- Preview `/api/contact` smoke reached runtime but returned `500` before email delivery because Supabase schema is not ready:
-  - `public.admin_messages` is missing in the linked remote schema cache,
-  - Vercel log evidence shows `storage_insert_failed` with PostgREST `PGRST205`.
+- Supabase preflight and apply completed on `2026-05-07`:
+  - `supabase projects list` confirmed linked project `freeswimming-org-prod` / `sazgjhgxvmxcyowovond`,
+  - `supabase migration list --linked` showed remote missing `20260506183000` and `20260506213000`,
+  - `supabase db push --dry-run --linked` showed only those two expected Admin Messages migrations,
+  - `supabase db push --linked` applied both,
+  - post-apply `supabase migration list --linked` showed local and remote in sync through `20260506213000`.
+- Preview `/api/contact` smoke first reached runtime but returned `500` before email delivery because `public.admin_messages` was missing in remote Supabase. After migration apply, the same Preview route returned `200` / `{"ok":true}`.
+- Latest non-sensitive Supabase status read shows:
+  - `admin_messages.notification_status`: `accepted_by_provider`,
+  - `admin_message_delivery_attempts.provider_key`: `smtp_one_com_compatible`,
+  - `admin_message_delivery_attempts.status`: `accepted_by_provider`.
 - Preview logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage failure is the hard blocker.
-- This brief remains `in-progress` until the environment group exists and both smoke rows pass.
+- This brief remains `in-progress` until full Preview admin workflow smoke and Production redeploy/smoke pass.
 
 ## Supabase Preflight Note
 
-The first Preview smoke exposed a sequencing gap: app/provider env was ready, but the remote Supabase schema had not received the Admin Messages migrations. Before continuing live smoke, follow `docs/runbooks/supabase-migration-discipline.md`:
+The first Preview smoke exposed a sequencing gap: app/provider env was ready, but the remote Supabase schema had not received the Admin Messages migrations. The preflight and apply sequence from `docs/runbooks/supabase-migration-discipline.md` has now been executed for the expected pending migrations:
 
 1. Confirm linked Supabase project with `supabase projects list`.
 2. Read migration status with `supabase migration list --linked`.
@@ -215,5 +223,6 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | preview-contact-smoke-partial-pass | Supabase preflight confirmed remote was missing only expected Admin Messages migrations, dry-run showed the same two files, db push applied them, post-apply migration list is in sync, Preview `/api/contact` returned 200, and latest non-sensitive DB status shows message + SMTP delivery attempt accepted_by_provider; full Preview admin workflow smoke and Production redeploy/smoke remain pending, and Upstash 401 fallback remains a secondary env issue | next: complete Preview admin workflow smoke, then redeploy/smoke Production`
 - `2026-05-07 | supabase-preflight-note | Vercel contact/message-delivery env group was configured and Preview redeploy succeeded, but `/api/contact`Preview smoke returned 500 before email delivery because`public.admin_messages` is missing in remote Supabase; added Supabase migration discipline runbook and linked this brief so future schema-dependent app changes apply migrations before deploy/smoke | next: run Supabase migration list, dry-run, db push for expected pending Admin Messages migrations, then rerun Preview contact smoke`
 - `2026-05-07 | in-progress | opened branch contact-email-pre-live-smoke-10-10 from clean main and checked local/Vercel config presence; local .env.local has no contact/message-delivery values, and Vercel Preview/Production env listings are missing CONTACT_TO_EMAIL, CONTACT_ALLOWED_ORIGINS, MESSAGE_DELIVERY_PROVIDER, MESSAGE_DELIVERY_FROM_EMAIL, and provider-specific secret group | next: configure required Vercel env group, redeploy, then run admin-message-v1 pre-live smoke`
