@@ -23,17 +23,18 @@ Provide a short, repeatable procedure for rotating sensitive config and confirmi
 2. `/api/runtime/flags` returns `ok: true`.
 3. Signed-in admin gets `flags.dashboardVisible=true` from `/api/runtime/flags`.
 4. `/admin` opens without redirect loop.
-5. Contact form/API still accepts allowed origin requests.
-6. Checkout flow still reaches Stripe session creation from app flow.
+5. `/admin?tab=messages` opens for admin/editor and can show message diagnostics when rows exist.
+6. Contact form/API still accepts allowed origin requests.
+7. Checkout flow still reaches Stripe session creation from app flow.
 
 ## Manual Smoke Evidence (Required Before Brief Closeout)
 
 Record one row per environment after smoke checks. Keep values non-sensitive.
 
-| Date (UTC)       | Environment  | Operator   | `/auth/sign-in` | `/api/runtime/flags` (`ok: true`) | `dashboardVisible=true` (signed-in admin) | `/admin` | `/api/contact` (allowed origin) | `/api/checkout/session` (app flow) | Result | Notes                                       |
-| ---------------- | ------------ | ---------- | --------------- | --------------------------------- | ----------------------------------------- | -------- | ------------------------------- | ---------------------------------- | ------ | ------------------------------------------- |
-| 2026-03-13 11:02 | `preview`    | stianvikra | pass            | pass                              | pass                                      | pass     | pass                            | pass                               | pass   | manual smoke via PR #207 preview deployment |
-| 2026-03-13 11:11 | `production` | stianvikra | pass            | pass                              | pass                                      | pass     | pass                            | pass                               | pass   | manual smoke via production deployment      |
+| Date (UTC)       | Environment  | Operator   | `/auth/sign-in` | `/api/runtime/flags` (`ok: true`) | `dashboardVisible=true` (signed-in admin) | `/admin` | `/admin?tab=messages` | `/api/contact` (allowed origin) | `/api/checkout/session` (app flow) | Result | Notes                                       |
+| ---------------- | ------------ | ---------- | --------------- | --------------------------------- | ----------------------------------------- | -------- | --------------------- | ------------------------------- | ---------------------------------- | ------ | ------------------------------------------- |
+| 2026-03-13 11:02 | `preview`    | stianvikra | pass            | pass                              | pass                                      | pass     | N/A before v1         | pass                            | pass                               | pass   | manual smoke via PR #207 preview deployment |
+| 2026-03-13 11:11 | `production` | stianvikra | pass            | pass                              | pass                                      | pass     | N/A before v1         | pass                            | pass                               | pass   | manual smoke via production deployment      |
 
 Closeout rule:
 

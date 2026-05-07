@@ -139,6 +139,12 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Messages are stored in the platform before user success.")
     ).toBeVisible();
+    await expect(
+      page.getByText("the normal email inbox remains the v1 reply workspace").first()
+    ).toBeVisible();
+    await expect(
+      page.getByText("Dashboard reply compose/outbound log is deferred in v1.")
+    ).toBeVisible();
     await expect(page.getByText("Save changes / Cancel:")).toBeVisible();
     await expect(
       page.getByText(
@@ -149,6 +155,9 @@ test.describe("admin help center", () => {
     await expect(page.getByText("docs/runbooks/site-lock-operations.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-notes-recovery.md")).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-message-inbox.md")).toBeVisible();
+    await expect(
+      page.getByText("docs/checklists/admin-message-v1-pre-live-smoke.md")
+    ).toBeVisible();
     await expect(page.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
     await expect(
       page.getByText(

@@ -300,7 +300,8 @@ export default function AdminMessagesManager({ adminRole }: Props) {
               <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
             </div>
             <p className="mt-1 max-w-2xl text-sm text-slate-600">
-              Stored contact and intake requests with provider-independent delivery diagnostics.
+              Stored contact and intake requests with delivery diagnostics. Reply from the normal
+              email inbox in v1.
             </p>
           </div>
           <button
@@ -398,7 +399,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
         <div className="rounded-2xl border border-slate-200 bg-white">
           <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">Inbox</p>
+            <p className="text-sm font-semibold text-slate-900">Stored requests</p>
             <p className="text-xs text-slate-500">{filteredSummary}</p>
           </div>
 

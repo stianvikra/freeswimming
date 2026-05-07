@@ -47,7 +47,7 @@ Legend:
 | `CONTACT_INTAKE_STORAGE`                  | local/test config    | `optional`    | `no`          | `no`          | `local_verify` is allowed only for no-egress local/Playwright verification outside production; production uses Supabase. |
 | `MESSAGE_DELIVERY_PROVIDER`               | server config        | `optional`    | `required`    | `required`    | Admin Messages v1 provider key: `disabled`, `resend_api`, `resend_smtp`, or `smtp_one_com_compatible`.                   |
 | `MESSAGE_DELIVERY_TIMEOUT_MS`             | server config        | `optional`    | `optional`    | `optional`    | Provider timeout; defaults to `10000` and hard-caps at `15000`.                                                          |
-| `MESSAGE_DELIVERY_FROM_EMAIL`             | server config        | `optional`    | `required`    | `required`    | Default sender for Admin Messages v1 notifications/replies; may use `Name <email>` format.                               |
+| `MESSAGE_DELIVERY_FROM_EMAIL`             | server config        | `optional`    | `required`    | `required`    | Default sender for Admin Messages v1 notifications; dashboard replies are deferred and normal email remains reply inbox. |
 | `MESSAGE_DELIVERY_REPLY_TO_EMAIL`         | server config        | `optional`    | `optional`    | `optional`    | Default reply-to mailbox when the payload does not provide a submitter/reply address.                                    |
 | `MESSAGE_DELIVERY_RESEND_API_KEY`         | server secret        | `optional`    | `conditional` | `conditional` | Required only when `MESSAGE_DELIVERY_PROVIDER=resend_api`; falls back to `RESEND_API_KEY` if omitted.                    |
 | `MESSAGE_DELIVERY_RESEND_API_URL`         | server config        | `optional`    | `optional`    | `optional`    | Optional Resend API endpoint override; default is the official Resend email API.                                         |
@@ -126,6 +126,24 @@ Legend:
    - `docs/checklists/admin-access-and-secret-rotation.md`
    - include `preview` and `production` rows with timestamp + operator.
 5. If smoke fails, rollback by restoring previous env values and redeploy.
+
+## Admin Messages V1 Provider Parity
+
+Admin Messages v1 is e-mail-first:
+
+- `/api/contact` stores app-canonical intake before provider notification.
+- provider notification can be disabled, retryable, or failed without deleting the stored request.
+- `/admin?tab=messages` is the triage and diagnostic safety net.
+- the normal email inbox is the only daily reply workspace for v1.
+
+Before test swimmer intake, verify Preview and Production have:
+
+- `CONTACT_TO_EMAIL` and `CONTACT_ALLOWED_ORIGINS`,
+- `MESSAGE_DELIVERY_PROVIDER`,
+- `MESSAGE_DELIVERY_FROM_EMAIL`,
+- exactly the provider-specific secret group required by the selected provider.
+
+Use `docs/checklists/admin-message-v1-pre-live-smoke.md` for non-sensitive evidence. Do not record secret values, raw provider responses, or message free text.
 
 ## Rotation Policy
 

@@ -88,6 +88,8 @@ describe("AdminMessagesManager", () => {
     render(<AdminMessagesManager adminRole="admin" />);
 
     await screen.findByText("Test Swimmer");
+    expect(screen.getByText("Stored requests")).toBeInTheDocument();
+    expect(screen.getByText(/Reply from the normal email inbox in v1\./)).toBeInTheDocument();
     expect(screen.getAllByText("Please help me with freestyle.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("swimmer@example.com").length).toBeGreaterThan(0);
 

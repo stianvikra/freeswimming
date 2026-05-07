@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-06-admin-message-ops-tests-runbook-closeout-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-06`
 - `updated`: `2026-05-07`
@@ -32,7 +32,7 @@ Close out Admin Messages v1 with launch-grade e-mail-first operations, test cove
   - did provider accept the admin notification email,
   - how admin replies from the normal email inbox and marks the app row,
   - what failed and how to recover/rollback.
-- Pre-live smoke checklist is ready before any test swimmer invitation.
+- Pre-live smoke checklist is ready at `docs/checklists/admin-message-v1-pre-live-smoke.md` before any test swimmer invitation.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -138,6 +138,37 @@ Critical target categories for `10/10` claim:
 4. Env parity and rollback path are documented without exposing secrets.
 5. Final closeout states achieved score per target category.
 
+## Implementation Evidence
+
+- Reference surface / shared UI contract:
+  - reused the existing `AdminMessagesManager` and `AdminHelpCenter` surfaces from the Admin Message Inbox slice,
+  - kept the typed `lib/admin/messages.ts` view-model contract unchanged,
+  - changed copy only; no new admin renderer, dashboard reply state, or outbound-log surface was introduced.
+- Route/label/support sweep identifiers searched:
+  - `tab=messages`,
+  - `admin-tab-messages`,
+  - `Messages`,
+  - `Stored requests`,
+  - `Needs reply`,
+  - `Mark replied`,
+  - `normal email inbox`,
+  - `dashboard reply`,
+  - `admin-message-v1-pre-live-smoke`,
+  - `admin-message-inbox`.
+- Surfaces checked / directories:
+  - `app/`,
+  - `components/`,
+  - `tests/`,
+  - `docs/`,
+  - `docs/runbooks/`,
+  - `docs/checklists/`,
+  - active/planned/done/deferred Admin Message task briefs.
+- Fallout handled:
+  - Help/Guide copy now says email remains the v1 reply workspace,
+  - Admin Messages copy says reply from the normal email inbox in v1,
+  - runbook/env parity/checklist evidence defines provider diagnostics and e-mail-first recovery,
+  - deferred reply/outbound brief remains out of scope.
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -146,7 +177,33 @@ Critical target categories for `10/10` claim:
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Gate Evidence
+
+- Targeted unit/component/route regression:
+  - `npm exec vitest run tests/unit/admin-messages-manager.test.tsx tests/unit/admin-messages-routes.test.ts tests/unit/contact-api-route.test.ts tests/unit/admin-messages.test.ts tests/unit/admin-message-delivery.test.ts tests/unit/contact-intake.test.ts`
+  - passed: 6 files, 38 tests.
+- Brief governance:
+  - `npm run lint:briefs:all` passed.
+  - `npm run lint:quality-gates` passed after adding explicit reference-surface and support-sweep evidence.
+- Screenshot handoff:
+  - before/after artifacts captured at `output/admin-message-ops-closeout-2026-05-07-065040`.
+  - owner approved on 2026-05-07.
+  - no product-rendering files changed after capture.
+- Pre-PR release gate:
+  - `npm run verify:pre-pr` passed full lane on 2026-05-07 after the quality-gate evidence fix.
+  - unit: 178 files, 958 tests passed.
+  - e2e: 82 passed, 374 skipped.
+  - build and performance budgets passed.
+- Performance budget trend:
+  - `verify:pre-pr` reported tighten recommendation after 4 consecutive weekly green runs.
+  - decision for this non-performance Admin Messages closeout: hold budgets here; prompt owner to tighten one stretch target in the next performance-governance or performance-sensitive slice.
+
 ## Checkpoint Log
 
+- `2026-05-07 | pre-pr-pass | npm run verify:pre-pr passed full lane after quality-gate evidence fix: unit 178 files / 958 tests, e2e 82 passed / 374 skipped, build and performance budgets passed; perf trend recommended tighten after 4 weekly green runs, decision hold for this non-performance closeout and prompt next performance-relevant slice | next: rerun npm run verify:pre-pr after this evidence-only brief update, then commit/push/PR`
+- `2026-05-07 | pre-pr-gate-fix | npm run verify:pre-pr failed at lint:quality-gates because active brief lacked explicit sweep identifiers/surfaces and reference surface evidence; added implementation evidence without changing product UI after screenshot capture | next: rerun npm run verify:pre-pr`
+- `2026-05-07 | screenshot-approved | owner approved before/after screenshot handoff at output/admin-message-ops-closeout-2026-05-07-065040 after structured-intake fixture clarification; no product-rendering files changed after capture | next: run npm run verify:pre-pr`
+- `2026-05-07 | screenshot-handoff-ready | e-mail-first Help/Guide and Messages copy updated, ops runbook/env parity/pre-live smoke checklist added, targeted unit tests passed (6 files, 38 tests), lint:briefs:all passed, route/label/support sweep completed, and before/after screenshot artifacts captured at output/admin-message-ops-closeout-2026-05-07-065040 | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-05-07 | in-progress | branch admin-message-ops-tests-runbook-closeout-10-10 opened from clean synced main after PR #628; brief moved to in-progress and scope is e-mail-first v1 ops/tests/runbook closeout with dashboard replies deferred | next: update Help/Guide, runbooks, env parity, and targeted tests before local verification`
 - `2026-05-07 | scope-corrected | dashboard reply/outbound child deferred because email should remain the single daily inbox for first test swimmers; closeout now validates Admin Messages as form-submission safety net plus notification diagnostics | next: execute e-mail-first ops/tests/runbook closeout`
 - `2026-05-06 | planned | created as final child for Admin Messages v1 to ensure ops, tests, runbooks, env parity, rollback, and 10/10 closeout are not left implicit before test swimmers | next: execute after provider, intake, inbox, and reply children`
