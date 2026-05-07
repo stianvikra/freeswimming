@@ -48,8 +48,16 @@ Verify that Preview and Production contact intake can store requests, attempt ad
   - browser smoke opened `/admin?tab=messages` and verified `Admin console`, `Messages`, stored requests, request diagnostics, delivery attempts, `Notification: Accepted`, Early access row, and Goals coaching row.
 - Browser evidence artifact: `output/contact-email-pre-live-smoke-2026-05-07-095726/after-preview-admin-messages-desktop.png`.
 - Owner mailbox receipt/reply confirmation remains pending because Codex does not have access to the One.com inbox.
-- Preview logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage failure is the hard blocker.
-- This brief remains `in-progress` until owner mailbox confirmation, Production redeploy/smoke, and Upstash env repair/decision pass.
+- Production redeploy completed on `2026-05-07`:
+  - deployment `dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA` reached `READY`,
+  - `https://freeswimming.org` was aliased to the new deployment,
+  - contact submit returned `200` and latest contact row showed SMTP delivery `accepted_by_provider`,
+  - goals coaching submit returned `200`, latest row showed structured intake count `6`, diagnostics count `5`, and SMTP delivery `accepted_by_provider`,
+  - preview notify submit returned `200`, latest row showed diagnostics count `5` and SMTP delivery `accepted_by_provider`,
+  - reversible Production status workflow passed: `needs_reply` -> `replied` -> `archived` -> `new` -> `deleted` -> `new`.
+- Production logs after redeploy confirm `contact_intake_accepted` for `contact`, `goals_coaching`, and `preview_access_notify` with `notificationStatus: accepted_by_provider`.
+- Preview and Production logs also show Upstash rate limiting returned `401` and fell back to in-memory limiting. This is a secondary config issue because storage and SMTP delivery now pass.
+- This brief remains `in-progress` until owner mailbox confirmation and Upstash env repair/decision pass.
 
 ## Supabase Preflight Note
 
@@ -215,7 +223,8 @@ Critical target categories for `10/10` claim:
   - automated intake/admin smoke passed after Supabase migrations were applied.
   - owner mailbox receipt/reply confirmation is still pending.
 - Production:
-  - env group is present; redeploy and smoke are still pending.
+  - redeploy completed and automated intake/admin smoke passed.
+  - owner mailbox receipt/reply confirmation is still pending.
 - Local:
   - no real-provider smoke possible from current `.env.local` because the contact/message-delivery env group is absent.
 
@@ -229,6 +238,7 @@ Critical target categories for `10/10` claim:
 
 ## Checkpoint Log
 
+- `2026-05-07 | production-smoke-automated-pass | Production redeploy dpl_7vwxhecjct57GmKcD1Ad13hhQ1SA reached READY and aliased freeswimming.org; live contact, goals coaching, and preview notify submissions returned 200 and latest admin rows showed SMTP accepted_by_provider; reversible Production status workflow passed through needs_reply/replied/archived/restored/deleted/restored; logs confirm contact_intake_accepted with notificationStatus accepted_by_provider while Upstash 401 fallback remains a secondary env issue | next: owner confirms One.com mailbox receipt/reply, then repair or explicitly defer Upstash env`
 - `2026-05-07 | preview-admin-smoke-automated-pass | Preview contact, goals coaching, and preview notify submissions returned 200, latest admin message rows showed SMTP accepted_by_provider with privacy-safe diagnostics, authenticated admin API listed messages as role editor with schemaReady true, reversible status workflow passed through needs_reply/replied/archived/restored/deleted/restored, and browser smoke verified /admin?tab=messages with screenshot evidence at output/contact-email-pre-live-smoke-2026-05-07-095726/after-preview-admin-messages-desktop.png | next: owner confirms One.com mailbox receipt/reply, then Production redeploy/smoke`
 - `2026-05-07 | preview-contact-smoke-partial-pass | Supabase preflight confirmed remote was missing only expected Admin Messages migrations, dry-run showed the same two files, db push applied them, post-apply migration list is in sync, Preview `/api/contact` returned 200, and latest non-sensitive DB status shows message + SMTP delivery attempt accepted_by_provider; full Preview admin workflow smoke and Production redeploy/smoke remain pending, and Upstash 401 fallback remains a secondary env issue | next: complete Preview admin workflow smoke, then redeploy/smoke Production`
 - `2026-05-07 | supabase-preflight-note | Vercel contact/message-delivery env group was configured and Preview redeploy succeeded, but `/api/contact`Preview smoke returned 500 before email delivery because`public.admin_messages` is missing in remote Supabase; added Supabase migration discipline runbook and linked this brief so future schema-dependent app changes apply migrations before deploy/smoke | next: run Supabase migration list, dry-run, db push for expected pending Admin Messages migrations, then rerun Preview contact smoke`
