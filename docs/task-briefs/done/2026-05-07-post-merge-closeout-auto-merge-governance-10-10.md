@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-07-post-merge-closeout-auto-merge-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-07`
@@ -35,6 +35,31 @@ Critical target categories for `10/10` claim in closeout:
 - Stack-fit and dependency discipline
 - Testing and QA automation
 - DevOps and rollback readiness
+
+## Completion Record
+
+- `completed`: `2026-05-07`
+- `merged_pr`: `#631`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/631`
+- `squash_commit`: `68d22b8`
+- `implementation_commit`: `80c3b28`
+- `10/10 claim`: yes - all critical target categories are scored `5/5` with canonical AGENTS/runbook guidance, docs-only validation, green CI, local pre-merge evidence, merge-preflight, and this repo-managed post-merge closeout.
+
+Plain-language done summary:
+
+- Post-merge cleanup PRs now have a narrow automatic path when they are clearly the repo-generated docs-only closeout for the workstream you already approved for merge.
+- The rule is deliberately bounded: it still stops for ambiguous closeouts, non-docs files, failed gates, conflicts, visual review, credentials, or product decisions.
+- No product UI, runtime code, data model, auth, payments, analytics, or customer-facing workflow changed.
+
+| Category                                 | Achieved Score | Evidence                                                                                                                                       | Gaps / Notes                                            |
+| ---------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Product goals and IA                     | `5/5`          | AGENTS and PR/chat handoff guidance scope the exception to exactly one repo-managed docs-only closeout for the just-merged workstream.         | No product IA changed.                                  |
+| Reliability and failure handling         | `5/5`          | Stop conditions cover ambiguous closeouts, unrelated workstreams, non-docs diffs, failing gates, conflicts, credentials, and scope decisions.  | Process reliability only; no runtime failure path.      |
+| Content governance                       | `5/5`          | Canonical agent guidance, PR/chat handoff runbook, post-merge sync runbook, and this brief were updated together.                              | Historical workflow docs left unchanged when unrelated. |
+| Incident response and support operations | `5/5`          | Post-merge sync path now requires rerunning preflight after any closeout auto-merge and stopping on unsafe conditions.                         | Internal repo operations only.                          |
+| Stack-fit and dependency discipline      | `5/5`          | Reused existing `post-merge:preflight`, docs-only verification, PR, CI, and branch cleanup flow; no scripts, workflows, or dependencies added. | No new automation surface required.                     |
+| Testing and QA automation                | `5/5`          | `npm run lint:briefs:all`, `npm run verify:pre-pr`, CI for #631, `npm run verify:pre-merge`, and `npm run merge:preflight -- --assert-ready`.  | Docs-only lane by design.                               |
+| DevOps and rollback readiness            | `5/5`          | PR #631 merged as `68d22b8`; rollback is `git revert 68d22b8`; post-merge preflight surfaced this closeout as expected.                        | Closeout PR is docs-only and non-runtime.               |
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                 | Evidence                                   | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | ----------------------- |
@@ -130,3 +155,5 @@ N/A because this slice creates no persisted product entity, route param, slug, o
 
 - `2026-05-07 | in-progress | owner asked to systematize automatic post-merge cleanup PR handling after PR #630; created docs-only governance branch and codified the narrow auto-merge exception in AGENTS and runbooks | next: run brief lint and docs-only pre-PR validation`
 - `2026-05-07 | validation | npm run lint:briefs:all PASS; npm run verify:pre-pr PASS docs-only with artifact log artifacts/test-runs/20260507-075156/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-05-07 | 68d22b8 | PR #631 squash-merged to main, local main synced, remote branch pruned, and post-merge preflight surfaced this repo-managed closeout; using the newly merged auto-merge rule for this single docs-only lifecycle PR | next: validate, commit, push, open/monitor closeout PR, run verify:pre-merge, auto-merge, sync main, rerun post-merge:preflight, then do chat-handoff assessment`
+- `2026-05-07 | closeout validation | npm run lint:briefs:all PASS; npm run verify:pre-pr PASS docs-only with artifact log artifacts/test-runs/20260507-075719/verify.log | next: commit, push, open closeout PR, wait for CI, run verify:pre-merge, then auto-merge under the post-merge closeout rule`
