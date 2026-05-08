@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-07-manual-dryland-simple-sessions-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
-- `updated`: `2026-05-07`
+- `updated`: `2026-05-08`
 
-## Draft Status
+## Closeout Status
 
-This brief is now in progress after the owner explicitly said `execute` on `2026-05-07`. Implementation must stay scoped to the simple manual dryland slice, and UI work must stop for screenshot handoff approval before `verify:pre-pr`, PR creation, and `verify:pre-merge`.
+This brief shipped in PR `#642`, merged to `main` as `a2b6e8e` on `2026-05-08`. The post-merge closeout moves the brief to `done` after local `npm run verify:pre-merge` and required GitHub checks passed.
 
 ## Goal
 
@@ -317,3 +317,4 @@ Implementation sweep evidence:
 - `2026-05-07 | in-progress | captured before/after screenshot handoff artifacts in output/manual-dryland-simple-sessions-2026-05-07-210759 using isolated fake Supabase because configured local dev-login Supabase auth returned invalid JSON/HTML | validation: lint:briefs:all, lint:quality-gates, test:unit, typecheck, lint, and safe-env build passed; targeted dryland Playwright remains environment-skipped | next: wait for owner screenshot approval before verify:pre-pr and PR automation`
 - `2026-05-07 | in-progress | owner approved screenshot handoff | next: run verify:pre-pr, commit, push, open PR, monitor CI, and run verify:pre-merge before merge-readiness summary`
 - `2026-05-07 | in-progress | verify:pre-pr passed full lane: lint, quality gates, typecheck, unit, build, perf budgets, and e2e; e2e ran 82 passed / 374 skipped under current local auth gating | note: perf budget trend recommended tightening after 4 green weekly runs; hold/defer budget tightening to a dedicated performance-governance slice because this PR is scoped to dryland UX and validation | next: commit, push, open PR, and monitor CI`
+- `2026-05-08 | done | PR #642 merged to main as a2b6e8e after green GitHub checks and local npm run verify:pre-merge; post-merge preflight requested this docs-only lifecycle closeout | next: closeout PR`
