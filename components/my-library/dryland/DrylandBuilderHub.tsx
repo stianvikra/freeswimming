@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
+import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import DrylandSessionEditor from "@/components/my-library/dryland/DrylandSessionEditor";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
@@ -263,6 +264,15 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
       ) : null}
 
       <div className="mt-6 space-y-5">
+        {browseOnly ? (
+          <DrylandMicroPlanPanel
+            initialPlan={drylandLibrary.microPlan}
+            sessions={recentSessions}
+            schemaReady={drylandLibrary.microPlanSchemaReady}
+            loadError={drylandLibrary.microPlanLoadError}
+          />
+        ) : null}
+
         {!browseOnly && savedSession && pendingDeleteSessionId === savedSession.id ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
             <p className="text-sm font-medium text-rose-900">Delete this saved dryland session?</p>

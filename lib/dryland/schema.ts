@@ -28,7 +28,12 @@ function isSchemaMissing(error: PostgrestLikeError | null | undefined, markers: 
 export function isDrylandSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {
   return isSchemaMissing(error, [
     "dryland_sessions",
+    "dryland_micro_plans",
     "session_kind",
+    "source_dryland_session_id",
+    "week_starts_at",
+    "week_ends_at",
+    "blocks",
     "actual_duration_seconds",
     "started_at",
     "completed_at",

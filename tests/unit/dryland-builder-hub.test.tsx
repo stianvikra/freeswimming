@@ -90,10 +90,13 @@ function buildSummary(overrides?: Partial<DrylandSessionSummary>): DrylandSessio
 function buildLibrary(overrides?: Partial<DrylandLibrarySnapshot>): DrylandLibrarySnapshot {
   return {
     schemaReady: true,
+    microPlanSchemaReady: true,
     loadError: null,
+    microPlanLoadError: null,
     selectedSession: buildRecord(),
     selectedSessionMissing: false,
     recentSessions: [buildSummary()],
+    microPlan: null,
     ...overrides,
   };
 }

@@ -155,6 +155,58 @@ test.describe("my library dryland builder", () => {
       "Single-leg squat"
     );
     await expect(page.getByTestId("dryland-manual-exercise-set-count-0")).toHaveValue("2");
+
+    await gotoWithTransientRetry(page, "/my-library/dryland", 60_000);
+    await waitForDrylandBuilderClientReady(page);
+    await expect(page.getByTestId("dryland-micro-plan-panel")).toBeVisible();
+
+    const microSyncing = await page
+      .getByText("Micro Sessions are still syncing in this environment.")
+      .isVisible()
+      .catch(() => false);
+
+    if (!microSyncing) {
+      const startButton = page.getByTestId(`dryland-micro-start-${createdSessionId}`);
+      const startNextButton = page.getByTestId(`dryland-micro-start-next-${createdSessionId}`);
+      const canStartFreshPlan =
+        (await startButton.isVisible().catch(() => false)) ||
+        (await startNextButton.isVisible().catch(() => false));
+
+      if (canStartFreshPlan) {
+        const startResponsePromise = page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/my-library/dryland/micro-plans") &&
+            response.request().method() === "POST" &&
+            response.status() === 200
+        );
+        if (await startButton.isVisible().catch(() => false)) {
+          await startButton.click();
+        } else {
+          await startNextButton.click();
+        }
+        await expect((await startResponsePromise).json()).resolves.toMatchObject({ ok: true });
+      }
+
+      await expect(page.getByRole("progressbar", { name: "Micro session progress" })).toBeVisible();
+
+      for (let index = 0; index < 6; index += 1) {
+        const completeButton = page.locator('[data-testid^="dryland-micro-complete-"]').first();
+        if (!(await completeButton.isVisible().catch(() => false))) break;
+        if (!(await completeButton.isEnabled().catch(() => false))) break;
+
+        const completeResponsePromise = page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/my-library/dryland/micro-plans/") &&
+            response.request().method() === "PATCH" &&
+            response.status() === 200
+        );
+        await completeButton.click();
+        await expect((await completeResponsePromise).json()).resolves.toMatchObject({ ok: true });
+      }
+    }
+
+    await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
+    await waitForDrylandBuilderClientReady(page);
     await page.getByTestId("dryland-mode-train").click();
 
     await page.getByTestId("dryland-session-more").click();

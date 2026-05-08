@@ -267,6 +267,100 @@
 - `400`: invalid JSON or invalid event name
 - `415`: unsupported content type
 
+## `POST /api/my-library/dryland/micro-plans`
+
+### Request
+
+- Auth: signed-in user session required
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "sourceDrylandSessionId": "11111111-1111-4111-8111-111111111111",
+  "timezone": "Europe/Oslo"
+}
+```
+
+### Response
+
+```json
+{
+  "ok": true,
+  "plan": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "sourceDrylandSessionId": "11111111-1111-4111-8111-111111111111",
+    "status": "active",
+    "progress": {
+      "totalBlockCount": 2,
+      "completedBlockCount": 0,
+      "skippedBlockCount": 0,
+      "remainingBlockCount": 2,
+      "progressPercent": 0
+    }
+  }
+}
+```
+
+### Status Codes
+
+- `200`: plan created, or existing active/paused plan returned with `reusedExisting`
+- `400`: invalid JSON or source dryland session id
+- `401`: unauthenticated
+- `404`: source dryland session not found for this user
+- `503`: micro-plan schema not live in the environment
+
+## `PATCH /api/my-library/dryland/micro-plans/[planId]`
+
+### Request
+
+- Auth: signed-in user session required
+- Headers:
+  - `Content-Type: application/json`
+- Body for block completion:
+
+```json
+{
+  "blockId": "block-1-exercise-1",
+  "blockStatus": "completed"
+}
+```
+
+- `blockStatus`: `queued`, `completed`, or `skipped`
+- Body for plan pause/resume:
+
+```json
+{
+  "planStatus": "paused"
+}
+```
+
+### Response
+
+```json
+{
+  "ok": true,
+  "plan": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "status": "active",
+    "progress": {
+      "completedBlockCount": 1,
+      "totalBlockCount": 2,
+      "progressPercent": 50
+    }
+  }
+}
+```
+
+### Status Codes
+
+- `200`: plan updated
+- `400`: invalid JSON, plan id, block id, block status, or plan status
+- `401`: unauthenticated
+- `404`: micro plan not found for this user
+- `503`: micro-plan schema not live in the environment
+
 ## `GET|POST /api/progress/guide`
 
 ### Request

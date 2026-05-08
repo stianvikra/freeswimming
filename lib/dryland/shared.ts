@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database";
+import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 
 export const DRYLAND_SESSION_KINDS = ["strength", "stretching"] as const;
 export const DRYLAND_SOURCE_KINDS = ["manual"] as const;
@@ -79,10 +80,13 @@ export type DrylandSessionRecord = {
 
 export type DrylandLibrarySnapshot = {
   schemaReady: boolean;
+  microPlanSchemaReady: boolean;
   loadError: string | null;
+  microPlanLoadError: string | null;
   selectedSession: DrylandSessionRecord | null;
   selectedSessionMissing: boolean;
   recentSessions: DrylandSessionSummary[];
+  microPlan: DrylandMicroPlanRecord | null;
 };
 
 export type DrylandSaveRequestBody = {

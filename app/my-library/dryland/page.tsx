@@ -28,7 +28,8 @@ export default async function DrylandSessionsPage() {
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Dryland Sessions</h1>
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Browse saved strength and stretching sessions first, then open one focused session
-                at a time when you want to edit, execute, or finish it.
+                at a time when you want to edit, execute, finish it, or split it into weekly micro
+                blocks.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

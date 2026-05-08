@@ -1168,6 +1168,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      dryland_micro_plans: {
+        Row: {
+          blocks: Json;
+          created_at: string;
+          id: string;
+          session_kind: string;
+          source_dryland_session_id: string | null;
+          source_session_title: string;
+          status: string;
+          timezone: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+          week_ends_at: string;
+          week_starts_at: string;
+        };
+        Insert: {
+          blocks?: Json;
+          created_at?: string;
+          id?: string;
+          session_kind: string;
+          source_dryland_session_id?: string | null;
+          source_session_title: string;
+          status: string;
+          timezone?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+          week_ends_at: string;
+          week_starts_at: string;
+        };
+        Update: {
+          blocks?: Json;
+          created_at?: string;
+          id?: string;
+          session_kind?: string;
+          source_dryland_session_id?: string | null;
+          source_session_title?: string;
+          status?: string;
+          timezone?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+          week_ends_at?: string;
+          week_starts_at?: string;
+        };
+        Relationships: [];
+      };
       dryland_sessions: {
         Row: {
           actual_duration_seconds: number | null;
