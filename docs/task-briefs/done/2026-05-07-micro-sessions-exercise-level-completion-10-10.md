@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-07-micro-sessions-exercise-level-completion-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-08`
 
-## Draft Status
+## Closeout Status
 
-Execution started on `2026-05-08` after owner instruction: `execute micro sessions`.
+This brief shipped in PR `#644`, merged to `main` as `af390a7` on `2026-05-08`. The post-merge closeout moves the brief to `done` after local `npm run verify:pre-merge` and required GitHub checks passed.
 
 ## Goal
 
@@ -290,3 +290,35 @@ Evidence:
 - `2026-05-08 | in-progress | implemented first pass of dryland micro-plan domain, Supabase migration/types, owner-scoped API routes, My Library dryland panel, route/support docs, targeted domain/API/component/e2e tests, and route-label-support sweep | validation: targeted Vitest passed (5 files, 23 tests) | next: run formatting/type/lint checks, targeted Playwright if environment allows, then capture screenshot handoff`
 - `2026-05-08 | screenshot handoff | targeted Vitest passed (5 files, 23 tests), targeted ESLint passed, npm run typecheck passed, npm run lint:briefs:all passed, targeted dryland Playwright ran but skipped because local dev-login Supabase auth returned HTML instead of JSON, and after/reference screenshots were captured in output/micro-sessions-exercise-completion-20260508-060809 using isolated local fixture props for the authenticated surface | next: wait for owner screenshot approval before verify:pre-pr, commit, push, and PR automation`
 - `2026-05-08 | pre-pr verified | owner approved screenshot handoff; npm run verify:pre-pr passed full lane (lint, typecheck, unit, build, perf budgets, E2E: 82 passed / 374 skipped under existing auth/dev-login skip behavior). Perf trend reported 4 consecutive weekly green runs and recommended tightening one stretch target; decision for this feature PR is hold budget changes and prompt owner to tighten in a dedicated perf-budget maintenance slice because this scope changes dryland micro-session behavior, not core route budgets | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-08 | done | PR #644 merged to main as af390a7 after green GitHub checks and local npm run verify:pre-merge passed on 4b82d36; post-merge preflight requested this docs-only lifecycle closeout | next: closeout PR`
+
+## Completion Record
+
+- `merged_pr`: `#644`
+- `merge_commit`: `af390a7`
+- `completed`: `2026-05-08`
+- `validation`: owner approved screenshot handoff, targeted Vitest/ESLint/typecheck passed, `npm run verify:pre-pr` passed full lane, required GitHub checks passed, `npm run verify:pre-merge` passed on PR head `4b82d36`, and post-merge preflight requested this docs-only closeout.
+- `screenshot_artifacts`: `output/micro-sessions-exercise-completion-20260508-060809`
+- `10/10 claim`: yes for the Micro Sessions Exercise-Level Completion V1 scope; reminders, Home personalization, wearable sync, analytics event delivery, and future scheduling remain out of scope.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Micro Sessions stays inside My Library Dryland and does not replace full dryland sessions or the swim-session builder.                  | None.        |
+| UX flow clarity                               | `5/5`          | Screenshot handoff and component coverage verified start, active, partial, pause/resume, completed, and action states.                  | None.        |
+| Visual design quality                         | `5/5`          | After/reference desktop and mobile artifacts showed compact My Library styling, responsive stacking, and no incoherent overlap.         | None.        |
+| Business logic correctness and data integrity | `5/5`          | Domain/API tests cover progress math, source-session snapshots, idempotent block updates, status transitions, and validation failures.  | None.        |
+| Accessibility (a11y)                          | `5/5`          | UI uses labelled buttons, semantic progress text/meter, and full verify includes public a11y smoke coverage.                            | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency was added, no polling was introduced, build passed, and perf budgets passed in pre-PR and pre-merge gates.                | None.        |
+| Data placement and sync boundaries            | `5/5`          | `dryland_micro_plans` is server-canonical, optimistic UI is temporary, and source dryland exercises are snapshotted per plan.           | None.        |
+| Caching and invalidation strategy             | `5/5`          | Routes use no-store semantics for authenticated state and mutations refresh the affected dryland surface.                               | None.        |
+| Reliability and failure handling              | `5/5`          | UI exposes retryable errors, schema readiness fallback, paused state, and no false completion on failed mutations.                      | None.        |
+| Security and authz                            | `5/5`          | API routes require auth, validate ids/payloads, fail closed, and owner-scope source dryland sessions and micro plans.                   | None.        |
+| Privacy and compliance                        | `5/5`          | Completion state remains account-private in Supabase; policy review found no required Privacy/Cookies text change.                      | None.        |
+| Content governance                            | `5/5`          | Block labels come from source session snapshots with clear rollback and no hidden generated content.                                    | None.        |
+| Analytics and KPI observability               | `5/5`          | V1 intentionally ships no analytics events; safe event taxonomy is explicitly deferred to a future scoped measurement brief.            | None.        |
+| Incident response and support operations      | `5/5`          | API contracts, authz/cache registry, user-flow map, and auth/account support runbook were updated for support-visible failure paths.    | None.        |
+| i18n operational readiness                    | `4/5`          | Week/progress copy is centralized enough for later localization, but no locale routing or translation system ships in this slice.       | Deferred.    |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js/Supabase/Tailwind/test stack and dryland route/component surfaces; no new package was added.                    | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest/ESLint/typecheck, dryland E2E coverage, screenshot approval, `verify:pre-pr`, GitHub checks, and `verify:pre-merge`.    | None.        |
+| Scalability and cost efficiency               | `5/5`          | Updates are bounded to explicit user actions, indexed by owner/status/week, and avoid scheduled writes or high-frequency polling.       | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Migration is additive, RLS-reviewed, typed, and rollback is a normal revert with the table left unused unless a later DB cleanup ships. | None.        |
