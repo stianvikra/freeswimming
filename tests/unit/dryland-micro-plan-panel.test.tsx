@@ -120,6 +120,22 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByTestId("dryland-micro-block-0")).toHaveTextContent("Single-leg squat");
   });
 
+  it("shows start choices instead of sync warning when the micro schema is ready", () => {
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={null}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.queryByText(/Micro Sessions are still syncing/)).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("dryland-micro-start-11111111-1111-4111-8111-111111111111")
+    ).toBeVisible();
+  });
+
   it("marks a micro block complete and updates the percent", async () => {
     const completedPlan = buildPlan({
       status: "completed",

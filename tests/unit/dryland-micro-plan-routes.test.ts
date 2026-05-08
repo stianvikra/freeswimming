@@ -129,6 +129,50 @@ describe("dryland micro plan routes", () => {
     expect(response.status).toBe(401);
   });
 
+  it("returns a support-diagnosable sync response when the micro plan table is missing", async () => {
+    const existingMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: "42P01",
+        message: 'relation "public.dryland_micro_plans" does not exist',
+      },
+    });
+    const existingLimit = vi.fn(() => ({ maybeSingle: existingMaybeSingle }));
+    const existingOrder = vi.fn(() => ({ limit: existingLimit }));
+    const existingIn = vi.fn(() => ({ order: existingOrder }));
+    const existingEq = vi.fn(() => ({ in: existingIn }));
+    const microSelect = vi.fn(() => ({ eq: existingEq }));
+    const from = vi.fn(() => ({ select: microSelect }));
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postDrylandMicroPlan(
+      new Request("http://127.0.0.1:3000/api/my-library/dryland/micro-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceDrylandSessionId: "11111111-1111-4111-8111-111111111111",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(503);
+    expect(payload).toEqual({
+      ok: false,
+      error: "Micro Sessions are still syncing in this environment.",
+    });
+    expect(from).toHaveBeenCalledWith("dryland_micro_plans");
+  });
+
   it("creates a micro plan from an owner-scoped dryland session snapshot", async () => {
     const existingMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     const existingLimit = vi.fn(() => ({ maybeSingle: existingMaybeSingle }));
@@ -285,5 +329,56 @@ describe("dryland micro plan routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.plan.status).toBe("completed");
     expect(payload.plan.progress.progressPercent).toBe(100);
+  });
+
+  it("returns a support-diagnosable sync response when updating before the table is applied", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: "42P01",
+        message: 'relation "public.dryland_micro_plans" does not exist',
+      },
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const select = vi.fn(() => ({ eq: planEqUser }));
+    const from = vi.fn().mockReturnValue({ select });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blockId: "block-1-exercise-1",
+            blockStatus: "completed",
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(503);
+    expect(payload).toEqual({
+      ok: false,
+      error: "Micro Sessions are still syncing in this environment.",
+    });
+    expect(from).toHaveBeenCalledWith("dryland_micro_plans");
   });
 });
