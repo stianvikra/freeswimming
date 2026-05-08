@@ -211,6 +211,122 @@ describe("DrylandBuilderHub", () => {
     });
   });
 
+  it("opens custom-only drafts in the simple build flow and saves row targets", async () => {
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        draft: DrylandSessionDraft;
+      };
+
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          session: buildRecord({
+            draft: body.draft,
+          }),
+          summary: buildSummary({
+            title: body.draft.title,
+            exerciseCount: body.draft.exercises.length,
+            setCount: body.draft.exercises.reduce(
+              (total, exercise) => total + exercise.sets.length,
+              0
+            ),
+          }),
+        }),
+      } as Response;
+    });
+
+    const baseDraft = buildDraft();
+    const customDraft = buildDraft({
+      exercises: [
+        {
+          ...baseDraft.exercises[0],
+          source: "custom",
+          bankExerciseId: null,
+          title: "Custom strength exercise",
+          summary: "Owner-authored dryland exercise.",
+          targetAreas: [],
+          sets: [
+            {
+              id: "set-1",
+              reps: 8,
+              holdSeconds: null,
+              loadKg: null,
+              restSeconds: 60,
+              isCompleted: false,
+              completedAt: null,
+            },
+          ],
+        },
+      ],
+    });
+
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({
+          selectedSession: buildRecord({ draft: customDraft }),
+          recentSessions: [buildSummary({ setCount: 1 })],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("dryland-manual-exercises")).toBeVisible();
+    expect(screen.getByText("Manual exercises")).toBeVisible();
+    expect(screen.getByText("Advanced: add from exercise bank")).toBeVisible();
+    expect(
+      within(screen.getByTestId("dryland-advanced-bank")).getByText("Air squat")
+    ).not.toBeVisible();
+
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
+      target: { value: "Single-leg squat" },
+    });
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-set-count-0"), {
+      target: { value: "4" },
+    });
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-target-0"), {
+      target: { value: "6" },
+    });
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-rest-0"), {
+      target: { value: "75" },
+    });
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-load-0"), {
+      target: { value: "12.5" },
+    });
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
+      target: { value: "Slow down." },
+    });
+
+    fireEvent.click(screen.getByTestId("dryland-builder-save"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const saveBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: DrylandSessionDraft;
+    };
+    const savedExercise = saveBody.draft.exercises[0];
+
+    expect(savedExercise?.source).toBe("custom");
+    expect(savedExercise?.bankExerciseId).toBeNull();
+    expect(savedExercise?.title).toBe("Single-leg squat");
+    expect(savedExercise?.notes).toBe("Slow down.");
+    expect(savedExercise?.sets).toHaveLength(4);
+    expect(
+      savedExercise?.sets.every(
+        (set) => set.reps === 6 && set.loadKg === 12.5 && set.restSeconds === 75
+      )
+    ).toBe(true);
+  });
+
   it("browses and deletes a dryland session from the list view", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

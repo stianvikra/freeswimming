@@ -6,6 +6,7 @@ export const DRYLAND_SESSION_STATUSES = ["draft", "in_progress", "completed"] as
 export const DRYLAND_EXERCISE_SOURCES = ["bank", "custom"] as const;
 export const DRYLAND_EXERCISE_MEDIA_TYPES = ["none", "image", "video"] as const;
 export const DRYLAND_EXERCISE_ACCENTS = ["blue", "teal", "amber", "rose", "emerald"] as const;
+export const DRYLAND_MAX_SETS_PER_EXERCISE = 20;
 
 export type DrylandSessionKind = (typeof DRYLAND_SESSION_KINDS)[number];
 export type DrylandSourceKind = (typeof DRYLAND_SOURCE_KINDS)[number];
@@ -279,6 +280,12 @@ function normalizeExercise(
   const rawSets = Array.isArray(input.sets) ? input.sets : [];
   if (rawSets.length === 0) {
     return { ok: false, error: `Exercise ${index + 1} needs at least one set.` };
+  }
+  if (rawSets.length > DRYLAND_MAX_SETS_PER_EXERCISE) {
+    return {
+      ok: false,
+      error: `Exercise ${index + 1} can have at most ${DRYLAND_MAX_SETS_PER_EXERCISE} sets.`,
+    };
   }
 
   const sets: DrylandSetDraft[] = [];

@@ -11,6 +11,7 @@ import {
   buildDrylandExecutionSummary,
   buildDrylandSetChipLabel,
   buildDrylandSummary,
+  DRYLAND_MAX_SETS_PER_EXERCISE,
   formatSecondsLabel,
   getDrylandSessionKindLabel,
   getDrylandStatusLabel,
@@ -35,6 +36,8 @@ type Props = {
 };
 
 type DrylandEditorMode = "train" | "build";
+
+const DRYLAND_MIN_SETS_PER_EXERCISE = 1;
 
 function accentClasses(accent: DrylandExerciseAccent) {
   switch (accent) {
@@ -78,6 +81,26 @@ function parseMinutesToSeconds(value: string) {
   const parsed = Number.parseFloat(trimmed);
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.round(parsed * 60);
+}
+
+function parsePositiveIntegerInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number.parseInt(trimmed, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseNonNegativeDecimalInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number.parseFloat(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function clampSetCount(value: string, fallback: number) {
+  const parsed = parsePositiveIntegerInput(value);
+  if (parsed === null) return Math.max(DRYLAND_MIN_SETS_PER_EXERCISE, fallback);
+  return Math.min(DRYLAND_MAX_SETS_PER_EXERCISE, parsed);
 }
 
 function buildNextSet(
@@ -191,7 +214,11 @@ export default function DrylandSessionEditor({
   onOpenExerciseDetail,
   onCloseExerciseDetail,
 }: Props) {
-  const [mode, setMode] = useState<DrylandEditorMode>("train");
+  const startsAsManualDraft =
+    savedSession.status === "draft" &&
+    !draft.startedAt &&
+    draft.exercises.every((exercise) => exercise.source === "custom");
+  const [mode, setMode] = useState<DrylandEditorMode>(startsAsManualDraft ? "build" : "train");
   const [openBuildExerciseIds, setOpenBuildExerciseIds] = useState<Set<string>>(() => new Set());
   const summary = buildDrylandSummary(draft);
   const executionSummary = buildDrylandExecutionSummary(draft);
@@ -267,6 +294,53 @@ export default function DrylandSessionEditor({
     setOpenBuildExerciseIds(new Set([nextExercise.id]));
   }
 
+  function updateExerciseSetCount(exerciseId: string, value: string) {
+    updateExercise(exerciseId, (exercise) => {
+      const nextSetCount = clampSetCount(value, exercise.sets.length);
+      if (nextSetCount === exercise.sets.length) return exercise;
+
+      if (nextSetCount < exercise.sets.length) {
+        return {
+          ...exercise,
+          sets: exercise.sets.slice(0, nextSetCount),
+        };
+      }
+
+      const sets = [...exercise.sets];
+      while (sets.length < nextSetCount) {
+        sets.push(buildNextSet(draft.sessionKind, sets.at(-1) ?? null));
+      }
+
+      return {
+        ...exercise,
+        sets,
+      };
+    });
+  }
+
+  function updateAllExerciseSetField(
+    exerciseId: string,
+    field: "reps" | "holdSeconds" | "loadKg" | "restSeconds",
+    value: string
+  ) {
+    updateExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.map((set) => {
+        if (field === "loadKg") {
+          return {
+            ...set,
+            loadKg: parseNonNegativeDecimalInput(value),
+          };
+        }
+
+        return {
+          ...set,
+          [field]: parsePositiveIntegerInput(value),
+        };
+      }),
+    }));
+  }
+
   function setBuildExerciseOpen(exerciseId: string, isOpen: boolean) {
     setOpenBuildExerciseIds((current) => {
       const next = new Set(current);
@@ -325,8 +399,7 @@ export default function DrylandSessionEditor({
         }
 
         const trimmed = value.trim();
-        const parsed = trimmed.length > 0 ? Number.parseInt(trimmed, 10) : Number.NaN;
-        const normalized = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        const normalized = parsePositiveIntegerInput(trimmed);
         return {
           ...set,
           [field]: normalized,
@@ -838,11 +911,16 @@ export default function DrylandSessionEditor({
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5">
+          <section
+            data-testid="dryland-manual-exercises"
+            className="rounded-[2rem] border border-slate-200 bg-white p-5"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-950">Add exercises</h3>
-                <p className="mt-1 text-sm text-slate-600">Pick from the bank or add custom.</p>
+                <h3 className="text-lg font-semibold text-slate-950">Manual exercises</h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Type the dryland work you already know you want to do, then train it.
+                </p>
               </div>
               <button
                 type="button"
@@ -850,41 +928,149 @@ export default function DrylandSessionEditor({
                 onClick={() => addCustomExercise(draft.sessionKind)}
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Add custom
+                Add exercise
               </button>
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {getDrylandExerciseBankByKind(draft.sessionKind).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-testid={`dryland-bank-add-${item.id}`}
-                  onClick={() => addBankExercise(draft.sessionKind, item.id)}
-                  className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${accentClasses(
-                    item.accent
-                  )}`}
-                >
-                  <span className="text-xs font-semibold tracking-wide uppercase opacity-80">
-                    {draft.sessionKind === "strength" ? "Strength" : "Stretch"}
-                  </span>
-                  <span className="mt-2 block text-base font-semibold">{item.title}</span>
-                  <span className="mt-2 line-clamp-2 block text-sm opacity-90">{item.summary}</span>
-                  <span className="mt-3 block text-xs opacity-80">
-                    {item.targetAreas.join(" · ")}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-950">Session plan</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Edit one exercise at a time. The plan stays compact until you open a movement.
-                </p>
-              </div>
+            <div className="mt-5 space-y-3">
+              {draft.exercises.map((exercise, exerciseIndex) => {
+                const firstSet = exercise.sets[0] ?? null;
+                const setTargetValue =
+                  draft.sessionKind === "strength"
+                    ? (firstSet?.reps ?? "")
+                    : (firstSet?.holdSeconds ?? "");
+                return (
+                  <article
+                    key={exercise.id}
+                    data-testid={`dryland-simple-exercise-row-${exerciseIndex}`}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                  >
+                    <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.35fr)_84px_112px_112px_112px_auto] lg:items-end">
+                      <label className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900">Exercise</span>
+                        <input
+                          data-testid={`dryland-manual-exercise-name-${exerciseIndex}`}
+                          value={exercise.title}
+                          onChange={(event) =>
+                            updateExercise(exercise.id, (current) => ({
+                              ...current,
+                              title: event.target.value,
+                              source: "custom",
+                              bankExerciseId: null,
+                            }))
+                          }
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 transition outline-none focus:border-blue-400"
+                        />
+                      </label>
+
+                      <label className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900">Sets</span>
+                        <input
+                          aria-label={`Set count for exercise ${exerciseIndex + 1}`}
+                          data-testid={`dryland-manual-exercise-set-count-${exerciseIndex}`}
+                          value={exercise.sets.length}
+                          onChange={(event) =>
+                            updateExerciseSetCount(exercise.id, event.target.value)
+                          }
+                          inputMode="numeric"
+                          min={DRYLAND_MIN_SETS_PER_EXERCISE}
+                          max={DRYLAND_MAX_SETS_PER_EXERCISE}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                        />
+                      </label>
+
+                      <label className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900">
+                          {draft.sessionKind === "strength" ? "Reps" : "Hold sec"}
+                        </span>
+                        <input
+                          aria-label={`${draft.sessionKind === "strength" ? "Reps" : "Hold seconds"} for exercise ${exerciseIndex + 1}`}
+                          data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
+                          value={setTargetValue}
+                          onChange={(event) =>
+                            updateAllExerciseSetField(
+                              exercise.id,
+                              draft.sessionKind === "strength" ? "reps" : "holdSeconds",
+                              event.target.value
+                            )
+                          }
+                          inputMode="numeric"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                        />
+                      </label>
+
+                      <label className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900">Rest sec</span>
+                        <input
+                          aria-label={`Rest seconds for exercise ${exerciseIndex + 1}`}
+                          data-testid={`dryland-manual-exercise-rest-${exerciseIndex}`}
+                          value={firstSet?.restSeconds ?? ""}
+                          onChange={(event) =>
+                            updateAllExerciseSetField(
+                              exercise.id,
+                              "restSeconds",
+                              event.target.value
+                            )
+                          }
+                          inputMode="numeric"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                        />
+                      </label>
+
+                      <label className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900">Load kg</span>
+                        {draft.sessionKind === "strength" ? (
+                          <input
+                            aria-label={`Load kg for exercise ${exerciseIndex + 1}`}
+                            data-testid={`dryland-manual-exercise-load-${exerciseIndex}`}
+                            value={firstSet?.loadKg ?? ""}
+                            onChange={(event) =>
+                              updateAllExerciseSetField(exercise.id, "loadKg", event.target.value)
+                            }
+                            inputMode="decimal"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                          />
+                        ) : (
+                          <span className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
+                            N/A
+                          </span>
+                        )}
+                      </label>
+
+                      <button
+                        type="button"
+                        data-testid={`dryland-exercise-remove-${exerciseIndex}`}
+                        onClick={() => removeExercise(exercise.id)}
+                        disabled={draft.exercises.length === 1}
+                        className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    <label className="mt-3 grid gap-1">
+                      <span className="text-sm font-medium text-slate-900">Notes</span>
+                      <input
+                        data-testid={`dryland-manual-exercise-notes-${exerciseIndex}`}
+                        value={exercise.notes}
+                        onChange={(event) =>
+                          updateExercise(exercise.id, (current) => ({
+                            ...current,
+                            notes: event.target.value,
+                            source: "custom",
+                            bankExerciseId: null,
+                          }))
+                        }
+                        placeholder="Optional cue"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                      />
+                    </label>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 flex justify-end">
               <button
                 type="button"
                 onClick={() => setMode("train")}
@@ -894,310 +1080,386 @@ export default function DrylandSessionEditor({
               </button>
             </div>
 
-            <div className="mt-5 space-y-3">
-              {draft.exercises.map((exercise, exerciseIndex) => {
-                const isBuildExerciseOpen = openBuildExerciseIds.has(exercise.id);
-                const completed = countCompletedSets(exercise);
-                return (
-                  <article
-                    key={exercise.id}
-                    data-testid={`dryland-exercise-card-${exerciseIndex}`}
-                    className={`rounded-2xl border transition ${
-                      isBuildExerciseOpen
-                        ? "border-blue-200 bg-blue-50/35"
-                        : "border-slate-200 bg-white"
-                    }`}
+            <details
+              data-testid="dryland-advanced-bank"
+              className="mt-5 rounded-2xl border border-slate-200 bg-white"
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50">
+                <span>Advanced: add from exercise bank</span>
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Optional
+                </span>
+              </summary>
+              <div className="grid gap-3 border-t border-slate-200 p-4 md:grid-cols-3">
+                {getDrylandExerciseBankByKind(draft.sessionKind).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`dryland-bank-add-${item.id}`}
+                    onClick={() => addBankExercise(draft.sessionKind, item.id)}
+                    className={`rounded-2xl border p-4 text-left transition hover:shadow-sm ${accentClasses(
+                      item.accent
+                    )}`}
                   >
-                    <div className="grid gap-3 p-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
-                        {exerciseIndex + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <h4 className="text-base font-semibold text-slate-950">{exercise.title}</h4>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {completed}/{exercise.sets.length} sets · {getMediaSlotLabel(exercise)} ·{" "}
-                          {exercise.targetAreas.slice(0, 3).join(" · ") || "No target areas"}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 md:justify-end">
-                        <button
-                          type="button"
-                          onClick={() => setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                        >
-                          {isBuildExerciseOpen ? "Close" : "Edit"}
-                        </button>
-                        <button
-                          type="button"
-                          data-testid={`dryland-exercise-detail-${exerciseIndex}`}
-                          onClick={() => onOpenExerciseDetail(exercise.id)}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                        >
-                          Details
-                        </button>
-                      </div>
-                    </div>
+                    <span className="text-xs font-semibold tracking-wide uppercase opacity-80">
+                      {draft.sessionKind === "strength" ? "Strength" : "Stretch"}
+                    </span>
+                    <span className="mt-2 block text-base font-semibold">{item.title}</span>
+                    <span className="mt-2 line-clamp-2 block text-sm opacity-90">
+                      {item.summary}
+                    </span>
+                    <span className="mt-3 block text-xs opacity-80">
+                      {item.targetAreas.join(" · ")}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </details>
+          </section>
 
-                    {isBuildExerciseOpen ? (
-                      <div className="border-t border-blue-100 p-4">
-                        <div className="grid gap-3 lg:grid-cols-[minmax(180px,0.75fr)_minmax(0,1fr)_auto]">
-                          <input
-                            data-testid={`dryland-exercise-title-${exerciseIndex}`}
-                            value={exercise.title}
-                            onChange={(event) =>
-                              updateExercise(exercise.id, (current) => ({
-                                ...current,
-                                title: event.target.value,
-                              }))
-                            }
-                            className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-900 transition outline-none focus:border-blue-400"
-                          />
-                          <textarea
-                            data-testid={`dryland-exercise-summary-${exerciseIndex}`}
-                            value={exercise.summary}
-                            onChange={(event) =>
-                              updateExercise(exercise.id, (current) => ({
-                                ...current,
-                                summary: event.target.value,
-                              }))
-                            }
-                            rows={2}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none focus:border-blue-400"
-                          />
+          <details
+            data-testid="dryland-advanced-exercise-details"
+            className="rounded-[2rem] border border-slate-200 bg-white"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-slate-50">
+              <div>
+                <h3 className="text-base font-semibold text-slate-950">
+                  Advanced exercise details
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Open this only when you need per-set edits, target areas, how-to notes, or media
+                  placeholders.
+                </p>
+              </div>
+              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Optional
+              </span>
+            </summary>
+
+            <div className="border-t border-slate-200 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-950">Detailed session plan</h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Edit one exercise at a time when the simple row is not enough.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode("train")}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 active:bg-slate-900"
+                >
+                  Train this
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {draft.exercises.map((exercise, exerciseIndex) => {
+                  const isBuildExerciseOpen = openBuildExerciseIds.has(exercise.id);
+                  const completed = countCompletedSets(exercise);
+                  return (
+                    <article
+                      key={exercise.id}
+                      data-testid={`dryland-exercise-card-${exerciseIndex}`}
+                      className={`rounded-2xl border transition ${
+                        isBuildExerciseOpen
+                          ? "border-blue-200 bg-blue-50/35"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="grid gap-3 p-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                          {exerciseIndex + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <h4 className="text-base font-semibold text-slate-950">
+                            {exercise.title}
+                          </h4>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {completed}/{exercise.sets.length} sets · {getMediaSlotLabel(exercise)}{" "}
+                            · {exercise.targetAreas.slice(0, 3).join(" · ") || "No target areas"}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 md:justify-end">
                           <button
                             type="button"
-                            data-testid={`dryland-exercise-remove-${exerciseIndex}`}
-                            onClick={() => removeExercise(exercise.id)}
-                            disabled={draft.exercises.length === 1}
-                            className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={() => setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                           >
-                            Remove
+                            {isBuildExerciseOpen ? "Close" : "Edit"}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`dryland-exercise-detail-${exerciseIndex}`}
+                            onClick={() => onOpenExerciseDetail(exercise.id)}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                          >
+                            Details
                           </button>
                         </div>
+                      </div>
 
-                        <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-                          <div className="space-y-3">
-                            <label className="block space-y-2">
-                              <span className="text-sm font-medium text-slate-900">How-to</span>
-                              <textarea
-                                value={exercise.howTo}
-                                onChange={(event) =>
-                                  updateExercise(exercise.id, (current) => ({
-                                    ...current,
-                                    howTo: event.target.value,
-                                  }))
-                                }
-                                rows={3}
-                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none focus:border-blue-400"
-                              />
-                            </label>
-                            <div>
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <h5 className="text-sm font-semibold text-slate-900">
-                                  Set targets
-                                </h5>
-                                <button
-                                  type="button"
-                                  data-testid={`dryland-add-set-${exerciseIndex}`}
-                                  onClick={() => addSet(exercise.id)}
-                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                                >
-                                  Add set
-                                </button>
-                              </div>
-                              <div className="mt-3 hidden grid-cols-[64px_minmax(80px,1fr)_minmax(80px,1fr)_minmax(90px,1fr)_86px_76px] gap-2 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 sm:grid">
-                                <span>Set</span>
-                                <span>{draft.sessionKind === "strength" ? "Reps" : "Hold"}</span>
-                                <span>Pause</span>
-                                <span>Load</span>
-                                <span>Status</span>
-                                <span className="text-right">Action</span>
-                              </div>
-                              <div className="divide-y divide-slate-200">
-                                {exercise.sets.map((set, setIndex) => {
-                                  const isNext = executionSummary.nextSet?.setId === set.id;
-                                  return (
-                                    <div
-                                      key={set.id}
-                                      className={`grid gap-2 py-3 sm:grid-cols-[64px_minmax(80px,1fr)_minmax(80px,1fr)_minmax(90px,1fr)_86px_76px] sm:items-center ${
-                                        isNext ? "rounded-2xl bg-blue-50 px-3 sm:-mx-3" : ""
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between gap-3 sm:block">
-                                        <span className="text-sm font-semibold text-slate-900">
-                                          Set {setIndex + 1}
-                                        </span>
+                      {isBuildExerciseOpen ? (
+                        <div className="border-t border-blue-100 p-4">
+                          <div className="grid gap-3 lg:grid-cols-[minmax(180px,0.75fr)_minmax(0,1fr)_auto]">
+                            <input
+                              data-testid={`dryland-exercise-title-${exerciseIndex}`}
+                              value={exercise.title}
+                              onChange={(event) =>
+                                updateExercise(exercise.id, (current) => ({
+                                  ...current,
+                                  title: event.target.value,
+                                }))
+                              }
+                              className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-900 transition outline-none focus:border-blue-400"
+                            />
+                            <textarea
+                              data-testid={`dryland-exercise-summary-${exerciseIndex}`}
+                              value={exercise.summary}
+                              onChange={(event) =>
+                                updateExercise(exercise.id, (current) => ({
+                                  ...current,
+                                  summary: event.target.value,
+                                }))
+                              }
+                              rows={2}
+                              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none focus:border-blue-400"
+                            />
+                            <button
+                              type="button"
+                              data-testid={`dryland-advanced-exercise-remove-${exerciseIndex}`}
+                              onClick={() => removeExercise(exercise.id)}
+                              disabled={draft.exercises.length === 1}
+                              className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+                            <div className="space-y-3">
+                              <label className="block space-y-2">
+                                <span className="text-sm font-medium text-slate-900">How-to</span>
+                                <textarea
+                                  value={exercise.howTo}
+                                  onChange={(event) =>
+                                    updateExercise(exercise.id, (current) => ({
+                                      ...current,
+                                      howTo: event.target.value,
+                                    }))
+                                  }
+                                  rows={3}
+                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none focus:border-blue-400"
+                                />
+                              </label>
+                              <div>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <h5 className="text-sm font-semibold text-slate-900">
+                                    Set targets
+                                  </h5>
+                                  <button
+                                    type="button"
+                                    data-testid={`dryland-add-set-${exerciseIndex}`}
+                                    onClick={() => addSet(exercise.id)}
+                                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                                  >
+                                    Add set
+                                  </button>
+                                </div>
+                                <div className="mt-3 hidden grid-cols-[64px_minmax(80px,1fr)_minmax(80px,1fr)_minmax(90px,1fr)_86px_76px] gap-2 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 sm:grid">
+                                  <span>Set</span>
+                                  <span>{draft.sessionKind === "strength" ? "Reps" : "Hold"}</span>
+                                  <span>Pause</span>
+                                  <span>Load</span>
+                                  <span>Status</span>
+                                  <span className="text-right">Action</span>
+                                </div>
+                                <div className="divide-y divide-slate-200">
+                                  {exercise.sets.map((set, setIndex) => {
+                                    const isNext = executionSummary.nextSet?.setId === set.id;
+                                    return (
+                                      <div
+                                        key={set.id}
+                                        className={`grid gap-2 py-3 sm:grid-cols-[64px_minmax(80px,1fr)_minmax(80px,1fr)_minmax(90px,1fr)_86px_76px] sm:items-center ${
+                                          isNext ? "rounded-2xl bg-blue-50 px-3 sm:-mx-3" : ""
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between gap-3 sm:block">
+                                          <span className="text-sm font-semibold text-slate-900">
+                                            Set {setIndex + 1}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            data-testid={`dryland-set-chip-${exerciseIndex}-${setIndex}`}
+                                            aria-pressed={set.isCompleted}
+                                            onClick={() => toggleSetCompletion(exercise.id, set.id)}
+                                            className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition sm:hidden ${getSetStatusClasses(
+                                              set,
+                                              isNext
+                                            )}`}
+                                          >
+                                            {getSetStatusLabel(set, isNext)}
+                                          </button>
+                                        </div>
+
+                                        <label className="grid gap-1">
+                                          <SetMetricLabel>
+                                            {draft.sessionKind === "strength" ? "Reps" : "Hold sec"}
+                                          </SetMetricLabel>
+                                          <input
+                                            value={
+                                              draft.sessionKind === "strength"
+                                                ? (set.reps ?? "")
+                                                : (set.holdSeconds ?? "")
+                                            }
+                                            onChange={(event) =>
+                                              updateSetField(
+                                                exercise.id,
+                                                set.id,
+                                                draft.sessionKind === "strength"
+                                                  ? "reps"
+                                                  : "holdSeconds",
+                                                event.target.value
+                                              )
+                                            }
+                                            inputMode="numeric"
+                                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                          />
+                                        </label>
+
+                                        <label className="grid gap-1">
+                                          <SetMetricLabel>Pause sec</SetMetricLabel>
+                                          <input
+                                            value={set.restSeconds ?? ""}
+                                            onChange={(event) =>
+                                              updateSetField(
+                                                exercise.id,
+                                                set.id,
+                                                "restSeconds",
+                                                event.target.value
+                                              )
+                                            }
+                                            inputMode="numeric"
+                                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                          />
+                                        </label>
+
+                                        <label className="grid gap-1">
+                                          <SetMetricLabel>Load kg</SetMetricLabel>
+                                          {draft.sessionKind === "strength" ? (
+                                            <input
+                                              value={set.loadKg ?? ""}
+                                              onChange={(event) =>
+                                                updateSetField(
+                                                  exercise.id,
+                                                  set.id,
+                                                  "loadKg",
+                                                  event.target.value
+                                                )
+                                              }
+                                              inputMode="decimal"
+                                              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                            />
+                                          ) : (
+                                            <span className="hidden text-sm text-slate-400 sm:block">
+                                              N/A
+                                            </span>
+                                          )}
+                                        </label>
+
                                         <button
                                           type="button"
-                                          data-testid={`dryland-set-chip-${exerciseIndex}-${setIndex}`}
+                                          data-testid={`dryland-set-chip-desktop-${exerciseIndex}-${setIndex}`}
                                           aria-pressed={set.isCompleted}
                                           onClick={() => toggleSetCompletion(exercise.id, set.id)}
-                                          className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition sm:hidden ${getSetStatusClasses(
+                                          className={`hidden h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition sm:inline-flex ${getSetStatusClasses(
                                             set,
                                             isNext
                                           )}`}
                                         >
                                           {getSetStatusLabel(set, isNext)}
                                         </button>
+
+                                        <button
+                                          type="button"
+                                          data-testid={`dryland-set-remove-${exerciseIndex}-${setIndex}`}
+                                          onClick={() => removeSet(exercise.id, set.id)}
+                                          disabled={exercise.sets.length === 1}
+                                          className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 sm:justify-self-end"
+                                        >
+                                          Remove
+                                        </button>
                                       </div>
-
-                                      <label className="grid gap-1">
-                                        <SetMetricLabel>
-                                          {draft.sessionKind === "strength" ? "Reps" : "Hold sec"}
-                                        </SetMetricLabel>
-                                        <input
-                                          value={
-                                            draft.sessionKind === "strength"
-                                              ? (set.reps ?? "")
-                                              : (set.holdSeconds ?? "")
-                                          }
-                                          onChange={(event) =>
-                                            updateSetField(
-                                              exercise.id,
-                                              set.id,
-                                              draft.sessionKind === "strength"
-                                                ? "reps"
-                                                : "holdSeconds",
-                                              event.target.value
-                                            )
-                                          }
-                                          inputMode="numeric"
-                                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                                        />
-                                      </label>
-
-                                      <label className="grid gap-1">
-                                        <SetMetricLabel>Pause sec</SetMetricLabel>
-                                        <input
-                                          value={set.restSeconds ?? ""}
-                                          onChange={(event) =>
-                                            updateSetField(
-                                              exercise.id,
-                                              set.id,
-                                              "restSeconds",
-                                              event.target.value
-                                            )
-                                          }
-                                          inputMode="numeric"
-                                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                                        />
-                                      </label>
-
-                                      <label className="grid gap-1">
-                                        <SetMetricLabel>Load kg</SetMetricLabel>
-                                        {draft.sessionKind === "strength" ? (
-                                          <input
-                                            value={set.loadKg ?? ""}
-                                            onChange={(event) =>
-                                              updateSetField(
-                                                exercise.id,
-                                                set.id,
-                                                "loadKg",
-                                                event.target.value
-                                              )
-                                            }
-                                            inputMode="decimal"
-                                            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                                          />
-                                        ) : (
-                                          <span className="hidden text-sm text-slate-400 sm:block">
-                                            N/A
-                                          </span>
-                                        )}
-                                      </label>
-
-                                      <button
-                                        type="button"
-                                        data-testid={`dryland-set-chip-desktop-${exerciseIndex}-${setIndex}`}
-                                        aria-pressed={set.isCompleted}
-                                        onClick={() => toggleSetCompletion(exercise.id, set.id)}
-                                        className={`hidden h-9 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition sm:inline-flex ${getSetStatusClasses(
-                                          set,
-                                          isNext
-                                        )}`}
-                                      >
-                                        {getSetStatusLabel(set, isNext)}
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        data-testid={`dryland-set-remove-${exerciseIndex}-${setIndex}`}
-                                        onClick={() => removeSet(exercise.id, set.id)}
-                                        disabled={exercise.sets.length === 1}
-                                        className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 sm:justify-self-end"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            <h5 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
-                              Guidance
-                            </h5>
-                            <div className="mt-3 space-y-3">
-                              <label className="block space-y-2">
-                                <span className="text-sm font-medium text-slate-900">
-                                  Target areas
-                                </span>
-                                <input
-                                  value={exercise.targetAreas.join(", ")}
-                                  onChange={(event) =>
-                                    updateExercise(exercise.id, (current) => ({
-                                      ...current,
-                                      targetAreas: event.target.value
-                                        .split(",")
-                                        .map((entry) => entry.trim())
-                                        .filter(Boolean)
-                                        .slice(0, 8),
-                                    }))
-                                  }
-                                  placeholder="Glutes, Core, Shoulders"
-                                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                                />
-                              </label>
-                              <label className="block space-y-2">
-                                <span className="text-sm font-medium text-slate-900">Notes</span>
-                                <input
-                                  value={exercise.notes}
-                                  onChange={(event) =>
-                                    updateExercise(exercise.id, (current) => ({
-                                      ...current,
-                                      notes: event.target.value,
-                                    }))
-                                  }
-                                  placeholder="Optional cue"
-                                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                                />
-                              </label>
-                              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
-                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                  Common mistake
-                                </p>
-                                <p className="mt-1 text-sm text-slate-700">Placeholder</p>
-                              </div>
-                              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
-                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                  {getMediaSlotLabel(exercise)}
-                                </p>
-                                <p className="mt-1 text-sm text-slate-700">
-                                  Real media attaches here later.
-                                </p>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                              <h5 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
+                                Guidance
+                              </h5>
+                              <div className="mt-3 space-y-3">
+                                <label className="block space-y-2">
+                                  <span className="text-sm font-medium text-slate-900">
+                                    Target areas
+                                  </span>
+                                  <input
+                                    value={exercise.targetAreas.join(", ")}
+                                    onChange={(event) =>
+                                      updateExercise(exercise.id, (current) => ({
+                                        ...current,
+                                        targetAreas: event.target.value
+                                          .split(",")
+                                          .map((entry) => entry.trim())
+                                          .filter(Boolean)
+                                          .slice(0, 8),
+                                      }))
+                                    }
+                                    placeholder="Glutes, Core, Shoulders"
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                                <label className="block space-y-2">
+                                  <span className="text-sm font-medium text-slate-900">Notes</span>
+                                  <input
+                                    value={exercise.notes}
+                                    onChange={(event) =>
+                                      updateExercise(exercise.id, (current) => ({
+                                        ...current,
+                                        notes: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="Optional cue"
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                  />
+                                </label>
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+                                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    Common mistake
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-700">Placeholder</p>
+                                </div>
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3">
+                                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    {getMediaSlotLabel(exercise)}
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-700">
+                                    Real media attaches here later.
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })}
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
             </div>
-          </section>
+          </details>
         </section>
       )}
 
