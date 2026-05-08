@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-08`
 - `updated`: `2026-05-08`
 
-## Execution Status
+## Completion Status
 
-This is the active first execution slice. It creates documentation architecture and design rules only. It does not create the reusable asset pack or claim verified Final Cut Pro recipes yet.
+This Phase 1 docs-only execution slice is complete. It created documentation architecture and design rules only. It did not create the reusable asset pack or claim verified Final Cut Pro recipes.
 
 ## Goal
 
@@ -226,3 +226,29 @@ N/A because Phase 1 changes internal production docs only and does not change ap
 - `2026-05-08 | planned | created as the recommended first execution slice for the visual coaching system; stops at design language and production architecture before assets/FCP recipes | next: owner selects this brief when ready to start Phase 1`
 - `2026-05-08 | in-progress | owner approved execution and added requirement that the system must support course videos plus social formats; expanded Phase 1 scope to cover 16:9, 9:16, and 1:1 formats, footage matrix, caption/audio rules, review checklist, and anti-patterns before asset production | next: create docs/video-production/visual-coaching-system Phase 1 documentation, run docs-only gates, then open PR`
 - `2026-05-08 | local validation | created the Phase 1 documentation set under docs/video-production/visual-coaching-system and updated parent/child brief links; local docs-only validation passed: git diff --check PASS, npm run lint:briefs:all PASS, npm run verify:pre-pr PASS (docs-only lane) | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-05-08 | 40471bb (main) | PR #648 merged after local npm run verify:pre-pr PASS, local npm run verify:pre-merge PASS, and required GitHub checks PASS; Phase 1 system docs are now on main under docs/video-production/visual-coaching-system | next: move to asset-pack child brief when ready`
+
+## Closeout Record
+
+- `PR`: `#648`
+- `merge`: `docs/visual-coaching-phase-1` -> `main`
+- `commit`: `40471bb`
+- `result`: Phase 1 visual coaching system documentation is complete for brand extension, overlay language, 16:9/9:16/1:1 formats, lesson blueprints, production architecture, naming, exports, asset requirements, audio/caption policy, FCP recipe verification planning, review checklist, and unknowns/decisions.
+- `validation`: `npm run verify:pre-pr` PASS (docs-only lane), `npm run verify:pre-merge` PASS (docs-only lane), GitHub required checks PASS.
+- `10/10 claim`: yes for the Phase 1 docs-only scope.
+
+## Achieved Target Scores
+
+| Category                                 | Score | Evidence                                                                                                           |
+| ---------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------ |
+| Product goals and IA                     | `5/5` | Phase 1 docs separate brand, overlays, formats, lessons, naming, exports, and FCP verification.                    |
+| UX flow clarity                          | `5/5` | Future editors have one documented map for what to design, what not to design, and how to adapt formats.           |
+| Visual design quality                    | `5/5` | Swimmer-first, format-safe, brand-aligned overlay and anti-pattern rules are documented.                           |
+| Accessibility (a11y)                     | `5/5` | Mobile readability, caption separation, contrast, safe zones, and non-color-only meaning are required.             |
+| Data placement and sync boundaries       | `5/5` | Source footage, FCP libraries, generated assets, public runtime assets, and exports have explicit boundaries.      |
+| Reliability and failure handling         | `5/5` | FCP verification plan, review checklist, unknowns, and troubleshooting ownership prevent unverified recipe drift.  |
+| Content governance                       | `5/5` | Stable production IDs, asset IDs, format naming, export naming, and decision logging are defined.                  |
+| Incident response and support operations | `5/5` | Review checklist and unknowns/decisions create repair paths for bad exports, missing assets, and recipe gaps.      |
+| Stack-fit and dependency discipline      | `5/5` | Docs-only Markdown approach reused existing brand assets and added no dependencies or runtime code.                |
+| Testing and QA automation                | `5/5` | `lint:briefs:all`, `verify:pre-pr`, `verify:pre-merge`, and GitHub checks passed.                                  |
+| Scalability and cost efficiency          | `5/5` | Folder, naming, asset, and format architecture supports many drills and future editors without one-off recreation. |

@@ -16,7 +16,7 @@ Create a reusable FreeSwimming visual coaching asset pack optimized for Final Cu
 
 - Parent: [Visual Coaching Production System Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-production-system-parent-10-10.md)
 - Phase 1 should define the asset requirements first:
-  - [Visual Coaching Phase 1](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
+  - [Visual Coaching Phase 1](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
 - Existing brand source:
   - [FreeSwimming Brand Usage](/Users/stianvikra/freeswimming/docs/design/brand-logo-usage.md)
 
@@ -151,3 +151,4 @@ N/A because this asset pack changes internal production assets only and no user/
 ## Checkpoint Log
 
 - `2026-05-08 | planned | created asset-system child brief for reusable FCP-ready overlays, watermarks, lower thirds, title cards, and visual coaching graphics | next: execute after Phase 1 defines exact asset requirements`
+- `2026-05-08 | dependency ready | Phase 1 merged in PR #648 and defines multi-format asset requirements for 16:9, 9:16, and 1:1 outputs | next: execute this asset-pack child brief when ready`
