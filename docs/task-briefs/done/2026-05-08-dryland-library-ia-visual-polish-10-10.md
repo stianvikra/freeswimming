@@ -172,6 +172,7 @@ Critical target categories for a `10/10` claim:
 - Planned follow-up: app-wide control sizing and action-color audit using the same Apple HIG-inspired standard across all relevant app surfaces.
 - Planned follow-up: reusable `My Library` workspace shell for the blue-to-light page background, header action row, spacing, and standard card rhythm across My Library, Swim Sessions, Dryland Sessions, Goals, My Training, My Swim Profile, and Program builder. Keep admin, auth, checkout, print/export, and public marketing/course surfaces on their own visual systems unless explicitly redesigned.
 - Planned follow-up: session planning model shared by Swim Sessions and Dryland Sessions: whole-session calendar scheduling and micro-plan/week planning.
+- Planned follow-up: dryland data-contract cleanup for legacy `focus_text`/`focusText`: audit readers/writers, decide preserve-vs-migrate for historical rows, update generated DB/types, and drop/deprecate only through an explicit migration with backward-compatibility evidence.
 
 ## Acceptance Criteria
 
