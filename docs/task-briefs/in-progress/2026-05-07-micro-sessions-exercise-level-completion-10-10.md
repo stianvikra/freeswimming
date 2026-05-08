@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-07-micro-sessions-exercise-level-completion-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
-- `updated`: `2026-05-07`
+- `updated`: `2026-05-08`
 
 ## Draft Status
 
-This brief is a draft planning artifact until execution starts. Before implementation, the owner and assistant must review and finalize scope, UX decisions, data/storage decisions, acceptance criteria, validation gates, scorecard targets, and execution order. Move the brief to `in-progress` only after that final pre-start review is complete.
+Execution started on `2026-05-08` after owner instruction: `execute micro sessions`.
 
 ## Goal
 
@@ -29,7 +29,7 @@ This should be implemented after Manual Dryland Simple Sessions.
 ## Dependencies And Reference Surfaces
 
 - Recommended prerequisite:
-  - `docs/task-briefs/planned/2026-05-07-manual-dryland-simple-sessions-10-10.md`
+  - `docs/task-briefs/done/2026-05-07-manual-dryland-simple-sessions-10-10.md`
 - Existing dryland foundation:
   - `docs/task-briefs/done/2026-03-29-dryland-builder-foundation-strength-and-stretching-10-10.md`
   - `docs/task-briefs/done/2026-05-05-dryland-build-execute-ergonomics-v2-10-10.md`
@@ -52,9 +52,18 @@ This should be implemented after Manual Dryland Simple Sessions.
 - Completion percentage is `completed blocks / total blocks`.
 - The UI may also show `3/8 blocks complete`.
 - Blocks can be marked `complete`, `not complete`, and optionally `skipped` if skipped is represented honestly and not counted as completed.
-- Ufinished blocks remain visible until the plan ends; whether they roll over must be explicit.
+- Unfinished blocks remain visible until the plan ends; whether they roll over must be explicit.
 - Recovery/rest must not be treated as failure.
 - The implementation must avoid shame copy, aggressive streak loss, or pressure to overtrain.
+
+## Implementation Decisions
+
+- Micro plans live inside the existing authenticated `/my-library/dryland` route, not a new top-level route.
+- `dryland_micro_plans` is a separate server-canonical table because completion must be durable and must not rewrite `dryland_sessions.exercises`.
+- Each plan snapshots one block per source dryland exercise; later source-session edits or deletes do not silently mutate an active plan.
+- One active/paused plan per user is allowed at a time; completed plans can remain visible as evidence and no longer block a new plan.
+- Progress is `completed blocks / total blocks`; skipped blocks remain visible and do not count as completed.
+- V1 adds no push, email, SMS, calendar, wearable, or analytics event delivery. Analytics event taxonomy is deferred until the Home/reminder or habit-loop measurement brief explicitly scopes safe payloads.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -237,8 +246,10 @@ Required because this is UI work.
 
 This changes user workflow behavior.
 
-- Update Help/Guide assertions, `docs/user-flow-map.md`, and runbook/support notes if new labels, recovery states, APIs, or route surfaces are introduced.
-- If no support docs are changed, record explicit no-impact rationale with route/label/support sweep evidence.
+- Updated `docs/user-flow-map.md` so `/my-library/dryland` includes weekly `Micro Sessions` exercise-block completion.
+- Updated `docs/runbooks/auth-account-support.md` so support guidance describes Micro Sessions under Dryland Sessions.
+- Updated `docs/api-contracts.md` and `docs/architecture/data-access-authz-cache-contract-registry.md` for the new protected micro-plan API routes.
+- No admin Help/Guide assertion update is required because this slice changes no admin editor, admin note, or operator CRUD workflow.
 
 ## Route, Label, And Support-Surface Sweep
 
@@ -255,6 +266,15 @@ Search at minimum:
 - `/my-library/dryland`
 - `api/my-library/dryland`
 
+Evidence:
+
+- Command: `rg -n --hidden --glob '!node_modules' --glob '!.next' "dryland|micro|Micro Sessions|complete|progress|week|/my-library/dryland|api/my-library/dryland" app components tests docs scripts package.json`
+- Fallout handled in this slice:
+  - product route copy updated in `app/my-library/dryland/page.tsx`,
+  - dryland UI/test locators added for `Micro Sessions`,
+  - API contracts and authz/cache registry updated for `dryland/micro-plans`,
+  - support guidance updated in `docs/user-flow-map.md` and `docs/runbooks/auth-account-support.md`.
+
 ## Execution Notes
 
 - Start from clean `main`.
@@ -266,3 +286,7 @@ Search at minimum:
 ## Checkpoint Log
 
 - `2026-05-07 | planned | created after owner proposed breaking strength/stretching work into micro exercises with 0-100% completion over a week | next: wait until manual simple dryland path is selected or shipped`
+- `2026-05-08 | in-progress | owner said execute; branch feature/micro-sessions-exercise-completion-10-10 started from clean main after Manual Dryland Simple Sessions shipped | next: implement micro-plan persistence, API, My Library dryland UI, tests, route/support sweep, and screenshot handoff`
+- `2026-05-08 | in-progress | implemented first pass of dryland micro-plan domain, Supabase migration/types, owner-scoped API routes, My Library dryland panel, route/support docs, targeted domain/API/component/e2e tests, and route-label-support sweep | validation: targeted Vitest passed (5 files, 23 tests) | next: run formatting/type/lint checks, targeted Playwright if environment allows, then capture screenshot handoff`
+- `2026-05-08 | screenshot handoff | targeted Vitest passed (5 files, 23 tests), targeted ESLint passed, npm run typecheck passed, npm run lint:briefs:all passed, targeted dryland Playwright ran but skipped because local dev-login Supabase auth returned HTML instead of JSON, and after/reference screenshots were captured in output/micro-sessions-exercise-completion-20260508-060809 using isolated local fixture props for the authenticated surface | next: wait for owner screenshot approval before verify:pre-pr, commit, push, and PR automation`
+- `2026-05-08 | pre-pr verified | owner approved screenshot handoff; npm run verify:pre-pr passed full lane (lint, typecheck, unit, build, perf budgets, E2E: 82 passed / 374 skipped under existing auth/dev-login skip behavior). Perf trend reported 4 consecutive weekly green runs and recommended tightening one stretch target; decision for this feature PR is hold budget changes and prompt owner to tighten in a dedicated perf-budget maintenance slice because this scope changes dryland micro-session behavior, not core route budgets | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`

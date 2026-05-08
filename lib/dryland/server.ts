@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
+import {
+  buildDrylandMicroBlocksFromDraft,
+  buildDrylandMicroPlanRecord,
+  buildDrylandMicroPlanWeekWindow,
+} from "@/lib/dryland/micro-plans";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import {
   buildDrylandSessionRecord,
@@ -17,6 +22,8 @@ type TypedSupabaseClient = SupabaseClient<Database>;
 type DrylandRow = Database["public"]["Tables"]["dryland_sessions"]["Row"];
 type DrylandInsert = Database["public"]["Tables"]["dryland_sessions"]["Insert"];
 type DrylandUpdate = Database["public"]["Tables"]["dryland_sessions"]["Update"];
+type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
+type DrylandMicroPlanInsert = Database["public"]["Tables"]["dryland_micro_plans"]["Insert"];
 
 export const DRYLAND_SELECT = `
   id,
@@ -31,6 +38,22 @@ export const DRYLAND_SELECT = `
   started_at,
   completed_at,
   actual_duration_seconds,
+  created_at,
+  updated_at
+`;
+
+export const DRYLAND_MICRO_PLAN_SELECT = `
+  id,
+  user_id,
+  source_dryland_session_id,
+  status,
+  session_kind,
+  source_session_title,
+  title,
+  timezone,
+  week_starts_at,
+  week_ends_at,
+  blocks,
   created_at,
   updated_at
 `;
@@ -88,6 +111,30 @@ export function buildDrylandUpdate(draft: unknown): DrylandUpdate {
   };
 }
 
+export function buildDrylandMicroPlanInsert(
+  userId: string,
+  sourceSession: DrylandRow,
+  timezoneInput: unknown,
+  now = new Date()
+): DrylandMicroPlanInsert {
+  const sourceRecord = buildDrylandSessionRecord(sourceSession);
+  const blocks = buildDrylandMicroBlocksFromDraft(sourceRecord.draft);
+  const weekWindow = buildDrylandMicroPlanWeekWindow(now, timezoneInput);
+
+  return {
+    user_id: userId,
+    source_dryland_session_id: sourceSession.id,
+    status: "active",
+    session_kind: sourceRecord.draft.sessionKind,
+    source_session_title: sourceRecord.draft.title,
+    title: `Micro plan: ${sourceRecord.draft.title}`.slice(0, 120),
+    timezone: weekWindow.timezone,
+    week_starts_at: weekWindow.weekStartsAt,
+    week_ends_at: weekWindow.weekEndsAt,
+    blocks: blocks as unknown as Json,
+  };
+}
+
 export function normalizeDrylandSourceKind(
   value: DrylandSaveRequestBody["sourceKind"]
 ): DrylandSourceKind {
@@ -105,7 +152,7 @@ export async function loadDrylandLibrarySnapshot(
   userId: string,
   selectedSessionId: string | null
 ): Promise<DrylandLibrarySnapshot> {
-  const [recentResult, selectedResult] = await Promise.all([
+  const [recentResult, selectedResult, microPlanResult] = await Promise.all([
     supabase
       .from("dryland_sessions")
       .select(DRYLAND_SELECT)
@@ -120,26 +167,41 @@ export async function loadDrylandLibrarySnapshot(
           .eq("id", selectedSessionId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("dryland_micro_plans")
+      .select(DRYLAND_MICRO_PLAN_SELECT)
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (isDrylandSchemaMissing(recentResult.error) || isDrylandSchemaMissing(selectedResult.error)) {
     return {
       schemaReady: false,
+      microPlanSchemaReady: false,
       loadError: null,
+      microPlanLoadError: null,
       selectedSession: null,
       selectedSessionMissing: false,
       recentSessions: [],
+      microPlan: null,
     };
   }
+
+  const microPlanSchemaReady = !isDrylandSchemaMissing(microPlanResult.error);
 
   if (recentResult.error) {
     console.error("[Dryland] Could not load dryland sessions", recentResult.error);
     return {
       schemaReady: true,
+      microPlanSchemaReady,
       loadError: "Could not load saved dryland sessions right now.",
+      microPlanLoadError: null,
       selectedSession: null,
       selectedSessionMissing: false,
       recentSessions: [],
+      microPlan: null,
     };
   }
 
@@ -147,19 +209,33 @@ export async function loadDrylandLibrarySnapshot(
     console.error("[Dryland] Could not load selected dryland session", selectedResult.error);
     return {
       schemaReady: true,
+      microPlanSchemaReady,
       loadError: "Could not open that dryland session right now.",
+      microPlanLoadError: null,
       selectedSession: null,
       selectedSessionMissing: false,
       recentSessions: (recentResult.data ?? []).map((row) =>
         buildDrylandSessionSummary(row as DrylandRow)
       ),
+      microPlan: null,
     };
+  }
+
+  const microPlanLoadError =
+    microPlanResult.error && microPlanSchemaReady
+      ? "Could not load your micro session plan right now."
+      : null;
+
+  if (microPlanResult.error && microPlanSchemaReady) {
+    console.error("[Dryland] Could not load dryland micro plan", microPlanResult.error);
   }
 
   try {
     return {
       schemaReady: true,
+      microPlanSchemaReady,
       loadError: null,
+      microPlanLoadError,
       selectedSession: selectedResult.data
         ? buildDrylandSessionRecord(selectedResult.data as DrylandRow)
         : null,
@@ -167,15 +243,22 @@ export async function loadDrylandLibrarySnapshot(
       recentSessions: (recentResult.data ?? []).map((row) =>
         buildDrylandSessionSummary(row as DrylandRow)
       ),
+      microPlan:
+        microPlanResult.data && !microPlanLoadError
+          ? buildDrylandMicroPlanRecord(microPlanResult.data as DrylandMicroPlanRow)
+          : null,
     };
   } catch (error) {
     console.error("[Dryland] Could not normalize saved dryland session", error);
     return {
       schemaReady: true,
+      microPlanSchemaReady,
       loadError: "Could not read one of your saved dryland sessions right now.",
+      microPlanLoadError,
       selectedSession: null,
       selectedSessionMissing: false,
       recentSessions: [],
+      microPlan: null,
     };
   }
 }

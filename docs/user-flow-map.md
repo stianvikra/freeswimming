@@ -64,5 +64,5 @@ flowchart LR
 - `/my-library/goals`: `Goals` for long-term targets and progress.
 - `/my-library/training`: `My Training` for turning goals into focus cues and notes.
 - `/my-library/workouts`: `My Swim Sessions` for saved swim sessions plus `Build pool session`, `Build open water session`, and `AI session generator`.
-- `/my-library/dryland`: `Dryland Sessions` for saved strength/stretching work and dryland creation.
+- `/my-library/dryland`: `Dryland Sessions` for saved strength/stretching work, dryland creation, and weekly `Micro Sessions` exercise-block completion.
 - `/my-library/programs/<id>`: `Program builder preview` for optional week/day planning from saved swim sessions.
