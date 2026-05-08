@@ -3,10 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-01-ai-swim-coach-roadmap-alignment-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-01`
-- `updated`: `2026-05-01`
+- `updated`: `2026-05-08`
+
+## Closeout Status
+
+This docs-only roadmap alignment shipped in PR `#564`, merged to `main` as `f9e0cda` on `2026-05-01`. This lifecycle closeout moves the brief to `done` after the merged work was found still listed under `in-progress`.
 
 ## Goal
 
@@ -175,3 +179,25 @@ N/A because this PR changes only task-brief documentation and does not change UI
 
 - `2026-05-01 | in-progress | created docs-only roadmap-alignment brief and updated AI session, AI program, program-builder, and training-history briefs with owner coaching, calendar, and planned-vs-actual requirements | next: run docs-only validation, commit, push, and open PR`
 - `2026-05-01 | validation | docs-only validation passed: npm run lint:briefs:all PASS, npm run verify:pre-pr selected docs-only lane and PASS | next: commit, push, open PR, then run verify:pre-merge before merge recommendation`
+- `2026-05-01 | done | PR #564 merged to main as f9e0cda; roadmap alignment is shipped and implementation sequencing now points back to AI Session V1 rather than a broad calendar/history/program build | next: lifecycle closeout`
+- `2026-05-08 | done | moved stale in-progress brief to done and recorded closeout scores/evidence after recovery scan found PR #564 already merged | next: validate docs-only closeout PR`
+- `2026-05-08 | closeout verify | npm run verify:pre-pr passed on docs-only lane with artifact artifacts/test-runs/20260508-082636/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+
+## Completion Record
+
+- `merged_pr`: `#564`
+- `merge_commit`: `f9e0cda`
+- `completed`: `2026-05-01`
+- `closeout`: `2026-05-08`
+- `validation`: original docs-only roadmap PR recorded `npm run lint:briefs:all` PASS and `npm run verify:pre-pr` PASS on docs-only lane; closeout `npm run verify:pre-pr` passed on docs-only lane with artifact `artifacts/test-runs/20260508-082636/verify.log`.
+- `10/10 claim`: yes for the docs-only roadmap-alignment scope; runtime AI session generation, calendar/history implementation, Garmin import, and multi-session program generation remain out of scope.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | AI Session V1 remains separate from future AI program, calendar, and training-history work while preserving one coach roadmap. | None.        |
+| UX flow clarity                               | `5/5`          | Briefs document one-session V1, later weekly-pattern/full-AI program entrypoints, and planned-vs-actual history boundaries.    | None.        |
+| Business logic correctness and data integrity | `5/5`          | Roadmap keeps one canonical session/program/history model and explicitly avoids AI-only duplicate planning truth.              | None.        |
+| Data placement and sync boundaries            | `5/5`          | V1 draft generation, future program planning, and training-history completion truth are assigned to separate canonical owners. | None.        |
+| Content governance                            | `5/5`          | Course-aligned drills, profile save-back, program history, and future feedback are assigned to the appropriate parent briefs.  | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only change added no dependencies and kept future implementation sequencing compatible with the existing stack.           | None.        |
+| Testing and QA automation                     | `5/5`          | Original docs-only PR recorded `npm run lint:briefs:all` PASS and `npm run verify:pre-pr` PASS; closeout pre-PR gate passed.   | None.        |
