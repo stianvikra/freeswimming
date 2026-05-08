@@ -70,7 +70,7 @@ New video assets may only be derived variants for motion/video use, not a replac
 
 ## Child Briefs
 
-- [Phase 1 - Brand Extension, Overlay Language, And Production Architecture](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
+- [Phase 1 - Brand Extension, Overlay Language, And Production Architecture](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
 - [FCP-Ready Asset Pack And Template System](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-fcp-ready-asset-pack-and-template-system-10-10.md)
 - [Verified Final Cut Pro Recipes](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-verified-final-cut-pro-recipes-10-10.md)
 - [Pilot Technique Lesson](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-pilot-technique-lesson-10-10.md)
@@ -194,3 +194,4 @@ N/A because this parent creates internal production-planning briefs only and cha
 ## Checkpoint Log
 
 - `2026-05-08 | planned | created parent brief after owner asked to preserve the full visual coaching production-system concept and relate it to the existing FreeSwimming brand system | next: review child briefs and choose Phase 1 when ready`
+- `2026-05-08 | planning update | Phase 1 moved to in-progress and expanded to support course videos plus 16:9, 9:16, and 1:1 social/export formats before asset production | next: complete Phase 1 docs-only execution slice`

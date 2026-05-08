@@ -16,7 +16,7 @@ Create a reusable FreeSwimming visual coaching asset pack optimized for Final Cu
 
 - Parent: [Visual Coaching Production System Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-production-system-parent-10-10.md)
 - Phase 1 should define the asset requirements first:
-  - [Visual Coaching Phase 1](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
+  - [Visual Coaching Phase 1](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
 - Existing brand source:
   - [FreeSwimming Brand Usage](/Users/stianvikra/freeswimming/docs/design/brand-logo-usage.md)
 
