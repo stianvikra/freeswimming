@@ -22,20 +22,21 @@
 | final codec/bitrate profiles                               | verified FCP recipes + pilot | Phase 1 only defines export naming and review expectations |
 | whether burned-in captions are required per social channel | pilot or publish brief       | platform behavior can change                               |
 | preferred music policy for course lessons                  | pilot                        | default is instruction-first and music optional            |
-| exact watermark scale per format                           | asset pack + pilot           | must be judged on real footage                             |
-| whether wall-logo treatment is used in real lessons        | asset pack + FCP recipes     | must look physically plausible                             |
-| lower-third variants                                       | asset pack                   | depends on first pilot lesson needs                        |
+| exact watermark scale per format                           | manual FCP/Motion pilot      | must be judged on real footage before asset generation     |
+| whether wall-logo treatment is used in real lessons        | manual pilot + FCP recipes   | must look physically plausible                             |
+| lower-third variants                                       | manual pilot                 | depends on first pilot lesson needs                        |
 | social posting metadata                                    | publish brief                | not part of Phase 1                                        |
 | public runtime hosting path                                | publish brief                | no video publishing in Phase 1                             |
 
 ## Decision Log
 
-| Date       | Decision                                            | Rationale                                                                                         |
-| ---------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| 2026-05-08 | Start Phase 1 before asset pack                     | Design language and production architecture should be stable before creating reusable assets.     |
-| 2026-05-08 | Support `16:9`, `9:16`, and `1:1` from the start    | Course videos and social videos need the same visual system with format-specific placement rules. |
-| 2026-05-08 | Keep FCP recipes separate and verified              | Prevents fabricated or outdated editing instructions from becoming production rules.              |
-| 2026-05-08 | Keep private footage and FCP libraries outside repo | Avoids leaking large/private source files and keeps repo docs/runtime boundaries clean.           |
+| Date       | Decision                                            | Rationale                                                                                                                                                |
+| ---------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-08 | Start Phase 1 before asset pack                     | Design language and production architecture should be stable before creating reusable assets.                                                            |
+| 2026-05-08 | Support `16:9`, `9:16`, and `1:1` from the start    | Course videos and social videos need the same visual system with format-specific placement rules.                                                        |
+| 2026-05-08 | Keep FCP recipes separate and verified              | Prevents fabricated or outdated editing instructions from becoming production rules.                                                                     |
+| 2026-05-08 | Keep private footage and FCP libraries outside repo | Avoids leaking large/private source files and keeps repo docs/runtime boundaries clean.                                                                  |
+| 2026-05-08 | Block generated asset pack before production use    | Owner review showed the generated sheets/comps were not 10/10 or FCP-editable enough; visual decisions move to a manual FCP/Motion pilot on real frames. |
 
 ## Change Rule
 

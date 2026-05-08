@@ -2,16 +2,18 @@
 
 ## Purpose
 
-This folder is the Phase 1 source of truth for FreeSwimming visual coaching video production.
+This folder is the source of truth for FreeSwimming visual coaching video production.
 
 Phase 1 defines the design language, format rules, lesson structure, production architecture, naming, exports, asset requirements, and Final Cut Pro verification plan before reusable assets, templates, or pilot videos are created.
 
+Generated assets must not be treated as production-ready until a real FCP/Motion pilot has been approved on representative swim footage.
+
 ## Status
 
-- Phase: `Phase 1 - design language and production architecture`
-- Scope: documentation only
+- Phase: `Phase 1 complete; manual FCP/Motion pilot pending`
+- Scope: production docs and pilot planning
 - Runtime impact: none
-- Asset impact: no final assets created in this phase
+- Asset impact: no generated asset pack is approved; final overlays/templates must be proven in FCP/Motion first
 - FCP impact: no recipe is production-ready until verified in the dedicated recipe brief
 
 ## Brand Source
