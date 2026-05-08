@@ -85,7 +85,7 @@ Captions must be treated as a separate text layer from coaching overlays.
 
 Text-bearing overlays and captions should be replaceable later.
 
-Do not flatten critical long-form instructional text into non-editable assets unless the asset pack explicitly defines how localization variants are generated.
+Do not flatten critical long-form instructional text into non-editable assets unless an approved template or asset system explicitly defines how localization variants are generated.
 
 ## Review Rule
 

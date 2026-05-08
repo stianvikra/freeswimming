@@ -71,7 +71,8 @@ New video assets may only be derived variants for motion/video use, not a replac
 ## Child Briefs
 
 - [Phase 1 - Brand Extension, Overlay Language, And Production Architecture](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
-- [FCP-Ready Asset Pack And Template System](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-fcp-ready-asset-pack-and-template-system-10-10.md)
+- [FCP-Ready Asset Pack And Template System - blocked generated-pack attempt](/Users/stianvikra/freeswimming/docs/task-briefs/blocked/2026-05-08-visual-coaching-fcp-ready-asset-pack-and-template-system-10-10.md)
+- [Manual FCP/Motion Pilot Template System](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-manual-fcp-motion-pilot-template-system-10-10.md)
 - [Verified Final Cut Pro Recipes](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-verified-final-cut-pro-recipes-10-10.md)
 - [Pilot Technique Lesson](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-pilot-technique-lesson-10-10.md)
 - [Scale Governance And Production Ops](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-scale-governance-and-production-ops-10-10.md)
@@ -196,3 +197,4 @@ N/A because this parent creates internal production-planning briefs only and cha
 - `2026-05-08 | planned | created parent brief after owner asked to preserve the full visual coaching production-system concept and relate it to the existing FreeSwimming brand system | next: review child briefs and choose Phase 1 when ready`
 - `2026-05-08 | planning update | Phase 1 moved to in-progress and expanded to support course videos plus 16:9, 9:16, and 1:1 social/export formats before asset production | next: complete Phase 1 docs-only execution slice`
 - `2026-05-08 | phase-1 complete | PR #648 merged Phase 1 docs under docs/video-production/visual-coaching-system and moved the child brief to done in post-merge closeout | next: execute FCP-ready asset pack child brief when ready`
+- `2026-05-08 | asset-pack blocked | generated asset-pack attempt failed owner visual/readability/FCP-editability review; pack, scripts, and generated review artifacts were removed; a manual FCP/Motion pilot child brief now owns the next visual decision | next: execute manual FCP/Motion pilot brief`

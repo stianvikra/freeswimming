@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This file defines what the later FCP-ready asset pack must create. It does not create those assets in Phase 1.
+This file defines what a later approved asset/template system must cover. It does not create those assets in Phase 1, and generated assets should wait until the manual FCP/Motion pilot proves the look on real footage.
 
 ## Required Asset Families
 
