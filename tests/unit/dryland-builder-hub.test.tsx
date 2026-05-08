@@ -24,7 +24,7 @@ function buildDraft(overrides?: Partial<DrylandSessionDraft>): DrylandSessionDra
     sessionKind: "strength",
     title: "Strength session 2026-03-29",
     description: "Simple dryland test session.",
-    focusText: "Brace first.",
+    focusText: null,
     startedAt: null,
     completedAt: null,
     actualDurationSeconds: null,
@@ -181,9 +181,22 @@ describe("DrylandBuilderHub", () => {
     });
     expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
 
-    fireEvent.click(within(screen.getByTestId("dryland-exercise-card-0")).getByText("Edit"));
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Edit sets individually",
+      })
+    );
 
-    expect(screen.getByText("Common mistake")).toBeInTheDocument();
+    expect(screen.getByTestId("dryland-exercise-card-0")).toBeInTheDocument();
+    expect(screen.getByText("Individual sets")).toBeVisible();
+    expect(screen.getByText("Only when one set differs.")).toBeVisible();
+    expect(screen.queryByText("Common mistake")).not.toBeInTheDocument();
+    expect(screen.queryByText("Focus cue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Detail title")).not.toBeInTheDocument();
+    expect(screen.queryByText("Summary")).not.toBeInTheDocument();
+    expect(screen.queryByText("How-to")).not.toBeInTheDocument();
+    expect(screen.queryByText("Guidance")).not.toBeInTheDocument();
+    expect(screen.queryByText("Target areas")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("dryland-draft-title"), {
       target: { value: "Updated dryland session" },
@@ -193,9 +206,7 @@ describe("DrylandBuilderHub", () => {
     });
     fireEvent.click(screen.getByTestId("dryland-add-custom-exercise"));
 
-    expect(screen.getByTestId("dryland-editor-save-state")).toHaveTextContent(
-      "Unsaved changes stay local until you save"
-    );
+    expect(screen.getByTestId("dryland-builder-save")).toHaveTextContent("Save session");
 
     fireEvent.click(screen.getByTestId("dryland-builder-save"));
 
@@ -282,11 +293,11 @@ describe("DrylandBuilderHub", () => {
 
     expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
     expect(screen.getByTestId("dryland-manual-exercises")).toBeVisible();
-    expect(screen.getByText("Manual exercises")).toBeVisible();
-    expect(screen.getByText("Advanced: add from exercise bank")).toBeVisible();
-    expect(
-      within(screen.getByTestId("dryland-advanced-bank")).getByText("Air squat")
-    ).not.toBeVisible();
+    expect(screen.getByText("Quick session")).toBeVisible();
+    expect(screen.getByText("Type the exercises you want to do now.")).toBeVisible();
+    expect(screen.queryByText("Focus cue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Advanced: add from exercise bank")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-advanced-bank")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
       target: { value: "Single-leg squat" },
@@ -306,6 +317,15 @@ describe("DrylandBuilderHub", () => {
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
       target: { value: "Slow down." },
     });
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Edit sets individually",
+      })
+    );
+    fireEvent.change(screen.getByTestId("dryland-set-target-0-1"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByTestId("dryland-make-sets-equal-0"));
 
     fireEvent.click(screen.getByTestId("dryland-builder-save"));
 
@@ -328,6 +348,96 @@ describe("DrylandBuilderHub", () => {
         (set) => set.reps === 6 && set.loadKg === 12.5 && set.restSeconds === 75
       )
     ).toBe(true);
+  });
+
+  it("lets numeric simple-row fields be cleared before replacement typing", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        session: buildRecord(),
+        summary: buildSummary({ setCount: 6 }),
+      }),
+    } as Response);
+
+    const baseDraft = buildDraft();
+    const customDraft = buildDraft({
+      exercises: [
+        {
+          ...baseDraft.exercises[0],
+          source: "custom",
+          bankExerciseId: null,
+          title: "Custom strength exercise",
+          sets: [
+            {
+              id: "set-1",
+              reps: 8,
+              holdSeconds: null,
+              loadKg: null,
+              restSeconds: 60,
+              isCompleted: false,
+              completedAt: null,
+            },
+            {
+              id: "set-2",
+              reps: 8,
+              holdSeconds: null,
+              loadKg: null,
+              restSeconds: 60,
+              isCompleted: false,
+              completedAt: null,
+            },
+          ],
+        },
+      ],
+    });
+
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({
+          selectedSession: buildRecord({ draft: customDraft }),
+          recentSessions: [buildSummary({ setCount: 2 })],
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    const setCountInput = screen.getByTestId("dryland-manual-exercise-set-count-0");
+    fireEvent.change(setCountInput, { target: { value: "" } });
+    expect(setCountInput).toHaveValue("");
+    expect(screen.getByText("Exercise 1 needs 1-20 sets.")).toBeVisible();
+
+    fireEvent.change(setCountInput, { target: { value: "6" } });
+    expect(setCountInput).toHaveValue("6");
+    expect(screen.queryByText("Exercise 1 needs 1-20 sets.")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-target-0"), {
+      target: { value: "" },
+    });
+    expect(screen.getByTestId("dryland-manual-exercise-target-0")).toHaveValue("");
+    expect(screen.getByText("Exercise 1 needs reps.")).toBeVisible();
+
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-target-0"), {
+      target: { value: "6" },
+    });
+    fireEvent.click(screen.getByTestId("dryland-builder-save"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    const saveBody = JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body ?? "{}")) as {
+      draft: DrylandSessionDraft;
+    };
+
+    expect(saveBody.draft.exercises[0]?.sets).toHaveLength(6);
+    expect(saveBody.draft.exercises[0]?.sets.every((set) => set.reps === 6)).toBe(true);
   });
 
   it("browses and deletes a dryland session from the list view", async () => {
@@ -367,15 +477,7 @@ describe("DrylandBuilderHub", () => {
     });
   });
 
-  it("replaces back to the dryland list after deleting the current session", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        deletedSessionId: "11111111-1111-4111-8111-111111111111",
-      }),
-    } as Response);
-
+  it("keeps destructive delete actions in the dryland list instead of the focused editor", async () => {
     render(<DrylandBuilderHub drylandLibrary={buildLibrary()} />);
 
     await waitFor(() => {
@@ -385,22 +487,7 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
-    fireEvent.click(screen.getByTestId("dryland-delete-current-session"));
-    fireEvent.click(screen.getByTestId("dryland-confirm-delete-current-session"));
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        "/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
-        expect.objectContaining<Record<string, unknown>>({
-          method: "DELETE",
-        })
-      );
-    });
-
-    await waitFor(() => {
-      expect(navigationState.replace).toHaveBeenCalledWith("/my-library/dryland");
-    });
-
-    expect(navigationState.refresh).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("dryland-session-more")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-delete-current-session")).not.toBeInTheDocument();
   });
 });

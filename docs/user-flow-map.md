@@ -60,6 +60,7 @@ flowchart LR
 ## My Library Authenticated IA
 
 - `/my-library`: account home and top-level owner dashboard.
+- `/my-library` top-level cards stay scan-first: `Swim Sessions` and `Dryland Sessions` expose one `Open` action, while creation actions live inside their dedicated hub routes.
 - `/my-library/profile`: `My Swim Profile` for swimmer identity, CSS, preferences, and personal records.
 - `/my-library/goals`: `Goals` for long-term targets and progress.
 - `/my-library/training`: `My Training` for turning goals into focus cues and notes.

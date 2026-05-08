@@ -47,12 +47,12 @@ The public `/` home route should not be changed unless the owner explicitly conf
   - My Swim Profile
   - Goals
   - My Training
-  - My Swim Sessions
+  - Swim Sessions
   - Dryland Sessions
   - Program builder preview
 - Recommended product dependencies:
-  - `docs/task-briefs/planned/2026-05-07-manual-dryland-simple-sessions-10-10.md`
-  - `docs/task-briefs/planned/2026-05-07-micro-sessions-exercise-level-completion-10-10.md`
+  - `docs/task-briefs/done/2026-05-07-manual-dryland-simple-sessions-10-10.md`
+  - `docs/task-briefs/done/2026-05-07-micro-sessions-exercise-level-completion-10-10.md`
 
 ## V1 Behavior Contract
 
@@ -255,7 +255,7 @@ Search at minimum:
 - `Continue`
 - `Today`
 - `Dryland Sessions`
-- `My Swim Sessions`
+- `Swim Sessions`
 - `Goals`
 - `Program builder preview`
 - `/my-library`
