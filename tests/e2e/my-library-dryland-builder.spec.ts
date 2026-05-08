@@ -45,15 +45,25 @@ test.describe("my library dryland builder", () => {
     await loginToMyLibraryViaDevBypass(page);
     await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
 
-    const createButton = page.getByTestId("my-library-create-strength-session");
-    const schemaReady = await createButton.isVisible().catch(() => false);
+    const drylandCard = page
+      .getByRole("heading", { name: "Dryland Sessions" })
+      .locator("xpath=ancestor::section[1]");
+    const openDrylandLink = drylandCard.getByRole("link", { name: "Open" });
+    const drylandSchemaReady = await openDrylandLink.isVisible().catch(() => false);
 
-    if (!schemaReady) {
+    if (!drylandSchemaReady) {
       await expect(
         page.getByText("This dryland foundation is still syncing in this environment.")
       ).toBeVisible();
       return;
     }
+
+    await openDrylandLink.click();
+    await expect(page).toHaveURL(/\/my-library\/dryland(?:\?.*)?$/);
+    await waitForDrylandBuilderClientReady(page);
+
+    const createButton = page.getByTestId("dryland-browse-create-strength");
+    await expect(createButton).toBeVisible();
 
     const createResponsePromise = page.waitForResponse(
       (response) =>
@@ -91,11 +101,15 @@ test.describe("my library dryland builder", () => {
 
     await expect(page).toHaveURL(targetUrl);
     await waitForDrylandBuilderClientReady(page);
+    await expect(page.getByRole("link", { name: "Dryland Sessions" })).toHaveCount(1);
 
     await expect(page.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
     await expect(page.getByTestId("dryland-manual-exercises")).toBeVisible();
-    await expect(page.getByTestId("dryland-advanced-bank")).toBeVisible();
-    await expect(page.getByTestId("dryland-bank-add-strength-air-squat")).not.toBeVisible();
+    await expect(page.getByText("Quick session")).toBeVisible();
+    await expect(page.getByText("Type the exercises you want to do now.")).toBeVisible();
+    await expect(page.getByText("Focus cue")).toHaveCount(0);
+    await expect(page.getByTestId("dryland-advanced-bank")).toHaveCount(0);
+    await expect(page.getByTestId("dryland-advanced-exercise-details")).toHaveCount(0);
 
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);
     await page.getByTestId("dryland-manual-exercise-name-0").fill("Single-leg squat");
@@ -144,9 +158,7 @@ test.describe("my library dryland builder", () => {
         (set) => set.reps === 6 && set.loadKg === 12.5 && set.restSeconds === 75
       )
     ).toBe(true);
-    await expect(page.getByTestId("dryland-editor-save-state")).toHaveText(
-      "All dryland changes are saved"
-    );
+    await expect(page.getByTestId("dryland-builder-save")).toHaveText("Saved");
 
     await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
     await waitForDrylandBuilderClientReady(page);
@@ -207,10 +219,12 @@ test.describe("my library dryland builder", () => {
 
     await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
     await waitForDrylandBuilderClientReady(page);
-    await page.getByTestId("dryland-mode-train").click();
+    await expect(page.getByTestId("dryland-session-more")).toHaveCount(0);
+    await expect(page.getByTestId("dryland-delete-current-session")).toHaveCount(0);
 
-    await page.getByTestId("dryland-session-more").click();
-    await page.getByTestId("dryland-delete-current-session").click();
+    await gotoWithTransientRetry(page, "/my-library/dryland", 60_000);
+    await waitForDrylandBuilderClientReady(page);
+    await page.getByTestId(`dryland-delete-session-${createdSessionId}`).click();
 
     const deleteResponsePromise = page.waitForResponse(
       (response) =>
@@ -219,7 +233,7 @@ test.describe("my library dryland builder", () => {
         response.status() === 200
     );
 
-    await page.getByTestId("dryland-confirm-delete-current-session").click();
+    await page.getByTestId(`dryland-confirm-delete-session-${createdSessionId}`).click();
     const deleteResponse = await deleteResponsePromise;
     const deleteResponseBody = (await deleteResponse.json()) as {
       ok?: boolean;

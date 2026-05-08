@@ -812,17 +812,20 @@ test.describe("poolside save image export", () => {
 
     await loginToMyLibraryViaDevBypass(page);
 
-    const createButton = page.getByTestId("my-library-create-pool-workout");
+    await gotoWithTransientRetry(page, "/my-library/workouts");
+    await waitForWorkoutBuilderClientReady(page);
+
+    const createButton = page.getByTestId("workout-builder-browse-create-pool");
     const schemaReady = await createButton.isVisible().catch(() => false);
 
     if (!schemaReady) {
       await expect(
-        page.getByText("This canonical swim-session layer is still syncing in this environment.")
+        page.getByText("Canonical workout save is still syncing in this environment.")
       ).toBeVisible();
       return;
     }
 
-    await triggerCreateSession(page, "my-library-create-pool-workout");
+    await triggerCreateSession(page, "workout-builder-browse-create-pool");
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);

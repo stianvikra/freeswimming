@@ -354,7 +354,7 @@ export default function DrylandMicroPlanPanel({
                   className="rounded-2xl border border-slate-200 bg-white p-4"
                 >
                   <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-start">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-800">
                       {index + 1}
                     </span>
                     <div className="min-w-0">

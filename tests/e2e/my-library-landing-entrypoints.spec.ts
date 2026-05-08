@@ -53,7 +53,7 @@ test.describe("my library landing entrypoints", () => {
     await expect(page.getByRole("heading", { name: "My Swim Profile" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "My Training" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "My Swim Sessions" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Swim Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Swim session builder" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Continue Free Course" })).toHaveCount(0);
@@ -89,13 +89,20 @@ test.describe("my library landing entrypoints", () => {
       .locator("xpath=ancestor::section[1]");
     await expect(focusCard.getByRole("link", { name: "Open" })).toBeVisible();
 
-    const mySwimSessionsLink = page.getByRole("link", { name: "My Swim Sessions" });
-    await expect(mySwimSessionsLink).toBeVisible();
-    await expect(mySwimSessionsLink).toHaveClass(/bg-blue-600/);
+    const swimSessionsCard = page
+      .getByRole("heading", { name: "Swim Sessions" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(swimSessionsCard.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(swimSessionsCard.getByRole("link", { name: "Open" })).toHaveClass(/bg-blue-600/);
+    await expect(swimSessionsCard.getByText("Build pool session")).toHaveCount(0);
+    await expect(swimSessionsCard.getByText("Build open water session")).toHaveCount(0);
+    await expect(swimSessionsCard.getByText("AI session generator")).toHaveCount(0);
 
-    const buildPoolButton = page.getByTestId("my-library-create-pool-workout");
-    await expect(buildPoolButton).toBeVisible();
-    await expect(buildPoolButton).toHaveClass(/border/);
-    await expect(buildPoolButton).not.toHaveClass(/bg-blue-600/);
+    const drylandCard = page
+      .getByRole("heading", { name: "Dryland Sessions" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(drylandCard.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(drylandCard.getByText("Create strength session")).toHaveCount(0);
+    await expect(drylandCard.getByText("Create stretching session")).toHaveCount(0);
   });
 });

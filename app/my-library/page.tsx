@@ -7,9 +7,7 @@ import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server"
 import { signOutFromLibrary } from "@/app/my-library/actions";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
-import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
-import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
@@ -224,7 +222,7 @@ export default async function MyLibraryPage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">My Swim Sessions</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">Swim Sessions</h2>
                   {!workoutLibrarySnapshot.schemaReady ? (
                     <p className="mt-2 text-sm text-slate-600">
                       This canonical swim-session layer is still syncing in this environment.
@@ -237,34 +235,9 @@ export default async function MyLibraryPage() {
                       href="/my-library/workouts"
                       className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                     >
-                      My Swim Sessions
+                      Open
                     </Link>
                   ) : null}
-                  {workoutLibrarySnapshot.schemaReady ? (
-                    <CreateManualWorkoutButton
-                      label="Build pool session"
-                      testId="my-library-create-pool-workout"
-                      manualPoolCssMetricSecondsPer100m={
-                        athleteProfileSnapshot.cssMetric?.valueSeconds ?? null
-                      }
-                      manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    />
-                  ) : null}
-                  {workoutLibrarySnapshot.schemaReady ? (
-                    <CreateManualWorkoutButton
-                      label="Build open water session"
-                      testId="my-library-create-open-water-workout"
-                      builderMode="open_water"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    />
-                  ) : null}
-                  <Link
-                    href="/my-library/generator"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                  >
-                    AI session generator
-                  </Link>
                 </div>
               </div>
             </section>
@@ -280,29 +253,13 @@ export default async function MyLibraryPage() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {drylandLibrarySnapshot.recentSessions[0] ? (
+                  {drylandLibrarySnapshot.schemaReady ? (
                     <Link
                       href="/my-library/dryland"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                     >
-                      Dryland Sessions
+                      Open
                     </Link>
-                  ) : null}
-                  {drylandLibrarySnapshot.schemaReady ? (
-                    <>
-                      <CreateManualDrylandSessionButton
-                        sessionKind="strength"
-                        label="Create strength session"
-                        testId="my-library-create-strength-session"
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                      />
-                      <CreateManualDrylandSessionButton
-                        sessionKind="stretching"
-                        label="Create stretching session"
-                        testId="my-library-create-stretching-session"
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </>
                   ) : null}
                 </div>
               </div>

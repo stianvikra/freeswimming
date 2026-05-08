@@ -148,6 +148,11 @@ async function triggerCreateSession(page: Page, testId: string) {
   }
 }
 
+async function openWorkoutBrowse(page: Page) {
+  await gotoWithTransientRetry(page, "/my-library/workouts");
+  await waitForWorkoutBuilderClientReady(page);
+}
+
 test.describe("my library workout builder", () => {
   test("reclaims mobile width and keeps secondary builder actions behind progressive disclosure on phone widths", async ({
     page,
@@ -157,17 +162,19 @@ test.describe("my library workout builder", () => {
 
     await loginToMyLibraryViaDevBypass(page);
 
-    const createButton = page.getByTestId("my-library-create-pool-workout");
+    await openWorkoutBrowse(page);
+
+    const createButton = page.getByTestId("workout-builder-browse-create-pool");
     const schemaReady = await createButton.isVisible().catch(() => false);
 
     if (!schemaReady) {
       await expect(
-        page.getByText("This canonical swim-session layer is still syncing in this environment.")
+        page.getByText("Canonical workout save is still syncing in this environment.")
       ).toBeVisible();
       return;
     }
 
-    await triggerCreateSession(page, "my-library-create-pool-workout");
+    await triggerCreateSession(page, "workout-builder-browse-create-pool");
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
@@ -236,17 +243,19 @@ test.describe("my library workout builder", () => {
     await loginToMyLibraryViaDevBypass(page);
     const hydrationConsoleMessages = collectHydrationConsoleMessages(page);
 
-    const createButton = page.getByTestId("my-library-create-pool-workout");
+    await openWorkoutBrowse(page);
+
+    const createButton = page.getByTestId("workout-builder-browse-create-pool");
     const schemaReady = await createButton.isVisible().catch(() => false);
 
     if (!schemaReady) {
       await expect(
-        page.getByText("This canonical swim-session layer is still syncing in this environment.")
+        page.getByText("Canonical workout save is still syncing in this environment.")
       ).toBeVisible();
       return;
     }
 
-    await triggerCreateSession(page, "my-library-create-pool-workout");
+    await triggerCreateSession(page, "workout-builder-browse-create-pool");
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);
@@ -354,19 +363,21 @@ test.describe("my library workout builder", () => {
 
     await loginToMyLibraryViaDevBypass(page);
 
-    const createButton = page.getByTestId("my-library-create-pool-workout");
+    await openWorkoutBrowse(page);
+
+    const createButton = page.getByTestId("workout-builder-browse-create-pool");
     const schemaReady = await createButton.isVisible().catch(() => false);
 
     if (!schemaReady) {
       await expect(
-        page.getByText("This canonical swim-session layer is still syncing in this environment.")
+        page.getByText("Canonical workout save is still syncing in this environment.")
       ).toBeVisible();
       return;
     }
 
     const resumeTitle = `Recovered local draft ${Date.now()}`;
 
-    await triggerCreateSession(page, "my-library-create-pool-workout");
+    await triggerCreateSession(page, "workout-builder-browse-create-pool");
     await waitForLocalWorkoutBuilderRoute(page);
     await waitForWorkoutBuilderClientReady(page);
     await waitForWorkoutBuilderSaveReady(page);

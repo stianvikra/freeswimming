@@ -33,18 +33,14 @@ export default async function DrylandBuilderPage({ params }: Props) {
   const drylandLibrary = await loadDrylandLibrarySnapshot(supabase, user.id, sessionId);
 
   return (
-    <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[1080px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28">
+    <SiteChrome mobileNavMode="hidden">
+      <section className="mx-auto min-h-screen w-full max-w-[1080px] px-4 pt-24 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-28 sm:pb-20">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
               My Library
             </p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">Dryland builder</h1>
-            <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-              Edit one strength or stretching session at a time, keep the execution view front and
-              center, and open saved sessions only when you want to switch back to older work.
-            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
