@@ -77,7 +77,8 @@ Critical target categories for a `10/10` claim:
 - React/Next.js:
   - reuse `DrylandMicroPlanPanel` and existing `/my-library/dryland` server data loading,
   - keep interactive state in the client component,
-  - do not add a top-level Micro Sessions route in this readiness slice.
+  - do not add a top-level Micro Sessions route in this readiness slice,
+  - when test fallout touches swim-session editor surfaces, keep `docs/design/session-step-surface-contract.md` as the reference contract and adjust assertions to the shared renderer output instead of changing product markup.
 - TypeScript/domain contracts:
   - keep `DrylandMicroPlanRecord` and status helpers as canonical contracts,
   - verify plan status/progress invariants against the actual API payload shape.
