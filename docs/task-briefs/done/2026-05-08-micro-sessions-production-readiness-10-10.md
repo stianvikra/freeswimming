@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-08-micro-sessions-production-readiness-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-08`
-- `updated`: `2026-05-08`
+- `updated`: `2026-05-09`
 
 ## Goal
 
@@ -203,3 +203,4 @@ Run the targeted sweep for `Micro Sessions`, `dryland_micro_plans`, `/my-library
 - `2026-05-08` - Added readiness regressions for the no-sync-warning start state and missing-table `503` responses on `POST`/`PATCH`, plus a support runbook note for Micro Sessions sync repair. Targeted validation passed: `./node_modules/.bin/vitest run tests/unit/dryland-micro-plans.test.ts tests/unit/dryland-micro-plan-routes.test.ts tests/unit/dryland-micro-plan-panel.test.tsx` (`3` files, `14` tests) and `npm run lint:briefs:all` (`266` briefs). Route/support sweep ran for `Micro Sessions`, `dryland_micro_plans`, `/my-library/dryland`, sync warning, and support docs; fallout was limited to the runbook/tests/brief updates in this slice. Targeted Playwright dryland builder exited `0` but skipped the authenticated browser flow because local `/dev/login` still receives an HTML Supabase Auth response instead of JSON; this is the same local auth blocker from the prior dryland slice, not a Micro Sessions regression. Screenshot artifacts captured at `output/micro-sessions-production-readiness-2026-05-08-222214` with the real Micro Sessions component rendered through a temporary dev-only fixture, then the fixture was removed. Next: owner screenshot review before `npm run verify:pre-pr`.
 - `2026-05-08` - Owner approved screenshot handoff. Next: run `npm run verify:pre-pr`, then commit, push, and open PR if green.
 - `2026-05-08` - `npm run verify:pre-pr` passed after adding explicit route/support sweep identifiers/surfaces and clearing stale generated `.next/dev` cache from the temporary screenshot fixture. Full lane evidence: branch-current pass, quality gates pass, lint/typecheck pass, unit pass (`182` files, `981` tests), build pass, perf budgets pass, and e2e pass (`82` passed, `374` skipped by local auth/support gating). Perf trend recommended tightening after `4` weekly green runs with `20.3%` margin; decision for this readiness slice is `hold` because no route budget or runtime payload changed, and budget tightening should happen in a dedicated performance-governance slice. Next: commit, push, open PR, monitor CI, and run `npm run verify:pre-merge`.
+- `2026-05-09` - PR #653 merged to `main` as `2b0ac0f` after CI green and local `npm run verify:pre-merge` pass. Post-merge preflight surfaced this repo-managed docs-only closeout, so the brief moved to `done`. Next: continue with the planned Micro Sessions V2, stats/habits, and dryland focus-text cleanup briefs as separate slices.
