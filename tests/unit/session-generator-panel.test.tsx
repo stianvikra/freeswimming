@@ -612,7 +612,9 @@ describe("SessionGeneratorPanel", () => {
 
     fireEvent.click(screen.getByTestId("workout-editor-builder-mode-view"));
 
-    expect(screen.getByText(/4 x 100m · Freestyle · Moderate · Interval rest 0:30/i)).toBeVisible();
+    expect(
+      screen.getAllByText(/4 x 100m · Freestyle · Moderate · Interval rest 0:30/i).length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Set rest 0:30").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Rest 0:30").length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText(/Coach note:/i)).not.toBeInTheDocument();

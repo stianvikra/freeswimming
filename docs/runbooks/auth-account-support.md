@@ -34,6 +34,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - If a sign-in code does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new code on `/auth/sign-in`.
 - If a code expires or fails: request a new code from `/auth/sign-in`.
 - If preview access is blocked while the site is private: use `/preview-access`; admin sign-in and preview-password behavior stay separate from normal My Library sign-in.
+- If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
 
 ## Security Rules
 
