@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { COURSE_MODULES } from "@/app/course/courseData";
 import {
   isAthleteProfileSchemaMissing,
   isPersonalRecordsSchemaMissing,
   isTrainingMetricSchemaMissing,
   isTrainingPreferencesSchemaMissing,
 } from "@/lib/athlete-profile/schema";
-import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import { loadPublishedCourseModulesCached } from "@/lib/admin/content-course";
 import { normalizeCourseProgressRows } from "@/lib/course/progress";
 import {
   buildCanonicalCourseLessonIdMap,
@@ -41,11 +40,7 @@ export async function GET() {
 
   const userId = user.id;
   const generatedAt = new Date().toISOString();
-  const courseModules = await loadCourseModulesByStatus({
-    statuses: ["published"],
-    fallback: COURSE_MODULES,
-    autoSeedWhenEmpty: false,
-  });
+  const courseModules = await loadPublishedCourseModulesCached();
   const canonicalLessonIdByAlias = buildCanonicalCourseLessonIdMap(courseModules);
   const resolveLessonId = (lessonId: string) =>
     canonicalizeCourseLessonRuntimeId(lessonId, canonicalLessonIdByAlias);

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import {
@@ -8,6 +9,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { GUIDE_0_TO_1000M_SESSIONS, type Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
 import { GUIDE_POOLSIDE_DRILLS, type PoolsideDrill } from "@/lib/guides/guide-poolside";
 import type { Database, Json } from "@/types/database";
+
+export const PUBLIC_GUIDE_CONTENT_REVALIDATE_SECONDS = 60 * 60;
 
 type AdminContentType = Database["public"]["Enums"]["admin_content_type"];
 type AdminContentRow = Database["public"]["Tables"]["admin_content_items"]["Row"];
@@ -212,14 +215,36 @@ export function toPublishedPoolsideDrills(
   return normalized.length > 0 ? normalized : fallback;
 }
 
+export const loadPublishedGuide0To1000SessionsCached = unstable_cache(
+  async () => {
+    const rows = await loadPublishedContentRows("guide_session");
+    if (!rows) return GUIDE_0_TO_1000M_SESSIONS;
+    return toPublishedGuide0To1000Sessions(rows);
+  },
+  ["published-guide-0-1000m-sessions-v1"],
+  {
+    revalidate: PUBLIC_GUIDE_CONTENT_REVALIDATE_SECONDS,
+    tags: ["published-guide-content"],
+  }
+);
+
 export async function loadPublishedGuide0To1000Sessions(): Promise<Guide0To1000Session[]> {
-  const rows = await loadPublishedContentRows("guide_session");
-  if (!rows) return GUIDE_0_TO_1000M_SESSIONS;
-  return toPublishedGuide0To1000Sessions(rows);
+  return loadPublishedGuide0To1000SessionsCached();
 }
 
 export async function loadPublishedPoolsideDrills(): Promise<PoolsideDrill[]> {
-  const rows = await loadPublishedContentRows("guide_drill");
-  if (!rows) return GUIDE_POOLSIDE_DRILLS;
-  return toPublishedPoolsideDrills(rows);
+  return loadPublishedPoolsideDrillsCached();
 }
+
+export const loadPublishedPoolsideDrillsCached = unstable_cache(
+  async () => {
+    const rows = await loadPublishedContentRows("guide_drill");
+    if (!rows) return GUIDE_POOLSIDE_DRILLS;
+    return toPublishedPoolsideDrills(rows);
+  },
+  ["published-poolside-drills-v1"],
+  {
+    revalidate: PUBLIC_GUIDE_CONTENT_REVALIDATE_SECONDS,
+    tags: ["published-guide-content"],
+  }
+);

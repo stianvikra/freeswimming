@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   loadCourseModulesByStatusMock,
+  loadPublishedCourseModulesCachedMock,
   requireAdminRoleFromSupabaseMock,
   createRouteHandlerSupabaseClientMock,
 } = vi.hoisted(() => {
   return {
     loadCourseModulesByStatusMock: vi.fn(),
+    loadPublishedCourseModulesCachedMock: vi.fn(),
     requireAdminRoleFromSupabaseMock: vi.fn(),
     createRouteHandlerSupabaseClientMock: vi.fn(),
   };
@@ -14,6 +16,8 @@ const {
 
 vi.mock("@/lib/admin/content-course", () => ({
   loadCourseModulesByStatus: loadCourseModulesByStatusMock,
+  loadPublishedCourseModulesCached: loadPublishedCourseModulesCachedMock,
+  PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS: 3600,
 }));
 
 vi.mock("@/lib/admin/server", () => ({
@@ -32,7 +36,7 @@ function buildRequest(path: string): Request {
 
 describe("/api/course/content route", () => {
   beforeEach(() => {
-    loadCourseModulesByStatusMock.mockResolvedValue([
+    const courseModules = [
       {
         id: "mod1",
         title: "Intro",
@@ -51,7 +55,9 @@ describe("/api/course/content route", () => {
           },
         ],
       },
-    ]);
+    ];
+    loadCourseModulesByStatusMock.mockResolvedValue(courseModules);
+    loadPublishedCourseModulesCachedMock.mockResolvedValue(courseModules);
 
     requireAdminRoleFromSupabaseMock.mockResolvedValue({
       ok: true,
@@ -82,11 +88,9 @@ describe("/api/course/content route", () => {
       enabled: false,
       mode: "published",
     });
-    expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
-      statuses: ["published"],
-      fallback: expect.any(Array),
-      autoSeedWhenEmpty: true,
-    });
+    expect(response.headers.get("cache-control")).toContain("s-maxage=3600");
+    expect(loadPublishedCourseModulesCachedMock).toHaveBeenCalledTimes(1);
+    expect(loadCourseModulesByStatusMock).not.toHaveBeenCalled();
     expect(requireAdminRoleFromSupabaseMock).not.toHaveBeenCalled();
   });
 

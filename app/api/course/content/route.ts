@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { COURSE_MODULES } from "@/app/course/courseData";
-import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import {
+  loadCourseModulesByStatus,
+  loadPublishedCourseModulesCached,
+  PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS,
+} from "@/lib/admin/content-course";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import {
   resolveCourseContentStatusesForPreviewMode,
@@ -27,6 +31,14 @@ function noStoreJson(
   return NextResponse.json(body, {
     status: init?.status ?? 200,
     headers,
+  });
+}
+
+function publicCachedJson(body: Record<string, unknown>) {
+  return NextResponse.json(body, {
+    headers: {
+      "Cache-Control": `public, max-age=0, s-maxage=${PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS}, stale-while-revalidate=86400`,
+    },
   });
 }
 
@@ -90,12 +102,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const modules = await loadCourseModulesByStatus({
-      statuses: ["published"],
-      fallback: COURSE_MODULES,
-      autoSeedWhenEmpty: true,
-    });
-    return noStoreJson({
+    const modules = await loadPublishedCourseModulesCached();
+    return publicCachedJson({
       ok: true,
       modules: modules.length > 0 ? modules : COURSE_MODULES,
       preview: {

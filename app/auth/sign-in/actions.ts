@@ -10,6 +10,7 @@ import {
   toRetrySeconds,
 } from "@/lib/auth/magic-link-cooldown";
 import { getSafeNextPath } from "@/lib/auth/next-path";
+import { classifySignInEmailError } from "@/lib/auth/sign-in-email-error";
 import { isResendRequestFlag, shouldApplyMagicLinkCooldown } from "@/lib/auth/sign-in-request";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -379,9 +380,10 @@ export async function requestMagicLink(formData: FormData) {
   });
 
   if (error) {
-    if (error.message.toLowerCase().includes("rate limit")) {
+    const classification = classifySignInEmailError(error);
+    if (classification.kind === "rate_limited") {
       const params: Record<string, string> = {
-        error: "Please wait about a minute before requesting a new login code.",
+        error: classification.userMessage,
         cooldownUntil: String(Date.now() + 60_000),
         email,
       };
@@ -393,12 +395,13 @@ export async function requestMagicLink(formData: FormData) {
     }
 
     console.error("[Auth] Could not request sign-in email.", {
+      kind: classification.kind,
       message: error.message,
       status: error.status,
       code: error.code,
     });
     const params: Record<string, string> = {
-      error: "Could not send sign-in email right now. Please try again.",
+      error: classification.userMessage,
       email,
     };
     if (isResendRequest) {

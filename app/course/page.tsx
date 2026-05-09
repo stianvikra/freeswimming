@@ -682,12 +682,13 @@ function CoursePageClient() {
       }
       const requestPath =
         params.size > 0 ? `/api/course/content?${params.toString()}` : "/api/course/content";
+      const requestCache: RequestCache = previewEnabled ? "no-store" : "force-cache";
 
       try {
         const response = await fetch(requestPath, {
           method: "GET",
           credentials: "same-origin",
-          cache: "no-store",
+          cache: requestCache,
         });
 
         const payload = (await response.json()) as {

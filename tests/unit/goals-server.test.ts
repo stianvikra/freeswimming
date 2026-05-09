@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loadCourseModulesByStatusMock } = vi.hoisted(() => ({
-  loadCourseModulesByStatusMock: vi.fn(),
+const { loadPublishedCourseModulesCachedMock } = vi.hoisted(() => ({
+  loadPublishedCourseModulesCachedMock: vi.fn(),
 }));
 
 vi.mock("@/lib/admin/content-course", () => ({
-  loadCourseModulesByStatus: loadCourseModulesByStatusMock,
+  loadPublishedCourseModulesCached: loadPublishedCourseModulesCachedMock,
 }));
 
 import { loadGoalProgressContext } from "@/lib/goals/server";
@@ -56,11 +56,11 @@ function createSupabaseStub(params: {
 
 describe("loadGoalProgressContext", () => {
   beforeEach(() => {
-    loadCourseModulesByStatusMock.mockReset();
+    loadPublishedCourseModulesCachedMock.mockReset();
   });
 
   it("counts completed lessons by published module membership instead of hyphen parsing", async () => {
-    loadCourseModulesByStatusMock.mockResolvedValue([
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([
       {
         id: "intro-course",
         title: "Introduction to the Course",
@@ -85,16 +85,12 @@ describe("loadGoalProgressContext", () => {
       "user-1"
     );
 
-    expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
-      statuses: ["published"],
-      fallback: expect.any(Array),
-      autoSeedWhenEmpty: false,
-    });
+    expect(loadPublishedCourseModulesCachedMock).toHaveBeenCalledTimes(1);
     expect(context.completedModuleLessonCounts.get("intro-course")).toBe(1);
   });
 
   it("falls back to compatibility inference when published module lookup misses a legacy lesson id", async () => {
-    loadCourseModulesByStatusMock.mockResolvedValue([]);
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([]);
 
     const context = await loadGoalProgressContext(
       createSupabaseStub({

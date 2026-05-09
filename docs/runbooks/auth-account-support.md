@@ -32,6 +32,11 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - verify `invoice_creation.enabled=true` and an invoice ID exists for the session,
   - treat older sandbox purchases made before invoice creation was enabled as receipt/charge-only records; they do not retroactively gain portal invoice history.
 - If a sign-in code does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new code on `/auth/sign-in`.
+- If `/auth/sign-in` shows "Sign-in is temporarily unavailable because a service limit was reached":
+  - check Vercel logs for `[Auth] Could not request sign-in email` with `kind: "service_restricted"`,
+  - check Supabase Dashboard -> Organization Usage -> Egress for `exceed_egress_quota` or Fair Use restrictions,
+  - do not ask the user to retry repeatedly until Supabase usage/billing restriction is resolved,
+  - tell the user sign-in is temporarily unavailable and that we are resolving a service limit.
 - If a code expires or fails: request a new code from `/auth/sign-in`.
 - If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships.
 - If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
