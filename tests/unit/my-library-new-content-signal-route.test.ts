@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loadCourseModulesByStatusMock, createRouteHandlerSupabaseClientMock } = vi.hoisted(() => {
-  return {
-    loadCourseModulesByStatusMock: vi.fn(),
-    createRouteHandlerSupabaseClientMock: vi.fn(),
-  };
-});
+const { loadPublishedCourseModulesCachedMock, createRouteHandlerSupabaseClientMock } = vi.hoisted(
+  () => {
+    return {
+      loadPublishedCourseModulesCachedMock: vi.fn(),
+      createRouteHandlerSupabaseClientMock: vi.fn(),
+    };
+  }
+);
 
 vi.mock("@/lib/admin/content-course", () => ({
-  loadCourseModulesByStatus: loadCourseModulesByStatusMock,
+  loadPublishedCourseModulesCached: loadPublishedCourseModulesCachedMock,
 }));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
@@ -51,7 +53,7 @@ function buildSupabaseClient(userId: string | null) {
 
 describe("/api/my-library/new-content-signal route", () => {
   beforeEach(() => {
-    loadCourseModulesByStatusMock.mockResolvedValue([
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([
       {
         id: "mod1",
         title: "Intro",
@@ -114,7 +116,7 @@ describe("/api/my-library/new-content-signal route", () => {
       },
       applySupabaseCookies: <T>(response: T) => response,
     });
-    loadCourseModulesByStatusMock.mockResolvedValueOnce([
+    loadPublishedCourseModulesCachedMock.mockResolvedValueOnce([
       {
         id: "mod1",
         title: "Intro",
@@ -180,15 +182,11 @@ describe("/api/my-library/new-content-signal route", () => {
       publishedAt: "2026-04-03T08:00:00.000Z",
     });
     expect(payload.signal?.lessons?.[0]?.lessonToken).toMatch(/^[0-9a-f]{16}$/);
-    expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
-      statuses: ["published"],
-      fallback: [],
-      autoSeedWhenEmpty: true,
-    });
+    expect(loadPublishedCourseModulesCachedMock).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to auth-user creation when athlete profile is missing", async () => {
-    loadCourseModulesByStatusMock.mockResolvedValueOnce([
+    loadPublishedCourseModulesCachedMock.mockResolvedValueOnce([
       {
         id: "mod1",
         title: "Intro",

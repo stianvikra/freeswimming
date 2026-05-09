@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { COURSE_MODULES } from "@/app/course/courseData";
-import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import { loadPublishedCourseModulesCached } from "@/lib/admin/content-course";
 import {
   MAX_COURSE_PROGRESS_ROWS,
   normalizeCourseProgressRows,
@@ -52,11 +51,7 @@ async function getSignedInUserId() {
 }
 
 async function getCourseProgressLessonIdResolver(): Promise<CourseProgressLessonIdResolver> {
-  const modules = await loadCourseModulesByStatus({
-    statuses: ["published"],
-    fallback: COURSE_MODULES,
-    autoSeedWhenEmpty: false,
-  });
+  const modules = await loadPublishedCourseModulesCached();
   const canonicalLessonIdByAlias = buildCanonicalCourseLessonIdMap(modules);
 
   return (lessonId) => canonicalizeCourseLessonRuntimeId(lessonId, canonicalLessonIdByAlias);

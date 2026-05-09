@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isUnauthenticatedAuthUserLookupError } from "@/lib/admin/access";
-import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import { loadPublishedCourseModulesCached } from "@/lib/admin/content-course";
 import {
   buildMyLibraryCourseSignal,
   resolveMyLibraryViewerSince,
@@ -68,11 +68,7 @@ export async function GET() {
       );
     }
 
-    const modules = await loadCourseModulesByStatus({
-      statuses: ["published"],
-      fallback: [],
-      autoSeedWhenEmpty: true,
-    });
+    const modules = await loadPublishedCourseModulesCached();
     const signal = buildMyLibraryCourseSignal(modules, {
       viewerSince: resolveMyLibraryViewerSince({
         profileCreatedAt: profileCreatedResult.data?.created_at ?? null,

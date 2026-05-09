@@ -6,13 +6,12 @@ import TrackedLink from "@/components/analytics/TrackedLink";
 import PageTemplate from "@/components/PageTemplate";
 import PageIntro from "@/components/PageIntro";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
+import { loadPublicCatalogOverridesCached } from "@/lib/commerce/catalog-server";
 import {
   getCatalogProductsWithAvailability,
+  type CatalogProductOverridesById,
   type CatalogProductAvailability,
 } from "@/lib/commerce/catalog";
-import type { CatalogProductOverridesById } from "@/lib/commerce/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -60,10 +59,10 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
   const copy = getPlanCopy(product);
 
   return (
-    <article className="bg-white/92 relative overflow-hidden rounded-[22px] border border-slate-200/70 p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+    <article className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-white/92 p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
       <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
 
-      <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
         {product.kind === "analysis" ? "Video feedback" : "Guide"}
       </div>
       <h2 className="mt-2 text-[18px] font-semibold text-slate-900">{product.title}</h2>
@@ -101,17 +100,7 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
 export default async function PlansPage() {
   let catalogOverrides: CatalogProductOverridesById = {};
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: productRows, error: productRowsError } = await supabase
-      .from("products")
-      .select("id, slug, title, kind, active")
-      .order("created_at", { ascending: true });
-
-    if (productRowsError) {
-      console.error("[Plans] Could not load product catalog overrides", productRowsError);
-    } else {
-      catalogOverrides = buildCatalogOverridesFromRows(productRows ?? []);
-    }
+    catalogOverrides = await loadPublicCatalogOverridesCached();
   } catch (error) {
     console.error("[Plans] Falling back to env catalog due override lookup failure", error);
   }

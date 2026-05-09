@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { COURSE_MODULES } from "@/app/course/courseData";
-import { loadCourseModulesByStatus } from "@/lib/admin/content-course";
+import { loadPublishedCourseModulesCached } from "@/lib/admin/content-course";
 import {
   buildCourseLessonModuleIdMap,
   inferCourseModuleRuntimeIdFromLessonRuntimeId,
@@ -142,11 +141,7 @@ export async function loadGoalProgressContext(
   } else {
     const courseModules =
       courseResult.data && courseResult.data.length > 0
-        ? await loadCourseModulesByStatus({
-            statuses: ["published"],
-            fallback: COURSE_MODULES,
-            autoSeedWhenEmpty: false,
-          })
+        ? await loadPublishedCourseModulesCached()
         : [];
     const lessonToModuleId = buildCourseLessonModuleIdMap(courseModules);
 

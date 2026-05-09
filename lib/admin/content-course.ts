@@ -4,6 +4,7 @@ import {
   type CourseModule,
   type CourseSupportActionId,
 } from "@/app/course/courseData";
+import { unstable_cache } from "next/cache";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import {
@@ -16,6 +17,8 @@ import {
 import type { CourseContentReadStatus } from "@/lib/course/preview";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
+
+export const PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS = 60 * 60;
 
 type AdminContentRow = Database["public"]["Tables"]["admin_content_items"]["Row"];
 
@@ -422,10 +425,20 @@ export async function loadCourseModulesByStatus(
   }
 }
 
+export const loadPublishedCourseModulesCached = unstable_cache(
+  async () =>
+    loadCourseModulesByStatus({
+      statuses: ["published"],
+      fallback: COURSE_MODULES,
+      autoSeedWhenEmpty: true,
+    }),
+  ["published-course-modules-v1"],
+  {
+    revalidate: PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS,
+    tags: ["published-course-content"],
+  }
+);
+
 export async function loadPublishedCourseModules(): Promise<CourseModule[]> {
-  return loadCourseModulesByStatus({
-    statuses: ["published"],
-    fallback: COURSE_MODULES,
-    autoSeedWhenEmpty: true,
-  });
+  return loadPublishedCourseModulesCached();
 }

@@ -1,20 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createServerSupabaseClientMock, loadCourseModulesByStatusMock, trackAnalyticsEventMock } =
-  vi.hoisted(() => {
-    return {
-      createServerSupabaseClientMock: vi.fn(),
-      loadCourseModulesByStatusMock: vi.fn(),
-      trackAnalyticsEventMock: vi.fn(),
-    };
-  });
+const {
+  createServerSupabaseClientMock,
+  loadPublishedCourseModulesCachedMock,
+  trackAnalyticsEventMock,
+} = vi.hoisted(() => {
+  return {
+    createServerSupabaseClientMock: vi.fn(),
+    loadPublishedCourseModulesCachedMock: vi.fn(),
+    trackAnalyticsEventMock: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: createServerSupabaseClientMock,
 }));
 
 vi.mock("@/lib/admin/content-course", () => ({
-  loadCourseModulesByStatus: loadCourseModulesByStatusMock,
+  loadPublishedCourseModulesCached: loadPublishedCourseModulesCachedMock,
 }));
 
 vi.mock("@/lib/analytics/events", () => ({
@@ -87,7 +90,7 @@ function buildPostSupabase() {
 
 describe("/api/progress/course route", () => {
   beforeEach(() => {
-    loadCourseModulesByStatusMock.mockResolvedValue([
+    loadPublishedCourseModulesCachedMock.mockResolvedValue([
       {
         id: "intro-course",
         title: "Intro",
@@ -153,11 +156,7 @@ describe("/api/progress/course route", () => {
         },
       ],
     });
-    expect(loadCourseModulesByStatusMock).toHaveBeenCalledWith({
-      statuses: ["published"],
-      fallback: expect.any(Array),
-      autoSeedWhenEmpty: false,
-    });
+    expect(loadPublishedCourseModulesCachedMock).toHaveBeenCalledTimes(1);
     expect(supabase.upsert).toHaveBeenCalledWith(
       [
         {
