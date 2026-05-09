@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-governance-health-restore-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -110,9 +110,37 @@ N/A because no persisted or linkable domain entities are created, renamed, delet
 
 ## Validation
 
-- `npm run lint:briefs`
-- `npm run verify:docs-only`
-- `npm run verify:pre-pr`
+- `npm run lint:briefs` - PASS
+- `npm run verify:docs-only` - PASS
+- `npm run verify:pre-pr` - PASS
+- `npm run verify:pre-merge` - PASS
+
+## Completion Record
+
+- Implementation PR: `#659`
+- Merged commit: `b16060a`
+- Scope completed:
+  - fixed the Supabase egress done brief metadata shape that blocked brief lint,
+  - aligned contributor docs with Node 24/npm 11 and current pre-PR/pre-merge gates,
+  - aligned branch-protection docs/runbook with live required check names,
+  - documented the live branch-protection review-count mismatch as a follow-up.
+- CI evidence:
+  - PR `#659` passed `verify`, `Analyze (javascript-typescript)`, `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, and Vercel.
+- 10/10 claim: yes.
+- Remaining gap:
+  - live branch protection still reported `required_pull_request_reviews: 0`; applying the desired review setting requires explicit repository-admin action outside this docs-only PR.
+
+## Achieved Target Scores
+
+| Category                            | Achieved Score | Evidence                                                                                               | Gaps / Notes                                                                               |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Product goals and IA                | `5/5`          | Contributor and branch-protection docs now point to the current Node/npm and verification workflow.    | None for docs scope.                                                                       |
+| Content governance                  | `5/5`          | Brief metadata, lifecycle location, and closeout evidence are lint-clean.                              | None for docs scope.                                                                       |
+| Stack-fit and dependency discipline | `5/5`          | Reused existing docs, runbook, branch-protection, and task-brief systems; no dependency or script add. | None.                                                                                      |
+| Testing and QA automation           | `5/5`          | `lint:briefs`, `verify:docs-only`, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                 | None for docs scope.                                                                       |
+| DevOps and rollback readiness       | `5/5`          | Branch-protection docs name live check contexts and the remaining review-count mismatch.               | Live GitHub review enforcement still requires a separate repository-admin settings change. |
+
+Critical target categories were Content governance, Stack-fit and dependency discipline, Testing and QA automation, and DevOps and rollback readiness. Each critical target category closed at `5/5`.
 
 ## Approval Needed?
 
@@ -123,3 +151,4 @@ settings later needs repository admin credentials and a separate explicit owner 
 
 - `2026-05-09` - Started after owner approved Phase 0 from the platform audit. Scope is docs-only governance health restore before new feature work.
 - `2026-05-09` - Committed docs restore as `185e9b5`; `npm run lint:briefs`, `npm run verify:docs-only`, and `npm run verify:pre-pr` passed on the docs-only lane. Next step: push the branch, open PR, monitor CI, then run `npm run verify:pre-merge`.
+- `2026-05-09` - PR `#659` merged as `b16060a`; post-merge preflight requested brief lifecycle closeout, so this brief moved from `in-progress` to `done`.
