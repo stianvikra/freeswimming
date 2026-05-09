@@ -9,9 +9,9 @@ else
 fi
 
 DEFAULT_CHECKS=(
-  "CI / verify"
-  "CodeQL / Analyze (javascript-typescript)"
-  "PR Size / size-check"
+  "verify"
+  "Analyze (javascript-typescript)"
+  "size-check"
 )
 
 if [[ $# -gt 0 ]]; then
@@ -63,9 +63,9 @@ payload=$(
   },
   "enforce_admins": true,
   "required_pull_request_reviews": {
-    "dismiss_stale_reviews": true,
-    "require_code_owner_reviews": true,
-    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0,
     "require_last_push_approval": false
   },
   "required_conversation_resolution": true,

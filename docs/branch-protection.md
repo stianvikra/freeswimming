@@ -3,9 +3,8 @@
 This repository should protect `main` with:
 
 - pull request required before merge
-- at least 1 approving review
-- code owner review required
-- stale review dismissal enabled
+- solo-owner review policy: `0` required approving reviews in GitHub
+- explicit owner approval in Codex chat before merge
 - required conversation resolution
 - required passing checks:
   - `verify`
@@ -25,14 +24,16 @@ gh api repos/stianvikra/freeswimming/branches/main/protection \
 ```
 
 Governance audit note: on `2026-05-09`, the live rule initially reported
-`required_pull_request_reviews: 0`. The review gate was restored the same day
-through the GitHub PR-review protection endpoint and verified as
-`required_pull_request_reviews: 1` with the required checks unchanged.
+`required_pull_request_reviews: 0`, then was briefly raised to `1`. Because this
+is a solo-owner repository, the desired live policy is now `0` required GitHub
+reviews plus required checks and explicit owner approval in Codex chat. The live
+rule was restored to that solo-owner policy the same day.
 
 ## Apply Automatically (CLI Script)
 
 1. Create a GitHub token with repository admin scope.
-2. Run (defaults include CI + CodeQL + PR Size checks):
+2. Run (defaults include current `verify`, CodeQL, and PR Size check names plus
+   the solo-owner review policy):
 
 ```bash
 GITHUB_TOKEN=your_token_here bash ./scripts/apply-branch-protection.sh main
@@ -48,4 +49,4 @@ GITHUB_TOKEN=your_token_here bash ./scripts/apply-branch-protection.sh main \
 ```
 
 Prefer passing the current live check context names explicitly when restoring
-protection so a review-count fix does not accidentally drift status checks.
+protection so a solo-owner policy fix does not accidentally drift status checks.

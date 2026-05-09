@@ -10,8 +10,8 @@ Branch protection required-check names do not exactly match current workflow run
 
 Example mismatch:
 
-- Required: `CI / verify`
-- Actual run: `CI / verify (pull_request)`
+- Required branch-protection context: `CI / verify`
+- Current actual PR check name: `verify`
 
 ## Recovery Steps
 
@@ -23,9 +23,9 @@ read -s GITHUB_TOKEN
 echo
 export GITHUB_TOKEN
 bash ./scripts/apply-branch-protection.sh main \
-  "CI / verify (pull_request)" \
-  "CodeQL / Analyze (javascript-typescript) (pull_request)" \
-  "PR Size / size-check (pull_request)"
+  "verify" \
+  "Analyze (javascript-typescript)" \
+  "size-check"
 unset GITHUB_TOKEN
 ```
 
