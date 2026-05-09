@@ -25,6 +25,56 @@ function getAalErrorMessage() {
   return "Complete stronger admin verification in this session before unlocking the preview.";
 }
 
+function noStoreRedirect(request: Request, path: string) {
+  const response = NextResponse.redirect(new URL(path, request.url));
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
+
+function previewAccessPath(nextPath: string) {
+  const params = new URLSearchParams({ next: nextPath });
+  return `/preview-access?${params.toString()}`;
+}
+
+function setPreviewAccessCookie(response: NextResponse, sessionToken: string) {
+  const config = getSiteLockConfig();
+  response.cookies.set({
+    name: config.cookieName,
+    value: sessionToken,
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "lax",
+    path: "/",
+    maxAge: config.sessionMaxAgeSeconds,
+  });
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const nextPath = getSafeNextPath(url.searchParams.get("next"), "/");
+
+  if (!isSiteLockEnabled()) {
+    return noStoreRedirect(request, nextPath);
+  }
+
+  const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
+  const gate = await requireAdminRoleFromSupabase(supabase, {
+    minimumRole: "admin",
+    allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+  });
+
+  if (!gate.ok) {
+    return applySupabaseCookies(noStoreRedirect(request, previewAccessPath(nextPath)));
+  }
+
+  const config = getSiteLockConfig();
+  const sessionToken = await createSiteLockSessionToken(config.bypassToken);
+  const response = noStoreRedirect(request, nextPath);
+  setPreviewAccessCookie(response, sessionToken);
+
+  return applySupabaseCookies(response);
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     next?: unknown;
@@ -41,7 +91,7 @@ export async function POST(request: Request) {
   const config = getSiteLockConfig();
   const { supabase, applySupabaseCookies } = await createRouteHandlerSupabaseClient();
   const gate = await requireAdminRoleFromSupabase(supabase, {
-    minimumRole: "viewer",
+    minimumRole: "admin",
     allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
   });
 
@@ -87,15 +137,7 @@ export async function POST(request: Request) {
     ok: true,
     redirectPath: nextPath,
   });
-  response.cookies.set({
-    name: config.cookieName,
-    value: sessionToken,
-    httpOnly: true,
-    secure: process.env.NODE_ENV !== "development",
-    sameSite: "lax",
-    path: "/",
-    maxAge: config.sessionMaxAgeSeconds,
-  });
+  setPreviewAccessCookie(response, sessionToken);
 
   return applySupabaseCookies(response);
 }

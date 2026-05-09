@@ -35,6 +35,7 @@ SITE_LOCK_PASSWORD_HASH=sha256:<OUTPUT>
 3. Verify:
    - public route redirects to `/preview-access`,
    - preview password unlocks and sets access cookie,
+   - signed-in admins are issued preview access through `/preview-access/admin-unlock`,
    - `/api/stripe/webhook` remains reachable.
 
 Preview cookie clear URL:
@@ -59,6 +60,7 @@ Ops alternative:
 - Public visitor redirected from `/` to `/preview-access`.
 - Invalid password keeps user on preview page with clear error.
 - Valid password redirects to requested `next` path.
+- Authenticated admin redirects through `/preview-access/admin-unlock` and reaches the requested `next` path without entering the shared preview password.
 - `/preview-access` keeps the shared preview password as the primary unlock action and any notify-interest CTA as a clearly secondary path.
 - `/contact?source=preview_access_notify` stays reachable while private mode is enabled so visitors can request preview updates.
 - API endpoints (except explicit bypasses) return locked response while private mode is enabled.

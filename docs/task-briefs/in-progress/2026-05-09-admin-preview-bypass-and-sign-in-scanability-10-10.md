@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-admin-preview-bypass-and-sign-in-scanability-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -81,6 +81,9 @@ Critical target categories for a `10/10` claim:
   - use existing auth session/user role source,
   - keep fail-closed behavior when role source is unavailable.
 - UI system:
+  - reference surface: reuse the existing `/auth/sign-in` card/form layout, `AuthRequestStatus`,
+    `AuthSubmitButton`, `AuthResendButton`, `PageTemplate`, and `SiteChrome` instead of
+    introducing a new auth visual system,
   - remove the sign-in device-support card,
   - keep one primary auth action and concise support/retry copy,
   - screenshot handoff is before/after for desktop and mobile.
@@ -114,7 +117,11 @@ Critical target categories for a `10/10` claim:
 - Compatibility contract:
   - password-based preview access remains available for non-authenticated preview access.
 - Observability and repair:
-  - support logs distinguish missing role source, denied role, and cookie write failure without sensitive values.
+  - support logs distinguish missing role source, denied role, and cookie write failure without
+    sensitive values,
+  - no unexpected 500 path is introduced for anonymous/non-admin admin-unlock attempts; those
+    failure-mode paths deterministically return preview-page redirects or JSON denial, while auth
+    lookup errors stay fail-closed.
 
 ## Scope
 
@@ -156,6 +163,19 @@ Update `docs/runbooks/auth-account-support.md` and any preview-access support co
 
 Run a targeted sweep for `preview access`, `site lock`, `preview password`, `What works on this device`, `Email code today`, `admin unlock`, `/preview-access`, `/auth/sign-in`, and `/dev/login`.
 
+Identifiers searched: `preview access`, `site lock`, `preview password`, `What works on this device`,
+`Email code today`, `admin unlock`, `/preview-access`, `/auth/sign-in`, `/dev/login`, `pushState`,
+`popstate`, `history.back`, `replaceState`, and `display: standalone`.
+
+Surfaces checked: `app/`, `components/`, `lib/`, `tests/`, `docs/runbooks/`,
+`docs/architecture/`, and the active task brief. Fallout handled in this slice: sign-in UI,
+preview access UI, admin operations copy, auth account support runbook, private access runbook,
+authz/cache contract registry, and route/e2e/unit tests.
+
 ## Checkpoint Log
 
 - `2026-05-09` - Planned after owner reported preview-password friction and sign-in scanability issue. Next: execute this small admin-only slice before broader user-management/test-user work.
+- `2026-05-09` - Moved to in-progress for admin-only preview bypass and sign-in scanability implementation. Next: targeted tests, screenshot handoff, then owner visual approval before broad gates.
+- `2026-05-09` - Implemented sign-in scanability cleanup and admin-only preview-cookie issue route. Targeted validation: `npx vitest run tests/unit/preview-access-admin-unlock-route.test.ts tests/unit/sign-in-ui-state.test.ts`, `npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=desktop-chromium`, `npm run typecheck`, `npm run lint:briefs:all`, and screenshot artifacts in `output/admin-preview-bypass-sign-in-scanability-2026-05-09-083728`. Next: owner screenshot approval before `npm run verify:pre-pr`, commit/PR, and pre-merge gate.
+- `2026-05-09` - Owner correction applied: removed the redundant sign-in intro sentence and removed the Back button from anonymous preview access. Regenerated screenshot artifacts in the same handoff folder and reran targeted unit tests, sign-in Playwright, and `npm run typecheck`. Next: owner visual approval before broad gates.
+- `2026-05-09` - Owner correction applied: removed duplicate helper text under `Enter code` because the green sent-status already carries that instruction. Local browser-back audit found no `pushState`/`popstate` history hijacking; current browser-chrome hiding comes only from installed PWA `display: standalone`, while normal browser tabs retain native controls. Next: regenerate screenshot handoff.
