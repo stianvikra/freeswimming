@@ -228,6 +228,8 @@ Revert this PR to return to previous uncached public reads and generic auth erro
 - `2026-05-09` - Implemented public published-content/catalog caching, auth failure classification, runbook update, focused tests, and screenshot handoff. Next: rerun `npm run verify:pre-pr`.
 - `2026-05-09` - Merged PR #657 at `9b61215` after green CI and local `npm run verify:pre-merge`. Next: post-merge closeout.
 
+## Completion Record
+
 ## Closeout Evidence
 
 - Merged PR: `#657`

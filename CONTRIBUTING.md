@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- Node.js 20+
-- npm 10+
+- Node.js 24.x
+- npm 11.11.0
 
 ## Local Setup
 
@@ -31,10 +31,16 @@
 
 ## Quality Gate
 
-Before opening a PR, run:
+Before opening or updating a PR, run:
 
 ```bash
-npm run verify
+npm run verify:pre-pr
+```
+
+Before merge readiness, run:
+
+```bash
+npm run verify:pre-merge
 ```
 
 ## Pull Requests
@@ -42,6 +48,7 @@ npm run verify
 - Use `.github/pull_request_template.md`.
 - Keep PRs small and focused.
 - Target <= 500 changed lines (additions + deletions) per PR where practical.
+- CI blocks PRs above 4000 changed lines.
 - Include test evidence and screenshots when UI is changed.
 - Split oversized work into multiple PRs.
 
