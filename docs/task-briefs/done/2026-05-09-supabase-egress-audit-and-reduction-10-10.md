@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-supabase-egress-audit-and-reduction-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -226,3 +226,38 @@ Revert this PR to return to previous uncached public reads and generic auth erro
 
 - `2026-05-09` - Created after Supabase dashboard confirmed `18.614 GB` egress on Free Plan and production logs showed `402 exceed_egress_quota` blocking sign-in. Next: implement low-risk cache and auth error diagnostics.
 - `2026-05-09` - Implemented public published-content/catalog caching, auth failure classification, runbook update, focused tests, and screenshot handoff. Next: rerun `npm run verify:pre-pr`.
+- `2026-05-09` - Merged PR #657 at `9b61215` after green CI and local `npm run verify:pre-merge`. Next: post-merge closeout.
+
+## Closeout Evidence
+
+- Merged PR: `#657`
+- Merge commit: `9b61215`
+- Implementation commit: `c6bb03f`
+- `npm run verify:pre-pr`: PASS, full public lane, artifact `artifacts/test-runs/20260509-104851`
+- CI: PASS, including `verify`, `CodeQL`, `Vercel`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, and `size-check`
+- `npm run verify:pre-merge`: PASS, artifact marker `artifacts/verify-pre-merge/20260509-092015.json`
+- Screenshot artifacts: `output/supabase-egress-hotfix-20260509-084249`
+- Follow-up created: `docs/task-briefs/planned/2026-05-09-admin-incident-alerts-and-status-ops-10-10.md`
+- Remaining gap: Supabase dashboard egress recovery remains owner-verified outside repo automation.
+- 10/10 claim: yes.
+
+## Achieved Target Scores
+
+| Target Category                               | Achieved Score | Evidence                                                                                                     |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Scoped hotfix reduced avoidable Supabase egress and preserved route purpose.                                 |
+| UX flow clarity                               | `5/5`          | Service-limit sign-in error is clear and no longer shows misleading countdown.                               |
+| Business logic correctness and data integrity | `5/5`          | Public cache is limited to public projections; protected/admin/session-bound reads remain request-bound.     |
+| Performance (CWV + payloads)                  | `5/5`          | Perf budgets passed; no new client dependency or payload growth.                                             |
+| Data placement and sync boundaries            | `5/5`          | Cacheable public data, server-canonical auth/admin/user data, and no-store boundaries documented and tested. |
+| Caching and invalidation strategy             | `5/5`          | Public content/catalog cache has bounded revalidation and response cache headers.                            |
+| Reliability and failure handling              | `5/5`          | Auth classifier covers rate limit, quota/project restriction, delivery, and unknown failures.                |
+| Security and authz                            | `5/5`          | Protected data is not globally cached; negative-path tests stayed green.                                     |
+| Privacy and compliance                        | `5/5`          | Logs and UI avoid raw tokens, provider internals, and unnecessary PII.                                       |
+| Incident response and support operations      | `5/5`          | Auth support runbook documents Supabase `402 exceed_egress_quota` diagnosis and user guidance.               |
+| Stack-fit and dependency discipline           | `5/5`          | Uses Next.js cache primitives and existing Supabase helpers; no dependency added.                            |
+| Testing and QA automation                     | `5/5`          | Focused unit/cache tests plus full pre-PR, CI, and pre-merge gates passed.                                   |
+| Scalability and cost efficiency               | `5/5`          | Public published-content/catalog reads no longer require one Supabase read per view.                         |
+| DevOps and rollback readiness                 | `5/5`          | Revert-only rollback; no migration required.                                                                 |
+
+Critical target categories were Business logic correctness and data integrity, Caching and invalidation strategy, Reliability and failure handling, Security and authz, Privacy and compliance, Incident response and support operations, Stack-fit and dependency discipline, Testing and QA automation, and Scalability and cost efficiency. Each critical target category closed at `5/5`.
