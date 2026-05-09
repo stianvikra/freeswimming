@@ -29,7 +29,13 @@ export type TrainingContextType = (typeof TRAINING_CONTEXT_TYPE_VALUES)[number];
 export type TrainingFocusRow = Database["public"]["Tables"]["training_focuses"]["Row"];
 export type TrainingFocusInsert = Database["public"]["Tables"]["training_focuses"]["Insert"];
 export type TrainingFocusUpdate = Database["public"]["Tables"]["training_focuses"]["Update"];
-export type TrainingNoteRow = Database["public"]["Tables"]["training_notes"]["Row"];
+export type TrainingNoteRow = Omit<
+  Database["public"]["Tables"]["training_notes"]["Row"],
+  "note_type" | "status"
+> & {
+  note_type: TrainingNoteType;
+  status: TrainingNoteStatus;
+};
 export type TrainingNoteInsert = Database["public"]["Tables"]["training_notes"]["Insert"];
 export type TrainingNoteUpdate = Database["public"]["Tables"]["training_notes"]["Update"];
 

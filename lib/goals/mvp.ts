@@ -28,7 +28,14 @@ export type GoalSource = (typeof GOAL_SOURCE_VALUES)[number];
 export type GoalStatus = (typeof GOAL_STATUS_VALUES)[number];
 export type GoalActiveStatus = (typeof GOAL_ACTIVE_STATUS_VALUES)[number];
 
-export type GoalRow = Database["public"]["Tables"]["goals"]["Row"];
+export type GoalRow = Omit<
+  Database["public"]["Tables"]["goals"]["Row"],
+  "goal_type" | "source" | "status"
+> & {
+  goal_type: GoalType;
+  source: GoalSource;
+  status: GoalStatus;
+};
 export type GoalInsert = Database["public"]["Tables"]["goals"]["Insert"];
 export type GoalUpdate = Database["public"]["Tables"]["goals"]["Update"];
 export type GoalCreateInsert = Omit<GoalInsert, "user_id">;

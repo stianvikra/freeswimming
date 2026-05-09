@@ -12,7 +12,12 @@ export const ATHLETE_AGE_BAND_VALUES = [
 ] as const;
 
 export type AthleteAgeBand = (typeof ATHLETE_AGE_BAND_VALUES)[number];
-export type AthleteProfileRow = Database["public"]["Tables"]["athlete_profiles"]["Row"];
+export type AthleteProfileRow = Omit<
+  Database["public"]["Tables"]["athlete_profiles"]["Row"],
+  "age_band"
+> & {
+  age_band: AthleteAgeBand | null;
+};
 export type AthleteProfileInsert = Database["public"]["Tables"]["athlete_profiles"]["Insert"];
 export type AthleteProfileUpdate = Database["public"]["Tables"]["athlete_profiles"]["Update"];
 

@@ -190,7 +190,7 @@ export async function loadUserGoals(
     return [];
   }
 
-  return result.data ?? [];
+  return (result.data ?? []) as GoalRow[];
 }
 
 export async function countActiveGoals(
@@ -238,7 +238,7 @@ export async function syncDerivedGoals(
     }
 
     if (result.data) {
-      mergedRows[index] = result.data;
+      mergedRows[index] = result.data as GoalRow;
     }
   }
 

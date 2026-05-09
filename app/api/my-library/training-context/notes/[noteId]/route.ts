@@ -5,6 +5,7 @@ import {
   normalizeNullableText,
   normalizeTrainingNoteStatus,
   resolveTrainingNoteResolvedAt,
+  type TrainingNoteRow,
 } from "@/lib/training-context/mvp";
 import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
@@ -96,7 +97,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     );
   }
 
-  const existing = noteResult.data;
+  const existing = noteResult.data as TrainingNoteRow | null;
   if (!existing) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Note not found." }, { status: 404 })
