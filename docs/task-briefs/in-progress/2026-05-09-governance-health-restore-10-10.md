@@ -122,3 +122,4 @@ settings later needs repository admin credentials and a separate explicit owner 
 ## Checkpoint Log
 
 - `2026-05-09` - Started after owner approved Phase 0 from the platform audit. Scope is docs-only governance health restore before new feature work.
+- `2026-05-09` - Committed docs restore as `185e9b5`; `npm run lint:briefs`, `npm run verify:docs-only`, and `npm run verify:pre-pr` passed on the docs-only lane. Next step: push the branch, open PR, monitor CI, then run `npm run verify:pre-merge`.
