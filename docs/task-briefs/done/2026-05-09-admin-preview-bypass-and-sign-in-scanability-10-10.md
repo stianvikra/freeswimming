@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-admin-preview-bypass-and-sign-in-scanability-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -155,6 +155,36 @@ Critical target categories for a `10/10` claim:
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Closeout Evidence
+
+- Merged PR: `#655`
+- Merge commit: `acc191b`
+- Screenshot artifacts: `output/admin-preview-bypass-sign-in-scanability-2026-05-09-083728`
+- `npm run verify:pre-pr`: PASS, full lane, `artifacts/test-runs/20260509-090902`
+- `npm run verify:pre-merge`: PASS, `artifacts/verify-pre-merge/20260509-073847.json`
+- CI: PASS for `verify`, `site-lock-smoke`, `e2e-smoke`, CodeQL, Vercel, deploy preview, and size check.
+- Performance budget decision: hold for this auth/access slice; CI/local gates reported continued green margin, but budget tightening belongs in a dedicated performance-governance slice.
+- `10/10 claim`: yes - all critical target categories are scored `5/5`, and no target category is below `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #655 merged; admin preview bypass works through server-confirmed admin auth.          | None         |
+| UX flow clarity                               | `5/5`          | Removed low-value sign-in card, duplicate helper copy, and preview-page app Back button. | None         |
+| Visual design quality                         | `5/5`          | Owner-approved screenshot handoff in the listed artifact folder.                         | None         |
+| Business logic correctness and data integrity | `5/5`          | Route/unit tests prove admin-only cookie issue and non-admin/anonymous denial.           | None         |
+| Accessibility (a11y)                          | `5/5`          | Existing labelled email/code form remains; removed non-essential card only.              | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency added; removed UI weight; perf gates passed.                               | None         |
+| Data placement and sync boundaries            | `5/5`          | Auth session, role check, and preview cookie remain server-canonical.                    | None         |
+| Caching and invalidation strategy             | `5/5`          | Preview/auth decisions stay request/session-bound.                                       | None         |
+| Reliability and failure handling              | `5/5`          | Anonymous/non-admin flows redirect or deny deterministically without unexpected 500.     | None         |
+| Security and authz                            | `5/5`          | Admin-only `minimumRole` and negative-path tests cover forbidden bypasses.               | None         |
+| Privacy and compliance                        | `5/5`          | No preview passwords, tokens, or allowlist values exposed in UI/log copy.                | None         |
+| Incident response and support operations      | `5/5`          | Auth/support/private-access runbooks updated for admin auto-unlock and fallback paths.   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next/Supabase/site-lock helpers and UI patterns; no dependency added.    | None         |
+| Testing and QA automation                     | `5/5`          | Targeted unit/e2e, full `verify:pre-pr`, full CI verify, and `verify:pre-merge` passed.  | None         |
+| Scalability and cost efficiency               | `5/5`          | Request-bounded role/cookie check; no polling, fan-out, or background job.               | None         |
+| DevOps and rollback readiness                 | `5/5`          | Rollback is revert of PR #655; pre-pr/pre-merge/CI gates passed.                         | None         |
+
 ## Help / Guide Impact
 
 Update `docs/runbooks/auth-account-support.md` and any preview-access support copy that currently says admin sign-in and preview-password behavior are fully separate.
@@ -179,3 +209,4 @@ authz/cache contract registry, and route/e2e/unit tests.
 - `2026-05-09` - Implemented sign-in scanability cleanup and admin-only preview-cookie issue route. Targeted validation: `npx vitest run tests/unit/preview-access-admin-unlock-route.test.ts tests/unit/sign-in-ui-state.test.ts`, `npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=desktop-chromium`, `npm run typecheck`, `npm run lint:briefs:all`, and screenshot artifacts in `output/admin-preview-bypass-sign-in-scanability-2026-05-09-083728`. Next: owner screenshot approval before `npm run verify:pre-pr`, commit/PR, and pre-merge gate.
 - `2026-05-09` - Owner correction applied: removed the redundant sign-in intro sentence and removed the Back button from anonymous preview access. Regenerated screenshot artifacts in the same handoff folder and reran targeted unit tests, sign-in Playwright, and `npm run typecheck`. Next: owner visual approval before broad gates.
 - `2026-05-09` - Owner correction applied: removed duplicate helper text under `Enter code` because the green sent-status already carries that instruction. Local browser-back audit found no `pushState`/`popstate` history hijacking; current browser-chrome hiding comes only from installed PWA `display: standalone`, while normal browser tabs retain native controls. Next: regenerate screenshot handoff.
+- `2026-05-09` - PR #655 merged to `main` as `acc191b` after owner screenshot approval, local `npm run verify:pre-pr`, green GitHub checks, and local `npm run verify:pre-merge`. Post-merge preflight surfaced this repo-managed docs-only closeout. Next: merge closeout PR, then return to dryland in a fresh chat.
