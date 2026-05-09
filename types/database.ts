@@ -1,419 +1,85 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1";
+  };
   public: {
     Tables: {
-      course_progress: {
+      admin_audit_logs: {
         Row: {
-          done: boolean;
-          done_confirmed_at: string | null;
-          lesson_id: string;
-          updated_at: string;
-          user_id: string;
-          video_seconds: number;
+          action: string;
+          actor_email: string | null;
+          actor_user_id: string | null;
+          after: Json | null;
+          before: Json | null;
+          created_at: string;
+          entity_id: string | null;
+          entity_table: string;
+          id: string;
         };
         Insert: {
-          done?: boolean;
-          done_confirmed_at?: string | null;
-          lesson_id: string;
-          updated_at?: string;
-          user_id: string;
-          video_seconds?: number;
+          action: string;
+          actor_email?: string | null;
+          actor_user_id?: string | null;
+          after?: Json | null;
+          before?: Json | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_table: string;
+          id?: string;
         };
         Update: {
-          done?: boolean;
-          done_confirmed_at?: string | null;
-          lesson_id?: string;
-          updated_at?: string;
-          user_id?: string;
-          video_seconds?: number;
+          action?: string;
+          actor_email?: string | null;
+          actor_user_id?: string | null;
+          after?: Json | null;
+          before?: Json | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_table?: string;
+          id?: string;
         };
         Relationships: [];
       };
-      download_links: {
+      admin_categories: {
         Row: {
           created_at: string;
-          entitlement_id: string;
-          expires_at: string;
+          created_by: string | null;
           id: string;
-          token_hash: string;
-          used_at: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          entitlement_id: string;
-          expires_at: string;
-          id?: string;
-          token_hash: string;
-          used_at?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          entitlement_id?: string;
-          expires_at?: string;
-          id?: string;
-          token_hash?: string;
-          used_at?: string | null;
-        };
-        Relationships: [];
-      };
-      entitlements: {
-        Row: {
-          created_at: string;
-          granted_at: string;
-          id: string;
-          product_id: string;
-          purchaser_email: string;
-          source: string;
-          stripe_checkout_session_id: string;
-          stripe_customer_id: string | null;
-          updated_at: string;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          granted_at?: string;
-          id?: string;
-          product_id: string;
-          purchaser_email: string;
-          source?: string;
-          stripe_checkout_session_id: string;
-          stripe_customer_id?: string | null;
-          updated_at?: string;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          granted_at?: string;
-          id?: string;
-          product_id?: string;
-          purchaser_email?: string;
-          source?: string;
-          stripe_checkout_session_id?: string;
-          stripe_customer_id?: string | null;
-          updated_at?: string;
-          user_id?: string | null;
-        };
-        Relationships: [];
-      };
-      goals: {
-        Row: {
-          achieved_at: string | null;
-          celebrated_at: string | null;
-          created_at: string;
-          goal_type:
-            | "distance_time"
-            | "distance_continuous"
-            | "drill_complete"
-            | "module_complete"
-            | "custom";
-          id: string;
-          progress_value: number;
-          source: "template" | "custom";
-          status: "active" | "on_track" | "at_risk" | "achieved" | "archived";
-          target_count: number | null;
-          target_date: string | null;
-          target_distance_m: number | null;
-          target_ref: string | null;
-          target_time_seconds: number | null;
-          target_unit: string;
-          target_value: number | null;
+          is_active: boolean;
+          scope: string;
+          slug: string;
+          sort_order: number;
           title: string;
           updated_at: string;
-          user_id: string;
+          updated_by: string | null;
         };
         Insert: {
-          achieved_at?: string | null;
-          celebrated_at?: string | null;
           created_at?: string;
-          goal_type?:
-            | "distance_time"
-            | "distance_continuous"
-            | "drill_complete"
-            | "module_complete"
-            | "custom";
+          created_by?: string | null;
           id?: string;
-          progress_value?: number;
-          source?: "template" | "custom";
-          status?: "active" | "on_track" | "at_risk" | "achieved" | "archived";
-          target_count?: number | null;
-          target_date?: string | null;
-          target_distance_m?: number | null;
-          target_ref?: string | null;
-          target_time_seconds?: number | null;
-          target_unit: string;
-          target_value?: number | null;
+          is_active?: boolean;
+          scope: string;
+          slug: string;
+          sort_order?: number;
           title: string;
           updated_at?: string;
-          user_id: string;
+          updated_by?: string | null;
         };
         Update: {
-          achieved_at?: string | null;
-          celebrated_at?: string | null;
           created_at?: string;
-          goal_type?:
-            | "distance_time"
-            | "distance_continuous"
-            | "drill_complete"
-            | "module_complete"
-            | "custom";
+          created_by?: string | null;
           id?: string;
-          progress_value?: number;
-          source?: "template" | "custom";
-          status?: "active" | "on_track" | "at_risk" | "achieved" | "archived";
-          target_count?: number | null;
-          target_date?: string | null;
-          target_distance_m?: number | null;
-          target_ref?: string | null;
-          target_time_seconds?: number | null;
-          target_unit?: string;
-          target_value?: number | null;
+          is_active?: boolean;
+          scope?: string;
+          slug?: string;
+          sort_order?: number;
           title?: string;
           updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      training_focuses: {
-        Row: {
-          archived_at: string | null;
-          completed_at: string | null;
-          context_ref: string | null;
-          context_type:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at: string;
-          details: string | null;
-          goal_id: string | null;
-          id: string;
-          is_primary: boolean;
-          status: "open" | "completed" | "archived";
-          title: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          archived_at?: string | null;
-          completed_at?: string | null;
-          context_ref?: string | null;
-          context_type?:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at?: string;
-          details?: string | null;
-          goal_id?: string | null;
-          id?: string;
-          is_primary?: boolean;
-          status?: "open" | "completed" | "archived";
-          title: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          archived_at?: string | null;
-          completed_at?: string | null;
-          context_ref?: string | null;
-          context_type?:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at?: string;
-          details?: string | null;
-          goal_id?: string | null;
-          id?: string;
-          is_primary?: boolean;
-          status?: "open" | "completed" | "archived";
-          title?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      training_notes: {
-        Row: {
-          answer: string | null;
-          body: string;
-          context_ref: string | null;
-          context_type:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at: string;
-          focus_id: string | null;
-          goal_id: string | null;
-          id: string;
-          note_type: "observation" | "question";
-          resolved_at: string | null;
-          status:
-            | "open"
-            | "actioned"
-            | "no_action_needed"
-            | "unanswered"
-            | "answered"
-            | "no_answer_needed";
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          answer?: string | null;
-          body: string;
-          context_ref?: string | null;
-          context_type?:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at?: string;
-          focus_id?: string | null;
-          goal_id?: string | null;
-          id?: string;
-          note_type: "observation" | "question";
-          resolved_at?: string | null;
-          status:
-            | "open"
-            | "actioned"
-            | "no_action_needed"
-            | "unanswered"
-            | "answered"
-            | "no_answer_needed";
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          answer?: string | null;
-          body?: string;
-          context_ref?: string | null;
-          context_type?:
-            | "course_lesson"
-            | "course_module"
-            | "guide_drill"
-            | "guide_session"
-            | "workout_session"
-            | "program"
-            | null;
-          created_at?: string;
-          focus_id?: string | null;
-          goal_id?: string | null;
-          id?: string;
-          note_type?: "observation" | "question";
-          resolved_at?: string | null;
-          status?:
-            | "open"
-            | "actioned"
-            | "no_action_needed"
-            | "unanswered"
-            | "answered"
-            | "no_answer_needed";
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      guide_progress: {
-        Row: {
-          completed: boolean;
-          guide_slug: string;
-          notes: string;
-          section_id: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          completed?: boolean;
-          guide_slug: string;
-          notes?: string;
-          section_id: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          completed?: boolean;
-          guide_slug?: string;
-          notes?: string;
-          section_id?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      guide_session_progress: {
-        Row: {
-          completed: boolean;
-          completed_at: string | null;
-          guide_slug: string;
-          notes: string;
-          session_number: number;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          completed?: boolean;
-          completed_at?: string | null;
-          guide_slug: string;
-          notes?: string;
-          session_number: number;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          completed?: boolean;
-          completed_at?: string | null;
-          guide_slug?: string;
-          notes?: string;
-          session_number?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      guide_sessions: {
-        Row: {
-          created_at: string;
-          description: string;
-          guide_slug: string;
-          session_number: number;
-          title: string;
-          updated_at: string;
-          week_number: number;
-        };
-        Insert: {
-          created_at?: string;
-          description?: string;
-          guide_slug: string;
-          session_number: number;
-          title: string;
-          updated_at?: string;
-          week_number: number;
-        };
-        Update: {
-          created_at?: string;
-          description?: string;
-          guide_slug?: string;
-          session_number?: number;
-          title?: string;
-          updated_at?: string;
-          week_number?: number;
+          updated_by?: string | null;
         };
         Relationships: [];
       };
@@ -515,233 +181,96 @@ export type Database = {
         };
         Relationships: [];
       };
-      admin_categories: {
-        Row: {
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          is_active: boolean;
-          scope: string;
-          slug: string;
-          sort_order: number;
-          title: string;
-          updated_at: string;
-          updated_by: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          is_active?: boolean;
-          scope: string;
-          slug: string;
-          sort_order?: number;
-          title: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          is_active?: boolean;
-          scope?: string;
-          slug?: string;
-          sort_order?: number;
-          title?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [];
-      };
-      admin_audit_logs: {
+      admin_email_template_revisions: {
         Row: {
           action: string;
-          actor_email: string | null;
-          actor_user_id: string | null;
-          after: Json | null;
-          before: Json | null;
+          changed_by: string | null;
+          changed_by_email: string | null;
           created_at: string;
-          entity_id: string | null;
-          entity_table: string;
           id: string;
+          locale: string;
+          revision_number: number;
+          snapshot: Json;
+          template_id: string;
+          template_key: string;
         };
         Insert: {
           action: string;
-          actor_email?: string | null;
-          actor_user_id?: string | null;
-          after?: Json | null;
-          before?: Json | null;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
           created_at?: string;
-          entity_id?: string | null;
-          entity_table: string;
           id?: string;
+          locale: string;
+          revision_number: number;
+          snapshot: Json;
+          template_id: string;
+          template_key: string;
         };
         Update: {
           action?: string;
-          actor_email?: string | null;
-          actor_user_id?: string | null;
-          after?: Json | null;
-          before?: Json | null;
+          changed_by?: string | null;
+          changed_by_email?: string | null;
           created_at?: string;
-          entity_id?: string | null;
-          entity_table?: string;
           id?: string;
+          locale?: string;
+          revision_number?: number;
+          snapshot?: Json;
+          template_id?: string;
+          template_key?: string;
         };
         Relationships: [];
       };
-      qr_redirect_links: {
-        Row: {
-          content_item_id: string | null;
-          content_label: string;
-          created_at: string;
-          created_by: string | null;
-          destination_url: string;
-          id: string;
-          last_resolved_at: string | null;
-          owner_user_id: string | null;
-          placement_key: string;
-          slug: string;
-          status: Database["public"]["Enums"]["qr_link_status"];
-          updated_at: string;
-          updated_by: string | null;
-        };
-        Insert: {
-          content_item_id?: string | null;
-          content_label?: string;
-          created_at?: string;
-          created_by?: string | null;
-          destination_url: string;
-          id?: string;
-          last_resolved_at?: string | null;
-          owner_user_id?: string | null;
-          placement_key?: string;
-          slug: string;
-          status?: Database["public"]["Enums"]["qr_link_status"];
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Update: {
-          content_item_id?: string | null;
-          content_label?: string;
-          created_at?: string;
-          created_by?: string | null;
-          destination_url?: string;
-          id?: string;
-          last_resolved_at?: string | null;
-          owner_user_id?: string | null;
-          placement_key?: string;
-          slug?: string;
-          status?: Database["public"]["Enums"]["qr_link_status"];
-          updated_at?: string;
-          updated_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "qr_redirect_links_content_item_id_fkey";
-            columns: ["content_item_id"];
-            isOneToOne: false;
-            referencedRelation: "admin_content_items";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      admin_notes: {
+      admin_email_templates: {
         Row: {
           body: string;
-          category: string;
-          context_ref: string | null;
-          context_type: string | null;
           created_at: string;
           created_by: string | null;
           id: string;
-          is_done: boolean;
-          note_date: string;
-          priority: "low" | "normal" | "high" | "urgent";
-          title: string;
+          last_published_at: string | null;
+          last_published_by: string | null;
+          locale: string;
+          optional_placeholders: string[];
+          required_placeholders: string[];
+          status: Database["public"]["Enums"]["admin_email_template_status"];
+          subject: string;
+          template_key: string;
           updated_at: string;
           updated_by: string | null;
+          version: number;
         };
         Insert: {
           body?: string;
-          category?: string;
-          context_ref?: string | null;
-          context_type?: string | null;
           created_at?: string;
           created_by?: string | null;
           id?: string;
-          is_done?: boolean;
-          note_date?: string;
-          priority?: "low" | "normal" | "high" | "urgent";
-          title: string;
+          last_published_at?: string | null;
+          last_published_by?: string | null;
+          locale?: string;
+          optional_placeholders?: string[];
+          required_placeholders?: string[];
+          status?: Database["public"]["Enums"]["admin_email_template_status"];
+          subject?: string;
+          template_key: string;
           updated_at?: string;
           updated_by?: string | null;
+          version?: number;
         };
         Update: {
           body?: string;
-          category?: string;
-          context_ref?: string | null;
-          context_type?: string | null;
           created_at?: string;
           created_by?: string | null;
           id?: string;
-          is_done?: boolean;
-          note_date?: string;
-          priority?: "low" | "normal" | "high" | "urgent";
-          title?: string;
+          last_published_at?: string | null;
+          last_published_by?: string | null;
+          locale?: string;
+          optional_placeholders?: string[];
+          required_placeholders?: string[];
+          status?: Database["public"]["Enums"]["admin_email_template_status"];
+          subject?: string;
+          template_key?: string;
           updated_at?: string;
           updated_by?: string | null;
-        };
-        Relationships: [];
-      };
-      admin_messages: {
-        Row: {
-          created_at: string;
-          id: string;
-          message_body: string;
-          notification_error_code:
-            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
-            | null;
-          notification_status: Database["public"]["Enums"]["admin_message_delivery_status"];
-          request_metadata: Json;
-          source_variant: Database["public"]["Enums"]["admin_message_source"];
-          status: Database["public"]["Enums"]["admin_message_status"];
-          structured_intake: Json;
-          submitter_email: string;
-          submitter_name: string;
-          updated_at: string;
-        };
-        Insert: {
-          created_at?: string;
-          id?: string;
-          message_body?: string;
-          notification_error_code?:
-            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
-            | null;
-          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
-          request_metadata?: Json;
-          source_variant: Database["public"]["Enums"]["admin_message_source"];
-          status?: Database["public"]["Enums"]["admin_message_status"];
-          structured_intake?: Json;
-          submitter_email: string;
-          submitter_name: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          id?: string;
-          message_body?: string;
-          notification_error_code?:
-            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
-            | null;
-          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
-          request_metadata?: Json;
-          source_variant?: Database["public"]["Enums"]["admin_message_source"];
-          status?: Database["public"]["Enums"]["admin_message_status"];
-          structured_intake?: Json;
-          submitter_email?: string;
-          submitter_name?: string;
-          updated_at?: string;
+          version?: number;
         };
         Relationships: [];
       };
@@ -800,6 +329,57 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      admin_messages: {
+        Row: {
+          created_at: string;
+          id: string;
+          message_body: string;
+          notification_error_code:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata: Json;
+          source_variant: Database["public"]["Enums"]["admin_message_source"];
+          status: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake: Json;
+          submitter_email: string;
+          submitter_name: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          message_body?: string;
+          notification_error_code?:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata?: Json;
+          source_variant: Database["public"]["Enums"]["admin_message_source"];
+          status?: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake?: Json;
+          submitter_email: string;
+          submitter_name: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          message_body?: string;
+          notification_error_code?:
+            | Database["public"]["Enums"]["admin_message_delivery_error_code"]
+            | null;
+          notification_status?: Database["public"]["Enums"]["admin_message_delivery_status"];
+          request_metadata?: Json;
+          source_variant?: Database["public"]["Enums"]["admin_message_source"];
+          status?: Database["public"]["Enums"]["admin_message_status"];
+          structured_intake?: Json;
+          submitter_email?: string;
+          submitter_name?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       admin_note_attachments: {
         Row: {
@@ -878,6 +458,54 @@ export type Database = {
           },
         ];
       };
+      admin_notes: {
+        Row: {
+          body: string;
+          category: string;
+          context_ref: string | null;
+          context_type: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          is_done: boolean;
+          note_date: string;
+          priority: string;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          body?: string;
+          category?: string;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_done?: boolean;
+          note_date?: string;
+          priority?: string;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          body?: string;
+          category?: string;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_done?: boolean;
+          note_date?: string;
+          priority?: string;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       admin_runtime_flags: {
         Row: {
           description: string;
@@ -905,152 +533,9 @@ export type Database = {
         };
         Relationships: [];
       };
-      admin_email_templates: {
-        Row: {
-          body: string;
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          last_published_at: string | null;
-          last_published_by: string | null;
-          locale: string;
-          optional_placeholders: string[];
-          required_placeholders: string[];
-          status: Database["public"]["Enums"]["admin_email_template_status"];
-          subject: string;
-          template_key: string;
-          updated_at: string;
-          updated_by: string | null;
-          version: number;
-        };
-        Insert: {
-          body?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          last_published_at?: string | null;
-          last_published_by?: string | null;
-          locale?: string;
-          optional_placeholders?: string[];
-          required_placeholders?: string[];
-          status?: Database["public"]["Enums"]["admin_email_template_status"];
-          subject?: string;
-          template_key: string;
-          updated_at?: string;
-          updated_by?: string | null;
-          version?: number;
-        };
-        Update: {
-          body?: string;
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          last_published_at?: string | null;
-          last_published_by?: string | null;
-          locale?: string;
-          optional_placeholders?: string[];
-          required_placeholders?: string[];
-          status?: Database["public"]["Enums"]["admin_email_template_status"];
-          subject?: string;
-          template_key?: string;
-          updated_at?: string;
-          updated_by?: string | null;
-          version?: number;
-        };
-        Relationships: [];
-      };
-      admin_email_template_revisions: {
-        Row: {
-          action: string;
-          changed_by: string | null;
-          changed_by_email: string | null;
-          created_at: string;
-          id: string;
-          locale: string;
-          revision_number: number;
-          snapshot: Json;
-          template_id: string;
-          template_key: string;
-        };
-        Insert: {
-          action: string;
-          changed_by?: string | null;
-          changed_by_email?: string | null;
-          created_at?: string;
-          id?: string;
-          locale: string;
-          revision_number: number;
-          snapshot: Json;
-          template_id: string;
-          template_key: string;
-        };
-        Update: {
-          action?: string;
-          changed_by?: string | null;
-          changed_by_email?: string | null;
-          created_at?: string;
-          id?: string;
-          locale?: string;
-          revision_number?: number;
-          snapshot?: Json;
-          template_id?: string;
-          template_key?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "admin_email_template_revisions_template_id_fkey";
-            columns: ["template_id"];
-            isOneToOne: false;
-            referencedRelation: "admin_email_templates";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      products: {
-        Row: {
-          active: boolean;
-          created_at: string;
-          id: string;
-          kind: string;
-          slug: string;
-          stripe_price_id: string;
-          title: string;
-          updated_at: string;
-        };
-        Insert: {
-          active?: boolean;
-          created_at?: string;
-          id: string;
-          kind: string;
-          slug: string;
-          stripe_price_id: string;
-          title: string;
-          updated_at?: string;
-        };
-        Update: {
-          active?: boolean;
-          created_at?: string;
-          id?: string;
-          kind?: string;
-          slug?: string;
-          stripe_price_id?: string;
-          title?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       athlete_profiles: {
         Row: {
-          age_band:
-            | "under_18"
-            | "18_24"
-            | "25_34"
-            | "35_44"
-            | "45_54"
-            | "55_64"
-            | "65_plus"
-            | "prefer_not_to_say"
-            | null;
+          age_band: string | null;
           created_at: string;
           display_name: string | null;
           first_name: string | null;
@@ -1060,16 +545,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          age_band?:
-            | "under_18"
-            | "18_24"
-            | "25_34"
-            | "35_44"
-            | "45_54"
-            | "55_64"
-            | "65_plus"
-            | "prefer_not_to_say"
-            | null;
+          age_band?: string | null;
           created_at?: string;
           display_name?: string | null;
           first_name?: string | null;
@@ -1079,16 +555,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          age_band?:
-            | "under_18"
-            | "18_24"
-            | "25_34"
-            | "35_44"
-            | "45_54"
-            | "55_64"
-            | "65_plus"
-            | "prefer_not_to_say"
-            | null;
+          age_band?: string | null;
           created_at?: string;
           display_name?: string | null;
           first_name?: string | null;
@@ -1099,74 +566,67 @@ export type Database = {
         };
         Relationships: [];
       };
-      swim_capability_limits: {
+      course_progress: {
         Row: {
-          created_at: string;
-          id: string;
-          limit_kind: string;
-          max_repeat_distance_m: number | null;
-          max_total_distance_m: number | null;
-          stroke: string | null;
-          target_total_distance_m: number | null;
+          done: boolean;
+          done_confirmed_at: string | null;
+          lesson_id: string;
           updated_at: string;
           user_id: string;
+          video_seconds: number;
         };
         Insert: {
-          created_at?: string;
-          id?: string;
-          limit_kind: string;
-          max_repeat_distance_m?: number | null;
-          max_total_distance_m?: number | null;
-          stroke?: string | null;
-          target_total_distance_m?: number | null;
+          done?: boolean;
+          done_confirmed_at?: string | null;
+          lesson_id: string;
           updated_at?: string;
           user_id: string;
+          video_seconds?: number;
         };
         Update: {
-          created_at?: string;
-          id?: string;
-          limit_kind?: string;
-          max_repeat_distance_m?: number | null;
-          max_total_distance_m?: number | null;
-          stroke?: string | null;
-          target_total_distance_m?: number | null;
+          done?: boolean;
+          done_confirmed_at?: string | null;
+          lesson_id?: string;
           updated_at?: string;
           user_id?: string;
+          video_seconds?: number;
         };
         Relationships: [];
       };
-      programs: {
+      download_links: {
         Row: {
           created_at: string;
+          entitlement_id: string;
+          expires_at: string;
           id: string;
-          source_kind: string;
-          status: string;
-          title: string;
-          updated_at: string;
-          user_id: string;
-          weeks: Json;
+          token_hash: string;
+          used_at: string | null;
         };
         Insert: {
           created_at?: string;
+          entitlement_id: string;
+          expires_at: string;
           id?: string;
-          source_kind: string;
-          status: string;
-          title: string;
-          updated_at?: string;
-          user_id: string;
-          weeks: Json;
+          token_hash: string;
+          used_at?: string | null;
         };
         Update: {
           created_at?: string;
+          entitlement_id?: string;
+          expires_at?: string;
           id?: string;
-          source_kind?: string;
-          status?: string;
-          title?: string;
-          updated_at?: string;
-          user_id?: string;
-          weeks?: Json;
+          token_hash?: string;
+          used_at?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "download_links_entitlement_id_fkey";
+            columns: ["entitlement_id"];
+            isOneToOne: false;
+            referencedRelation: "entitlements";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       dryland_micro_plans: {
         Row: {
@@ -1214,7 +674,15 @@ export type Database = {
           week_ends_at?: string;
           week_starts_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "dryland_micro_plans_source_dryland_session_id_fkey";
+            columns: ["source_dryland_session_id"];
+            isOneToOne: false;
+            referencedRelation: "dryland_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       dryland_sessions: {
         Row: {
@@ -1267,108 +735,208 @@ export type Database = {
         };
         Relationships: [];
       };
-      workouts: {
+      entitlements: {
         Row: {
-          accepted_at: string;
-          allowed_strokes: string[];
-          base_pace_seconds_per_100: number;
-          constraint_text: string | null;
           created_at: string;
-          description: string;
-          effort: string;
-          environment: string;
-          equipment_allowlist: string[];
-          estimated_duration_min: number | null;
-          focus_text: string | null;
-          generated_at: string;
-          generator_kind: string;
-          goal_title: string | null;
+          granted_at: string;
           id: string;
-          pool_length_m: number | null;
-          pool_length_unit: string;
-          size_mode: string;
-          source_fingerprint: string;
-          source_kind: string;
-          status: string;
-          steps: Json;
-          session_type: string;
-          target_distance_m: number | null;
-          target_time_min: number | null;
-          title: string;
-          title_suggestions: string[];
-          total_distance_m: number | null;
+          product_id: string;
+          purchaser_email: string;
+          source: string;
+          stripe_checkout_session_id: string;
+          stripe_customer_id: string | null;
           updated_at: string;
-          used_css_pace_label: string | null;
-          user_id: string;
-          warnings: string[];
+          user_id: string | null;
         };
         Insert: {
-          accepted_at?: string;
-          allowed_strokes?: string[];
-          base_pace_seconds_per_100: number;
-          constraint_text?: string | null;
           created_at?: string;
-          description?: string;
-          effort: string;
-          environment: string;
-          equipment_allowlist?: string[];
-          estimated_duration_min?: number | null;
-          focus_text?: string | null;
-          generated_at?: string;
-          generator_kind: string;
-          goal_title?: string | null;
+          granted_at?: string;
           id?: string;
-          pool_length_m?: number | null;
-          pool_length_unit?: string;
-          size_mode: string;
-          source_fingerprint: string;
-          source_kind: string;
-          status: string;
-          steps: Json;
-          session_type: string;
-          target_distance_m?: number | null;
-          target_time_min?: number | null;
-          title: string;
-          title_suggestions?: string[];
-          total_distance_m?: number | null;
+          product_id: string;
+          purchaser_email: string;
+          source?: string;
+          stripe_checkout_session_id: string;
+          stripe_customer_id?: string | null;
           updated_at?: string;
-          used_css_pace_label?: string | null;
-          user_id: string;
-          warnings?: string[];
+          user_id?: string | null;
         };
         Update: {
-          accepted_at?: string;
-          allowed_strokes?: string[];
-          base_pace_seconds_per_100?: number;
-          constraint_text?: string | null;
+          created_at?: string;
+          granted_at?: string;
+          id?: string;
+          product_id?: string;
+          purchaser_email?: string;
+          source?: string;
+          stripe_checkout_session_id?: string;
+          stripe_customer_id?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entitlements_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      goals: {
+        Row: {
+          achieved_at: string | null;
+          celebrated_at: string | null;
+          created_at: string;
+          goal_type: string;
+          id: string;
+          progress_value: number;
+          source: string;
+          status: string;
+          target_count: number | null;
+          target_date: string | null;
+          target_distance_m: number | null;
+          target_ref: string | null;
+          target_time_seconds: number | null;
+          target_unit: string;
+          target_value: number | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          achieved_at?: string | null;
+          celebrated_at?: string | null;
+          created_at?: string;
+          goal_type?: string;
+          id?: string;
+          progress_value?: number;
+          source?: string;
+          status?: string;
+          target_count?: number | null;
+          target_date?: string | null;
+          target_distance_m?: number | null;
+          target_ref?: string | null;
+          target_time_seconds?: number | null;
+          target_unit: string;
+          target_value?: number | null;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          achieved_at?: string | null;
+          celebrated_at?: string | null;
+          created_at?: string;
+          goal_type?: string;
+          id?: string;
+          progress_value?: number;
+          source?: string;
+          status?: string;
+          target_count?: number | null;
+          target_date?: string | null;
+          target_distance_m?: number | null;
+          target_ref?: string | null;
+          target_time_seconds?: number | null;
+          target_unit?: string;
+          target_value?: number | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      guide_progress: {
+        Row: {
+          completed: boolean;
+          guide_slug: string;
+          notes: string;
+          section_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          completed?: boolean;
+          guide_slug: string;
+          notes?: string;
+          section_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          completed?: boolean;
+          guide_slug?: string;
+          notes?: string;
+          section_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      guide_session_progress: {
+        Row: {
+          completed: boolean;
+          completed_at: string | null;
+          guide_slug: string;
+          notes: string;
+          session_number: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          completed?: boolean;
+          completed_at?: string | null;
+          guide_slug: string;
+          notes?: string;
+          session_number: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          completed?: boolean;
+          completed_at?: string | null;
+          guide_slug?: string;
+          notes?: string;
+          session_number?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guide_session_progress_guide_fk";
+            columns: ["guide_slug", "session_number"];
+            isOneToOne: false;
+            referencedRelation: "guide_sessions";
+            referencedColumns: ["guide_slug", "session_number"];
+          },
+        ];
+      };
+      guide_sessions: {
+        Row: {
+          created_at: string;
+          description: string;
+          guide_slug: string;
+          session_number: number;
+          title: string;
+          updated_at: string;
+          week_number: number;
+        };
+        Insert: {
           created_at?: string;
           description?: string;
-          effort?: string;
-          environment?: string;
-          equipment_allowlist?: string[];
-          estimated_duration_min?: number | null;
-          focus_text?: string | null;
-          generated_at?: string;
-          generator_kind?: string;
-          goal_title?: string | null;
-          id?: string;
-          pool_length_m?: number | null;
-          pool_length_unit?: string;
-          size_mode?: string;
-          source_fingerprint?: string;
-          source_kind?: string;
-          status?: string;
-          steps?: Json;
-          session_type?: string;
-          target_distance_m?: number | null;
-          target_time_min?: number | null;
-          title?: string;
-          title_suggestions?: string[];
-          total_distance_m?: number | null;
+          guide_slug: string;
+          session_number: number;
+          title: string;
           updated_at?: string;
-          used_css_pace_label?: string | null;
-          user_id?: string;
-          warnings?: string[];
+          week_number: number;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          guide_slug?: string;
+          session_number?: number;
+          title?: string;
+          updated_at?: string;
+          week_number?: number;
         };
         Relationships: [];
       };
@@ -1411,6 +979,244 @@ export type Database = {
         };
         Relationships: [];
       };
+      products: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          id: string;
+          kind: string;
+          slug: string;
+          stripe_price_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          id: string;
+          kind: string;
+          slug: string;
+          stripe_price_id: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          slug?: string;
+          stripe_price_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          created_at: string;
+          email: string;
+          id: string;
+          role: Database["public"]["Enums"]["admin_role"];
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          email: string;
+          id: string;
+          role?: Database["public"]["Enums"]["admin_role"];
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          email?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["admin_role"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      programs: {
+        Row: {
+          created_at: string;
+          id: string;
+          source_kind: string;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+          weeks: Json;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          source_kind: string;
+          status: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+          weeks: Json;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          source_kind?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+          weeks?: Json;
+        };
+        Relationships: [];
+      };
+      qr_redirect_links: {
+        Row: {
+          content_item_id: string | null;
+          content_label: string;
+          created_at: string;
+          created_by: string | null;
+          destination_url: string;
+          id: string;
+          last_resolved_at: string | null;
+          owner_user_id: string | null;
+          placement_key: string;
+          slug: string;
+          status: Database["public"]["Enums"]["qr_link_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          content_item_id?: string | null;
+          content_label?: string;
+          created_at?: string;
+          created_by?: string | null;
+          destination_url: string;
+          id?: string;
+          last_resolved_at?: string | null;
+          owner_user_id?: string | null;
+          placement_key?: string;
+          slug: string;
+          status?: Database["public"]["Enums"]["qr_link_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          content_item_id?: string | null;
+          content_label?: string;
+          created_at?: string;
+          created_by?: string | null;
+          destination_url?: string;
+          id?: string;
+          last_resolved_at?: string | null;
+          owner_user_id?: string | null;
+          placement_key?: string;
+          slug?: string;
+          status?: Database["public"]["Enums"]["qr_link_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "qr_redirect_links_content_item_id_fkey";
+            columns: ["content_item_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_content_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      swim_capability_limits: {
+        Row: {
+          created_at: string;
+          id: string;
+          limit_kind: string;
+          max_repeat_distance_m: number | null;
+          max_total_distance_m: number | null;
+          stroke: string | null;
+          target_total_distance_m: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          limit_kind: string;
+          max_repeat_distance_m?: number | null;
+          max_total_distance_m?: number | null;
+          stroke?: string | null;
+          target_total_distance_m?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          limit_kind?: string;
+          max_repeat_distance_m?: number | null;
+          max_total_distance_m?: number | null;
+          stroke?: string | null;
+          target_total_distance_m?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      training_focuses: {
+        Row: {
+          archived_at: string | null;
+          completed_at: string | null;
+          context_ref: string | null;
+          context_type: string | null;
+          created_at: string;
+          details: string | null;
+          goal_id: string | null;
+          id: string;
+          is_primary: boolean;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          completed_at?: string | null;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          details?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          completed_at?: string | null;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          details?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "training_focuses_goal_id_fkey";
+            columns: ["goal_id"];
+            isOneToOne: false;
+            referencedRelation: "goals";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       training_metrics: {
         Row: {
           created_at: string;
@@ -1447,6 +1253,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      training_notes: {
+        Row: {
+          answer: string | null;
+          body: string;
+          context_ref: string | null;
+          context_type: string | null;
+          created_at: string;
+          focus_id: string | null;
+          goal_id: string | null;
+          id: string;
+          note_type: string;
+          resolved_at: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          answer?: string | null;
+          body: string;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          focus_id?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          note_type: string;
+          resolved_at?: string | null;
+          status: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          answer?: string | null;
+          body?: string;
+          context_ref?: string | null;
+          context_type?: string | null;
+          created_at?: string;
+          focus_id?: string | null;
+          goal_id?: string | null;
+          id?: string;
+          note_type?: string;
+          resolved_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "training_notes_focus_id_fkey";
+            columns: ["focus_id"];
+            isOneToOne: false;
+            referencedRelation: "training_focuses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "training_notes_goal_id_fkey";
+            columns: ["goal_id"];
+            isOneToOne: false;
+            referencedRelation: "goals";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       training_preferences: {
         Row: {
           available_days: string[] | null;
@@ -1480,27 +1349,108 @@ export type Database = {
         };
         Relationships: [];
       };
-      profiles: {
+      workouts: {
         Row: {
+          accepted_at: string;
+          allowed_strokes: string[];
+          base_pace_seconds_per_100: number;
+          constraint_text: string | null;
           created_at: string;
-          email: string;
+          description: string;
+          effort: string;
+          environment: string;
+          equipment_allowlist: string[];
+          estimated_duration_min: number | null;
+          focus_text: string | null;
+          generated_at: string;
+          generator_kind: string;
+          goal_title: string | null;
           id: string;
-          role: Database["public"]["Enums"]["admin_role"];
+          pool_length_m: number | null;
+          pool_length_unit: string;
+          session_type: string;
+          size_mode: string;
+          source_fingerprint: string;
+          source_kind: string;
+          status: string;
+          steps: Json;
+          target_distance_m: number | null;
+          target_time_min: number | null;
+          title: string;
+          title_suggestions: string[];
+          total_distance_m: number | null;
           updated_at: string;
+          used_css_pace_label: string | null;
+          user_id: string;
+          warnings: string[];
         };
         Insert: {
+          accepted_at?: string;
+          allowed_strokes?: string[];
+          base_pace_seconds_per_100: number;
+          constraint_text?: string | null;
           created_at?: string;
-          email: string;
-          id: string;
-          role?: Database["public"]["Enums"]["admin_role"];
+          description?: string;
+          effort: string;
+          environment: string;
+          equipment_allowlist?: string[];
+          estimated_duration_min?: number | null;
+          focus_text?: string | null;
+          generated_at?: string;
+          generator_kind: string;
+          goal_title?: string | null;
+          id?: string;
+          pool_length_m?: number | null;
+          pool_length_unit?: string;
+          session_type: string;
+          size_mode: string;
+          source_fingerprint: string;
+          source_kind: string;
+          status: string;
+          steps: Json;
+          target_distance_m?: number | null;
+          target_time_min?: number | null;
+          title: string;
+          title_suggestions?: string[];
+          total_distance_m?: number | null;
           updated_at?: string;
+          used_css_pace_label?: string | null;
+          user_id: string;
+          warnings?: string[];
         };
         Update: {
+          accepted_at?: string;
+          allowed_strokes?: string[];
+          base_pace_seconds_per_100?: number;
+          constraint_text?: string | null;
           created_at?: string;
-          email?: string;
+          description?: string;
+          effort?: string;
+          environment?: string;
+          equipment_allowlist?: string[];
+          estimated_duration_min?: number | null;
+          focus_text?: string | null;
+          generated_at?: string;
+          generator_kind?: string;
+          goal_title?: string | null;
           id?: string;
-          role?: Database["public"]["Enums"]["admin_role"];
+          pool_length_m?: number | null;
+          pool_length_unit?: string;
+          session_type?: string;
+          size_mode?: string;
+          source_fingerprint?: string;
+          source_kind?: string;
+          status?: string;
+          steps?: Json;
+          target_distance_m?: number | null;
+          target_time_min?: number | null;
+          title?: string;
+          title_suggestions?: string[];
+          total_distance_m?: number | null;
           updated_at?: string;
+          used_css_pace_label?: string | null;
+          user_id?: string;
+          warnings?: string[];
         };
         Relationships: [];
       };
@@ -1510,39 +1460,40 @@ export type Database = {
     };
     Functions: {
       training_focus_set_primary: {
-        Args: {
-          p_focus_id: string;
+        Args: { p_focus_id: string };
+        Returns: {
+          archived_at: string | null;
+          completed_at: string | null;
+          context_ref: string | null;
+          context_type: string | null;
+          created_at: string;
+          details: string | null;
+          goal_id: string | null;
+          id: string;
+          is_primary: boolean;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
         };
-        Returns: undefined;
-      };
-      set_updated_at: {
-        Args: Record<PropertyKey, never>;
-        Returns: unknown;
+        SetofOptions: {
+          from: "*";
+          to: "training_focuses";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
     };
     Enums: {
-      admin_role: "admin" | "editor" | "viewer";
-      admin_message_source: "contact" | "analysis" | "goals_coaching" | "preview_access_notify";
-      admin_message_status:
-        | "new"
-        | "read"
-        | "needs_reply"
-        | "replied"
-        | "triaged"
-        | "archived"
-        | "deleted";
-      admin_message_delivery_target: "inbound_notification" | "admin_reply" | "system_notice";
-      admin_message_delivery_status:
-        | "queued"
-        | "accepted_by_provider"
-        | "failed_retryable"
-        | "failed_final"
-        | "disabled";
-      admin_message_delivery_provider:
-        | "smtp_one_com_compatible"
-        | "resend_api"
-        | "resend_smtp"
-        | "disabled";
+      admin_content_status: "draft" | "published" | "review" | "archived";
+      admin_content_type:
+        | "course_module"
+        | "course_lesson"
+        | "guide_session"
+        | "guide_drill"
+        | "page"
+        | "product";
+      admin_email_template_status: "draft" | "review" | "published" | "archived";
       admin_message_delivery_error_code:
         | "provider_disabled"
         | "provider_invalid"
@@ -1554,15 +1505,28 @@ export type Database = {
         | "provider_rate_limited"
         | "provider_request_failed"
         | "provider_response_invalid";
-      admin_email_template_status: "draft" | "review" | "published" | "archived";
-      admin_content_status: "draft" | "review" | "published" | "archived";
-      admin_content_type:
-        | "course_module"
-        | "course_lesson"
-        | "guide_session"
-        | "guide_drill"
-        | "page"
-        | "product";
+      admin_message_delivery_provider:
+        | "smtp_one_com_compatible"
+        | "resend_api"
+        | "resend_smtp"
+        | "disabled";
+      admin_message_delivery_status:
+        | "queued"
+        | "accepted_by_provider"
+        | "failed_retryable"
+        | "failed_final"
+        | "disabled";
+      admin_message_delivery_target: "inbound_notification" | "admin_reply" | "system_notice";
+      admin_message_source: "contact" | "preview_access_notify" | "analysis" | "goals_coaching";
+      admin_message_status:
+        | "new"
+        | "triaged"
+        | "archived"
+        | "deleted"
+        | "read"
+        | "needs_reply"
+        | "replied";
+      admin_role: "admin" | "editor" | "viewer";
       qr_link_status: "draft" | "active" | "disabled" | "archived";
     };
     CompositeTypes: {
@@ -1571,12 +1535,172 @@ export type Database = {
   };
 };
 
-export type PublicSchema = Database["public"];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-export type Tables<T extends keyof PublicSchema["Tables"]> = PublicSchema["Tables"][T]["Row"];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
-export type TablesInsert<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Insert"];
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
 
-export type TablesUpdate<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Update"];
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  public: {
+    Enums: {
+      admin_content_status: ["draft", "published", "review", "archived"],
+      admin_content_type: [
+        "course_module",
+        "course_lesson",
+        "guide_session",
+        "guide_drill",
+        "page",
+        "product",
+      ],
+      admin_email_template_status: ["draft", "review", "published", "archived"],
+      admin_message_delivery_error_code: [
+        "provider_disabled",
+        "provider_invalid",
+        "provider_config_missing",
+        "payload_invalid",
+        "provider_timeout",
+        "provider_auth_failed",
+        "provider_rejected",
+        "provider_rate_limited",
+        "provider_request_failed",
+        "provider_response_invalid",
+      ],
+      admin_message_delivery_provider: [
+        "smtp_one_com_compatible",
+        "resend_api",
+        "resend_smtp",
+        "disabled",
+      ],
+      admin_message_delivery_status: [
+        "queued",
+        "accepted_by_provider",
+        "failed_retryable",
+        "failed_final",
+        "disabled",
+      ],
+      admin_message_delivery_target: ["inbound_notification", "admin_reply", "system_notice"],
+      admin_message_source: ["contact", "preview_access_notify", "analysis", "goals_coaching"],
+      admin_message_status: [
+        "new",
+        "triaged",
+        "archived",
+        "deleted",
+        "read",
+        "needs_reply",
+        "replied",
+      ],
+      admin_role: ["admin", "editor", "viewer"],
+      qr_link_status: ["draft", "active", "disabled", "archived"],
+    },
+  },
+} as const;

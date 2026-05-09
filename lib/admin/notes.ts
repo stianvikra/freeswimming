@@ -5,10 +5,6 @@ import {
   type AdminNoteContext,
 } from "@/lib/admin/note-context";
 
-export type AdminNoteRow = Database["public"]["Tables"]["admin_notes"]["Row"];
-export type AdminNoteAttachmentRow = Database["public"]["Tables"]["admin_note_attachments"]["Row"];
-export type AdminNoteLinkRow = Database["public"]["Tables"]["admin_note_links"]["Row"];
-
 export const INCIDENT_NOTE_SEVERITIES = ["P0", "P1", "P2"] as const;
 export type IncidentNoteSeverity = (typeof INCIDENT_NOTE_SEVERITIES)[number];
 export const ADMIN_NOTE_PRIORITY_VALUES = ["low", "normal", "high", "urgent"] as const;
@@ -23,6 +19,12 @@ export const ADMIN_NOTE_ALLOWED_ATTACHMENT_MIME_TYPES = [
   "image/gif",
 ] as const;
 export type AdminNoteAttachmentMimeType = (typeof ADMIN_NOTE_ALLOWED_ATTACHMENT_MIME_TYPES)[number];
+
+export type AdminNoteRow = Omit<Database["public"]["Tables"]["admin_notes"]["Row"], "priority"> & {
+  priority: AdminNotePriority;
+};
+export type AdminNoteAttachmentRow = Database["public"]["Tables"]["admin_note_attachments"]["Row"];
+export type AdminNoteLinkRow = Database["public"]["Tables"]["admin_note_links"]["Row"];
 
 export type AdminNoteAttachment = Omit<AdminNoteAttachmentRow, "storage_path"> & {
   signed_url: string | null;

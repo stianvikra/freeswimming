@@ -7,6 +7,7 @@ import {
   buildGoalView,
   buildTemplateGoalInsert,
   normalizeTargetDate,
+  type GoalRow,
 } from "@/lib/goals/mvp";
 import { countActiveGoals, loadGoalProgressContext, loadGoalViews } from "@/lib/goals/server";
 import { isGoalsMvpSchemaMissing } from "@/lib/goals/schema";
@@ -181,7 +182,7 @@ export async function POST(request: Request) {
   }
 
   const context = await loadGoalProgressContext(supabase, user.id);
-  const goalView = buildGoalView(insertResult.data, context);
+  const goalView = buildGoalView(insertResult.data as GoalRow, context);
 
   return applySupabaseCookies(
     noStoreJson(

@@ -331,7 +331,7 @@ export async function loadTrainingContextSnapshot(
   );
   const goalOptions = await loadTrainingGoalOptions(supabase, userId);
   const focusRows = [...(openFocusResult.data ?? []), ...(historyFocusResult.data ?? [])];
-  const noteRows = noteResult.data ?? [];
+  const noteRows = (noteResult.data ?? []) as TrainingNoteRow[];
   const focusCollections = deriveTrainingFocusCollections(focusRows);
 
   const missingFocusIds = Array.from(
@@ -354,7 +354,7 @@ export async function loadTrainingContextSnapshot(
     if (extraFocusResult.error) {
       console.error("[TrainingContext] Failed loading linked focus titles", extraFocusResult.error);
     } else {
-      extraFocusRows = extraFocusResult.data ?? [];
+      extraFocusRows = (extraFocusResult.data ?? []) as TrainingFocusRow[];
     }
   }
 

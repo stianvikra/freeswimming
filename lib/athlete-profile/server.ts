@@ -398,7 +398,9 @@ export async function loadAthleteProfileSnapshot(
     preferencesLoadError,
     personalRecordsLoadError,
     swimCapabilityLimitsLoadError,
-    profile: profileResult.data ? buildAthleteProfileView(profileResult.data) : null,
+    profile: profileResult.data
+      ? buildAthleteProfileView(profileResult.data as AthleteProfileRow)
+      : null,
     cssMetric: cssMetricResult.data ? buildTrainingMetricView(cssMetricResult.data) : null,
     preferences: preferencesResult.data
       ? buildTrainingPreferencesView(preferencesResult.data)

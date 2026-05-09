@@ -212,7 +212,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
     );
   }
 
-  const goal = goalResult.data;
+  const goal = goalResult.data as GoalRow | null;
   if (!goal) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Goal not found." }, { status: 404 })
@@ -273,7 +273,7 @@ export async function PATCH(request: Request, { params }: { params: Params }) {
   }
 
   const context = await loadGoalProgressContext(supabase, user.id);
-  const goalView = buildGoalView(updateResult.data, context);
+  const goalView = buildGoalView(updateResult.data as GoalRow, context);
 
   return applySupabaseCookies(
     noStoreJson({
