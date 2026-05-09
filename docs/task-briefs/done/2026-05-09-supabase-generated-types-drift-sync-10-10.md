@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-supabase-generated-types-drift-sync-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -154,6 +154,32 @@ N/A because this slice does not create, rename, repurpose, alias, redirect, or m
 - Performance budget evidence:
   - `npm run verify:pre-pr` reported 4 consecutive weekly green baseline runs with worst margin 20.3%. This slice recommends holding budget files unchanged and recording any tighten decision in a separate governance/performance slice because the active change is compile-time Supabase type drift sync only.
 
+## Closeout
+
+- Merged PR: #663 (`e73b52a`)
+- Implementation commit: `d0514d1`
+- No runtime schema migration was created or applied.
+- No secrets, raw rows, connection strings, request bodies, cookies, tokens, or emails were committed.
+- Screenshot evidence: N/A because no UI, print, layout, export, or brand-rendered surface changed.
+- Remaining gaps: none for this narrow generated-contract maintenance scope.
+- Defer/fix recommendation: none; all target categories are `5/5`.
+- Recommended next step: after this docs-only closeout merges, run `npm run post-merge:preflight` again to confirm no pending closeout remains.
+
+### Achieved Target Scores
+
+| Target Category                               | Score | Evidence                                                                                                         |
+| --------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------- |
+| Business logic correctness and data integrity | `5/5` | Live generated types were refreshed; app literal-union invariants remain enforced at existing domain boundaries. |
+| Data placement and sync boundaries            | `5/5` | Server-canonical Supabase contract only; no local/server sync behavior changed.                                  |
+| Reliability and failure handling              | `5/5` | No new runtime failure path; CLI caveat documented non-destructively.                                            |
+| Security and authz                            | `5/5` | No RLS, authz, service-role, unauthorized, or forbidden behavior changed.                                        |
+| Privacy and compliance                        | `5/5` | Evidence is non-sensitive; no secrets or raw live data committed.                                                |
+| Stack-fit and dependency discipline           | `5/5` | Existing Supabase CLI generated type pattern used; no dependency changes.                                        |
+| Testing and QA automation                     | `5/5` | `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed on the PR branch.                             |
+| DevOps and rollback readiness                 | `5/5` | Rollback is a plain revert; no remote database rollback needed.                                                  |
+
+10/10 claim: yes. Critical target categories were business/data integrity, data boundaries, reliability, security/authz, privacy, stack-fit, testing, and devops/rollback; each is scored `5/5`.
+
 ## Checkpoint Log
 
 - `2026-05-09 | start | branch supabase-generated-types-drift-sync-2026-05-09 from main 3648ac9 | next: refresh generated types, validate, commit, push, and open PR`
@@ -161,3 +187,4 @@ N/A because this slice does not create, rename, repurpose, alias, redirect, or m
 - `2026-05-09 | typecheck adaptation | live generated types exposed several check-constraint fields as string, so app-level domain aliases and API/server boundary casts were added to preserve existing literal-union invariants without editing generated schema | next: run lint, quality, and pre-PR gates`
 - `2026-05-09 | targeted validation | npm run typecheck PASS; npm run lint:quality-gates PASS; npm run lint:briefs:all PASS; targeted Vitest for goals, training-context, admin-notes, and athlete-profile passed 8 files / 60 tests | next: run verify:pre-pr`
 - `2026-05-09 | pre-PR gate | npm run verify:pre-pr PASS on full lane: lint, eslint, typecheck, unit, build, perf budgets, e2e, and verify-open passed; perf trend recommends considering one stretch target tighten after 4 weekly green runs | next: commit, push, open PR, monitor CI, and run verify:pre-merge`
+- `2026-05-09 | merge | PR #663 merged to main as e73b52a after CI and npm run verify:pre-merge passed | next: docs-only closeout PR`
