@@ -12,12 +12,17 @@ import {
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { classifySignInEmailError } from "@/lib/auth/sign-in-email-error";
 import { isResendRequestFlag, shouldApplyMagicLinkCooldown } from "@/lib/auth/sign-in-request";
+import { reportAdminIncident, type AdminIncidentInput } from "@/lib/admin/incidents";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function buildSignInPath(nextPath: string, params: Record<string, string>) {
   const query = new URLSearchParams({ next: nextPath, ...params });
   return `/auth/sign-in?${query.toString()}`;
+}
+
+function getIncidentPathLabel(path: string): string {
+  return path.split("?")[0] || "/";
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -400,6 +405,34 @@ export async function requestMagicLink(formData: FormData) {
       status: error.status,
       code: error.code,
     });
+    const incident =
+      classification.kind === "service_restricted"
+        ? ({
+            category: "auth_sign_in_service_restricted",
+            severity: "P0",
+            affectedFlow: "auth_sign_in",
+          } satisfies Pick<AdminIncidentInput, "category" | "severity" | "affectedFlow">)
+        : classification.kind === "email_delivery"
+          ? ({
+              category: "auth_sign_in_email_delivery_failed",
+              severity: "P1",
+              affectedFlow: "auth_sign_in",
+            } satisfies Pick<AdminIncidentInput, "category" | "severity" | "affectedFlow">)
+          : null;
+
+    if (incident) {
+      await reportAdminIncident({
+        ...incident,
+        context: {
+          reason: classification.kind,
+          status: error.status ?? null,
+          code: error.code ?? null,
+          nextPath: getIncidentPathLabel(nextPath),
+          resend: isResendRequest,
+        },
+      });
+    }
+
     const params: Record<string, string> = {
       error: classification.userMessage,
       email,

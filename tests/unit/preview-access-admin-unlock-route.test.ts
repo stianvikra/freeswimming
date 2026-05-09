@@ -9,12 +9,18 @@ const { requireAdminRoleFromSupabaseMock } = vi.hoisted(() => ({
 const { createSiteLockSessionTokenMock } = vi.hoisted(() => ({
   createSiteLockSessionTokenMock: vi.fn(),
 }));
+const { reportAdminIncidentMock } = vi.hoisted(() => ({
+  reportAdminIncidentMock: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
 }));
 vi.mock("@/lib/admin/server", () => ({
   requireAdminRoleFromSupabase: requireAdminRoleFromSupabaseMock,
+}));
+vi.mock("@/lib/admin/incidents", () => ({
+  reportAdminIncident: reportAdminIncidentMock,
 }));
 vi.mock("@/lib/site-lock/session", async () => {
   const actual =
@@ -36,6 +42,19 @@ describe("/preview-access/admin-unlock route", () => {
     createRouteHandlerSupabaseClientMock.mockReset();
     requireAdminRoleFromSupabaseMock.mockReset();
     createSiteLockSessionTokenMock.mockReset();
+    reportAdminIncidentMock.mockReset();
+    reportAdminIncidentMock.mockResolvedValue({
+      ok: true,
+      status: "sent",
+      category: "preview_access_unlock_failed",
+      dedupeKey: "incident:production:preview_access:preview_access_unlock_failed",
+      count: 1,
+      resetAt: "2026-05-09T10:15:00.000Z",
+      delivery: {
+        providerKey: "resend_api",
+        status: "accepted_by_provider",
+      },
+    });
 
     vi.stubEnv("SITE_LOCK_ENABLED", "1");
     vi.stubEnv("SITE_LOCK_MODE", "password");
@@ -150,6 +169,7 @@ describe("/preview-access/admin-unlock route", () => {
     expect(response.status).toBe(401);
     expect(payload.ok).toBe(false);
     expect(payload.error).toMatch(/sign in as an admin/i);
+    expect(reportAdminIncidentMock).not.toHaveBeenCalled();
     expect(requireAdminRoleFromSupabaseMock).toHaveBeenCalledWith(
       {},
       expect.objectContaining({ minimumRole: "admin" })
@@ -190,6 +210,50 @@ describe("/preview-access/admin-unlock route", () => {
     expect(response.status).toBe(403);
     expect(payload.ok).toBe(false);
     expect(payload.error).toMatch(/stronger admin verification/i);
+    expect(reportAdminIncidentMock).not.toHaveBeenCalled();
+  });
+
+  it("alerts admin when strong admin session claims cannot be verified", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getClaims: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error("claims unavailable"),
+          }),
+        },
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+    requireAdminRoleFromSupabaseMock.mockResolvedValue({
+      ok: true,
+      user: { id: "user-1" },
+      role: "admin",
+    });
+
+    const response = await POST(
+      new Request("http://127.0.0.1:3000/preview-access/admin-unlock", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ next: "/admin?token=not-copied" }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(500);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toMatch(/could not verify/i);
+    expect(reportAdminIncidentMock).toHaveBeenCalledWith({
+      category: "preview_access_unlock_failed",
+      severity: "P1",
+      affectedFlow: "preview_access",
+      context: {
+        reason: "admin_claims_unavailable",
+        nextPath: "/admin",
+      },
+    });
   });
 
   it("sets preview access cookie for aal2 admin sessions", async () => {

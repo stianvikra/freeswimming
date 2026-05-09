@@ -107,6 +107,36 @@ Required checks:
 - record only redacted diagnostics named by the matrix,
 - pick the documented disable/swap/rollback action before hot-patching provider behavior.
 
+## Automated Incident Alerts V1
+
+Critical-flow failures can send a deduped admin email through `lib/admin/incidents.ts` using the
+existing `message_delivery` adapter and the `system_notice` target.
+
+Configured V1 categories:
+
+- `auth_sign_in_service_restricted` (`P0`)
+- `auth_sign_in_email_delivery_failed` (`P1`)
+- `preview_access_unlock_failed` (`P1`)
+
+Email routing and dedupe:
+
+- `INCIDENT_ALERTS_ENABLED=0` disables incident alert emails without disabling contact messages.
+- `INCIDENT_ALERT_TO_EMAIL` receives alerts; if blank, alerts fall back to `CONTACT_TO_EMAIL`.
+- `INCIDENT_ALERT_DEDUPE_WINDOW_SECONDS` defaults to `900`; repeats in the same category/environment/flow window increment the counter but do not send another email.
+- Upstash REST stores the dedupe TTL when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are configured; otherwise the app falls back to instance-local memory.
+
+Privacy guardrails:
+
+- Alert context must not contain raw email, IP, cookies, tokens, passwords, provider secrets, allowlists, request bodies, or free-text user content.
+- The alert helper redacts sensitive keys and common sensitive value patterns before delivery, but callers should still send only aggregate context such as category, status code, reason, route label, and environment.
+
+First triage after receiving an alert:
+
+1. Open the alert category in this runbook and `docs/architecture/external-service-contract-matrix.md`.
+2. Search Vercel logs for `[IncidentAlert]` and the category.
+3. For auth service restrictions, check Supabase usage/egress and provider availability before asking users to retry.
+4. If alert volume is noisy but user impact is understood, temporarily set `INCIDENT_ALERTS_ENABLED=0` or increase the dedupe window, then record the decision in the incident note.
+
 ## Communication Contract
 
 - Open one incident note with:
