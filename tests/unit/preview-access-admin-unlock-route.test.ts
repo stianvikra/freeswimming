@@ -25,7 +25,7 @@ vi.mock("@/lib/site-lock/session", async () => {
   };
 });
 
-import { POST } from "@/app/preview-access/admin-unlock/route";
+import { GET, POST } from "@/app/preview-access/admin-unlock/route";
 
 function applyResponseCookiesIdentity<T>(response: T): T {
   return response;
@@ -49,6 +49,80 @@ describe("/preview-access/admin-unlock route", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.clearAllMocks();
+  });
+
+  it("redirects anonymous GET requests back to the preview password page", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {},
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+    requireAdminRoleFromSupabaseMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: "Unauthorized.",
+    });
+
+    const response = await GET(
+      new Request("http://127.0.0.1:3000/preview-access/admin-unlock?next=%2Fadmin")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://127.0.0.1:3000/preview-access?next=%2Fadmin"
+    );
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(requireAdminRoleFromSupabaseMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ minimumRole: "admin" })
+    );
+  });
+
+  it("sets preview access cookie and redirects for authenticated admin GET requests", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {},
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+    requireAdminRoleFromSupabaseMock.mockResolvedValue({
+      ok: true,
+      user: { id: "user-1" },
+      role: "admin",
+    });
+    createSiteLockSessionTokenMock.mockResolvedValue("signed-preview-token");
+
+    const response = await GET(
+      new Request("http://127.0.0.1:3000/preview-access/admin-unlock?next=%2Fmy-library")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://127.0.0.1:3000/my-library");
+    expect(response.headers.get("set-cookie")).toContain("fs_preview_access=signed-preview-token");
+    expect(requireAdminRoleFromSupabaseMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ minimumRole: "admin" })
+    );
+  });
+
+  it("does not issue preview access cookie for non-admin GET requests", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {},
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+    requireAdminRoleFromSupabaseMock.mockResolvedValue({
+      ok: false,
+      status: 403,
+      error: "Forbidden.",
+    });
+
+    const response = await GET(
+      new Request("http://127.0.0.1:3000/preview-access/admin-unlock?next=%2Fmy-library")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://127.0.0.1:3000/preview-access?next=%2Fmy-library"
+    );
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(createSiteLockSessionTokenMock).not.toHaveBeenCalled();
   });
 
   it("fails closed when no admin session is available", async () => {
@@ -76,6 +150,10 @@ describe("/preview-access/admin-unlock route", () => {
     expect(response.status).toBe(401);
     expect(payload.ok).toBe(false);
     expect(payload.error).toMatch(/sign in as an admin/i);
+    expect(requireAdminRoleFromSupabaseMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ minimumRole: "admin" })
+    );
   });
 
   it("requires aal2 before issuing preview access cookie", async () => {

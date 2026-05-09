@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import AuthPasskeyReadinessCard from "@/components/auth/AuthPasskeyReadinessCard";
 import AuthRequestStatus from "@/components/auth/AuthRequestStatus";
 import AuthResendButton from "@/components/auth/AuthResendButton";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
@@ -42,11 +41,7 @@ export default async function SignInPage({ searchParams }: Props) {
       <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pt-28 pb-16">
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Enter your email and we&apos;ll send a one-time code. No password needed.
-          </p>
 
-          <AuthPasskeyReadinessCard sent={sent} />
           <AuthRequestStatus sent={sent} error={error} cooldownUntilMs={cooldownUntil} />
 
           <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/35 p-5">
@@ -54,11 +49,11 @@ export default async function SignInPage({ searchParams }: Props) {
               <h2 className="text-lg font-semibold text-slate-900">
                 {tokenMode ? "Enter code" : "Get a code"}
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                {tokenMode
-                  ? "Check your email, then enter the code to open My Library."
-                  : "We'll email a one-time code to sign you in."}
-              </p>
+              {!tokenMode ? (
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  We&apos;ll email a one-time code to sign you in.
+                </p>
+              ) : null}
             </div>
 
             {tokenMode ? (

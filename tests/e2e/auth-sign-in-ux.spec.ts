@@ -17,13 +17,7 @@ test.describe("auth sign-in ux", () => {
     });
     await gotoWithTransientRetry(page, `/auth/sign-in?${params.toString()}`);
 
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "What works on this device"
-    );
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText("Email code today");
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Check your email, then enter the code below."
-    );
+    await expect(page.getByTestId("auth-passkey-readiness")).toHaveCount(0);
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Code sent. Check your email, then enter it below."
     );
@@ -70,12 +64,7 @@ test.describe("auth sign-in ux", () => {
     await gotoWithTransientRetry(page, `/auth/sign-in?${params.toString()}`);
 
     await expect(page.getByRole("heading", { name: "Get a code" })).toBeVisible();
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "What works on this device"
-    );
-    await expect(page.getByTestId("auth-passkey-readiness")).toContainText(
-      "Email code sign-in works on this device today."
-    );
+    await expect(page.getByTestId("auth-passkey-readiness")).toHaveCount(0);
     await expect(page.getByTestId("auth-request-status")).toContainText(
       "Enter a valid email address."
     );
