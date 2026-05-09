@@ -63,8 +63,14 @@ Confirm:
 - `enforce_admins` and `required_linear_history` are `true`.
 - `allow_force_pushes` and `allow_deletions` are `false`.
 
-Governance audit note: on `2026-05-09`, the live rule reported `required_pull_request_reviews: 0`.
-Restore the desired review setting before claiming branch protection is fully aligned.
+Governance audit note: on `2026-05-09`, the live rule initially reported
+`required_pull_request_reviews: 0`. The review gate was restored the same day
+through the GitHub PR-review protection endpoint and verified as
+`required_pull_request_reviews: 1` with the required checks unchanged.
+
+When correcting only review enforcement, prefer the narrow PR-review protection
+endpoint instead of reapplying the full protection object. That preserves the
+existing status check names and other branch-protection settings.
 
 ## If Checks Show As Stuck `Expected`
 
