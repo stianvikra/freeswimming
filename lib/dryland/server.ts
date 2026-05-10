@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
 import {
-  buildDrylandMicroBlocksFromDraft,
+  buildDrylandMicroBlocksFromSources,
   buildDrylandMicroPlanRecord,
   buildDrylandMicroPlanWeekWindow,
+  type DrylandMicroPlanBuildOptions,
 } from "@/lib/dryland/micro-plans";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import {
@@ -113,25 +114,55 @@ export function buildDrylandUpdate(draft: unknown): DrylandUpdate {
 
 export function buildDrylandMicroPlanInsert(
   userId: string,
-  sourceSession: DrylandRow,
+  sourceSessions: DrylandRow | DrylandRow[],
   timezoneInput: unknown,
+  options: DrylandMicroPlanBuildOptions & { title?: unknown } = {},
   now = new Date()
 ): DrylandMicroPlanInsert {
-  const sourceRecord = buildDrylandSessionRecord(sourceSession);
-  const blocks = buildDrylandMicroBlocksFromDraft(sourceRecord.draft);
+  const sourceRows = Array.isArray(sourceSessions) ? sourceSessions : [sourceSessions];
+  const sourceRecords = sourceRows.map((sourceSession) => buildDrylandSessionRecord(sourceSession));
+  const blocks = buildDrylandMicroBlocksFromSources(
+    sourceRecords.map((sourceRecord) => ({
+      sourceDrylandSessionId: sourceRecord.id,
+      draft: sourceRecord.draft,
+    })),
+    options
+  );
+  if (!blocks.ok) {
+    throw new Error(blocks.error);
+  }
+
+  const primarySource = sourceRows[0];
+  const primaryRecord = sourceRecords[0];
+  if (!primarySource || !primaryRecord) {
+    throw new Error("Select at least one dryland session.");
+  }
+
   const weekWindow = buildDrylandMicroPlanWeekWindow(now, timezoneInput);
+  const sourceTitle =
+    sourceRecords.length === 1
+      ? primaryRecord.draft.title
+      : `${sourceRecords.length} source sessions`;
+  const defaultTitle =
+    sourceRecords.length === 1
+      ? `Micro session: ${primaryRecord.draft.title}`
+      : `Micro session: ${sourceRecords.length} sessions`;
+  const title =
+    typeof options.title === "string" && options.title.trim()
+      ? options.title.trim().slice(0, 120)
+      : defaultTitle.slice(0, 120);
 
   return {
     user_id: userId,
-    source_dryland_session_id: sourceSession.id,
+    source_dryland_session_id: primarySource.id,
     status: "active",
-    session_kind: sourceRecord.draft.sessionKind,
-    source_session_title: sourceRecord.draft.title,
-    title: `Micro plan: ${sourceRecord.draft.title}`.slice(0, 120),
+    session_kind: primaryRecord.draft.sessionKind,
+    source_session_title: sourceTitle.slice(0, 120),
+    title,
     timezone: weekWindow.timezone,
     week_starts_at: weekWindow.weekStartsAt,
     week_ends_at: weekWindow.weekEndsAt,
-    blocks: blocks as unknown as Json,
+    blocks: blocks.value as unknown as Json,
   };
 }
 

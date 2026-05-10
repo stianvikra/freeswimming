@@ -187,12 +187,11 @@ describe("dryland micro plan routes", () => {
     const insertSelect = vi.fn(() => ({ single: insertSingle }));
     const insert = vi.fn(() => ({ select: insertSelect }));
 
-    const sourceMaybeSingle = vi.fn().mockResolvedValue({
-      data: buildDrylandRow(),
+    const sourceIn = vi.fn().mockResolvedValue({
+      data: [buildDrylandRow()],
       error: null,
     });
-    const sourceEqId = vi.fn(() => ({ maybeSingle: sourceMaybeSingle }));
-    const sourceEqUser = vi.fn(() => ({ eq: sourceEqId }));
+    const sourceEqUser = vi.fn(() => ({ in: sourceIn }));
     const sourceSelect = vi.fn(() => ({ eq: sourceEqUser }));
     const from = vi.fn((table: string) =>
       table === "dryland_micro_plans" ? { select: microSelect, insert } : { select: sourceSelect }
@@ -213,7 +212,7 @@ describe("dryland micro plan routes", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceDrylandSessionId: "11111111-1111-4111-8111-111111111111",
+          sourceDrylandSessionIds: ["11111111-1111-4111-8111-111111111111"],
           timezone: "Europe/Oslo",
         }),
       })
@@ -223,7 +222,7 @@ describe("dryland micro plan routes", () => {
     expect(response.status).toBe(200);
     expect(from).toHaveBeenCalledWith("dryland_sessions");
     expect(sourceEqUser).toHaveBeenCalledWith("user_id", "user-1");
-    expect(sourceEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+    expect(sourceIn).toHaveBeenCalledWith("id", ["11111111-1111-4111-8111-111111111111"]);
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: "user-1",
@@ -329,6 +328,78 @@ describe("dryland micro plan routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.plan.status).toBe("completed");
     expect(payload.plan.progress.progressPercent).toBe(100);
+  });
+
+  it("releases an upcoming micro unit for the authenticated owner", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({
+        blocks: [
+          {
+            ...((buildMicroPlanRow().blocks as Array<Record<string, unknown>>)[0] ?? {}),
+            releaseMode: "manual",
+            releasedAt: null,
+          },
+        ],
+      }),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const select = vi.fn(() => ({ eq: planEqUser }));
+
+    const updateMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({
+        blocks: [
+          {
+            ...((buildMicroPlanRow().blocks as Array<Record<string, unknown>>)[0] ?? {}),
+            releaseMode: "manual",
+            releasedAt: "2026-05-08T09:00:00.000Z",
+          },
+        ],
+      }),
+      error: null,
+    });
+    const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+    const updateEqId = vi.fn(() => ({ select: updateSelect }));
+    const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
+    const update = vi.fn(() => ({ eq: updateEqUser }));
+    const from = vi.fn().mockReturnValue({ select, update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blockId: "block-1-exercise-1",
+            releaseNow: true,
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blocks: [expect.objectContaining({ releasedAt: expect.any(String) })],
+      })
+    );
   });
 
   it("returns a support-diagnosable sync response when updating before the table is applied", async () => {

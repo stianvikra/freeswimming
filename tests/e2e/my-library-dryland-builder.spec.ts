@@ -178,11 +178,11 @@ test.describe("my library dryland builder", () => {
       .catch(() => false);
 
     if (!microSyncing) {
-      const startButton = page.getByTestId(`dryland-micro-start-${createdSessionId}`);
-      const startNextButton = page.getByTestId(`dryland-micro-start-next-${createdSessionId}`);
+      const selectSession = page.getByTestId(`dryland-micro-select-${createdSessionId}`);
+      const createButton = page.getByTestId("dryland-micro-create");
       const canStartFreshPlan =
-        (await startButton.isVisible().catch(() => false)) ||
-        (await startNextButton.isVisible().catch(() => false));
+        (await selectSession.isVisible().catch(() => false)) &&
+        (await createButton.isVisible().catch(() => false));
 
       if (canStartFreshPlan) {
         const startResponsePromise = page.waitForResponse(
@@ -191,11 +191,8 @@ test.describe("my library dryland builder", () => {
             response.request().method() === "POST" &&
             response.status() === 200
         );
-        if (await startButton.isVisible().catch(() => false)) {
-          await startButton.click();
-        } else {
-          await startNextButton.click();
-        }
+        await selectSession.check();
+        await createButton.click();
         await expect((await startResponsePromise).json()).resolves.toMatchObject({ ok: true });
       }
 

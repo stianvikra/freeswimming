@@ -7,6 +7,7 @@ import {
 } from "@/lib/dryland/server";
 import {
   buildDrylandMicroPlanRecord,
+  normalizeDrylandMicroSourceIds,
   type DrylandMicroPlanApiResponse,
   type DrylandMicroPlanCreateRequestBody,
 } from "@/lib/dryland/micro-plans";
@@ -51,9 +52,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const sourceDrylandSessionId =
-    typeof body.sourceDrylandSessionId === "string" ? body.sourceDrylandSessionId.trim() : "";
-  if (!UUID_PATTERN.test(sourceDrylandSessionId)) {
+  const sourceIds = normalizeDrylandMicroSourceIds(
+    body.sourceDrylandSessionIds,
+    body.sourceDrylandSessionId
+  );
+  if (!sourceIds.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: sourceIds.error }, { status: 400 })
+    );
+  }
+
+  if (sourceIds.value.some((sourceId) => !UUID_PATTERN.test(sourceId))) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Invalid dryland session id." }, { status: 400 })
     );
@@ -107,8 +116,7 @@ export async function POST(request: Request) {
     .from("dryland_sessions")
     .select(DRYLAND_SELECT)
     .eq("user_id", user.id)
-    .eq("id", sourceDrylandSessionId)
-    .maybeSingle();
+    .in("id", sourceIds.value);
 
   if (isDrylandSchemaMissing(sourceResult.error)) {
     return applySupabaseCookies(
@@ -135,19 +143,27 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!sourceResult.data) {
+  const sourceRows = ((sourceResult.data ?? []) as DrylandRow[]).slice().sort((first, second) => {
+    return sourceIds.value.indexOf(first.id) - sourceIds.value.indexOf(second.id);
+  });
+
+  if (sourceRows.length !== sourceIds.value.length) {
     return applySupabaseCookies(
-      noStoreJson({ ok: false, error: "Dryland session not found." }, { status: 404 })
+      noStoreJson(
+        { ok: false, error: "One or more dryland sessions were not found." },
+        { status: 404 }
+      )
     );
   }
 
   let insertPayload;
   try {
-    insertPayload = buildDrylandMicroPlanInsert(
-      user.id,
-      sourceResult.data as DrylandRow,
-      body.timezone
-    );
+    insertPayload = buildDrylandMicroPlanInsert(user.id, sourceRows, body.timezone, {
+      title: body.title,
+      releaseMode: body.releaseMode,
+      releaseTime: body.releaseTime,
+      sourceReleaseOffsetDays: body.sourceReleaseOffsetDays,
+    });
   } catch (error) {
     return applySupabaseCookies(
       noStoreJson(
