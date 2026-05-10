@@ -303,6 +303,133 @@ describe("DrylandMicroPlanPanel", () => {
     expect(await screen.findByText("Micro session updated.")).toBeVisible();
   });
 
+  it("renders bubbles mode with a selectable detail panel", () => {
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+
+    expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-bubble-0")).toHaveAccessibleName(
+      /Single-leg squat, 6 reps/
+    );
+    expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Single-leg squat");
+
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+
+    expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Dead bug");
+  });
+
+  it("double taps a bubble through the existing server-confirmed completion mutation", async () => {
+    const completedPlan = buildPlan({
+      blocks: buildPlan().blocks.map((block, index) =>
+        index === 0
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-08T09:00:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: completedPlan,
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"blockStatus":"completed"'),
+        })
+      );
+    });
+    expect(await screen.findByText("Bubble completed.")).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+        "aria-valuenow",
+        "50"
+      );
+    });
+  });
+
+  it("keeps a bubble visible when server completion fails", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not update micro session right now.",
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+
+    expect(await screen.findByText("Could not update micro session right now.")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-bubble-0")).toBeVisible();
+    expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "0"
+    );
+  });
+
+  it("disables bubble completion while a micro session is paused", () => {
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({ status: "paused" })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+
+    expect(screen.getByTestId("dryland-micro-bubble-0")).toBeDisabled();
+    expect(screen.getByTestId("dryland-micro-complete-0")).toBeDisabled();
+  });
+
   it("shows syncing state without hiding the dryland surface", () => {
     render(
       <DrylandMicroPlanPanel

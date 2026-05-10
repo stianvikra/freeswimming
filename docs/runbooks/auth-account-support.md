@@ -45,6 +45,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - If a code expires or fails: request a new code from `/auth/sign-in`.
 - If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships. A `preview_access_unlock_failed` incident alert means an authenticated admin passed the admin gate, but strong session claims could not be verified.
 - If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
+- If a user reports that a Micro Sessions bubble did not pop or complete: first confirm whether they are in `Ordered` or `Bubbles` mode under `Dryland Sessions`. Bubbles use the same owner-scoped set-unit update as ordered mode, and the pop feedback should only appear after that update succeeds. If the bubble remains visible with an error, diagnose the existing micro-plan `PATCH` path and do not look for stored drag/pop/audio/haptic telemetry because bubble presentation state is not persisted.
 
 ## Security Rules
 
