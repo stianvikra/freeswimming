@@ -1,0 +1,119 @@
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import TodayTabsPanel from "@/components/my-library/TodayTabsPanel";
+import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
+import type { DrylandLibrarySnapshot } from "@/lib/dryland/shared";
+import type { HabitSnapshot } from "@/lib/habits/shared";
+
+function buildDrylandLibrary(): Pick<
+  DrylandLibrarySnapshot,
+  "microPlan" | "microPlanLoadError" | "microPlanSchemaReady" | "recentSessions"
+> {
+  return {
+    microPlanSchemaReady: true,
+    microPlanLoadError: null,
+    recentSessions: [],
+    microPlan: {
+      id: "plan-1",
+      title: "Micro session: Weekly strength",
+      status: "active",
+      releaseMode: "available_now",
+      releaseTime: "06:00",
+      timezone: "UTC",
+      weekStartsAt: "2026-05-04T00:00:00.000Z",
+      weekEndsAt: "2026-05-11T00:00:00.000Z",
+      progress: {
+        totalBlockCount: 3,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 2,
+        progressPercent: 33,
+      },
+      blocks: [
+        {
+          id: "unit-1",
+          status: "queued",
+          isArchived: false,
+          releaseMode: "available_now",
+          releaseOffsetDays: null,
+          releaseTime: "06:00",
+          releasedAt: "1970-01-01T00:00:00.000Z",
+        },
+      ],
+    } as DrylandMicroPlanRecord,
+  };
+}
+
+function buildHabitSnapshot(): HabitSnapshot {
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits: [
+      {
+        id: "habit-1",
+      },
+      {
+        id: "habit-2",
+      },
+    ] as HabitSnapshot["activeHabits"],
+    archivedHabits: [],
+    daySummary: {
+      date: "2026-05-10",
+      scheduledHabitCount: 2,
+      perfectDayItemCount: 2,
+      satisfiedPerfectDayItemCount: 1,
+      completionPercent: 50,
+      isPerfectDay: false,
+      completedDurationMinutes: 0,
+      completedCountTotal: 0,
+      items: [],
+    },
+    weekSummary: {
+      days: [],
+      perfectDayCount: 0,
+      averageCompletionPercent: 0,
+      totalDurationMinutes: 0,
+      totalCount: 0,
+    },
+  };
+}
+
+describe("TodayTabsPanel", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("keeps Bubbles and Habits as switchable views in one Today panel", () => {
+    render(
+      <TodayTabsPanel
+        drylandLibrary={buildDrylandLibrary()}
+        habitSnapshot={buildHabitSnapshot()}
+        nowIso="2026-05-10T09:00:00.000Z"
+      />
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+    expect(within(panel).getByRole("heading", { name: "Daily work" })).toBeVisible();
+    expect(within(panel).getByText("Perfect Day: 1/2 done")).toBeVisible();
+
+    const bubblesTab = within(panel).getByRole("tab", { name: "Bubbles" });
+    const habitsTab = within(panel).getByRole("tab", { name: "Habits" });
+    expect(bubblesTab).toHaveAttribute("aria-selected", "true");
+    expect(within(panel).getByRole("link", { name: "Open Bubbles" })).toHaveAttribute(
+      "href",
+      "/my-library/dryland"
+    );
+
+    fireEvent.click(habitsTab);
+    expect(habitsTab).toHaveAttribute("aria-selected", "true");
+    expect(within(panel).getByRole("link", { name: "Open Habits" })).toHaveAttribute(
+      "href",
+      "/my-library/habits"
+    );
+
+    fireEvent.click(bubblesTab);
+    expect(bubblesTab).toHaveAttribute("aria-selected", "true");
+    expect(within(panel).getByRole("link", { name: "Open Bubbles" })).toBeVisible();
+  });
+});

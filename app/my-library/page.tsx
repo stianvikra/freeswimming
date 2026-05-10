@@ -10,6 +10,7 @@ import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
+import TodayTabsPanel from "@/components/my-library/TodayTabsPanel";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
@@ -170,6 +171,16 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
+            <TodayTabsPanel
+              drylandLibrary={{
+                microPlan: drylandLibrarySnapshot.microPlan,
+                microPlanLoadError: drylandLibrarySnapshot.microPlanLoadError,
+                microPlanSchemaReady: drylandLibrarySnapshot.microPlanSchemaReady,
+                recentSessions: drylandLibrarySnapshot.recentSessions,
+              }}
+              habitSnapshot={habitSnapshot}
+              nowIso={new Date().toISOString()}
+            />
             <MyLibraryNewContentNotice userId={user.id} />
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
