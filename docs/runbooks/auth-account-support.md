@@ -17,7 +17,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
 - `My Training` (`/my-library/training`) holds goals-to-focus workflow, focus cues, and poolside notes.
 - `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
-- `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and weekly `Micro Sessions` exercise-block completion surface.
+- `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and weekly `Micro Sessions` set-unit completion surface.
 - `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
 
 ## Support Answers

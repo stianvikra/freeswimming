@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   applyDrylandMicroBlockStatus,
   buildDrylandMicroBlocksFromDraft,
+  buildDrylandMicroBlocksFromSources,
   buildDrylandMicroPlanProgress,
   buildDrylandMicroPlanWeekWindow,
   deriveDrylandMicroPlanStatus,
+  getDrylandMicroBlockReleaseDate,
+  isDrylandMicroBlockAvailable,
+  mergeDrylandMicroBlocksForPlanEdit,
   type DrylandMicroBlockSnapshot,
 } from "@/lib/dryland/micro-plans";
 import type { DrylandSessionDraft } from "@/lib/dryland/shared";
@@ -90,21 +94,82 @@ function buildBlocks(): DrylandMicroBlockSnapshot[] {
 }
 
 describe("dryland micro plans", () => {
-  it("snapshots one micro block per dryland exercise", () => {
+  it("snapshots one micro unit per dryland set with rep targets", () => {
     const blocks = buildBlocks();
 
-    expect(blocks).toHaveLength(2);
+    expect(blocks).toHaveLength(3);
     expect(blocks[0]).toMatchObject({
       sourceExerciseId: "exercise-1",
+      sourceSetId: "set-1",
+      setIndex: 0,
       title: "Single-leg squat",
       status: "queued",
-      targetLabel: "2 sets · 6 @ 12.5kg P: 1 min 15 sec",
+      targetType: "reps",
+      targetValue: 6,
+      targetLabel: "6 reps · 12.5kg · 1 min 15 sec rest",
       coachCue: "Slow down.",
     });
     expect(blocks[1]).toMatchObject({
+      sourceExerciseId: "exercise-1",
+      sourceSetId: "set-2",
+      setIndex: 1,
+      targetLabel: "6 reps · 12.5kg · 1 min 15 sec rest",
+    });
+    expect(blocks[2]).toMatchObject({
       title: "Dead bug",
       summary: "Core",
       coachCue: "Brace first",
+    });
+  });
+
+  it("snapshots stretching set units with duration targets", () => {
+    const blocks = buildDrylandMicroBlocksFromSources([
+      {
+        sourceDrylandSessionId: "stretching-session",
+        draft: {
+          ...buildDraft(),
+          sessionKind: "stretching",
+          title: "Core mobility",
+          exercises: [
+            {
+              ...buildDraft().exercises[0]!,
+              id: "plank",
+              title: "Plank",
+              sets: [
+                {
+                  id: "hold-1",
+                  reps: null,
+                  holdSeconds: 30,
+                  loadKg: null,
+                  restSeconds: 20,
+                  isCompleted: false,
+                  completedAt: null,
+                },
+                {
+                  id: "hold-2",
+                  reps: null,
+                  holdSeconds: 30,
+                  loadKg: null,
+                  restSeconds: 20,
+                  isCompleted: false,
+                  completedAt: null,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(blocks.ok).toBe(true);
+    if (!blocks.ok) return;
+    expect(blocks.value).toHaveLength(2);
+    expect(blocks.value[0]).toMatchObject({
+      title: "Plank",
+      targetType: "duration",
+      targetValue: 30,
+      targetUnit: "sec",
+      targetLabel: "30 sec · 20 sec rest",
     });
   });
 
@@ -122,11 +187,11 @@ describe("dryland micro plans", () => {
     };
 
     expect(buildDrylandMicroPlanProgress(blocks)).toEqual({
-      totalBlockCount: 2,
+      totalBlockCount: 3,
       completedBlockCount: 1,
       skippedBlockCount: 1,
-      remainingBlockCount: 0,
-      progressPercent: 50,
+      remainingBlockCount: 1,
+      progressPercent: 33,
     });
   });
 
@@ -161,7 +226,16 @@ describe("dryland micro plans", () => {
     expect(completedAll.ok).toBe(true);
     if (!completedAll.ok) return;
 
-    expect(deriveDrylandMicroPlanStatus(completedAll.value, "active")).toBe("completed");
+    const completedLast = applyDrylandMicroBlockStatus(
+      completedAll.value,
+      blocks[2].id,
+      "completed",
+      new Date("2026-05-08T11:00:00.000Z")
+    );
+    expect(completedLast.ok).toBe(true);
+    if (!completedLast.ok) return;
+
+    expect(deriveDrylandMicroPlanStatus(completedLast.value, "active")).toBe("completed");
   });
 
   it("uses the user's timezone for a Monday-based week window", () => {
@@ -174,6 +248,97 @@ describe("dryland micro plans", () => {
       timezone: "Europe/Oslo",
       weekStartsAt: "2026-05-03T22:00:00.000Z",
       weekEndsAt: "2026-05-10T22:00:00.000Z",
+    });
+  });
+
+  it("distributes three source sessions across Monday, Wednesday, and Friday", () => {
+    const blocks = buildDrylandMicroBlocksFromSources(
+      [
+        { sourceDrylandSessionId: "source-1", draft: buildDraft() },
+        { sourceDrylandSessionId: "source-2", draft: { ...buildDraft(), title: "Pull" } },
+        { sourceDrylandSessionId: "source-3", draft: { ...buildDraft(), title: "Core" } },
+      ],
+      { releaseMode: "weekday", releaseTime: "07:30" }
+    );
+
+    expect(blocks.ok).toBe(true);
+    if (!blocks.ok) return;
+    expect(
+      blocks.value.filter((block) => block.sourceDrylandSessionId === "source-1")[0]
+    ).toMatchObject({ releaseOffsetDays: 0, releaseTime: "07:30" });
+    expect(
+      blocks.value.filter((block) => block.sourceDrylandSessionId === "source-2")[0]
+    ).toMatchObject({ releaseOffsetDays: 2, releaseTime: "07:30" });
+    expect(
+      blocks.value.filter((block) => block.sourceDrylandSessionId === "source-3")[0]
+    ).toMatchObject({ releaseOffsetDays: 4, releaseTime: "07:30" });
+  });
+
+  it("keeps earlier unfinished weekday units available before newer releases", () => {
+    const blocks = buildDrylandMicroBlocksFromSources(
+      [{ sourceDrylandSessionId: "source-1", draft: buildDraft() }],
+      { releaseMode: "weekday", releaseTime: "06:00" }
+    );
+    expect(blocks.ok).toBe(true);
+    if (!blocks.ok) return;
+
+    const plan = {
+      timezone: "Europe/Oslo",
+      weekStartsAt: "2026-05-03T22:00:00.000Z",
+    };
+    const releaseDate = getDrylandMicroBlockReleaseDate(plan, blocks.value[0]);
+
+    expect(releaseDate?.toISOString()).toBe("2026-05-04T04:00:00.000Z");
+    expect(
+      isDrylandMicroBlockAvailable(plan, blocks.value[0], new Date("2026-05-06T12:00:00.000Z"))
+    ).toBe(true);
+  });
+
+  it("preserves completed unit history when editing sources removes future units", () => {
+    const currentBlocks = buildBlocks();
+    const completed = applyDrylandMicroBlockStatus(
+      currentBlocks,
+      currentBlocks[0].id,
+      "completed",
+      new Date("2026-05-08T08:00:00.000Z")
+    );
+    expect(completed.ok).toBe(true);
+    if (!completed.ok) return;
+
+    const generated = buildDrylandMicroBlocksFromSources([
+      {
+        sourceDrylandSessionId: "another-source",
+        draft: { ...buildDraft(), title: "Another source" },
+      },
+    ]);
+    expect(generated.ok).toBe(true);
+    if (!generated.ok) return;
+
+    const merged = mergeDrylandMicroBlocksForPlanEdit(completed.value, generated.value);
+
+    expect(merged.some((block) => block.id === currentBlocks[0].id && block.isArchived)).toBe(true);
+    expect(merged.some((block) => block.id === currentBlocks[1].id)).toBe(false);
+  });
+
+  it("clears stale release overrides when edit changes release mode", () => {
+    const current = buildDrylandMicroBlocksFromSources(
+      [{ sourceDrylandSessionId: "source-1", draft: buildDraft() }],
+      { releaseMode: "available_now" }
+    );
+    const generated = buildDrylandMicroBlocksFromSources(
+      [{ sourceDrylandSessionId: "source-1", draft: buildDraft() }],
+      { releaseMode: "weekday", releaseTime: "06:00" }
+    );
+    expect(current.ok).toBe(true);
+    expect(generated.ok).toBe(true);
+    if (!current.ok || !generated.ok) return;
+
+    const merged = mergeDrylandMicroBlocksForPlanEdit(current.value, generated.value);
+
+    expect(merged[0]).toMatchObject({
+      releaseMode: "weekday",
+      releaseOffsetDays: 0,
+      releasedAt: null,
     });
   });
 });
