@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-admin-incident-alerts-and-status-ops-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-05-09`
@@ -26,9 +26,24 @@ First target incident categories:
 - `checkout_unavailable`
 - `save_export_failed`
 
+## V1 Scope Decision
+
+Ship the smallest safe hardening slice first:
+
+- use the existing Admin Messages email delivery adapter with `system_notice`,
+- use Upstash REST when configured and an in-memory fallback for dedupe,
+- add deterministic privacy redaction before email delivery,
+- wire only `auth_sign_in_service_restricted`, `auth_sign_in_email_delivery_failed`, and the high-signal `/preview-access/admin-unlock` claims-verification failure,
+- add no database table, no generated Supabase type change, no admin UI, and no public status/banner in V1.
+
+Deferred categories remain planned but intentionally unwired in this PR:
+
+- `checkout_unavailable`
+- `save_export_failed`
+
 ## Relevance Assessment Before Scoring
 
-Relevant categories are incident response, admin workflow, reliability, privacy, security, observability, and cost/scalability. Visual design is supporting unless a status/banner UI is included. Commerce and finance are supporting only because checkout alerts may be covered, but reconciliation/reporting is not changed in V1.
+Relevant categories are incident response, admin workflow, reliability, privacy, security, observability, and cost/scalability. Visual design is supporting unless a status/banner UI is included. Commerce and finance are supporting only because checkout alerts may be covered later; checkout, reconciliation, and reporting are not changed in V1.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -47,7 +62,7 @@ Critical target categories for a `10/10` claim:
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                    | Evidence                                     | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------- |
 | Product goals and IA                          | `target`     | Admin can understand what failed, where to look, and what to do next without entering unrelated admin surfaces.                       | admin workflow QA + runbook                  | `5/5`                   |
-| UX flow clarity                               | `target`     | User-facing errors remain calm and non-technical; admin-facing alert has clear next action.                                           | screenshot/copy review where UI changes      | `5/5`                   |
+| UX flow clarity                               | `target`     | User-facing errors remain calm and non-technical; admin-facing alert has clear next action.                                           | copy review; no UI change in V1              | `5/5`                   |
 | Visual design quality                         | `supporting` | Supporting unless a status/banner UI is included; any UI must reuse existing admin/status primitives.                                 | screenshot handoff if UI changes             | `4/5`                   |
 | Business logic correctness and data integrity | `target`     | Alerts are deduplicated by category/window, do not double-send on retries, and preserve event counts.                                 | unit tests + integration tests               | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | Admin email and/or admin surface gives one concise action path, including Codex-ready diagnostic prompt and runbook link.             | admin QA + email snapshot                    | `5/5`                   |
@@ -59,11 +74,11 @@ Critical target categories for a `10/10` claim:
 | Security and authz                            | `target`     | Only authorized admins can manage status/alert settings; alert endpoints fail closed.                                                 | authz tests                                  | `5/5`                   |
 | Privacy and compliance                        | `target`     | Default payload excludes raw email, tokens, cookies, IP, and provider secrets; user identifiers require explicit support-case reason. | privacy review + tests                       | `5/5`                   |
 | Content governance                            | `supporting` | Supporting: status/banner messages, if included, have owner, publish/unpublish, and rollback path.                                    | admin/status review                          | `4/5`                   |
-| Admin workflow and editability                | `target`     | Admin can view current critical incident category, suppression state, and last alert timestamp.                                       | admin QA                                     | `5/5`                   |
+| Admin workflow and editability                | `supporting` | Supporting in V1 because there is no admin UI; email/runbook carries category, dedupe window, and next action.                        | email snapshot + runbook                     | `4/5`                   |
 | SEO and crawlability                          | `N/A`        | N/A because incident emails/status ops do not change public crawlable route metadata or sitemap behavior in V1.                       | explicit scope rationale                     | `N/A`                   |
 | AI discoverability                            | `N/A`        | N/A because this is internal ops/support workflow and does not add public AI-discoverable content.                                    | explicit scope rationale                     | `N/A`                   |
 | Analytics and KPI observability               | `target`     | Critical failures emit safe event category, count, first/last seen, and affected flow for admin review.                               | event tests + admin/email evidence           | `5/5`                   |
-| Commerce and revenue ops                      | `supporting` | Supporting: checkout incident category may alert admin, but pricing, invoices, entitlements, refunds, and reporting are unchanged.    | checkout alert negative-path test if touched | `4/5`                   |
+| Commerce and revenue ops                      | `supporting` | Supporting: checkout category remains deferred; pricing, invoices, entitlements, refunds, and reporting are unchanged.                | explicit scope rationale                     | `4/5`                   |
 | Incident response and support operations      | `target`     | Admin receives deduped actionable email and runbook gives exact diagnostic path and Codex prompt.                                     | email snapshot + runbook                     | `5/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A because this slice does not change finance reports, invoices, payouts, refunds, or reconciliation.                                | explicit scope rationale                     | `N/A`                   |
 | i18n operational readiness                    | `supporting` | Supporting: user/status copy remains concise and structurally localizable; internal admin emails may remain English in V1.            | copy review                                  | `4/5`                   |
@@ -81,8 +96,8 @@ Critical target categories for a `10/10` claim:
   - Define typed incident categories, severity, dedupe key, and safe diagnostic payload.
   - Redaction must be deterministic and tested.
 - Supabase/data layer:
-  - If persisted, use explicit migration, RLS/admin-only access, indexes for category/window, and generated DB type update.
-  - If using Upstash for dedupe, document TTL and fallback behavior.
+  - V1 is not persisted; if later persisted, use explicit migration, RLS/admin-only access, indexes for category/window, and generated DB type update.
+  - V1 uses Upstash for dedupe when configured and documents TTL/fallback behavior.
 - External services:
   - Use existing email provider contract.
   - Email delivery must be idempotent/deduped.
@@ -95,7 +110,7 @@ Critical target categories for a `10/10` claim:
 ## Data Placement And Sync Contract
 
 - Server-canonical:
-  - incident category, severity, count, first seen, last seen, dedupe window, delivery status.
+  - incident category, severity, dedupe count, first alert in window, reset timestamp, dedupe window, delivery status.
 - Local data:
   - none.
 - Sync policy:
@@ -114,7 +129,7 @@ Critical target categories for a `10/10` claim:
 - Human-readable identifiers:
   - incident title/category is renameable only through compatibility mapping if persisted.
 - Mutability rules:
-  - event rows are append-only where persisted; incident aggregate status may update counts/timestamps.
+  - V1 dedupe counters are TTL-bound; event rows are append-only only if a later persistence slice is approved.
 - Rename vs repurpose:
   - materially different failure class gets a new category.
 - Compatibility:
@@ -127,8 +142,9 @@ Critical target categories for a `10/10` claim:
 - Incident category contract.
 - Dedupe/rate-limited admin email alert.
 - Privacy-safe diagnostic payload.
+- Auth sign-in service restriction/email-delivery failure alerts.
+- Preview admin unlock strong-session-claims failure alert.
 - Runbook and Codex-ready prompt template.
-- Optional admin/status surface only if scoped explicitly during implementation.
 
 ## Out Of Scope
 
@@ -137,6 +153,7 @@ Critical target categories for a `10/10` claim:
 - User-specific support ticketing system.
 - Billing plan changes.
 - Broad analytics dashboard.
+- Database persistence, Supabase migration, generated type changes, admin status UI, checkout alert wiring, and save/export alert wiring.
 
 ## Acceptance Criteria
 
@@ -144,8 +161,24 @@ Critical target categories for a `10/10` claim:
 2. Repeated failures in the dedupe window increment count but do not spam email.
 3. Email includes affected flow, category, first/last seen, environment, log query hint, runbook link, and Codex-ready prompt.
 4. Raw user email, tokens, cookies, IP, provider secrets, and allowlists are not included by default.
-5. Admin route/settings, if included, are admin-only and fail closed.
+5. Admin UI/settings are not included in V1; existing protected preview admin unlock route remains fail-closed.
 6. Runbook explains how admin should triage and resolve the incident.
+
+## Quality Gate Evidence
+
+- API and server actions failure-mode evidence:
+  - no unexpected 500 is introduced for expected auth, non-admin, or AAL1 preview-access paths,
+  - the existing preview admin unlock strong-session claims failure remains an intentional `500` fail-closed response and now sends `preview_access_unlock_failed` before returning safe JSON,
+  - incident email provider failure-mode is non-blocking and returns `delivery_failed` internally without changing the user-facing auth/preview response.
+- Route/label/support sweep:
+  - identifiers searched: `Could not request sign-in email`, `exceed_egress_quota`, `preview access`, `checkout`, `save image`, `export`, `admin_messages`, `message_delivery`, `incident`, `alert`,
+  - surfaces checked: `app/auth/sign-in/actions.ts`, `app/preview-access/admin-unlock/route.ts`, `lib/admin/message-delivery.ts`, `docs/runbooks/auth-account-support.md`, `docs/runbooks/core-flow-incident-response.md`, `docs/runbooks/environment-config-and-secret-parity.md`, `docs/architecture/external-service-contract-matrix.md`, `docs/architecture/secret-config-inventory.md`, `.env.example`,
+  - fallout handled in this PR for auth support, core incident response, external-service contracts, and env parity.
+- UI/layout/brand evidence:
+  - reference surface / shared component / view-model: N/A because V1 adds no UI, no layout, no copy-rendering surface, and no reusable visual component,
+  - screenshot artifacts / artifact folder / screenshot artifact handoff: N/A because no visual-rendering files changed,
+  - owner screenshot approval stop / visual review stop: N/A because screenshot review is not required for backend/docs/tooling-only behavior,
+  - screenshot comparison naming (`before/after`, `after/reference`, `before-`, `after-`, `reference-`): N/A because no screenshots are generated for this non-visual slice.
 
 ## Validation
 
@@ -180,3 +213,5 @@ Search targets:
 ## Checkpoint Log
 
 - `2026-05-09` - Planned after Supabase egress incident showed auth could fail without admin receiving proactive alert. Next: schedule after Supabase egress hotfix and before broad public launch.
+- `2026-05-09` - Moved to in-progress on branch `admin-incident-alerts-v1-2026-05-09`; V1 narrowed to email-only incident alerts with no DB/UI/status banner. Next: implement incident helper, auth/preview hooks, tests, and runbook/env docs.
+- `2026-05-09` - Implemented commit `9592736` with incident helper, auth/preview hooks, env/runbook contract updates, and tests. Validation: targeted `npm exec vitest run tests/unit/admin-incidents.test.ts tests/unit/preview-access-admin-unlock-route.test.ts` passed 11 tests; `npm run lint:briefs:all`, `npm run lint:quality-gates`, `npm run lint:env-parity`, `npm run lint`, `npm run typecheck`, and `npm run verify:pre-pr` passed on `9592736` (artifact `artifacts/test-runs/20260509-213319`, full lane: 994 unit tests, build, perf budgets, 82/456 E2E passed with 374 expected skips). Perf trend recommended tightening one stretch target after 4 weekly green runs; no budget is changed in this incident-alert slice. Next: amend checkpoint, push branch, open PR, and run merge-readiness gates.

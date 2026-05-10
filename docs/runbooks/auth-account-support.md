@@ -34,11 +34,16 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - If a sign-in code does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new code on `/auth/sign-in`.
 - If `/auth/sign-in` shows "Sign-in is temporarily unavailable because a service limit was reached":
   - check Vercel logs for `[Auth] Could not request sign-in email` with `kind: "service_restricted"`,
+  - confirm the admin incident alert `auth_sign_in_service_restricted` was sent or intentionally disabled by `INCIDENT_ALERTS_ENABLED=0`,
   - check Supabase Dashboard -> Organization Usage -> Egress for `exceed_egress_quota` or Fair Use restrictions,
   - do not ask the user to retry repeatedly until Supabase usage/billing restriction is resolved,
   - tell the user sign-in is temporarily unavailable and that we are resolving a service limit.
+- If `/auth/sign-in` shows "Email code could not be sent right now":
+  - check Vercel logs for `[Auth] Could not request sign-in email` with `kind: "email_delivery"`,
+  - confirm the admin incident alert `auth_sign_in_email_delivery_failed` was sent or intentionally disabled,
+  - inspect `MESSAGE_DELIVERY_*`/Supabase email provider state before asking the user to retry.
 - If a code expires or fails: request a new code from `/auth/sign-in`.
-- If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships.
+- If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships. A `preview_access_unlock_failed` incident alert means an authenticated admin passed the admin gate, but strong session claims could not be verified.
 - If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
 
 ## Security Rules

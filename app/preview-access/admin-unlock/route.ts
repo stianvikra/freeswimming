@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSafeNextPath } from "@/lib/auth/next-path";
+import { reportAdminIncident } from "@/lib/admin/incidents";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { getSiteLockConfig, isSiteLockEnabled } from "@/lib/site-lock/config";
 import { createSiteLockSessionToken } from "@/lib/site-lock/session";
@@ -34,6 +35,10 @@ function noStoreRedirect(request: Request, path: string) {
 function previewAccessPath(nextPath: string) {
   const params = new URLSearchParams({ next: nextPath });
   return `/preview-access?${params.toString()}`;
+}
+
+function getIncidentPathLabel(path: string): string {
+  return path.split("?")[0] || "/";
 }
 
 function setPreviewAccessCookie(response: NextResponse, sessionToken: string) {
@@ -111,6 +116,16 @@ export async function POST(request: Request) {
 
   const claimsResult = await supabase.auth.getClaims();
   if (claimsResult.error) {
+    await reportAdminIncident({
+      category: "preview_access_unlock_failed",
+      severity: "P1",
+      affectedFlow: "preview_access",
+      context: {
+        reason: "admin_claims_unavailable",
+        nextPath: getIncidentPathLabel(nextPath),
+      },
+    });
+
     const response = noStoreJson(
       {
         ok: false,
