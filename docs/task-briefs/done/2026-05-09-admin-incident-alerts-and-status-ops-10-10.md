@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-09-admin-incident-alerts-and-status-ops-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
-- `updated`: `2026-05-09`
+- `updated`: `2026-05-10`
 
 ## Goal
 
@@ -191,6 +191,44 @@ Critical target categories for a `10/10` claim:
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
 
+## Completion Record
+
+- `merged_pr`: `#665`
+- `merge_commit`: `cce1403`
+- `completed`: `2026-05-10`
+- `validation`: targeted Vitest PASS; `npm run verify:pre-pr` PASS full lane on `47f9be3` (`artifacts/test-runs/20260509-213936`); `npm run verify:pre-merge` PASS for `47f9be3`; GitHub required checks PASS including `verify`.
+- `screenshot_handoff`: N/A because V1 changed no rendered UI, print, layout, branding, or export surface.
+- `policy_impact`: PASS; reviewed privacy page, cookie page, and GDPR data-rights runbook. No new processor, retention category, consent boundary, or user-facing policy text change.
+- `perf_budget_decision`: `hold`; full gate reported tighten recommendation after repeated green runs, but this slice is server-only incident email/ops plumbing with no public route payload/layout budget change.
+- `10/10 claim`: yes for the Admin Incident Alerts V1 scope. App-wide incident management, checkout alert wiring, save/export alert wiring, persistence, admin UI, and public status surfaces remain intentionally out of scope.
+
+Critical target categories for `10/10` claim all achieved `5/5`:
+
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Incident response and support operations
+- Analytics and KPI observability
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                                                               | Remaining Gap                                                        |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Deduped admin email gives category, affected flow, environment, runbook link, log hint, and Codex-ready prompt.                        | Public status/admin dashboard remains a later slice.                 |
+| UX flow clarity                               | `5/5`          | User-facing auth/preview responses remain calm and unchanged for expected paths; admin-facing detail moves to internal email/runbooks. | None for V1 email-only scope.                                        |
+| Business logic correctness and data integrity | `5/5`          | Unit tests cover first alert delivery, repeat suppression, dedupe window behavior, missing recipient, and delivery failure.            | Persistent incident rows intentionally deferred.                     |
+| Admin editor ergonomics                       | `5/5`          | Email body and runbooks provide one concise triage path without requiring a new admin UI.                                              | Admin UI/editable status settings intentionally deferred.            |
+| Data placement and sync boundaries            | `5/5`          | Incident state is server-canonical; no client-local source of truth; no DB schema or Supabase generated type drift introduced.         | Later persistence slice must add migration/RLS/types.                |
+| Reliability and failure handling              | `5/5`          | Alert delivery never throws into user flow; delivery failures return internal `delivery_failed` and log redacted metadata.             | Real provider smoke remains an ops/config concern.                   |
+| Security and authz                            | `5/5`          | No new public alert endpoint or client secret path; preview admin unlock remains fail-closed for auth/AAL/admin boundaries.            | Admin alert settings authz belongs to later UI/settings slice.       |
+| Privacy and compliance                        | `5/5`          | Redaction tests cover sensitive keys/values, email addresses, tokens, cookies, IPs, secrets, and free-text diagnostic fields.          | None for V1; user-specific support linkage remains explicit-only.    |
+| Analytics and KPI observability               | `5/5`          | Stable typed categories, severity, flow, dedupe count/window, first/last seen, and safe context are included in alert payload.         | Aggregate dashboard/event stream intentionally deferred.             |
+| Incident response and support operations      | `5/5`          | Core incident runbook and auth support runbook document triage for shipped categories and exact env/config controls.                   | Checkout/save-export incident runbooks remain deferred with wiring.  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Admin Messages delivery adapter; added no dependency; Upstash REST is optional and already represented in env docs.    | None.                                                                |
+| Testing and QA automation                     | `5/5`          | Targeted unit/route tests, full `verify:pre-pr`, full `verify:pre-merge`, and green GitHub CI verify covered the V1 behavior.          | None for non-visual V1 scope.                                        |
+| Scalability and cost efficiency               | `5/5`          | TTL dedupe and in-memory fallback prevent email spam and unbounded incident persistence; no new storage/egress path.                   | Cross-instance dedupe requires Upstash envs in deployed environment. |
+| DevOps and rollback readiness                 | `5/5`          | `INCIDENT_ALERTS_ENABLED=0` disables alerts; rollback is `git revert cce1403`; env/runbook/secret inventory document config.           | None.                                                                |
+
 ## Help / Guide Impact
 
 Update relevant runbooks for any incident categories shipped in V1. Help/Guide end-user content is optional unless a user-facing status/banner is included.
@@ -215,3 +253,4 @@ Search targets:
 - `2026-05-09` - Planned after Supabase egress incident showed auth could fail without admin receiving proactive alert. Next: schedule after Supabase egress hotfix and before broad public launch.
 - `2026-05-09` - Moved to in-progress on branch `admin-incident-alerts-v1-2026-05-09`; V1 narrowed to email-only incident alerts with no DB/UI/status banner. Next: implement incident helper, auth/preview hooks, tests, and runbook/env docs.
 - `2026-05-09` - Implemented commit `9592736` with incident helper, auth/preview hooks, env/runbook contract updates, and tests. Validation: targeted `npm exec vitest run tests/unit/admin-incidents.test.ts tests/unit/preview-access-admin-unlock-route.test.ts` passed 11 tests; `npm run lint:briefs:all`, `npm run lint:quality-gates`, `npm run lint:env-parity`, `npm run lint`, `npm run typecheck`, and `npm run verify:pre-pr` passed on `9592736` (artifact `artifacts/test-runs/20260509-213319`, full lane: 994 unit tests, build, perf budgets, 82/456 E2E passed with 374 expected skips). Perf trend recommended tightening one stretch target after 4 weekly green runs; no budget is changed in this incident-alert slice. Next: amend checkpoint, push branch, open PR, and run merge-readiness gates.
+- `2026-05-10` - PR #665 merged as `cce1403` after green required CI, green local `verify:pre-pr`, and green local `verify:pre-merge`; post-merge preflight surfaced this repo-managed docs-only closeout, moved brief to done, and recorded achieved scores/evidence. Next: validate docs-only closeout PR, merge it, sync `main`, and rerun `npm run post-merge:preflight`.
