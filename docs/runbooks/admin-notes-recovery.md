@@ -27,7 +27,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 2. If the failure happened in `Quick note`, first search by the visible success state or intended title in `/admin?tab=notes` before retrying so you do not create duplicates.
 3. If you still need to inspect the page before saving, collapse the quick-note draft instead of closing it; the page underneath should remain interactive, and reopening from the docked right-edge handle should preserve the current text and staged images.
 4. If you navigated to another supported admin/context surface before saving, confirm the quick-note `Locked context` card still points to the original page/item you meant to annotate before you save.
-   Supported page-level quick-note hubs now include `/my-library`, `goals`, `training`, `profile`, `workouts`, `dryland`, and `generator` in addition to the existing supported public routes. `/my-library/security` is a legacy redirect and is not a live quick-note hub.
+   Supported page-level quick-note hubs now include `/my-library`, `goals`, `training`, `habits`, `profile`, `workouts`, `dryland`, and `generator` in addition to the existing supported public routes. `/my-library/security` is a legacy redirect and is not a live quick-note hub.
 5. After a successful quick-note save, confirm the panel is now ready for another note on the same locked context before you continue capturing follow-up issues.
 6. In `/admin?tab=notes`, keep the `Notes` tab active and click `Refresh` to reload server-canonical rows.
 7. If the row title starts with `[E2E Admin Note Artifact]`, treat it as automated test residue:

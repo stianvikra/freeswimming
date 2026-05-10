@@ -16,6 +16,7 @@ describe("page note context helpers", () => {
   it("returns known labels and safe fallback labels", () => {
     expect(getAdminPageContextLabel("/plans")).toBe("Plans page");
     expect(getAdminPageContextLabel("/my-library/training")).toBe("My Library training");
+    expect(getAdminPageContextLabel("/my-library/habits")).toBe("My Library habits");
     expect(getAdminPageContextLabel("/my-library/workouts/workout-1")).toBe(
       "My Library swim session detail"
     );
@@ -39,6 +40,7 @@ describe("page note context helpers", () => {
     expect(supportsAdminPageNotesSurface("/plans")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/goals")).toBe(true);
+    expect(supportsAdminPageNotesSurface("/my-library/habits")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/profile")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/workouts")).toBe(true);
     expect(supportsAdminPageNotesSurface("/my-library/workouts/workout-1")).toBe(true);

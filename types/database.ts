@@ -845,6 +845,119 @@ export type Database = {
         };
         Relationships: [];
       };
+      habit_check_ins: {
+        Row: {
+          check_in_date: string;
+          completed_at: string | null;
+          created_at: string;
+          habit_id: string;
+          id: string;
+          note: string | null;
+          status: string;
+          timezone: string;
+          updated_at: string;
+          user_id: string;
+          value_boolean: boolean | null;
+          value_numeric: number | null;
+          value_time: string | null;
+        };
+        Insert: {
+          check_in_date: string;
+          completed_at?: string | null;
+          created_at?: string;
+          habit_id: string;
+          id?: string;
+          note?: string | null;
+          status?: string;
+          timezone?: string;
+          updated_at?: string;
+          user_id: string;
+          value_boolean?: boolean | null;
+          value_numeric?: number | null;
+          value_time?: string | null;
+        };
+        Update: {
+          check_in_date?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          habit_id?: string;
+          id?: string;
+          note?: string | null;
+          status?: string;
+          timezone?: string;
+          updated_at?: string;
+          user_id?: string;
+          value_boolean?: boolean | null;
+          value_numeric?: number | null;
+          value_time?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "habit_check_ins_habit_owner_fkey";
+            columns: ["habit_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "habit_definitions";
+            referencedColumns: ["id", "user_id"];
+          },
+        ];
+      };
+      habit_definitions: {
+        Row: {
+          category: string;
+          created_at: string;
+          habit_type: string;
+          id: string;
+          is_perfect_day_item: boolean;
+          notes: string | null;
+          schedule_days: string[];
+          sort_order: number;
+          status: string;
+          target_operator: string;
+          target_time: string | null;
+          target_unit: string | null;
+          target_value_numeric: number | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          category?: string;
+          created_at?: string;
+          habit_type: string;
+          id?: string;
+          is_perfect_day_item?: boolean;
+          notes?: string | null;
+          schedule_days?: string[];
+          sort_order?: number;
+          status?: string;
+          target_operator: string;
+          target_time?: string | null;
+          target_unit?: string | null;
+          target_value_numeric?: number | null;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          habit_type?: string;
+          id?: string;
+          is_perfect_day_item?: boolean;
+          notes?: string | null;
+          schedule_days?: string[];
+          sort_order?: number;
+          status?: string;
+          target_operator?: string;
+          target_time?: string | null;
+          target_unit?: string | null;
+          target_value_numeric?: number | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       guide_progress: {
         Row: {
           completed: boolean;

@@ -53,6 +53,7 @@ test.describe("my library landing entrypoints", () => {
     await expect(page.getByRole("heading", { name: "My Swim Profile" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "My Training" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Habits" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Swim Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Swim session builder" })).toHaveCount(0);
@@ -88,6 +89,11 @@ test.describe("my library landing entrypoints", () => {
       .getByRole("heading", { name: "My Training" })
       .locator("xpath=ancestor::section[1]");
     await expect(focusCard.getByRole("link", { name: "Open" })).toBeVisible();
+
+    const habitsCard = page
+      .getByRole("heading", { name: "Habits" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(habitsCard.getByRole("link", { name: "Open" })).toBeVisible();
 
     const swimSessionsCard = page
       .getByRole("heading", { name: "Swim Sessions" })
