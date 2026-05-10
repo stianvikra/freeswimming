@@ -60,7 +60,7 @@ Owner-confirmed first implementation slice:
 Deferred child slices:
 
 - Game bubbles: floating bubbles, drag positioning/day-lane scheduling, double-tap pop completion, animation, opt-in audio/haptics.
-- Training stats: daily/weekly/monthly/rolling Micro Sessions analytics, exercise breakdowns, habits/streaks, and rollups in `docs/task-briefs/planned/2026-05-08-training-stats-and-habits-foundation-10-10.md`.
+- Training stats: daily/weekly/monthly/rolling Micro Sessions analytics, exercise breakdowns, habits/streaks, and rollups in `docs/task-briefs/in-progress/2026-05-08-training-stats-and-habits-foundation-10-10.md`.
 
 ## Dependencies And Reference Surfaces
 

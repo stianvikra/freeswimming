@@ -21,6 +21,7 @@ import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
+import { loadHabitSnapshot } from "@/lib/habits/server";
 
 export const dynamic = "force-dynamic";
 
@@ -86,12 +87,14 @@ export default async function MyLibraryPage() {
   const [
     trainingContextSnapshot,
     athleteProfileSnapshot,
+    habitSnapshot,
     workoutLibrarySnapshot,
     programLibrarySnapshot,
     drylandLibrarySnapshot,
   ] = await Promise.all([
     loadTrainingContextSnapshot(supabase, user.id),
     loadAthleteProfileSnapshot(supabase, user.id),
+    loadHabitSnapshot(supabase, user.id),
     loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadProgramLibrarySnapshot(supabase, user.id, null),
     loadDrylandLibrarySnapshot(supabase, user.id, null),
@@ -120,6 +123,11 @@ export default async function MyLibraryPage() {
       : trainingContextSnapshot.activeFocus
         ? `${trainingContextSnapshot.primaryFocus ? "Primary focus" : "Current focus cue"}: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
         : null;
+  const habitSummary = !habitSnapshot.schemaReady
+    ? "Habits are still syncing in this environment."
+    : habitSnapshot.activeHabits.length > 0
+      ? `${habitSnapshot.daySummary.satisfiedPerfectDayItemCount}/${habitSnapshot.daySummary.perfectDayItemCount} habits on target today · ${habitSnapshot.weekSummary.perfectDayCount} perfect day${habitSnapshot.weekSummary.perfectDayCount === 1 ? "" : "s"} this week.`
+      : "Start with 3-7 small habits that define a good day.";
 
   return (
     <SiteChrome>
@@ -213,6 +221,20 @@ export default async function MyLibraryPage() {
                 </div>
                 <Link
                   href="/my-library/training"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open
+                </Link>
+              </div>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
+                  <p className="mt-2 text-sm text-slate-600">{habitSummary}</p>
+                </div>
+                <Link
+                  href="/my-library/habits"
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open

@@ -27,6 +27,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "training_focus_updated",
   "training_note_created",
   "training_note_updated",
+  "habits_viewed",
   "generator_intake_viewed",
   "generator_intake_refreshed",
   "generator_intake_block_toggled",
