@@ -331,6 +331,24 @@ a {
 }
 
 @layer utilities {
+  @keyframes drylandMicroBubblePop {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+      filter: saturate(1);
+    }
+    60% {
+      opacity: 0.9;
+      transform: scale(1.08);
+      filter: saturate(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.72);
+      filter: saturate(0.9);
+    }
+  }
+
   @keyframes activeItem {
     from {
       opacity: 0;
@@ -340,6 +358,10 @@ a {
       opacity: 1;
       transform: translateX(0);
     }
+  }
+
+  .dryland-micro-bubble-pop {
+    animation: drylandMicroBubblePop 320ms ease-out both;
   }
 
   /* ✅ Respect reduced motion */
