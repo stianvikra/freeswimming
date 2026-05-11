@@ -20,6 +20,7 @@ import {
 type Props = {
   drylandLibrary: DrylandLibrarySnapshot;
   browseOnly?: boolean;
+  initialMicroPlanEditorOpen?: boolean;
 };
 
 function upsertRecentSessionSummary(current: DrylandSessionSummary[], next: DrylandSessionSummary) {
@@ -34,7 +35,11 @@ function haveDrylandDraftChanges(
   return JSON.stringify(draft) !== JSON.stringify(savedDraft);
 }
 
-export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }: Props) {
+export default function DrylandBuilderHub({
+  drylandLibrary,
+  browseOnly = false,
+  initialMicroPlanEditorOpen = false,
+}: Props) {
   const router = useRouter();
   const [savedSession, setSavedSession] = useState<DrylandSessionRecord | null>(
     drylandLibrary.selectedSession
@@ -46,6 +51,7 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [isMicroSourceSelectionActive, setIsMicroSourceSelectionActive] = useState(false);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveDrylandDraftChanges(draft, savedSession?.draft ?? null);
 
@@ -63,7 +69,12 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
     setSuccess("");
     setPendingDeleteSessionId(null);
     setDeletingSessionId(null);
+    setIsMicroSourceSelectionActive(
+      initialMicroPlanEditorOpen && drylandLibrary.microPlanSchemaReady
+    );
   }, [
+    initialMicroPlanEditorOpen,
+    drylandLibrary.microPlanSchemaReady,
     drylandLibrary.recentSessions,
     drylandLibrary.selectedSession,
     drylandLibrary.selectedSessionMissing,
@@ -233,11 +244,25 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
             sessions={recentSessions}
             schemaReady={drylandLibrary.microPlanSchemaReady}
             loadError={drylandLibrary.microPlanLoadError}
+            initialEditorOpen={initialMicroPlanEditorOpen}
+            onSourceSelectionChange={setIsMicroSourceSelectionActive}
           />
         ) : null}
 
         {browseOnly ? (
-          recentSessions.length > 0 ? (
+          isMicroSourceSelectionActive ? (
+            <div
+              data-testid="dryland-source-selection-active-note"
+              className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4"
+            >
+              <p className="text-sm font-medium text-blue-950">Choosing source sessions</p>
+              <p className="mt-1 text-sm text-blue-900/80">
+                The saved session list is paused while those same sessions are shown as Micro
+                Session source choices above. Finish source selection or cancel to return to
+                Edit/Open/Delete actions.
+              </p>
+            </div>
+          ) : recentSessions.length > 0 ? (
             <div className="space-y-4">
               {recentSessions.map((session) => {
                 const isPendingDelete = pendingDeleteSessionId === session.id;
@@ -259,6 +284,12 @@ export default function DrylandBuilderHub({ drylandLibrary, browseOnly = false }
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
+                        <Link
+                          href={`/my-library/dryland/${session.id}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                        >
+                          Edit
+                        </Link>
                         <Link
                           href={`/my-library/dryland/${session.id}`}
                           className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"

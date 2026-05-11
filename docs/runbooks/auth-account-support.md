@@ -14,12 +14,12 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 
 ## My Library IA
 
-- `Today` sits under `Free Course` on `My Library` and lets users switch between `Bubbles` and `Habits` without making `Perfect Day` a third tab or separate account-home concept.
+- `My routines` sits under `Free Course` on `My Library` and lets users switch between `Micro Sessions` and `Habits` with `Open` and `Edit` actions.
 - `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
-- `My Training` (`/my-library/training`) holds goals-to-focus workflow, focus cues, and poolside notes.
-- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary.
+- `My Training` (`/my-library/training`) is retained for contextual goals-to-focus links and notes, but it is not a top-level My Library card while focus/observations are being moved closer to session and history workflows.
+- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from `My routines`, not a duplicate top-level My Library card.
 - `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
-- `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and weekly `Micro Sessions` set-unit completion surface.
+- `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and weekly `Micro Sessions` set-unit completion surface. Saved sessions show normal `Edit`/`Open`/`Delete` actions by default; Micro Session source checkboxes appear only inside explicit create/edit mode.
 - `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
 
 ## Support Answers
@@ -46,8 +46,11 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - inspect `MESSAGE_DELIVERY_*`/Supabase email provider state before asking the user to retry.
 - If a code expires or fails: request a new code from `/auth/sign-in`.
 - If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships. A `preview_access_unlock_failed` incident alert means an authenticated admin passed the admin gate, but strong session claims could not be verified.
-- If the `Today` window on `My Library` looks stale: diagnose the underlying `Habits` and `Dryland Sessions` data separately. `Today` has local-only tab state and no reminder table, push subscription, background job, or persisted pinning state in V1.
+- If the `My routines` window on `My Library` looks stale: diagnose the underlying `Habits` and `Dryland Sessions` data separately. `My routines` has local-only tab state and no reminder table, push subscription, background job, or persisted pinning state in V1.
 - If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
+- If a user cannot find the normal `Edit`/`Open`/`Delete` saved-session actions under `Dryland Sessions`: check whether Micro Session create/edit source-selection mode is open. In that mode, the same saved sessions are shown as compact source checkboxes with direct `Edit` links; update or cancel the Micro Session edit to return to the normal saved-session list.
+- If a user reports that `Available units`, `Complete`, or `Skip today` disappeared while editing a Micro Session: confirm they are in edit mode. Edit mode is configuration-only; training execution actions return after `Update micro session`, `Cancel`, or `Close edit`.
+- If a user asks what happened to `Manual release`: it is no longer offered when creating or editing a Micro Session. Existing legacy manual-release units remain readable and can still use `Release now`; ask the user to choose `Available now` or `Weekday release` before saving edits to a legacy manual plan.
 - If a user reports that a Micro Sessions bubble did not pop or complete: first confirm whether they are in `Ordered` or `Bubbles` mode under `Dryland Sessions`. Bubbles use the same owner-scoped set-unit update as ordered mode, and the pop feedback should only appear after that update succeeds. If the bubble remains visible with an error, diagnose the existing micro-plan `PATCH` path and do not look for stored drag/pop/audio/haptic telemetry because bubble presentation state is not persisted.
 - If `Habits` shows "still syncing": verify the linked Supabase environment has applied `20260510153000_habits_perfect_day_foundation.sql`, then confirm `habit_definitions` and `habit_check_ins` RLS allow only owner-scoped authenticated reads/writes.
 - If a habit check-in is wrong for today: use `Reset` on the habit row, then log the correct count, minutes, time, or done state again. Duplicate same-day check-ins should update the same `user_id` + `habit_id` + `check_in_date` row, not create multiple competing facts.

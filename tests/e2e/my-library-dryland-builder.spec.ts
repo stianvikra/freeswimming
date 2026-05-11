@@ -178,6 +178,11 @@ test.describe("my library dryland builder", () => {
       .catch(() => false);
 
     if (!microSyncing) {
+      const startCreate = page.getByTestId("dryland-micro-start-create");
+      if (await startCreate.isVisible().catch(() => false)) {
+        await startCreate.click();
+      }
+
       const selectSession = page.getByTestId(`dryland-micro-select-${createdSessionId}`);
       const createButton = page.getByTestId("dryland-micro-create");
       const canStartFreshPlan =

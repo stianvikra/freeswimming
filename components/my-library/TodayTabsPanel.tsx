@@ -30,12 +30,20 @@ function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
           {state.progressLabel} · {state.progressPercent}%
         </p>
       </div>
-      <Link
-        href={state.href}
-        className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-      >
-        {state.actionLabel}
-      </Link>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <Link
+          href={state.editHref}
+          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+        >
+          Edit
+        </Link>
+        <Link
+          href={state.href}
+          className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+        >
+          {state.actionLabel}
+        </Link>
+      </div>
     </div>
   );
 }

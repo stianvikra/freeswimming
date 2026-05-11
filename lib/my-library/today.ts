@@ -21,6 +21,7 @@ export type TodaySurfaceState = {
   progressPercent: number;
   actionLabel: string;
   href: string;
+  editHref: string;
 };
 
 function countAvailableMicroUnits(plan: DrylandMicroPlanRecord, now: Date) {
@@ -77,6 +78,7 @@ export function buildTodayMicroSessionsState(
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/dryland",
+      editHref: "/my-library/dryland?micro=edit",
     };
   }
 
@@ -89,6 +91,7 @@ export function buildTodayMicroSessionsState(
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/dryland",
+      editHref: "/my-library/dryland?micro=edit",
     };
   }
 
@@ -105,6 +108,7 @@ export function buildTodayMicroSessionsState(
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/dryland",
+      editHref: "/my-library/dryland?micro=edit",
     };
   }
 
@@ -120,6 +124,7 @@ export function buildTodayMicroSessionsState(
       progressPercent: plan.progress.progressPercent,
       actionLabel: "Open",
       href: "/my-library/dryland",
+      editHref: "/my-library/dryland?micro=edit",
     };
   }
 
@@ -135,6 +140,7 @@ export function buildTodayMicroSessionsState(
       progressPercent: plan.progress.progressPercent,
       actionLabel: "Open",
       href: "/my-library/dryland",
+      editHref: "/my-library/dryland?micro=edit",
     };
   }
 
@@ -149,6 +155,7 @@ export function buildTodayMicroSessionsState(
     progressPercent: plan.progress.progressPercent,
     actionLabel: "Open",
     href: "/my-library/dryland",
+    editHref: "/my-library/dryland?micro=edit",
   };
 }
 
@@ -162,6 +169,7 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/habits",
+      editHref: "/my-library/habits",
     };
   }
 
@@ -174,6 +182,7 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/habits",
+      editHref: "/my-library/habits",
     };
   }
 
@@ -190,6 +199,7 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
       progressPercent: 0,
       actionLabel: "Open",
       href: "/my-library/habits",
+      editHref: "/my-library/habits",
     };
   }
 
@@ -202,6 +212,7 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
       progressPercent: habitSnapshot.daySummary.completionPercent,
       actionLabel: "Open",
       href: "/my-library/habits",
+      editHref: "/my-library/habits",
     };
   }
 
@@ -213,5 +224,6 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
     progressPercent: habitSnapshot.daySummary.completionPercent,
     actionLabel: "Open",
     href: "/my-library/habits",
+    editHref: "/my-library/habits",
   };
 }

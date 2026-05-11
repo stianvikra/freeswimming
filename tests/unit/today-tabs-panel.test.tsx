@@ -105,6 +105,15 @@ describe("TodayTabsPanel", () => {
       "href",
       "/my-library/dryland"
     );
+    expect(within(panel).getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      "/my-library/dryland?micro=edit"
+    );
+    expect(
+      within(panel)
+        .getAllByRole("link")
+        .map((link) => link.textContent)
+    ).toEqual(["Edit", "Open"]);
     expect(within(panel).getByRole("heading", { name: "Micro Sessions" })).toBeVisible();
     expect(within(panel).getByText("1/3 units · 33%")).toBeVisible();
     expect(within(panel).queryByText(/Bubbles/i)).toBeNull();
@@ -117,10 +126,20 @@ describe("TodayTabsPanel", () => {
       "href",
       "/my-library/habits"
     );
+    expect(within(panel).getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      "/my-library/habits"
+    );
+    expect(
+      within(panel)
+        .getAllByRole("link")
+        .map((link) => link.textContent)
+    ).toEqual(["Edit", "Open"]);
 
     fireEvent.click(microSessionsTab);
     expect(microSessionsTab).toHaveAttribute("aria-selected", "true");
     expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
+    expect(within(panel).getByRole("link", { name: "Edit" })).toBeVisible();
   });
 
   it("keeps My Library routines compact without secondary detail controls", () => {
