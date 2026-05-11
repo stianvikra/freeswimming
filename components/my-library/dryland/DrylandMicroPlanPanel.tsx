@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Bubbles, Check, ListChecks, MousePointerClick, SkipForward, Undo2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Bubbles, Check, ListChecks, SkipForward, Undo2 } from "lucide-react";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -42,6 +42,15 @@ const RELEASE_MODES: Array<{ value: DrylandMicroReleaseMode; label: string }> = 
 const WEEKDAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
 const BUBBLE_DOUBLE_TAP_WINDOW_MS = 520;
 const BUBBLE_POP_ANIMATION_MS = 320;
+const BUBBLE_TONE_CLASSES = [
+  "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-emerald-900/10",
+  "border-cyan-200 bg-cyan-50 text-cyan-950 shadow-cyan-900/10",
+  "border-amber-200 bg-amber-50 text-amber-950 shadow-amber-900/10",
+  "border-sky-200 bg-sky-50 text-sky-950 shadow-sky-900/10",
+  "border-violet-200 bg-violet-50 text-violet-950 shadow-violet-900/10",
+  "border-rose-200 bg-rose-50 text-rose-950 shadow-rose-900/10",
+] as const;
+const BUBBLE_OFFSETS_PX = [0, 14, 5, 20, 9, 16] as const;
 
 function formatDateLabel(value: string) {
   const parsed = new Date(value);
@@ -154,16 +163,55 @@ function wait(ms: number) {
   });
 }
 
+function hashBubbleSeed(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(31, hash) + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getBubbleExerciseKey(block: DrylandMicroBlockSnapshot) {
+  return block.title.trim().toLowerCase() || block.sourceExerciseId || block.id;
+}
+
 function getBubbleToneClasses(unit: UnitView) {
-  if (unit.block.targetType === "duration") {
-    return "border-cyan-200 bg-cyan-50 text-cyan-950 shadow-cyan-900/10";
+  const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
+  return BUBBLE_TONE_CLASSES[seed % BUBBLE_TONE_CLASSES.length];
+}
+
+function getBubbleTargetLabel(block: DrylandMicroBlockSnapshot) {
+  if (block.targetType === "reps" && block.targetValue !== null) {
+    return `${block.targetValue} reps`;
   }
 
-  if (unit.block.loadKg !== null) {
-    return "border-amber-200 bg-amber-50 text-amber-950 shadow-amber-900/10";
+  if (block.targetType === "duration" && block.targetValue !== null) {
+    return block.targetLabel.split("·")[0]?.trim() || `${block.targetValue} sec`;
   }
 
-  return "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-emerald-900/10";
+  return block.targetLabel.split("·")[0]?.trim() || block.targetLabel;
+}
+
+function getBubbleVisualStyle(unit: UnitView): CSSProperties {
+  const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
+  const targetLabel = getBubbleTargetLabel(unit.block);
+  const contentWeight = unit.block.title.length + Math.round(targetLabel.length * 0.55);
+  const size = Math.min(9.25, Math.max(7, 6.5 + contentWeight * 0.09));
+  const rawOffset =
+    BUBBLE_OFFSETS_PX[(unit.index + unit.block.setIndex) % BUBBLE_OFFSETS_PX.length] ??
+    BUBBLE_OFFSETS_PX[0];
+  const offset = Math.round(rawOffset * 0.55);
+  const rotation = ((seed + unit.index) % 7) - 3;
+
+  return {
+    width: `${size}rem`,
+    height: `${size}rem`,
+    marginTop: `${offset}px`,
+    animationDelay: `${-1 * ((seed + unit.index) % 6) * 0.45}s`,
+    "--bubble-rotate": `${rotation}deg`,
+    "--bubble-rotate-inverse": `${rotation * -1}deg`,
+  } as CSSProperties;
 }
 
 export default function DrylandMicroPlanPanel({
@@ -651,7 +699,7 @@ export default function DrylandMicroPlanPanel({
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-amber-200 bg-white px-4 text-sm font-medium text-amber-700 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <SkipForward className="h-4 w-4" aria-hidden="true" />
-              Skip
+              Skip set
             </button>
           </>
         ) : (
@@ -694,8 +742,8 @@ export default function DrylandMicroPlanPanel({
               onClick={() => switchExecutionMode(mode.value)}
               className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition ${
                 isActive
-                  ? "bg-slate-950 text-white shadow-sm"
-                  : "bg-transparent text-slate-600 hover:bg-white hover:text-slate-950"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-transparent text-slate-600 hover:bg-white hover:text-blue-700"
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
@@ -813,7 +861,7 @@ export default function DrylandMicroPlanPanel({
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div
           data-testid="dryland-micro-bubble-board"
-          className="grid grid-cols-2 gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3 xl:grid-cols-4"
+          className="flex flex-wrap items-start gap-x-4 gap-y-3 rounded-3xl border border-slate-200 bg-slate-50 p-3"
         >
           {availableUnits.map((unit) => {
             const isSelected = selectedBubbleId === unit.block.id;
@@ -825,10 +873,13 @@ export default function DrylandMicroPlanPanel({
                 type="button"
                 data-testid={`dryland-micro-bubble-${unit.index}`}
                 aria-pressed={isSelected}
-                aria-label={`${unit.block.title}, ${unit.block.targetLabel}. Select bubble. Double tap to complete.`}
+                aria-label={`${unit.block.title}, ${getBubbleTargetLabel(
+                  unit.block
+                )}. Select bubble. Double tap to complete.`}
                 onClick={() => handleBubbleClick(unit)}
                 disabled={plan?.status === "paused" || isPending}
-                className={`dryland-micro-bubble ui-press relative aspect-square min-h-28 rounded-full border p-3 text-center shadow-sm transition ${getBubbleToneClasses(
+                style={getBubbleVisualStyle(unit)}
+                className={`dryland-micro-bubble dryland-micro-bubble-float ui-press relative flex min-h-28 min-w-28 flex-none flex-col items-center justify-center rounded-full border p-3 text-center shadow-sm transition ${getBubbleToneClasses(
                   unit
                 )} ${
                   isSelected
@@ -838,14 +889,11 @@ export default function DrylandMicroPlanPanel({
                   isPopping ? "dryland-micro-bubble-pop" : ""
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm">
-                  <MousePointerClick className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <span className="mt-2 block text-sm leading-tight font-semibold break-words">
+                <span className="block text-sm leading-tight font-semibold break-words">
                   {unit.block.title}
                 </span>
                 <span className="mt-1 block text-xs leading-tight font-medium break-words text-slate-700">
-                  {unit.block.targetLabel}
+                  {getBubbleTargetLabel(unit.block)}
                 </span>
                 {isPending ? (
                   <span className="absolute inset-x-0 bottom-3 text-xs font-semibold text-slate-600">

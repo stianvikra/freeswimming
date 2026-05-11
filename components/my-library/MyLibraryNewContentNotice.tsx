@@ -192,18 +192,15 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
   return (
     <section
       data-testid="my-library-new-content-notice"
-      className="rounded-[28px] border border-blue-200/80 bg-[linear-gradient(145deg,rgba(239,246,255,0.95),rgba(255,255,255,0.98))] px-4 py-4 shadow-[0_14px_40px_rgba(37,99,235,0.08)]"
+      className="rounded-2xl border border-blue-100 bg-slate-50/70 p-5"
       role="status"
       aria-live="polite"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-700 ring-1 ring-blue-100">
+            <p className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.24em] text-blue-700 uppercase ring-1 ring-blue-100">
               New content
-            </p>
-            <p className="text-xs font-medium text-blue-700">
-              {newLessonCount} new lesson{newLessonCount === 1 ? "" : "s"}
             </p>
           </div>
         </div>
@@ -216,7 +213,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
             aria-controls="my-library-new-content-details"
             className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
           >
-            {detailsExpanded ? "Hide lesson list" : "Show lesson list"}
+            {detailsExpanded ? "Hide list" : "Show list"}
           </button>
           <button
             data-testid="my-library-new-content-dismiss"
@@ -235,7 +232,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
           id="my-library-new-content-details"
           className="mt-4 rounded-2xl border border-white/80 bg-white/85 px-4 py-3 ring-1 ring-blue-100/70"
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             New lesson list
           </p>
           <ul data-testid="my-library-new-content-list" className="mt-3 space-y-2">

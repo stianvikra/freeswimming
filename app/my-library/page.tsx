@@ -10,14 +10,13 @@ import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
+import TodayTabsPanel from "@/components/my-library/TodayTabsPanel";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
 import { buildLibrarySections } from "@/lib/commerce/library";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
-import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
@@ -84,21 +83,13 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
-  const [
-    trainingContextSnapshot,
-    athleteProfileSnapshot,
-    habitSnapshot,
-    workoutLibrarySnapshot,
-    programLibrarySnapshot,
-    drylandLibrarySnapshot,
-  ] = await Promise.all([
-    loadTrainingContextSnapshot(supabase, user.id),
-    loadAthleteProfileSnapshot(supabase, user.id),
-    loadHabitSnapshot(supabase, user.id),
-    loadWorkoutLibrarySnapshot(supabase, user.id, null),
-    loadProgramLibrarySnapshot(supabase, user.id, null),
-    loadDrylandLibrarySnapshot(supabase, user.id, null),
-  ]);
+  const [habitSnapshot, workoutLibrarySnapshot, programLibrarySnapshot, drylandLibrarySnapshot] =
+    await Promise.all([
+      loadHabitSnapshot(supabase, user.id),
+      loadWorkoutLibrarySnapshot(supabase, user.id, null),
+      loadProgramLibrarySnapshot(supabase, user.id, null),
+      loadDrylandLibrarySnapshot(supabase, user.id, null),
+    ]);
 
   const claimQuery = new URLSearchParams({ next: "/my-library" });
   if (user.email) {
@@ -106,28 +97,6 @@ export default async function MyLibraryPage() {
   }
   const claimHref = `/claim?${claimQuery.toString()}`;
   const latestProgram = programLibrarySnapshot.recentPrograms[0] ?? null;
-  const mySwimProfileSummary = [
-    athleteProfileSnapshot.profile?.primaryName?.trim() || null,
-    athleteProfileSnapshot.cssMetric
-      ? `CSS ${athleteProfileSnapshot.cssMetric.paceLabel}/100m`
-      : null,
-    athleteProfileSnapshot.preferences?.poolLengthLabel ?? null,
-    athleteProfileSnapshot.preferences?.preferredWeeklySessionCount
-      ? `${athleteProfileSnapshot.preferences.preferredWeeklySessionCount} sessions/week`
-      : null,
-  ].filter((value): value is string => Boolean(value));
-  const myTrainingSummary = !trainingContextSnapshot.schemaReady
-    ? "This training context is still syncing in this environment."
-    : trainingContextSnapshot.focusNeedsPrimarySelection
-      ? `You have ${trainingContextSnapshot.openFocuses.length} open focuses and need to choose one primary cue before other My Library surfaces use a single focus.`
-      : trainingContextSnapshot.activeFocus
-        ? `${trainingContextSnapshot.primaryFocus ? "Primary focus" : "Current focus cue"}: ${trainingContextSnapshot.activeFocus.title}. ${trainingContextSnapshot.unresolvedObservationCount} open observation${trainingContextSnapshot.unresolvedObservationCount === 1 ? "" : "s"} and ${trainingContextSnapshot.unansweredQuestionCount} unanswered question${trainingContextSnapshot.unansweredQuestionCount === 1 ? "" : "s"}.`
-        : null;
-  const habitSummary = !habitSnapshot.schemaReady
-    ? "Habits are still syncing in this environment."
-    : habitSnapshot.activeHabits.length > 0
-      ? `${habitSnapshot.daySummary.satisfiedPerfectDayItemCount}/${habitSnapshot.daySummary.perfectDayItemCount} habits on target today · ${habitSnapshot.weekSummary.perfectDayCount} perfect day${habitSnapshot.weekSummary.perfectDayCount === 1 ? "" : "s"} this week.`
-      : "Start with 3-7 small habits that define a good day.";
 
   return (
     <SiteChrome>
@@ -170,24 +139,25 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
+            <TodayTabsPanel
+              drylandLibrary={{
+                microPlan: drylandLibrarySnapshot.microPlan,
+                microPlanLoadError: drylandLibrarySnapshot.microPlanLoadError,
+                microPlanSchemaReady: drylandLibrarySnapshot.microPlanSchemaReady,
+                recentSessions: drylandLibrarySnapshot.recentSessions,
+              }}
+              habitSnapshot={habitSnapshot}
+              nowIso={new Date().toISOString()}
+            />
             <MyLibraryNewContentNotice userId={user.id} />
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-slate-900">My Swim Profile</h2>
-                  {!athleteProfileSnapshot.profileSchemaReady ? (
-                    <p className="mt-2 text-sm text-slate-600">
-                      This swimmer profile foundation is still syncing in this environment.
-                    </p>
-                  ) : mySwimProfileSummary.length > 0 ? (
-                    <p className="mt-2 text-sm text-slate-600">
-                      {mySwimProfileSummary.join(" · ")}
-                    </p>
-                  ) : null}
                 </div>
                 <Link
                   href="/my-library/profile"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open
                 </Link>
@@ -212,30 +182,26 @@ export default async function MyLibraryPage() {
               </div>
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-slate-900">My Training</h2>
-                  {myTrainingSummary ? (
-                    <p className="mt-2 text-sm text-slate-600">{myTrainingSummary}</p>
-                  ) : null}
                 </div>
                 <Link
                   href="/my-library/training"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open
                 </Link>
               </div>
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
-                  <p className="mt-2 text-sm text-slate-600">{habitSummary}</p>
                 </div>
                 <Link
                   href="/my-library/habits"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Open
                 </Link>

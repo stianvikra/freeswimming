@@ -364,6 +364,20 @@ a {
     animation: drylandMicroBubblePop 320ms ease-out both;
   }
 
+  @keyframes drylandMicroBubbleFloat {
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--bubble-rotate, 0deg));
+    }
+    50% {
+      transform: translateY(-4px) rotate(var(--bubble-rotate-inverse, 0deg));
+    }
+  }
+
+  .dryland-micro-bubble-float {
+    animation: drylandMicroBubbleFloat 5.8s ease-in-out infinite;
+  }
+
   /* ✅ Respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     * {

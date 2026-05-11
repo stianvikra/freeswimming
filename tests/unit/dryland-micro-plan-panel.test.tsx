@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
@@ -324,6 +324,143 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
 
     expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Dead bug");
+    expect(screen.getByRole("button", { name: "Skip set" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
+  });
+
+  it("renders one bubble per repeated exercise set", () => {
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = Array.from({ length: 3 }, (_, index) => ({
+      ...basePlan.blocks[0]!,
+      id: `unit-push-ups-set-${index + 1}`,
+      sourceExerciseId: "push-ups",
+      sourceSetId: `push-up-set-${index + 1}`,
+      setIndex: index,
+      title: "Push ups",
+      summary: "Chest and core",
+      targetLabel: "12 reps · 30 sec rest",
+      targetValue: 12,
+      loadKg: null,
+      restSeconds: 30,
+    }));
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          sourceSessionSnapshots: [
+            {
+              ...basePlan.sourceSessionSnapshots[0]!,
+              unitCount: 3,
+            },
+          ],
+          blocks,
+          progress: {
+            totalBlockCount: 3,
+            completedBlockCount: 0,
+            skippedBlockCount: 0,
+            remainingBlockCount: 3,
+            progressPercent: 0,
+          },
+        })}
+        sessions={[buildSummary({ setCount: 3 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("bg-blue-600");
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("bg-slate-950");
+
+    const board = screen.getByTestId("dryland-micro-bubble-board");
+    expect(board).toHaveClass("flex", "flex-wrap", "gap-x-4", "gap-y-3");
+    expect(
+      within(board).getAllByRole("button", {
+        name: /Push ups, 12 reps\. Select bubble\. Double tap to complete\./,
+      })
+    ).toHaveLength(3);
+    expect(within(board).queryByText(/30 sec rest/)).toBeNull();
+    const bubbleBgClasses: Array<string | undefined> = [];
+    for (let index = 0; index < 3; index += 1) {
+      const bubble = screen.getByTestId(`dryland-micro-bubble-${index}`);
+      expect(bubble).toBeVisible();
+      expect(bubble).toHaveClass("dryland-micro-bubble-float", "relative", "min-h-28", "min-w-28");
+      expect(bubble).not.toHaveClass("absolute");
+      expect(bubble.getAttribute("style")).toMatch(/margin-top:\s*\d+px/);
+      expect(bubble.getAttribute("style")).toMatch(/width:\s*7\.\d+rem/);
+      bubbleBgClasses.push(
+        Array.from(bubble.classList).find((className) => /^bg-\w+-50$/.test(className))
+      );
+    }
+    expect(bubbleBgClasses[0]).toBeDefined();
+    expect(bubbleBgClasses[1]).toBe(bubbleBgClasses[0]);
+    expect(bubbleBgClasses[2]).toBe(bubbleBgClasses[0]);
+  });
+
+  it("shows reps or duration inside each bubble based on the unit target", () => {
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = [
+      {
+        ...basePlan.blocks[0]!,
+        id: "unit-hang-ups",
+        sourceExerciseId: "hang-ups",
+        sourceSetId: "hang-up-set-1",
+        title: "Hang ups",
+        targetLabel: "8 reps · 45 sec rest",
+        targetType: "reps",
+        targetValue: 8,
+        targetUnit: "reps",
+        restSeconds: 45,
+      },
+      {
+        ...basePlan.blocks[1]!,
+        id: "unit-plank",
+        sourceSessionKind: "stretching",
+        sourceExerciseId: "plank",
+        sourceSetId: "plank-hold-1",
+        title: "Plank",
+        targetLabel: "30 sec · 20 sec rest",
+        targetType: "duration",
+        targetValue: 30,
+        targetUnit: "sec",
+        restSeconds: 20,
+      },
+    ];
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          blocks,
+          progress: {
+            totalBlockCount: 2,
+            completedBlockCount: 0,
+            skippedBlockCount: 0,
+            remainingBlockCount: 2,
+            progressPercent: 0,
+          },
+        })}
+        sessions={[buildSummary({ setCount: 2 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+
+    const board = screen.getByTestId("dryland-micro-bubble-board");
+    expect(
+      within(board).getByRole("button", {
+        name: /Hang ups, 8 reps\. Select bubble\. Double tap to complete\./,
+      })
+    ).toBeVisible();
+    expect(
+      within(board).getByRole("button", {
+        name: /Plank, 30 sec\. Select bubble\. Double tap to complete\./,
+      })
+    ).toBeVisible();
+    expect(within(board).getByText("8 reps")).toBeVisible();
+    expect(within(board).getByText("30 sec")).toBeVisible();
+    expect(within(board).queryByText(/45 sec rest|20 sec rest/)).toBeNull();
   });
 
   it("double taps a bubble through the existing server-confirmed completion mutation", async () => {
