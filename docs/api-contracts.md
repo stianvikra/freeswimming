@@ -336,6 +336,26 @@
 }
 ```
 
+- Body for clearing the active weekly surface without deleting saved Dryland Sessions:
+
+```json
+{
+  "clearPlan": true
+}
+```
+
+- Body for rebuilding the current Micro Session from saved source sessions after a source-session edit:
+
+```json
+{
+  "sourceDrylandSessionIds": ["11111111-1111-4111-8111-111111111111"],
+  "releaseMode": "available_now",
+  "releaseTime": "06:00"
+}
+```
+
+- Source rebuilds preserve completed/skipped block history and regenerate queued blocks only through the owner-scoped plan update path.
+
 ### Response
 
 ```json
@@ -355,8 +375,8 @@
 
 ### Status Codes
 
-- `200`: plan updated
-- `400`: invalid JSON, plan id, block id, block status, or plan status
+- `200`: plan updated or active weekly surface cleared
+- `400`: invalid JSON, plan id, block id, block status, plan status, or source dryland session id
 - `401`: unauthenticated
 - `404`: micro plan not found for this user
 - `503`: micro-plan schema not live in the environment

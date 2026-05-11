@@ -330,6 +330,74 @@ describe("dryland micro plan routes", () => {
     expect(payload.plan.progress.progressPercent).toBe(100);
   });
 
+  it("clears an active micro plan for the authenticated owner without deleting blocks", async () => {
+    const existingBlocks = buildMicroPlanRow().blocks;
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({ blocks: existingBlocks }),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const select = vi.fn(() => ({ eq: planEqUser }));
+
+    const updateMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({
+        status: "completed",
+        blocks: existingBlocks,
+      }),
+      error: null,
+    });
+    const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+    const updateEqId = vi.fn(() => ({ select: updateSelect }));
+    const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
+    const update = vi.fn(() => ({ eq: updateEqUser }));
+    const from = vi.fn().mockReturnValue({ select, update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clearPlan: true,
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      plan: { status: string; blocks: Array<unknown> };
+    };
+
+    expect(response.status).toBe(200);
+    expect(updateEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "completed",
+        blocks: [expect.objectContaining({ id: "block-1-exercise-1" })],
+      })
+    );
+    expect(payload.ok).toBe(true);
+    expect(payload.plan.status).toBe("completed");
+    expect(payload.plan.blocks).toHaveLength(1);
+  });
+
   it("releases an upcoming micro unit for the authenticated owner", async () => {
     const planMaybeSingle = vi.fn().mockResolvedValue({
       data: buildMicroPlanRow({

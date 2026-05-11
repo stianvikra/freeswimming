@@ -117,7 +117,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   let nextStatus: DrylandMicroPlanStatus = currentPlan.status;
   const updatePayload: DrylandMicroPlanUpdate = {};
 
-  if (typeof body.blockId === "string" || body.blockStatus !== undefined) {
+  if (body.clearPlan === true) {
+    nextStatus = "completed";
+  } else if (typeof body.blockId === "string" || body.blockStatus !== undefined) {
     const blockId = typeof body.blockId === "string" ? body.blockId.trim() : "";
     if (body.releaseNow === true) {
       if (!blockId) {

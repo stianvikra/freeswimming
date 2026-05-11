@@ -105,6 +105,7 @@ export type DrylandMicroPlanPatchRequestBody = {
   blockId?: unknown;
   blockStatus?: unknown;
   releaseNow?: unknown;
+  clearPlan?: unknown;
   planStatus?: unknown;
   title?: unknown;
   sourceDrylandSessionIds?: unknown;

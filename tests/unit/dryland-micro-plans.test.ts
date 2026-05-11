@@ -370,6 +370,43 @@ describe("dryland micro plans", () => {
     expect(merged.some((block) => block.id === currentBlocks[1].id)).toBe(false);
   });
 
+  it("preserves skipped history while rebuilding only queued units for a source edit", () => {
+    const currentBlocks = buildBlocks();
+    const skipped = applyDrylandMicroBlockStatus(
+      currentBlocks,
+      currentBlocks[1].id,
+      "skipped",
+      new Date("2026-05-08T08:10:00.000Z")
+    );
+    expect(skipped.ok).toBe(true);
+    if (!skipped.ok) return;
+
+    const editedDraft = buildDraft();
+    editedDraft.exercises = [
+      {
+        ...editedDraft.exercises[0]!,
+        sets: [editedDraft.exercises[0]!.sets[0]!],
+      },
+    ];
+    const generated = buildDrylandMicroBlocksFromSources([
+      {
+        sourceDrylandSessionId: null,
+        draft: editedDraft,
+      },
+    ]);
+    expect(generated.ok).toBe(true);
+    if (!generated.ok) return;
+
+    const merged = mergeDrylandMicroBlocksForPlanEdit(skipped.value, generated.value);
+
+    expect(merged.some((block) => block.id === currentBlocks[1].id && block.isArchived)).toBe(true);
+    expect(merged.find((block) => block.id === currentBlocks[1].id)).toMatchObject({
+      status: "skipped",
+      skippedAt: "2026-05-08T08:10:00.000Z",
+    });
+    expect(merged.some((block) => block.id === currentBlocks[2].id)).toBe(false);
+  });
+
   it("clears stale release overrides when edit changes release mode", () => {
     const current = buildDrylandMicroBlocksFromSources(
       [{ sourceDrylandSessionId: "source-1", draft: buildDraft() }],
