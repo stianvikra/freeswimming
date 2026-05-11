@@ -276,15 +276,16 @@ describe("DrylandBuilderHub", () => {
     expect(screen.queryByText("Target areas")).not.toBeInTheDocument();
     expect(screen.getByText("Session details")).toBeVisible();
     expect(screen.queryByTestId("dryland-draft-title")).not.toBeInTheDocument();
+    expect(screen.queryByText("Timing not set")).not.toBeInTheDocument();
+    expect(screen.queryByText("Timing")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("dryland-session-details-toggle"));
     expect(screen.getByTestId("dryland-session-details-panel")).toBeVisible();
+    expect(screen.queryByTestId("dryland-draft-start-timer")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-draft-actual-duration")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("dryland-draft-title"), {
       target: { value: "Updated dryland session" },
-    });
-    fireEvent.change(screen.getByTestId("dryland-draft-actual-duration"), {
-      target: { value: "18" },
     });
     fireEvent.click(screen.getByTestId("dryland-add-custom-exercise"));
 

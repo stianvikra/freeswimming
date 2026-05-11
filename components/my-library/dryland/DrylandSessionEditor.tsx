@@ -66,22 +66,6 @@ function formatDateTimeLabel(value: string | null) {
   });
 }
 
-function toMinutesInputValue(seconds: number | null) {
-  if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds < 0) {
-    return "";
-  }
-  if (seconds % 60 === 0) return String(seconds / 60);
-  return String(Math.round((seconds / 60) * 10) / 10);
-}
-
-function parseMinutesToSeconds(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseFloat(trimmed);
-  if (!Number.isFinite(parsed) || parsed < 0) return null;
-  return Math.round(parsed * 60);
-}
-
 function parsePositiveIntegerInput(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -270,14 +254,6 @@ export default function DrylandSessionEditor({
     currentExercise && currentExercise.sets.length > 0
       ? Math.round((currentExerciseCompletedSetCount / currentExercise.sets.length) * 100)
       : 0;
-  const sessionDetailsTimingSummary = draft.completedAt
-    ? `Completed ${formatDateTimeLabel(draft.completedAt)}`
-    : draft.startedAt
-      ? `Started ${formatDateTimeLabel(draft.startedAt)}`
-      : draft.actualDurationSeconds
-        ? `Duration ${formatSecondsLabel(draft.actualDurationSeconds)}`
-        : "Timing not set";
-  const actualDurationInputId = useId();
   const progressBarLabelId = useId();
   const sessionDetailsPanelId = useId();
 
@@ -1305,12 +1281,7 @@ export default function DrylandSessionEditor({
               }
               className="flex w-full items-center justify-between gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
             >
-              <span>
-                <span className="block text-lg font-semibold text-slate-950">Session details</span>
-                <span className="mt-1 block text-sm text-slate-600">
-                  {sessionDetailsTimingSummary}
-                </span>
-              </span>
+              <span className="block text-lg font-semibold text-slate-950">Session details</span>
               <span className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
                   {isSessionDetailsOpen ? "Hide" : "Edit"}
@@ -1322,100 +1293,27 @@ export default function DrylandSessionEditor({
               <div
                 id={sessionDetailsPanelId}
                 data-testid="dryland-session-details-panel"
-                className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]"
+                className="mt-5 grid gap-4"
               >
-                <div className="grid gap-4">
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-900">Title</span>
-                    <input
-                      data-testid="dryland-draft-title"
-                      value={draft.title}
-                      onChange={(event) => patchDraft({ title: event.target.value })}
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                    />
-                  </label>
-                  <label className="space-y-2">
-                    <span className="text-sm font-medium text-slate-900">Description</span>
-                    <textarea
-                      data-testid="dryland-draft-description"
-                      value={draft.description}
-                      onChange={(event) => patchDraft({ description: event.target.value })}
-                      rows={3}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <h4 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
-                    Timing
-                  </h4>
-                  <dl className="mt-3 space-y-2 text-sm text-slate-700">
-                    <div className="flex justify-between gap-3">
-                      <dt>Started</dt>
-                      <dd className="font-medium text-slate-900">
-                        {formatDateTimeLabel(draft.startedAt)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <dt>Completed</dt>
-                      <dd className="font-medium text-slate-900">
-                        {formatDateTimeLabel(draft.completedAt)}
-                      </dd>
-                    </div>
-                  </dl>
-                  <label className="mt-4 block space-y-2">
-                    <span id={actualDurationInputId} className="text-sm font-medium text-slate-900">
-                      Duration (min)
-                    </span>
-                    <input
-                      aria-labelledby={actualDurationInputId}
-                      data-testid="dryland-draft-actual-duration"
-                      value={toMinutesInputValue(draft.actualDurationSeconds)}
-                      onChange={(event) =>
-                        patchDraft({
-                          actualDurationSeconds: parseMinutesToSeconds(event.target.value),
-                        })
-                      }
-                      placeholder="Optional"
-                      inputMode="decimal"
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                    />
-                  </label>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {!draft.startedAt ? (
-                      <button
-                        type="button"
-                        data-testid="dryland-draft-start-timer"
-                        onClick={startTimer}
-                        disabled={!canSaveOrTrain}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                      >
-                        Start
-                      </button>
-                    ) : null}
-                    {draft.startedAt && !draft.completedAt ? (
-                      <button
-                        type="button"
-                        data-testid="dryland-draft-stop-timer"
-                        onClick={stopTimer}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
-                      >
-                        Stop
-                      </button>
-                    ) : null}
-                    {draft.startedAt || draft.completedAt || draft.actualDurationSeconds ? (
-                      <button
-                        type="button"
-                        data-testid="dryland-draft-clear-timing"
-                        onClick={clearTimer}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                      >
-                        Clear
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-900">Title</span>
+                  <input
+                    data-testid="dryland-draft-title"
+                    value={draft.title}
+                    onChange={(event) => patchDraft({ title: event.target.value })}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-900">Description</span>
+                  <textarea
+                    data-testid="dryland-draft-description"
+                    value={draft.description}
+                    onChange={(event) => patchDraft({ description: event.target.value })}
+                    rows={3}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                  />
+                </label>
               </div>
             ) : null}
           </section>

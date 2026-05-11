@@ -127,8 +127,9 @@ test.describe("my library dryland builder", () => {
       .getByRole("button", { name: "Edit sets" })
       .click();
     await page.getByTestId("dryland-manual-exercise-notes-0").fill("Control the knee line.");
-    await page.getByTestId("dryland-draft-start-timer").click();
+    await expect(page.getByTestId("dryland-draft-start-timer")).toHaveCount(0);
     await page.getByTestId("dryland-mode-train").click();
+    await page.getByTestId("dryland-draft-start-timer").click();
     await page.getByTestId("dryland-set-chip-0-0").click();
     const saveResponsePromise = page.waitForResponse(
       (response) =>
