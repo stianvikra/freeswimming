@@ -7,7 +7,11 @@ import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function DrylandSessionsPage() {
+type DrylandSessionsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function DrylandSessionsPage({ searchParams }: DrylandSessionsPageProps) {
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (!supabase || !user) {
@@ -15,6 +19,11 @@ export default async function DrylandSessionsPage() {
   }
 
   const drylandLibrary = await loadDrylandLibrarySnapshot(supabase, user.id, null);
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const microParam = resolvedSearchParams.micro;
+  const initialMicroPlanEditorOpen = Array.isArray(microParam)
+    ? microParam.includes("edit")
+    : microParam === "edit";
 
   return (
     <SiteChrome>
@@ -41,7 +50,11 @@ export default async function DrylandSessionsPage() {
           </div>
 
           <div className="mt-8">
-            <DrylandBuilderHub drylandLibrary={drylandLibrary} browseOnly />
+            <DrylandBuilderHub
+              drylandLibrary={drylandLibrary}
+              browseOnly
+              initialMicroPlanEditorOpen={initialMicroPlanEditorOpen}
+            />
           </div>
         </div>
       </section>

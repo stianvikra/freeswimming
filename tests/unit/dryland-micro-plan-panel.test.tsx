@@ -147,6 +147,7 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
+    fireEvent.click(screen.getByTestId("dryland-micro-start-create"));
     fireEvent.click(
       screen.getByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     );
@@ -183,9 +184,15 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     expect(screen.queryByText(/Micro Sessions are still syncing/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("dryland-micro-start-create")).toBeVisible();
+    expect(
+      screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("dryland-micro-start-create"));
     expect(
       screen.getByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).toBeVisible();
+    expect(screen.getByText("Choose source sessions")).toBeVisible();
   });
 
   it("marks a micro block complete and updates the percent", async () => {
@@ -283,6 +290,17 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     fireEvent.click(screen.getByTestId("dryland-micro-edit-plan"));
+    expect(screen.getByText("Choose source sessions")).toBeVisible();
+    expect(screen.queryByText("Available units")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-micro-unit-group-0")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Skip today" })).toBeNull();
+    expect(screen.getByTestId("dryland-micro-save-edit")).toHaveTextContent("Update micro session");
+    expect(screen.queryByText(/exercise[s]? · .*set unit/)).toBeNull();
+    expect(
+      screen.getByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111").closest("div")
+    ).toHaveClass("min-h-14");
+    expect(screen.getAllByRole("link", { name: "Edit" })).toHaveLength(2);
+
     fireEvent.click(
       screen.getByTestId("dryland-micro-select-33333333-3333-4333-8333-333333333333")
     );
@@ -301,6 +319,64 @@ describe("DrylandMicroPlanPanel", () => {
       );
     });
     expect(await screen.findByText("Micro session updated.")).toBeVisible();
+  });
+
+  it("groups ordered execution units by exercise without source-session provenance", () => {
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = Array.from({ length: 3 }, (_, index) => ({
+      ...basePlan.blocks[0]!,
+      id: `unit-push-ups-set-${index + 1}`,
+      sourceExerciseId: "push-ups",
+      sourceSetId: `push-up-set-${index + 1}`,
+      setIndex: index,
+      title: "Push ups",
+      summary: "Chest and core",
+      targetLabel: "12 reps · 30 sec rest",
+      targetValue: 12,
+      loadKg: null,
+      restSeconds: 30,
+    }));
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          sourceSessionSnapshots: [
+            {
+              ...basePlan.sourceSessionSnapshots[0]!,
+              unitCount: 3,
+            },
+          ],
+          blocks,
+          progress: {
+            totalBlockCount: 3,
+            completedBlockCount: 0,
+            skippedBlockCount: 0,
+            remainingBlockCount: 3,
+            progressPercent: 0,
+          },
+        })}
+        sessions={[buildSummary({ setCount: 3 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.getByText("Weekly micro plan")).toBeVisible();
+    expect(screen.queryByText("Ordered and bubbles execution")).toBeNull();
+    expect(
+      screen.queryByText(
+        "Build one weekly Micro Session from saved Dryland Sessions and finish one set unit at a time in a calm list or a bubble board."
+      )
+    ).toBeNull();
+
+    const group = screen.getByTestId("dryland-micro-unit-group-0");
+    expect(within(group).getByText("Push ups")).toBeVisible();
+    expect(within(group).getByText("3 sets · 12 reps · Rest 30 sec")).toBeVisible();
+    expect(within(group).queryByText(/Weekly strength/)).toBeNull();
+    expect(within(group).getByRole("button", { name: "Set 1 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Set 2 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Set 3 · 12 reps" })).toBeVisible();
+    expect(within(group).getAllByRole("button", { name: "Skip today" })).toHaveLength(3);
   });
 
   it("renders bubbles mode with a selectable detail panel", () => {
@@ -324,7 +400,7 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
 
     expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Dead bug");
-    expect(screen.getByRole("button", { name: "Skip set" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Skip today" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
   });
 
@@ -581,5 +657,41 @@ describe("DrylandMicroPlanPanel", () => {
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps manual release as legacy state without offering it for new edits", () => {
+    const manualPlan = buildPlan({
+      releaseMode: "manual",
+      sourceSessionSnapshots: [
+        {
+          ...buildPlan().sourceSessionSnapshots[0]!,
+          releaseOffsetDays: null,
+        },
+      ],
+      blocks: buildPlan().blocks.map((block) => ({
+        ...block,
+        releaseMode: "manual",
+        releaseOffsetDays: null,
+        releasedAt: null,
+      })),
+    });
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={manualPlan}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.getAllByRole("button", { name: "Release now" })[0]).toBeVisible();
+    fireEvent.click(screen.getByTestId("dryland-micro-edit-plan"));
+
+    expect(screen.queryByRole("button", { name: "Manual release" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Available now" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Weekday release" })).toBeVisible();
+    expect(screen.getByText(/legacy manual release/i)).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-save-edit")).toBeDisabled();
   });
 });

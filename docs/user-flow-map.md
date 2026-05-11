@@ -60,11 +60,11 @@ flowchart LR
 ## My Library Authenticated IA
 
 - `/my-library`: account home and top-level owner dashboard.
-- `/my-library` places a compact `Today` window directly under `Free Course`; `Today` has `Bubbles` and `Habits` tabs, while `Perfect Day` remains a habit progress status rather than a separate route/tab.
-- `/my-library` top-level cards stay scan-first: `Swim Sessions` and `Dryland Sessions` expose one `Open` action, while creation actions live inside their dedicated hub routes.
+- `/my-library` places a compact `My routines` window directly under `Free Course`; `My routines` has `Micro Sessions` and `Habits` tabs with `Open` and `Edit` actions.
+- `/my-library` top-level cards stay scan-first: `My Swim Profile`, `Goals`, `Swim Sessions`, and `Dryland Sessions` expose one `Open` action, while duplicate `Habits` and top-level `My Training` cards stay out of the landing IA.
 - `/my-library/profile`: `My Swim Profile` for swimmer identity, CSS, preferences, and personal records.
 - `/my-library/goals`: `Goals` for long-term targets and progress.
-- `/my-library/training`: `My Training` for turning goals into focus cues and notes.
+- `/my-library/training`: contextual training focus/notes route retained for deep links from goals and future session-bound observations; it is not a top-level My Library card.
 - `/my-library/workouts`: `My Swim Sessions` for saved swim sessions plus `Build pool session`, `Build open water session`, and `AI session generator`.
-- `/my-library/dryland`: `Dryland Sessions` for saved strength/stretching work, dryland creation, and weekly `Micro Sessions` exercise-block completion.
+- `/my-library/dryland`: `Dryland Sessions` for saved strength/stretching work, dryland creation, and weekly `Micro Sessions` set-unit completion. Saved-session `Edit`/`Open`/`Delete` rows are the default; Micro Session source checkboxes appear only inside explicit create/edit mode, source rows keep direct `Edit` links, and edit mode stays configuration-only while execution actions remain in the normal open view.
 - `/my-library/programs/<id>`: `Program builder preview` for optional week/day planning from saved swim sessions.

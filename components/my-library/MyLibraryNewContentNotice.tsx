@@ -196,7 +196,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
       role="status"
       aria-live="polite"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.24em] text-blue-700 uppercase ring-1 ring-blue-100">
@@ -220,7 +220,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
             type="button"
             onClick={handleDismiss}
             aria-label="Dismiss new lesson notice"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             X
           </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Bubbles, Check, ListChecks, SkipForward, Undo2 } from "lucide-react";
 import {
@@ -12,13 +13,19 @@ import {
   type DrylandMicroPlanRecord,
   type DrylandMicroReleaseMode,
 } from "@/lib/dryland/micro-plans";
-import { getDrylandSessionKindLabel, type DrylandSessionSummary } from "@/lib/dryland/shared";
+import {
+  formatSecondsLabel,
+  getDrylandSessionKindLabel,
+  type DrylandSessionSummary,
+} from "@/lib/dryland/shared";
 
 type Props = {
   initialPlan: DrylandMicroPlanRecord | null;
   sessions: DrylandSessionSummary[];
   schemaReady: boolean;
   loadError: string | null;
+  initialEditorOpen?: boolean;
+  onSourceSelectionChange?: (isActive: boolean) => void;
 };
 
 type UnitView = {
@@ -33,10 +40,9 @@ type PatchPlanOptions = {
   applyResponse?: boolean;
 };
 
-const RELEASE_MODES: Array<{ value: DrylandMicroReleaseMode; label: string }> = [
+const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; label: string }> = [
   { value: "available_now", label: "Available now" },
   { value: "weekday", label: "Weekday release" },
-  { value: "manual", label: "Manual release" },
 ];
 
 const WEEKDAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
@@ -193,6 +199,28 @@ function getBubbleTargetLabel(block: DrylandMicroBlockSnapshot) {
   return block.targetLabel.split("·")[0]?.trim() || block.targetLabel;
 }
 
+function formatSetCountLabel(count: number) {
+  return `${count} set${count === 1 ? "" : "s"}`;
+}
+
+function getUnitSummaryParts(units: UnitView[]) {
+  const firstUnit = units[0];
+  if (!firstUnit) return [];
+
+  const parts = [formatSetCountLabel(units.length)];
+  const targetLabel = getBubbleTargetLabel(firstUnit.block);
+  if (targetLabel) {
+    parts.push(targetLabel);
+  }
+
+  const restLabel = formatSecondsLabel(firstUnit.block.restSeconds);
+  if (restLabel) {
+    parts.push(`Rest ${restLabel}`);
+  }
+
+  return parts;
+}
+
 function getBubbleVisualStyle(unit: UnitView): CSSProperties {
   const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
   const targetLabel = getBubbleTargetLabel(unit.block);
@@ -219,6 +247,8 @@ export default function DrylandMicroPlanPanel({
   sessions,
   schemaReady,
   loadError,
+  initialEditorOpen = false,
+  onSourceSelectionChange,
 }: Props) {
   const [plan, setPlan] = useState(initialPlan);
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>(
@@ -232,7 +262,8 @@ export default function DrylandMicroPlanPanel({
     buildInitialReleaseDayAssignments(initialPlan)
   );
   const [planTitle, setPlanTitle] = useState(initialPlan?.title ?? "");
-  const [isEditing, setIsEditing] = useState(false);
+  const [isCreating, setIsCreating] = useState(!initialPlan && initialEditorOpen);
+  const [isEditing, setIsEditing] = useState(Boolean(initialPlan && initialEditorOpen));
   const [pendingBlockId, setPendingBlockId] = useState<string | null>(null);
   const [isPlanStatusSaving, setIsPlanStatusSaving] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
@@ -251,7 +282,8 @@ export default function DrylandMicroPlanPanel({
     setReleaseTime(initialPlan?.releaseTime ?? "06:00");
     setReleaseDayAssignments(buildInitialReleaseDayAssignments(initialPlan));
     setPlanTitle(initialPlan?.title ?? "");
-    setIsEditing(false);
+    setIsCreating(!initialPlan && initialEditorOpen);
+    setIsEditing(Boolean(initialPlan && initialEditorOpen));
     setError("");
     setSuccess("");
     setPendingBlockId(null);
@@ -261,7 +293,11 @@ export default function DrylandMicroPlanPanel({
     setSelectedBubbleId(null);
     setPoppingBubbleId(null);
     lastBubbleTapRef.current = null;
-  }, [initialPlan]);
+  }, [initialEditorOpen, initialPlan]);
+
+  useEffect(() => {
+    onSourceSelectionChange?.(schemaReady && ((!plan && isCreating) || Boolean(plan && isEditing)));
+  }, [isCreating, isEditing, onSourceSelectionChange, plan, schemaReady]);
 
   const unitViews = useMemo<UnitView[]>(() => {
     if (!plan) return [];
@@ -413,6 +449,11 @@ export default function DrylandMicroPlanPanel({
       return;
     }
 
+    if (releaseMode === "manual") {
+      setError("Choose Available now or Weekday release before saving this micro session.");
+      return;
+    }
+
     setIsSavingPlan(true);
     setError("");
     setSuccess("");
@@ -546,7 +587,7 @@ export default function DrylandMicroPlanPanel({
       <div className="space-y-3">
         <div>
           <p className="text-sm font-semibold text-slate-900">Release pacing</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {RELEASE_MODES.map((mode) => (
               <button
                 key={mode.value}
@@ -563,6 +604,13 @@ export default function DrylandMicroPlanPanel({
             ))}
           </div>
         </div>
+
+        {releaseMode === "manual" ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            This micro session uses legacy manual release. Choose a supported pacing above before
+            saving edits. Existing queued units can still be released from the upcoming list.
+          </p>
+        ) : null}
 
         {releaseMode === "weekday" ? (
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
@@ -603,12 +651,6 @@ export default function DrylandMicroPlanPanel({
             </label>
           </div>
         ) : null}
-
-        {releaseMode === "manual" ? (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Manual release keeps units queued until you release them.
-          </p>
-        ) : null}
       </div>
     );
   }
@@ -617,42 +659,53 @@ export default function DrylandMicroPlanPanel({
     return (
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Select sessions</p>
+          <p className="text-sm font-semibold text-slate-900">Choose source sessions</p>
           <p className="mt-1 text-sm text-slate-600">
-            Saved Dryland Sessions stay in the library. Micro Sessions creates ordered set units
-            from the selected sources.
+            Saved Dryland Sessions stay in the library. Choose which ones feed this Micro Session.
           </p>
         </div>
         {sessions.length > 0 ? (
           <div className="grid gap-2 md:grid-cols-2">
             {sessions.slice(0, 8).map((session) => {
               const isSelected = selectedSessionIds.includes(session.id);
+              const checkboxId = `dryland-micro-select-${session.id}`;
               return (
-                <label
+                <div
                   key={session.id}
-                  className={`flex min-h-24 cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                  className={`grid min-h-14 gap-3 rounded-xl border p-3 transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
                     isSelected
                       ? "border-blue-500 bg-blue-50"
                       : "border-slate-200 bg-white hover:bg-slate-50"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    data-testid={`dryland-micro-select-${session.id}`}
-                    checked={isSelected}
-                    onChange={() => toggleSelectedSession(session.id)}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-slate-950">
-                      {session.title}
+                  <label
+                    htmlFor={checkboxId}
+                    className="flex min-w-0 cursor-pointer items-center gap-3"
+                  >
+                    <input
+                      id={checkboxId}
+                      type="checkbox"
+                      data-testid={`dryland-micro-select-${session.id}`}
+                      checked={isSelected}
+                      onChange={() => toggleSelectedSession(session.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold break-words text-slate-950">
+                        {session.title}
+                      </span>
+                      <span className="mt-1 inline-flex min-h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[0.68rem] font-semibold tracking-wide text-slate-600 uppercase">
+                        {getDrylandSessionKindLabel(session.sessionKind)}
+                      </span>
                     </span>
-                    <span className="mt-1 block text-sm text-slate-600">
-                      {getDrylandSessionKindLabel(session.sessionKind)} · {session.exerciseCount}{" "}
-                      exercises · {session.setCount} set units
-                    </span>
-                  </span>
-                </label>
+                  </label>
+                  <Link
+                    href={`/my-library/dryland/${session.id}`}
+                    className="ml-7 inline-flex min-h-9 w-fit items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:ml-0"
+                  >
+                    Edit
+                  </Link>
+                </div>
               );
             })}
           </div>
@@ -668,7 +721,11 @@ export default function DrylandMicroPlanPanel({
     );
   }
 
-  function renderUnitControls(unit: UnitView, visualOrigin: ExecutionMode = "ordered") {
+  function renderUnitControls(
+    unit: UnitView,
+    visualOrigin: ExecutionMode = "ordered",
+    actionLabel?: string
+  ) {
     const isPending = pendingBlockId === unit.block.id;
     const isPaused = plan?.status === "paused";
     const completeDisabled = isPending || isPaused || !unit.isAvailable;
@@ -689,7 +746,7 @@ export default function DrylandMicroPlanPanel({
                 ? "Saving..."
                 : visualOrigin === "bubbles"
                   ? "Complete"
-                  : unit.block.targetLabel}
+                  : (actionLabel ?? unit.block.targetLabel)}
             </button>
             <button
               type="button"
@@ -699,7 +756,7 @@ export default function DrylandMicroPlanPanel({
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-amber-200 bg-white px-4 text-sm font-medium text-amber-700 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <SkipForward className="h-4 w-4" aria-hidden="true" />
-              Skip set
+              Skip today
             </button>
           </>
         ) : (
@@ -772,6 +829,7 @@ export default function DrylandMicroPlanPanel({
         {groupUnitsByExercise(availableUnits).map((group) => {
           const firstUnit = group[0];
           if (!firstUnit) return null;
+          const summaryParts = getUnitSummaryParts(group);
           return (
             <article
               key={`${firstUnit.block.id}-group`}
@@ -783,17 +841,20 @@ export default function DrylandMicroPlanPanel({
                   <h5 className="text-base font-semibold text-slate-950">
                     {firstUnit.block.title}
                   </h5>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {firstUnit.block.sourceSessionTitle} ·{" "}
-                    {formatReleaseDateLabel(firstUnit.releaseDate)}
-                  </p>
+                  <p className="mt-1 text-sm text-slate-600">{summaryParts.join(" · ")}</p>
                   <p className="mt-2 text-sm text-slate-700">{firstUnit.block.coachCue}</p>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {group.map((unit) => (
+                {group.map((unit, setIndex) => (
                   <div key={unit.block.id} className="flex flex-wrap gap-2">
-                    {renderUnitControls(unit)}
+                    {renderUnitControls(
+                      unit,
+                      "ordered",
+                      group.length > 1
+                        ? `Set ${setIndex + 1} · ${getBubbleTargetLabel(unit.block)}`
+                        : getBubbleTargetLabel(unit.block)
+                    )}
                   </div>
                 ))}
               </div>
@@ -831,7 +892,6 @@ export default function DrylandMicroPlanPanel({
               {selectedBubbleUnit.block.title}
             </h5>
             <p className="mt-1 text-sm text-slate-600">
-              {selectedBubbleUnit.block.sourceSessionTitle} ·{" "}
               {formatReleaseDateLabel(selectedBubbleUnit.releaseDate)}
             </p>
           </div>
@@ -919,12 +979,9 @@ export default function DrylandMicroPlanPanel({
           <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
             Micro Sessions
           </p>
-          <h3 className="mt-2 text-lg font-semibold text-slate-950">
-            Ordered and bubbles execution
-          </h3>
+          <h3 className="mt-2 text-lg font-semibold text-slate-950">Weekly micro plan</h3>
           <p className="mt-1 max-w-[68ch] text-sm text-slate-700">
-            Build one weekly Micro Session from saved Dryland Sessions and finish one set unit at a
-            time in a calm list or a bubble board.
+            Build one weekly Micro Session from saved Dryland Sessions.
           </p>
         </div>
         {plan ? (
@@ -962,38 +1019,75 @@ export default function DrylandMicroPlanPanel({
       ) : null}
 
       {schemaReady && !plan ? (
-        <div className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-          {renderSessionSelector()}
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
-            <span>Title</span>
-            <input
-              type="text"
-              value={planTitle}
-              onChange={(event) => setPlanTitle(event.target.value)}
-              placeholder={buildDefaultTitle(selectedSessionIds, sessions)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            />
-          </label>
-          {renderReleaseControls()}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-600">
-              {selectedSessionIds.length} selected ·{" "}
-              {releaseMode === "weekday"
-                ? "weekday release"
-                : releaseMode === "manual"
-                  ? "manual release"
-                  : "available now"}
-            </p>
-            <button
-              type="button"
-              data-testid="dryland-micro-create"
-              onClick={() => void createPlan()}
-              disabled={isSavingPlan || selectedSessionIds.length === 0}
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
-            >
-              {isSavingPlan ? "Creating..." : "Create micro session"}
-            </button>
-          </div>
+        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+          {!isCreating ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
+                <p className="mt-1 max-w-[58ch] text-sm text-slate-600">
+                  Create one weekly Micro Session from saved Dryland Sessions when you want small
+                  set-by-set work.
+                </p>
+              </div>
+              {sessions.length > 0 ? (
+                <button
+                  type="button"
+                  data-testid="dryland-micro-start-create"
+                  onClick={() => {
+                    setIsCreating(true);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
+                >
+                  Create micro session
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {renderSessionSelector()}
+              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                <span>Title</span>
+                <input
+                  type="text"
+                  value={planTitle}
+                  onChange={(event) => setPlanTitle(event.target.value)}
+                  placeholder={buildDefaultTitle(selectedSessionIds, sessions)}
+                  className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                />
+              </label>
+              {renderReleaseControls()}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-slate-600">
+                  {selectedSessionIds.length} selected ·{" "}
+                  {releaseMode === "weekday" ? "weekday release" : "available now"}
+                </p>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreating(false);
+                      setError("");
+                    }}
+                    disabled={isSavingPlan}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="dryland-micro-create"
+                    onClick={() => void createPlan()}
+                    disabled={isSavingPlan || selectedSessionIds.length === 0}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                  >
+                    {isSavingPlan ? "Creating..." : "Create micro session"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -1006,8 +1100,8 @@ export default function DrylandMicroPlanPanel({
                 <p className="mt-1 text-sm text-slate-600">
                   {formatDateLabel(plan.weekStartsAt)} to {formatDateLabel(plan.weekEndsAt)} ·{" "}
                   {plan.sourceSessionSnapshots.length || 1} source session
-                  {(plan.sourceSessionSnapshots.length || 1) === 1 ? "" : "s"} · {executionMode}{" "}
-                  mode
+                  {(plan.sourceSessionSnapshots.length || 1) === 1 ? "" : "s"}
+                  {isEditing ? "" : ` · ${executionMode} mode`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -1098,94 +1192,99 @@ export default function DrylandMicroPlanPanel({
                   type="button"
                   data-testid="dryland-micro-save-edit"
                   onClick={() => void savePlanEdit()}
-                  disabled={isSavingPlan || selectedSessionIds.length === 0}
+                  disabled={
+                    isSavingPlan || selectedSessionIds.length === 0 || releaseMode === "manual"
+                  }
                   className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                 >
-                  {isSavingPlan ? "Saving..." : "Save micro session"}
+                  {isSavingPlan ? "Saving..." : "Update micro session"}
                 </button>
               </div>
             </div>
           ) : null}
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h4 className="text-base font-semibold text-slate-950">Available units</h4>
-                <p className="mt-1 text-sm text-slate-600">
-                  {availableUnits.length} ready · {upcomingUnits.length} upcoming
-                </p>
-              </div>
-              {renderExecutionModeSwitch()}
-            </div>
-
-            {executionMode === "ordered" ? renderOrderedUnits() : renderBubbleBoard()}
-          </div>
-
-          {upcomingUnits.length > 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <h4 className="text-base font-semibold text-slate-950">Upcoming units</h4>
-              <div className="mt-3 space-y-2">
-                {upcomingUnits.map((unit) => {
-                  const isPending = pendingBlockId === unit.block.id;
-                  const releaseLabel =
-                    unit.block.releaseMode === "manual" ? "Release now" : "Move to today";
-                  return (
-                    <div
-                      key={unit.block.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-slate-950">
-                          {unit.block.title} · {unit.block.targetLabel}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {unit.block.sourceSessionTitle} ·{" "}
-                          {unit.block.releaseMode === "weekday"
-                            ? `${getDrylandMicroWeekdayLabel(unit.block.releaseOffsetDays)} ${
-                                unit.block.releaseTime
-                              }`
-                            : "Manual release"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        data-testid={`dryland-micro-release-now-${unit.index}`}
-                        onClick={() => void releaseBlockNow(unit.block.id)}
-                        disabled={isPending || plan.status === "paused"}
-                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isPending ? "Saving..." : releaseLabel}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          {historyUnits.length > 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <h4 className="text-base font-semibold text-slate-950">Completed and skipped</h4>
-              <div className="mt-3 grid gap-2">
-                {historyUnits.map((unit) => (
-                  <div
-                    key={unit.block.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-950">
-                        {unit.block.title} · {unit.block.targetLabel}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {getBlockStatusLabel(unit.block.status)}
-                        {unit.block.isArchived ? " · source removed from active plan" : ""}
-                      </p>
-                    </div>
-                    {renderUnitControls(unit)}
+          {!isEditing ? (
+            <>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-base font-semibold text-slate-950">Available units</h4>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {availableUnits.length} ready · {upcomingUnits.length} upcoming
+                    </p>
                   </div>
-                ))}
+                  {renderExecutionModeSwitch()}
+                </div>
+
+                {executionMode === "ordered" ? renderOrderedUnits() : renderBubbleBoard()}
               </div>
-            </div>
+
+              {upcomingUnits.length > 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h4 className="text-base font-semibold text-slate-950">Upcoming units</h4>
+                  <div className="mt-3 space-y-2">
+                    {upcomingUnits.map((unit) => {
+                      const isPending = pendingBlockId === unit.block.id;
+                      const releaseLabel =
+                        unit.block.releaseMode === "manual" ? "Release now" : "Move to today";
+                      return (
+                        <div
+                          key={unit.block.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-950">
+                              {unit.block.title} · {getBubbleTargetLabel(unit.block)}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {unit.block.releaseMode === "weekday"
+                                ? `${getDrylandMicroWeekdayLabel(unit.block.releaseOffsetDays)} ${
+                                    unit.block.releaseTime
+                                  }`
+                                : "Manual release"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            data-testid={`dryland-micro-release-now-${unit.index}`}
+                            onClick={() => void releaseBlockNow(unit.block.id)}
+                            disabled={isPending || plan.status === "paused"}
+                            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isPending ? "Saving..." : releaseLabel}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
+              {historyUnits.length > 0 ? (
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h4 className="text-base font-semibold text-slate-950">Completed and skipped</h4>
+                  <div className="mt-3 grid gap-2">
+                    {historyUnits.map((unit) => (
+                      <div
+                        key={unit.block.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                      >
+                        <div>
+                          <p className="text-sm font-semibold text-slate-950">
+                            {unit.block.title} · {getBubbleTargetLabel(unit.block)}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            {getBlockStatusLabel(unit.block.status)}
+                            {unit.block.isArchived ? " · source removed from active plan" : ""}
+                          </p>
+                        </div>
+                        {renderUnitControls(unit)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       ) : null}

@@ -182,32 +182,6 @@ export default async function MyLibraryPage() {
               </div>
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-slate-900">My Training</h2>
-                </div>
-                <Link
-                  href="/my-library/training"
-                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  Open
-                </Link>
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
-                </div>
-                <Link
-                  href="/my-library/habits"
-                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  Open
-                </Link>
-              </div>
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">Swim Sessions</h2>

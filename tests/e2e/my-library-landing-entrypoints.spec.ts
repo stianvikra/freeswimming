@@ -53,8 +53,8 @@ test.describe("my library landing entrypoints", () => {
     await expect(page.getByTestId("my-library-today-tabs")).toBeVisible();
     await expect(page.getByRole("heading", { name: "My Swim Profile" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goals" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "My Training" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Habits" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Training" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Habits" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Swim Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dryland Sessions" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Swim session builder" })).toHaveCount(0);
@@ -88,6 +88,11 @@ test.describe("my library landing entrypoints", () => {
         name: "Open",
       })
     ).toBeVisible();
+    await expect(
+      todayPanel.getByRole("link", {
+        name: "Edit",
+      })
+    ).toHaveAttribute("href", "/my-library/dryland?micro=edit");
     await expect(todayPanel.getByText(/Bubbles/i)).toHaveCount(0);
     await expect(todayPanel.getByText(/Perfect Day/i)).toHaveCount(0);
     await expect(todayPanel.getByRole("button", { name: "Show details" })).toHaveCount(0);
@@ -99,6 +104,10 @@ test.describe("my library landing entrypoints", () => {
       "true"
     );
     await expect(todayPanel.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(todayPanel.getByRole("link", { name: "Edit" })).toHaveAttribute(
+      "href",
+      "/my-library/habits"
+    );
     await todayPanel.getByRole("tab", { name: "Micro Sessions" }).click();
     await expect(todayPanel.getByRole("tab", { name: "Micro Sessions" })).toHaveAttribute(
       "aria-selected",
@@ -115,18 +124,6 @@ test.describe("my library landing entrypoints", () => {
       .getByRole("heading", { name: "Goals" })
       .locator("xpath=ancestor::section[1]");
     await expect(goalsCard.getByRole("link", { name: "Open" })).toBeVisible();
-
-    const focusCard = page
-      .getByRole("heading", { name: "My Training" })
-      .locator("xpath=ancestor::section[1]");
-    await expect(focusCard.getByRole("link", { name: "Open" })).toBeVisible();
-    await expect(focusCard.locator("p")).toHaveCount(0);
-
-    const habitsCard = page
-      .getByRole("heading", { name: "Habits" })
-      .locator("xpath=ancestor::section[1]");
-    await expect(habitsCard.getByRole("link", { name: "Open" })).toBeVisible();
-    await expect(habitsCard.locator("p")).toHaveCount(0);
 
     const swimSessionsCard = page
       .getByRole("heading", { name: "Swim Sessions" })

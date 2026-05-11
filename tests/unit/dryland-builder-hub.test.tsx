@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandBuilderHub from "@/components/my-library/dryland/DrylandBuilderHub";
+import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type {
   DrylandLibrarySnapshot,
   DrylandSessionDraft,
@@ -83,6 +84,78 @@ function buildSummary(overrides?: Partial<DrylandSessionSummary>): DrylandSessio
     exerciseCount: 1,
     setCount: 1,
     actualDurationSeconds: null,
+    ...overrides,
+  };
+}
+
+function buildMicroPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMicroPlanRecord {
+  const summary = buildSummary();
+  const blocks: DrylandMicroBlockSnapshot[] = [
+    {
+      id: "unit-1",
+      sourceDrylandSessionId: summary.id,
+      sourceSessionTitle: summary.title,
+      sourceSessionKind: summary.sessionKind,
+      sourceSessionIndex: 0,
+      sourceExerciseId: "exercise-1",
+      sourceExerciseIndex: 0,
+      sourceSetId: "set-1",
+      setIndex: 0,
+      title: "Air squat",
+      summary: "Lower-body strength.",
+      targetLabel: "12 reps",
+      targetType: "reps",
+      targetValue: 12,
+      targetUnit: "reps",
+      loadKg: null,
+      restSeconds: null,
+      coachCue: "Stand tall.",
+      releaseMode: "available_now",
+      releaseOffsetDays: null,
+      releaseTime: "06:00",
+      releasedAt: "1970-01-01T00:00:00.000Z",
+      isArchived: false,
+      status: "queued",
+      completedAt: null,
+      skippedAt: null,
+    },
+  ];
+
+  return {
+    id: "22222222-2222-4222-8222-222222222222",
+    sourceDrylandSessionId: summary.id,
+    sourceSessionTitle: summary.title,
+    title: "Micro session: Strength session",
+    sessionKind: summary.sessionKind,
+    sourceSessionSnapshots: [
+      {
+        sourceDrylandSessionId: summary.id,
+        sourceSessionTitle: summary.title,
+        sourceSessionKind: summary.sessionKind,
+        sourceSessionIndex: 0,
+        releaseOffsetDays: null,
+        releaseTime: "06:00",
+        unitCount: 1,
+        completedUnitCount: 0,
+        skippedUnitCount: 0,
+      },
+    ],
+    releaseMode: "available_now",
+    releaseTime: "06:00",
+    status: "active",
+    timezone: "UTC",
+    weekStartsAt: "2026-03-23T00:00:00.000Z",
+    weekEndsAt: "2026-03-30T00:00:00.000Z",
+    blocks,
+    createdAt: "2026-03-29T10:00:00.000Z",
+    updatedAt: "2026-03-29T10:00:00.000Z",
+    progress: {
+      totalBlockCount: 1,
+      completedBlockCount: 0,
+      skippedBlockCount: 0,
+      remainingBlockCount: 1,
+      progressPercent: 0,
+    },
     ...overrides,
   };
 }
@@ -460,6 +533,7 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
+    expect(screen.getByRole("link", { name: "Edit" })).toBeVisible();
     fireEvent.click(
       screen.getByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
     );
@@ -475,6 +549,61 @@ describe("DrylandBuilderHub", () => {
         })
       );
     });
+  });
+
+  it("hides the normal saved-session list while choosing micro plan sources", async () => {
+    render(
+      <DrylandBuilderHub drylandLibrary={buildLibrary({ selectedSession: null })} browseOnly />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByRole("link", { name: "Open" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Edit" })).toBeVisible();
+    expect(
+      screen.getByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-start-create"));
+
+    expect(screen.getByText("Choose source sessions")).toBeVisible();
+    expect(screen.getByTestId("dryland-source-selection-active-note")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
+    expect(
+      screen.queryByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the normal saved-session list when direct-opening the micro plan editor", async () => {
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({
+          selectedSession: null,
+          microPlan: buildMicroPlan(),
+        })}
+        browseOnly
+        initialMicroPlanEditorOpen
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByText("Choose source sessions")).toBeVisible();
+    expect(screen.getByTestId("dryland-source-selection-active-note")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
+    expect(
+      screen.queryByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
+    ).not.toBeInTheDocument();
   });
 
   it("keeps destructive delete actions in the dryland list instead of the focused editor", async () => {
