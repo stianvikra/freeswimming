@@ -134,7 +134,7 @@
   "ok": true,
   "export": {
     "generatedAt": "2026-02-17T14:00:00.000Z",
-    "schemaVersion": "2026-03-19-athlete-profile",
+    "schemaVersion": "2026-05-11-dryland-legacy-focus-export",
     "user": {
       "id": "user-id",
       "email": "swimmer@example.com"
@@ -159,10 +159,30 @@
     "guideProgress": [],
     "guideSessionProgress": [],
     "goals": [],
-    "downloadLinks": []
+    "downloadLinks": [],
+    "drylandSessions": [
+      {
+        "id": "dryland-session-id",
+        "sourceKind": "manual",
+        "status": "draft",
+        "sessionKind": "strength",
+        "title": "Core strength",
+        "description": "Short dryland session.",
+        "legacyFocusText": "Brace the trunk first.",
+        "exercises": [],
+        "startedAt": null,
+        "completedAt": null,
+        "actualDurationSeconds": null,
+        "createdAt": "2026-05-08T08:00:00.000Z",
+        "updatedAt": "2026-05-08T08:10:00.000Z"
+      }
+    ],
+    "workouts": []
   }
 }
 ```
+
+- `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
 
 - Failure:
 

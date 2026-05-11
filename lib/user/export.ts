@@ -124,6 +124,23 @@ type DownloadLinkRow = Pick<
   "id" | "entitlement_id" | "expires_at" | "used_at" | "created_at"
 >;
 
+type DrylandSessionRow = Pick<
+  Database["public"]["Tables"]["dryland_sessions"]["Row"],
+  | "id"
+  | "source_kind"
+  | "status"
+  | "session_kind"
+  | "title"
+  | "description"
+  | "focus_text"
+  | "exercises"
+  | "started_at"
+  | "completed_at"
+  | "actual_duration_seconds"
+  | "created_at"
+  | "updated_at"
+>;
+
 type WorkoutRow = Pick<
   Database["public"]["Tables"]["workouts"]["Row"],
   | "id"
@@ -174,6 +191,7 @@ export type BuildUserExportPayloadInput = {
   trainingFocuses: TrainingFocusRow[];
   trainingNotes: TrainingNoteRow[];
   downloadLinks: DownloadLinkRow[];
+  drylandSessions: DrylandSessionRow[];
   workouts: WorkoutRow[];
   generatedAt?: string;
 };
@@ -183,7 +201,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-03-20-workout-generator-accept",
+    schemaVersion: "2026-05-11-dryland-legacy-focus-export",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -316,6 +334,21 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       expiresAt: row.expires_at,
       usedAt: row.used_at,
       createdAt: row.created_at,
+    })),
+    drylandSessions: input.drylandSessions.map((row) => ({
+      id: row.id,
+      sourceKind: row.source_kind,
+      status: row.status,
+      sessionKind: row.session_kind,
+      title: row.title,
+      description: row.description,
+      legacyFocusText: row.focus_text,
+      exercises: row.exercises,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      actualDurationSeconds: row.actual_duration_seconds,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     })),
     workouts: input.workouts.map((row) => ({
       id: row.id,

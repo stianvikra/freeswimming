@@ -11,6 +11,7 @@ import {
   buildCanonicalCourseLessonIdMap,
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
+import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { buildUserExportPayload } from "@/lib/user/export";
@@ -59,6 +60,7 @@ export async function GET() {
     trainingFocusesResult,
     trainingNotesResult,
     downloadLinksResult,
+    drylandSessionsResult,
     workoutsResult,
   ] = await Promise.all([
     supabase
@@ -140,6 +142,13 @@ export async function GET() {
       .select("id, entitlement_id, expires_at, used_at, created_at")
       .order("created_at", { ascending: false }),
     supabase
+      .from("dryland_sessions")
+      .select(
+        "id, source_kind, status, session_kind, title, description, focus_text, exercises, started_at, completed_at, actual_duration_seconds, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
+    supabase
       .from("workouts")
       .select(
         "id, source_kind, status, generator_kind, source_fingerprint, title, title_suggestions, description, environment, pool_length_m, session_type, effort, size_mode, target_distance_m, target_time_min, total_distance_m, estimated_duration_min, base_pace_seconds_per_100, used_css_pace_label, allowed_strokes, equipment_allowlist, focus_text, goal_title, constraint_text, warnings, steps, generated_at, accepted_at, created_at, updated_at"
@@ -177,6 +186,10 @@ export async function GET() {
     workoutsResult.error && isWorkoutSchemaMissing(workoutsResult.error)
       ? []
       : (workoutsResult.data ?? []);
+  const normalizedDrylandSessions =
+    drylandSessionsResult.error && isDrylandSchemaMissing(drylandSessionsResult.error)
+      ? []
+      : (drylandSessionsResult.data ?? []);
 
   const failedQuery =
     profileResult.error ??
@@ -205,6 +218,9 @@ export async function GET() {
       ? trainingNotesResult.error
       : null) ??
     downloadLinksResult.error ??
+    (drylandSessionsResult.error && !isDrylandSchemaMissing(drylandSessionsResult.error)
+      ? drylandSessionsResult.error
+      : null) ??
     (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
       ? workoutsResult.error
       : null);
@@ -239,6 +255,7 @@ export async function GET() {
       trainingFocuses: normalizedTrainingFocuses,
       trainingNotes: normalizedTrainingNotes,
       downloadLinks: downloadLinksResult.data ?? [],
+      drylandSessions: normalizedDrylandSessions,
       workouts: normalizedWorkouts,
       generatedAt,
     }),
