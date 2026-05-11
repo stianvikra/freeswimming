@@ -150,6 +150,29 @@ describe("buildUserExportPayload", () => {
           created_at: "2026-02-15T09:00:00.000Z",
         },
       ],
+      drylandSessions: [
+        {
+          id: "dryland-1",
+          source_kind: "manual",
+          status: "draft",
+          session_kind: "strength",
+          title: "Core strength",
+          description: "Short dryland session.",
+          focus_text: "Brace the trunk first.",
+          exercises: [
+            {
+              id: "exercise-1",
+              title: "Plank",
+              sets: [{ id: "set-1", holdSeconds: 45 }],
+            },
+          ],
+          started_at: null,
+          completed_at: null,
+          actual_duration_seconds: null,
+          created_at: "2026-05-08T08:00:00.000Z",
+          updated_at: "2026-05-08T08:10:00.000Z",
+        },
+      ],
       workouts: [
         {
           id: "workout-1",
@@ -194,7 +217,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-03-20-workout-generator-accept",
+      schemaVersion: "2026-05-11-dryland-legacy-focus-export",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -342,6 +365,29 @@ describe("buildUserExportPayload", () => {
           createdAt: "2026-02-15T09:00:00.000Z",
         },
       ],
+      drylandSessions: [
+        {
+          id: "dryland-1",
+          sourceKind: "manual",
+          status: "draft",
+          sessionKind: "strength",
+          title: "Core strength",
+          description: "Short dryland session.",
+          legacyFocusText: "Brace the trunk first.",
+          exercises: [
+            {
+              id: "exercise-1",
+              title: "Plank",
+              sets: [{ id: "set-1", holdSeconds: 45 }],
+            },
+          ],
+          startedAt: null,
+          completedAt: null,
+          actualDurationSeconds: null,
+          createdAt: "2026-05-08T08:00:00.000Z",
+          updatedAt: "2026-05-08T08:10:00.000Z",
+        },
+      ],
       workouts: [
         {
           id: "workout-1",
@@ -403,6 +449,7 @@ describe("buildUserExportPayload", () => {
       trainingFocuses: [],
       trainingNotes: [],
       downloadLinks: [],
+      drylandSessions: [],
       workouts: [],
     });
 
@@ -413,6 +460,7 @@ describe("buildUserExportPayload", () => {
     expect(payload.trainingFocuses).toEqual([]);
     expect(payload.trainingNotes).toEqual([]);
     expect(payload.downloadLinks).toEqual([]);
+    expect(payload.drylandSessions).toEqual([]);
     expect(payload.workouts).toEqual([]);
   });
 });

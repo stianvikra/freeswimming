@@ -111,6 +111,10 @@ function buildDrylandDraft(overrides?: Partial<DrylandSessionDraft>): DrylandSes
   };
 }
 
+function firstMockObjectArg(fn: unknown): Record<string, unknown> | undefined {
+  return (fn as { mock: { calls: Array<[Record<string, unknown>]> } }).mock.calls[0]?.[0];
+}
+
 describe("dryland routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
@@ -191,15 +195,17 @@ describe("dryland routes", () => {
         title: "Strength session 2026-03-29",
       })
     );
+    expect(firstMockObjectArg(insert)).not.toHaveProperty("focus_text");
     expect(payload.ok).toBe(true);
     expect(payload.session.id).toBe("11111111-1111-4111-8111-111111111111");
     expect(payload.summary.title).toBe("Strength session 2026-03-29");
   });
 
-  it("updates a dryland session for the authenticated owner", async () => {
+  it("updates a dryland session while preserving read-only legacy focus text", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: buildDrylandRow({
         title: "Updated strength session",
+        focus_text: "Existing legacy cue.",
       }),
       error: null,
     });
@@ -228,6 +234,7 @@ describe("dryland routes", () => {
           body: JSON.stringify({
             draft: buildDrylandDraft({
               title: "Updated strength session",
+              focusText: "Old client focus cue should be ignored.",
             }),
           }),
         }
@@ -238,6 +245,10 @@ describe("dryland routes", () => {
         }),
       }
     );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      session: { draft: { focusText: string | null } };
+    };
 
     expect(response.status).toBe(200);
     expect(from).toHaveBeenCalledWith("dryland_sessions");
@@ -246,6 +257,8 @@ describe("dryland routes", () => {
         title: "Updated strength session",
       })
     );
+    expect(firstMockObjectArg(update)).not.toHaveProperty("focus_text");
+    expect(payload.session.draft.focusText).toBe("Existing legacy cue.");
   });
 
   it("rejects invalid dryland update payloads before persistence", async () => {

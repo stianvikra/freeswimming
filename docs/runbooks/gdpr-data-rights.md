@@ -37,7 +37,7 @@ Define the operational workflow for privacy rights handling in freeswimming.org:
 2. Verification:
    - confirm requester identity before processing manual access/rectification requests.
 3. Fulfillment:
-   - `export`: direct user to authenticated export flow or provide verified export bundle.
+   - `export`: direct user to authenticated export flow or provide verified export bundle; saved dryland sessions are included, and historical dryland Focus cue values appear only as read-only `legacyFocusText`.
    - `delete`: direct user to authenticated delete flow or perform verified backend-assisted deletion.
    - `rectification/objection`: apply data correction or processing limitation according to request and legal basis.
 4. Stripe/payment retention note:

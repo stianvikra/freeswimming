@@ -50,6 +50,7 @@ export type DrylandSessionDraft = {
   sessionKind: DrylandSessionKind;
   title: string;
   description: string;
+  /** @deprecated Dryland Focus cue is read-only legacy data. New saves must not write it. */
   focusText: string | null;
   startedAt: string | null;
   completedAt: string | null;

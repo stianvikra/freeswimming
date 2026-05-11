@@ -120,6 +120,7 @@ describe("dryland micro plans", () => {
       summary: "Core",
       coachCue: "Brace first",
     });
+    expect(JSON.stringify(blocks)).not.toContain("Keep the line stable.");
   });
 
   it("keeps repeated exercise sets as separate micro units", () => {

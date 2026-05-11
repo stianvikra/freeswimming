@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-08-dryland-focus-text-data-contract-cleanup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-08`
-- `updated`: `2026-05-08`
+- `updated`: `2026-05-11`
 
 ## Goal
 
@@ -15,6 +15,8 @@ Clean up the legacy dryland `focus_text`/`focusText` contract safely after the D
 ## Product Decision
 
 `Focus cue` remains valid language for swim/generator/session contexts, but it does not belong in the Dryland quick builder. The dryland UI no longer exposes or writes it, but the database/type contract still contains it for backward compatibility. This brief owns the explicit data decision: preserve, deprecate, migrate, or drop dryland `focus_text` through a safe migration path.
+
+Implementation decision: dryland `focus_text` is `read-only legacy` data for this slice. The app keeps the DB column and generated type so historical rows remain readable, but new dryland create/update payloads no longer write `focus_text`. Old clients may still send `draft.focusText`; the server accepts the draft shape for compatibility and ignores that field on persistence. Authenticated user exports include historical values as `drylandSessions[].legacyFocusText` so users can still access the data without reintroducing Focus cue into dryland authoring.
 
 ## Dependencies And Reference Surfaces
 
@@ -67,7 +69,7 @@ Critical target categories for a `10/10` claim:
 | Incident response and support operations      | `target`     | Support can identify legacy data/migration issues and advise whether historical dryland focus text was preserved, archived, or removed.       | runbook/support note + migration evidence            | `5/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A because this data-contract cleanup has no finance, payout, subscription, entitlement, invoice, or reconciliation impact.                  | explicit scope rationale                             | `N/A`                   |
 | i18n operational readiness                    | `N/A`        | N/A because no user-facing localized copy model or locale routing changes; field cleanup does not alter translation readiness.                | explicit scope rationale                             | `N/A`                   |
-| Stack-fit and dependency discipline           | `target`     | Use explicit Supabase migration, generated types, typed normalizers, and tests; add no new dependency.                                        | architecture review + dependency diff                | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Use typed normalizers, existing generated types, explicit no-migration decision, and tests; add no new dependency.                            | architecture review + dependency diff                | `5/5`                   |
 | Testing and QA automation                     | `target`     | Tests cover old/new dryland payloads, exports, migration/backwards compatibility, and non-dryland focusText preservation.                     | targeted unit/API/export tests + verify gates        | `5/5`                   |
 | Scalability and cost efficiency               | `supporting` | Supporting only: field cleanup should not add scans or runtime transforms on hot read paths.                                                  | query/diff review                                    | `4/5`                   |
 | DevOps and rollback readiness                 | `target`     | Any drop/deprecation uses explicit migration, generated types, rollback note, and evidence that old app versions degrade safely.              | migration/rollback evidence + pre-pr/pre-merge gates | `5/5`                   |
@@ -82,10 +84,10 @@ Critical target categories for a `10/10` claim:
   - audit `DrylandSessionDraft`, dryland row mapping, manual defaults, export payloads, and tests,
   - decide whether `focusText` remains as read-only legacy or leaves the dryland domain type.
 - Supabase/data layer:
-  - inspect real data before drop/migration,
-  - use explicit migration if schema changes,
-  - update generated DB types,
-  - preserve or archive historical values deliberately.
+  - no schema migration in this slice because historical values are preserved in place,
+  - keep `dryland_sessions.focus_text` selected only for legacy reads and account export,
+  - use an explicit migration only in a later drop/archive slice with real-data evidence,
+  - generated DB types remain valid because the row shape is unchanged.
 - External services:
   - none.
 - UI system:
@@ -98,16 +100,17 @@ Critical target categories for a `10/10` claim:
 ## Data Placement And Sync Contract
 
 - Server-canonical:
-  - current `dryland_sessions.focus_text` until this brief explicitly changes it.
+  - current `dryland_sessions.focus_text` remains server-canonical read-only legacy data.
 - Local-only:
   - no new local data.
 - Sync policy:
   - dryland UI must not write new Focus cue values,
-  - old API payloads with focus text are either accepted and ignored, accepted as legacy read-only, or rejected with a tested compatibility decision.
+  - old API payloads with focus text are accepted for draft compatibility and ignored on create/update persistence,
+  - existing non-null `focus_text` values are preserved during normal dryland updates.
 - Conflict policy:
   - old clients must not corrupt dryland rows if they send focus text.
 - Retention and sensitivity:
-  - historical focus text may contain personal training notes and must be handled in export/delete and migration decisions.
+  - historical focus text may contain personal training notes and is included only in authenticated account export as `legacyFocusText`; account deletion continues through auth-user cascade.
 - Cache/invalidation:
   - if row shape changes, all dryland reads/writes and generated types must be updated together.
 
@@ -122,16 +125,16 @@ Critical target categories for a `10/10` claim:
 - Rename vs repurpose policy:
   - removing/deprecating the field must not repurpose it for another meaning.
 - Compatibility contract:
-  - historical rows and exports remain readable or explicitly migrated.
+  - historical rows remain readable through the existing DB column and account exports include `legacyFocusText`.
 - Observability and repair:
-  - unexpected non-null legacy values should be auditable during rollout without leaking content.
+  - unexpected non-null legacy values should be auditable through owner-scoped export/support checks without leaking content.
 
 ## Scope
 
 - Audit dryland `focus_text`/`focusText` readers, writers, tests, exports, DB schema, and generated types.
-- Decide preserve/deprecate/migrate/drop for dryland only.
+- Decide preserve/deprecate/migrate/drop for dryland only. Decision for this slice: preserve as read-only legacy.
 - Preserve swim/session/generator focusText behavior.
-- Apply explicit migration if selected.
+- Apply explicit migration if selected. No migration selected because the row shape remains intentionally backward-compatible.
 - Update docs/tests and support surfaces.
 
 ## Out Of Scope
@@ -155,12 +158,30 @@ Critical target categories for a `10/10` claim:
 
 ## Validation
 
-- `npm run lint:briefs`
-- targeted dryland domain/API/export tests
-- generated type check if schema changes
-- migration validation if schema changes
-- `npm run verify:pre-pr`
-- `npm run verify:pre-merge`
+- `./node_modules/.bin/vitest run tests/unit/dryland-routes.test.ts tests/unit/dryland-micro-plans.test.ts tests/unit/dryland-micro-plan-routes.test.ts tests/unit/user-export-payload.test.ts` - pass (`4` files, `30` tests)
+- `npm run typecheck` - pass
+- `npm run lint` - pass
+- `npm run lint:briefs` - pass; no changed task briefs found because the brief was moved across lifecycle folders
+- `npm run lint:briefs:all` - pass (`279` brief files)
+- `git diff --check` - pass
+- generated type check if schema changes: N/A, no schema shape change
+- migration validation if schema changes: N/A, no migration selected
+- `npm run verify:pre-pr` - pass full lane after final evidence update (`artifacts/test-runs/20260511-220413/verify.log`; unit `189` files / `1035` tests, build pass, perf budgets pass, Playwright `82` passed / `380` skipped)
+- `npm run verify:pre-merge` - pending
+
+## Quality Gate Evidence
+
+- Data decision evidence: dryland `focus_text` is preserved in `dryland_sessions` as read-only legacy data; `buildDrylandInsert` and `buildDrylandUpdate` no longer include `focus_text`, so old `draft.focusText` payloads cannot create new dryland Focus cue writes.
+- Backward compatibility evidence: `DRYLAND_SELECT` and `buildDrylandSessionRecord` still read existing `focus_text`, so historical rows can load. Updates omit the field rather than nulling it, preserving existing values.
+- Export/privacy evidence: `/api/user/export` now owner-scope reads saved `dryland_sessions` and maps historical values to `drylandSessions[].legacyFocusText`; support/GDPR runbooks and API contract document that this is legacy export data.
+- API failure-mode evidence: dryland route tests cover fail-closed `401`, invalid-payload `400`, invalid/missing id paths, and no persistence before validation. `/api/user/export` keeps its existing fail-closed `401` unauthenticated behavior; missing dryland schema normalizes to an empty export slice, while non-schema query failures return the existing controlled `500` response without raw details, so there is no unexpected 500 for compatibility or old-client focus payloads.
+- Micro-plan evidence: micro-plan block generation continues to use exercise titles, notes, how-to, target areas, and set targets; targeted tests assert draft-level dryland focus text is not copied into micro blocks.
+- Non-dryland focus evidence: swim workout and session-generator `focusText` contracts are out of scope and unchanged.
+- Migration/rollback evidence: no schema migration, generated DB type change, or data backfill is required. Rollback is a normal code/docs revert; historical `focus_text` rows are not modified.
+- Performance ratchet evidence: perf budgets passed and reported `5` consecutive weekly green runs with a tighten recommendation; decision is `hold` for this data-contract PR and defer budget tightening to a dedicated performance-governance slice.
+- Print/export/screenshot evidence: this is a JSON account export contract, not a rendered UI, PDF, image, or screenshot artifact. Artifact-level validation uses the actual consumed artifact shape from `buildUserExportPayload`; high-cost export debug path reviewed against `docs/runbooks/ui-debug-hypothesis-and-handoff.md`, with no browser rendering or downloaded visual artifact to inspect.
+- Owner visual approval stop evidence: screenshot approval stop / owner visual approval stop is N/A because there is no user-facing visual, print, layout, brand, image, PDF, or browser-rendered export change in this slice.
+- Route/label/support sweep evidence: identifiers searched include `focus_text`, `focusText`, `Focus cue`, `dryland`, `export`, `micro`, `session generator`, and `workouts`; surfaces checked include `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/architecture/`, `supabase/`, and task briefs. Fallout handled in dryland server code, export payload, tests, API contract, support runbook, GDPR runbook, and data-access registry.
 
 ## Manual QA Environments
 
@@ -169,7 +190,7 @@ Critical target categories for a `10/10` claim:
 
 ## Help / Guide Impact
 
-Required if export/delete/support guidance changes. Otherwise closeout must explicitly state why Help/Guide is N/A.
+Required because export/support guidance changed. Updated `docs/runbooks/auth-account-support.md`, `docs/runbooks/gdpr-data-rights.md`, `docs/api-contracts.md`, and `docs/architecture/data-access-authz-cache-contract-registry.md`. No Admin Help/Guide UI content changed.
 
 ## Route / Label / Support Surface Sweep
 
@@ -178,3 +199,7 @@ Run the targeted sweep for `focus_text`, `focusText`, `Focus cue`, `dryland`, `e
 ## Checkpoint Log
 
 - `2026-05-08` - Planned after Dryland builder removed Focus cue from UI while keeping DB support for backward compatibility. Next: execute as a separate data-contract cleanup, not inside Micro Sessions V2.
+- `2026-05-11 | in-progress | branch dryland-focus-text-data-contract-cleanup-2026-05-11 created from clean main cb4e802 after PR #680 and closeout PR #681 landed; owner approved executing the planned data-contract cleanup before habits findings | next: audit dryland focus_text/focusText readers, writers, exports, DB contract, and non-dryland focus surfaces before selecting preserve/deprecate/migrate/drop behavior`
+- `2026-05-11 | in-progress | implemented read-only legacy focus contract: dryland create/update ignores draft focusText and preserves existing focus_text values, account export includes drylandSessions[].legacyFocusText, support/API/GDPR/data-access docs document the legacy policy, and targeted dryland/export tests, typecheck, lint, lint:briefs:all, and diff check pass; first npm run verify:pre-pr failed at quality-gate evidence because API failure-mode and export/screenshot rationale keywords were not explicit enough in the brief, then the missing evidence was added | next: rerun npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-11 | pre-pr-ready | npm run verify:pre-pr passed full lane at artifacts/test-runs/20260511-215800/verify.log with quality gates, lint, typecheck, unit, build, perf budgets, and Playwright E2E; perf ratchet recommendation recorded as hold because this slice is scoped to dryland data-contract cleanup | next: rerun pre-pr after this evidence update, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-11 | pre-pr-ready | final npm run verify:pre-pr rerun after the evidence update passed full lane at artifacts/test-runs/20260511-220413/verify.log; no product/rendering files changed after this validation, only this checkpoint now records the final evidence path | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
