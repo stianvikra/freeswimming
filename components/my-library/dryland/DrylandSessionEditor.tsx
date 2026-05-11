@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { buildCustomDrylandExercise } from "@/lib/dryland/exercise-bank";
 import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import {
@@ -11,6 +11,7 @@ import {
   formatSecondsLabel,
   getDrylandSessionKindLabel,
   getDrylandStatusLabel,
+  getDrylandSetTargetType,
   type DrylandExerciseDraft,
   type DrylandSessionDraft,
   type DrylandSessionKind,
@@ -32,8 +33,21 @@ type Props = {
 
 type DrylandEditorMode = "train" | "build";
 type SimpleInputField = "setCount" | "target" | "rest" | "load";
+type QuickTargetType = "reps" | "duration";
 
 const DRYLAND_MIN_SETS_PER_EXERCISE = 1;
+const DEFAULT_STRENGTH_REPS = 8;
+const DEFAULT_STRENGTH_DURATION_SECONDS = 45;
+const DEFAULT_STRETCH_DURATION_SECONDS = 30;
+
+const STATIC_TIME_TARGET_PATTERNS = [
+  /\bplank\b/i,
+  /\bside plank\b/i,
+  /\bwall sit\b/i,
+  /\bhollow hold\b/i,
+  /\bsuperman hold\b/i,
+  /\bglute bridge hold\b/i,
+];
 
 function getSimpleInputKey(revision: string, exerciseId: string, field: SimpleInputField) {
   return `${revision}:${exerciseId}:${field}`;
@@ -93,14 +107,94 @@ function parseSetCountInput(value: string) {
   return parsed;
 }
 
+function shouldSuggestTimeTarget(title: string) {
+  return STATIC_TIME_TARGET_PATTERNS.some((pattern) => pattern.test(title));
+}
+
+function getDefaultDurationSeconds(title: string, sessionKind: DrylandSessionKind) {
+  if (sessionKind === "stretching") return DEFAULT_STRETCH_DURATION_SECONDS;
+  return shouldSuggestTimeTarget(title) ? DEFAULT_STRENGTH_DURATION_SECONDS : 30;
+}
+
+function getTargetTypeForSet(
+  set: DrylandExerciseDraft["sets"][number] | null,
+  sessionKind: DrylandSessionKind
+): QuickTargetType {
+  if (sessionKind === "stretching") return "duration";
+  return set ? getDrylandSetTargetType(set) : "reps";
+}
+
+function getTargetTypeForExercise(
+  exercise: DrylandExerciseDraft,
+  sessionKind: DrylandSessionKind
+): QuickTargetType {
+  return getTargetTypeForSet(exercise.sets[0] ?? null, sessionKind);
+}
+
+function getTargetValueForSet(
+  set: DrylandExerciseDraft["sets"][number] | null,
+  targetType: QuickTargetType
+) {
+  if (!set) return "";
+  return targetType === "duration" ? (set.holdSeconds ?? "") : (set.reps ?? "");
+}
+
+function getTargetInputLabel(targetType: QuickTargetType) {
+  return targetType === "duration" ? "Time sec" : "Reps";
+}
+
+function getTargetUnitLabel(targetType: QuickTargetType) {
+  return targetType === "duration" ? "sec" : "reps";
+}
+
+function getNextTargetType(targetType: QuickTargetType): QuickTargetType {
+  return targetType === "duration" ? "reps" : "duration";
+}
+
+function getTargetTypeLabel(targetType: QuickTargetType) {
+  return targetType === "duration" ? "time" : "reps";
+}
+
+function convertSetTarget(
+  set: DrylandExerciseDraft["sets"][number],
+  targetType: QuickTargetType,
+  exerciseTitle: string,
+  sessionKind: DrylandSessionKind
+) {
+  if (targetType === "duration") {
+    return {
+      ...set,
+      reps: null,
+      holdSeconds:
+        set.holdSeconds ??
+        (set.reps && set.reps >= 20
+          ? set.reps
+          : getDefaultDurationSeconds(exerciseTitle, sessionKind)),
+    };
+  }
+
+  return {
+    ...set,
+    reps: set.reps ?? DEFAULT_STRENGTH_REPS,
+    holdSeconds: null,
+  };
+}
+
 function buildNextSet(
   sessionKind: DrylandSessionKind,
   previous: DrylandExerciseDraft["sets"][number] | null
 ) {
+  const previousTargetType = getTargetTypeForSet(previous, sessionKind);
   return {
     id: `set-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    reps: sessionKind === "strength" ? (previous?.reps ?? 8) : null,
-    holdSeconds: sessionKind === "stretching" ? (previous?.holdSeconds ?? 30) : null,
+    reps:
+      sessionKind === "strength" && previousTargetType === "reps"
+        ? (previous?.reps ?? DEFAULT_STRENGTH_REPS)
+        : null,
+    holdSeconds:
+      previousTargetType === "duration"
+        ? (previous?.holdSeconds ?? DEFAULT_STRETCH_DURATION_SECONDS)
+        : null,
     loadKg: sessionKind === "strength" ? (previous?.loadKg ?? null) : null,
     restSeconds: previous?.restSeconds ?? (sessionKind === "strength" ? 90 : 15),
     isCompleted: false,
@@ -148,9 +242,18 @@ export default function DrylandSessionEditor({
     savedSession.status === "draft" &&
     !draft.startedAt &&
     draft.exercises.every((exercise) => exercise.source === "custom");
+  const sessionDetailsResetKey = `${savedSession.id}:${savedSession.updatedAt ?? ""}`;
   const [mode, setMode] = useState<DrylandEditorMode>(startsAsManualDraft ? "build" : "train");
+  const [sessionDetailsState, setSessionDetailsState] = useState({
+    isOpen: false,
+    key: sessionDetailsResetKey,
+  });
   const [openBuildExerciseIds, setOpenBuildExerciseIds] = useState<Set<string>>(() => new Set());
   const [simpleInputValues, setSimpleInputValues] = useState<Record<string, string>>({});
+  const exerciseInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const pendingFocusExerciseIdRef = useRef<string | null>(null);
+  const isSessionDetailsOpen =
+    sessionDetailsState.key === sessionDetailsResetKey ? sessionDetailsState.isOpen : false;
   const simpleInputRevision = `${savedSession.id}:${savedSession.updatedAt ?? ""}`;
   const summary = buildDrylandSummary(draft);
   const executionSummary = buildDrylandExecutionSummary(draft);
@@ -167,8 +270,28 @@ export default function DrylandSessionEditor({
     currentExercise && currentExercise.sets.length > 0
       ? Math.round((currentExerciseCompletedSetCount / currentExercise.sets.length) * 100)
       : 0;
+  const sessionDetailsTimingSummary = draft.completedAt
+    ? `Completed ${formatDateTimeLabel(draft.completedAt)}`
+    : draft.startedAt
+      ? `Started ${formatDateTimeLabel(draft.startedAt)}`
+      : draft.actualDurationSeconds
+        ? `Duration ${formatSecondsLabel(draft.actualDurationSeconds)}`
+        : "Timing not set";
   const actualDurationInputId = useId();
   const progressBarLabelId = useId();
+  const sessionDetailsPanelId = useId();
+
+  useEffect(() => {
+    const pendingExerciseId = pendingFocusExerciseIdRef.current;
+    if (!pendingExerciseId) return;
+
+    const input = exerciseInputRefs.current[pendingExerciseId];
+    if (!input) return;
+
+    input.focus();
+    input.select();
+    pendingFocusExerciseIdRef.current = null;
+  }, [draft.exercises]);
 
   function getSimpleInputValue(
     exerciseId: string,
@@ -219,8 +342,9 @@ export default function DrylandSessionEditor({
       }
 
       if (targetInput !== undefined && parsePositiveIntegerInput(targetInput) === null) {
+        const targetType = getTargetTypeForExercise(exercise, draft.sessionKind);
         issues.push(
-          draft.sessionKind === "strength" ? `${label} needs reps.` : `${label} needs hold seconds.`
+          targetType === "reps" ? `${label} needs reps.` : `${label} needs time in seconds.`
         );
       }
 
@@ -244,13 +368,14 @@ export default function DrylandSessionEditor({
       for (const set of exercise.sets) {
         const hasTarget =
           draft.sessionKind === "strength"
-            ? typeof set.reps === "number" && set.reps > 0
+            ? (typeof set.reps === "number" && set.reps > 0) ||
+              (typeof set.holdSeconds === "number" && set.holdSeconds > 0)
             : typeof set.holdSeconds === "number" && set.holdSeconds > 0;
 
         if (!hasTarget) {
           issues.push(
             draft.sessionKind === "strength"
-              ? `${label} needs reps.`
+              ? `${label} needs reps or time in seconds.`
               : `${label} needs hold seconds.`
           );
           break;
@@ -302,10 +427,62 @@ export default function DrylandSessionEditor({
 
   function addCustomExercise(kind: DrylandSessionKind) {
     const nextExercise = buildCustomDrylandExercise(kind);
+    pendingFocusExerciseIdRef.current = nextExercise.id;
     onDraftChange({
       ...draft,
       exercises: [...draft.exercises, nextExercise],
     });
+  }
+
+  function updateExerciseTitle(exerciseId: string, value: string) {
+    const existingExercise = draft.exercises.find((item) => item.id === exerciseId) ?? null;
+    const nextTitleSuggestsTime = shouldSuggestTimeTarget(value);
+    const shouldAutoSwitchToTime =
+      Boolean(existingExercise) &&
+      draft.sessionKind === "strength" &&
+      nextTitleSuggestsTime &&
+      !shouldSuggestTimeTarget(existingExercise?.title ?? "") &&
+      existingExercise !== null &&
+      getTargetTypeForExercise(existingExercise, draft.sessionKind) === "reps";
+
+    updateExercise(exerciseId, (current) => {
+      return {
+        ...current,
+        title: value,
+        source: "custom",
+        bankExerciseId: null,
+        sets: shouldAutoSwitchToTime
+          ? current.sets.map((set) => convertSetTarget(set, "duration", value, draft.sessionKind))
+          : current.sets,
+      };
+    });
+
+    if (shouldAutoSwitchToTime) {
+      setSimpleInputValue(
+        exerciseId,
+        "target",
+        String(getDefaultDurationSeconds(value, draft.sessionKind))
+      );
+    }
+  }
+
+  function updateExerciseTargetType(exerciseId: string, targetType: QuickTargetType) {
+    const exercise = draft.exercises.find((item) => item.id === exerciseId);
+    if (!exercise || draft.sessionKind === "stretching") return;
+
+    updateExercise(exerciseId, (current) => ({
+      ...current,
+      sets: current.sets.map((set) =>
+        convertSetTarget(set, targetType, current.title, draft.sessionKind)
+      ),
+    }));
+
+    const firstSet = exercise.sets[0] ?? null;
+    const nextTargetValue =
+      targetType === "duration"
+        ? (firstSet?.holdSeconds ?? getDefaultDurationSeconds(exercise.title, draft.sessionKind))
+        : (firstSet?.reps ?? DEFAULT_STRENGTH_REPS);
+    setSimpleInputValue(exerciseId, "target", String(nextTargetValue));
   }
 
   function updateExerciseSetCount(exerciseId: string, value: string) {
@@ -355,6 +532,22 @@ export default function DrylandSessionEditor({
           return {
             ...set,
             loadKg: parseNonNegativeDecimalInput(value),
+          };
+        }
+
+        if (field === "reps") {
+          return {
+            ...set,
+            reps: parsePositiveIntegerInput(value),
+            holdSeconds: null,
+          };
+        }
+
+        if (field === "holdSeconds") {
+          return {
+            ...set,
+            reps: null,
+            holdSeconds: parsePositiveIntegerInput(value),
           };
         }
 
@@ -425,11 +618,40 @@ export default function DrylandSessionEditor({
 
         const trimmed = value.trim();
         const normalized = parsePositiveIntegerInput(trimmed);
+        if (field === "reps") {
+          return {
+            ...set,
+            reps: normalized,
+            holdSeconds: null,
+          };
+        }
+
+        if (field === "holdSeconds") {
+          return {
+            ...set,
+            reps: null,
+            holdSeconds: normalized,
+          };
+        }
+
         return {
           ...set,
           [field]: normalized,
         };
       }),
+    }));
+  }
+
+  function updateSetTargetType(exerciseId: string, setId: string, targetType: QuickTargetType) {
+    if (draft.sessionKind === "stretching") return;
+
+    updateExercise(exerciseId, (exercise) => ({
+      ...exercise,
+      sets: exercise.sets.map((set) =>
+        set.id === setId
+          ? convertSetTarget(set, targetType, exercise.title, draft.sessionKind)
+          : set
+      ),
     }));
   }
 
@@ -461,7 +683,7 @@ export default function DrylandSessionEditor({
     setSimpleInputValues((current) => ({
       ...current,
       [getSimpleInputKey(simpleInputRevision, exerciseId, "target")]: String(
-        draft.sessionKind === "strength" ? (firstSet.reps ?? "") : (firstSet.holdSeconds ?? "")
+        getTargetValueForSet(firstSet, getTargetTypeForSet(firstSet, draft.sessionKind))
       ),
       [getSimpleInputKey(simpleInputRevision, exerciseId, "rest")]: String(
         firstSet.restSeconds ?? ""
@@ -514,28 +736,95 @@ export default function DrylandSessionEditor({
     setMode("train");
   }
 
-  function renderSetTargets(
+  function renderTargetUnitControl(
+    targetType: QuickTargetType,
+    ariaLabel: string,
+    onChange: (targetType: QuickTargetType) => void,
+    testId?: string
+  ) {
+    if (draft.sessionKind === "stretching") {
+      return (
+        <span
+          aria-label={ariaLabel}
+          className="inline-flex min-w-14 items-center justify-center border-l border-slate-200 bg-slate-50 px-2 text-xs font-semibold text-slate-500"
+        >
+          {getTargetUnitLabel(targetType)}
+        </span>
+      );
+    }
+
+    const nextTargetType = getNextTargetType(targetType);
+
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        onClick={() => onChange(nextTargetType)}
+        className="inline-flex min-w-14 items-center justify-center border-l border-slate-200 bg-slate-50 px-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-inset active:bg-slate-200"
+      >
+        {getTargetUnitLabel(targetType)}
+      </button>
+    );
+  }
+
+  function getTargetUnitControlLabel(subject: string, targetType: QuickTargetType) {
+    if (draft.sessionKind === "stretching") {
+      return `${subject} target unit seconds`;
+    }
+
+    return `Switch ${subject} target to ${getTargetTypeLabel(getNextTargetType(targetType))}`;
+  }
+
+  function renderExerciseDetails(
     exercise: DrylandExerciseDraft,
     exerciseIndex: number,
     panelId: string
   ) {
+    const exerciseLabel = exercise.title.trim() || `Exercise ${exerciseIndex + 1}`;
+
     return (
       <div
         id={panelId}
         data-testid={`dryland-exercise-card-${exerciseIndex}`}
-        className="mt-4 border-t border-blue-100 pt-4"
+        className="mt-3 rounded-2xl border border-slate-200 border-l-blue-300 bg-white p-3 sm:p-4"
       >
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <div>
-            <h4 className="text-sm font-semibold text-slate-900">Individual sets</h4>
-            <p className="mt-1 text-sm text-slate-600">Only when one set differs.</p>
+            <h4 className="text-sm font-semibold text-slate-950">{exerciseLabel} details</h4>
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {exercise.sets.length} set{exercise.sets.length === 1 ? "" : "s"}
+            </p>
           </div>
+        </div>
+
+        <label className="mt-3 grid gap-1">
+          <span className="text-sm font-medium text-slate-900">{exerciseLabel} notes</span>
+          <input
+            data-testid={`dryland-manual-exercise-notes-${exerciseIndex}`}
+            value={exercise.notes}
+            onChange={(event) =>
+              updateExercise(exercise.id, (current) => ({
+                ...current,
+                notes: event.target.value,
+                source: "custom",
+                bankExerciseId: null,
+              }))
+            }
+            placeholder="Optional cue"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+          />
+        </label>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <h5 className="text-sm font-semibold text-slate-900">{exerciseLabel} sets</h5>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               data-testid={`dryland-make-sets-equal-${exerciseIndex}`}
               onClick={() => makeSetsEqual(exercise.id)}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:bg-blue-100"
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
               Make sets equal
             </button>
@@ -551,9 +840,9 @@ export default function DrylandSessionEditor({
           </div>
         </div>
 
-        <div className="mt-3 hidden grid-cols-[64px_88px_88px_90px_auto] gap-2 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 sm:grid">
+        <div className="mt-3 hidden grid-cols-[64px_minmax(144px,170px)_88px_90px_auto] gap-2 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 sm:grid">
           <span>Set</span>
-          <span>{draft.sessionKind === "strength" ? "Reps" : "Hold"}</span>
+          <span>Target</span>
           <span>Rest sec</span>
           <span>Load kg</span>
           <span className="text-right">Action</span>
@@ -562,33 +851,43 @@ export default function DrylandSessionEditor({
           {exercise.sets.map((set, setIndex) => (
             <div
               key={set.id}
-              className="grid grid-cols-2 gap-2 py-3 sm:grid-cols-[64px_88px_88px_90px_auto] sm:items-center"
+              className="grid grid-cols-2 gap-2 py-3 sm:grid-cols-[64px_minmax(144px,170px)_88px_90px_auto] sm:items-center"
             >
               <span className="col-span-2 text-sm font-semibold text-slate-900 sm:col-span-1">
                 Set {setIndex + 1}
               </span>
 
-              <label className="grid gap-1">
-                <SetMetricLabel>
-                  {draft.sessionKind === "strength" ? "Reps" : "Hold sec"}
-                </SetMetricLabel>
-                <input
-                  value={
-                    draft.sessionKind === "strength" ? (set.reps ?? "") : (set.holdSeconds ?? "")
-                  }
-                  data-testid={`dryland-set-target-${exerciseIndex}-${setIndex}`}
-                  onChange={(event) =>
-                    updateSetField(
-                      exercise.id,
-                      set.id,
-                      draft.sessionKind === "strength" ? "reps" : "holdSeconds",
-                      event.target.value
-                    )
-                  }
-                  inputMode="numeric"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                />
-              </label>
+              <div className="grid gap-1">
+                <SetMetricLabel>Target</SetMetricLabel>
+                <div className="flex h-10 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
+                  <input
+                    aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} set ${setIndex + 1} ${getTargetInputLabel(getTargetTypeForSet(set, draft.sessionKind)).toLowerCase()}`}
+                    value={getTargetValueForSet(set, getTargetTypeForSet(set, draft.sessionKind))}
+                    data-testid={`dryland-set-target-${exerciseIndex}-${setIndex}`}
+                    onChange={(event) =>
+                      updateSetField(
+                        exercise.id,
+                        set.id,
+                        getTargetTypeForSet(set, draft.sessionKind) === "duration"
+                          ? "holdSeconds"
+                          : "reps",
+                        event.target.value
+                      )
+                    }
+                    inputMode="numeric"
+                    className="min-w-0 flex-1 border-0 bg-white px-3 text-sm text-slate-900 outline-none"
+                  />
+                  {renderTargetUnitControl(
+                    getTargetTypeForSet(set, draft.sessionKind),
+                    getTargetUnitControlLabel(
+                      `${exercise.title || `Exercise ${exerciseIndex + 1}`} set ${setIndex + 1}`,
+                      getTargetTypeForSet(set, draft.sessionKind)
+                    ),
+                    (targetType) => updateSetTargetType(exercise.id, set.id, targetType),
+                    `dryland-set-target-unit-${exerciseIndex}-${setIndex}`
+                  )}
+                </div>
+              </div>
 
               <label className="grid gap-1">
                 <SetMetricLabel>Rest sec</SetMetricLabel>
@@ -676,7 +975,7 @@ export default function DrylandSessionEditor({
               disabled={isSaving || !hasUnsavedChanges || !canSaveOrTrain}
               className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             >
-              {isSaving ? "Saving..." : hasUnsavedChanges ? "Save session" : "Saved"}
+              {isSaving ? "Saving..." : hasUnsavedChanges ? "Save" : "Saved"}
             </button>
           </div>
         </div>
@@ -992,22 +1291,40 @@ export default function DrylandSessionEditor({
         </section>
       ) : (
         <section data-testid="dryland-build-mode" className="space-y-4">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-950">Build session</h3>
-                  </div>
-                  <span
-                    data-testid="dryland-session-kind-locked-build"
-                    className="inline-flex min-h-8 items-center rounded-full border border-blue-200 bg-blue-50 px-3 text-xs font-semibold tracking-wide text-blue-800 uppercase"
-                  >
-                    {getDrylandSessionKindLabel(draft.sessionKind)}
-                  </span>
-                </div>
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-5">
+            <button
+              type="button"
+              data-testid="dryland-session-details-toggle"
+              aria-expanded={isSessionDetailsOpen}
+              aria-controls={sessionDetailsPanelId}
+              onClick={() =>
+                setSessionDetailsState((current) => ({
+                  isOpen: current.key === sessionDetailsResetKey ? !current.isOpen : true,
+                  key: sessionDetailsResetKey,
+                }))
+              }
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+            >
+              <span>
+                <span className="block text-lg font-semibold text-slate-950">Session details</span>
+                <span className="mt-1 block text-sm text-slate-600">
+                  {sessionDetailsTimingSummary}
+                </span>
+              </span>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
+                  {isSessionDetailsOpen ? "Hide" : "Edit"}
+                </span>
+              </span>
+            </button>
 
-                <div className="mt-5 grid gap-4">
+            {isSessionDetailsOpen ? (
+              <div
+                id={sessionDetailsPanelId}
+                data-testid="dryland-session-details-panel"
+                className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]"
+              >
+                <div className="grid gap-4">
                   <label className="space-y-2">
                     <span className="text-sm font-medium text-slate-900">Title</span>
                     <input
@@ -1028,100 +1345,90 @@ export default function DrylandSessionEditor({
                     />
                   </label>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <h4 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
-                  Timing
-                </h4>
-                <dl className="mt-3 space-y-2 text-sm text-slate-700">
-                  <div className="flex justify-between gap-3">
-                    <dt>Started</dt>
-                    <dd className="font-medium text-slate-900">
-                      {formatDateTimeLabel(draft.startedAt)}
-                    </dd>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <h4 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
+                    Timing
+                  </h4>
+                  <dl className="mt-3 space-y-2 text-sm text-slate-700">
+                    <div className="flex justify-between gap-3">
+                      <dt>Started</dt>
+                      <dd className="font-medium text-slate-900">
+                        {formatDateTimeLabel(draft.startedAt)}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Completed</dt>
+                      <dd className="font-medium text-slate-900">
+                        {formatDateTimeLabel(draft.completedAt)}
+                      </dd>
+                    </div>
+                  </dl>
+                  <label className="mt-4 block space-y-2">
+                    <span id={actualDurationInputId} className="text-sm font-medium text-slate-900">
+                      Duration (min)
+                    </span>
+                    <input
+                      aria-labelledby={actualDurationInputId}
+                      data-testid="dryland-draft-actual-duration"
+                      value={toMinutesInputValue(draft.actualDurationSeconds)}
+                      onChange={(event) =>
+                        patchDraft({
+                          actualDurationSeconds: parseMinutesToSeconds(event.target.value),
+                        })
+                      }
+                      placeholder="Optional"
+                      inputMode="decimal"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                    />
+                  </label>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {!draft.startedAt ? (
+                      <button
+                        type="button"
+                        data-testid="dryland-draft-start-timer"
+                        onClick={startTimer}
+                        disabled={!canSaveOrTrain}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      >
+                        Start
+                      </button>
+                    ) : null}
+                    {draft.startedAt && !draft.completedAt ? (
+                      <button
+                        type="button"
+                        data-testid="dryland-draft-stop-timer"
+                        onClick={stopTimer}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
+                      >
+                        Stop
+                      </button>
+                    ) : null}
+                    {draft.startedAt || draft.completedAt || draft.actualDurationSeconds ? (
+                      <button
+                        type="button"
+                        data-testid="dryland-draft-clear-timing"
+                        onClick={clearTimer}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      >
+                        Clear
+                      </button>
+                    ) : null}
                   </div>
-                  <div className="flex justify-between gap-3">
-                    <dt>Completed</dt>
-                    <dd className="font-medium text-slate-900">
-                      {formatDateTimeLabel(draft.completedAt)}
-                    </dd>
-                  </div>
-                </dl>
-                <label className="mt-4 block space-y-2">
-                  <span id={actualDurationInputId} className="text-sm font-medium text-slate-900">
-                    Duration (min)
-                  </span>
-                  <input
-                    aria-labelledby={actualDurationInputId}
-                    data-testid="dryland-draft-actual-duration"
-                    value={toMinutesInputValue(draft.actualDurationSeconds)}
-                    onChange={(event) =>
-                      patchDraft({
-                        actualDurationSeconds: parseMinutesToSeconds(event.target.value),
-                      })
-                    }
-                    placeholder="Optional"
-                    inputMode="decimal"
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                  />
-                </label>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {!draft.startedAt ? (
-                    <button
-                      type="button"
-                      data-testid="dryland-draft-start-timer"
-                      onClick={startTimer}
-                      disabled={!canSaveOrTrain}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                    >
-                      Start
-                    </button>
-                  ) : null}
-                  {draft.startedAt && !draft.completedAt ? (
-                    <button
-                      type="button"
-                      data-testid="dryland-draft-stop-timer"
-                      onClick={stopTimer}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
-                    >
-                      Stop
-                    </button>
-                  ) : null}
-                  {draft.startedAt || draft.completedAt || draft.actualDurationSeconds ? (
-                    <button
-                      type="button"
-                      data-testid="dryland-draft-clear-timing"
-                      onClick={clearTimer}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
                 </div>
               </div>
-            </div>
+            ) : null}
           </section>
 
           <section
             data-testid="dryland-manual-exercises"
             className="rounded-[2rem] border border-slate-200 bg-white p-5"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-950">Quick session</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Type the exercises you want to do now.
-                </p>
-              </div>
-              <button
-                type="button"
-                data-testid="dryland-add-custom-exercise"
-                onClick={() => addCustomExercise(draft.sessionKind)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Add exercise
-              </button>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-950">Quick session</h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Manually enter the exercises and their details.
+              </p>
             </div>
 
             {simpleInputIssues.length > 0 ? (
@@ -1132,12 +1439,21 @@ export default function DrylandSessionEditor({
             ) : null}
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">
+              <div
+                aria-hidden="true"
+                className="hidden grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] gap-3 border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 lg:grid"
+              >
+                <span>Exercise</span>
+                <span>Sets</span>
+                <span>Target</span>
+                <span>Rest sec</span>
+                <span>Load kg</span>
+                <span className="text-right">Actions</span>
+              </div>
               {draft.exercises.map((exercise, exerciseIndex) => {
                 const firstSet = exercise.sets[0] ?? null;
-                const setTargetValue =
-                  draft.sessionKind === "strength"
-                    ? (firstSet?.reps ?? "")
-                    : (firstSet?.holdSeconds ?? "");
+                const targetType = getTargetTypeForExercise(exercise, draft.sessionKind);
+                const setTargetValue = getTargetValueForSet(firstSet, targetType);
                 const isBuildExerciseOpen = openBuildExerciseIds.has(exercise.id);
                 const setEditorId = `dryland-exercise-card-${exerciseIndex}`;
                 return (
@@ -1146,28 +1462,27 @@ export default function DrylandSessionEditor({
                     data-testid={`dryland-simple-exercise-row-${exerciseIndex}`}
                     className="border-b border-slate-200 p-3 last:border-b-0 sm:p-4"
                   >
-                    <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_72px_80px_88px_88px_auto] lg:items-end">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] lg:items-end">
                       <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900">Exercise</span>
+                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
+                          Exercise
+                        </span>
                         <input
+                          ref={(node) => {
+                            exerciseInputRefs.current[exercise.id] = node;
+                          }}
+                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} name`}
                           data-testid={`dryland-manual-exercise-name-${exerciseIndex}`}
                           value={exercise.title}
-                          onChange={(event) =>
-                            updateExercise(exercise.id, (current) => ({
-                              ...current,
-                              title: event.target.value,
-                              source: "custom",
-                              bankExerciseId: null,
-                            }))
-                          }
+                          onChange={(event) => updateExerciseTitle(exercise.id, event.target.value)}
                           className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 transition outline-none focus:border-blue-400"
                         />
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900">Sets</span>
+                        <span className="text-sm font-medium text-slate-900 lg:sr-only">Sets</span>
                         <input
-                          aria-label={`Set count for exercise ${exerciseIndex + 1}`}
+                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} set count`}
                           data-testid={`dryland-manual-exercise-set-count-${exerciseIndex}`}
                           value={getSimpleInputValue(exercise.id, "setCount", exercise.sets.length)}
                           onChange={(event) =>
@@ -1180,30 +1495,44 @@ export default function DrylandSessionEditor({
                         />
                       </label>
 
-                      <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900">
-                          {draft.sessionKind === "strength" ? "Reps" : "Hold sec"}
+                      <div className="grid gap-1">
+                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
+                          Target
                         </span>
-                        <input
-                          aria-label={`${draft.sessionKind === "strength" ? "Reps" : "Hold seconds"} for exercise ${exerciseIndex + 1}`}
-                          data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
-                          value={getSimpleInputValue(exercise.id, "target", setTargetValue)}
-                          onChange={(event) =>
-                            updateAllExerciseSetField(
-                              exercise.id,
-                              draft.sessionKind === "strength" ? "reps" : "holdSeconds",
-                              event.target.value
-                            )
-                          }
-                          inputMode="numeric"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                        />
-                      </label>
+                        <div className="flex h-11 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
+                          <input
+                            aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} ${getTargetInputLabel(targetType).toLowerCase()}`}
+                            data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
+                            value={getSimpleInputValue(exercise.id, "target", setTargetValue)}
+                            onChange={(event) =>
+                              updateAllExerciseSetField(
+                                exercise.id,
+                                targetType === "duration" ? "holdSeconds" : "reps",
+                                event.target.value
+                              )
+                            }
+                            inputMode="numeric"
+                            className="min-w-0 flex-1 border-0 bg-white px-3 text-sm text-slate-900 outline-none"
+                          />
+                          {renderTargetUnitControl(
+                            targetType,
+                            getTargetUnitControlLabel(
+                              exercise.title || `Exercise ${exerciseIndex + 1}`,
+                              targetType
+                            ),
+                            (nextTargetType) =>
+                              updateExerciseTargetType(exercise.id, nextTargetType),
+                            `dryland-manual-exercise-target-unit-${exerciseIndex}`
+                          )}
+                        </div>
+                      </div>
 
                       <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900">Rest sec</span>
+                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
+                          Rest sec
+                        </span>
                         <input
-                          aria-label={`Rest seconds for exercise ${exerciseIndex + 1}`}
+                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} rest seconds`}
                           data-testid={`dryland-manual-exercise-rest-${exerciseIndex}`}
                           value={getSimpleInputValue(
                             exercise.id,
@@ -1223,15 +1552,26 @@ export default function DrylandSessionEditor({
                       </label>
 
                       <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900">Load kg</span>
+                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
+                          Load kg
+                        </span>
                         {draft.sessionKind === "strength" ? (
                           <input
-                            aria-label={`Load kg for exercise ${exerciseIndex + 1}`}
+                            aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} load kg`}
                             data-testid={`dryland-manual-exercise-load-${exerciseIndex}`}
                             value={getSimpleInputValue(exercise.id, "load", firstSet?.loadKg ?? "")}
                             onChange={(event) =>
                               updateAllExerciseSetField(exercise.id, "loadKg", event.target.value)
                             }
+                            onKeyDown={(event) => {
+                              if (
+                                event.key === "Enter" &&
+                                exerciseIndex === draft.exercises.length - 1
+                              ) {
+                                event.preventDefault();
+                                addCustomExercise(draft.sessionKind);
+                              }
+                            }}
                             inputMode="decimal"
                             className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
                           />
@@ -1242,7 +1582,7 @@ export default function DrylandSessionEditor({
                         )}
                       </label>
 
-                      <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+                      <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:justify-end">
                         <button
                           type="button"
                           aria-expanded={isBuildExerciseOpen}
@@ -1250,7 +1590,7 @@ export default function DrylandSessionEditor({
                           onClick={() => setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)}
                           className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:bg-blue-100"
                         >
-                          {isBuildExerciseOpen ? "Close set edits" : "Edit sets individually"}
+                          {isBuildExerciseOpen ? "Close edits" : "Edit sets"}
                         </button>
                         <button
                           type="button"
@@ -1264,42 +1604,43 @@ export default function DrylandSessionEditor({
                       </div>
                     </div>
 
-                    {isBuildExerciseOpen ? (
-                      <>
-                        <label className="mt-3 grid gap-1">
-                          <span className="text-sm font-medium text-slate-900">Notes</span>
-                          <input
-                            data-testid={`dryland-manual-exercise-notes-${exerciseIndex}`}
-                            value={exercise.notes}
-                            onChange={(event) =>
-                              updateExercise(exercise.id, (current) => ({
-                                ...current,
-                                notes: event.target.value,
-                                source: "custom",
-                                bankExerciseId: null,
-                              }))
-                            }
-                            placeholder="Optional cue"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                          />
-                        </label>
-                        {renderSetTargets(exercise, exerciseIndex, setEditorId)}
-                      </>
-                    ) : null}
+                    {isBuildExerciseOpen
+                      ? renderExerciseDetails(exercise, exerciseIndex, setEditorId)
+                      : null}
                   </article>
                 );
               })}
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={switchToTrainMode}
-                disabled={!canSaveOrTrain}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                data-testid="dryland-add-custom-exercise"
+                onClick={() => addCustomExercise(draft.sessionKind)}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
-                Open Train mode
+                Add exercise
               </button>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-testid="dryland-builder-bottom-save"
+                  onClick={handleSave}
+                  disabled={isSaving || !hasUnsavedChanges || !canSaveOrTrain}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSaving ? "Saving..." : hasUnsavedChanges ? "Save" : "Saved"}
+                </button>
+                <button
+                  type="button"
+                  onClick={switchToTrainMode}
+                  disabled={!canSaveOrTrain}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  Open Train mode
+                </button>
+              </div>
             </div>
           </section>
         </section>
