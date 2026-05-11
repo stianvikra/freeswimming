@@ -14,9 +14,11 @@ import type {
 import {
   buildDrylandSessionSummarySubtitle,
   getDrylandSessionKindLabel,
+  normalizeDrylandSessionDraft,
   type DrylandDeleteApiResponse,
   type DrylandLibrarySnapshot,
   type DrylandSaveApiResponse,
+  type DrylandSessionDraft,
   type DrylandSessionRecord,
   type DrylandSessionSummary,
 } from "@/lib/dryland/shared";
@@ -37,6 +39,63 @@ function haveDrylandDraftChanges(
   savedDraft: DrylandSessionRecord["draft"] | null
 ) {
   return JSON.stringify(draft) !== JSON.stringify(savedDraft);
+}
+
+const LOCAL_DRYLAND_DRAFT_VERSION = 1;
+
+function getLocalDraftKey(sessionId: string) {
+  return `freeswimming:dryland:draft:${sessionId}:v${LOCAL_DRYLAND_DRAFT_VERSION}`;
+}
+
+function readLocalDrylandDraft(session: DrylandSessionRecord | null): DrylandSessionDraft | null {
+  if (!session || typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(getLocalDraftKey(session.id));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      savedUpdatedAt?: unknown;
+      draft?: unknown;
+    };
+    if (parsed.savedUpdatedAt !== session.updatedAt) return null;
+
+    const normalized = normalizeDrylandSessionDraft(parsed.draft);
+    if (!normalized.ok || normalized.value.sessionKind !== session.draft.sessionKind) return null;
+    if (!haveDrylandDraftChanges(normalized.value, session.draft)) return null;
+    return normalized.value;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalDrylandDraft(session: DrylandSessionRecord | null, draft: DrylandSessionDraft) {
+  if (!session || typeof window === "undefined") return;
+
+  try {
+    if (!haveDrylandDraftChanges(draft, session.draft)) {
+      window.localStorage.removeItem(getLocalDraftKey(session.id));
+      return;
+    }
+
+    window.localStorage.setItem(
+      getLocalDraftKey(session.id),
+      JSON.stringify({
+        savedUpdatedAt: session.updatedAt,
+        draft,
+      })
+    );
+  } catch {
+    // Local draft persistence is best-effort; server save remains canonical.
+  }
+}
+
+function clearLocalDrylandDraft(sessionId: string | null | undefined) {
+  if (!sessionId || typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(getLocalDraftKey(sessionId));
+  } catch {
+    // Ignore blocked localStorage cleanup.
+  }
 }
 
 export default function DrylandBuilderHub({
@@ -71,7 +130,11 @@ export default function DrylandBuilderHub({
 
   useEffect(() => {
     setSavedSession(drylandLibrary.selectedSession);
-    setDraft(drylandLibrary.selectedSession?.draft ?? null);
+    setDraft(
+      readLocalDrylandDraft(drylandLibrary.selectedSession) ??
+        drylandLibrary.selectedSession?.draft ??
+        null
+    );
     setRecentSessions(drylandLibrary.recentSessions);
     setActiveMicroPlan(drylandLibrary.microPlan);
     setError("");
@@ -123,6 +186,7 @@ export default function DrylandBuilderHub({
 
       setSavedSession(responseBody.session);
       setDraft(responseBody.session.draft);
+      clearLocalDrylandDraft(savedSession.id);
       setRecentSessions((current) => upsertRecentSessionSummary(current, responseBody.summary));
       setSuccess("Dryland session changes saved.");
     } catch {
@@ -134,6 +198,7 @@ export default function DrylandBuilderHub({
 
   function resetDraftToSavedSession() {
     if (!savedSession) return;
+    clearLocalDrylandDraft(savedSession.id);
     setDraft(savedSession.draft);
     setSuccess("Unsaved dryland edits were reset to the last saved session.");
     setError("");
@@ -226,6 +291,7 @@ export default function DrylandBuilderHub({
       setPendingDeleteSessionId(null);
 
       if (savedSession?.id === session.id) {
+        clearLocalDrylandDraft(session.id);
         setSavedSession(null);
         setDraft(null);
         router.replace("/my-library/dryland");
@@ -456,6 +522,7 @@ export default function DrylandBuilderHub({
             hasUnsavedChanges={hasUnsavedChanges}
             onDraftChange={(nextDraft) => {
               setDraft(nextDraft);
+              writeLocalDrylandDraft(savedSession, nextDraft);
               setSuccess("");
             }}
             onSave={saveSession}

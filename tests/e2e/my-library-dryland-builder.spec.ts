@@ -106,11 +106,16 @@ test.describe("my library dryland builder", () => {
     await expect(page.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
     await expect(page.getByTestId("dryland-manual-exercises")).toBeVisible();
     await expect(page.getByText("Quick session")).toBeVisible();
-    await expect(page.getByText("Type the exercises you want to do now.")).toBeVisible();
+    await expect(page.getByText("Manually enter the exercises and their details.")).toBeVisible();
     await expect(page.getByText("Focus cue")).toHaveCount(0);
     await expect(page.getByTestId("dryland-advanced-bank")).toHaveCount(0);
     await expect(page.getByTestId("dryland-advanced-exercise-details")).toHaveCount(0);
+    await expect(page.getByTestId("dryland-session-details-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
 
+    await page.getByTestId("dryland-session-details-toggle").click();
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);
     await page.getByTestId("dryland-manual-exercise-name-0").fill("Single-leg squat");
     await page.getByTestId("dryland-manual-exercise-set-count-0").fill("2");
@@ -119,11 +124,12 @@ test.describe("my library dryland builder", () => {
     await page.getByTestId("dryland-manual-exercise-load-0").fill("12.5");
     await page
       .getByTestId("dryland-simple-exercise-row-0")
-      .getByRole("button", { name: "Edit sets individually" })
+      .getByRole("button", { name: "Edit sets" })
       .click();
     await page.getByTestId("dryland-manual-exercise-notes-0").fill("Control the knee line.");
-    await page.getByTestId("dryland-draft-start-timer").click();
+    await expect(page.getByTestId("dryland-draft-start-timer")).toHaveCount(0);
     await page.getByTestId("dryland-mode-train").click();
+    await page.getByTestId("dryland-draft-start-timer").click();
     await page.getByTestId("dryland-set-chip-0-0").click();
     const saveResponsePromise = page.waitForResponse(
       (response) =>

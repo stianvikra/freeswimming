@@ -26,6 +26,8 @@ export type DrylandSetDraft = {
   completedAt: string | null;
 };
 
+export type DrylandSetTargetType = "reps" | "duration";
+
 export type DrylandExerciseDraft = {
   id: string;
   source: DrylandExerciseSource;
@@ -227,16 +229,21 @@ function normalizeSet(
     : null;
 
   if (sessionKind === "strength") {
-    if (reps === null) {
-      return { ok: false, error: `Strength sets require reps for exercise ${exerciseIndex + 1}.` };
+    if (reps === null && holdSeconds === null) {
+      return {
+        ok: false,
+        error: `Strength sets require reps or time for exercise ${exerciseIndex + 1}.`,
+      };
     }
+
+    const useDurationTarget = reps === null && holdSeconds !== null;
     return {
       ok: true,
       value: {
         id,
-        reps,
-        holdSeconds: null,
-        loadKg,
+        reps: useDurationTarget ? null : reps,
+        holdSeconds: useDurationTarget ? holdSeconds : null,
+        loadKg: sessionKind === "strength" ? loadKg : null,
         restSeconds,
         isCompleted,
         completedAt,
@@ -263,6 +270,10 @@ function normalizeSet(
       completedAt,
     },
   };
+}
+
+export function getDrylandSetTargetType(set: DrylandSetDraft): DrylandSetTargetType {
+  return set.holdSeconds !== null ? "duration" : "reps";
 }
 
 function normalizeExercise(
@@ -431,9 +442,9 @@ export function buildDrylandSetChipLabel(
   sessionKind: DrylandSessionKind
 ): string {
   const main =
-    sessionKind === "strength"
-      ? `${set.reps ?? 0}${set.loadKg ? ` @ ${set.loadKg}kg` : ""}`
-      : `${set.holdSeconds ?? 0}s`;
+    set.holdSeconds !== null
+      ? (formatSecondsLabel(set.holdSeconds) ?? `${set.holdSeconds} sec`)
+      : `${set.reps ?? 0} reps${sessionKind === "strength" && set.loadKg ? ` @ ${set.loadKg}kg` : ""}`;
   const pause = set.restSeconds ? ` P: ${formatSecondsLabel(set.restSeconds)}` : "";
   return `${main}${pause}`;
 }

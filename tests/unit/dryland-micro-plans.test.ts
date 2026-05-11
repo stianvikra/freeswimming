@@ -223,6 +223,48 @@ describe("dryland micro plans", () => {
     });
   });
 
+  it("snapshots strength time targets as duration micro units", () => {
+    const baseExercise = buildDraft().exercises[0]!;
+    const blocks = buildDrylandMicroBlocksFromSources([
+      {
+        sourceDrylandSessionId: "strength-time-session",
+        draft: {
+          ...buildDraft(),
+          title: "Core strength",
+          exercises: [
+            {
+              ...baseExercise,
+              id: "plank",
+              title: "Plank",
+              sets: [
+                {
+                  id: "hold-1",
+                  reps: null,
+                  holdSeconds: 45,
+                  loadKg: null,
+                  restSeconds: 60,
+                  isCompleted: false,
+                  completedAt: null,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(blocks.ok).toBe(true);
+    if (!blocks.ok) return;
+    expect(blocks.value).toHaveLength(1);
+    expect(blocks.value[0]).toMatchObject({
+      title: "Plank",
+      targetType: "duration",
+      targetValue: 45,
+      targetUnit: "sec",
+      targetLabel: "45 sec · 1 min rest",
+    });
+  });
+
   it("calculates simple completed-block progress without counting skipped work as complete", () => {
     const blocks = buildBlocks();
     blocks[0] = {
