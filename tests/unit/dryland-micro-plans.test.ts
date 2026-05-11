@@ -122,6 +122,56 @@ describe("dryland micro plans", () => {
     });
   });
 
+  it("keeps repeated exercise sets as separate micro units", () => {
+    const pushUpSets = Array.from({ length: 3 }, (_, index) => ({
+      id: `push-up-set-${index + 1}`,
+      reps: 12,
+      holdSeconds: null,
+      loadKg: null,
+      restSeconds: 30,
+      isCompleted: false,
+      completedAt: null,
+    }));
+    const baseExercise = buildDraft().exercises[0]!;
+    const blocks = buildDrylandMicroBlocksFromSources([
+      {
+        sourceDrylandSessionId: "push-up-source",
+        draft: {
+          ...buildDraft(),
+          title: "Push-up volume",
+          exercises: [
+            {
+              ...baseExercise,
+              id: "push-ups",
+              title: "Push ups",
+              summary: "",
+              notes: "",
+              howTo: "Keep a strong plank.",
+              targetAreas: ["Chest", "Core"],
+              sets: pushUpSets,
+            },
+          ],
+        },
+      },
+    ]);
+
+    expect(blocks.ok).toBe(true);
+    if (!blocks.ok) return;
+    expect(blocks.value).toHaveLength(3);
+    expect(blocks.value.map((block) => block.title)).toEqual(["Push ups", "Push ups", "Push ups"]);
+    expect(blocks.value.map((block) => block.sourceSetId)).toEqual([
+      "push-up-set-1",
+      "push-up-set-2",
+      "push-up-set-3",
+    ]);
+    expect(blocks.value.map((block) => block.setIndex)).toEqual([0, 1, 2]);
+    expect(blocks.value.map((block) => block.targetLabel)).toEqual([
+      "12 reps · 30 sec rest",
+      "12 reps · 30 sec rest",
+      "12 reps · 30 sec rest",
+    ]);
+  });
+
   it("snapshots stretching set units with duration targets", () => {
     const blocks = buildDrylandMicroBlocksFromSources([
       {

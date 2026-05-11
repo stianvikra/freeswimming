@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTodayBubblesState, buildTodayHabitsState } from "@/lib/my-library/today";
+import { buildTodayHabitsState, buildTodayMicroSessionsState } from "@/lib/my-library/today";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type { HabitDefinitionView, HabitSnapshot } from "@/lib/habits/shared";
 
@@ -140,8 +140,8 @@ function buildHabitSnapshot(options?: {
 }
 
 describe("my library today state", () => {
-  it("summarizes an active bubbles plan without persistence", () => {
-    const state = buildTodayBubblesState(
+  it("summarizes an active micro sessions plan without persistence", () => {
+    const state = buildTodayMicroSessionsState(
       {
         microPlanSchemaReady: true,
         microPlanLoadError: null,
@@ -157,13 +157,15 @@ describe("my library today state", () => {
     );
 
     expect(state.state).toBe("ready");
-    expect(state.title).toBe("Continue Bubbles");
+    expect(state.title).toBe("Micro Sessions");
     expect(state.progressLabel).toBe("1/2 units");
     expect(state.progressPercent).toBe(50);
+    expect(state.actionLabel).toBe("Open");
+    expect(state.detail).not.toMatch(/bubble/i);
   });
 
   it("falls back to setup when there is no active micro plan", () => {
-    const state = buildTodayBubblesState({
+    const state = buildTodayMicroSessionsState({
       microPlanSchemaReady: true,
       microPlanLoadError: null,
       microPlan: null,
@@ -171,7 +173,7 @@ describe("my library today state", () => {
     });
 
     expect(state.state).toBe("setup");
-    expect(state.title).toBe("Create a dryland session");
+    expect(state.title).toBe("Micro Sessions");
     expect(state.href).toBe("/my-library/dryland");
   });
 
@@ -179,7 +181,8 @@ describe("my library today state", () => {
     const state = buildTodayHabitsState(buildHabitSnapshot({ activeCount: 3, satisfiedCount: 2 }));
 
     expect(state.state).toBe("ready");
-    expect(state.title).toBe("Check in habits");
+    expect(state.title).toBe("Habits");
+    expect(state.actionLabel).toBe("Open");
     expect(state.progressLabel).toBe("2/3 done");
     expect(state.detail).not.toMatch(/streak/i);
   });
@@ -188,7 +191,8 @@ describe("my library today state", () => {
     const state = buildTodayHabitsState(buildHabitSnapshot({ activeCount: 3, satisfiedCount: 3 }));
 
     expect(state.state).toBe("complete");
-    expect(state.title).toBe("Perfect day logged");
+    expect(state.title).toBe("Habits");
+    expect(state.actionLabel).toBe("Open");
     expect(state.progressPercent).toBe(100);
   });
 });

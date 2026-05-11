@@ -84,7 +84,7 @@ describe("TodayTabsPanel", () => {
     cleanup();
   });
 
-  it("keeps Bubbles and Habits as switchable views in one Today panel", () => {
+  it("keeps Micro Sessions and Habits as switchable views in one routines panel", () => {
     render(
       <TodayTabsPanel
         drylandLibrary={buildDrylandLibrary()}
@@ -94,26 +94,54 @@ describe("TodayTabsPanel", () => {
     );
 
     const panel = screen.getByTestId("my-library-today-tabs");
-    expect(within(panel).getByRole("heading", { name: "Daily work" })).toBeVisible();
-    expect(within(panel).getByText("Perfect Day: 1/2 done")).toBeVisible();
+    expect(within(panel).getByText("Routines")).toBeVisible();
+    expect(within(panel).getByRole("heading", { name: "My routines" })).toBeVisible();
+    expect(within(panel).queryByText(/Perfect Day/i)).toBeNull();
 
-    const bubblesTab = within(panel).getByRole("tab", { name: "Bubbles" });
+    const microSessionsTab = within(panel).getByRole("tab", { name: "Micro Sessions" });
     const habitsTab = within(panel).getByRole("tab", { name: "Habits" });
-    expect(bubblesTab).toHaveAttribute("aria-selected", "true");
-    expect(within(panel).getByRole("link", { name: "Open Bubbles" })).toHaveAttribute(
+    expect(microSessionsTab).toHaveAttribute("aria-selected", "true");
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute(
       "href",
       "/my-library/dryland"
     );
+    expect(within(panel).getByRole("heading", { name: "Micro Sessions" })).toBeVisible();
+    expect(within(panel).getByText("1/3 units · 33%")).toBeVisible();
+    expect(within(panel).queryByText(/Bubbles/i)).toBeNull();
+    expect(within(panel).queryByText("1 unit ready in Micro session: Weekly strength.")).toBeNull();
 
     fireEvent.click(habitsTab);
     expect(habitsTab).toHaveAttribute("aria-selected", "true");
-    expect(within(panel).getByRole("link", { name: "Open Habits" })).toHaveAttribute(
+    expect(within(panel).getByRole("heading", { name: "Habits" })).toBeVisible();
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute(
       "href",
       "/my-library/habits"
     );
 
-    fireEvent.click(bubblesTab);
-    expect(bubblesTab).toHaveAttribute("aria-selected", "true");
-    expect(within(panel).getByRole("link", { name: "Open Bubbles" })).toBeVisible();
+    fireEvent.click(microSessionsTab);
+    expect(microSessionsTab).toHaveAttribute("aria-selected", "true");
+    expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
+  });
+
+  it("keeps My Library routines compact without secondary detail controls", () => {
+    render(
+      <TodayTabsPanel
+        drylandLibrary={buildDrylandLibrary()}
+        habitSnapshot={buildHabitSnapshot()}
+        nowIso="2026-05-10T09:00:00.000Z"
+      />
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+
+    expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
+    expect(within(panel).queryByRole("button", { name: "Show details" })).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Hide details" })).toBeNull();
+    expect(
+      within(panel).queryByRole("progressbar", { name: "Micro Sessions progress" })
+    ).toBeNull();
+    expect(
+      within(panel).queryByRole("progressbar", { name: "My Perfect Day progress" })
+    ).toBeNull();
   });
 });

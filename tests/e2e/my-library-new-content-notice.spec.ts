@@ -182,7 +182,8 @@ test.describe("my library new content notice", () => {
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
     await expect(banner).toContainText("New content");
-    await expect(banner).toContainText("1 new lesson");
+    await expect(banner).not.toContainText("1 new lesson");
+    await expect(page.getByTestId("my-library-new-content-toggle")).toHaveText("Show list");
     await expect(page.getByTestId("my-library-new-content-open")).toHaveCount(0);
     await expect(page.getByTestId("my-library-new-content-toggle")).toHaveAttribute(
       "aria-expanded",
@@ -195,6 +196,7 @@ test.describe("my library new content notice", () => {
       "aria-expanded",
       "true"
     );
+    await expect(page.getByTestId("my-library-new-content-toggle")).toHaveText("Hide list");
     await expect(page.getByTestId("my-library-new-content-list")).toBeVisible();
 
     await openExpandedNewLessonFromNotice(page, "mod1-l1");

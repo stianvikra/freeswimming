@@ -7,7 +7,7 @@ import type { DrylandLibrarySnapshot } from "@/lib/dryland/shared";
 import type { HabitSnapshot } from "@/lib/habits/shared";
 
 export const TODAY_SURFACE_TABS = [
-  { id: "bubbles", label: "Bubbles" },
+  { id: "micro-sessions", label: "Micro Sessions" },
   { id: "habits", label: "Habits" },
 ] as const;
 
@@ -15,7 +15,6 @@ export type TodaySurfaceTabId = (typeof TODAY_SURFACE_TABS)[number]["id"];
 
 export type TodaySurfaceState = {
   state: "ready" | "complete" | "setup" | "paused" | "syncing" | "error";
-  eyebrow: string;
   title: string;
   detail: string;
   progressLabel: string;
@@ -23,10 +22,6 @@ export type TodaySurfaceState = {
   actionLabel: string;
   href: string;
 };
-
-function pluralize(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
 
 function countAvailableMicroUnits(plan: DrylandMicroPlanRecord, now: Date) {
   return plan.blocks.filter(
@@ -62,7 +57,11 @@ function getNextMicroReleaseLabel(plan: DrylandMicroPlanRecord, now: Date) {
   })}.`;
 }
 
-export function buildTodayBubblesState(
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function buildTodayMicroSessionsState(
   drylandLibrary: Pick<
     DrylandLibrarySnapshot,
     "microPlan" | "microPlanLoadError" | "microPlanSchemaReady" | "recentSessions"
@@ -72,12 +71,11 @@ export function buildTodayBubblesState(
   if (!drylandLibrary.microPlanSchemaReady) {
     return {
       state: "syncing",
-      eyebrow: "Micro Sessions",
-      title: "Bubbles are syncing",
+      title: "Micro Sessions",
       detail: "Saved dryland sessions stay available while the micro-plan table is applied.",
       progressLabel: "Syncing",
       progressPercent: 0,
-      actionLabel: "Open Dryland",
+      actionLabel: "Open",
       href: "/my-library/dryland",
     };
   }
@@ -85,12 +83,11 @@ export function buildTodayBubblesState(
   if (drylandLibrary.microPlanLoadError) {
     return {
       state: "error",
-      eyebrow: "Micro Sessions",
-      title: "Bubbles need a refresh",
+      title: "Micro Sessions",
       detail: drylandLibrary.microPlanLoadError,
       progressLabel: "Not loaded",
       progressPercent: 0,
-      actionLabel: "Open Dryland",
+      actionLabel: "Open",
       href: "/my-library/dryland",
     };
   }
@@ -99,16 +96,14 @@ export function buildTodayBubblesState(
   if (!plan) {
     return {
       state: "setup",
-      eyebrow: "Micro Sessions",
-      title:
-        drylandLibrary.recentSessions.length > 0 ? "Start Bubbles" : "Create a dryland session",
+      title: "Micro Sessions",
       detail:
         drylandLibrary.recentSessions.length > 0
           ? "Build one weekly Micro Session from saved dryland work."
-          : "Save a dryland session before building weekly bubbles.",
+          : "Save a dryland session before building weekly Micro Sessions.",
       progressLabel: "No active plan",
       progressPercent: 0,
-      actionLabel: "Open Dryland",
+      actionLabel: "Open",
       href: "/my-library/dryland",
     };
   }
@@ -119,12 +114,11 @@ export function buildTodayBubblesState(
   if (plan.status === "completed") {
     return {
       state: "complete",
-      eyebrow: "Micro Sessions",
-      title: "Bubbles complete",
+      title: "Micro Sessions",
       detail: `${plan.title} is complete for this week.`,
       progressLabel,
       progressPercent: plan.progress.progressPercent,
-      actionLabel: "Review Bubbles",
+      actionLabel: "Open",
       href: "/my-library/dryland",
     };
   }
@@ -132,30 +126,28 @@ export function buildTodayBubblesState(
   if (plan.status === "paused") {
     return {
       state: "paused",
-      eyebrow: "Micro Sessions",
-      title: "Bubbles paused",
+      title: "Micro Sessions",
       detail: `${plan.title} is paused with ${pluralize(
         plan.progress.remainingBlockCount,
         "unit"
       )} remaining.`,
       progressLabel,
       progressPercent: plan.progress.progressPercent,
-      actionLabel: "Resume Bubbles",
+      actionLabel: "Open",
       href: "/my-library/dryland",
     };
   }
 
   return {
     state: availableCount > 0 ? "ready" : "setup",
-    eyebrow: "Micro Sessions",
-    title: availableCount > 0 ? "Continue Bubbles" : "Bubbles queued",
+    title: "Micro Sessions",
     detail:
       availableCount > 0
-        ? `${pluralize(availableCount, "bubble")} ready in ${plan.title}.`
+        ? `${pluralize(availableCount, "unit")} ready in ${plan.title}.`
         : getNextMicroReleaseLabel(plan, now),
     progressLabel,
     progressPercent: plan.progress.progressPercent,
-    actionLabel: availableCount > 0 ? "Open Bubbles" : "Open Micro Sessions",
+    actionLabel: "Open",
     href: "/my-library/dryland",
   };
 }
@@ -164,12 +156,11 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   if (!habitSnapshot.schemaReady) {
     return {
       state: "syncing",
-      eyebrow: "My Perfect Day",
-      title: "Habits are syncing",
+      title: "Habits",
       detail: "Today's habits will appear when the habits table is ready.",
       progressLabel: "Syncing",
       progressPercent: 0,
-      actionLabel: "Open Habits",
+      actionLabel: "Open",
       href: "/my-library/habits",
     };
   }
@@ -177,12 +168,11 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   if (habitSnapshot.loadError) {
     return {
       state: "error",
-      eyebrow: "My Perfect Day",
-      title: "Habits need a refresh",
+      title: "Habits",
       detail: habitSnapshot.loadError,
       progressLabel: "Not loaded",
       progressPercent: 0,
-      actionLabel: "Open Habits",
+      actionLabel: "Open",
       href: "/my-library/habits",
     };
   }
@@ -194,12 +184,11 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   if (activeCount === 0 || perfectDayTotal === 0) {
     return {
       state: "setup",
-      eyebrow: "My Perfect Day",
-      title: "Set today's habits",
+      title: "Habits",
       detail: "Start with a few small habits that define a good day.",
       progressLabel: "No habits yet",
       progressPercent: 0,
-      actionLabel: "Add Habits",
+      actionLabel: "Open",
       href: "/my-library/habits",
     };
   }
@@ -207,24 +196,22 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   if (habitSnapshot.daySummary.isPerfectDay) {
     return {
       state: "complete",
-      eyebrow: "My Perfect Day",
-      title: "Perfect day logged",
+      title: "Habits",
       detail: `${satisfiedCount}/${perfectDayTotal} habits are on target today.`,
       progressLabel: `${satisfiedCount}/${perfectDayTotal} done`,
       progressPercent: habitSnapshot.daySummary.completionPercent,
-      actionLabel: "Review Habits",
+      actionLabel: "Open",
       href: "/my-library/habits",
     };
   }
 
   return {
     state: "ready",
-    eyebrow: "My Perfect Day",
-    title: "Check in habits",
+    title: "Habits",
     detail: `${satisfiedCount}/${perfectDayTotal} habits are on target today.`,
     progressLabel: `${satisfiedCount}/${perfectDayTotal} done`,
     progressPercent: habitSnapshot.daySummary.completionPercent,
-    actionLabel: "Open Habits",
+    actionLabel: "Open",
     href: "/my-library/habits",
   };
 }
