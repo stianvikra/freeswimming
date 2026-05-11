@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-07-home-personalization-and-training-reminders-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-11`
@@ -318,6 +318,44 @@ Search at minimum:
 - Confirmed: "home" means authenticated `/my-library`, not public `/`.
 - Do not implement push/browser/email/SMS reminders unless a separate consent/privacy brief is approved.
 
+## Completion Record
+
+- Merged PR: `#673`
+- Merge commit: `1b44711`
+- Final status: done on `2026-05-11`
+- Plain-language outcome: My Library now has a calmer `Routines` launcher under `Free Course`, with `Micro Sessions` and `Habits` as the two clear entry points. `Perfect Day` and `Bubbles` no longer compete as My Library concepts; bubble execution remains inside Micro Sessions.
+- Screenshot artifacts: `output/my-library-routines-bubbles-v1-20260511085849`
+- Final validation:
+  - `npm run verify:pre-pr`: PASS (`artifacts/test-runs/20260511-074509/verify.log`, full lane, HEAD `9315ca6`)
+  - `npm run verify:pre-merge`: PASS (`artifacts/verify-pre-merge/20260511-061151.json`, full public lane, HEAD `9315ca6`)
+  - GitHub CI: PASS (`verify`, CodeQL, Vercel, deploy-preview, e2e-smoke, site-lock-smoke, size-check)
+- Deferred out of scope:
+  - automatic Micro Sessions week rollover, missed/expired status, and auto-skipping unfinished units,
+  - bubble drag/reorder,
+  - global performance budget tightening.
+- `10/10 claim`: yes for the scoped My Library Routines and Micro Sessions bubble readability slice. All critical target categories are scored `5/5`; deferred items are explicitly out of scope and need separate briefs.
+
+| Category                                      | Achieved Score | Evidence                                                                                                | Gaps / Notes                                                 |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#673`, screenshot artifacts, owner-approved IA decisions                                            | No My Library IA gap in scoped slice.                        |
+| UX flow clarity                               | `5/5`          | `TodayTabsPanel` tests, My Library e2e coverage, screenshot handoff                                     | Bubble drag/reorder deferred.                                |
+| Visual design quality                         | `5/5`          | Screenshot artifacts regenerated on current HEAD, active states use app blue                            | No remaining visual blocker.                                 |
+| Business logic correctness and data integrity | `5/5`          | Unit coverage for Routines state, one-bubble-per-set mapping, target labels, and skip semantics         | Week rollover/missed state deferred.                         |
+| Accessibility (a11y)                          | `5/5`          | Semantic tabs/buttons/links and full verify a11y smoke                                                  | No known a11y blocker.                                       |
+| Performance (CWV + payloads)                  | `5/5`          | Full perf budget gate PASS; no new dependency or polling fanout                                         | Budget tightening deferred to dedicated maintenance slice.   |
+| Data placement and sync boundaries            | `5/5`          | Local-only tab state, existing server-canonical Habits/Micro Sessions data, no new reminder persistence | No new persistence in scoped slice.                          |
+| Caching and invalidation strategy             | `5/5`          | Existing authenticated route/cache behavior preserved; full gate PASS                                   | Future date rollover state needs separate design.            |
+| Reliability and failure handling              | `5/5`          | Existing fallbacks preserved; migration readiness documented; full verify PASS                          | No known reliability blocker.                                |
+| Security and authz                            | `5/5`          | No new auth surface; existing owner-scoped surfaces reused; full CI and local gates PASS                | No authz behavior changed.                                   |
+| Privacy and compliance                        | `5/5`          | No push/email/SMS tokens, no new reminder payloads, no sensitive analytics detail                       | Reminder delivery deferred.                                  |
+| Content governance                            | `5/5`          | Copy decisions recorded in brief and PR body                                                            | App-wide Perfect Day naming decision deferred.               |
+| Analytics and KPI observability               | `5/5`          | Existing New Content analytics payload preserved; no new sensitive routine analytics                    | Broader KPI dashboard out of scope.                          |
+| Incident response and support operations      | `5/5`          | `auth-account-support.md`, user-flow map, route/label/support sweep evidence                            | No Help/Guide/admin workflow change required.                |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next/React/Tailwind/test stack reused; no new dependency                                       | No stack gap.                                                |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest PASS, full `verify:pre-pr`, full `verify:pre-merge`, GitHub CI PASS                     | Local auth-dependent Playwright skips remain known/expected. |
+| Scalability and cost efficiency               | `5/5`          | Bounded existing reads, local tab state, no polling or notification fanout                              | No cost-risking delivery in V1.                              |
+| DevOps and rollback readiness                 | `5/5`          | Squash merge `1b44711`, rollback by revert, post-merge preflight surfaced docs-only closeout            | No runtime closeout gap.                                     |
+
 ## Checkpoint Log
 
 - `2026-05-07 | planned | created after owner asked whether Micro Sessions, reminders, and selectable Home content should live under Free Course; recommendation is fixed Free Course primary CTA plus controlled personal section below | next: wait until prerequisite training surfaces are stable or owner selects this as the next slice`
@@ -336,3 +374,4 @@ Search at minimum:
 - `2026-05-11 | bubble-mode-toggle-and-target-labels | owner flagged the black `Bubbles`mode button and clarified bubble target text should show reps or time depending on the exercise; active mode switches now use blue selected styling and component coverage protects`Hang ups · 8 reps`plus`Plank · 30 sec` bubble labels without rest text inside the bubble | next: run targeted tests and refresh screenshot handoff before PR gates`
 - `2026-05-11 | skip-set-and-rollover-defer | owner asked what `Skip`means and whether unfinished units are automatically skipped on a new week; decision is`Skip set` for explicit user intent only, while automatic week rollover/missed/expired state is explicitly not done in this slice and must be handled in a separate follow-up scope | next: run targeted tests and refresh screenshot handoff before PR gates`
 - `2026-05-11 | screenshot-approved-and-pre-pr-pass | refreshed screenshots captured at output/my-library-routines-bubbles-v1-20260511-073536 after the My Library `Routines`label, compact`Open`actions, content-sized non-overlapping bubbles,`Skip set` copy, and reduced bubble row spacing landed; owner approved screenshot direction with corrections handled; targeted Vitest, lint:briefs, lint, typecheck, and npm run verify:pre-pr all pass, with Playwright local skips limited to the known dev-login/Supabase JSON fallback and gate exit code 0 | next: commit, push PR #673, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-05-11 | done | PR #673 merged to main as 1b44711; post-merge preflight surfaced this repo-managed docs-only closeout; brief moved from in-progress to done with 10/10 claim recorded for scoped target categories | next: docs-only closeout PR`
