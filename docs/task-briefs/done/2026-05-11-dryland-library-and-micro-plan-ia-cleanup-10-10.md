@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-11-dryland-library-and-micro-plan-ia-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-11`
 - `updated`: `2026-05-11`
@@ -163,6 +163,32 @@ Critical target categories for a `10/10` claim:
 - screenshot handoff before `npm run verify:pre-pr`
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
+
+## Completion Record
+
+- Merged PR: `#676`
+- Merge commit: `df508c9`
+- Completed scope: Dryland default library and Micro Session source-selection IA are separated; edit mode is configuration-only; new create/edit release pacing no longer offers `Manual release`; legacy manual-release units remain readable and releasable.
+- Verification: `npm run verify:pre-pr` PASS full lane, GitHub CI PASS, and `npm run verify:pre-merge` PASS full lane on `23875d0` before merge.
+- Screenshot evidence: `output/playwright/dryland-source-actions-20260511-120753` approved by owner before PR gate; no product-rendering files changed after capture.
+- Local caveat: local E2E kept the existing dev-login/Supabase HTML skips (`82 passed`, `380 skipped`), matching pre-PR and pre-merge evidence.
+- Follow-up: `docs/task-briefs/planned/2026-05-11-dryland-builder-lifecycle-and-source-session-impact-cleanup-10-10.md` tracks clear-empty micro sessions, source-session impact warnings, and compact quick-session rows.
+- Performance decision: hold budget tightening outside this UI PR; perf gate recommended tightening one stretch target after five green weekly runs with 20.1% margin.
+- `10/10 claim`: yes for the approved Dryland Library and Micro Plan IA cleanup scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                          | Gaps / Notes                                                |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#676`, screenshot handoff, and merged code separate saved sessions from source selection.                     | Lifecycle redesign is deferred to the planned follow-up.    |
+| UX flow clarity                               | `5/5`          | Unit/component tests and screenshot handoff cover default library, source edit mode, and action ordering.         | None for this slice.                                        |
+| Visual design quality                         | `5/5`          | Owner-approved screenshots at `output/playwright/dryland-source-actions-20260511-120753`.                         | None for this slice.                                        |
+| Business logic correctness and data integrity | `5/5`          | Tests and code preserve legacy manual-release read/release behavior while removing it from new UI choices.        | No schema or data migration shipped.                        |
+| Accessibility (a11y)                          | `5/5`          | Component/e2e coverage keeps source checkboxes, edit links, and actions named and keyboard reachable.             | None for this slice.                                        |
+| Data placement and sync boundaries            | `5/5`          | Brief contract and code keep saved sessions/server plans canonical and create/edit selections local until save.   | None for this slice.                                        |
+| Reliability and failure handling              | `5/5`          | Negative-path/component coverage protects cancel/save failure states and avoids hiding the library permanently.   | Existing local dev-login skip remains unrelated.            |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` and `docs/user-flow-map.md` explain the updated Dryland support behavior. | None for this slice.                                        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Dryland components/helpers and added no dependency or migration.                                  | None for this slice.                                        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, targeted Playwright smoke, full `verify:pre-pr`, GitHub CI, and `verify:pre-merge` passed.       | Local DB-backed E2E tests skipped on known dev-login issue. |
+| DevOps and rollback readiness                 | `5/5`          | No migration; rollback is `git revert df508c9`; PR checks and local pre-merge gate passed.                        | None for this slice.                                        |
 
 ## Manual QA Environments
 

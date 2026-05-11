@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-11-my-library-routines-entrypoint-and-training-ia-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-11`
 - `updated`: `2026-05-11`
@@ -139,6 +139,30 @@ Critical target categories for a `10/10` claim:
 - screenshot handoff before `npm run verify:pre-pr`
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
+
+## Completion Record
+
+- Merged PR: `#676`
+- Merge commit: `df508c9`
+- Completed scope: My Library keeps `Free Course` first, then one `My routines` launcher with `Edit` and `Open`; duplicate top-level `Habits` and `My Training` cards are removed while direct routes remain compatible.
+- Verification: `npm run verify:pre-pr` PASS full lane, GitHub CI PASS, and `npm run verify:pre-merge` PASS full lane on `23875d0` before merge.
+- Screenshot evidence: final Dryland/source-actions handoff at `output/playwright/dryland-source-actions-20260511-120753` plus earlier My routines action-order screenshots at `output/playwright/my-routines-action-order-20260511-103310`; owner approved the visual handoff before PR gate.
+- Local caveat: local E2E kept the existing dev-login/Supabase HTML skips (`82 passed`, `380 skipped`), matching pre-PR and pre-merge evidence.
+- Performance decision: hold budget tightening outside this UI PR; perf gate recommended tightening one stretch target after five green weekly runs with 20.1% margin.
+- `10/10 claim`: yes for the approved My Library routines entrypoint and training IA cleanup scope; all critical target categories are scored `5/5`.
+
+| Category                                 | Achieved Score | Evidence                                                                                                          | Gaps / Notes                                                |
+| ---------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Product goals and IA                     | `5/5`          | PR `#676`, screenshot handoff, and route tests keep `Free Course` first and remove duplicate routine entrypoints. | Full training observations IA remains out of scope.         |
+| UX flow clarity                          | `5/5`          | `TodayTabsPanel` tests and screenshots cover `Edit`/`Open` actions and removed duplicate cards.                   | None for this slice.                                        |
+| Visual design quality                    | `5/5`          | Owner-approved screenshots cover Routines action order and New Content alignment.                                 | None for this slice.                                        |
+| Accessibility (a11y)                     | `5/5`          | Component/e2e assertions keep tabs and links named and keyboard/screen-reader usable.                             | None for this slice.                                        |
+| Data placement and sync boundaries       | `5/5`          | Brief contract and code keep tab state local and existing routine facts server-canonical.                         | No new data path shipped.                                   |
+| Reliability and failure handling         | `5/5`          | Regression tests preserve fallback/navigation behavior when routine data or downstream schema is unavailable.     | Existing local dev-login skip remains unrelated.            |
+| Incident response and support operations | `5/5`          | `docs/runbooks/auth-account-support.md` and `docs/user-flow-map.md` document the updated entrypoint shape.        | None for this slice.                                        |
+| Stack-fit and dependency discipline      | `5/5`          | Reused existing My Library, Today/Routines, Link, Tailwind, and test stack; no dependency added.                  | None for this slice.                                        |
+| Testing and QA automation                | `5/5`          | Targeted Vitest, targeted Playwright smoke, full `verify:pre-pr`, GitHub CI, and `verify:pre-merge` passed.       | Local DB-backed E2E tests skipped on known dev-login issue. |
+| DevOps and rollback readiness            | `5/5`          | No migration; rollback is `git revert df508c9`; PR checks and local pre-merge gate passed.                        | None for this slice.                                        |
 
 ## Manual QA Environments
 
