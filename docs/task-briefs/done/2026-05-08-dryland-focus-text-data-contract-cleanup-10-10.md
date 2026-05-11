@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-08-dryland-focus-text-data-contract-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-08`
 - `updated`: `2026-05-11`
@@ -167,7 +167,7 @@ Critical target categories for a `10/10` claim:
 - generated type check if schema changes: N/A, no schema shape change
 - migration validation if schema changes: N/A, no migration selected
 - `npm run verify:pre-pr` - pass full lane after final evidence update (`artifacts/test-runs/20260511-220413/verify.log`; unit `189` files / `1035` tests, build pass, perf budgets pass, Playwright `82` passed / `380` skipped)
-- `npm run verify:pre-merge` - pending
+- `npm run verify:pre-merge` - pass (`artifacts/verify-pre-merge/20260511-202313.json`; public full lane pass, private-gate regression skipped because `SITE_LOCK_ENABLED!=1`)
 
 ## Quality Gate Evidence
 
@@ -203,3 +203,4 @@ Run the targeted sweep for `focus_text`, `focusText`, `Focus cue`, `dryland`, `e
 - `2026-05-11 | in-progress | implemented read-only legacy focus contract: dryland create/update ignores draft focusText and preserves existing focus_text values, account export includes drylandSessions[].legacyFocusText, support/API/GDPR/data-access docs document the legacy policy, and targeted dryland/export tests, typecheck, lint, lint:briefs:all, and diff check pass; first npm run verify:pre-pr failed at quality-gate evidence because API failure-mode and export/screenshot rationale keywords were not explicit enough in the brief, then the missing evidence was added | next: rerun npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-05-11 | pre-pr-ready | npm run verify:pre-pr passed full lane at artifacts/test-runs/20260511-215800/verify.log with quality gates, lint, typecheck, unit, build, perf budgets, and Playwright E2E; perf ratchet recommendation recorded as hold because this slice is scoped to dryland data-contract cleanup | next: rerun pre-pr after this evidence update, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-11 | pre-pr-ready | final npm run verify:pre-pr rerun after the evidence update passed full lane at artifacts/test-runs/20260511-220413/verify.log; no product/rendering files changed after this validation, only this checkpoint now records the final evidence path | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-11 | done | PR #682 merged to main at 6609380 after green CI and npm run verify:pre-merge passed at artifacts/verify-pre-merge/20260511-202313.json; repo-managed post-merge closeout moved this brief to done | next: rerun post-merge preflight after closeout merge`
