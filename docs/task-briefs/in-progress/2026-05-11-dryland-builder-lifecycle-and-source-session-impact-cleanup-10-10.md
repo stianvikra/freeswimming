@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-11-dryland-builder-lifecycle-and-source-session-impact-cleanup-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-11`
 - `updated`: `2026-05-11`
@@ -21,6 +21,12 @@ The Micro Session surface should expand when there is something to do today and 
 When a saved Dryland Session is edited and that session is already used by the active Micro Session, the user must be told what will happen. Default behavior should be safe: saved-session edits apply to future Micro Sessions. A deliberate `Update current micro session` action may rebuild remaining queued units, but must preserve completed/skipped history and never rewrite what the user has already done.
 
 Quick session building should stay compact. Exercises should render as rows inside one container, with per-exercise notes hidden from the default quick path. Notes can be session-level or behind a deliberate advanced/more affordance.
+
+Micro Session execution should not make `Skip set` a default action. If a user does not do a unit, it can remain open; if the whole plan is stale, wrong, or no longer relevant, the user should clear the Micro Session at plan level. Existing skipped history must still remain readable and must not be rewritten by current-plan updates.
+
+Set completion affordances must distinguish action from status. A ready unit should not look completed before the user acts; use a neutral `Done` action for open units and reserve green/check treatment for completed history or successful completion feedback.
+
+`Bubbles` mode should be a direct task-selection surface. Bubbles show only the remaining task by default. First tap/click or `Enter` arms the bubble in place with `Mark done?`; the next tap/click or `Enter` confirms completion, while `Escape` cancels. Double-click/double-tap completes through the same two-step path as a power-user shortcut. Completion removes the bubble from available units, records completion, and adds the action to a stable undo stack so repeated `Undo` clicks restore units in reverse completion order.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -137,6 +143,9 @@ Critical target categories for a `10/10` claim:
 - Add explicit `Update current micro session` behavior for remaining queued units only, preserving completed/skipped history.
 - Convert quick-session exercise authoring into compact rows inside one container.
 - Remove per-exercise `Notes` from default quick rows; retain session-level notes or advanced/more notes only if needed.
+- Remove or tone down default per-unit `Skip set`; leave unfinished units open and use `Clear micro session` when the plan is no longer relevant.
+- Use neutral `Done` action semantics for open units and reserve green/check treatment for completed state or successful completion feedback.
+- Make `Bubbles` a direct remaining-task surface with in-bubble `Mark done?` confirmation, keyboard cancel/confirm, immediate stacked undo, no default `Skip set`, and no persistent detail card in the default view.
 - Update tests, support docs, and user-flow docs.
 
 ## Out Of Scope
@@ -157,18 +166,27 @@ Critical target categories for a `10/10` claim:
 6. Saved-session edits apply to future Micro Sessions by default.
 7. `Update current micro session` only rebuilds queued units and preserves completed/skipped units as history.
 8. Quick session builder uses compact rows inside one container and removes per-exercise notes from the default row.
-9. Mobile and desktop screenshots show no text overlap, card sprawl, or competing primary tasks.
-10. Support docs explain clearing stale Micro Sessions and source-session edit impact.
+9. Default execution UI does not present `Skip set` as a primary per-unit action; unfinished units remain available until completed or the plan is cleared.
+10. Open units use neutral `Done` actions, while green check treatment is reserved for completed state/feedback.
+11. Bubbles mode shows remaining tasks directly, supports accessible in-bubble confirmation without relying only on double-click/double-tap, removes completed bubbles from available units, and provides a stable LIFO undo stack.
+12. Mobile and desktop screenshots show no text overlap, card sprawl, or competing primary tasks.
+13. Support docs explain clearing stale Micro Sessions and source-session edit impact.
 
 ## Validation
 
 - `npm run lint:briefs`
 - targeted Vitest for Dryland micro-plan lifecycle, builder hub, micro-plan panel, and session editor
 - targeted API tests for clear/update-current owner scoping and invalid ids
-- targeted Playwright for `/my-library/dryland` completed/empty/active states when local auth is available
+- targeted Playwright for `/my-library/dryland` completed/empty/active states and Bubbles completion/undo semantics when local auth is available
 - screenshot handoff before `npm run verify:pre-pr`
 - `npm run verify:pre-pr`
 - `npm run verify:pre-merge`
+
+## Quality Gate Evidence
+
+- API/server failure-mode evidence: clear/update-current mutations must return typed recoverable errors instead of unexpected 500 responses; targeted route tests cover owner-scoped success, invalid ids, and preserved blocks so failures keep the prior visible plan state.
+- Route/label/support sweep evidence: identifiers searched include `Dryland Sessions`, `Saved Dryland Sessions`, `Micro Sessions`, `Weekly micro plan`, `Clear micro session`, `Update current micro session`, `Use from next micro session`, `Week complete`, `No dryland sessions yet`, `Quick session`, `Notes`, `Skip set`, `Done`, `Bubbles`, `Undo`, and `/my-library/dryland`. Surfaces checked include `app/`, `components/`, `tests/`, `docs/`, `docs/runbooks/`, active/planned/done task briefs, and Help/Guide assertions where relevant; fallout handled in product UI, tests, API contracts, support runbook, user-flow map, and data-access registry.
+- UI reference surface evidence: reference surface is the existing My Library Dryland saved-session card/list and Micro Session panel, with `DrylandSessionEditor` and `DrylandMicroPlanPanel` kept as the shared component surfaces. The patch adapts source-impact and execution state into those shared components instead of creating a separate workflow surface; direct reuse exception is limited to local Bubbles interaction state because it is transient execution UI.
 
 ## Manual QA Environments
 
@@ -176,6 +194,7 @@ Critical target categories for a `10/10` claim:
 - Screenshot handoff:
   - `after/reference` for saved-session library vs compact Micro Session panel,
   - `after` quick-session compact rows desktop/mobile,
+  - `after` Bubbles remaining-task completion/undo desktop/mobile,
   - `after` source-impact warning in saved-session editor.
 
 ## Help / Guide Impact
@@ -185,12 +204,18 @@ Required: update `docs/runbooks/auth-account-support.md` and `docs/user-flow-map
 - `Clear micro session`,
 - saved-session edits applying to future Micro Sessions by default,
 - explicit `Update current micro session`,
+- default removal/toning down of per-unit `Skip set`,
+- Bubbles completion and undo behavior,
 - compact quick-session rows and removed default per-exercise notes.
 
 ## Route / Label / Support Surface Sweep
 
-Run targeted sweep for `Dryland Sessions`, `Saved Dryland Sessions`, `Micro Sessions`, `Weekly micro plan`, `Clear micro session`, `Update current micro session`, `Use from next micro session`, `Week complete`, `No dryland sessions yet`, `Quick session`, `Notes`, `/my-library/dryland`, and support docs before broad verification.
+Run targeted sweep for `Dryland Sessions`, `Saved Dryland Sessions`, `Micro Sessions`, `Weekly micro plan`, `Clear micro session`, `Update current micro session`, `Use from next micro session`, `Week complete`, `No dryland sessions yet`, `Quick session`, `Notes`, `Skip set`, `Done`, `Bubbles`, `Undo`, `/my-library/dryland`, and support docs before broad verification.
 
 ## Checkpoint Log
 
 - `2026-05-11 | planned | owner identified follow-up UX/lifecycle findings while reviewing the My Library/Dryland IA cleanup: saved sessions can be long main workouts while Micro Sessions are short daily work, quick-session exercises should be compact rows, stale/completed micro plans need clear-to-empty recovery, and source-session edits need explicit current-vs-future impact handling | next: implement in a fresh branch after the current approved IA cleanup PR lands`
+- `2026-05-11 | in-progress | branch dryland-builder-lifecycle-source-impact-2026-05-11 created from clean main a3e402a after PR #676 and closeout PR #677 landed; owner added execution UX decisions: remove/soften default per-unit skip, make ready units use neutral Done action semantics, and make Bubbles a direct remaining-task surface with accessible completion plus undo | next: inspect domain/API/UI surfaces, implement scoped lifecycle and UI changes, then run targeted validation and screenshot handoff before PR gates`
+- `2026-05-11 | screenshot-ready | implemented non-destructive clear via existing completed plan status, active loader now shows only active/paused plans, saved-session editor warns when the session feeds the active Micro Session, explicit current-plan source rebuild reuses owner-scoped PATCH and preserves completed/skipped history, default per-unit skip is removed from execution UI, Bubbles uses in-bubble Mark done? confirmation with keyboard cancel/confirm and stable stacked undo, and quick-session exercises render as compact rows with per-exercise notes behind individual set edits | validation: targeted Vitest 4 files/41 tests PASS, focused panel Vitest 14 tests PASS after final duplicate-action cleanup, npm run typecheck PASS, npm run lint PASS, npm run lint:briefs:all PASS, git diff --check PASS, targeted Playwright Dryland spec exit 0 with 1 known local dev-login skip | screenshots: output/playwright/dryland-lifecycle-source-impact-2026-05-11-135004 | next: refresh targeted validation and screenshot handoff before npm run verify:pre-pr`
+- `2026-05-11 | screenshot-ready-refresh | owner requested final Bubbles contract before PR gates: default bubbles show only task content, first tap/click or Enter arms Mark done? in place, second confirms completion, Escape cancels, completed bubbles leave the open board, and global Undo uses LIFO stack count such as Undo · 2 | validation: focused panel Vitest 15 tests PASS, targeted Vitest 4 files/42 tests PASS, npm run typecheck PASS, npm run lint PASS, npm run lint:briefs:all PASS, git diff --check PASS | screenshots: output/playwright/dryland-bubbles-undo-2026-05-11-140839 | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-05-11 | pre-pr-ready | owner approved screenshot handoff; npm run verify:pre-pr PASS on full lane with quality-gate, lint, typecheck, 189 unit files/1032 tests, build, perf budgets, and Playwright E2E 82 passed/380 skipped; perf trend reported 5 consecutive weekly green runs and recommended tightening one stretch target, decision recorded for PR summary as follow-up outside this UI lifecycle slice | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`

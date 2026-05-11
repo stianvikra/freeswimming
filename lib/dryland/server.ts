@@ -202,6 +202,7 @@ export async function loadDrylandLibrarySnapshot(
       .from("dryland_micro_plans")
       .select(DRYLAND_MICRO_PLAN_SELECT)
       .eq("user_id", userId)
+      .in("status", ["active", "paused"])
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle(),

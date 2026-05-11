@@ -117,6 +117,10 @@ test.describe("my library dryland builder", () => {
     await page.getByTestId("dryland-manual-exercise-target-0").fill("6");
     await page.getByTestId("dryland-manual-exercise-rest-0").fill("75");
     await page.getByTestId("dryland-manual-exercise-load-0").fill("12.5");
+    await page
+      .getByTestId("dryland-simple-exercise-row-0")
+      .getByRole("button", { name: "Edit sets individually" })
+      .click();
     await page.getByTestId("dryland-manual-exercise-notes-0").fill("Control the knee line.");
     await page.getByTestId("dryland-draft-start-timer").click();
     await page.getByTestId("dryland-mode-train").click();

@@ -298,6 +298,61 @@ describe("DrylandBuilderHub", () => {
     });
   });
 
+  it("warns when a saved session feeds the active micro session and can update current queued units", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: buildMicroPlan({
+          blocks: buildMicroPlan().blocks.map((block) => ({
+            ...block,
+            targetLabel: "14 reps",
+            targetValue: 14,
+          })),
+        }),
+      }),
+    } as Response);
+
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({
+          microPlan: buildMicroPlan(),
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("dryland-source-impact-warning")).toHaveTextContent(
+      "Saving this Dryland Session applies to future Micro Sessions by default"
+    );
+    expect(screen.getByText("Use from next micro session")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("dryland-update-current-micro-session"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining(
+            '"sourceDrylandSessionIds":["11111111-1111-4111-8111-111111111111"]'
+          ),
+        })
+      );
+    });
+    expect(
+      await screen.findByText(
+        "Current micro session updated. Completed and skipped units were preserved."
+      )
+    ).toBeVisible();
+  });
+
   it("opens custom-only drafts in the simple build flow and saves row targets", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
@@ -371,6 +426,7 @@ describe("DrylandBuilderHub", () => {
     expect(screen.queryByText("Focus cue")).not.toBeInTheDocument();
     expect(screen.queryByText("Advanced: add from exercise bank")).not.toBeInTheDocument();
     expect(screen.queryByTestId("dryland-advanced-bank")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-manual-exercise-notes-0")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
       target: { value: "Single-leg squat" },
@@ -387,14 +443,14 @@ describe("DrylandBuilderHub", () => {
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-load-0"), {
       target: { value: "12.5" },
     });
-    fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
-      target: { value: "Slow down." },
-    });
     fireEvent.click(
       within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
         name: "Edit sets individually",
       })
     );
+    fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
+      target: { value: "Slow down." },
+    });
     fireEvent.change(screen.getByTestId("dryland-set-target-0-1"), {
       target: { value: "10" },
     });

@@ -7,6 +7,10 @@ import CreateManualDrylandSessionButton from "@/components/my-library/dryland/Cr
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import DrylandSessionEditor from "@/components/my-library/dryland/DrylandSessionEditor";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
+import type {
+  DrylandMicroPlanApiResponse,
+  DrylandMicroPlanRecord,
+} from "@/lib/dryland/micro-plans";
 import {
   buildDrylandSessionSummarySubtitle,
   getDrylandSessionKindLabel,
@@ -46,9 +50,13 @@ export default function DrylandBuilderHub({
   );
   const [draft, setDraft] = useState(drylandLibrary.selectedSession?.draft ?? null);
   const [recentSessions, setRecentSessions] = useState(drylandLibrary.recentSessions);
+  const [activeMicroPlan, setActiveMicroPlan] = useState<DrylandMicroPlanRecord | null>(
+    drylandLibrary.microPlan
+  );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingCurrentMicroPlan, setIsUpdatingCurrentMicroPlan] = useState(false);
   const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [isMicroSourceSelectionActive, setIsMicroSourceSelectionActive] = useState(false);
@@ -65,8 +73,10 @@ export default function DrylandBuilderHub({
     setSavedSession(drylandLibrary.selectedSession);
     setDraft(drylandLibrary.selectedSession?.draft ?? null);
     setRecentSessions(drylandLibrary.recentSessions);
+    setActiveMicroPlan(drylandLibrary.microPlan);
     setError("");
     setSuccess("");
+    setIsUpdatingCurrentMicroPlan(false);
     setPendingDeleteSessionId(null);
     setDeletingSessionId(null);
     setIsMicroSourceSelectionActive(
@@ -75,6 +85,7 @@ export default function DrylandBuilderHub({
   }, [
     initialMicroPlanEditorOpen,
     drylandLibrary.microPlanSchemaReady,
+    drylandLibrary.microPlan,
     drylandLibrary.recentSessions,
     drylandLibrary.selectedSession,
     drylandLibrary.selectedSessionMissing,
@@ -126,6 +137,67 @@ export default function DrylandBuilderHub({
     setDraft(savedSession.draft);
     setSuccess("Unsaved dryland edits were reset to the last saved session.");
     setError("");
+  }
+
+  async function updateCurrentMicroPlanFromSavedSession() {
+    if (!activeMicroPlan || !savedSession) return;
+
+    const sourceIds = activeMicroPlan.sourceSessionSnapshots
+      .map((source) => source.sourceDrylandSessionId)
+      .filter((sourceId): sourceId is string => Boolean(sourceId));
+    if (!sourceIds.includes(savedSession.id)) {
+      setError("This saved session is not part of the current Micro Session.");
+      setSuccess("");
+      return;
+    }
+
+    const sourceReleaseOffsetDays = activeMicroPlan.sourceSessionSnapshots.reduce<
+      Record<string, number>
+    >((assignments, source) => {
+      if (source.sourceDrylandSessionId && source.releaseOffsetDays !== null) {
+        assignments[source.sourceDrylandSessionId] = source.releaseOffsetDays;
+      }
+      return assignments;
+    }, {});
+
+    setIsUpdatingCurrentMicroPlan(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`/api/my-library/dryland/micro-plans/${activeMicroPlan.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: activeMicroPlan.title,
+          sourceDrylandSessionIds: sourceIds,
+          releaseMode: activeMicroPlan.releaseMode,
+          releaseTime: activeMicroPlan.releaseTime,
+          sourceReleaseOffsetDays,
+        }),
+      });
+      const responseBody = (await response
+        .json()
+        .catch(() => null)) as DrylandMicroPlanApiResponse | null;
+
+      if (!response.ok || !responseBody?.ok) {
+        setError(
+          responseBody && !responseBody.ok
+            ? responseBody.error
+            : "Could not update current micro session."
+        );
+        return;
+      }
+
+      setActiveMicroPlan(responseBody.plan);
+      setSuccess("Current micro session updated. Completed and skipped units were preserved.");
+    } catch {
+      setError("Could not update current micro session.");
+    } finally {
+      setIsUpdatingCurrentMicroPlan(false);
+    }
   }
 
   async function confirmDeleteSession(session: Pick<DrylandSessionSummary, "id" | "title">) {
@@ -240,12 +312,13 @@ export default function DrylandBuilderHub({
       <div className="mt-6 space-y-5">
         {browseOnly ? (
           <DrylandMicroPlanPanel
-            initialPlan={drylandLibrary.microPlan}
+            initialPlan={activeMicroPlan}
             sessions={recentSessions}
             schemaReady={drylandLibrary.microPlanSchemaReady}
             loadError={drylandLibrary.microPlanLoadError}
             initialEditorOpen={initialMicroPlanEditorOpen}
             onSourceSelectionChange={setIsMicroSourceSelectionActive}
+            onPlanChange={setActiveMicroPlan}
           />
         ) : null}
 
@@ -377,13 +450,16 @@ export default function DrylandBuilderHub({
           <DrylandSessionEditor
             draft={draft}
             savedSession={savedSession}
+            activeMicroPlan={activeMicroPlan}
             isSaving={isSaving}
+            isUpdatingCurrentMicroPlan={isUpdatingCurrentMicroPlan}
             hasUnsavedChanges={hasUnsavedChanges}
             onDraftChange={(nextDraft) => {
               setDraft(nextDraft);
               setSuccess("");
             }}
             onSave={saveSession}
+            onUpdateCurrentMicroPlan={updateCurrentMicroPlanFromSavedSession}
             onResetToSaved={resetDraftToSavedSession}
           />
         )}

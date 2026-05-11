@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { buildCustomDrylandExercise } from "@/lib/dryland/exercise-bank";
+import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import {
   buildDrylandExecutionSummary,
   buildDrylandSetChipLabel,
@@ -19,10 +20,13 @@ import {
 type Props = {
   draft: DrylandSessionDraft;
   savedSession: DrylandSessionRecord;
+  activeMicroPlan: DrylandMicroPlanRecord | null;
   isSaving: boolean;
+  isUpdatingCurrentMicroPlan: boolean;
   hasUnsavedChanges: boolean;
   onDraftChange: (draft: DrylandSessionDraft) => void;
   onSave: () => void;
+  onUpdateCurrentMicroPlan: () => void;
   onResetToSaved: () => void;
 };
 
@@ -131,10 +135,13 @@ function SetMetricLabel({ children }: { children: string }) {
 export default function DrylandSessionEditor({
   draft,
   savedSession,
+  activeMicroPlan,
   isSaving,
+  isUpdatingCurrentMicroPlan,
   hasUnsavedChanges,
   onDraftChange,
   onSave,
+  onUpdateCurrentMicroPlan,
   onResetToSaved,
 }: Props) {
   const startsAsManualDraft =
@@ -256,6 +263,10 @@ export default function DrylandSessionEditor({
 
   const simpleInputIssues = getSimpleInputIssues();
   const canSaveOrTrain = simpleInputIssues.length === 0;
+  const isUsedByActiveMicroPlan =
+    activeMicroPlan?.sourceSessionSnapshots.some(
+      (source) => source.sourceDrylandSessionId === savedSession.id
+    ) ?? false;
 
   function patchDraft(patch: Partial<DrylandSessionDraft>) {
     onDraftChange({
@@ -670,6 +681,43 @@ export default function DrylandSessionEditor({
           </div>
         </div>
 
+        {isUsedByActiveMicroPlan ? (
+          <div
+            data-testid="dryland-source-impact-warning"
+            className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-amber-950">
+                  This session feeds the current Micro Session
+                </p>
+                <p className="mt-1 max-w-[68ch] text-sm text-amber-900">
+                  Saving this Dryland Session applies to future Micro Sessions by default. Update
+                  the current Micro Session only when you want remaining queued units rebuilt from
+                  the saved session.
+                </p>
+                <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
+                  Use from next micro session
+                </span>
+              </div>
+              <button
+                type="button"
+                data-testid="dryland-update-current-micro-session"
+                onClick={onUpdateCurrentMicroPlan}
+                disabled={hasUnsavedChanges || isSaving || isUpdatingCurrentMicroPlan}
+                className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 active:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+              >
+                {isUpdatingCurrentMicroPlan ? "Updating..." : "Update current micro session"}
+              </button>
+            </div>
+            {hasUnsavedChanges ? (
+              <p className="mt-2 text-sm text-amber-900">
+                Save the Dryland Session first, then update the current Micro Session.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           className={`mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200 pt-4 ${
             mode === "train" ? "justify-between" : "justify-end"
@@ -1083,7 +1131,7 @@ export default function DrylandSessionEditor({
               </div>
             ) : null}
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">
               {draft.exercises.map((exercise, exerciseIndex) => {
                 const firstSet = exercise.sets[0] ?? null;
                 const setTargetValue =
@@ -1096,7 +1144,7 @@ export default function DrylandSessionEditor({
                   <article
                     key={exercise.id}
                     data-testid={`dryland-simple-exercise-row-${exerciseIndex}`}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                    className="border-b border-slate-200 p-3 last:border-b-0 sm:p-4"
                   >
                     <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_72px_80px_88px_88px_auto] lg:items-end">
                       <label className="grid gap-1">
@@ -1216,26 +1264,28 @@ export default function DrylandSessionEditor({
                       </div>
                     </div>
 
-                    <label className="mt-3 grid gap-1">
-                      <span className="text-sm font-medium text-slate-900">Notes</span>
-                      <input
-                        data-testid={`dryland-manual-exercise-notes-${exerciseIndex}`}
-                        value={exercise.notes}
-                        onChange={(event) =>
-                          updateExercise(exercise.id, (current) => ({
-                            ...current,
-                            notes: event.target.value,
-                            source: "custom",
-                            bankExerciseId: null,
-                          }))
-                        }
-                        placeholder="Optional cue"
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                      />
-                    </label>
-                    {isBuildExerciseOpen
-                      ? renderSetTargets(exercise, exerciseIndex, setEditorId)
-                      : null}
+                    {isBuildExerciseOpen ? (
+                      <>
+                        <label className="mt-3 grid gap-1">
+                          <span className="text-sm font-medium text-slate-900">Notes</span>
+                          <input
+                            data-testid={`dryland-manual-exercise-notes-${exerciseIndex}`}
+                            value={exercise.notes}
+                            onChange={(event) =>
+                              updateExercise(exercise.id, (current) => ({
+                                ...current,
+                                notes: event.target.value,
+                                source: "custom",
+                                bankExerciseId: null,
+                              }))
+                            }
+                            placeholder="Optional cue"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                          />
+                        </label>
+                        {renderSetTargets(exercise, exerciseIndex, setEditorId)}
+                      </>
+                    ) : null}
                   </article>
                 );
               })}

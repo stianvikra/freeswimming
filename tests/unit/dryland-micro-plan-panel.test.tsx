@@ -102,8 +102,8 @@ function buildPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMicroPla
     releaseTime: "06:00",
     status: "active",
     timezone: "UTC",
-    weekStartsAt: "2026-05-04T00:00:00.000Z",
-    weekEndsAt: "2026-05-11T00:00:00.000Z",
+    weekStartsAt: "2026-05-11T00:00:00.000Z",
+    weekEndsAt: "2026-05-18T00:00:00.000Z",
     blocks,
     createdAt: "2026-05-08T08:00:00.000Z",
     updatedAt: "2026-05-08T08:00:00.000Z",
@@ -245,7 +245,49 @@ describe("DrylandMicroPlanPanel", () => {
       "aria-valuenow",
       "100"
     );
-    expect(screen.getAllByText("Complete")).toHaveLength(2);
+    expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent("Week complete");
+    expect(screen.getByTestId("dryland-micro-clear-open")).toBeVisible();
+  });
+
+  it("clears an active micro session without deleting saved dryland sessions", async () => {
+    const onPlanChange = vi.fn();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: buildPlan({ status: "completed" }),
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+        onPlanChange={onPlanChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-clear-open"));
+    expect(screen.getByTestId("dryland-micro-clear-confirm")).toHaveTextContent(
+      "Saved Dryland Sessions stay in the library"
+    );
+    fireEvent.click(screen.getByTestId("dryland-micro-clear-confirm-action"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"clearPlan":true'),
+        })
+      );
+    });
+
+    expect(await screen.findByText("Micro session cleared.")).toBeVisible();
+    expect(screen.getByText("No active micro session")).toBeVisible();
+    expect(onPlanChange).toHaveBeenLastCalledWith(null);
   });
 
   it("edits a created micro session without changing the saved dryland session", async () => {
@@ -373,13 +415,13 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(group).getByText("Push ups")).toBeVisible();
     expect(within(group).getByText("3 sets · 12 reps · Rest 30 sec")).toBeVisible();
     expect(within(group).queryByText(/Weekly strength/)).toBeNull();
-    expect(within(group).getByRole("button", { name: "Set 1 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Set 2 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Set 3 · 12 reps" })).toBeVisible();
-    expect(within(group).getAllByRole("button", { name: "Skip today" })).toHaveLength(3);
+    expect(within(group).getByRole("button", { name: "Done · Set 1 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Done · Set 2 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Done · Set 3 · 12 reps" })).toBeVisible();
+    expect(within(group).queryByRole("button", { name: "Skip today" })).toBeNull();
   });
 
-  it("renders bubbles mode with a selectable detail panel", () => {
+  it("renders bubbles mode as a direct task surface with armed bubble confirmation", () => {
     render(
       <DrylandMicroPlanPanel
         initialPlan={buildPlan()}
@@ -393,15 +435,29 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
     expect(screen.getByTestId("dryland-micro-bubble-0")).toHaveAccessibleName(
-      /Single-leg squat, 6 reps/
+      "Mark Single-leg squat, 6 reps as done"
     );
-    expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Single-leg squat");
+    expect(screen.queryByTestId("dryland-micro-bubble-detail")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mark done?")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
 
-    expect(screen.getByTestId("dryland-micro-bubble-detail")).toHaveTextContent("Dead bug");
-    expect(screen.getByRole("button", { name: "Skip today" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Mark done?")
+    ).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-bubble-1")).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-0")).queryByText("Mark done?")
+    ).toBeNull();
+
+    fireEvent.keyDown(screen.getByTestId("dryland-micro-bubble-1"), { key: "Escape" });
+
+    expect(screen.queryByText("Mark done?")).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByTestId("dryland-micro-bubble-0"), { key: "Enter" });
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-0")).getByText("Mark done?")
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Skip today" })).toBeNull();
   });
 
   it("renders one bubble per repeated exercise set", () => {
@@ -449,10 +505,10 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("bg-slate-950");
 
     const board = screen.getByTestId("dryland-micro-bubble-board");
-    expect(board).toHaveClass("flex", "flex-wrap", "gap-x-4", "gap-y-3");
+    expect(board).toHaveClass("flex", "flex-wrap", "gap-x-4", "gap-y-4");
     expect(
       within(board).getAllByRole("button", {
-        name: /Push ups, 12 reps\. Select bubble\. Double tap to complete\./,
+        name: "Mark Push ups, 12 reps as done",
       })
     ).toHaveLength(3);
     expect(within(board).queryByText(/30 sec rest/)).toBeNull();
@@ -462,7 +518,6 @@ describe("DrylandMicroPlanPanel", () => {
       expect(bubble).toBeVisible();
       expect(bubble).toHaveClass("dryland-micro-bubble-float", "relative", "min-h-28", "min-w-28");
       expect(bubble).not.toHaveClass("absolute");
-      expect(bubble.getAttribute("style")).toMatch(/margin-top:\s*\d+px/);
       expect(bubble.getAttribute("style")).toMatch(/width:\s*7\.\d+rem/);
       bubbleBgClasses.push(
         Array.from(bubble.classList).find((className) => /^bg-\w+-50$/.test(className))
@@ -526,12 +581,12 @@ describe("DrylandMicroPlanPanel", () => {
     const board = screen.getByTestId("dryland-micro-bubble-board");
     expect(
       within(board).getByRole("button", {
-        name: /Hang ups, 8 reps\. Select bubble\. Double tap to complete\./,
+        name: "Mark Hang ups, 8 reps as done",
       })
     ).toBeVisible();
     expect(
       within(board).getByRole("button", {
-        name: /Plank, 30 sec\. Select bubble\. Double tap to complete\./,
+        name: "Mark Plank, 30 sec as done",
       })
     ).toBeVisible();
     expect(within(board).getByText("8 reps")).toBeVisible();
@@ -588,13 +643,140 @@ describe("DrylandMicroPlanPanel", () => {
         })
       );
     });
-    expect(await screen.findByText("Bubble completed.")).toBeVisible();
+    expect(screen.queryByText("Bubble completed.")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("dryland-micro-global-undo")).toHaveTextContent("Undo");
+    expect(screen.getByTestId("dryland-micro-global-undo")).toHaveAccessibleName(
+      "Undo last completed micro unit: Single-leg squat"
+    );
     await waitFor(() => {
       expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
         "aria-valuenow",
         "50"
       );
     });
+  });
+
+  it("stacks bubble undo actions in completion order", async () => {
+    const basePlan = buildPlan();
+    const firstCompletedPlan = buildPlan({
+      blocks: basePlan.blocks.map((block, index) =>
+        index === 0
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-11T10:00:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    const fullyCompletedPlan = buildPlan({
+      status: "completed",
+      blocks: firstCompletedPlan.blocks.map((block, index) =>
+        index === 1
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-11T10:01:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 2,
+        skippedBlockCount: 0,
+        remainingBlockCount: 0,
+        progressPercent: 100,
+      },
+    });
+    const secondRestoredPlan = buildPlan({
+      blocks: fullyCompletedPlan.blocks.map((block, index) =>
+        index === 1
+          ? {
+              ...block,
+              status: "queued",
+              completedAt: null,
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          plan: firstCompletedPlan,
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          plan: fullyCompletedPlan,
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          plan: secondRestoredPlan,
+        }),
+      } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={basePlan}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("dryland-micro-bubble-0")).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(await screen.findByTestId("dryland-micro-bubble-1"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-micro-global-undo")).toHaveTextContent("Undo · 2");
+    });
+
+    fireEvent.click(screen.getByTestId("dryland-micro-global-undo"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenLastCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining(`"blockId":"${basePlan.blocks[1]!.id}"`),
+        })
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-micro-global-undo")).toHaveTextContent("Undo");
+    });
+    expect(screen.getByTestId("dryland-micro-global-undo")).toHaveAccessibleName(
+      "Undo last completed micro unit: Single-leg squat"
+    );
   });
 
   it("keeps a bubble visible when server completion fails", async () => {
@@ -637,10 +819,11 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
-
-    expect(screen.getByTestId("dryland-micro-bubble-0")).toBeDisabled();
-    expect(screen.getByTestId("dryland-micro-complete-0")).toBeDisabled();
+    expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent(
+      "Micro session paused"
+    );
+    expect(screen.getByTestId("dryland-micro-resume-collapsed")).toBeVisible();
+    expect(screen.queryByTestId("dryland-micro-bubble-0")).not.toBeInTheDocument();
   });
 
   it("shows syncing state without hiding the dryland surface", () => {
@@ -685,8 +868,11 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
-    expect(screen.getAllByRole("button", { name: "Release now" })[0]).toBeVisible();
-    fireEvent.click(screen.getByTestId("dryland-micro-edit-plan"));
+    expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent(
+      "No units are ready today"
+    );
+    expect(screen.getByRole("button", { name: "Move next to today" })).toBeVisible();
+    fireEvent.click(screen.getByTestId("dryland-micro-edit-from-collapsed"));
 
     expect(screen.queryByRole("button", { name: "Manual release" })).toBeNull();
     expect(screen.getByRole("button", { name: "Available now" })).toBeVisible();
