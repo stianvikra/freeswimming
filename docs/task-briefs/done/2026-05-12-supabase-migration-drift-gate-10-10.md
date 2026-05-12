@@ -3,11 +3,13 @@
 ## Metadata
 
 - `id`: `2026-05-12-supabase-migration-drift-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-12`
 - `updated`: `2026-05-12`
 - `execution mode`: `end-to-end implementation after owner approved the recommended systemic guardrail`
+- `merged PR`: `#688`
+- `merge commit`: `e0ca07d`
 
 ## Goal
 
@@ -170,7 +172,29 @@ N/A because this is a local verification tooling and runbook slice with no UI, b
 
 N/A because no user-facing Help/Guide content changes. The operational runbook `docs/runbooks/supabase-migration-discipline.md` is updated because this changes release workflow behavior.
 
+## Closeout Result
+
+- `10/10 claim`: `yes`
+- Critical target categories:
+  - Business logic correctness and data integrity: `5/5`
+  - Data placement and sync boundaries: `5/5`
+  - Reliability and failure handling: `5/5`
+  - DevOps and rollback readiness: `5/5`
+  - Testing and QA automation: `5/5`
+- Additional target categories:
+  - Incident response and support operations: `5/5`
+  - Stack-fit and dependency discipline: `5/5`
+- Evidence:
+  - `npm run verify:pre-pr`: PASS (`artifacts/test-runs/20260512-182117`, full-public lane)
+  - `npm run verify:pre-merge`: PASS for `8cddfe8` (`2026-05-12T16:29:11Z`, full lane)
+  - GitHub checks for PR `#688`: PASS (`verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, PR Size, Vercel)
+  - `npm run merge:preflight -- --assert-ready`: PASS before merge
+  - `npm run post-merge:preflight`: detected this brief as the only pending closeout after merge
+- Remaining gaps: none for the scoped tooling/runbook slice.
+- Performance-budget cadence: hold/defer tightening to a dedicated performance-budget workstream; PR `#688` changed Supabase release tooling, not route performance budgets.
+
 ## Checkpoint Log
 
 - `2026-05-12 | in-progress | created the systemic Supabase migration drift gate brief after habits V2 remote schema drift was found post-merge | next: implement the verification script, tests, runbook update, and pre-PR/pre-merge integration`
 - `2026-05-12 | working tree | implemented the drift gate, pre-PR/pre-merge integration, unit tests, and runbook update; targeted validation passed with lint:quality-gates, lint:briefs:all, drift-gate smoke, and targeted Vitest | next: commit, run verify:pre-pr, push, and open PR`
+- `2026-05-12 | PR #688 merged | merged Supabase migration drift gate at e0ca07d; all local gates and required GitHub checks were green | next: close this brief as the repo-managed docs-only post-merge closeout`
