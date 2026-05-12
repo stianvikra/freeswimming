@@ -181,7 +181,8 @@ test.describe("my library new content notice", () => {
 
     const banner = page.getByTestId("my-library-new-content-notice");
     await expect(banner).toBeVisible();
-    await expect(banner).toContainText("New content");
+    await expect(banner).toContainText("New lessons");
+    await expect(banner).not.toContainText("Updated content");
     await expect(banner).not.toContainText("1 new lesson");
     await expect(page.getByTestId("my-library-new-content-toggle")).toHaveText("Show list");
     await expect(page.getByTestId("my-library-new-content-open")).toHaveCount(0);
