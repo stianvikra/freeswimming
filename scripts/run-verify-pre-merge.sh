@@ -86,6 +86,7 @@ EOF
 require_npm_runtime "[verify-pre-merge]"
 
 bash ./scripts/lib/assert-branch-current-with-base.sh "${VERIFICATION_BASE_REF:-main}"
+node ./scripts/assert-supabase-migration-drift.mjs
 
 node ./scripts/verification-scope.mjs --summary
 verification_lane="$(node ./scripts/verification-scope.mjs --lane)"
