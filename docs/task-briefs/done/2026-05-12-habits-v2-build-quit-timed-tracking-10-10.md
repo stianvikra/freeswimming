@@ -360,3 +360,42 @@ Surfaces:
 - `2026-05-12 | updated screenshot checkpoint | captured refreshed compact-row after/reference artifacts in output/habits-v2-build-quit-timed-compact-2026-05-12-125608 covering desktop returning compact, desktop first-use expanded, desktop timer running, mobile returning compact, and build-only reference; removed temporary preview/capture code and stopped local dev server | validation unchanged since compact-row follow-up; no product rendering files changed after this capture | next: owner reviews screenshot handoff before verify:pre-pr, commit, push, and PR automation`
 - `2026-05-12 | cadence clarity follow-up | after owner asked whether the mobility timer goal was daily or weekly, updated UI copy so habit rows show cadence chips, timed rows show daily progress against target, and weekly metric cards are explicitly labeled as 7-day rollups | validation: targeted Vitest habits/routes/component/export/My Library today/analytics PASS (27 tests); npm run lint PASS; npm run typecheck PASS; npm run lint:briefs:all PASS | screenshot artifacts: output/habits-v2-build-quit-timed-cadence-2026-05-12-132000; temporary preview/capture code removed and local dev server stopped | next: owner reviews refreshed screenshot handoff before verify:pre-pr, commit, push, and PR automation`
 - `2026-05-12 | screenshot approved | owner approved the refreshed cadence/timer-goal screenshot handoff in output/habits-v2-build-quit-timed-cadence-2026-05-12-132000 | route/label/support sweep completed for Daily, Weekly, 7-day, today, Timer target, Daily target, timer progress, and /my-library/habits across app/components/lib/tests/docs/runbooks/active briefs; fallout handled in HabitPerfectDayHub, component tests, user-flow map, auth support runbook, and this brief | next: run npm run verify:pre-pr before commit, push, and PR automation`
+- `2026-05-12 | implementation merged | PR #686 merged to main as e9a668f feat: add habits v2 build quit timed tracking (#686) | validation: npm run verify:pre-pr PASS; npm run verify:pre-merge PASS; GitHub checks PASS including verify, CodeQL, Vercel, e2e-smoke, site-lock-smoke, deploy-preview, and size-check | next: close this brief via docs-only post-merge closeout`
+
+## Closeout Evidence
+
+- PR: `#686`
+- Merge commit: `e9a668f feat: add habits v2 build quit timed tracking (#686)`
+- Screenshot artifacts: `output/habits-v2-build-quit-timed-cadence-2026-05-12-132000`
+- Captured: `2026-05-12 13:20`
+- Screenshot review: approved by owner before `verify:pre-pr`.
+- Local gates:
+  - `npm run verify:pre-pr`: PASS, full lane.
+  - `npm run verify:pre-merge`: PASS, full lane with private-gate regression skipped because `SITE_LOCK_ENABLED!=1`.
+- CI gates: PASS for GitHub `verify`, CodeQL, Vercel, deploy-preview, e2e-smoke, site-lock-smoke, and size-check.
+- Perf trend decision: held stretch-target tightening for a separate governance slice; this PR used existing budgets and passed with the recorded 20.0% worst margin.
+- Remaining gaps: none blocking release for this scoped Habits V2 slice.
+- 10/10 claim: yes.
+
+Critical target categories confirmed `5/5`: Product goals and IA, UX flow clarity, Business logic correctness and data integrity, Data placement and sync boundaries, Reliability and failure handling, Security and authz, Privacy and compliance, Accessibility (a11y), and Testing and QA automation.
+
+| Target Category                               | Achieved Score | Evidence                                                                                                         |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Build, Quit, and Timed modes implemented in habit creation and compact rows.                                     |
+| UX flow clarity                               | `5/5`          | Start-date quit/build flows, Done/Undo, Log slip/Undo slip, and timer progress validated by tests/screenshots.   |
+| Visual design quality                         | `5/5`          | Approved mobile/desktop after/reference screenshot handoff with compact and expanded states.                     |
+| Business logic correctness and data integrity | `5/5`          | Domain/API tests cover modes, dates, lapses, timers, duplicate writes, resets, and schema-not-ready paths.       |
+| Accessibility (a11y)                          | `5/5`          | Existing semantic controls preserved; component tests cover accessible mode/action labels.                       |
+| Performance (CWV + payloads)                  | `5/5`          | No new heavy dependency; build and perf budgets passed.                                                          |
+| Data placement and sync boundaries            | `5/5`          | Additive Supabase fields, server-canonical definitions/check-ins, and local-only collapsed-row preference.       |
+| Caching and invalidation strategy             | `5/5`          | Mutation routes return refreshed habit snapshots after create/update/check-in/lapse/reset.                       |
+| Reliability and failure handling              | `5/5`          | Negative-path tests cover invalid input, before-start rejection, unauthenticated access, and recoverable errors. |
+| Security and authz                            | `5/5`          | Authenticated owner-scoped routes remain fail-closed with sanitized payloads.                                    |
+| Privacy and compliance                        | `5/5`          | Analytics omit habit labels/notes; export includes habit data for user-owned portability.                        |
+| Analytics and KPI observability               | `5/5`          | Habit create/update/check-in/reset/lapse/timer events added with redacted mode/cadence metadata.                 |
+| Incident response and support operations      | `5/5`          | Support runbook updated for quit days-since, lapse/reset, timer recovery, and sensitive label handling.          |
+| i18n operational readiness                    | `5/5`          | Cadence, target, date, days-since, and timer labels use controlled copy and formatted durations.                 |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js, TypeScript, Supabase, Tailwind, and test patterns reused; no new dependency added.             |
+| Testing and QA automation                     | `5/5`          | Targeted unit/component/API/export/analytics tests plus full `verify:pre-pr`, `verify:pre-merge`, and CI.        |
+| Scalability and cost efficiency               | `5/5`          | Indexed additive fields and bounded date-window habit summaries preserve one-row-per-event write shape.          |
+| DevOps and rollback readiness                 | `5/5`          | Forward-safe migration, generated DB types, clean PR state, green gates, and revertable merge commit.            |
