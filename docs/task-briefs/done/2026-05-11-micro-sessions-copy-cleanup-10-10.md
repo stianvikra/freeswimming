@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-11-micro-sessions-copy-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-11`
 - `updated`: `2026-05-12`
@@ -132,8 +132,35 @@ N/A because this slice does not change persisted entity IDs, route params, slugs
 - `git diff --check` passed.
 - Route/label sweep found no removed Micro Sessions copy in `app/`, `components/`, `lib/`, or `tests/`.
 - Screenshot handoff captured: `output/micro-sessions-copy-cleanup-2026-05-12-072128` (`before/after`, desktop and mobile, `/my-library/dryland?micro=edit`).
-- `npm run verify:pre-pr` passed full lane (`artifacts/test-runs/20260512-073134`): lint, quality gates, typecheck, `1035` unit tests, build, perf budgets, and Playwright E2E (`82` passed / `380` skipped).
+- `npm run verify:pre-pr` passed full lane on committed HEAD `3e3a81c` (`artifacts/test-runs/20260512-074458`): lint, quality gates, typecheck, `1035` unit tests, build, perf budgets, and Playwright E2E (`82` passed / `380` skipped).
+- GitHub CI passed for PR `#684` on `3e3a81c`: CodeQL, PR Size, Vercel, `e2e-smoke`, `site-lock-smoke`, and `verify`.
+- `npm run verify:pre-merge` passed for `3e3a81c` (`artifacts/verify-pre-merge/20260512-060757.json`).
 - Performance budget ratchet decision: hold in this copy/UI PR and recommend a separate performance-budget tighten slice; this PR does not change route payload policy or budgets.
+
+## Completion Record
+
+- Merged PR: `#684`
+- Merge commit: `4a39a0d`
+- Completed scope: Dryland Micro Sessions copy, source-selection density, progress/release labels, CTA color, and green panel treatment were cleaned up without changing micro-plan persistence, progress math, release behavior, or data contracts.
+- Verification: owner-approved screenshot handoff, `npm run verify:pre-pr` PASS full lane, GitHub CI PASS, and `npm run verify:pre-merge` PASS on `3e3a81c` before merge.
+- Screenshot evidence: `output/micro-sessions-copy-cleanup-2026-05-12-072128` approved by owner before PR gate; no product-rendering files changed after capture.
+- Performance decision: hold budget tightening outside this copy/UI PR; perf gate recommended tightening one stretch target after five green weekly runs with margin.
+- `10/10 claim`: yes for the approved Micro Sessions Copy Cleanup scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                               | Gaps / Notes                                                                |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#684`, owner-approved screenshot handoff, and merged copy state Micro Sessions as splitting dryland sessions.      | None for this slice.                                                        |
+| UX flow clarity                               | `5/5`          | Source selection, empty-state, progress, and release labels were shortened and covered by component/E2E assertions.    | None for this slice.                                                        |
+| Visual design quality                         | `5/5`          | Before/after desktop and mobile screenshots approved at `output/micro-sessions-copy-cleanup-2026-05-12-072128`.        | Existing bottom nav/admin notes overlays are unrelated to this slice.       |
+| Business logic correctness and data integrity | `4/5`          | Diff and tests show no micro-plan payload, progress math, persisted dryland data, or release-mode behavior changed.    | Supporting category only; no new data invariant shipped.                    |
+| Accessibility (a11y)                          | `5/5`          | Testing Library/E2E assertions cover the updated `Progress` accessible name and source-selection controls.             | None for this slice.                                                        |
+| Performance (CWV + payloads)                  | `4/5`          | Full verify perf budget passed; no dependency, route fetch, or payload policy changed.                                 | Separate performance-budget tighten slice recommended by the ratchet trend. |
+| Reliability and failure handling              | `4/5`          | Create/edit/cancel/clear flows remain covered by component tests and unchanged runtime behavior.                       | Supporting category only; no new failure path was introduced.               |
+| Content governance                            | `5/5`          | Route/label sweep and tests removed old helper copy from product surfaces while keeping brief-only historical context. | None for this slice.                                                        |
+| i18n operational readiness                    | `4/5`          | New copy is shorter and literal, with no locale-routing or translation workflow change.                                | Supporting category only; app-wide i18n workflow remains out of scope.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `DrylandMicroPlanPanel`, `DrylandBuilderHub`, and existing Tailwind primitives; no dependency added.            | None for this slice.                                                        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full `verify:pre-pr`, GitHub CI, screenshot handoff, and `verify:pre-merge` passed.                    | None for this slice.                                                        |
+| DevOps and rollback readiness                 | `5/5`          | No migration/config; rollback is `git revert 4a39a0d`; branch and PR gates passed.                                     | None for this slice.                                                        |
 
 ## Help / Guide Impact
 
@@ -153,4 +180,5 @@ Surfaces checked: `app/`, `components/`, `lib/`, `tests/`, and this active task 
 - `2026-05-11 | in-progress | owner asked whether mobile needed all frames; mobile source selection was flattened by removing the inner form frame and using divider rows, while desktop keeps card rows; regenerated before/after screenshots at 2026-05-11 23:12 and targeted unit/eslint/typecheck stayed green | next: wait for owner screenshot approval before running verify:pre-pr and preparing PR`
 - `2026-05-12 | in-progress | owner approved reducing the mobile green treatment; Micro Sessions panel now uses a white mobile background with green border/label and only a subtle desktop tint; regenerated before/after screenshots at 2026-05-12 07:02 and targeted unit/eslint/typecheck stayed green | next: wait for owner screenshot approval before running verify:pre-pr and preparing PR`
 - `2026-05-12 | in-progress | owner chose the recommended middle path; Micro Sessions now uses the same subtle green tint on mobile and desktop while the outer Dryland Sessions container stays neutral; targeted unit/eslint/typecheck/brief-lint/diff-check passed and before/after screenshots regenerated at 2026-05-12 07:21 | next: wait for owner screenshot approval before running verify:pre-pr and preparing PR`
-- `2026-05-12 | in-progress | owner approved screenshot handoff; npm run verify:pre-pr passed full lane at artifacts/test-runs/20260512-073134; perf-budget trend recommended tighten, recorded as hold/defer to separate performance-budget slice because this PR is copy/UI scoped | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
+- `2026-05-12 | in-progress | owner approved screenshot handoff; npm run verify:pre-pr passed full lane on committed HEAD at artifacts/test-runs/20260512-074458; perf-budget trend recommended tighten, recorded as hold/defer to separate performance-budget slice because this PR is copy/UI scoped | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
+- `2026-05-12 | done | PR #684 merged to main as 4a39a0d after owner approval, green GitHub CI, green local verify:pre-pr on committed HEAD 3e3a81c, and green local verify:pre-merge; post-merge preflight surfaced this repo-managed docs-only closeout, moved brief from in-progress to done, and recorded achieved scores/evidence | next: docs-only closeout PR`
