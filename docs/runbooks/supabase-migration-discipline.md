@@ -63,6 +63,27 @@ supabase db push --dry-run --linked
 
 Confirm the pending migrations are exactly the intended files.
 
+## Automated Drift Gate
+
+`npm run verify:pre-pr` and `npm run verify:pre-merge` run
+`node ./scripts/assert-supabase-migration-drift.mjs` before choosing the
+verification lane.
+
+The gate is intentionally narrow:
+
+- when the branch does not change `supabase/migrations/*.sql`, it skips without
+  contacting Supabase,
+- when the branch changes a Supabase migration, it runs
+  `npx supabase db push --dry-run --linked`,
+- if the dry-run reports pending migrations, the gate fails until the linked
+  remote has received the migration,
+- if schema must intentionally be applied after app code, set
+  `SUPABASE_MIGRATION_DRIFT_ALLOW_PENDING=1` for that gate run only and record
+  the rollout rationale in the active brief and PR.
+
+Treat missing Supabase credentials, an unlinked project, or an ambiguous dry-run
+result as a release blocker for migration-touching PRs.
+
 ## Apply
 
 Only after the required preflight is clean:

@@ -7,6 +7,7 @@ source "$(dirname "$0")/lib/bootstrap-node.sh"
 require_npm_runtime "[verify-pre-pr]"
 
 bash ./scripts/lib/assert-branch-current-with-base.sh "${VERIFICATION_BASE_REF:-main}"
+node ./scripts/assert-supabase-migration-drift.mjs
 
 node ./scripts/verification-scope.mjs --summary
 lane="$(node ./scripts/verification-scope.mjs --lane)"
