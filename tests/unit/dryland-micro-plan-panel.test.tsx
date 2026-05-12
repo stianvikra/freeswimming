@@ -166,7 +166,7 @@ describe("DrylandMicroPlanPanel", () => {
     });
 
     expect(await screen.findByText("Micro session created.")).toBeVisible();
-    expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+    expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
       "aria-valuenow",
       "0"
     );
@@ -241,7 +241,7 @@ describe("DrylandMicroPlanPanel", () => {
     });
 
     expect(await screen.findByText("All micro units are complete for this week.")).toBeVisible();
-    expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+    expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
       "aria-valuenow",
       "100"
     );
@@ -271,7 +271,7 @@ describe("DrylandMicroPlanPanel", () => {
 
     fireEvent.click(screen.getByTestId("dryland-micro-clear-open"));
     expect(screen.getByTestId("dryland-micro-clear-confirm")).toHaveTextContent(
-      "Saved Dryland Sessions stay in the library"
+      "Only the active micro session is cleared."
     );
     fireEvent.click(screen.getByTestId("dryland-micro-clear-confirm-action"));
 
@@ -340,7 +340,8 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.queryByText(/exercise[s]? · .*set unit/)).toBeNull();
     expect(
       screen.getByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111").closest("div")
-    ).toHaveClass("min-h-14");
+    ).toHaveClass("min-h-12", "grid-cols-[auto_minmax(0,1fr)]");
+    expect(screen.queryByText("STRENGTH SESSION")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Edit" })).toHaveLength(2);
 
     fireEvent.click(
@@ -404,12 +405,10 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     expect(screen.getByText("Weekly micro plan")).toBeVisible();
-    expect(screen.queryByText("Ordered and bubbles execution")).toBeNull();
     expect(
-      screen.queryByText(
-        "Build one weekly Micro Session from saved Dryland Sessions and finish one set unit at a time in a calm list or a bubble board."
-      )
-    ).toBeNull();
+      screen.getByText("Split dryland sessions into manageable micro sessions.")
+    ).toBeVisible();
+    expect(screen.queryByText("Ordered and bubbles execution")).toBeNull();
 
     const group = screen.getByTestId("dryland-micro-unit-group-0");
     expect(within(group).getByText("Push ups")).toBeVisible();
@@ -649,7 +648,7 @@ describe("DrylandMicroPlanPanel", () => {
       "Undo last completed micro unit: Single-leg squat"
     );
     await waitFor(() => {
-      expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+      expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
         "aria-valuenow",
         "50"
       );
@@ -803,7 +802,7 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(await screen.findByText("Could not update micro session right now.")).toBeVisible();
     expect(screen.getByTestId("dryland-micro-bubble-0")).toBeVisible();
-    expect(screen.getByRole("progressbar", { name: "Micro session progress" })).toHaveAttribute(
+    expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
       "aria-valuenow",
       "0"
     );

@@ -13,11 +13,7 @@ import {
   type DrylandMicroPlanRecord,
   type DrylandMicroReleaseMode,
 } from "@/lib/dryland/micro-plans";
-import {
-  formatSecondsLabel,
-  getDrylandSessionKindLabel,
-  type DrylandSessionSummary,
-} from "@/lib/dryland/shared";
+import { formatSecondsLabel, type DrylandSessionSummary } from "@/lib/dryland/shared";
 
 type Props = {
   initialPlan: DrylandMicroPlanRecord | null;
@@ -742,9 +738,7 @@ export default function DrylandMicroPlanPanel({
         className="rounded-xl border border-amber-200 bg-amber-50 p-3"
       >
         <p className="text-sm font-semibold text-amber-950">Clear this Micro Session?</p>
-        <p className="mt-1 text-sm text-amber-900">
-          Saved Dryland Sessions stay in the library. This only removes the active weekly surface.
-        </p>
+        <p className="mt-1 text-sm text-amber-900">Only the active micro session is cleared.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -772,7 +766,7 @@ export default function DrylandMicroPlanPanel({
     return (
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Release pacing</p>
+          <p className="text-sm font-semibold text-slate-900">Release exercises</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {RELEASE_MODES.map((mode) => (
               <button
@@ -842,52 +836,45 @@ export default function DrylandMicroPlanPanel({
   }
 
   function renderSessionSelector() {
+    const visibleSessions = sessions.slice(0, 8);
+
     return (
       <div className="space-y-3">
         <div>
           <p className="text-sm font-semibold text-slate-900">Choose source sessions</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Saved Dryland Sessions stay in the library. Choose which ones feed this Micro Session.
-          </p>
         </div>
         {sessions.length > 0 ? (
-          <div className="grid gap-2 md:grid-cols-2">
-            {sessions.slice(0, 8).map((session) => {
+          <div className="grid gap-0 sm:gap-2 md:grid-cols-2">
+            {visibleSessions.map((session, index) => {
               const isSelected = selectedSessionIds.includes(session.id);
+              const isLastVisibleSession = index === visibleSessions.length - 1;
               const checkboxId = `dryland-micro-select-${session.id}`;
               return (
                 <div
                   key={session.id}
-                  className={`grid min-h-14 gap-3 rounded-xl border p-3 transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
+                  className={`grid min-h-12 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-0 py-3 transition sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:rounded-xl sm:border sm:px-3 sm:py-2 ${
                     isSelected
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-slate-200 bg-white hover:bg-slate-50"
-                  }`}
+                      ? "border-blue-300 bg-blue-50/70 sm:border-blue-500 sm:bg-blue-50"
+                      : "border-slate-200 bg-transparent sm:bg-white sm:hover:bg-slate-50"
+                  } ${isLastVisibleSession ? "border-b-0 sm:border-b" : "border-b"}`}
                 >
+                  <input
+                    id={checkboxId}
+                    type="checkbox"
+                    data-testid={`dryland-micro-select-${session.id}`}
+                    checked={isSelected}
+                    onChange={() => toggleSelectedSession(session.id)}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
                   <label
                     htmlFor={checkboxId}
-                    className="flex min-w-0 cursor-pointer items-center gap-3"
+                    className="min-w-0 cursor-pointer text-sm leading-snug font-semibold break-words text-slate-950"
                   >
-                    <input
-                      id={checkboxId}
-                      type="checkbox"
-                      data-testid={`dryland-micro-select-${session.id}`}
-                      checked={isSelected}
-                      onChange={() => toggleSelectedSession(session.id)}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold break-words text-slate-950">
-                        {session.title}
-                      </span>
-                      <span className="mt-1 inline-flex min-h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[0.68rem] font-semibold tracking-wide text-slate-600 uppercase">
-                        {getDrylandSessionKindLabel(session.sessionKind)}
-                      </span>
-                    </span>
+                    {session.title}
                   </label>
                   <Link
                     href={`/my-library/dryland/${session.id}`}
-                    className="ml-7 inline-flex min-h-9 w-fit items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:ml-0"
+                    className="col-start-2 inline-flex min-h-9 w-fit items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:col-start-auto"
                   >
                     Edit
                   </Link>
@@ -896,10 +883,10 @@ export default function DrylandMicroPlanPanel({
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="border-t border-slate-200 pt-3 sm:rounded-xl sm:border sm:bg-white sm:p-4">
             <p className="text-sm font-medium text-slate-900">No dryland sessions yet.</p>
             <p className="mt-2 text-sm text-slate-600">
-              Create a saved dryland session first, then build a Micro Session from it.
+              Create a dryland exercise, then split it into micro sessions here.
             </p>
           </div>
         )}
@@ -1174,7 +1161,7 @@ export default function DrylandMicroPlanPanel({
   return (
     <section
       data-testid="dryland-micro-plan-panel"
-      className="rounded-2xl border border-emerald-200 bg-emerald-50/45 p-4 sm:p-5"
+      className="rounded-2xl border border-emerald-200 bg-emerald-50/20 p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -1183,7 +1170,7 @@ export default function DrylandMicroPlanPanel({
           </p>
           <h3 className="mt-2 text-lg font-semibold text-slate-950">Weekly micro plan</h3>
           <p className="mt-1 max-w-[68ch] text-sm text-slate-700">
-            Build one weekly Micro Session from saved Dryland Sessions.
+            Split dryland sessions into manageable micro sessions.
           </p>
         </div>
         {plan ? (
@@ -1221,7 +1208,7 @@ export default function DrylandMicroPlanPanel({
       ) : null}
 
       {schemaReady && !plan ? (
-        <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="mt-5 space-y-4 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:p-4">
           {!isCreating ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -1240,7 +1227,7 @@ export default function DrylandMicroPlanPanel({
                     setError("");
                     setSuccess("");
                   }}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
                 >
                   Create micro session
                 </button>
@@ -1282,7 +1269,7 @@ export default function DrylandMicroPlanPanel({
                     data-testid="dryland-micro-create"
                     onClick={() => void createPlan()}
                     disabled={isSavingPlan || selectedSessionIds.length === 0}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                   >
                     {isSavingPlan ? "Creating..." : "Create micro session"}
                   </button>
@@ -1347,7 +1334,7 @@ export default function DrylandMicroPlanPanel({
             <div className="mt-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p id={progressLabelId} className="text-sm font-semibold text-slate-900">
-                  Micro session progress
+                  Progress
                 </p>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {latestUndoableCompletedUnit ? (
@@ -1390,7 +1377,7 @@ export default function DrylandMicroPlanPanel({
           {isEditing ? (
             <div
               data-testid="dryland-micro-edit-form"
-              className="space-y-4 rounded-xl border border-blue-200 bg-white p-4"
+              className="space-y-4 sm:rounded-xl sm:border sm:border-blue-200 sm:bg-white sm:p-4"
             >
               <label className="grid gap-1 text-sm font-medium text-slate-700">
                 <span>Title</span>
