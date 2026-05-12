@@ -211,7 +211,7 @@ test.describe("my library dryland builder", () => {
         await expect((await startResponsePromise).json()).resolves.toMatchObject({ ok: true });
       }
 
-      await expect(page.getByRole("progressbar", { name: "Micro session progress" })).toBeVisible();
+      await expect(page.getByRole("progressbar", { name: "Progress" })).toBeVisible();
 
       for (let index = 0; index < 6; index += 1) {
         const completeButton = page.locator('[data-testid^="dryland-micro-complete-"]').first();

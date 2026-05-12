@@ -319,11 +319,11 @@ export default function DrylandBuilderHub({
             <h2 className="text-lg font-semibold text-slate-900">
               {browseOnly ? "Dryland Sessions" : "Dryland builder"}
             </h2>
-            <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-              {browseOnly
-                ? "Saved dryland sessions and weekly micro blocks."
-                : "Create a strength or stretching session."}
-            </p>
+            {!browseOnly ? (
+              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+                Create a strength or stretching session.
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {drylandLibrary.schemaReady ? (
@@ -389,19 +389,7 @@ export default function DrylandBuilderHub({
         ) : null}
 
         {browseOnly ? (
-          isMicroSourceSelectionActive ? (
-            <div
-              data-testid="dryland-source-selection-active-note"
-              className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4"
-            >
-              <p className="text-sm font-medium text-blue-950">Choosing source sessions</p>
-              <p className="mt-1 text-sm text-blue-900/80">
-                The saved session list is paused while those same sessions are shown as Micro
-                Session source choices above. Finish source selection or cancel to return to
-                Edit/Open/Delete actions.
-              </p>
-            </div>
-          ) : recentSessions.length > 0 ? (
+          isMicroSourceSelectionActive ? null : recentSessions.length > 0 ? (
             <div className="space-y-4">
               {recentSessions.map((session) => {
                 const isPendingDelete = pendingDeleteSessionId === session.id;

@@ -102,8 +102,8 @@ export function buildTodayMicroSessionsState(
       title: "Micro Sessions",
       detail:
         drylandLibrary.recentSessions.length > 0
-          ? "Build one weekly Micro Session from saved dryland work."
-          : "Save a dryland session before building weekly Micro Sessions.",
+          ? "Split dryland sessions into manageable micro sessions."
+          : "Create a dryland exercise before building micro sessions.",
       progressLabel: "No active plan",
       progressPercent: 0,
       actionLabel: "Open",

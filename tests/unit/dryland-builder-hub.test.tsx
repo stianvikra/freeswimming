@@ -806,7 +806,7 @@ describe("DrylandBuilderHub", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-start-create"));
 
     expect(screen.getByText("Choose source sessions")).toBeVisible();
-    expect(screen.getByTestId("dryland-source-selection-active-note")).toBeVisible();
+    expect(screen.queryByTestId("dryland-source-selection-active-note")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
     expect(
       screen.queryByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
@@ -833,7 +833,7 @@ describe("DrylandBuilderHub", () => {
     });
 
     expect(screen.getByText("Choose source sessions")).toBeVisible();
-    expect(screen.getByTestId("dryland-source-selection-active-note")).toBeVisible();
+    expect(screen.queryByTestId("dryland-source-selection-active-note")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
     expect(
       screen.queryByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")

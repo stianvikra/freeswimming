@@ -35,9 +35,6 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
                 My Library
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Dryland Sessions</h1>
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
-                Saved dryland sessions and weekly micro blocks.
-              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
