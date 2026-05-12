@@ -15,12 +15,17 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow>): HabitDefinitionR
     user_id: "user-1",
     title: "Read",
     notes: null,
+    habit_mode: "build",
     habit_type: "binary",
     category: "learning",
     target_operator: "at_least",
     target_value_numeric: null,
     target_unit: null,
     target_time: null,
+    start_date: "2026-05-04",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
     schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     is_perfect_day_item: true,
     status: "active",
@@ -74,6 +79,99 @@ describe("habits domain helpers", () => {
       target_unit: "times",
       is_perfect_day_item: true,
       sort_order: 2,
+    });
+  });
+
+  it("builds quit habits with start dates and days-since evaluation", () => {
+    const insert = buildHabitDefinitionInsert(
+      "user-1",
+      {
+        title: "Eating chips",
+        habitMode: "quit",
+        category: "nutrition",
+        startDate: "2026-05-07",
+        selectedDate: "2026-05-10",
+      },
+      3
+    );
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Eating chips",
+        habit_mode: insert.habit_mode,
+        habit_type: insert.habit_type,
+        category: insert.category,
+        target_operator: insert.target_operator,
+        target_value_numeric: insert.target_value_numeric,
+        target_unit: insert.target_unit,
+        start_date: insert.start_date,
+        last_lapse_date: null,
+      })
+    );
+
+    const summary = buildHabitDaySummary([habit], [], "2026-05-10");
+
+    expect(insert).toMatchObject({
+      habit_mode: "quit",
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      start_date: "2026-05-07",
+      timer_enabled: false,
+    });
+    expect(summary.satisfiedPerfectDayItemCount).toBe(1);
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("3 days without");
+  });
+
+  it("treats a quit lapse as explicit same-day miss without rewriting the habit start", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Eating chips",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-05-07",
+        last_lapse_date: "2026-05-10",
+      })
+    );
+    const lapse = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        value_boolean: false,
+      })
+    );
+
+    const summary = buildHabitDaySummary([habit], [lapse], "2026-05-10");
+
+    expect(summary.satisfiedPerfectDayItemCount).toBe(0);
+    expect(summary.items[0]?.evaluation.stateLabel).toBe("Lapse logged");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("0 days without");
+  });
+
+  it("builds timed habits with duration timer metadata", () => {
+    const insert = buildHabitDefinitionInsert(
+      "user-1",
+      {
+        title: "Mobility",
+        habitMode: "timed",
+        category: "movement",
+        targetValueNumeric: 8,
+        targetUnit: "minutes",
+        startDate: "2026-05-10",
+        selectedDate: "2026-05-10",
+      },
+      4
+    );
+
+    expect(insert).toMatchObject({
+      habit_mode: "timed",
+      habit_type: "duration",
+      target_operator: "at_least",
+      target_value_numeric: 8,
+      target_unit: "minutes",
+      timer_enabled: true,
+      timer_target_seconds: 480,
     });
   });
 

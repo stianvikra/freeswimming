@@ -12,6 +12,7 @@ import {
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
+import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isTrainingContextSchemaMissing } from "@/lib/training-context/schema";
 import { buildUserExportPayload } from "@/lib/user/export";
@@ -61,6 +62,8 @@ export async function GET() {
     trainingNotesResult,
     downloadLinksResult,
     drylandSessionsResult,
+    habitDefinitionsResult,
+    habitCheckInsResult,
     workoutsResult,
   ] = await Promise.all([
     supabase
@@ -149,6 +152,20 @@ export async function GET() {
       .eq("user_id", userId)
       .order("updated_at", { ascending: false }),
     supabase
+      .from("habit_definitions")
+      .select(
+        "id, title, notes, habit_mode, habit_type, category, target_operator, target_value_numeric, target_unit, target_time, start_date, last_lapse_date, timer_enabled, timer_target_seconds, schedule_days, is_perfect_day_item, status, sort_order, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("habit_check_ins")
+      .select(
+        "id, habit_id, check_in_date, timezone, value_numeric, value_boolean, value_time, note, status, completed_at, created_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("check_in_date", { ascending: false }),
+    supabase
       .from("workouts")
       .select(
         "id, source_kind, status, generator_kind, source_fingerprint, title, title_suggestions, description, environment, pool_length_m, session_type, effort, size_mode, target_distance_m, target_time_min, total_distance_m, estimated_duration_min, base_pace_seconds_per_100, used_css_pace_label, allowed_strokes, equipment_allowlist, focus_text, goal_title, constraint_text, warnings, steps, generated_at, accepted_at, created_at, updated_at"
@@ -190,6 +207,14 @@ export async function GET() {
     drylandSessionsResult.error && isDrylandSchemaMissing(drylandSessionsResult.error)
       ? []
       : (drylandSessionsResult.data ?? []);
+  const normalizedHabitDefinitions =
+    habitDefinitionsResult.error && isHabitsSchemaMissing(habitDefinitionsResult.error)
+      ? []
+      : (habitDefinitionsResult.data ?? []);
+  const normalizedHabitCheckIns =
+    habitCheckInsResult.error && isHabitsSchemaMissing(habitCheckInsResult.error)
+      ? []
+      : (habitCheckInsResult.data ?? []);
 
   const failedQuery =
     profileResult.error ??
@@ -220,6 +245,12 @@ export async function GET() {
     downloadLinksResult.error ??
     (drylandSessionsResult.error && !isDrylandSchemaMissing(drylandSessionsResult.error)
       ? drylandSessionsResult.error
+      : null) ??
+    (habitDefinitionsResult.error && !isHabitsSchemaMissing(habitDefinitionsResult.error)
+      ? habitDefinitionsResult.error
+      : null) ??
+    (habitCheckInsResult.error && !isHabitsSchemaMissing(habitCheckInsResult.error)
+      ? habitCheckInsResult.error
       : null) ??
     (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
       ? workoutsResult.error
@@ -256,6 +287,8 @@ export async function GET() {
       trainingNotes: normalizedTrainingNotes,
       downloadLinks: downloadLinksResult.data ?? [],
       drylandSessions: normalizedDrylandSessions,
+      habitDefinitions: normalizedHabitDefinitions,
+      habitCheckIns: normalizedHabitCheckIns,
       workouts: normalizedWorkouts,
       generatedAt,
     }),

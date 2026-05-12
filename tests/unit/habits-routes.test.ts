@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRouteHandlerSupabaseClientMock, loadHabitSnapshotMock } = vi.hoisted(() => ({
-  createRouteHandlerSupabaseClientMock: vi.fn(),
-  loadHabitSnapshotMock: vi.fn(),
-}));
+const { createRouteHandlerSupabaseClientMock, loadHabitSnapshotMock, trackAnalyticsEventMock } =
+  vi.hoisted(() => ({
+    createRouteHandlerSupabaseClientMock: vi.fn(),
+    loadHabitSnapshotMock: vi.fn(),
+    trackAnalyticsEventMock: vi.fn(),
+  }));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
@@ -13,6 +15,10 @@ vi.mock("@/lib/habits/server", () => ({
   HABIT_DEFINITION_SELECT: "habit definition select",
   HABIT_CHECK_IN_SELECT: "habit check-in select",
   loadHabitSnapshot: loadHabitSnapshotMock,
+}));
+
+vi.mock("@/lib/analytics/events", () => ({
+  trackAnalyticsEvent: trackAnalyticsEventMock,
 }));
 
 import { POST as postHabitCheckIn } from "@/app/api/my-library/habits/check-ins/route";
@@ -133,6 +139,17 @@ describe("habits routes", () => {
         target_value_numeric: 0,
       })
     );
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_created",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "build",
+          habitType: "avoidance",
+          category: "nutrition",
+        }),
+      })
+    );
   });
 
   it("rejects invalid habit ids before auth work", async () => {
@@ -207,6 +224,88 @@ describe("habits routes", () => {
         value_boolean: true,
       }),
       { onConflict: "user_id,habit_id,check_in_date" }
+    );
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_check_in_logged",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "build",
+          hasBooleanValue: true,
+        }),
+      })
+    );
+  });
+
+  it("logs quit habit lapses and updates the fast days-since anchor", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "quit",
+        start_date: "2026-05-07",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const habitUpdateEqId = vi.fn().mockResolvedValue({ error: null });
+    const habitUpdateEqUser = vi.fn(() => ({ eq: habitUpdateEqId }));
+    const habitUpdate = vi.fn(() => ({ eq: habitUpdateEqUser }));
+    const upsertSingle = vi.fn().mockResolvedValue({
+      data: { id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
+    const upsertSelect = vi.fn(() => ({ single: upsertSingle }));
+    const upsert = vi.fn(() => ({ select: upsertSelect }));
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect, update: habitUpdate }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          valueBoolean: false,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        check_in_date: "2026-05-10",
+        value_boolean: false,
+      }),
+      { onConflict: "user_id,habit_id,check_in_date" }
+    );
+    expect(habitUpdate).toHaveBeenCalledWith({ last_lapse_date: "2026-05-10" });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_lapse_logged",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "quit",
+          checkInDate: "2026-05-10",
+        }),
+      })
     );
   });
 });

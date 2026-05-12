@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
@@ -128,6 +129,21 @@ export async function POST(request: Request) {
       noStoreJson({ ok: false, error: "Could not create that habit right now." }, { status: 500 })
     );
   }
+
+  trackAnalyticsEvent({
+    eventName: "habit_created",
+    channel: "server",
+    userId: user.id,
+    payload: {
+      habitMode: insertPayload.habit_mode,
+      habitType: insertPayload.habit_type,
+      category: insertPayload.category,
+      hasTargetValue: insertPayload.target_value_numeric !== null,
+      targetUnit: insertPayload.target_unit,
+      timerEnabled: insertPayload.timer_enabled,
+      activeHabitCountBefore: activeRows.length,
+    },
+  });
 
   const snapshot = await loadHabitSnapshot(
     supabase,

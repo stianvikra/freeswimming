@@ -173,6 +173,46 @@ describe("buildUserExportPayload", () => {
           updated_at: "2026-05-08T08:10:00.000Z",
         },
       ],
+      habitDefinitions: [
+        {
+          id: "habit-1",
+          title: "Quit chips",
+          notes: null,
+          habit_mode: "quit",
+          habit_type: "avoidance",
+          category: "nutrition",
+          target_operator: "at_most",
+          target_value_numeric: 0,
+          target_unit: "times",
+          target_time: null,
+          start_date: "2026-05-09",
+          last_lapse_date: null,
+          timer_enabled: false,
+          timer_target_seconds: null,
+          schedule_days: ["monday", "tuesday"],
+          is_perfect_day_item: true,
+          status: "active",
+          sort_order: 1,
+          created_at: "2026-05-09T08:00:00.000Z",
+          updated_at: "2026-05-09T08:10:00.000Z",
+        },
+      ],
+      habitCheckIns: [
+        {
+          id: "habit-check-in-1",
+          habit_id: "habit-1",
+          check_in_date: "2026-05-10",
+          timezone: "Europe/Oslo",
+          value_numeric: null,
+          value_boolean: false,
+          value_time: null,
+          note: null,
+          status: "logged",
+          completed_at: "2026-05-10T08:00:00.000Z",
+          created_at: "2026-05-10T08:00:00.000Z",
+          updated_at: "2026-05-10T08:00:00.000Z",
+        },
+      ],
       workouts: [
         {
           id: "workout-1",
@@ -217,7 +257,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-05-11-dryland-legacy-focus-export",
+      schemaVersion: "2026-05-12-habits-v2-export",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -388,6 +428,46 @@ describe("buildUserExportPayload", () => {
           updatedAt: "2026-05-08T08:10:00.000Z",
         },
       ],
+      habitDefinitions: [
+        {
+          id: "habit-1",
+          title: "Quit chips",
+          notes: null,
+          habitMode: "quit",
+          habitType: "avoidance",
+          category: "nutrition",
+          targetOperator: "at_most",
+          targetValueNumeric: 0,
+          targetUnit: "times",
+          targetTime: null,
+          startDate: "2026-05-09",
+          lastLapseDate: null,
+          timerEnabled: false,
+          timerTargetSeconds: null,
+          scheduleDays: ["monday", "tuesday"],
+          isPerfectDayItem: true,
+          status: "active",
+          sortOrder: 1,
+          createdAt: "2026-05-09T08:00:00.000Z",
+          updatedAt: "2026-05-09T08:10:00.000Z",
+        },
+      ],
+      habitCheckIns: [
+        {
+          id: "habit-check-in-1",
+          habitId: "habit-1",
+          checkInDate: "2026-05-10",
+          timezone: "Europe/Oslo",
+          valueNumeric: null,
+          valueBoolean: false,
+          valueTime: null,
+          note: null,
+          status: "logged",
+          completedAt: "2026-05-10T08:00:00.000Z",
+          createdAt: "2026-05-10T08:00:00.000Z",
+          updatedAt: "2026-05-10T08:00:00.000Z",
+        },
+      ],
       workouts: [
         {
           id: "workout-1",
@@ -450,6 +530,8 @@ describe("buildUserExportPayload", () => {
       trainingNotes: [],
       downloadLinks: [],
       drylandSessions: [],
+      habitDefinitions: [],
+      habitCheckIns: [],
       workouts: [],
     });
 
@@ -461,6 +543,8 @@ describe("buildUserExportPayload", () => {
     expect(payload.trainingNotes).toEqual([]);
     expect(payload.downloadLinks).toEqual([]);
     expect(payload.drylandSessions).toEqual([]);
+    expect(payload.habitDefinitions).toEqual([]);
+    expect(payload.habitCheckIns).toEqual([]);
     expect(payload.workouts).toEqual([]);
   });
 });

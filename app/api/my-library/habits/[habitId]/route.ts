@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_DEFINITION_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
@@ -101,5 +102,16 @@ export async function PATCH(request: Request, { params }: Props) {
     user.id,
     normalizeHabitDate(body.selectedDate)
   );
+  trackAnalyticsEvent({
+    eventName: "habit_updated",
+    channel: "server",
+    userId: user.id,
+    payload: {
+      habitMode: updateResult.data.habit_mode ?? "build",
+      status: updateResult.data.status,
+      archived: updateResult.data.status === "archived",
+      changedStatus: typeof body.status === "string",
+    },
+  });
   return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
 }

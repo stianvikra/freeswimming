@@ -141,6 +141,46 @@ type DrylandSessionRow = Pick<
   | "updated_at"
 >;
 
+type HabitDefinitionRow = Pick<
+  Database["public"]["Tables"]["habit_definitions"]["Row"],
+  | "id"
+  | "title"
+  | "notes"
+  | "habit_mode"
+  | "habit_type"
+  | "category"
+  | "target_operator"
+  | "target_value_numeric"
+  | "target_unit"
+  | "target_time"
+  | "start_date"
+  | "last_lapse_date"
+  | "timer_enabled"
+  | "timer_target_seconds"
+  | "schedule_days"
+  | "is_perfect_day_item"
+  | "status"
+  | "sort_order"
+  | "created_at"
+  | "updated_at"
+>;
+
+type HabitCheckInRow = Pick<
+  Database["public"]["Tables"]["habit_check_ins"]["Row"],
+  | "id"
+  | "habit_id"
+  | "check_in_date"
+  | "timezone"
+  | "value_numeric"
+  | "value_boolean"
+  | "value_time"
+  | "note"
+  | "status"
+  | "completed_at"
+  | "created_at"
+  | "updated_at"
+>;
+
 type WorkoutRow = Pick<
   Database["public"]["Tables"]["workouts"]["Row"],
   | "id"
@@ -192,6 +232,8 @@ export type BuildUserExportPayloadInput = {
   trainingNotes: TrainingNoteRow[];
   downloadLinks: DownloadLinkRow[];
   drylandSessions: DrylandSessionRow[];
+  habitDefinitions: HabitDefinitionRow[];
+  habitCheckIns: HabitCheckInRow[];
   workouts: WorkoutRow[];
   generatedAt?: string;
 };
@@ -201,7 +243,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-05-11-dryland-legacy-focus-export",
+    schemaVersion: "2026-05-12-habits-v2-export",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -347,6 +389,42 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       startedAt: row.started_at,
       completedAt: row.completed_at,
       actualDurationSeconds: row.actual_duration_seconds,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    habitDefinitions: input.habitDefinitions.map((row) => ({
+      id: row.id,
+      title: row.title,
+      notes: row.notes,
+      habitMode: row.habit_mode,
+      habitType: row.habit_type,
+      category: row.category,
+      targetOperator: row.target_operator,
+      targetValueNumeric: row.target_value_numeric,
+      targetUnit: row.target_unit,
+      targetTime: row.target_time,
+      startDate: row.start_date,
+      lastLapseDate: row.last_lapse_date,
+      timerEnabled: row.timer_enabled,
+      timerTargetSeconds: row.timer_target_seconds,
+      scheduleDays: row.schedule_days,
+      isPerfectDayItem: row.is_perfect_day_item,
+      status: row.status,
+      sortOrder: row.sort_order,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    habitCheckIns: input.habitCheckIns.map((row) => ({
+      id: row.id,
+      habitId: row.habit_id,
+      checkInDate: row.check_in_date,
+      timezone: row.timezone,
+      valueNumeric: row.value_numeric,
+      valueBoolean: row.value_boolean,
+      valueTime: row.value_time,
+      note: row.note,
+      status: row.status,
+      completedAt: row.completed_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),

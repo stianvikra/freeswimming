@@ -905,13 +905,18 @@ export type Database = {
         Row: {
           category: string;
           created_at: string;
+          habit_mode: string;
           habit_type: string;
           id: string;
           is_perfect_day_item: boolean;
+          last_lapse_date: string | null;
           notes: string | null;
           schedule_days: string[];
           sort_order: number;
+          start_date: string;
           status: string;
+          timer_enabled: boolean;
+          timer_target_seconds: number | null;
           target_operator: string;
           target_time: string | null;
           target_unit: string | null;
@@ -923,13 +928,18 @@ export type Database = {
         Insert: {
           category?: string;
           created_at?: string;
+          habit_mode?: string;
           habit_type: string;
           id?: string;
           is_perfect_day_item?: boolean;
+          last_lapse_date?: string | null;
           notes?: string | null;
           schedule_days?: string[];
           sort_order?: number;
+          start_date?: string;
           status?: string;
+          timer_enabled?: boolean;
+          timer_target_seconds?: number | null;
           target_operator: string;
           target_time?: string | null;
           target_unit?: string | null;
@@ -941,13 +951,18 @@ export type Database = {
         Update: {
           category?: string;
           created_at?: string;
+          habit_mode?: string;
           habit_type?: string;
           id?: string;
           is_perfect_day_item?: boolean;
+          last_lapse_date?: string | null;
           notes?: string | null;
           schedule_days?: string[];
           sort_order?: number;
+          start_date?: string;
           status?: string;
+          timer_enabled?: boolean;
+          timer_target_seconds?: number | null;
           target_operator?: string;
           target_time?: string | null;
           target_unit?: string | null;
