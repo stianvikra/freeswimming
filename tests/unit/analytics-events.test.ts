@@ -19,6 +19,12 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("contact_intake_accepted")).toBe(true);
     expect(isAnalyticsEventName("contact_intake_notification_failed")).toBe(true);
     expect(isAnalyticsEventName("admin_message_status_changed")).toBe(true);
+    expect(isAnalyticsEventName("habit_created")).toBe(true);
+    expect(isAnalyticsEventName("habit_updated")).toBe(true);
+    expect(isAnalyticsEventName("habit_check_in_logged")).toBe(true);
+    expect(isAnalyticsEventName("habit_check_in_reset")).toBe(true);
+    expect(isAnalyticsEventName("habit_lapse_logged")).toBe(true);
+    expect(isAnalyticsEventName("habit_timer_saved")).toBe(true);
     expect(isAnalyticsEventName("unknown_event")).toBe(false);
   });
 

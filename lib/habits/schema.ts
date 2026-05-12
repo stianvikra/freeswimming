@@ -9,9 +9,12 @@ const HABIT_SCHEMA_MARKERS = [
   "habit_definitions",
   "habit_check_ins",
   "habit_type",
+  "habit_mode",
   "check_in_date",
   "target_operator",
   "is_perfect_day_item",
+  "start_date",
+  "timer_enabled",
 ];
 
 export function isHabitsSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {

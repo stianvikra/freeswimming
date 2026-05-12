@@ -7,6 +7,7 @@ export const HABIT_TYPE_VALUES = [
   "time_of_day",
   "avoidance",
 ] as const;
+export const HABIT_MODE_VALUES = ["build", "quit", "timed"] as const;
 export const HABIT_CATEGORY_VALUES = [
   "movement",
   "nutrition",
@@ -36,6 +37,7 @@ export const HABIT_WEEKDAY_VALUES = [
 ] as const;
 
 export type HabitType = (typeof HABIT_TYPE_VALUES)[number];
+export type HabitMode = (typeof HABIT_MODE_VALUES)[number];
 export type HabitCategory = (typeof HABIT_CATEGORY_VALUES)[number];
 export type HabitOperator = (typeof HABIT_OPERATOR_VALUES)[number];
 export type HabitUnit = (typeof HABIT_UNIT_VALUES)[number];
@@ -52,6 +54,7 @@ export type HabitDefinitionView = {
   id: string;
   title: string;
   notes: string | null;
+  habitMode: HabitMode;
   habitType: HabitType;
   category: HabitCategory;
   targetOperator: HabitOperator;
@@ -59,6 +62,10 @@ export type HabitDefinitionView = {
   targetUnit: HabitUnit | null;
   targetTime: string | null;
   targetLabel: string;
+  startDate: string;
+  lastLapseDate: string | null;
+  timerEnabled: boolean;
+  timerTargetSeconds: number | null;
   scheduleDays: HabitWeekday[];
   isPerfectDayItem: boolean;
   status: HabitStatus;
@@ -128,11 +135,15 @@ export type HabitSnapshot = {
 export type HabitCreateRequestBody = {
   title?: unknown;
   notes?: unknown;
+  habitMode?: unknown;
   habitType?: unknown;
   category?: unknown;
   targetValueNumeric?: unknown;
   targetUnit?: unknown;
   targetTime?: unknown;
+  startDate?: unknown;
+  timerEnabled?: unknown;
+  timerTargetSeconds?: unknown;
   scheduleDays?: unknown;
   isPerfectDayItem?: unknown;
   selectedDate?: unknown;
@@ -209,18 +220,106 @@ function getHabitType(value: unknown): HabitType {
   return isOneOf(HABIT_TYPE_VALUES, value) ? value : "binary";
 }
 
+function getHabitMode(
+  value: unknown,
+  input?: { habitType?: HabitType; timerEnabled?: unknown }
+): HabitMode {
+  if (isOneOf(HABIT_MODE_VALUES, value)) return value;
+  if (input?.timerEnabled === true && input.habitType === "duration") return "timed";
+  return "build";
+}
+
 function getHabitCategory(value: unknown): HabitCategory {
   return isOneOf(HABIT_CATEGORY_VALUES, value) ? value : "other";
 }
 
+function buildUtcDate(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function getSelectedDateFallback(value: unknown): Date {
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    if (!Number.isNaN(parsed)) return new Date(parsed);
+  }
+  return buildUtcDate(normalizeHabitDate(value));
+}
+
+function normalizeHabitStartDate(value: unknown, selectedDate: string): string {
+  return normalizeHabitDate(value, buildUtcDate(selectedDate));
+}
+
+function isAfterHabitDate(left: string, right: string) {
+  return left > right;
+}
+
+function getDayDelta(startDate: string, endDate: string): number {
+  const start = Date.parse(`${startDate}T00:00:00.000Z`);
+  const end = Date.parse(`${endDate}T00:00:00.000Z`);
+  if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+  return Math.max(0, Math.floor((end - start) / 86_400_000));
+}
+
+function normalizeTimerTargetSeconds(
+  habitMode: HabitMode,
+  targetValueNumeric: number | null,
+  targetUnit: HabitUnit | null,
+  explicitSeconds: unknown
+): number | null {
+  if (habitMode !== "timed") return null;
+
+  const explicit =
+    typeof explicitSeconds === "number"
+      ? explicitSeconds
+      : typeof explicitSeconds === "string"
+        ? Number(explicitSeconds)
+        : Number.NaN;
+  if (Number.isFinite(explicit) && explicit >= 1 && explicit <= 86400) {
+    return Math.round(explicit);
+  }
+
+  if (targetValueNumeric === null) return null;
+  const seconds = targetUnit === "seconds" ? targetValueNumeric : targetValueNumeric * 60;
+  if (!Number.isFinite(seconds) || seconds < 1 || seconds > 86400) return null;
+  return Math.round(seconds);
+}
+
 function getHabitShape(
+  habitMode: HabitMode,
   habitType: HabitType,
   targetValueNumeric: unknown,
   targetUnit: unknown,
   targetTime: unknown
 ) {
+  if (habitMode === "quit") {
+    return {
+      habitType: "avoidance" as const,
+      targetOperator: "at_most" as const,
+      targetValueNumeric: 0,
+      targetUnit: "times" as const,
+      targetTime: null,
+    };
+  }
+
+  if (habitMode === "timed") {
+    const value = normalizePositiveNumber(targetValueNumeric);
+    if (value === null || value <= 0) {
+      throw new Error("Choose a timer target.");
+    }
+
+    const unit = targetUnit === "seconds" ? "seconds" : "minutes";
+    return {
+      habitType: "duration" as const,
+      targetOperator: "at_least" as const,
+      targetValueNumeric: value,
+      targetUnit: unit,
+      targetTime: null,
+    };
+  }
+
   if (habitType === "binary") {
     return {
+      habitType,
       targetOperator: "at_least" as const,
       targetValueNumeric: null,
       targetUnit: null,
@@ -232,6 +331,7 @@ function getHabitShape(
     const time = normalizeHabitTime(targetTime);
     if (!time) throw new Error("Choose a target time.");
     return {
+      habitType,
       targetOperator: "before" as const,
       targetValueNumeric: null,
       targetUnit: null,
@@ -251,6 +351,7 @@ function getHabitShape(
       : "times";
 
   return {
+    habitType,
     targetOperator: habitType === "avoidance" ? ("at_most" as const) : ("at_least" as const),
     targetValueNumeric: value,
     targetUnit: unit,
@@ -268,19 +369,49 @@ export function buildHabitDefinitionInsert(
     throw new Error("Give the habit a short name.");
   }
 
-  const habitType = getHabitType(body.habitType);
-  const shape = getHabitShape(habitType, body.targetValueNumeric, body.targetUnit, body.targetTime);
+  const selectedDate = normalizeHabitDate(body.selectedDate);
+  const requestedHabitType = getHabitType(body.habitType);
+  const habitMode = getHabitMode(body.habitMode, {
+    habitType: requestedHabitType,
+    timerEnabled: body.timerEnabled,
+  });
+  const startDate = normalizeHabitStartDate(body.startDate, selectedDate);
+  if (isAfterHabitDate(startDate, selectedDate)) {
+    throw new Error("Choose today or an earlier start date.");
+  }
+
+  const shape = getHabitShape(
+    habitMode,
+    requestedHabitType,
+    body.targetValueNumeric,
+    body.targetUnit,
+    body.targetTime
+  );
+  const timerTargetSeconds = normalizeTimerTargetSeconds(
+    habitMode,
+    shape.targetValueNumeric,
+    shape.targetUnit as HabitUnit | null,
+    body.timerTargetSeconds
+  );
+  if (habitMode === "timed" && timerTargetSeconds === null) {
+    throw new Error("Choose a timer target.");
+  }
 
   return {
     user_id: userId,
     title,
     notes: normalizeOptionalText(body.notes, 280),
-    habit_type: habitType,
+    habit_mode: habitMode,
+    habit_type: shape.habitType,
     category: getHabitCategory(body.category),
     target_operator: shape.targetOperator,
     target_value_numeric: shape.targetValueNumeric,
     target_unit: shape.targetUnit,
     target_time: shape.targetTime,
+    start_date: startDate,
+    last_lapse_date: null,
+    timer_enabled: habitMode === "timed",
+    timer_target_seconds: timerTargetSeconds,
     schedule_days: normalizeScheduleDays(body.scheduleDays),
     is_perfect_day_item: body.isPerfectDayItem === false ? false : true,
     status: "active",
@@ -313,6 +444,15 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
     update.is_perfect_day_item = body.isPerfectDayItem === false ? false : true;
   }
 
+  if ("startDate" in body) {
+    const selectedDate = normalizeHabitDate(body.selectedDate);
+    const startDate = normalizeHabitStartDate(body.startDate, selectedDate);
+    if (isAfterHabitDate(startDate, selectedDate)) {
+      throw new Error("Choose today or an earlier start date.");
+    }
+    update.start_date = startDate;
+  }
+
   if ("status" in body) {
     update.status = body.status === "archived" ? "archived" : "active";
   }
@@ -321,20 +461,40 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
     "habitType" in body ||
     "targetValueNumeric" in body ||
     "targetUnit" in body ||
-    "targetTime" in body
+    "targetTime" in body ||
+    "habitMode" in body ||
+    "timerEnabled" in body ||
+    "timerTargetSeconds" in body
   ) {
-    const habitType = getHabitType(body.habitType);
+    const requestedHabitType = getHabitType(body.habitType);
+    const habitMode = getHabitMode(body.habitMode, {
+      habitType: requestedHabitType,
+      timerEnabled: body.timerEnabled,
+    });
     const shape = getHabitShape(
-      habitType,
+      habitMode,
+      requestedHabitType,
       body.targetValueNumeric,
       body.targetUnit,
       body.targetTime
     );
-    update.habit_type = habitType;
+    const timerTargetSeconds = normalizeTimerTargetSeconds(
+      habitMode,
+      shape.targetValueNumeric,
+      shape.targetUnit as HabitUnit | null,
+      body.timerTargetSeconds
+    );
+    if (habitMode === "timed" && timerTargetSeconds === null) {
+      throw new Error("Choose a timer target.");
+    }
+    update.habit_mode = habitMode;
+    update.habit_type = shape.habitType;
     update.target_operator = shape.targetOperator;
     update.target_value_numeric = shape.targetValueNumeric;
     update.target_unit = shape.targetUnit;
     update.target_time = shape.targetTime;
+    update.timer_enabled = habitMode === "timed";
+    update.timer_target_seconds = timerTargetSeconds;
   }
 
   return update;
@@ -373,6 +533,10 @@ export function buildHabitCheckInInsert(
 
 export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefinitionView {
   const habitType = getHabitType(row.habit_type);
+  const habitMode = getHabitMode(row.habit_mode, {
+    habitType,
+    timerEnabled: row.timer_enabled,
+  });
   const targetOperator = isOneOf(HABIT_OPERATOR_VALUES, row.target_operator)
     ? row.target_operator
     : "at_least";
@@ -382,6 +546,7 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
     id: row.id,
     title: row.title,
     notes: row.notes,
+    habitMode,
     habitType,
     category: getHabitCategory(row.category),
     targetOperator,
@@ -390,6 +555,7 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
     targetUnit,
     targetTime: row.target_time,
     targetLabel: buildTargetLabel({
+      habitMode,
       habitType,
       targetOperator,
       targetValueNumeric:
@@ -397,6 +563,11 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
       targetUnit,
       targetTime: row.target_time,
     }),
+    startDate: normalizeHabitDate(row.start_date, getSelectedDateFallback(row.created_at)),
+    lastLapseDate: row.last_lapse_date ? normalizeHabitDate(row.last_lapse_date) : null,
+    timerEnabled: row.timer_enabled === true,
+    timerTargetSeconds:
+      typeof row.timer_target_seconds === "number" ? row.timer_target_seconds : null,
     scheduleDays: normalizeScheduleDays(row.schedule_days),
     isPerfectDayItem: row.is_perfect_day_item,
     status: row.status === "archived" ? "archived" : "active",
@@ -424,12 +595,19 @@ export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
 }
 
 function buildTargetLabel(input: {
+  habitMode: HabitMode;
   habitType: HabitType;
   targetOperator: HabitOperator;
   targetValueNumeric: number | null;
   targetUnit: HabitUnit | null;
   targetTime: string | null;
 }) {
+  if (input.habitMode === "quit") return "Days without";
+  if (input.habitMode === "timed") {
+    const value = input.targetValueNumeric ?? 0;
+    const unit = input.targetUnit ?? "minutes";
+    return `Timer ${value} ${unit}`;
+  }
   if (input.habitType === "binary") return "Done once";
   if (input.habitType === "time_of_day") {
     const time = input.targetTime?.slice(0, 5) ?? "";
@@ -450,8 +628,33 @@ function compareTime(valueTime: string, targetTime: string, operator: HabitOpera
 
 export function evaluateHabitForDate(
   habit: HabitDefinitionView,
-  checkIn: HabitCheckInView | null
+  checkIn: HabitCheckInView | null,
+  date: string
 ): HabitEvaluation {
+  if (habit.habitMode === "quit") {
+    const started = !isAfterHabitDate(habit.startDate, date);
+    const lapseLoggedToday =
+      checkIn?.status === "logged" &&
+      (checkIn.valueBoolean === false || (checkIn.valueNumeric ?? 0) > 0);
+    const lastLapseDate =
+      lapseLoggedToday && checkIn?.checkInDate
+        ? checkIn.checkInDate
+        : habit.lastLapseDate && !isAfterHabitDate(habit.lastLapseDate, date)
+          ? habit.lastLapseDate
+          : null;
+    const anchorDate = lastLapseDate ?? habit.startDate;
+    const daysSince = started ? getDayDelta(anchorDate, date) : 0;
+
+    return {
+      isSatisfied: started && !lapseLoggedToday,
+      valueLabel: started
+        ? `${daysSince} ${daysSince === 1 ? "day" : "days"} without`
+        : `Starts ${habit.startDate}`,
+      stateLabel: lapseLoggedToday ? "Lapse logged" : started ? "On track" : "Not started",
+      progressRatio: started && !lapseLoggedToday ? 1 : 0,
+    };
+  }
+
   if (!checkIn || checkIn.status === "skipped") {
     return {
       isSatisfied: false,
@@ -507,12 +710,17 @@ export function evaluateHabitForDate(
   return {
     isSatisfied,
     valueLabel: `${value} ${habit.targetUnit ?? "times"}`,
-    stateLabel: isSatisfied ? "On target" : "Logged",
+    stateLabel: isSatisfied
+      ? habit.habitMode === "timed"
+        ? "Timer saved"
+        : "On target"
+      : "Logged",
     progressRatio: ratio,
   };
 }
 
 export function isHabitScheduledForDate(habit: HabitDefinitionView, date: string): boolean {
+  if (isAfterHabitDate(habit.startDate, date)) return false;
   const parsed = Date.parse(`${date}T00:00:00.000Z`);
   if (Number.isNaN(parsed)) return true;
   const weekday = HABIT_WEEKDAY_VALUES[(new Date(parsed).getUTCDay() + 6) % 7];
@@ -531,7 +739,7 @@ export function buildHabitDaySummary(
     return {
       habit,
       checkIn,
-      evaluation: evaluateHabitForDate(habit, checkIn),
+      evaluation: evaluateHabitForDate(habit, checkIn, date),
     };
   });
   const perfectDayItems = items.filter((item) => item.habit.isPerfectDayItem);
