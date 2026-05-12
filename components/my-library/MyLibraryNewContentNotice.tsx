@@ -200,7 +200,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.24em] text-blue-700 uppercase ring-1 ring-blue-100">
-              New content
+              New lessons
             </p>
           </div>
         </div>

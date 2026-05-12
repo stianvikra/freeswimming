@@ -85,7 +85,8 @@ describe("MyLibraryNewContentNotice", () => {
     await waitFor(() => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
-    expect(screen.getByText("New content")).toBeInTheDocument();
+    expect(screen.getByText("New lessons")).toBeInTheDocument();
+    expect(screen.queryByText("New content")).not.toBeInTheDocument();
     expect(screen.queryByText("2 new lessons")).not.toBeInTheDocument();
     expect(screen.queryByText("+2 nye leksjoner i Free Course")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-list")).not.toBeInTheDocument();
@@ -162,7 +163,8 @@ describe("MyLibraryNewContentNotice", () => {
     await waitFor(() => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
-    expect(screen.getByText("New content")).toBeInTheDocument();
+    expect(screen.getByText("New lessons")).toBeInTheDocument();
+    expect(screen.queryByText("Updated content")).not.toBeInTheDocument();
     expect(screen.queryByText("2 new lessons")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-open")).not.toBeInTheDocument();
     expect(screen.queryByTestId("my-library-new-content-item-mod1-l2")).not.toBeInTheDocument();

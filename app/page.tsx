@@ -50,7 +50,7 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2.5">
+          <section data-testid="home-primary-actions" className="flex flex-col gap-2.5">
             <ActionButton
               title="Free course"
               subtitle="Start swimming today"
@@ -59,6 +59,16 @@ export default async function HomePage() {
               variant="primary"
               compact
             />
+
+            {user ? (
+              <ActionButton
+                title="My routines"
+                subtitle="Today's habits and micro-sessions"
+                href="/my-library#my-library-routines-heading"
+                variant="secondary"
+                compact
+              />
+            ) : null}
 
             <ActionButton
               title="Swim programs"
