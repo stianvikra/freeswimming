@@ -1,8 +1,8 @@
 // components/SiteChrome.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import BrandImage from "@/components/brand/BrandImage";
 import MenuDrawer from "@/components/MenuDrawer";
@@ -43,6 +43,270 @@ type Props = {
    */
   bottomBar?: React.ReactNode;
 };
+
+type DefaultMobileNavProps = {
+  pathname: string;
+  signedInEmail: string | null;
+  authHref: string;
+};
+
+function linkMobileNavItem(input: {
+  id: string;
+  href: string;
+  label: string;
+  testId: string;
+  active?: boolean;
+  skin?: MobileSegmentedNavItem["skin"];
+  ariaLabel?: string;
+}): MobileSegmentedNavItem {
+  const isActive = Boolean(input.active);
+  return {
+    id: input.id,
+    kind: "link",
+    href: input.href,
+    label: input.label,
+    testId: input.testId,
+    ariaLabel: input.ariaLabel,
+    ariaCurrent: isActive ? "page" : undefined,
+    skin: input.skin ?? (isActive ? "active" : "muted"),
+  };
+}
+
+function getDefaultMobileNavItems({
+  pathname,
+  signedInEmail,
+  authHref,
+  microParam,
+}: DefaultMobileNavProps & { microParam: string }): MobileSegmentedNavItem[] {
+  const isHomeRoute = pathname === "/";
+  const isCourseRoute = pathname === "/course" || pathname.startsWith("/course");
+  const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
+  const isCheckoutRoute = pathname === "/checkout/success" || pathname.startsWith("/checkout/");
+  const isRoutinesRoute = pathname === "/my-library/routines";
+  const isHabitsRoute = pathname === "/my-library/habits";
+  const isDrylandRoute = pathname === "/my-library/dryland";
+  const isMicroFocusedRoute = isDrylandRoute && ["active", "edit", "setup"].includes(microParam);
+  const isWorkoutsRoute = pathname === "/my-library/workouts";
+  const isTrainingRoute = pathname === "/my-library/training";
+  const isProfileRoute = pathname === "/my-library/profile";
+  const isGoalsRoute = pathname === "/my-library/goals";
+  const isGeneratorRoute = pathname === "/my-library/generator";
+  const isProgramsBuilderRoute = pathname.startsWith("/my-library/programs/");
+
+  const libraryNavItem = linkMobileNavItem({
+    id: "library",
+    href: authHref,
+    label: signedInEmail ? "Library" : "Login",
+    testId: "mobile-nav-library",
+    active: pathname === "/my-library",
+    ariaLabel: signedInEmail ? "Open My Library" : "Log in to My Library",
+  });
+
+  const homeNavItem = linkMobileNavItem({
+    id: "home",
+    href: "/",
+    label: "Home",
+    testId: "mobile-nav-home",
+    active: isHomeRoute,
+  });
+
+  const courseNavItem = linkMobileNavItem({
+    id: "course",
+    href: "/course",
+    label: "Course",
+    testId: "mobile-nav-course",
+    active: isCourseRoute,
+  });
+
+  if (isLibraryRoute) {
+    if (isHabitsRoute || isMicroFocusedRoute || isRoutinesRoute) {
+      return [
+        libraryNavItem,
+        linkMobileNavItem({
+          id: "micro",
+          href: "/my-library/dryland?micro=active&view=auto#micro-sessions",
+          label: "Micro",
+          testId: "mobile-nav-micro",
+          active: isMicroFocusedRoute,
+          ariaLabel: "Open Micro Sessions",
+        }),
+        linkMobileNavItem({
+          id: "habits",
+          href: "/my-library/habits?view=active#today-habits",
+          label: "Habits",
+          testId: "mobile-nav-habits",
+          active: isHabitsRoute,
+          ariaLabel: "Open Habits",
+        }),
+      ];
+    }
+
+    if (isDrylandRoute) {
+      return [
+        libraryNavItem,
+        linkMobileNavItem({
+          id: "dryland",
+          href: "/my-library/dryland",
+          label: "Dryland",
+          testId: "mobile-nav-dryland",
+          active: true,
+        }),
+        linkMobileNavItem({
+          id: "habits",
+          href: "/my-library/habits?view=active#today-habits",
+          label: "Habits",
+          testId: "mobile-nav-habits",
+          ariaLabel: "Open Habits",
+        }),
+      ];
+    }
+
+    if (isWorkoutsRoute || isTrainingRoute || isProfileRoute || isGoalsRoute || isGeneratorRoute) {
+      const current = isWorkoutsRoute
+        ? { id: "workouts", label: "Sessions", testId: "mobile-nav-workouts" }
+        : isTrainingRoute
+          ? { id: "training", label: "Training", testId: "mobile-nav-training" }
+          : isProfileRoute
+            ? { id: "profile", label: "Profile", testId: "mobile-nav-profile" }
+            : isGoalsRoute
+              ? { id: "goals", label: "Goals", testId: "mobile-nav-goals" }
+              : { id: "generator", label: "AI Plan", testId: "mobile-nav-generator" };
+
+      return [
+        libraryNavItem,
+        linkMobileNavItem({
+          id: "routines",
+          href: "/my-library/routines",
+          label: "Routines",
+          testId: "mobile-nav-routines",
+        }),
+        linkMobileNavItem({
+          id: current.id,
+          href: pathname,
+          label: current.label,
+          testId: current.testId,
+          active: true,
+        }),
+      ];
+    }
+
+    if (isProgramsBuilderRoute) {
+      return [
+        libraryNavItem,
+        linkMobileNavItem({
+          id: "routines",
+          href: "/my-library/routines",
+          label: "Routines",
+          testId: "mobile-nav-routines",
+        }),
+        linkMobileNavItem({
+          id: "program",
+          href: pathname,
+          label: "Program",
+          testId: "mobile-nav-program",
+          active: true,
+        }),
+      ];
+    }
+
+    return [
+      libraryNavItem,
+      linkMobileNavItem({
+        id: "routines",
+        href: "/my-library/routines",
+        label: "Routines",
+        testId: "mobile-nav-routines",
+        active: isRoutinesRoute,
+      }),
+      linkMobileNavItem({
+        id: "habits",
+        href: "/my-library/habits?view=active#today-habits",
+        label: "Habits",
+        testId: "mobile-nav-habits",
+        active: isHabitsRoute,
+        ariaLabel: "Open Habits",
+      }),
+    ];
+  }
+
+  if (isAdminRoute) {
+    return [
+      homeNavItem,
+      libraryNavItem,
+      linkMobileNavItem({
+        id: "admin",
+        href: "/admin",
+        label: "Dashboard",
+        testId: "mobile-nav-admin",
+        active: true,
+      }),
+    ];
+  }
+
+  if (isAuthRoute) {
+    return [
+      homeNavItem,
+      courseNavItem,
+      linkMobileNavItem({
+        id: "login",
+        href: authHref,
+        label: "Login",
+        testId: "mobile-nav-login",
+        active: true,
+      }),
+    ];
+  }
+
+  if (isCheckoutRoute) {
+    return [
+      homeNavItem,
+      linkMobileNavItem({
+        id: "plans",
+        href: "/plans",
+        label: "Plans",
+        testId: "mobile-nav-plans",
+      }),
+      libraryNavItem,
+    ];
+  }
+
+  return [
+    homeNavItem,
+    courseNavItem,
+    linkMobileNavItem({
+      id: "programs",
+      href: "/programs",
+      label: "Programs",
+      testId: "mobile-nav-programs",
+      active: pathname === "/programs",
+    }),
+  ];
+}
+
+function DefaultMobileNavShell({ items }: { items: MobileSegmentedNavItem[] }) {
+  return (
+    <div
+      data-testid="mobile-fixed-nav"
+      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
+    >
+      <div className="mx-auto max-w-[520px]">
+        <MobileSegmentedNav items={items} />
+      </div>
+    </div>
+  );
+}
+
+function DefaultMobileNavFallback(props: DefaultMobileNavProps) {
+  return <DefaultMobileNavShell items={getDefaultMobileNavItems({ ...props, microParam: "" })} />;
+}
+
+function DefaultMobileNav(props: DefaultMobileNavProps) {
+  const searchParams = useSearchParams();
+  const microParam = searchParams?.get("micro") ?? "";
+  return <DefaultMobileNavShell items={getDefaultMobileNavItems({ ...props, microParam })} />;
+}
 
 export default function SiteChrome({
   children,
@@ -140,7 +404,6 @@ export default function SiteChrome({
   const isMenuOpen = customMenu ? customMenu.isOpen : menuOpen;
 
   const isHomeRoute = pathname === "/";
-  const isCourseRoute = pathname === "/course" || pathname.startsWith("/course");
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
@@ -158,16 +421,8 @@ export default function SiteChrome({
   const adminLabel = isAdminRoute ? "Dashboard" : "Open Dashboard";
   const menuItems = getMainMenuItems({ includeDashboard: dashboardVisible });
 
-  // ✅ Home: remove bottom nav so focus stays on the CTA buttons
+  // Home: remove bottom nav so focus stays on the CTA buttons.
   const showDefaultMobileNav = mobileNavMode !== "hidden" && !hasCustomBottomBar && !isHomeRoute;
-
-  // ✅ Hide hamburger on mobile when any bottom nav exists (default or custom).
-  const hideHamburgerOnMobile = showDefaultMobileNav || hasCustomBottomBar;
-
-  function openSiteDrawer(view: "main" | "course") {
-    setDrawerView(view);
-    setMenuOpen(true);
-  }
 
   const toggleMenu = () => {
     // Custom mode (Course page): Course page owns drawer state
@@ -182,52 +437,19 @@ export default function SiteChrome({
     setMenuOpen((v) => !v);
   };
 
-  const defaultNavItems: MobileSegmentedNavItem[] = [
-    {
-      id: "menu",
-      kind: "button",
-      label: "Menu",
-      testId: "mobile-nav-menu",
-      onClick: () => {
-        if (menuOpen && drawerView === "main") {
-          setMenuOpen(false);
-          return;
-        }
-        openSiteDrawer("main");
-      },
-      ariaPressed: menuOpen && drawerView === "main",
-      skin: menuOpen && drawerView === "main" ? "active" : "muted",
-    },
-    {
-      id: "home",
-      kind: "link",
-      href: "/",
-      label: "Home",
-      testId: "mobile-nav-home",
-      ariaCurrent: isHomeRoute ? "page" : undefined,
-      skin: isHomeRoute ? "active" : "muted",
-    },
-    {
-      id: "course",
-      kind: "link",
-      href: "/course",
-      label: "Course",
-      testId: "mobile-nav-course",
-      ariaCurrent: isCourseRoute ? "page" : undefined,
-      skin: isCourseRoute ? "active" : "muted",
-    },
-  ];
-
-  const defaultMobileNav = (
-    <div
-      data-testid="mobile-fixed-nav"
-      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
+  const defaultMobileNav = showDefaultMobileNav ? (
+    <Suspense
+      fallback={
+        <DefaultMobileNavFallback
+          pathname={pathname}
+          signedInEmail={signedInEmail}
+          authHref={authHref}
+        />
+      }
     >
-      <div className="mx-auto max-w-[520px]">
-        <MobileSegmentedNav items={defaultNavItems} />
-      </div>
-    </div>
-  );
+      <DefaultMobileNav pathname={pathname} signedInEmail={signedInEmail} authHref={authHref} />
+    </Suspense>
+  ) : null;
 
   // ✅ Helper: blur immediately on tap/click (fixes iOS “stuck” states)
   const blurNow = () => {
@@ -318,7 +540,7 @@ export default function SiteChrome({
                 "rounded-xl px-3 py-2 text-white/95",
                 "[--ui-focus-ring:rgba(255,255,255,0.56)]",
                 "[@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/10",
-                hideHamburgerOnMobile ? "hidden sm:inline-flex" : "inline-flex",
+                "inline-flex",
               ].join(" ")}
               aria-label={customMenu?.ariaLabel ?? "Toggle menu"}
               aria-expanded={isMenuOpen}
@@ -354,7 +576,7 @@ export default function SiteChrome({
           </div>
         ) : null}
       </div>
-      {showDefaultMobileNav ? defaultMobileNav : null}
+      {defaultMobileNav}
 
       {bottomBar ? (
         <div className="pointer-events-none fixed inset-0 z-[60]">

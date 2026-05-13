@@ -72,7 +72,7 @@ test("capture mobile full-page screenshots for core app flow", async ({ page }, 
   await saveFullPage(page, outputDir, "03-course-menu");
 
   await closeNavigationDrawer(page);
-  await page.getByTestId("course-nav-left").click();
+  await page.getByTestId("header-menu-toggle").click();
   await expect(drawer).toBeVisible();
   await expect(drawer.getByText("Main menu")).toBeVisible();
   await waitForStableUi(page);

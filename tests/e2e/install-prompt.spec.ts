@@ -7,8 +7,7 @@ const UNSUPPORTED_BROWSER_MESSAGE =
   "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge.";
 const INSTALL_SUCCESS_MESSAGE =
   "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen.";
-const INSTALL_PROMPT_LESSON_ID =
-  resolveCanonicalCourseLessonRuntimeId("mod3-l1") ?? "mod3-l1";
+const INSTALL_PROMPT_LESSON_ID = resolveCanonicalCourseLessonRuntimeId("mod3-l1") ?? "mod3-l1";
 
 async function stubPublishedCourseContent(page: Page) {
   await page.route("**/api/course/content*", async (route) => {
@@ -103,7 +102,7 @@ async function openMainMenuFromCourse(page: Page) {
   expect(drawerOpened).toBe(true);
   await expect(drawer).toBeVisible();
 
-  const menuTab = drawer.getByRole("button", { name: "Menu", exact: true });
+  const menuTab = drawer.getByRole("button", { name: "Main", exact: true });
   const switchToMenuAttempts: Array<() => Promise<void>> = [
     async () => {
       await menuTab.click();

@@ -55,7 +55,7 @@ async function openNavigationDrawer(page: Page, menu: Locator, drawer: Locator) 
   await expect(drawer).toBeVisible();
 }
 
-test("mobile fixed nav uses link semantics and menu toggles with Escape", async ({
+test("mobile fixed nav uses contextual links and header menu toggles with Escape", async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -72,25 +72,31 @@ test("mobile fixed nav uses link semantics and menu toggles with Escape", async 
 
   const home = page.getByTestId("mobile-nav-home");
   const course = page.getByTestId("mobile-nav-course");
-  const menu = page.getByTestId("mobile-nav-menu");
+  const programs = page.getByTestId("mobile-nav-programs");
+  const menu = page.getByTestId("header-menu-toggle");
 
   await expect(home).toHaveAttribute("href", "/");
   await expect(course).toHaveAttribute("href", "/course");
+  await expect(programs).toHaveAttribute("href", "/programs");
+  await expect(page.getByTestId("mobile-nav-menu")).toHaveCount(0);
+  await expect(menu).toBeVisible();
 
   const homeTag = await home.evaluate((el) => el.tagName);
   const courseTag = await course.evaluate((el) => el.tagName);
+  const programsTag = await programs.evaluate((el) => el.tagName);
   expect(homeTag).toBe("A");
   expect(courseTag).toBe("A");
+  expect(programsTag).toBe("A");
 
-  await expect(menu).toHaveAttribute("aria-pressed", "false");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
   await openNavigationDrawer(page, menu, drawer);
   await expect(drawer).toBeVisible();
-  await expect(menu).toHaveAttribute("aria-pressed", "true");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
-  await expect(menu).toHaveAttribute("aria-pressed", "false");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
 });
 
 test("home keeps menu access and shows login CTA", async ({ page }, testInfo) => {

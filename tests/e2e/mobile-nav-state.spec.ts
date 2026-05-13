@@ -19,22 +19,27 @@ async function waitForProgramsPageToSettle(page: Page) {
   await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
 }
 
-test("menu tab is muted on section pages and active only when drawer is open", async ({ page }) => {
+test("route-aware bottom nav marks the current section while header menu owns drawer state", async ({
+  page,
+}) => {
   test.slow();
 
   await page.goto("/programs", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await waitForProgramsPageToSettle(page);
 
-  const menu = page.getByTestId("mobile-nav-menu");
+  const menu = page.getByTestId("header-menu-toggle");
   const home = page.getByTestId("mobile-nav-home");
   const course = page.getByTestId("mobile-nav-course");
+  const programs = page.getByTestId("mobile-nav-programs");
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
 
-  await expect(menu).toHaveAttribute("aria-pressed", "false");
-  await expect(menu).toHaveClass(/bg-transparent/);
-  await expect(menu).not.toHaveClass(/from-blue-500/);
+  await expect(page.getByTestId("mobile-nav-menu")).toHaveCount(0);
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
   await expect(home).not.toHaveAttribute("aria-current", "page");
   await expect(course).not.toHaveAttribute("aria-current", "page");
+  await expect(programs).toHaveAttribute("aria-current", "page");
+  await expect(programs).toHaveClass(/from-blue-500/);
 
   const openAttempts: Array<() => Promise<void>> = [
     async () => {
@@ -71,6 +76,5 @@ test("menu tab is muted on section pages and active only when drawer is open", a
 
   expect(menuOpened).toBe(true);
   await expect(drawer).toBeVisible();
-  await expect(menu).toHaveAttribute("aria-pressed", "true");
-  await expect(menu).toHaveClass(/from-blue-500/);
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
 });

@@ -29,12 +29,12 @@ type Props = {
   /** Which view to show when the drawer opens */
   defaultView?: "main" | "course";
 
-  /** Main nav items to show in Menu view */
+  /** Main nav items to show in the Main view */
   mainItems: MainItem[];
 
   /**
    * If provided, enables Course view.
-   * If omitted, drawer only shows Menu view.
+   * If omitted, drawer only shows the Main view.
    */
   course?: {
     activeLessonId: string;
@@ -46,7 +46,7 @@ type Props = {
   };
 
   /** Optional: headline override */
-  titleMain?: string; // defaults to "Menu"
+  titleMain?: string; // defaults to "Main menu"
   titleCourse?: string; // defaults to "Course menu"
 };
 
@@ -58,7 +58,7 @@ export default function MenuDrawer({
   defaultView = "course",
   mainItems,
   course,
-  titleMain = "Menu",
+  titleMain = "Main menu",
   titleCourse = "Course menu",
 }: Props) {
   const pathname = usePathname() ?? "/";
@@ -204,7 +204,7 @@ export default function MenuDrawer({
     {
       id: "drawer-main",
       kind: "button",
-      label: "Menu",
+      label: "Main",
       onClick: () => setView("main"),
       ariaPressed: view === "main",
       skin: view === "main" ? "active" : "muted",
@@ -257,7 +257,7 @@ export default function MenuDrawer({
         </div>
 
         {/* Body */}
-        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-36 pt-4">
+        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pt-4 pb-36">
           {view === "course" && hasCourse ? (
             <CourseView
               modules={courseModules}
@@ -288,10 +288,10 @@ export default function MenuDrawer({
             />
           )}
 
-          {/* Tip only in Menu view */}
+          {/* Tip only in Main view */}
           {view === "main" && showMenuTip ? (
             <div className="mt-6 rounded-[22px] border border-slate-200/60 bg-[radial-gradient(520px_180px_at_20%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_60%)] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] backdrop-blur">
-              <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-600">
+              <div className="text-[12px] font-semibold tracking-wide text-slate-600 uppercase">
                 Tip
               </div>
               <div className="mt-1 text-[13px] leading-6 text-slate-600">
@@ -367,8 +367,8 @@ function MainView({
         );
       })}
 
-      <div className="border-slate-200/62 relative overflow-hidden rounded-[22px] border bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_62%),rgba(255,255,255,0.86)] px-5 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+      <div className="relative overflow-hidden rounded-[22px] border border-slate-200/62 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_62%),rgba(255,255,255,0.86)] px-5 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
+        <div className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
           App
         </div>
         <div className="mt-1 text-[16px] font-semibold text-slate-900">Install app</div>
@@ -397,7 +397,7 @@ function MainView({
         </div>
 
         {install.showIosGuide ? (
-          <div className="bg-white/86 mt-3 rounded-2xl border border-blue-100/70 p-3">
+          <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/86 p-3">
             <div className="text-[13px] font-semibold text-slate-900">Install on iPhone/iPad</div>
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
               <li>Tap the Share button in Safari.</li>
@@ -417,7 +417,7 @@ function MainView({
         ) : null}
 
         {install.showMacSafariGuide ? (
-          <div className="bg-white/86 mt-3 rounded-2xl border border-blue-100/70 p-3">
+          <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/86 p-3">
             <div className="text-[13px] font-semibold text-slate-900">Install on Mac (Safari)</div>
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
               <li>Open File in Safari.</li>
@@ -473,26 +473,23 @@ function CourseView({
       ),
     [doneGateChecksByLessonId, doneLessonIdSet, modules]
   );
-  const resolvedLessonProgressStatusById = useMemo(
-    () => {
-      if (!lessonProgressStatusById) {
-        return computedLessonProgressStatusById;
-      }
+  const resolvedLessonProgressStatusById = useMemo(() => {
+    if (!lessonProgressStatusById) {
+      return computedLessonProgressStatusById;
+    }
 
-      const next = { ...computedLessonProgressStatusById };
-      for (const courseModule of modules) {
-        for (const lesson of courseModule.lessons) {
-          next[lesson.id] = getStrongestCourseLessonProgressStatus(
-            computedLessonProgressStatusById[lesson.id],
-            lessonProgressStatusById[lesson.id]
-          );
-        }
+    const next = { ...computedLessonProgressStatusById };
+    for (const courseModule of modules) {
+      for (const lesson of courseModule.lessons) {
+        next[lesson.id] = getStrongestCourseLessonProgressStatus(
+          computedLessonProgressStatusById[lesson.id],
+          lessonProgressStatusById[lesson.id]
+        );
       }
+    }
 
-      return next;
-    },
-    [computedLessonProgressStatusById, lessonProgressStatusById, modules]
-  );
+    return next;
+  }, [computedLessonProgressStatusById, lessonProgressStatusById, modules]);
   const totalModules = modules.length;
   const totalLessons = useMemo(
     () => modules.reduce((sum, mod) => sum + mod.lessons.length, 0),
@@ -522,13 +519,13 @@ function CourseView({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="border-blue-200/62 rounded-[20px] border bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
+      <div className="rounded-[20px] border border-blue-200/62 bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+            <div className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
               Progress
             </div>
-            <p className="mt-1 text-[13px] font-semibold leading-5 text-slate-700">
+            <p className="mt-1 text-[13px] leading-5 font-semibold text-slate-700">
               Modules {completedModules} of {totalModules}
               <span className="px-1 text-slate-300">•</span>
               Lessons {completedLessons} done
@@ -543,7 +540,7 @@ function CourseView({
             </p>
           </div>
 
-          <span className="bg-blue-50/82 shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
+          <span className="shrink-0 rounded-full bg-blue-50/82 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
             {completedPct}%
           </span>
         </div>
@@ -557,7 +554,7 @@ function CourseView({
           aria-valuenow={completedPct}
           aria-valuetext={`Progress: modules ${completedModules} of ${totalModules}, lessons ${completedLessons} done, ${inProgressLessons} in progress, ${totalLessons} total.`}
         >
-          <div className="bg-slate-200/86 h-2.5 overflow-hidden rounded-full ring-1 ring-slate-200/75">
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/86 ring-1 ring-slate-200/75">
             <div
               className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-[width] duration-300"
               style={{ width: `${completedPct}%` }}
@@ -603,9 +600,9 @@ function CourseView({
               ? "bg-gradient-to-b from-emerald-300 to-emerald-500"
               : isInProgressModule
                 ? "bg-gradient-to-b from-amber-300 to-amber-500"
-              : isOpen
-                ? "bg-slate-300/80"
-                : "bg-slate-200/70",
+                : isOpen
+                  ? "bg-slate-300/80"
+                  : "bg-slate-200/70",
         ].join(" ");
 
         const moduleHeaderBtn = [
@@ -675,10 +672,10 @@ function CourseView({
 
               <span
                 className={[
-                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] font-semibold leading-none ring-1 transition",
+                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] leading-none font-semibold ring-1 transition",
                   isOpen
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
-                    : "bg-white/88 ring-slate-200/78 text-slate-600",
+                    : "bg-white/88 text-slate-600 ring-slate-200/78",
                 ].join(" ")}
               >
                 {isOpen ? "–" : "+"}
@@ -786,19 +783,19 @@ function SmartLessonList({
                 className={[
                   "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
                   activeAndDone
-                    ? "ring-blue-400/82 bg-emerald-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)] ring-2"
+                    ? "bg-emerald-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)] ring-2 ring-blue-400/82"
                     : active
-                      ? "bg-blue-50/82 ring-blue-300/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] ring-1"
+                      ? "bg-blue-50/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] ring-1 ring-blue-300/78"
                       : inProgress
-                        ? "bg-amber-50/88 ring-amber-200/80 ring-1"
-                      : done
-                        ? "ring-emerald-200/78 bg-emerald-50/85 ring-1"
-                        : "bg-white/78 ring-1 ring-slate-200/65",
+                        ? "bg-amber-50/88 ring-1 ring-amber-200/80"
+                        : done
+                          ? "bg-emerald-50/85 ring-1 ring-emerald-200/78"
+                          : "bg-white/78 ring-1 ring-slate-200/65",
                 ].join(" ")}
                 aria-current={active ? "page" : undefined}
               >
                 {active ? (
-                  <span className="absolute left-2 top-3.5 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                  <span className="absolute top-3.5 left-2 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
                 ) : null}
 
                 <div className="flex items-center justify-between gap-3">
@@ -806,7 +803,7 @@ function SmartLessonList({
 
                   <div className="flex items-center gap-2">
                     {active && !activeAndDone ? (
-                      <span className="bg-blue-100/68 rounded-full px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
+                      <span className="rounded-full bg-blue-100/68 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
                         Current
                       </span>
                     ) : null}
@@ -827,7 +824,11 @@ function SmartLessonList({
                       <span
                         className={[
                           "shrink-0 text-[12px] font-semibold",
-                          done ? "text-slate-500" : inProgress ? "text-amber-700" : "text-slate-700",
+                          done
+                            ? "text-slate-500"
+                            : inProgress
+                              ? "text-amber-700"
+                              : "text-slate-700",
                         ].join(" ")}
                       >
                         {i + 1} of {total}
@@ -837,7 +838,7 @@ function SmartLessonList({
                   </div>
                 </div>
 
-                <div className="mt-1.5 line-clamp-1 text-[13px] font-medium leading-5 text-slate-700 sm:line-clamp-2">
+                <div className="mt-1.5 line-clamp-1 text-[13px] leading-5 font-medium text-slate-700 sm:line-clamp-2">
                   {l.goal}
                 </div>
               </PressButton>
@@ -851,7 +852,7 @@ function SmartLessonList({
         <>
           {/* hint chip */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="bg-white/58 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/50 backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/58 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/50 backdrop-blur">
               <span aria-hidden>⬇︎</span>
               <span>Scroll for more</span>
             </div>

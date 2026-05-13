@@ -1595,7 +1595,6 @@ function CoursePageClient() {
 
   const isFirstLesson = !prevId;
   const isLastLesson = !nextId;
-  const isMainDrawerOpen = drawerOpen && drawerView === "main";
   const isCourseDrawerOpen = drawerOpen && drawerView === "course";
 
   const youtubeWatchUrl = useMemo(
@@ -2039,14 +2038,13 @@ function CoursePageClient() {
 
   if (isFirstLesson) {
     bottomNavItems.push({
-      id: "course-menu",
+      id: "course-prev",
       kind: "button",
-      label: isMainDrawerOpen ? "Close" : "Menu",
+      label: "Prev",
       testId: "course-nav-left",
-      onClick: () => toggleDrawer("main"),
-      skin: isMainDrawerOpen ? "neutral" : "muted",
-      ariaPressed: isMainDrawerOpen,
-      ariaLabel: isMainDrawerOpen ? "Close main menu" : "Open main menu",
+      disabled: true,
+      skin: "muted",
+      ariaLabel: "No previous lesson",
     });
   } else {
     bottomNavItems.push({
@@ -2451,11 +2449,11 @@ function CoursePageClient() {
           mode: "custom",
           isOpen: drawerOpen,
           onOpen: () => {
-            setDrawerView("course");
+            setDrawerView("main");
             setDrawerOpen(true);
           },
           onClose: () => setDrawerOpen(false),
-          ariaLabel: "Toggle lessons",
+          ariaLabel: "Toggle main menu",
         }}
         bottomBar={bottomBar}
       >
@@ -2521,11 +2519,11 @@ function CoursePageClient() {
         mode: "custom",
         isOpen: drawerOpen,
         onOpen: () => {
-          setDrawerView("course");
+          setDrawerView("main");
           setDrawerOpen(true);
         },
         onClose: () => setDrawerOpen(false),
-        ariaLabel: "Toggle lessons",
+        ariaLabel: "Toggle main menu",
       }}
       bottomBar={bottomBar}
     >
@@ -2639,12 +2637,12 @@ function CoursePageClient() {
                 {isFirstLesson ? (
                   <CourseNavButton
                     grow={false}
-                    onClick={() => toggleDrawer("main")}
-                    skin={isMainDrawerOpen ? "neutral" : "muted"}
+                    disabled
+                    skin="muted"
                     className="px-4 py-2"
-                    ariaLabel={isMainDrawerOpen ? "Close main menu" : "Open main menu"}
+                    ariaLabel="No previous lesson"
                   >
-                    {isMainDrawerOpen ? "Close" : "Menu"}
+                    Prev
                   </CourseNavButton>
                 ) : (
                   <CourseNavButton

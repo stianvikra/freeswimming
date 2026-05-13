@@ -5,6 +5,7 @@ import {
   prewarmRoute,
   waitForRouteToSettle,
 } from "./utils/transient-navigation";
+import { isMobileProject } from "./project-guards";
 
 const isSiteLockEnabled = process.env.SITE_LOCK_ENABLED === "1";
 
@@ -38,5 +39,46 @@ test.describe("my library habits", () => {
       "href",
       "/my-library"
     );
+  });
+
+  test("mobile contextual nav links Habits and Micro Sessions directly", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !isMobileProject(testInfo),
+      "Contextual mobile nav behavior is validated only on mobile projects."
+    );
+    test.skip(isSiteLockEnabled, "Skipped while private access gate is enabled.");
+    test.slow();
+
+    await loginToHabitsViaDevBypass(page);
+
+    const nav = page.getByTestId("mobile-fixed-nav");
+    const library = page.getByTestId("mobile-nav-library");
+    const micro = page.getByTestId("mobile-nav-micro");
+    const habits = page.getByTestId("mobile-nav-habits");
+
+    await expect(nav).toBeVisible();
+    await expect(library).toHaveAttribute("href", "/my-library");
+    await expect(micro).toHaveAttribute(
+      "href",
+      "/my-library/dryland?micro=active&view=auto#micro-sessions"
+    );
+    await expect(habits).toHaveAttribute("aria-current", "page");
+
+    await micro.click();
+    await waitForRouteToSettle(page);
+    const microUrl = new URL(page.url());
+    expect(microUrl.pathname).toBe("/my-library/dryland");
+    expect(microUrl.searchParams.get("micro")).toBe("active");
+    await expect(page.getByTestId("mobile-nav-micro")).toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("mobile-nav-habits")).toHaveAttribute(
+      "href",
+      "/my-library/habits?view=active#today-habits"
+    );
+
+    await page.getByTestId("mobile-nav-habits").click();
+    await waitForRouteToSettle(page);
+    expect(new URL(page.url()).pathname).toBe("/my-library/habits");
   });
 });
