@@ -29,6 +29,11 @@ type Props = {
   initialMicroPlanEditorOpen?: boolean;
 };
 
+type PostSaveCta = {
+  href: string;
+  label: string;
+};
+
 function upsertRecentSessionSummary(current: DrylandSessionSummary[], next: DrylandSessionSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
   return [next, ...existing].slice(0, 8);
@@ -114,6 +119,7 @@ export default function DrylandBuilderHub({
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [postSaveCta, setPostSaveCta] = useState<PostSaveCta | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingCurrentMicroPlan, setIsUpdatingCurrentMicroPlan] = useState(false);
   const [pendingDeleteSessionId, setPendingDeleteSessionId] = useState<string | null>(null);
@@ -139,6 +145,7 @@ export default function DrylandBuilderHub({
     setActiveMicroPlan(drylandLibrary.microPlan);
     setError("");
     setSuccess("");
+    setPostSaveCta(null);
     setIsUpdatingCurrentMicroPlan(false);
     setPendingDeleteSessionId(null);
     setDeletingSessionId(null);
@@ -160,6 +167,7 @@ export default function DrylandBuilderHub({
     setIsSaving(true);
     setError("");
     setSuccess("");
+    setPostSaveCta(null);
 
     try {
       const response = await fetch(`/api/my-library/dryland/${savedSession.id}`, {
@@ -189,6 +197,18 @@ export default function DrylandBuilderHub({
       clearLocalDrylandDraft(savedSession.id);
       setRecentSessions((current) => upsertRecentSessionSummary(current, responseBody.summary));
       setSuccess("Dryland session changes saved.");
+      const savedSessionFeedsCurrentPlan =
+        activeMicroPlan?.sourceSessionSnapshots.some(
+          (source) => source.sourceDrylandSessionId === savedSession.id
+        ) ?? false;
+      setPostSaveCta({
+        href: "/my-library/dryland?micro=edit",
+        label: activeMicroPlan
+          ? savedSessionFeedsCurrentPlan
+            ? "Go to current micro session"
+            : "Add to current micro session"
+          : "Build micro session",
+      });
     } catch {
       setError("Could not save dryland session right now.");
     } finally {
@@ -201,6 +221,7 @@ export default function DrylandBuilderHub({
     clearLocalDrylandDraft(savedSession.id);
     setDraft(savedSession.draft);
     setSuccess("Unsaved dryland edits were reset to the last saved session.");
+    setPostSaveCta(null);
     setError("");
   }
 
@@ -228,6 +249,7 @@ export default function DrylandBuilderHub({
     setIsUpdatingCurrentMicroPlan(true);
     setError("");
     setSuccess("");
+    setPostSaveCta(null);
 
     try {
       const response = await fetch(`/api/my-library/dryland/micro-plans/${activeMicroPlan.id}`, {
@@ -258,6 +280,10 @@ export default function DrylandBuilderHub({
 
       setActiveMicroPlan(responseBody.plan);
       setSuccess("Current micro session updated. Completed and skipped units were preserved.");
+      setPostSaveCta({
+        href: "/my-library/dryland?micro=edit",
+        label: "Go to current micro session",
+      });
     } catch {
       setError("Could not update current micro session.");
     } finally {
@@ -269,6 +295,7 @@ export default function DrylandBuilderHub({
     setDeletingSessionId(session.id);
     setError("");
     setSuccess("");
+    setPostSaveCta(null);
 
     try {
       const response = await fetch(`/api/my-library/dryland/${session.id}`, {
@@ -311,7 +338,7 @@ export default function DrylandBuilderHub({
     <section
       data-testid="dryland-builder-hub"
       data-client-ready={clientReady ? "true" : "false"}
-      className={browseOnly ? "rounded-2xl border border-slate-200 bg-white p-5" : "space-y-6"}
+      className="space-y-6"
     >
       {browseOnly || !savedSession ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -372,6 +399,15 @@ export default function DrylandBuilderHub({
       {success ? (
         <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
           <p className="text-sm text-emerald-900">{success}</p>
+          {postSaveCta ? (
+            <Link
+              href={postSaveCta.href}
+              data-testid="dryland-post-save-micro-cta"
+              className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-600 active:bg-emerald-800"
+            >
+              {postSaveCta.label}
+            </Link>
+          ) : null}
         </div>
       ) : null}
 
@@ -390,13 +426,13 @@ export default function DrylandBuilderHub({
 
         {browseOnly ? (
           isMicroSourceSelectionActive ? null : recentSessions.length > 0 ? (
-            <div className="space-y-4">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               {recentSessions.map((session) => {
                 const isPendingDelete = pendingDeleteSessionId === session.id;
                 return (
                   <article
                     key={session.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                    className="border-b border-slate-200 p-4 last:border-b-0 sm:p-5"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
@@ -512,6 +548,7 @@ export default function DrylandBuilderHub({
               setDraft(nextDraft);
               writeLocalDrylandDraft(savedSession, nextDraft);
               setSuccess("");
+              setPostSaveCta(null);
             }}
             onSave={saveSession}
             onUpdateCurrentMicroPlan={updateCurrentMicroPlanFromSavedSession}

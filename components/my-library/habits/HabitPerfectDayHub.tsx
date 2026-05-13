@@ -8,6 +8,7 @@ import {
   Clock,
   Flag,
   Pause,
+  Pencil,
   Play,
   Plus,
   RotateCcw,
@@ -25,6 +26,7 @@ import {
   type HabitSnapshot,
   type HabitType,
   type HabitUnit,
+  type HabitWeekday,
 } from "@/lib/habits/shared";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
@@ -48,6 +50,8 @@ type HabitDraft = {
   targetTime: string;
   startDate: string;
   notes: string;
+  scheduleMode: ScheduleMode;
+  scheduleDays: HabitWeekday[];
 };
 
 type TimerState = {
@@ -55,7 +59,27 @@ type TimerState = {
   startedAtMs: number | null;
 };
 
+type ScheduleMode = "daily" | "weekly" | "custom";
+
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
+const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+const ALL_HABIT_WEEKDAYS: HabitWeekday[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
 
 function buildDefaultDraft(selectedDate: string): HabitDraft {
   return {
@@ -68,6 +92,60 @@ function buildDefaultDraft(selectedDate: string): HabitDraft {
     targetTime: "05:00",
     startDate: selectedDate,
     notes: "",
+    scheduleMode: "daily",
+    scheduleDays: [...ALL_HABIT_WEEKDAYS],
+  };
+}
+
+function getWeekdayForDate(date: string): HabitWeekday {
+  const parsed = Date.parse(`${date}T00:00:00.000Z`);
+  if (Number.isNaN(parsed)) return "monday";
+  return ALL_HABIT_WEEKDAYS[(new Date(parsed).getUTCDay() + 6) % 7] ?? "monday";
+}
+
+function getScheduleModeFromDays(days: HabitWeekday[]): ScheduleMode {
+  if (days.length >= 7) return "daily";
+  if (days.length === 1) return "weekly";
+  return "custom";
+}
+
+function normalizeDraftScheduleDays(days: HabitWeekday[]) {
+  const uniqueDays = ALL_HABIT_WEEKDAYS.filter((day) => days.includes(day));
+  return uniqueDays.length > 0 ? uniqueDays : [...ALL_HABIT_WEEKDAYS];
+}
+
+function getScheduleDaysForDraft(draft: HabitDraft) {
+  if (draft.scheduleMode === "daily") return [...ALL_HABIT_WEEKDAYS];
+  if (draft.scheduleMode === "weekly") {
+    return [draft.scheduleDays[0] ?? "monday"];
+  }
+  return normalizeDraftScheduleDays(draft.scheduleDays);
+}
+
+function buildDraftFromHabit(habit: HabitDefinitionView): HabitDraft {
+  const scheduleDays = normalizeDraftScheduleDays(habit.scheduleDays);
+  const habitMode = habit.habitMode;
+  return {
+    title: habit.title,
+    habitMode,
+    habitType:
+      habitMode === "quit" ? "avoidance" : habitMode === "timed" ? "duration" : habit.habitType,
+    category: habit.category,
+    targetValueNumeric:
+      habitMode === "quit"
+        ? "0"
+        : habit.targetValueNumeric === null || habit.targetValueNumeric === undefined
+          ? "10"
+          : String(habit.targetValueNumeric),
+    targetUnit:
+      habitMode === "quit"
+        ? "times"
+        : (habit.targetUnit ?? getUnitOptions(habit.habitType)[0] ?? "times"),
+    targetTime: habit.targetTime?.slice(0, 5) ?? "05:00",
+    startDate: habit.startDate,
+    notes: habit.notes ?? "",
+    scheduleMode: getScheduleModeFromDays(scheduleDays),
+    scheduleDays,
   };
 }
 
@@ -100,6 +178,32 @@ function getUnitOptions(habitType: HabitType): HabitUnit[] {
   if (habitType === "count") return ["times", "steps", "pages", "glasses", "custom"];
   if (habitType === "avoidance") return ["times", "glasses", "custom"];
   return ["times"];
+}
+
+function getResolvedDraftHabitType(draft: HabitDraft): HabitType {
+  if (draft.habitMode === "quit") return "avoidance";
+  if (draft.habitMode === "timed") return "duration";
+  return draft.habitType;
+}
+
+function applyHabitModeToDraft(current: HabitDraft, mode: HabitMode): HabitDraft {
+  if (mode === "build") {
+    return {
+      ...current,
+      habitMode: mode,
+      habitType: current.habitMode === "build" ? current.habitType : "binary",
+      targetUnit: current.habitMode === "build" ? current.targetUnit : "times",
+      targetValueNumeric: current.habitMode === "build" ? current.targetValueNumeric : "10",
+    };
+  }
+
+  return {
+    ...current,
+    habitMode: mode,
+    habitType: mode === "quit" ? "avoidance" : "duration",
+    targetValueNumeric: mode === "quit" ? "0" : "10",
+    targetUnit: mode === "timed" ? "minutes" : mode === "quit" ? "times" : current.targetUnit,
+  };
 }
 
 function getTimerTargetSeconds(draft: HabitDraft) {
@@ -201,6 +305,32 @@ function getCategoryLabel(value: string) {
     .join(" ");
 }
 
+function getDisplayUnit(unit: HabitUnit | null, value: number) {
+  const plural = value === 1 ? "" : "s";
+  switch (unit) {
+    case "glasses":
+      return value === 1 ? "glass" : "glasses";
+    case "minutes":
+      return value === 1 ? "minute" : "minutes";
+    case "seconds":
+      return value === 1 ? "second" : "seconds";
+    case "steps":
+      return value === 1 ? "step" : "steps";
+    case "pages":
+      return value === 1 ? "page" : "pages";
+    case "times":
+      return value === 1 ? "time" : "times";
+    case "custom":
+      return value === 1 ? "unit" : "units";
+    default:
+      return `time${plural}`;
+  }
+}
+
+function formatCountValue(value: number, unit: HabitUnit | null) {
+  return `${value} ${getDisplayUnit(unit, value)}`;
+}
+
 function readSeenHabitRowIds() {
   if (typeof window === "undefined") return new Set<string>();
 
@@ -229,6 +359,8 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
   const [draft, setDraft] = useState<HabitDraft>(() =>
     buildDefaultDraft(initialSnapshot.selectedDate)
   );
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<HabitDraft | null>(null);
   const [checkInInputs, setCheckInInputs] = useState<Record<string, string>>(() =>
     buildInputState(initialSnapshot)
   );
@@ -278,7 +410,7 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
         ? `${activeCount} active · add a few more when ready`
         : `${activeCount} active`;
 
-  const draftHabitType = draft.habitMode === "timed" ? "duration" : draft.habitType;
+  const draftHabitType = getResolvedDraftHabitType(draft);
   const draftUnitOptions = useMemo(() => getUnitOptions(draftHabitType), [draftHabitType]);
 
   function getTimerSeconds(habitId: string) {
@@ -365,8 +497,7 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
 
     const habitMode = draft.habitMode;
     const timerTargetSeconds = getTimerTargetSeconds(draft);
-    const habitType =
-      habitMode === "quit" ? "avoidance" : habitMode === "timed" ? "duration" : draft.habitType;
+    const habitType = getResolvedDraftHabitType(draft);
 
     setPendingKey("create");
     setNotice(null);
@@ -383,6 +514,7 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
           targetUnit: habitMode === "quit" ? "times" : draft.targetUnit,
           timerEnabled: habitMode === "timed",
           timerTargetSeconds,
+          scheduleDays: getScheduleDaysForDraft(draft),
           selectedDate: snapshot.selectedDate,
           isPerfectDayItem: true,
         }),
@@ -397,6 +529,56 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
       setNotice("Habit added.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not create that habit right now.");
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  function startEditingHabit(habit: HabitDefinitionView) {
+    setEditingHabitId(habit.id);
+    setEditDraft(buildDraftFromHabit(habit));
+    setExpandedHabitIds((current) => [...new Set([...current, habit.id])]);
+    setNotice(null);
+    setError(null);
+  }
+
+  async function updateHabit(event: FormEvent<HTMLFormElement>, habitId: string) {
+    event.preventDefault();
+    if (!editDraft || editingHabitId !== habitId) return;
+
+    const habitMode = editDraft.habitMode;
+    const timerTargetSeconds = getTimerTargetSeconds(editDraft);
+    const habitType = getResolvedDraftHabitType(editDraft);
+
+    setPendingKey(`edit-${habitId}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/my-library/habits/${habitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editDraft.title,
+          notes: editDraft.notes,
+          habitMode,
+          habitType,
+          category: editDraft.category,
+          targetValueNumeric: habitMode === "quit" ? "0" : editDraft.targetValueNumeric,
+          targetUnit: habitMode === "quit" ? "times" : editDraft.targetUnit,
+          targetTime: editDraft.targetTime,
+          startDate: editDraft.startDate,
+          timerEnabled: habitMode === "timed",
+          timerTargetSeconds,
+          scheduleDays: getScheduleDaysForDraft(editDraft),
+          selectedDate: snapshot.selectedDate,
+        }),
+      });
+      await applyResponse(response, "Could not update that habit right now.");
+      setEditingHabitId(null);
+      setEditDraft(null);
+      setNotice("Habit updated. Check-ins and history were kept.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not update that habit right now.");
     } finally {
       setPendingKey(null);
     }
@@ -534,6 +716,146 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
     }
   }
 
+  function renderScheduleControls(
+    currentDraft: HabitDraft,
+    updateDraft: (updater: (current: HabitDraft) => HabitDraft) => void,
+    idPrefix: string
+  ) {
+    const weeklyDay = currentDraft.scheduleDays[0] ?? getWeekdayForDate(snapshot.selectedDate);
+
+    function setScheduleMode(scheduleMode: ScheduleMode) {
+      updateDraft((current) => {
+        if (scheduleMode === "daily") {
+          return { ...current, scheduleMode, scheduleDays: [...ALL_HABIT_WEEKDAYS] };
+        }
+        if (scheduleMode === "weekly") {
+          return {
+            ...current,
+            scheduleMode,
+            scheduleDays: [current.scheduleDays[0] ?? getWeekdayForDate(snapshot.selectedDate)],
+          };
+        }
+        return {
+          ...current,
+          scheduleMode,
+          scheduleDays:
+            current.scheduleDays.length > 0
+              ? normalizeDraftScheduleDays(current.scheduleDays)
+              : [getWeekdayForDate(snapshot.selectedDate)],
+        };
+      });
+    }
+
+    return (
+      <div className="md:col-span-2">
+        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          Schedule
+        </span>
+        <div className="mt-1 grid gap-2 sm:grid-cols-3">
+          {[
+            ["daily", "Daily"],
+            ["weekly", "1x/week"],
+            ["custom", "Custom days"],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={currentDraft.scheduleMode === mode}
+              onClick={() => setScheduleMode(mode as ScheduleMode)}
+              className={`min-h-10 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                currentDraft.scheduleMode === mode
+                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {currentDraft.scheduleMode === "weekly" ? (
+          <label className="mt-3 block">
+            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              Weekday
+            </span>
+            <select
+              aria-label={`${idPrefix} weekly weekday`}
+              value={weeklyDay}
+              onChange={(event) =>
+                updateDraft((current) => ({
+                  ...current,
+                  scheduleDays: [event.target.value as HabitWeekday],
+                }))
+              }
+              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            >
+              {ALL_HABIT_WEEKDAYS.map((day) => (
+                <option key={day} value={day}>
+                  {WEEKDAY_LABELS[day]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {currentDraft.scheduleMode === "custom" ? (
+          <fieldset className="mt-3">
+            <legend className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              Days
+            </legend>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {ALL_HABIT_WEEKDAYS.map((day) => {
+                const checked = currentDraft.scheduleDays.includes(day);
+                return (
+                  <label
+                    key={day}
+                    className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
+                      checked
+                        ? "border-blue-500 bg-blue-50 text-blue-900"
+                        : "border-slate-200 bg-white text-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        updateDraft((current) => {
+                          const nextDays = checked
+                            ? current.scheduleDays.filter((candidate) => candidate !== day)
+                            : [...current.scheduleDays, day];
+                          return {
+                            ...current,
+                            scheduleDays:
+                              nextDays.length > 0
+                                ? normalizeDraftScheduleDays(nextDays)
+                                : current.scheduleDays,
+                          };
+                        })
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                    />
+                    {WEEKDAY_LABELS[day]}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
+      </div>
+    );
+  }
+
+  function getCountHabitStatus(item: HabitDayItem) {
+    const todayValue = item.checkIn?.valueNumeric ?? 0;
+    const scheduledDays = snapshot.weekSummary.days
+      .map((day) => day.items.find((candidate) => candidate.habit.id === item.habit.id) ?? null)
+      .filter((candidate): candidate is HabitDayItem => candidate !== null);
+    const satisfiedDays = scheduledDays.filter((candidate) => candidate.evaluation.isSatisfied);
+    return `${formatCountValue(todayValue, item.habit.targetUnit)} today · ${
+      satisfiedDays.length
+    }/${scheduledDays.length || 7} days this week`;
+  }
+
   if (!snapshot.schemaReady) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -653,10 +975,16 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
               const cadenceLabel = getHabitCadenceLabel(habit);
               const timerTargetSeconds = getTimerTargetDisplaySeconds(habit);
               const quickStatusLabel = isQuit
-                ? item.evaluation.valueLabel
+                ? `${item.evaluation.valueLabel} · ${
+                    item.evaluation.stateLabel === "Lapse logged"
+                      ? "Slip logged today"
+                      : "On track today"
+                  }`
                 : isTimed
                   ? getTimedStatusLabel(item, timerSeconds)
-                  : item.evaluation.valueLabel;
+                  : habit.habitType === "count"
+                    ? getCountHabitStatus(item)
+                    : item.evaluation.valueLabel;
               return (
                 <article
                   key={habit.id}
@@ -736,6 +1064,16 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
 
                       <button
                         type="button"
+                        onClick={() => startEditingHabit(habit)}
+                        disabled={disabled}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
                         aria-expanded={isExpanded}
                         aria-controls={detailsId}
                         onClick={() => toggleHabitDetails(habit.id)}
@@ -750,6 +1088,247 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
                       </button>
                     </div>
                   </div>
+
+                  {editingHabitId === habit.id && editDraft ? (
+                    <form
+                      data-testid={`habit-edit-form-${habit.id}`}
+                      onSubmit={(event) => updateHabit(event, habit.id)}
+                      className="mt-4 grid gap-3 rounded-2xl border border-blue-100 bg-white p-4 md:grid-cols-2"
+                    >
+                      <p className="text-sm text-slate-600 md:col-span-2">
+                        Updates this habit definition. Check-ins and history stay attached.
+                      </p>
+
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Name
+                        </span>
+                        <input
+                          value={editDraft.title}
+                          onChange={(event) =>
+                            setEditDraft((current) =>
+                              current ? { ...current, title: event.target.value } : current
+                            )
+                          }
+                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                      </label>
+
+                      <div className="md:col-span-2">
+                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Mode
+                        </span>
+                        <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                          {HABIT_MODE_VALUES.map((modeOption) => (
+                            <button
+                              key={modeOption}
+                              type="button"
+                              aria-pressed={editDraft.habitMode === modeOption}
+                              onClick={() =>
+                                setEditDraft((current) =>
+                                  current ? applyHabitModeToDraft(current, modeOption) : current
+                                )
+                              }
+                              className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                                editDraft.habitMode === modeOption
+                                  ? "border-blue-600 bg-blue-50 text-blue-900"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              {getHabitModeLabel(modeOption)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {editDraft.habitMode === "build" ? (
+                        <label className="block">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Type
+                          </span>
+                          <select
+                            value={editDraft.habitType}
+                            onChange={(event) => {
+                              const habitType = event.target.value as HabitType;
+                              const unitOptions = getUnitOptions(habitType);
+                              setEditDraft((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      habitType,
+                                      targetUnit: unitOptions[0] ?? "times",
+                                      targetValueNumeric:
+                                        habitType === "avoidance"
+                                          ? "0"
+                                          : current.targetValueNumeric,
+                                    }
+                                  : current
+                              );
+                            }}
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          >
+                            {HABIT_TYPE_VALUES.map((type) => (
+                              <option key={type} value={type}>
+                                {getHabitTypeLabel(type)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
+
+                      <label className="block">
+                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Category
+                        </span>
+                        <select
+                          value={editDraft.category}
+                          onChange={(event) =>
+                            setEditDraft((current) =>
+                              current ? { ...current, category: event.target.value } : current
+                            )
+                          }
+                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        >
+                          {HABIT_CATEGORY_VALUES.map((category) => (
+                            <option key={category} value={category}>
+                              {getCategoryLabel(category)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="block">
+                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          {editDraft.habitMode === "quit" ? "Quit date" : "Start date"}
+                        </span>
+                        <input
+                          type="date"
+                          value={editDraft.startDate}
+                          max={snapshot.selectedDate}
+                          onChange={(event) =>
+                            setEditDraft((current) =>
+                              current ? { ...current, startDate: event.target.value } : current
+                            )
+                          }
+                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                      </label>
+
+                      {editDraft.habitMode === "build" && editDraft.habitType === "time_of_day" ? (
+                        <label className="block">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Target time
+                          </span>
+                          <input
+                            type="time"
+                            value={editDraft.targetTime}
+                            onChange={(event) =>
+                              setEditDraft((current) =>
+                                current ? { ...current, targetTime: event.target.value } : current
+                              )
+                            }
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          />
+                        </label>
+                      ) : null}
+
+                      {editDraft.habitMode !== "quit" &&
+                      getResolvedDraftHabitType(editDraft) !== "binary" &&
+                      getResolvedDraftHabitType(editDraft) !== "time_of_day" ? (
+                        <>
+                          <label className="block">
+                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              {editDraft.habitMode === "timed" ? "Timer target" : "Target"}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.25"
+                              value={editDraft.targetValueNumeric}
+                              onChange={(event) =>
+                                setEditDraft((current) =>
+                                  current
+                                    ? { ...current, targetValueNumeric: event.target.value }
+                                    : current
+                                )
+                              }
+                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              Unit
+                            </span>
+                            <select
+                              value={editDraft.targetUnit}
+                              onChange={(event) =>
+                                setEditDraft((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        targetUnit: event.target.value as HabitUnit,
+                                      }
+                                    : current
+                                )
+                              }
+                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            >
+                              {getUnitOptions(getResolvedDraftHabitType(editDraft)).map((unit) => (
+                                <option key={unit} value={unit}>
+                                  {unit}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </>
+                      ) : null}
+
+                      {renderScheduleControls(
+                        editDraft,
+                        (updater) =>
+                          setEditDraft((current) => (current ? updater(current) : current)),
+                        "Edit habit"
+                      )}
+
+                      <label className="block md:col-span-2">
+                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Note
+                        </span>
+                        <input
+                          value={editDraft.notes}
+                          onChange={(event) =>
+                            setEditDraft((current) =>
+                              current ? { ...current, notes: event.target.value } : current
+                            )
+                          }
+                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          placeholder="Optional"
+                        />
+                      </label>
+
+                      <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingHabitId(null);
+                            setEditDraft(null);
+                          }}
+                          disabled={pendingKey === `edit-${habit.id}`}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={pendingKey !== null}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Save className="h-4 w-4" aria-hidden="true" />
+                          {pendingKey === `edit-${habit.id}` ? "Saving..." : "Save changes"}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
 
                   {isExpanded ? (
                     <div id={detailsId} className="mt-4 border-t border-slate-200 pt-4">
@@ -929,26 +1508,7 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
                   key={mode}
                   type="button"
                   aria-pressed={draft.habitMode === mode}
-                  onClick={() =>
-                    setDraft((current) => ({
-                      ...current,
-                      habitMode: mode,
-                      habitType:
-                        mode === "quit" ? "avoidance" : mode === "timed" ? "duration" : "binary",
-                      targetValueNumeric:
-                        mode === "quit"
-                          ? "0"
-                          : mode === "timed"
-                            ? "10"
-                            : current.targetValueNumeric,
-                      targetUnit:
-                        mode === "timed"
-                          ? "minutes"
-                          : mode === "quit"
-                            ? "times"
-                            : current.targetUnit,
-                    }))
-                  }
+                  onClick={() => setDraft((current) => applyHabitModeToDraft(current, mode))}
                   className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
                     draft.habitMode === mode
                       ? "border-blue-600 bg-blue-50 text-blue-900"
@@ -1085,6 +1645,8 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
               </label>
             </>
           ) : null}
+
+          {renderScheduleControls(draft, setDraft, "Add habit")}
 
           <label className="block md:col-span-2">
             <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">

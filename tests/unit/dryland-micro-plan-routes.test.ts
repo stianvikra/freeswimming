@@ -74,7 +74,7 @@ function buildMicroPlanRow(overrides?: Partial<DrylandMicroPlanRow>): DrylandMic
     status: "active",
     session_kind: "strength",
     source_session_title: "Weekly strength",
-    title: "Micro plan: Weekly strength",
+    title: "MS: Weekly strength",
     timezone: "UTC",
     week_starts_at: "2026-05-04T00:00:00.000Z",
     week_ends_at: "2026-05-11T00:00:00.000Z",
@@ -228,6 +228,7 @@ describe("dryland micro plan routes", () => {
         user_id: "user-1",
         source_dryland_session_id: "11111111-1111-4111-8111-111111111111",
         source_session_title: "Weekly strength",
+        title: "MS: Weekly strength",
         session_kind: "strength",
       })
     );

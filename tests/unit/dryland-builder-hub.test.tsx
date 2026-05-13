@@ -125,7 +125,7 @@ function buildMicroPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMic
     id: "22222222-2222-4222-8222-222222222222",
     sourceDrylandSessionId: summary.id,
     sourceSessionTitle: summary.title,
-    title: "Micro session: Strength session",
+    title: "MS: Strength session",
     sessionKind: summary.sessionKind,
     sourceSessionSnapshots: [
       {
@@ -306,6 +306,13 @@ describe("DrylandBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Dryland session changes saved.")).toBeVisible();
     });
+    expect(screen.getByTestId("dryland-post-save-micro-cta")).toHaveTextContent(
+      "Build micro session"
+    );
+    expect(screen.getByTestId("dryland-post-save-micro-cta")).toHaveAttribute(
+      "href",
+      "/my-library/dryland?micro=edit"
+    );
   });
 
   it("warns when a saved session feeds the active micro session and can update current queued units", async () => {
@@ -339,9 +346,13 @@ describe("DrylandBuilderHub", () => {
     });
 
     expect(screen.getByTestId("dryland-source-impact-warning")).toHaveTextContent(
-      "Saving this Dryland Session applies to future Micro Sessions by default"
+      "Saving this Dryland Session is used from the next Micro Session by default"
     );
-    expect(screen.getByText("Use from next micro session")).toBeVisible();
+    expect(screen.getByText("Default: use from next micro session")).toBeVisible();
+    expect(screen.getByTestId("dryland-go-current-micro-session")).toHaveAttribute(
+      "href",
+      "/my-library/dryland?micro=edit"
+    );
 
     fireEvent.click(screen.getByTestId("dryland-update-current-micro-session"));
 
