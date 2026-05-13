@@ -617,7 +617,29 @@ function buildTargetLabel(input: {
   const operator = input.targetOperator === "at_most" ? "Max" : "At least";
   const value = input.targetValueNumeric ?? 0;
   const unit = input.targetUnit ?? "times";
-  return `${operator} ${value} ${unit}`;
+  return `${operator} ${value} ${formatHabitUnit(unit, value)}`;
+}
+
+function formatHabitUnit(unit: HabitUnit, value: number) {
+  if (value !== 1) return unit;
+  switch (unit) {
+    case "glasses":
+      return "glass";
+    case "minutes":
+      return "minute";
+    case "seconds":
+      return "second";
+    case "steps":
+      return "step";
+    case "pages":
+      return "page";
+    case "times":
+      return "time";
+    case "custom":
+      return "unit";
+    default:
+      return unit;
+  }
 }
 
 function compareTime(valueTime: string, targetTime: string, operator: HabitOperator) {
@@ -709,7 +731,7 @@ export function evaluateHabitForDate(
 
   return {
     isSatisfied,
-    valueLabel: `${value} ${habit.targetUnit ?? "times"}`,
+    valueLabel: `${value} ${formatHabitUnit(habit.targetUnit ?? "times", value)}`,
     stateLabel: isSatisfied
       ? habit.habitMode === "timed"
         ? "Timer saved"

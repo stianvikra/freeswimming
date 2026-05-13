@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Bubbles, ListChecks, Trash2, Undo2 } from "lucide-react";
+import { Bubbles, CheckCircle2, ListChecks, Trash2, Undo2 } from "lucide-react";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -129,9 +129,9 @@ function buildInitialReleaseDayAssignments(plan: DrylandMicroPlanRecord | null) 
 function buildDefaultTitle(sessionIds: string[], sessions: DrylandSessionSummary[]) {
   if (sessionIds.length === 1) {
     const session = sessions.find((candidate) => candidate.id === sessionIds[0]);
-    return `Micro session: ${session?.title ?? "Dryland"}`.slice(0, 120);
+    return `MS: ${session?.title ?? "Dryland"}`.slice(0, 120);
   }
-  return sessionIds.length > 1 ? `Micro session: ${sessionIds.length} sessions` : "Micro session";
+  return sessionIds.length > 1 ? `MS: ${sessionIds.length} sessions` : "MS: Dryland";
 }
 
 function sortUnitsByRelease(first: UnitView, second: UnitView) {
@@ -902,6 +902,7 @@ export default function DrylandMicroPlanPanel({
     const isPending = pendingBlockId === unit.block.id;
     const isPaused = plan?.status === "paused";
     const completeDisabled = isPending || isPaused || !unit.isAvailable;
+    const targetLabel = actionLabel ?? getBubbleTargetLabel(unit.block);
 
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -909,15 +910,26 @@ export default function DrylandMicroPlanPanel({
           <button
             type="button"
             data-testid={`dryland-micro-complete-${unit.index}`}
+            aria-pressed="false"
+            aria-label={`Complete ${targetLabel}`}
             onClick={() => void updateBlock(unit.block.id, "completed", { visualOrigin })}
             disabled={completeDisabled}
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending
-              ? "Saving..."
-              : visualOrigin === "bubbles"
-                ? "Done"
-                : (actionLabel ?? "Done")}
+            {isPending ? "Saving..." : targetLabel}
+          </button>
+        ) : unit.block.status === "completed" ? (
+          <button
+            type="button"
+            data-testid={`dryland-micro-undo-${unit.index}`}
+            aria-pressed="true"
+            aria-label={`Completed ${targetLabel}. Undo completion`}
+            onClick={() => void updateBlock(unit.block.id, "queued", { visualOrigin })}
+            disabled={isPending || isPaused}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 active:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            {isPending ? "Saving..." : "Completed"}
           </button>
         ) : (
           <button
@@ -975,7 +987,7 @@ export default function DrylandMicroPlanPanel({
   function renderOrderedUnits() {
     if (availableUnits.length === 0) {
       return (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className="mt-4 rounded-xl bg-white p-4 ring-1 ring-slate-100">
           <p className="text-sm font-medium text-slate-900">No units are available now.</p>
           <p className="mt-1 text-sm text-slate-600">
             Release an upcoming unit or wait for the next weekday release.
@@ -994,7 +1006,7 @@ export default function DrylandMicroPlanPanel({
             <article
               key={`${firstUnit.block.id}-group`}
               data-testid={`dryland-micro-unit-group-${firstUnit.index}`}
-              className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+              className="rounded-xl bg-white p-3 ring-1 ring-slate-100"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -1012,8 +1024,8 @@ export default function DrylandMicroPlanPanel({
                       unit,
                       "ordered",
                       group.length > 1
-                        ? `Done · Set ${setIndex + 1} · ${getBubbleTargetLabel(unit.block)}`
-                        : `Done · ${getBubbleTargetLabel(unit.block)}`
+                        ? `Set ${setIndex + 1} · ${getBubbleTargetLabel(unit.block)}`
+                        : getBubbleTargetLabel(unit.block)
                     )}
                   </div>
                 ))}
@@ -1028,7 +1040,7 @@ export default function DrylandMicroPlanPanel({
   function renderBubbleBoard() {
     if (availableUnits.length === 0) {
       return (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+        <div className="mt-4 rounded-xl bg-white p-4 ring-1 ring-slate-100">
           <p className="text-sm font-medium text-slate-900">No bubbles are available now.</p>
           <p className="mt-1 text-sm text-slate-600">
             Release an upcoming unit or switch back to ordered mode when the next unit opens.
@@ -1041,7 +1053,7 @@ export default function DrylandMicroPlanPanel({
       <div className="mt-4">
         <div
           data-testid="dryland-micro-bubble-board"
-          className="flex flex-wrap items-start gap-x-4 gap-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-3"
+          className="flex flex-wrap items-start gap-x-4 gap-y-4 rounded-3xl bg-white p-3 ring-1 ring-slate-100"
         >
           {availableUnits.map((unit) => {
             const isArmed = armedBubbleId === unit.block.id;
@@ -1057,9 +1069,7 @@ export default function DrylandMicroPlanPanel({
                   type="button"
                   data-testid={`dryland-micro-bubble-${unit.index}`}
                   aria-pressed={isArmed}
-                  aria-label={`Mark ${unit.block.title}, ${getBubbleTargetLabel(
-                    unit.block
-                  )} as done`}
+                  aria-label={`Complete ${unit.block.title}, ${getBubbleTargetLabel(unit.block)}`}
                   onClick={() => handleBubbleClick(unit)}
                   onKeyDown={(event) => handleBubbleKeyDown(event, unit)}
                   disabled={plan?.status === "paused" || isPending}
@@ -1082,7 +1092,7 @@ export default function DrylandMicroPlanPanel({
                   </span>
                   {isArmed && !isPending ? (
                     <span className="mt-2 inline-flex min-h-6 items-center rounded-full bg-white/85 px-2 text-[11px] leading-none font-bold text-blue-700 shadow-sm ring-1 ring-blue-100">
-                      Mark done?
+                      Complete?
                     </span>
                   ) : null}
                   {isPending ? (
@@ -1103,10 +1113,7 @@ export default function DrylandMicroPlanPanel({
     const copy = getCollapsedPlanCopy();
     const nextUpcomingUnit = upcomingUnits[0] ?? null;
     return (
-      <div
-        data-testid="dryland-micro-collapsed-state"
-        className="rounded-xl border border-slate-200 bg-white p-4"
-      >
+      <div data-testid="dryland-micro-collapsed-state" className="rounded-2xl bg-slate-50/70 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h4 className="text-base font-semibold text-slate-950">{copy.title}</h4>
@@ -1161,7 +1168,7 @@ export default function DrylandMicroPlanPanel({
   return (
     <section
       data-testid="dryland-micro-plan-panel"
-      className="rounded-2xl border border-emerald-200 bg-emerald-50/20 p-4 sm:p-5"
+      className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -1208,7 +1215,7 @@ export default function DrylandMicroPlanPanel({
       ) : null}
 
       {schemaReady && !plan ? (
-        <div className="mt-5 space-y-4 sm:rounded-xl sm:border sm:border-slate-200 sm:bg-white sm:p-4">
+        <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
           {!isCreating ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
@@ -1282,7 +1289,7 @@ export default function DrylandMicroPlanPanel({
 
       {schemaReady && plan ? (
         <div className="mt-5 space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl bg-slate-50/70 p-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <h4 className="text-xl font-semibold text-slate-950">{plan.title}</h4>
@@ -1377,7 +1384,7 @@ export default function DrylandMicroPlanPanel({
           {isEditing ? (
             <div
               data-testid="dryland-micro-edit-form"
-              className="space-y-4 sm:rounded-xl sm:border sm:border-blue-200 sm:bg-white sm:p-4"
+              className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4"
             >
               <label className="grid gap-1 text-sm font-medium text-slate-700">
                 <span>Title</span>
@@ -1419,7 +1426,7 @@ export default function DrylandMicroPlanPanel({
               renderCollapsedPlan()
             ) : (
               <>
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="rounded-2xl bg-slate-50/70 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h4 className="text-base font-semibold text-slate-950">Available units</h4>
@@ -1434,7 +1441,7 @@ export default function DrylandMicroPlanPanel({
                 </div>
 
                 {upcomingUnits.length > 0 ? (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="rounded-2xl bg-slate-50/70 p-4">
                     <h4 className="text-base font-semibold text-slate-950">Upcoming units</h4>
                     <div className="mt-3 space-y-2">
                       {upcomingUnits.map((unit) => {
@@ -1444,7 +1451,7 @@ export default function DrylandMicroPlanPanel({
                         return (
                           <div
                             key={unit.block.id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-100"
                           >
                             <div>
                               <p className="text-sm font-semibold text-slate-950">
@@ -1475,7 +1482,7 @@ export default function DrylandMicroPlanPanel({
                 ) : null}
 
                 {historyUnits.length > 0 ? (
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="rounded-2xl bg-slate-50/70 p-4">
                     <h4 className="text-base font-semibold text-slate-950">
                       Completed and skipped
                     </h4>
@@ -1483,7 +1490,7 @@ export default function DrylandMicroPlanPanel({
                       {historyUnits.map((unit) => (
                         <div
                           key={unit.block.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-100"
                         >
                           <div>
                             <p className="text-sm font-semibold text-slate-950">

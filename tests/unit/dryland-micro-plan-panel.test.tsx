@@ -83,7 +83,7 @@ function buildPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMicroPla
     id: "22222222-2222-4222-8222-222222222222",
     sourceDrylandSessionId: "11111111-1111-4111-8111-111111111111",
     sourceSessionTitle: "Weekly strength",
-    title: "Micro session: Weekly strength",
+    title: "MS: Weekly strength",
     sessionKind: "strength",
     sourceSessionSnapshots: [
       {
@@ -414,9 +414,9 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(group).getByText("Push ups")).toBeVisible();
     expect(within(group).getByText("3 sets · 12 reps · Rest 30 sec")).toBeVisible();
     expect(within(group).queryByText(/Weekly strength/)).toBeNull();
-    expect(within(group).getByRole("button", { name: "Done · Set 1 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Done · Set 2 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Done · Set 3 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Complete Set 1 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Complete Set 2 · 12 reps" })).toBeVisible();
+    expect(within(group).getByRole("button", { name: "Complete Set 3 · 12 reps" })).toBeVisible();
     expect(within(group).queryByRole("button", { name: "Skip today" })).toBeNull();
   });
 
@@ -434,27 +434,27 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
     expect(screen.getByTestId("dryland-micro-bubble-0")).toHaveAccessibleName(
-      "Mark Single-leg squat, 6 reps as done"
+      "Complete Single-leg squat, 6 reps"
     );
     expect(screen.queryByTestId("dryland-micro-bubble-detail")).not.toBeInTheDocument();
-    expect(screen.queryByText("Mark done?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Complete?")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
 
     expect(
-      within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Mark done?")
+      within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Complete?")
     ).toBeVisible();
     expect(screen.getByTestId("dryland-micro-bubble-1")).toHaveAttribute("aria-pressed", "true");
     expect(
-      within(screen.getByTestId("dryland-micro-bubble-0")).queryByText("Mark done?")
+      within(screen.getByTestId("dryland-micro-bubble-0")).queryByText("Complete?")
     ).toBeNull();
 
     fireEvent.keyDown(screen.getByTestId("dryland-micro-bubble-1"), { key: "Escape" });
 
-    expect(screen.queryByText("Mark done?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Complete?")).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId("dryland-micro-bubble-0"), { key: "Enter" });
     expect(
-      within(screen.getByTestId("dryland-micro-bubble-0")).getByText("Mark done?")
+      within(screen.getByTestId("dryland-micro-bubble-0")).getByText("Complete?")
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Skip today" })).toBeNull();
   });
@@ -507,7 +507,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(board).toHaveClass("flex", "flex-wrap", "gap-x-4", "gap-y-4");
     expect(
       within(board).getAllByRole("button", {
-        name: "Mark Push ups, 12 reps as done",
+        name: "Complete Push ups, 12 reps",
       })
     ).toHaveLength(3);
     expect(within(board).queryByText(/30 sec rest/)).toBeNull();
@@ -580,12 +580,12 @@ describe("DrylandMicroPlanPanel", () => {
     const board = screen.getByTestId("dryland-micro-bubble-board");
     expect(
       within(board).getByRole("button", {
-        name: "Mark Hang ups, 8 reps as done",
+        name: "Complete Hang ups, 8 reps",
       })
     ).toBeVisible();
     expect(
       within(board).getByRole("button", {
-        name: "Mark Plank, 30 sec as done",
+        name: "Complete Plank, 30 sec",
       })
     ).toBeVisible();
     expect(within(board).getByText("8 reps")).toBeVisible();

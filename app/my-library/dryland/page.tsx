@@ -28,7 +28,7 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[1080px] px-6 pt-28 pb-20">
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
+        <div className="space-y-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">

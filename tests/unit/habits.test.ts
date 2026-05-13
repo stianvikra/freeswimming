@@ -266,4 +266,29 @@ describe("habits domain helpers", () => {
     expect(summary.perfectDayCount).toBe(2);
     expect(summary.averageCompletionPercent).toBe(29);
   });
+
+  it("formats singular count units without parenthetical copy", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        habit_type: "count",
+        target_value_numeric: 1,
+        target_unit: "glasses",
+      })
+    );
+    const [item] = buildHabitDaySummary(
+      [habit],
+      [
+        buildHabitCheckInView(
+          buildCheckInRow({
+            value_boolean: null,
+            value_numeric: 1,
+          })
+        ),
+      ],
+      "2026-05-10"
+    ).items;
+
+    expect(habit.targetLabel).toBe("At least 1 glass");
+    expect(item?.evaluation.valueLabel).toBe("1 glass");
+  });
 });

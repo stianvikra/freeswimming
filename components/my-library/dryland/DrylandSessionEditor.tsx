@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { buildCustomDrylandExercise } from "@/lib/dryland/exercise-bank";
 import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
@@ -967,23 +968,32 @@ export default function DrylandSessionEditor({
                   This session feeds the current Micro Session
                 </p>
                 <p className="mt-1 max-w-[68ch] text-sm text-amber-900">
-                  Saving this Dryland Session applies to future Micro Sessions by default. Update
+                  Saving this Dryland Session is used from the next Micro Session by default. Update
                   the current Micro Session only when you want remaining queued units rebuilt from
                   the saved session.
                 </p>
                 <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
-                  Use from next micro session
+                  Default: use from next micro session
                 </span>
               </div>
-              <button
-                type="button"
-                data-testid="dryland-update-current-micro-session"
-                onClick={onUpdateCurrentMicroPlan}
-                disabled={hasUnsavedChanges || isSaving || isUpdatingCurrentMicroPlan}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 active:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
-              >
-                {isUpdatingCurrentMicroPlan ? "Updating..." : "Update current micro session"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/my-library/dryland?micro=edit"
+                  data-testid="dryland-go-current-micro-session"
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
+                >
+                  Go to current micro session
+                </Link>
+                <button
+                  type="button"
+                  data-testid="dryland-update-current-micro-session"
+                  onClick={onUpdateCurrentMicroPlan}
+                  disabled={hasUnsavedChanges || isSaving || isUpdatingCurrentMicroPlan}
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 active:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+                >
+                  {isUpdatingCurrentMicroPlan ? "Updating..." : "Update current micro session"}
+                </button>
+              </div>
             </div>
             {hasUnsavedChanges ? (
               <p className="mt-2 text-sm text-amber-900">

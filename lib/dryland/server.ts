@@ -143,8 +143,8 @@ export function buildDrylandMicroPlanInsert(
       : `${sourceRecords.length} source sessions`;
   const defaultTitle =
     sourceRecords.length === 1
-      ? `Micro session: ${primaryRecord.draft.title}`
-      : `Micro session: ${sourceRecords.length} sessions`;
+      ? `MS: ${primaryRecord.draft.title}`
+      : `MS: ${sourceRecords.length} sessions`;
   const title =
     typeof options.title === "string" && options.title.trim()
       ? options.title.trim().slice(0, 120)
