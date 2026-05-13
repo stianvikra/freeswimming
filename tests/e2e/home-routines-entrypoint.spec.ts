@@ -46,7 +46,7 @@ test.describe("home routines entrypoint", () => {
     await waitForRouteToSettle(page);
 
     await expect(page.getByRole("heading", { name: "Adult learner?" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /My routines/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /My Routines/i })).toHaveCount(0);
     await expect(await getPrimaryActionLabels(page)).toEqual([
       "Free course Start swimming today No signup. No paywall. Just swim.",
       "Swim programs Structured plans and PDFs",
@@ -62,13 +62,13 @@ test.describe("home routines entrypoint", () => {
     await loginToHomeViaDevBypass(page);
 
     const routinesLink = page.getByRole("link", {
-      name: /My routines Today's habits and micro-sessions/i,
+      name: /My Routines Today's habits and micro-sessions/i,
     });
     await expect(routinesLink).toBeVisible();
-    await expect(routinesLink).toHaveAttribute("href", "/my-library#my-library-routines-heading");
+    await expect(routinesLink).toHaveAttribute("href", "/my-library/routines");
     await expect(await getPrimaryActionLabels(page)).toEqual([
       "Free course Start swimming today No signup. No paywall. Just swim.",
-      "My routines Today's habits and micro-sessions",
+      "My Routines Today's habits and micro-sessions",
       "Swim programs Structured plans and PDFs",
       "Video analysis Technique feedback when useful",
       "Contact Questions, requests, and early access",

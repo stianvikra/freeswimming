@@ -60,8 +60,9 @@ flowchart LR
 ## My Library Authenticated IA
 
 - `/my-library`: account home and top-level owner dashboard.
-- `/my-library` places a compact `My routines` window directly under `Free Course`; `My routines` has `Micro Sessions` and `Habits` tabs with `Open` and `Edit` actions.
+- `/my-library` places one simple `My Routines` row directly under `Free Course`; `Open` goes to `/my-library/routines`.
 - `/my-library` top-level cards stay scan-first: `My Swim Profile`, `Goals`, `Swim Sessions`, and `Dryland Sessions` expose one `Open` action, while duplicate `Habits` and top-level `My Training` cards stay out of the landing IA.
+- `/my-library/routines`: focused `My Routines` workspace for `Micro Sessions` and `Habits` tabs with `Open` and `Edit` actions.
 - `/my-library/profile`: `My Swim Profile` for swimmer identity, CSS, preferences, and personal records.
 - `/my-library/goals`: `Goals` for long-term targets and progress.
 - `/my-library/training`: contextual training focus/notes route retained for deep links from goals and future session-bound observations; it is not a top-level My Library card.

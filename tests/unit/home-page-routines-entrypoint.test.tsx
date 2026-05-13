@@ -69,7 +69,7 @@ describe("HomePage routines entrypoint", () => {
 
     render(await HomePage());
 
-    expect(screen.queryByRole("link", { name: /My routines/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /My Routines/i })).not.toBeInTheDocument();
     expect(actionHrefs()).toEqual(["/course", "/programs", "/analysis", "/contact"]);
     expect(resolveAdminRoleFromSupabaseMock).not.toHaveBeenCalled();
   });
@@ -88,12 +88,12 @@ describe("HomePage routines entrypoint", () => {
     render(await HomePage());
 
     const routinesLink = screen.getByRole("link", {
-      name: /My routines Today's habits and micro-sessions/i,
+      name: /My Routines Today's habits and micro-sessions/i,
     });
-    expect(routinesLink).toHaveAttribute("href", "/my-library#my-library-routines-heading");
+    expect(routinesLink).toHaveAttribute("href", "/my-library/routines");
     expect(actionHrefs()).toEqual([
       "/course",
-      "/my-library#my-library-routines-heading",
+      "/my-library/routines",
       "/programs",
       "/analysis",
       "/contact",

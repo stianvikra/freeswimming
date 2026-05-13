@@ -62,9 +62,9 @@ export default async function HomePage() {
 
             {user ? (
               <ActionButton
-                title="My routines"
+                title="My Routines"
                 subtitle="Today's habits and micro-sessions"
-                href="/my-library#my-library-routines-heading"
+                href="/my-library/routines"
                 variant="secondary"
                 compact
               />
