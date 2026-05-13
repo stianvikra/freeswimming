@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-13-navigation-ia-mobile-nav-redesign-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-13`
 - `updated`: `2026-05-13`
@@ -316,6 +316,35 @@ Sweep evidence on `2026-05-13`:
 - Fallout handled: route paths, sitemap, metadata, Help/Guide assertions, admin mutation workflows, commerce workflows, Supabase schema, and analytics contracts did not require runtime changes; `/contact` showing `Programs` in the public floating nav is intentionally deferred as a future refinement and recorded in the Product Decision.
 - No route path, sitemap, metadata, Help/Guide assertion, admin mutation workflow, commerce workflow, Supabase schema, or analytics contract required a runtime change in this slice.
 
+## Completion Record
+
+- `completed`: `2026-05-13`
+- `implementation_pr`: `#698`
+- `merge_commit`: `b2c4179`
+- `10/10 claim`: yes
+- Summary: implemented the route-aware mobile navigation model, moved global menu ownership to the always-visible header hamburger, clarified Course contextual navigation, added direct Habits ↔ Micro Sessions movement, updated route/label/support docs, and validated the work with screenshot handoff, local gates, and green CI.
+- Screenshot artifacts: `output/navigation-ia-refresh-2026-05-13-205825`
+- Validation evidence: `npm run verify:pre-pr` PASS on `0ef7a18`, `npm run verify:pre-merge` PASS on `0ef7a18`, GitHub required checks PASS for PR `#698`, and PR merged as `b2c4179`.
+- Remaining gaps: none blocking for this scoped release. Deferred work is tracked separately by `docs/task-briefs/planned/2026-05-13-habits-cadence-priority-ux-10-10.md` plus possible future utility-route nav refinement for public routes such as `/contact`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                        |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Route-aware global/contextual nav model recorded in this brief and implemented in PR `#698`; public utility route deferral explicitly accepted and documented.                  |
+| UX flow clarity                               | `5/5`          | Direct Habits ↔ Micro Sessions movement, clearer Course first/middle/last nav, and route-aware My Library/public/Admin/Auth floating nav covered by Playwright and screenshots. |
+| Visual design quality                         | `5/5`          | Screenshot handoff captured at `output/navigation-ia-refresh-2026-05-13-205825`; no rendering files changed after approved capture.                                             |
+| Business logic correctness and data integrity | `5/5`          | Navigation state derives from route/search context and explicit component props; no database, migration, or persisted preference change.                                        |
+| Accessibility (a11y)                          | `5/5`          | Existing shared nav/drawer primitives retained; labels and drawer semantics updated from ambiguous `Menu` to `Main`/`Lessons`; targeted Playwright coverage passed.             |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency or data-fetch additions; `npm run verify:pre-pr` and CI verify passed including build/perf budget checks.                                                         |
+| Data placement and sync boundaries            | `5/5`          | Local-only drawer state and URL/route-derived nav context preserved; no Supabase or sync behavior touched.                                                                      |
+| Reliability and failure handling              | `5/5`          | Suspense-wrapped search-param nav fix restored Next prerender/build reliability; deep/direct route nav behavior covered by e2e tests and CI.                                    |
+| Security and authz                            | `5/5`          | No protected content or authz boundary changes; private/site-lock smoke and CI checks passed.                                                                                   |
+| Content governance                            | `5/5`          | Route/label/support sweep completed; docs, tests, support runbook, and interaction checklist updated for the new labels and nav ownership.                                      |
+| Incident response and support operations      | `5/5`          | Support-visible navigation wording was swept and updated where needed; no Help/Guide contract change required beyond recorded runbook/doc updates.                              |
+| i18n operational readiness                    | `5/5`          | Changed labels are short literal UI copy (`Main`, `Lessons`, `Habits`, `Micro`) and avoid history/database-dependent wording.                                                   |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `SiteChrome`, `MenuDrawer`, `MobileSegmentedNav`, `mainMenuItems`, and Course bottom-nav surface; no new dependency.                                                     |
+| Testing and QA automation                     | `5/5`          | Targeted Playwright, lint, typecheck, unit/build/e2e via `verify:pre-pr`, `verify:pre-merge`, and GitHub CI all passed.                                                         |
+| DevOps and rollback readiness                 | `5/5`          | Rollback is normal code/docs/test revert of `b2c4179`; no migration, config flag, data backfill, or release sequencing required.                                                |
+
 ## Checkpoint Log
 
 - `2026-05-13 | planned | created from owner-requested navigation audit after Home quick actions exposed ambiguity around floating nav, Home/Back, Course label scope, hamburger visibility, and Habits ↔ Micro Sessions movement | next: owner confirms execution scope or says to implement this brief end-to-end`
@@ -327,3 +356,4 @@ Sweep evidence on `2026-05-13`:
 - `2026-05-13 | screenshot approved | owner approved the refreshed Course nav screenshot handoff and accepted keeping public utility route `/contact`on the current`Home / Course / Programs` floating-nav model for this PR, with future refinement still possible | next: run npm run verify:pre-pr`
 - `2026-05-13 | pre-pr evidence fix | npm run verify:pre-pr failed at quality-gate evidence only: missing explicit high-cost UI/export debug path, sweep identifiers/surfaces, and reference surface wording. Added the required evidence to this brief without changing product code | next: rerun npm run verify:pre-pr`
 - `2026-05-13 | build fix | rerun npm run verify:pre-pr reached Next build and failed because useSearchParams in SiteChrome was not under a Suspense boundary for prerendered public routes such as /about. Moved search-param-dependent default mobile nav into a Suspense-wrapped child with a stable fallback while keeping the shared SiteChrome/MenuDrawer/MobileSegmentedNav contract | next: rerun npm run verify:pre-pr`
+- `2026-05-13 | merged | PR #698 merged to main as b2c4179 after local verify:pre-pr PASS, local verify:pre-merge PASS, approved screenshot handoff, and green GitHub required checks | next: repo-managed docs-only closeout PR`
