@@ -6,8 +6,11 @@ Use this checklist after UI interaction changes.
 
 - [ ] On default `/contact` mobile viewport, fixed bottom nav is visible and tappable.
 - [ ] On `/contact?source=preview_access_notify` mobile viewport, fixed bottom nav is hidden and header menu access remains available.
-- [ ] Bottom nav `Menu` button toggles open/close state and does not get stuck.
-- [ ] Bottom nav `Home` and `Course` controls are links (`<a>`) and navigate correctly.
+- [ ] Header hamburger toggles the global drawer and remains visible when fixed bottom nav is visible.
+- [ ] Public bottom nav `Home`, `Course`, and `Programs` controls are links (`<a>`) and navigate correctly.
+- [ ] My Library routine bottom nav exposes `Library`, `Micro`, and `Habits` links with correct active state.
+- [ ] Course bottom nav stays learning-flow only: first lesson shows disabled `Prev`, `Lessons`, `Next`; the header hamburger owns the global main menu.
+- [ ] Course drawer switcher uses `Main`, `Close`, and `Lessons` so `Menu` is not competing with global hamburger copy.
 - [ ] Home page CTA buttons (`FREE COURSE`, `SWIM PROGRAMS`, etc.) feel stronger than utility nav buttons.
 - [ ] Utility buttons (drawer controls, icon buttons) feel subtler than CTAs.
 

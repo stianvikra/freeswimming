@@ -65,7 +65,7 @@ test("main menu exposes install action on desktop and tablet layouts", async ({
     throw new Error("Navigation drawer did not open from menu toggle.");
   }
 
-  const menuTab = drawer.getByRole("button", { name: "Menu", exact: true });
+  const menuTab = drawer.getByRole("button", { name: "Main", exact: true });
   if ((await menuTab.count()) > 0) {
     await menuTab.first().click();
   }

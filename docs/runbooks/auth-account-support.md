@@ -16,6 +16,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 
 - Signed-in Home has two direct routine actions under `Free course`: `Micro Sessions` for the active weekly micro plan or creation state, and `Habits` for today's check-ins or add-habit state. Mobile Home entries prioritize execution: active micro plans open in compact `Bubbles` mode and Habits opens the active habit rows before weekly stats.
 - `My Routines` sits under `Free Course` on `My Library` as one simple `Open` row. It opens `/my-library/routines`, where users switch between `Micro Sessions` and `Habits` with `Open` and `Edit` actions.
+- Mobile navigation uses the topbar hamburger as the global menu everywhere. The floating mobile nav is contextual: public pages use `Home / Course / Programs`, routine pages use `Library / Micro / Habits`, and other My Library pages use `Library / Routines / <current section>`. `Home` is not relabelled as `Back`; local back links keep deterministic parent fallbacks.
 - `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
 - `My Training` (`/my-library/training`) is retained for contextual goals-to-focus links and notes, but it is not a top-level My Library card while focus/observations are being moved closer to session and history workflows.
 - `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from signed-in Home or `/my-library/routines`, not a duplicate top-level My Library card.

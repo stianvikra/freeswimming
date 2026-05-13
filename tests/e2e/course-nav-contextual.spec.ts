@@ -117,53 +117,20 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const leftFirst = page.getByTestId("course-nav-left");
   const middleFirst = page.getByTestId("course-nav-lessons");
   const rightFirst = page.getByTestId("course-nav-right");
+  const headerMenu = page.getByTestId("header-menu-toggle");
 
-  await expect(leftFirst).toHaveText("Menu");
+  await expect(headerMenu).toBeVisible();
+  await expect(leftFirst).toHaveText("Prev");
   await expect(leftFirst).toBeVisible();
-  await expect(leftFirst).not.toBeDisabled();
+  await expect(leftFirst).toBeDisabled();
   await expect(middleFirst).toHaveText("Lessons");
   await expect(rightFirst).toHaveText("Next");
 
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
   await expect(drawer).toBeHidden();
-
-  const openAttempts: Array<() => Promise<void>> = [
-    async () => {
-      await leftFirst.click();
-    },
-    async () => {
-      await leftFirst.focus();
-      await page.keyboard.press("Enter");
-    },
-    async () => {
-      await leftFirst.click();
-    },
-    async () => {
-      await leftFirst.focus();
-      await page.keyboard.press("Space");
-    },
-  ];
-
-  let drawerOpened = false;
-  for (const openAttempt of openAttempts) {
-    await page.keyboard.press("Escape").catch(() => {});
-    await waitForCoursePageToSettle(page);
-    await leftFirst.scrollIntoViewIfNeeded();
-    await openAttempt();
-    await expect(drawer)
-      .toBeVisible({ timeout: 4_000 })
-      .catch(() => {});
-    if (await drawer.isVisible().catch(() => false)) {
-      drawerOpened = true;
-      break;
-    }
-    await page.waitForTimeout(250);
-  }
-
-  expect(drawerOpened).toBe(true);
+  await headerMenu.click();
   await expect(drawer).toBeVisible();
   await expect(drawer.getByText("Main menu")).toBeVisible();
-
   await drawer.getByRole("button", { name: "Close menu" }).click();
   await expect(drawer).toBeHidden();
 
