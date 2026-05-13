@@ -32,6 +32,7 @@ import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 type Props = {
   initialSnapshot: HabitSnapshot;
+  preferMobileActiveFocus?: boolean;
 };
 
 type ApiResponse = {
@@ -354,7 +355,10 @@ function writeSeenHabitRowIds(ids: Set<string>) {
   }
 }
 
-export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
+export default function HabitPerfectDayHub({
+  initialSnapshot,
+  preferMobileActiveFocus = false,
+}: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [draft, setDraft] = useState<HabitDraft>(() =>
     buildDefaultDraft(initialSnapshot.selectedDate)
@@ -366,6 +370,9 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
   );
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const [expandedHabitIds, setExpandedHabitIds] = useState<string[]>([]);
+  const [isAddHabitOpen, setIsAddHabitOpen] = useState(
+    () => !preferMobileActiveFocus || initialSnapshot.daySummary.items.length === 0
+  );
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -384,15 +391,17 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
     setExpandedHabitIds((current) => {
       const currentExpanded = hasLoadedRowPreferencesRef.current
         ? new Set(current)
-        : new Set(firstSeenThisVisit);
-      firstSeenThisVisit.forEach((id) => currentExpanded.add(id));
+        : new Set(preferMobileActiveFocus ? [] : firstSeenThisVisit);
+      if (!preferMobileActiveFocus) {
+        firstSeenThisVisit.forEach((id) => currentExpanded.add(id));
+      }
       return activeIds.filter((id) => currentExpanded.has(id));
     });
 
     activeIds.forEach((id) => seenIds.add(id));
     writeSeenHabitRowIds(seenIds);
     hasLoadedRowPreferencesRef.current = true;
-  }, [snapshot.activeHabits]);
+  }, [preferMobileActiveFocus, snapshot.activeHabits]);
 
   useEffect(() => {
     const hasRunningTimer = Object.values(timers).some((timer) => timer.startedAtMs !== null);
@@ -869,7 +878,12 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section
+        data-testid="habit-perfect-day-summary"
+        className={`rounded-2xl border border-slate-200 bg-white p-5 ${
+          preferMobileActiveFocus ? "hidden sm:block" : ""
+        }`}
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
@@ -943,22 +957,51 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section
+        id="today-habits"
+        data-testid="habit-active-list"
+        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
-            <p className="mt-1 text-sm text-slate-600">{getLongDateLabel(snapshot.selectedDate)}</p>
-          </div>
-          {online === false ? (
-            <p className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-              Offline
+            <p className="mt-1 text-sm text-slate-600">
+              {preferMobileActiveFocus
+                ? `${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount} on target today`
+                : getLongDateLabel(snapshot.selectedDate)}
             </p>
-          ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {preferMobileActiveFocus ? (
+              <button
+                type="button"
+                onClick={() => setIsAddHabitOpen(true)}
+                className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+              >
+                Add
+              </button>
+            ) : null}
+            {online === false ? (
+              <p className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                Offline
+              </p>
+            ) : null}
+          </div>
         </div>
 
         {snapshot.daySummary.items.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600">Add the first habit below.</p>
+            <p className="text-sm font-medium text-slate-900">No active habits</p>
+            <p className="mt-1 text-sm text-slate-600">Add a habit to track today.</p>
+            {!isAddHabitOpen ? (
+              <button
+                type="button"
+                onClick={() => setIsAddHabitOpen(true)}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+              >
+                Add habit
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="mt-4 space-y-3">
@@ -1060,6 +1103,53 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
                             {isTimerRunning ? "Pause" : "Start"}
                           </button>
                         </>
+                      ) : null}
+
+                      {!isQuit && !isTimed && habit.habitType !== "binary" ? (
+                        <div className="flex flex-wrap items-end gap-2">
+                          <label className="block">
+                            <span className="sr-only">
+                              {habit.title} {habit.habitType === "time_of_day" ? "time" : "value"}
+                            </span>
+                            <input
+                              type={habit.habitType === "time_of_day" ? "time" : "number"}
+                              min={habit.habitType === "time_of_day" ? undefined : 0}
+                              step={habit.habitType === "time_of_day" ? undefined : "0.25"}
+                              aria-label={`${habit.title} ${
+                                habit.habitType === "time_of_day" ? "time" : "value"
+                              }`}
+                              value={checkInInputs[habit.id] ?? ""}
+                              onChange={(event) =>
+                                setCheckInInputs((current) => ({
+                                  ...current,
+                                  [habit.id]: event.target.value,
+                                }))
+                              }
+                              className="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => saveCheckIn(item)}
+                            disabled={disabled}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Save className="h-4 w-4" aria-hidden="true" />
+                            Save
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {isQuit ? (
+                        <button
+                          type="button"
+                          onClick={() => logLapse(item)}
+                          disabled={disabled || item.checkIn !== null}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Flag className="h-4 w-4" aria-hidden="true" />
+                          Log slip
+                        </button>
                       ) : null}
 
                       <button
@@ -1481,7 +1571,12 @@ export default function HabitPerfectDayHub({ initialSnapshot }: Props) {
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section
+        id="add-habit"
+        className={`rounded-2xl border border-slate-200 bg-white p-5 ${
+          isAddHabitOpen ? "" : "hidden"
+        }`}
+      >
         <h2 className="text-lg font-semibold text-slate-900">Add habit</h2>
         <form onSubmit={createHabit} className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="block md:col-span-2">

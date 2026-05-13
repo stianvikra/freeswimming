@@ -27,6 +27,8 @@ type Props = {
   drylandLibrary: DrylandLibrarySnapshot;
   browseOnly?: boolean;
   initialMicroPlanEditorOpen?: boolean;
+  isMicroFocused?: boolean;
+  preferMobileBubbles?: boolean;
 };
 
 type PostSaveCta = {
@@ -107,6 +109,8 @@ export default function DrylandBuilderHub({
   drylandLibrary,
   browseOnly = false,
   initialMicroPlanEditorOpen = false,
+  isMicroFocused = false,
+  preferMobileBubbles = false,
 }: Props) {
   const router = useRouter();
   const [savedSession, setSavedSession] = useState<DrylandSessionRecord | null>(
@@ -127,6 +131,7 @@ export default function DrylandBuilderHub({
   const [isMicroSourceSelectionActive, setIsMicroSourceSelectionActive] = useState(false);
   const [clientReady, setClientReady] = useState(false);
   const hasUnsavedChanges = haveDrylandDraftChanges(draft, savedSession?.draft ?? null);
+  const shouldPrioritizeMicroPlan = browseOnly && isMicroFocused && Boolean(activeMicroPlan);
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -340,15 +345,23 @@ export default function DrylandBuilderHub({
       data-client-ready={clientReady ? "true" : "false"}
       className="space-y-6"
     >
-      {browseOnly || !savedSession ? (
+      {(browseOnly || !savedSession) && !shouldPrioritizeMicroPlan ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {browseOnly ? "Dryland Sessions" : "Dryland builder"}
+              {browseOnly && isMicroFocused
+                ? "Build a micro session"
+                : browseOnly
+                  ? "Dryland Sessions"
+                  : "Dryland builder"}
             </h2>
             {!browseOnly ? (
               <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
                 Create a strength or stretching session.
+              </p>
+            ) : isMicroFocused ? (
+              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+                Start from a saved Dryland Session, then split it into small units.
               </p>
             ) : null}
           </div>
@@ -419,6 +432,7 @@ export default function DrylandBuilderHub({
             schemaReady={drylandLibrary.microPlanSchemaReady}
             loadError={drylandLibrary.microPlanLoadError}
             initialEditorOpen={initialMicroPlanEditorOpen}
+            preferMobileBubbles={preferMobileBubbles}
             onSourceSelectionChange={setIsMicroSourceSelectionActive}
             onPlanChange={setActiveMicroPlan}
           />
@@ -426,7 +440,11 @@ export default function DrylandBuilderHub({
 
         {browseOnly ? (
           isMicroSourceSelectionActive ? null : recentSessions.length > 0 ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div
+              className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${
+                isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""
+              }`}
+            >
               {recentSessions.map((session) => {
                 const isPendingDelete = pendingDeleteSessionId === session.id;
                 return (

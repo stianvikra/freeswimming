@@ -21,20 +21,36 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
   const drylandLibrary = await loadDrylandLibrarySnapshot(supabase, user.id, null);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const microParam = resolvedSearchParams.micro;
+  const viewParam = resolvedSearchParams.view;
+  const microValues = Array.isArray(microParam) ? microParam : microParam ? [microParam] : [];
+  const viewValues = Array.isArray(viewParam) ? viewParam : viewParam ? [viewParam] : [];
   const initialMicroPlanEditorOpen = Array.isArray(microParam)
     ? microParam.includes("edit")
     : microParam === "edit";
+  const isMicroFocused = microValues.some((value) => ["active", "edit", "setup"].includes(value));
+  const preferMobileBubbles = isMicroFocused && viewValues.includes("auto");
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[1080px] px-6 pt-28 pb-20">
+      <section
+        className={`mx-auto min-h-screen w-full max-w-[1080px] pb-20 ${
+          isMicroFocused ? "px-4 pt-20 sm:px-6 sm:pt-28" : "px-6 pt-28"
+        }`}
+      >
         <div className="space-y-8">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          {isMicroFocused ? <h1 className="sr-only">Micro Sessions</h1> : null}
+          <div
+            className={`flex flex-wrap items-start justify-between gap-3 ${
+              isMicroFocused ? "hidden sm:flex" : ""
+            }`}
+          >
             <div>
               <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Dryland Sessions</h1>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900">
+                {isMicroFocused ? "Micro Sessions" : "Dryland Sessions"}
+              </h1>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
@@ -46,11 +62,13 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
             </div>
           </div>
 
-          <div className="mt-8">
+          <div className={isMicroFocused ? "mt-0 sm:mt-8" : "mt-8"}>
             <DrylandBuilderHub
               drylandLibrary={drylandLibrary}
               browseOnly
               initialMicroPlanEditorOpen={initialMicroPlanEditorOpen}
+              isMicroFocused={isMicroFocused}
+              preferMobileBubbles={preferMobileBubbles}
             />
           </div>
         </div>

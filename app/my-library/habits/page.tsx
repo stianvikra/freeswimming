@@ -8,18 +8,30 @@ import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic";
 
-export default async function MyLibraryHabitsPage() {
+type MyLibraryHabitsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHabitsPageProps) {
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (!supabase || !user) {
     redirect("/auth/sign-in?next=%2Fmy-library%2Fhabits");
   }
 
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const viewParam = resolvedSearchParams.view;
+  const viewValues = Array.isArray(viewParam) ? viewParam : viewParam ? [viewParam] : [];
+  const preferMobileActiveFocus = viewValues.includes("active");
   const initialSnapshot = await loadHabitSnapshot(supabase, user.id);
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
+      <section
+        className={`mx-auto min-h-screen w-full max-w-[980px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28 ${
+          preferMobileActiveFocus ? "max-sm:max-w-[720px]" : ""
+        }`}
+      >
         <TrackEventOnMount
           eventName="habits_viewed"
           payload={{
@@ -27,8 +39,19 @@ export default async function MyLibraryHabitsPage() {
             perfectDayPercent: initialSnapshot.daySummary.completionPercent,
           }}
         />
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <div
+          className={`${
+            preferMobileActiveFocus
+              ? "bg-transparent p-0 shadow-none sm:rounded-3xl sm:border sm:border-blue-100 sm:bg-white/95 sm:p-8 sm:shadow-[0_16px_60px_rgba(24,58,107,0.14)]"
+              : "rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]"
+          }`}
+        >
+          {preferMobileActiveFocus ? <h1 className="sr-only">Habits</h1> : null}
+          <div
+            className={`flex flex-wrap items-start justify-between gap-3 ${
+              preferMobileActiveFocus ? "hidden sm:flex" : ""
+            }`}
+          >
             <div>
               <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 My Library
@@ -47,8 +70,11 @@ export default async function MyLibraryHabitsPage() {
             </Link>
           </div>
 
-          <div className="mt-8">
-            <HabitPerfectDayHub initialSnapshot={initialSnapshot} />
+          <div className={preferMobileActiveFocus ? "mt-0 sm:mt-8" : "mt-8"}>
+            <HabitPerfectDayHub
+              initialSnapshot={initialSnapshot}
+              preferMobileActiveFocus={preferMobileActiveFocus}
+            />
           </div>
         </div>
       </section>

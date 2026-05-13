@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildTodayHabitsState, buildTodayMicroSessionsState } from "@/lib/my-library/today";
+import {
+  buildTodayHabitsState,
+  buildTodayMicroSessionsState,
+  buildTodayRoutineQuickActions,
+} from "@/lib/my-library/today";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type { HabitDefinitionView, HabitSnapshot } from "@/lib/habits/shared";
 
@@ -181,6 +185,71 @@ describe("my library today state", () => {
     expect(state.title).toBe("Micro Sessions");
     expect(state.detail).toBe("Create a dryland exercise before building micro sessions.");
     expect(state.href).toBe("/my-library/dryland");
+  });
+
+  it("builds direct Home routine actions for active micro sessions and habits", () => {
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: buildMicroPlan({
+          blocks: [
+            buildMicroBlock({ status: "completed", completedAt: "2026-05-10T08:00:00.000Z" }),
+            buildMicroBlock({ id: "unit-2" }),
+          ],
+        }),
+        recentSessions: [],
+      },
+      buildHabitSnapshot({ activeCount: 3, satisfiedCount: 2 }),
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "micro-sessions",
+        title: "Micro Sessions",
+        subtitle: "1/2 units",
+        href: "/my-library/dryland?micro=active&view=auto#micro-sessions",
+        state: "ready",
+      },
+      {
+        id: "habits",
+        title: "Habits",
+        subtitle: "2/3 done",
+        href: "/my-library/habits?view=active#today-habits",
+        state: "ready",
+      },
+    ]);
+  });
+
+  it("routes Home routine actions to creation states when nothing is active", () => {
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: null,
+        recentSessions: [],
+      },
+      buildHabitSnapshot({ activeCount: 0, satisfiedCount: 0 }),
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "micro-sessions",
+        title: "Micro Sessions",
+        subtitle: "Create dryland first",
+        href: "/my-library/dryland?micro=setup#micro-sessions",
+        state: "setup",
+      },
+      {
+        id: "habits",
+        title: "Habits",
+        subtitle: "Add first habit",
+        href: "/my-library/habits?view=active#add-habit",
+        state: "setup",
+      },
+    ]);
   });
 
   it("summarizes Perfect Day as progress instead of a streak", () => {

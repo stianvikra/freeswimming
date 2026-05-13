@@ -14,10 +14,11 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 
 ## My Library IA
 
+- Signed-in Home has two direct routine actions under `Free course`: `Micro Sessions` for the active weekly micro plan or creation state, and `Habits` for today's check-ins or add-habit state. Mobile Home entries prioritize execution: active micro plans open in compact `Bubbles` mode and Habits opens the active habit rows before weekly stats.
 - `My Routines` sits under `Free Course` on `My Library` as one simple `Open` row. It opens `/my-library/routines`, where users switch between `Micro Sessions` and `Habits` with `Open` and `Edit` actions.
 - `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
 - `My Training` (`/my-library/training`) is retained for contextual goals-to-focus links and notes, but it is not a top-level My Library card while focus/observations are being moved closer to session and history workflows.
-- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from `/my-library/routines`, not a duplicate top-level My Library card.
+- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from signed-in Home or `/my-library/routines`, not a duplicate top-level My Library card.
 - `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
 - `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and compact weekly `Micro Sessions` execution surface. Saved sessions show normal `Edit`/`Open`/`Delete` actions by default; Micro Session source checkboxes appear only inside explicit create/edit mode.
 - `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
