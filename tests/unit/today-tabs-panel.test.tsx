@@ -95,7 +95,7 @@ describe("TodayTabsPanel", () => {
 
     const panel = screen.getByTestId("my-library-today-tabs");
     expect(within(panel).getByText("Routines")).toBeVisible();
-    expect(within(panel).getByRole("heading", { name: "My routines" })).toBeVisible();
+    expect(within(panel).getByRole("heading", { name: "My Routines" })).toBeVisible();
     expect(within(panel).queryByText(/Perfect Day/i)).toBeNull();
 
     const microSessionsTab = within(panel).getByRole("tab", { name: "Micro Sessions" });
@@ -142,7 +142,7 @@ describe("TodayTabsPanel", () => {
     expect(within(panel).getByRole("link", { name: "Edit" })).toBeVisible();
   });
 
-  it("keeps My Library routines compact without secondary detail controls", () => {
+  it("keeps My Library Routines compact without secondary detail controls", () => {
     render(
       <TodayTabsPanel
         drylandLibrary={buildDrylandLibrary()}
@@ -162,5 +162,28 @@ describe("TodayTabsPanel", () => {
     expect(
       within(panel).queryByRole("progressbar", { name: "My Perfect Day progress" })
     ).toBeNull();
+  });
+
+  it("can use an external page heading on the dedicated routines route", () => {
+    render(
+      <main>
+        <h1 id="routines-page-heading">My Routines</h1>
+        <TodayTabsPanel
+          drylandLibrary={buildDrylandLibrary()}
+          habitSnapshot={buildHabitSnapshot()}
+          nowIso="2026-05-10T09:00:00.000Z"
+          headingId="routines-page-heading"
+          showHeader={false}
+        />
+      </main>
+    );
+
+    const panel = screen.getByTestId("my-library-today-tabs");
+    expect(panel).toHaveAccessibleName("My Routines");
+    expect(within(panel).queryByText("Routines")).toBeNull();
+    expect(within(panel).getByRole("tab", { name: "Micro Sessions" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
   });
 });

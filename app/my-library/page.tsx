@@ -10,7 +10,6 @@ import ContinueCourseCard from "@/components/my-library/ContinueCourseCard";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import MyLibraryNewContentNotice from "@/components/my-library/MyLibraryNewContentNotice";
 import PortalButton from "@/components/my-library/PortalButton";
-import TodayTabsPanel from "@/components/my-library/TodayTabsPanel";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
 import { getCatalogProductsSafe, type CatalogProduct } from "@/lib/commerce/catalog";
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
@@ -20,7 +19,6 @@ import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
-import { loadHabitSnapshot } from "@/lib/habits/server";
 
 export const dynamic = "force-dynamic";
 
@@ -83,9 +81,8 @@ export default async function MyLibraryPage() {
     console.error("[MyLibrary] Could not load active goal count", activeGoalCountError);
   }
 
-  const [habitSnapshot, workoutLibrarySnapshot, programLibrarySnapshot, drylandLibrarySnapshot] =
+  const [workoutLibrarySnapshot, programLibrarySnapshot, drylandLibrarySnapshot] =
     await Promise.all([
-      loadHabitSnapshot(supabase, user.id),
       loadWorkoutLibrarySnapshot(supabase, user.id, null),
       loadProgramLibrarySnapshot(supabase, user.id, null),
       loadDrylandLibrarySnapshot(supabase, user.id, null),
@@ -139,16 +136,22 @@ export default async function MyLibraryPage() {
 
           <div className="mt-8 space-y-8">
             <ContinueCourseCard />
-            <TodayTabsPanel
-              drylandLibrary={{
-                microPlan: drylandLibrarySnapshot.microPlan,
-                microPlanLoadError: drylandLibrarySnapshot.microPlanLoadError,
-                microPlanSchemaReady: drylandLibrarySnapshot.microPlanSchemaReady,
-                recentSessions: drylandLibrarySnapshot.recentSessions,
-              }}
-              habitSnapshot={habitSnapshot}
-              nowIso={new Date().toISOString()}
-            />
+            <section
+              data-testid="my-library-routines-row"
+              className="rounded-2xl border border-slate-200 bg-white p-5"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold text-slate-900">My Routines</h2>
+                </div>
+                <Link
+                  href="/my-library/routines"
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                >
+                  Open
+                </Link>
+              </div>
+            </section>
             <MyLibraryNewContentNotice userId={user.id} />
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between gap-4">

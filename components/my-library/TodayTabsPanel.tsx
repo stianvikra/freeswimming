@@ -19,6 +19,8 @@ type Props = {
   >;
   habitSnapshot: HabitSnapshot;
   nowIso: string;
+  headingId?: string;
+  showHeader?: boolean;
 };
 
 function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
@@ -48,7 +50,13 @@ function TodayPanelContent({ state }: { state: TodaySurfaceState }) {
   );
 }
 
-export default function TodayTabsPanel({ drylandLibrary, habitSnapshot, nowIso }: Props) {
+export default function TodayTabsPanel({
+  drylandLibrary,
+  habitSnapshot,
+  nowIso,
+  headingId = "my-library-routines-heading",
+  showHeader = true,
+}: Props) {
   const [activeTab, setActiveTab] = useState<TodaySurfaceTabId>("micro-sessions");
   const now = useMemo(() => {
     const parsed = new Date(nowIso);
@@ -63,21 +71,20 @@ export default function TodayTabsPanel({ drylandLibrary, habitSnapshot, nowIso }
 
   return (
     <section
-      aria-labelledby="my-library-routines-heading"
+      aria-labelledby={headingId}
       data-testid="my-library-today-tabs"
       className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Routines</p>
-          <h2
-            id="my-library-routines-heading"
-            className="mt-2 text-lg font-semibold text-slate-900"
-          >
-            My routines
-          </h2>
+      {showHeader ? (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Routines</p>
+            <h2 id={headingId} className="mt-2 text-lg font-semibold text-slate-900">
+              My Routines
+            </h2>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div
         role="tablist"

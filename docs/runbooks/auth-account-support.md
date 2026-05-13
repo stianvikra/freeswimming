@@ -14,10 +14,10 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 
 ## My Library IA
 
-- `My routines` sits under `Free Course` on `My Library` and lets users switch between `Micro Sessions` and `Habits` with `Open` and `Edit` actions.
+- `My Routines` sits under `Free Course` on `My Library` as one simple `Open` row. It opens `/my-library/routines`, where users switch between `Micro Sessions` and `Habits` with `Open` and `Edit` actions.
 - `My Swim Profile` holds swimmer identity, CSS, preferences, and personal records.
 - `My Training` (`/my-library/training`) is retained for contextual goals-to-focus links and notes, but it is not a top-level My Library card while focus/observations are being moved closer to session and history workflows.
-- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from `My routines`, not a duplicate top-level My Library card.
+- `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from `/my-library/routines`, not a duplicate top-level My Library card.
 - `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
 - `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and compact weekly `Micro Sessions` execution surface. Saved sessions show normal `Edit`/`Open`/`Delete` actions by default; Micro Session source checkboxes appear only inside explicit create/edit mode.
 - `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
@@ -46,7 +46,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - inspect `MESSAGE_DELIVERY_*`/Supabase email provider state before asking the user to retry.
 - If a code expires or fails: request a new code from `/auth/sign-in`.
 - If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships. A `preview_access_unlock_failed` incident alert means an authenticated admin passed the admin gate, but strong session claims could not be verified.
-- If the `My routines` window on `My Library` looks stale: diagnose the underlying `Habits` and `Dryland Sessions` data separately. `My routines` has local-only tab state and no reminder table, push subscription, background job, or persisted pinning state in V1.
+- If the `My Routines` route looks stale: diagnose the underlying `Habits` and `Dryland Sessions` data separately. `My Routines` has local-only tab state and no reminder table, push subscription, background job, or persisted pinning state in V1.
 - If `Micro Sessions` shows "still syncing" under `Dryland Sessions`: verify the linked Supabase environment has applied `20260508101500_dryland_micro_plans.sql`, then confirm `dryland_micro_plans` RLS allows owner-scoped authenticated reads/writes. Saved dryland sessions should remain available while this is repaired.
 - If a user cannot find the normal `Edit`/`Open`/`Delete` saved-session actions under `Dryland Sessions`: check whether Micro Session create/edit source-selection mode is open. In that mode, the same saved sessions are shown as compact source checkboxes with direct `Edit` links; update or cancel the Micro Session edit to return to the normal saved-session list.
 - If a user asks where the old dryland `Focus cue` went: dryland authoring no longer exposes or writes it. Historical values are preserved only as read-only legacy data and appear in authenticated account exports as `drylandSessions[].legacyFocusText` when present.
