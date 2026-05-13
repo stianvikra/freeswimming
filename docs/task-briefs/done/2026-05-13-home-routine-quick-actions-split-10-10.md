@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-13-home-routine-quick-actions-split`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: Codex
 - `created`: `2026-05-13`
 - `updated`: `2026-05-13`
@@ -153,6 +153,53 @@ Full gates after owner screenshot approval:
 - Local: `http://127.0.0.1:3000`
 - Screenshots: before/after Home mobile/desktop, after micro-session direct entry, after habits empty/add or today state where fixture data allows.
 
+## Closeout
+
+- Merged PR: `#696`
+- Merge commit: `a5a734f`
+- Local validation:
+  - `npm run verify:pre-pr`: PASS on `a7db799`
+  - `npm run verify:pre-merge`: PASS on `a7db799`
+  - `npm run merge:preflight -- --assert-ready`: PASS
+- CI validation: GitHub `verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, PR Size, and Vercel passed.
+- Screenshot handoff: `output/home-routine-mobile-focus-2026-05-13-150854`, captured `2026-05-13 15:08`, owner approved in chat.
+- Product-rendering files changed after screenshot capture: no.
+- Remaining gaps: none for this slice. Perf budget trend recommended tightening after five green weekly runs; budget changes are intentionally deferred to a separate performance-budget follow-up because this PR was a UI/flow slice.
+- `10/10 claim`: yes.
+
+### Achieved Score
+
+Critical target categories for the `10/10` claim:
+
+- Product goals and IA: `5/5`
+- UX flow clarity: `5/5`
+- Accessibility (a11y): `5/5`
+- Business logic correctness and data integrity: `5/5`
+- Reliability and failure handling: `5/5`
+- Security and authz: `5/5`
+- Stack-fit and dependency discipline: `5/5`
+- Testing and QA automation: `5/5`
+- DevOps and rollback readiness: `5/5`
+
+All target scorecard categories:
+
+| Target Category                               | Achieved Score | Evidence                                                                                   |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Home split into direct `Micro Sessions` and `Habits`; `/my-library/routines` retained.     |
+| UX flow clarity                               | `5/5`          | Direct mobile focus states for micro sessions and active habits, validated by screenshots. |
+| Visual design quality                         | `5/5`          | Owner-approved screenshot handoff with compact Home and target mobile states.              |
+| Business logic correctness and data integrity | `5/5`          | Existing server-canonical dryland/habit loaders reused; no schema or mutation change.      |
+| Accessibility (a11y)                          | `5/5`          | Link semantics and route headings preserved; a11y/home E2E passed in full gates.           |
+| Performance (CWV + payloads)                  | `5/5`          | Perf budget passed; no dependency or polling added.                                        |
+| Data placement and sync boundaries            | `5/5`          | Home renders read-derived state only; target pages keep existing mutation/sync behavior.   |
+| Reliability and failure handling              | `5/5`          | Empty/fallback route states covered by unit tests and broad gates.                         |
+| Security and authz                            | `5/5`          | Signed-in actions stay private; protected route behavior unchanged and CI smoke passed.    |
+| Content governance                            | `5/5`          | Route/label/support sweep completed and docs updated.                                      |
+| Incident response and support operations      | `5/5`          | Support runbook and user-flow map document split Home actions and retained overview.       |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Home, dryland, habit, Tailwind, and test surfaces reused; no new dependency.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, `verify:pre-merge`, and CI all passed.                   |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert path; no migration/config/feature-flag rollout required.                     |
+
 ## Route, Label, And Support-Surface Impact Sweep
 
 Required before broad gates because Home labels and workflow entrypoints change. Search targets:
@@ -185,3 +232,4 @@ Surfaces to check:
 - `2026-05-13 | screenshot-handoff-ready | fixed mobile micro direct-entry hydration stability so the server hydrates ordered mode before the client applies bubbles on mobile, reran targeted Vitest for dryland micro panel/Home/today state (3 files/24 tests PASS), captured signed-in screenshots with local fake Supabase fixture at output/home-routine-quick-actions-split-2026-05-13-131249, and confirmed no hydration mismatch in Next logs after final capture | next: owner screenshot review; pause before npm run verify:pre-pr`
 - `2026-05-13 | mobile-execution-focus | owner requested collapsing Bubbles and Habits target pages further for fast mobile use. Updated Home Habits hrefs to /my-library/habits?view=active, hid weekly Habit stats on mobile active entry, kept active habit rows collapsed with inline count save controls, collapsed the Add habit form behind the Add action when active habits exist, reduced bubble sizes/gaps, moved micro management behind a disclosure in Bubbles mode, hid mobile micro page chrome/intro for direct active entries, and hid source dryland session list on mobile micro-focused active entries | validation: targeted Vitest 4 files/35 tests PASS, npm run typecheck PASS, npm run lint PASS, final screenshot handoff captured at output/home-routine-mobile-focus-2026-05-13-150854 with no hydration mismatch in server logs | next: owner screenshot review; pause before npm run verify:pre-pr`
 - `2026-05-13 | screenshot-approved | owner approved the final mobile focus screenshot handoff in output/home-routine-mobile-focus-2026-05-13-150854 | next: run npm run verify:pre-pr, commit, push, and open/update PR`
+- `2026-05-13 | merged | PR #696 merged to main as a5a734f after npm run verify:pre-pr PASS, npm run verify:pre-merge PASS, GitHub CI green, and merge preflight PASS | next: repo-managed docs-only closeout`
