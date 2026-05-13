@@ -5,19 +5,60 @@ import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
 import { BRAND_USAGE } from "@/lib/brand";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
+import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
+import { loadHabitSnapshot } from "@/lib/habits/server";
+import {
+  buildTodayRoutineQuickActions,
+  type TodayRoutineQuickAction,
+} from "@/lib/my-library/today";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+function RoutineQuickActionLink({ action }: { action: TodayRoutineQuickAction }) {
+  return (
+    <PressLink
+      tier="cta"
+      href={action.href}
+      data-testid={`home-routine-action-${action.id}`}
+      aria-label={`${action.title}: ${action.subtitle}`}
+      className="group relative flex min-h-[70px] min-w-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/92 px-3 text-center text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.085)] backdrop-blur transition hover:bg-white active:bg-slate-50 sm:min-h-[74px] sm:px-4"
+    >
+      <span className="flex min-w-0 flex-col items-center justify-center">
+        <span className="max-w-full truncate text-[14px] leading-tight font-semibold sm:text-[15px]">
+          {action.title}
+        </span>
+        <span className="mt-1 max-w-full truncate text-[12px] leading-snug font-medium text-slate-600 sm:text-[13px]">
+          {action.subtitle}
+        </span>
+      </span>
+    </PressLink>
+  );
+}
 
 export default async function HomePage() {
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   let showDashboardCta = false;
+  let routineQuickActions: TodayRoutineQuickAction[] = [];
   if (supabase && user) {
-    const adminRole = await resolveAdminRoleFromSupabase(supabase, user, {
-      allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
-    });
+    const [adminRole, drylandLibrarySnapshot, habitSnapshot] = await Promise.all([
+      resolveAdminRoleFromSupabase(supabase, user, {
+        allowlistedEmailsRaw: process.env.ADMIN_EMAIL_ALLOWLIST,
+      }),
+      loadDrylandLibrarySnapshot(supabase, user.id, null),
+      loadHabitSnapshot(supabase, user.id),
+    ]);
     showDashboardCta = Boolean(adminRole);
+    routineQuickActions = buildTodayRoutineQuickActions(
+      {
+        microPlan: drylandLibrarySnapshot.microPlan,
+        microPlanLoadError: drylandLibrarySnapshot.microPlanLoadError,
+        microPlanSchemaReady: drylandLibrarySnapshot.microPlanSchemaReady,
+        recentSessions: drylandLibrarySnapshot.recentSessions,
+      },
+      habitSnapshot
+    );
   }
 
   const authHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
@@ -61,13 +102,11 @@ export default async function HomePage() {
             />
 
             {user ? (
-              <ActionButton
-                title="My Routines"
-                subtitle="Today's habits and micro-sessions"
-                href="/my-library/routines"
-                variant="secondary"
-                compact
-              />
+              <div className="grid grid-cols-2 gap-2.5" aria-label="Routine quick actions">
+                {routineQuickActions.map((action) => (
+                  <RoutineQuickActionLink key={action.id} action={action} />
+                ))}
+              </div>
             ) : null}
 
             <ActionButton

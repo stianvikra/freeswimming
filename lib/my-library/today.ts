@@ -24,6 +24,14 @@ export type TodaySurfaceState = {
   editHref: string;
 };
 
+export type TodayRoutineQuickAction = {
+  id: TodaySurfaceTabId;
+  title: string;
+  subtitle: string;
+  href: string;
+  state: TodaySurfaceState["state"];
+};
+
 function countAvailableMicroUnits(plan: DrylandMicroPlanRecord, now: Date) {
   return plan.blocks.filter(
     (block) =>
@@ -226,4 +234,81 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
     href: "/my-library/habits",
     editHref: "/my-library/habits",
   };
+}
+
+function buildMicroSessionsQuickHref(
+  drylandLibrary: Pick<
+    DrylandLibrarySnapshot,
+    "microPlan" | "microPlanLoadError" | "microPlanSchemaReady" | "recentSessions"
+  >,
+  state: TodaySurfaceState
+) {
+  if (state.state === "setup" && !drylandLibrary.microPlan) {
+    return drylandLibrary.recentSessions.length > 0
+      ? "/my-library/dryland?micro=edit#micro-sessions"
+      : "/my-library/dryland?micro=setup#micro-sessions";
+  }
+
+  if (state.state === "ready" || state.state === "complete" || state.state === "paused") {
+    return "/my-library/dryland?micro=active&view=auto#micro-sessions";
+  }
+
+  return "/my-library/dryland#micro-sessions";
+}
+
+function buildMicroSessionsQuickSubtitle(
+  drylandLibrary: Pick<
+    DrylandLibrarySnapshot,
+    "microPlan" | "microPlanLoadError" | "microPlanSchemaReady" | "recentSessions"
+  >,
+  state: TodaySurfaceState
+) {
+  if (state.state === "ready") return state.progressLabel;
+  if (state.state === "complete") return "Week complete";
+  if (state.state === "paused") return "Paused";
+  if (state.state === "syncing") return "Syncing";
+  if (state.state === "error") return "Open to retry";
+  return drylandLibrary.recentSessions.length > 0 ? "Create from dryland" : "Create dryland first";
+}
+
+function buildHabitsQuickHref(state: TodaySurfaceState) {
+  if (state.state === "setup") return "/my-library/habits?view=active#add-habit";
+  return "/my-library/habits?view=active#today-habits";
+}
+
+function buildHabitsQuickSubtitle(state: TodaySurfaceState) {
+  if (state.state === "complete") return "Done today";
+  if (state.state === "ready") return state.progressLabel;
+  if (state.state === "syncing") return "Syncing";
+  if (state.state === "error") return "Open to retry";
+  return "Add first habit";
+}
+
+export function buildTodayRoutineQuickActions(
+  drylandLibrary: Pick<
+    DrylandLibrarySnapshot,
+    "microPlan" | "microPlanLoadError" | "microPlanSchemaReady" | "recentSessions"
+  >,
+  habitSnapshot: HabitSnapshot,
+  now = new Date()
+): TodayRoutineQuickAction[] {
+  const microSessionsState = buildTodayMicroSessionsState(drylandLibrary, now);
+  const habitsState = buildTodayHabitsState(habitSnapshot);
+
+  return [
+    {
+      id: "micro-sessions",
+      title: microSessionsState.title,
+      subtitle: buildMicroSessionsQuickSubtitle(drylandLibrary, microSessionsState),
+      href: buildMicroSessionsQuickHref(drylandLibrary, microSessionsState),
+      state: microSessionsState.state,
+    },
+    {
+      id: "habits",
+      title: habitsState.title,
+      subtitle: buildHabitsQuickSubtitle(habitsState),
+      href: buildHabitsQuickHref(habitsState),
+      state: habitsState.state,
+    },
+  ];
 }

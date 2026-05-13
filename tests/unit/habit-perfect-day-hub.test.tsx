@@ -344,6 +344,19 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("At least 1 glass")).toBeVisible();
   });
 
+  it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildCountSnapshot()} preferMobileActiveFocus />);
+
+    expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
+    expect(screen.getByTestId("habit-active-list")).toBeVisible();
+    expect(screen.getByText("1/1 on target today")).toBeVisible();
+    expect(screen.getByText("1 glass today · 1/7 days this week")).toBeVisible();
+    expect(screen.getByLabelText("Water value")).toBeVisible();
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
+    });
+  });
+
   it("creates weekly habits with the selected schedule day", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

@@ -459,6 +459,37 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.queryByRole("button", { name: "Skip today" })).toBeNull();
   });
 
+  it("can default Home mobile entry to bubbles mode", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    );
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+        preferMobileBubbles
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("bg-blue-600");
+    });
+    expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
+  });
+
   it("renders one bubble per repeated exercise set", () => {
     const basePlan = buildPlan();
     const blocks: DrylandMicroBlockSnapshot[] = Array.from({ length: 3 }, (_, index) => ({
@@ -502,9 +533,10 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
     expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("bg-blue-600");
     expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("bg-slate-950");
+    expect(screen.getByText("Manage micro session")).toBeVisible();
 
     const board = screen.getByTestId("dryland-micro-bubble-board");
-    expect(board).toHaveClass("flex", "flex-wrap", "gap-x-4", "gap-y-4");
+    expect(board).toHaveClass("flex", "flex-wrap", "gap-x-2", "gap-y-2");
     expect(
       within(board).getAllByRole("button", {
         name: "Complete Push ups, 12 reps",
@@ -515,9 +547,9 @@ describe("DrylandMicroPlanPanel", () => {
     for (let index = 0; index < 3; index += 1) {
       const bubble = screen.getByTestId(`dryland-micro-bubble-${index}`);
       expect(bubble).toBeVisible();
-      expect(bubble).toHaveClass("dryland-micro-bubble-float", "relative", "min-h-28", "min-w-28");
+      expect(bubble).toHaveClass("dryland-micro-bubble-float", "relative", "min-h-24", "min-w-24");
       expect(bubble).not.toHaveClass("absolute");
-      expect(bubble.getAttribute("style")).toMatch(/width:\s*7\.\d+rem/);
+      expect(bubble.getAttribute("style")).toMatch(/width:\s*[56]\.\d+rem/);
       bubbleBgClasses.push(
         Array.from(bubble.classList).find((className) => /^bg-\w+-50$/.test(className))
       );
