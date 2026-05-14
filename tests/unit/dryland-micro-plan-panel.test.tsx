@@ -118,6 +118,10 @@ function buildPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMicroPla
   };
 }
 
+function getBubbleBackgroundClass(element: HTMLElement) {
+  return Array.from(element.classList).find((className) => /^bg-\w+-50$/.test(className));
+}
+
 describe("DrylandMicroPlanPanel", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -551,13 +555,72 @@ describe("DrylandMicroPlanPanel", () => {
       expect(bubble).toHaveClass("dryland-micro-bubble-float", "relative", "min-h-24", "min-w-24");
       expect(bubble).not.toHaveClass("absolute");
       expect(bubble.getAttribute("style")).toMatch(/width:\s*[56]\.\d+rem/);
-      bubbleBgClasses.push(
-        Array.from(bubble.classList).find((className) => /^bg-\w+-50$/.test(className))
-      );
+      expect(within(bubble).getByText("Push ups")).toHaveClass("text-[13px]", "sm:text-[15px]");
+      expect(within(bubble).getByText("12 reps")).toHaveClass("text-xs", "sm:text-[13px]");
+      bubbleBgClasses.push(getBubbleBackgroundClass(bubble));
     }
     expect(bubbleBgClasses[0]).toBeDefined();
     expect(bubbleBgClasses[1]).toBe(bubbleBgClasses[0]);
     expect(bubbleBgClasses[2]).toBe(bubbleBgClasses[0]);
+  });
+
+  it("keeps different exercises visually distinct before reusing bubble colors", () => {
+    const basePlan = buildPlan();
+    const titles = [
+      "Wall Sit",
+      "Plank",
+      "Stabilizing Push-Ups",
+      "Nordic Curl",
+      "Bird Dog",
+      "Superman",
+    ];
+    const blocks: DrylandMicroBlockSnapshot[] = titles.map((title, index) => ({
+      ...basePlan.blocks[0]!,
+      id: `unit-color-${index}`,
+      sourceExerciseId: `exercise-color-${index}`,
+      sourceExerciseIndex: index,
+      sourceSetId: `set-color-${index}`,
+      setIndex: 0,
+      title,
+      targetLabel: index < 2 ? "30 sec · 30 sec rest" : "5 reps · 30 sec rest",
+      targetType: index < 2 ? "duration" : "reps",
+      targetValue: index < 2 ? 30 : 5,
+      targetUnit: index < 2 ? "sec" : "reps",
+      restSeconds: 30,
+    }));
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          sourceSessionSnapshots: [
+            {
+              ...basePlan.sourceSessionSnapshots[0]!,
+              unitCount: titles.length,
+            },
+          ],
+          blocks,
+          progress: {
+            totalBlockCount: titles.length,
+            completedBlockCount: 0,
+            skippedBlockCount: 0,
+            remainingBlockCount: titles.length,
+            progressPercent: 0,
+          },
+        })}
+        sessions={[buildSummary({ setCount: titles.length })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+
+    const bubbleBackgroundClasses = titles.map((_, index) =>
+      getBubbleBackgroundClass(screen.getByTestId(`dryland-micro-bubble-${index}`))
+    );
+
+    expect(bubbleBackgroundClasses.every(Boolean)).toBe(true);
+    expect(new Set(bubbleBackgroundClasses).size).toBe(titles.length);
   });
 
   it("shows reps or duration inside each bubble based on the unit target", () => {
@@ -626,7 +689,8 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(board).queryByText(/45 sec rest|20 sec rest/)).toBeNull();
   });
 
-  it("opens timed bubbles with a lightweight countdown and early done confirmation", async () => {
+  it("opens timed bubbles with a lightweight countdown and early completion confirmation", async () => {
+    vi.useFakeTimers({ now: new Date("2026-05-11T10:00:00.000Z") });
     const basePlan = buildPlan();
     const completedPlan = buildPlan({
       blocks: basePlan.blocks.map((block, index) =>
@@ -688,20 +752,40 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("0:30")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
-    expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Done?")).toBeVisible();
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Complete?")
+    ).toBeVisible();
+    expect(within(screen.getByTestId("dryland-micro-bubble-1")).queryByText("Done")).toBeNull();
+    expect(fetch).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+
+    expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("0:30")).toBeVisible();
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-1")).queryByText("Complete?")
+    ).toBeNull();
     expect(fetch).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+    expect(
+      within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Complete?")
+    ).toBeVisible();
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
 
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
-        expect.objectContaining<Record<string, unknown>>({
-          method: "PATCH",
-          body: expect.stringContaining('"blockId":"unit-plank"'),
-        })
-      );
+    await act(async () => {
+      await Promise.resolve();
     });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+      expect.objectContaining<Record<string, unknown>>({
+        method: "PATCH",
+        body: expect.stringContaining('"blockId":"unit-plank"'),
+      })
+    );
   });
 
   it("auto-completes timed bubbles when the countdown reaches zero", async () => {
