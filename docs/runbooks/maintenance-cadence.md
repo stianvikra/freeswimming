@@ -142,6 +142,7 @@ Current ratchet baseline:
 | 2026-04-26 | `tighten` | JS transfer default | `450kb` -> `425kb` | Multiple green weekly runs kept the worst margin above the tighten threshold; recent route medians remained about `305kb`.                                                                                       |
 | 2026-04-29 | `hold`    | JS transfer default | none               | `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the latest ratchet was only on `2026-04-26`; wait for two new weekly green cycles after that threshold. |
 | 2026-05-04 | `tighten` | JS transfer default | `425kb` -> `400kb` | `npm run test:perf:trend` recommended `tighten` with `4` weekly green runs and `25.1%` worst margin; latest route JS transfer medians stayed around `318kb` or lower.                                            |
+| 2026-05-14 | `tighten` | JS transfer default | `400kb` -> `390kb` | `npm run test:perf:trend` recommended `tighten` with `5` weekly green runs and `19.6%` worst margin; used a conservative `10kb` step to preserve the `15%` practical headroom rule.                              |
 
 Do not take another stretch-target step until at least two weekly green runs have accumulated after the latest threshold change.
 
