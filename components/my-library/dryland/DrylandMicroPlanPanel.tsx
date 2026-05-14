@@ -70,13 +70,20 @@ const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; 
 
 const WEEKDAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
 const BUBBLE_POP_ANIMATION_MS = 320;
+const BUBBLE_EARLY_COMPLETE_CONFIRM_MS = 1000;
 const BUBBLE_TONE_CLASSES = [
-  "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-emerald-900/10",
-  "border-cyan-200 bg-cyan-50 text-cyan-950 shadow-cyan-900/10",
   "border-amber-200 bg-amber-50 text-amber-950 shadow-amber-900/10",
+  "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-emerald-900/10",
+  "border-rose-200 bg-rose-50 text-rose-950 shadow-rose-900/10",
   "border-sky-200 bg-sky-50 text-sky-950 shadow-sky-900/10",
   "border-violet-200 bg-violet-50 text-violet-950 shadow-violet-900/10",
-  "border-rose-200 bg-rose-50 text-rose-950 shadow-rose-900/10",
+  "border-cyan-200 bg-cyan-50 text-cyan-950 shadow-cyan-900/10",
+  "border-orange-200 bg-orange-50 text-orange-950 shadow-orange-900/10",
+  "border-indigo-200 bg-indigo-50 text-indigo-950 shadow-indigo-900/10",
+  "border-teal-200 bg-teal-50 text-teal-950 shadow-teal-900/10",
+  "border-lime-200 bg-lime-50 text-lime-950 shadow-lime-900/10",
+  "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-950 shadow-fuchsia-900/10",
+  "border-red-200 bg-red-50 text-red-950 shadow-red-900/10",
 ] as const;
 const BUBBLE_OFFSETS_PX = [0, 14, 5, 20, 9, 16] as const;
 
@@ -207,9 +214,28 @@ function getBubbleExerciseKey(block: DrylandMicroBlockSnapshot) {
   return block.title.trim().toLowerCase() || block.sourceExerciseId || block.id;
 }
 
-function getBubbleToneClasses(unit: UnitView) {
-  const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
-  return BUBBLE_TONE_CLASSES[seed % BUBBLE_TONE_CLASSES.length];
+function buildBubbleToneClassByExerciseKey(units: UnitView[]) {
+  const toneByExerciseKey = new Map<string, (typeof BUBBLE_TONE_CLASSES)[number]>();
+  let nextToneIndex = 0;
+
+  for (const unit of units) {
+    const exerciseKey = getBubbleExerciseKey(unit.block);
+    if (toneByExerciseKey.has(exerciseKey)) continue;
+
+    const toneIndex = nextToneIndex % BUBBLE_TONE_CLASSES.length;
+    toneByExerciseKey.set(exerciseKey, BUBBLE_TONE_CLASSES[toneIndex] ?? BUBBLE_TONE_CLASSES[0]);
+    nextToneIndex += 1;
+  }
+
+  return toneByExerciseKey;
+}
+
+function getBubbleToneClasses(
+  unit: UnitView,
+  toneByExerciseKey: Map<string, (typeof BUBBLE_TONE_CLASSES)[number]>
+) {
+  const exerciseKey = getBubbleExerciseKey(unit.block);
+  return toneByExerciseKey.get(exerciseKey) ?? BUBBLE_TONE_CLASSES[0];
 }
 
 function getBubbleTargetLabel(block: DrylandMicroBlockSnapshot) {
@@ -364,6 +390,25 @@ export default function DrylandMicroPlanPanel({
   }, [bubbleTimer]);
 
   useEffect(() => {
+    if (!bubbleTimer?.isConfirmingDone) return;
+
+    const timeout = window.setTimeout(() => {
+      const now = Date.now();
+      setBubbleTimer((current) => {
+        if (!current?.isConfirmingDone || current.blockId !== bubbleTimer.blockId) return current;
+        return {
+          ...current,
+          startedAtMs: now,
+          isConfirmingDone: false,
+        };
+      });
+      setBubbleNowMs(now);
+    }, BUBBLE_EARLY_COMPLETE_CONFIRM_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [bubbleTimer]);
+
+  useEffect(() => {
     if (!bubbleTimer || bubbleTimer.startedAtMs === null) return;
     if (pendingBlockId === bubbleTimer.blockId) return;
     const remainingSeconds = getBubbleRemainingSeconds(bubbleTimer, bubbleNowMs);
@@ -443,6 +488,11 @@ export default function DrylandMicroPlanPanel({
     undoableCompletedUnits.length > 0
       ? (undoableCompletedUnits[undoableCompletedUnits.length - 1] ?? null)
       : null;
+  const bubbleToneByExerciseKey = buildBubbleToneClassByExerciseKey(
+    unitViews
+      .filter((unit) => !unit.block.isArchived)
+      .sort((first, second) => first.index - second.index)
+  );
 
   function toggleSelectedSession(sessionId: string) {
     setSelectedSessionIds((current) => {
@@ -1268,11 +1318,11 @@ export default function DrylandMicroPlanPanel({
             const timerActionLabel = isPending
               ? "Saving..."
               : isTimedActive && bubbleTimer?.isConfirmingDone
-                ? "Done?"
+                ? "Complete?"
                 : isTimerRunning
                   ? formatBubbleCountdown(remainingSeconds)
                   : isTimedActive && remainingSeconds <= 0
-                    ? "Done"
+                    ? formatBubbleCountdown(remainingSeconds)
                     : isTimedActive
                       ? "Start"
                       : null;
@@ -1306,7 +1356,8 @@ export default function DrylandMicroPlanPanel({
                   disabled={plan?.status === "paused" || isPending}
                   style={{ ...getBubbleVisualStyle(unit, isTimedActive), marginTop: undefined }}
                   className={`dryland-micro-bubble dryland-micro-bubble-float ui-press relative flex min-h-24 min-w-24 flex-none flex-col items-center justify-center rounded-full border p-2.5 text-center shadow-sm transition sm:p-3 ${getBubbleToneClasses(
-                    unit
+                    unit,
+                    bubbleToneByExerciseKey
                   )} ${
                     isArmed || isTimedActive
                       ? "ring-4 ring-blue-300 ring-offset-2"
@@ -1315,10 +1366,10 @@ export default function DrylandMicroPlanPanel({
                     isPopping ? "dryland-micro-bubble-pop" : ""
                   } disabled:cursor-not-allowed disabled:opacity-60`}
                 >
-                  <span className="block text-xs leading-tight font-semibold break-words sm:text-sm">
+                  <span className="block text-[13px] leading-tight font-semibold break-words sm:text-[15px]">
                     {unit.block.title}
                   </span>
-                  <span className="mt-1 block text-[11px] leading-tight font-medium break-words text-slate-700 sm:text-xs">
+                  <span className="mt-1 block text-xs leading-tight font-medium break-words text-slate-700 sm:text-[13px]">
                     {getBubbleTargetLabel(unit.block)}
                   </span>
                   {isTimedBubble && timerActionLabel ? (
