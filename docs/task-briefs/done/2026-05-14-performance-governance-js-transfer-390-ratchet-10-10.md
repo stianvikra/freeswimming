@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-05-14-performance-governance-js-transfer-390-ratchet-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-14`
 - `updated`: `2026-05-14`
-- `mode`: `implementation approved`
+- `mode`: `post-merge closeout`
 
 ## Goal
 
@@ -251,8 +251,28 @@ Critical target categories for a `10/10` claim in this brief:
 - Help/Guide and operator training documentation:
   - `N/A`; canonical maintenance/performance runbooks updated instead.
 
+## Closeout Evidence
+
+- `merged PR`: #706 as `df2b31b` on `2026-05-14`.
+- `10/10 claim`: yes for the approved performance governance ratchet scope.
+- Critical target categories are all `5/5`: Performance, Content governance, Stack-fit and dependency discipline, Testing and QA automation, DevOps and rollback readiness.
+- Remaining gaps: none within the approved scope.
+- Screenshot handoff: `N/A`; no UI, print, layout, export, or brand rendering changed.
+- Help/Guide impact: `N/A`; no admin/user workflow labels, actions, recovery behavior, or Help/Guide content changed.
+
+| Target Category                     | Achieved Score | Evidence                                                                                                          |
+| ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                | `5/5`          | JS transfer default moved from `400kb` to `390kb`; no product IA behavior changed.                                |
+| Performance (CWV + payloads)        | `5/5`          | `npm run test:perf:budgets` passed at `390kb`; worst post-ratchet margin remained `17.6%`.                        |
+| Content governance                  | `5/5`          | Canonical performance runbook, maintenance cadence, testing docs, and this brief record the `2026-05-14` ratchet. |
+| Stack-fit and dependency discipline | `5/5`          | Existing performance budget script/docs were reused; no dependencies or new measurement system were added.        |
+| Testing and QA automation           | `5/5`          | Targeted checks, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed for PR #706.           |
+| Scalability and cost efficiency     | `5/5`          | Tighter JS transfer gate catches future payload drift while preserving the repo's `15%` headroom rule.            |
+| DevOps and rollback readiness       | `5/5`          | Rollback remains a single threshold revert from `390kb` back to `400kb` plus docs note updates.                   |
+
 ## Checkpoint Log
 
 - `2026-05-14 | planning | audit started from clean main 7fddf9e after PR #704 and repo-managed closeout PR #705 were merged; npm run test:perf:trend reported public latest PASS at 9ad31161953d, 5 consecutive weekly green runs, 19.6% worst margin, recommendation tighten | next: get owner scope decision before changing performance thresholds`
 - `2026-05-14 | in-progress | owner approved recommended scope: implement JS transfer default 400kb -> 390kb, update canonical governance docs, run targeted perf validation and full pre-PR/pre-merge gates | next: implement threshold/docs changes`
 - `2026-05-14 | in-progress | implemented JS transfer default 390kb and governance docs; targeted validation passed: npm run lint:briefs:all PASS, npm run lint:quality-gates PASS after adding explicit sweep evidence, npm run test:perf:trend reported tighten with 5 weekly green runs and 19.6% pre-ratchet margin, npm run test:perf:budgets PASS with 17.6% worst post-ratchet margin and JS medians / 321.5kb, /plans 273.5kb, /course 300.4kb, /my-library 272.0kb | next: run npm run verify:pre-pr`
+- `2026-05-14 | done | PR #706 merged as df2b31b after green GitHub checks and green local npm run verify:pre-merge; post-merge preflight surfaced this repo-managed docs-only lifecycle closeout, moved brief to done, and recorded achieved 10/10 target evidence | next: validate, merge, sync, and rerun post-merge preflight for the closeout PR`
