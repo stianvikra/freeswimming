@@ -242,7 +242,7 @@ describe("habits domain helpers", () => {
     expect(habit.cadencePeriod).toBe("weekly");
     expect(habit.cadenceTargetCount).toBe(3);
     expect(habit.cadenceDayPolicy).toBe("fixed");
-    expect(habit.cadenceLabel).toBe("3 fixed days/week");
+    expect(habit.cadenceLabel).toBe("Weekly - 3 fixed days");
   });
 
   it("evaluates mixed perfect-day target types deterministically", () => {
@@ -337,7 +337,7 @@ describe("habits domain helpers", () => {
     expect(summary.averageCompletionPercent).toBe(29);
   });
 
-  it("sorts active habits by due action, timed action, quit status, then later rows", () => {
+  it("sorts active habits by due action, timed action, quit status, done status, then later rows", () => {
     const dueBuild = buildHabitDefinitionView(
       buildHabitRow({
         id: "11111111-1111-4111-8111-111111111111",
@@ -414,7 +414,7 @@ describe("habits domain helpers", () => {
       "due_build",
       "due_timed",
       "quit_status",
-      "not_due",
+      "done_today",
     ]);
   });
 

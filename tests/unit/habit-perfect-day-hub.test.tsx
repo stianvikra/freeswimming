@@ -188,6 +188,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    expect(screen.getByRole("option", { name: "Done only" })).toBeVisible();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Read 10 pages" },
     });
@@ -302,9 +303,11 @@ describe("HabitPerfectDayHub", () => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
     });
     expect(screen.getByRole("button", { name: "Done" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
+    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Archive" })).toBeVisible();
   });
 
@@ -367,18 +370,24 @@ describe("HabitPerfectDayHub", () => {
   it("keeps count habit status compact with singular units and weekly adherence", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCountSnapshot()} />);
 
-    expect(screen.getByText("1 glass today · 1/1 today")).toBeVisible();
+    expect(screen.getByText("1 glass today · Done today")).toBeVisible();
     expect(screen.getByText("At least 1 glass")).toBeVisible();
   });
 
   it("shows not-due fixed-day habits without a quick check-in action", () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v2:seen-row-ids",
+      JSON.stringify(["55555555-5555-4555-8555-555555555555"])
+    );
     render(<HabitPerfectDayHub initialSnapshot={buildNotDueFixedDaySnapshot()} />);
 
     expect(screen.getAllByText("Later").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Not due today")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
     expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
   });
 
   it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
@@ -387,8 +396,8 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
     expect(screen.getByText("1/1 on target today")).toBeVisible();
-    expect(screen.getByText("1 glass today · 1/1 today")).toBeVisible();
-    expect(screen.getByLabelText("Water value")).toBeVisible();
+    expect(screen.getByText("1 glass today · Done today")).toBeVisible();
+    expect(screen.queryByLabelText("Water value")).toBeNull();
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
     });
@@ -526,6 +535,10 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("edits an active habit definition while keeping the returned history", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v2:seen-row-ids",
+      JSON.stringify(["11111111-1111-4111-8111-111111111111"])
+    );
     const completedSnapshot = buildSnapshot({ withHabit: true, completed: true });
     const updatedHabitRow = buildHabitRow({
       title: "Read deeply",
@@ -552,6 +565,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={completedSnapshot} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(
       screen.getByText("Updates this habit definition. Check-ins and history stay attached.")

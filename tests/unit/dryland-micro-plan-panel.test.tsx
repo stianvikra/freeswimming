@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
@@ -125,6 +125,7 @@ describe("DrylandMicroPlanPanel", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
@@ -617,12 +618,159 @@ describe("DrylandMicroPlanPanel", () => {
     ).toBeVisible();
     expect(
       within(board).getByRole("button", {
-        name: "Complete Plank, 30 sec",
+        name: "Open timer for Plank, 30 sec",
       })
     ).toBeVisible();
     expect(within(board).getByText("8 reps")).toBeVisible();
     expect(within(board).getByText("30 sec")).toBeVisible();
     expect(within(board).queryByText(/45 sec rest|20 sec rest/)).toBeNull();
+  });
+
+  it("opens timed bubbles with a lightweight countdown and early done confirmation", async () => {
+    const basePlan = buildPlan();
+    const completedPlan = buildPlan({
+      blocks: basePlan.blocks.map((block, index) =>
+        index === 1
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-11T10:01:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    const blocks: DrylandMicroBlockSnapshot[] = [
+      basePlan.blocks[0]!,
+      {
+        ...basePlan.blocks[1]!,
+        id: "unit-plank",
+        title: "Plank",
+        targetLabel: "30 sec · 20 sec rest",
+        targetType: "duration",
+        targetValue: 30,
+        targetUnit: "sec",
+        restSeconds: 20,
+      },
+    ];
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: completedPlan,
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({ blocks })}
+        sessions={[buildSummary({ setCount: 2 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+
+    expect(screen.getByTestId("dryland-micro-bubble-1")).toHaveAccessibleName(
+      "Start Plank timer, 30 sec"
+    );
+    expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Start")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+    expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("0:30")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+    expect(within(screen.getByTestId("dryland-micro-bubble-1")).getByText("Done?")).toBeVisible();
+    expect(fetch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-1"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"blockId":"unit-plank"'),
+        })
+      );
+    });
+  });
+
+  it("auto-completes timed bubbles when the countdown reaches zero", async () => {
+    vi.useFakeTimers({ now: new Date("2026-05-11T10:00:00.000Z") });
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = [
+      {
+        ...basePlan.blocks[0]!,
+        id: "unit-plank",
+        title: "Plank",
+        targetLabel: "30 sec · 20 sec rest",
+        targetType: "duration",
+        targetValue: 30,
+        targetUnit: "sec",
+        restSeconds: 20,
+      },
+      basePlan.blocks[1]!,
+    ];
+    const completedPlan = buildPlan({
+      blocks: blocks.map((block, index) =>
+        index === 0
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-11T10:00:30.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: completedPlan,
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({ blocks })}
+        sessions={[buildSummary({ setCount: 2 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+    fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
+
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+      await Promise.resolve();
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+      expect.objectContaining<Record<string, unknown>>({
+        method: "PATCH",
+        body: expect.stringContaining('"blockId":"unit-plank"'),
+      })
+    );
   });
 
   it("double taps a bubble through the existing server-confirmed completion mutation", async () => {
