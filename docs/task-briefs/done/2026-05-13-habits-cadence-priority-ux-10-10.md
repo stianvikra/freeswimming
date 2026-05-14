@@ -102,6 +102,19 @@ Critical target categories for a `10/10` claim:
 | Scalability and cost efficiency               | `target`     | Queries remain bounded to active habits and relevant date windows; cadence evaluation avoids per-user unbounded history scans on Home/My Library.                           | query/index review + load-shape rationale                                                                                  | `5/5`                   |
 | DevOps and rollback readiness                 | `target`     | Additive migration is forward-safe, generated DB types update in same PR, legacy rows render, rollback/degrade behavior is documented, and gates catch schema drift.        | migration rollback note + generated types diff + pre-pr/pre-merge gates                                                    | `5/5`                   |
 
+## Closeout Evidence
+
+- Merged PR: `#700`, squash commit `ae49cfe`.
+- Implementation commit before squash: `5451218`.
+- `10/10 claim: yes`.
+- Achieved target scores: Product goals and IA `5/5`; UX flow clarity `5/5`; Visual design quality `5/5`; Business logic correctness and data integrity `5/5`; Accessibility (a11y) `5/5`; Performance (CWV + payloads) `5/5`; Data placement and sync boundaries `5/5`; Caching and invalidation strategy `5/5`; Reliability and failure handling `5/5`; Security and authz `5/5`; Privacy and compliance `5/5`; Analytics and KPI observability `5/5`; Incident response and support operations `5/5`; i18n operational readiness `5/5`; Stack-fit and dependency discipline `5/5`; Testing and QA automation `5/5`; Scalability and cost efficiency `5/5`; DevOps and rollback readiness `5/5`.
+- Critical target categories confirmed `5/5`: Product goals and IA; UX flow clarity; Visual design quality; Business logic correctness and data integrity; Data placement and sync boundaries; Accessibility (a11y); Reliability and failure handling; Security and authz; Privacy and compliance; Stack-fit and dependency discipline; Testing and QA automation.
+- Validation: `npm run verify:pre-pr` PASS; `npm run verify:pre-merge` PASS on `5451218`; `npm run merge:preflight -- --assert-ready` PASS; GitHub checks PASS for verify, e2e-smoke, site-lock-smoke, CodeQL, PR Size, Vercel Preview, and Vercel.
+- Screenshot evidence: `output/habits-cadence-priority-20260514-012554`, captured `2026-05-14 01:25`, owner approved; no product-rendering files changed after the final capture.
+- Supabase evidence: linked dry-run confirmed the remote database was up to date after `20260513213000_habits_cadence_priority_contract.sql` was applied, and generated DB types were updated in the PR.
+- Remaining gaps: none blocking for the Habits Cadence and Priority release gate.
+- Deferred follow-ups: `/my-library` floating nav `Home` vs `Habits` IA belongs in a separate navigation IA slice; public-route perf-budget tightening is held for a dedicated platform-performance slice because this PR targets the authenticated Habits cadence surface.
+
 ## Stack / Architecture Best-Practice Gate
 
 - React/Next.js:
