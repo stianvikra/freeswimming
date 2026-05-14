@@ -284,7 +284,7 @@ function getHabitTypeLabel(type: HabitType) {
       return "Count";
     case "binary":
     default:
-      return "Done";
+      return "Done only";
   }
 }
 
@@ -300,14 +300,29 @@ function getHabitModeLabel(mode: HabitMode) {
   }
 }
 
-function getPriorityGroupLabel(group: HabitDayItem["priorityGroup"]) {
-  switch (group) {
+function getPriorityGroupKey(item: HabitDayItem) {
+  return item.priorityGroup === "done_period"
+    ? `${item.priorityGroup}-${item.cadenceProgress.periodLabel}`
+    : item.priorityGroup;
+}
+
+function getCompletionStatusLabel(item: HabitDayItem) {
+  return item.priorityGroup === "done_period"
+    ? `Done ${item.cadenceProgress.periodLabel}`
+    : "Done today";
+}
+
+function getPriorityGroupLabel(item: HabitDayItem) {
+  switch (item.priorityGroup) {
     case "due_build":
       return "Action needed";
     case "due_timed":
       return "Timed today";
     case "quit_status":
       return "Quit status";
+    case "done_today":
+    case "done_period":
+      return getCompletionStatusLabel(item);
     case "archived":
       return "Archived";
     case "not_due":
@@ -1114,6 +1129,8 @@ export default function HabitPerfectDayHub({
               const isSatisfied = item.evaluation.isSatisfied;
               const isQuit = habit.habitMode === "quit";
               const isTimed = habit.habitMode === "timed";
+              const isCompletionGroup =
+                item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const timerSeconds = getTimerSeconds(habit.id);
               const isTimerRunning = timers[habit.id]?.startedAtMs != null;
               const isExpanded = expandedHabitIds.includes(habit.id);
@@ -1121,15 +1138,27 @@ export default function HabitPerfectDayHub({
               const cadenceLabel = habit.cadenceLabel;
               const timerTargetSeconds = getTimerTargetDisplaySeconds(habit);
               const canEditTodaysCheckIn = item.isScheduledForDate || item.checkIn !== null;
-              const statusLabel =
-                !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+              const statusLabel = isCompletionGroup
+                ? getCompletionStatusLabel(item)
+                : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
                   ? "Later"
                   : item.evaluation.stateLabel;
               const showGroupHeading =
                 index === 0 ||
-                snapshot.daySummary.items[index - 1]?.priorityGroup !== item.priorityGroup;
-              const quickStatusLabel =
-                !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
+                  getPriorityGroupKey(item);
+              const quickStatusLabel = isCompletionGroup
+                ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
+                  ? `${formatCountValue(
+                      item.checkIn?.valueNumeric ?? 0,
+                      habit.targetUnit
+                    )} today · ${getCompletionStatusLabel(item)}`
+                  : isTimed
+                    ? `${getTimedStatusLabel(item, timerSeconds)} · ${getCompletionStatusLabel(
+                        item
+                      )}`
+                    : getCompletionStatusLabel(item)
+                : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
                   ? "Not due today"
                   : isQuit
                     ? `${item.evaluation.valueLabel} · ${
@@ -1146,7 +1175,7 @@ export default function HabitPerfectDayHub({
                 <div key={habit.id} className="space-y-2">
                   {showGroupHeading ? (
                     <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      {getPriorityGroupLabel(item.priorityGroup)}
+                      {getPriorityGroupLabel(item)}
                     </p>
                   ) : null}
                   <article className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -1164,7 +1193,7 @@ export default function HabitPerfectDayHub({
                           </span>
                           <span
                             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              isSatisfied
+                              isSatisfied || isCompletionGroup
                                 ? "bg-emerald-50 text-emerald-800"
                                 : "bg-white text-slate-600"
                             }`}
@@ -1200,7 +1229,7 @@ export default function HabitPerfectDayHub({
                           </button>
                         ) : null}
 
-                        {canEditTodaysCheckIn && isTimed ? (
+                        {canEditTodaysCheckIn && !isCompletionGroup && isTimed ? (
                           <>
                             <div className="flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
                               <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
@@ -1225,6 +1254,7 @@ export default function HabitPerfectDayHub({
                         ) : null}
 
                         {canEditTodaysCheckIn &&
+                        !isCompletionGroup &&
                         !isQuit &&
                         !isTimed &&
                         habit.habitType !== "binary" ? (
@@ -1261,16 +1291,6 @@ export default function HabitPerfectDayHub({
                             </button>
                           </div>
                         ) : null}
-
-                        <button
-                          type="button"
-                          onClick={() => startEditingHabit(habit)}
-                          disabled={disabled}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                          Edit
-                        </button>
 
                         <button
                           type="button"
@@ -1665,6 +1685,16 @@ export default function HabitPerfectDayHub({
                               {isQuit ? "Undo slip" : "Reset"}
                             </button>
                           ) : null}
+
+                          <button
+                            type="button"
+                            onClick={() => startEditingHabit(habit)}
+                            disabled={disabled}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                            Edit
+                          </button>
 
                           <button
                             type="button"

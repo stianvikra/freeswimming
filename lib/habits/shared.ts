@@ -59,7 +59,14 @@ export type HabitCadenceProgress = {
   isDueToday: boolean;
 };
 
-export type HabitPriorityGroup = "due_build" | "due_timed" | "quit_status" | "not_due" | "archived";
+export type HabitPriorityGroup =
+  | "due_build"
+  | "due_timed"
+  | "quit_status"
+  | "done_today"
+  | "done_period"
+  | "not_due"
+  | "archived";
 
 export type HabitDefinitionRow = Database["public"]["Tables"]["habit_definitions"]["Row"];
 export type HabitDefinitionInsert = Database["public"]["Tables"]["habit_definitions"]["Insert"];
@@ -808,12 +815,16 @@ function buildHabitCadenceLabel(input: {
   if (input.cadencePeriod === "weekly") {
     if (input.cadenceDayPolicy === "fixed") {
       const count = input.scheduleDays.length;
-      return count === 1 ? "Weekly fixed day" : `${count} fixed days/week`;
+      return count === 1 ? "Weekly - fixed day" : `Weekly - ${count} fixed days`;
     }
-    return `${input.cadenceTargetCount}x/week any days`;
+    return input.cadenceTargetCount === 1
+      ? "Weekly - any day"
+      : `${input.cadenceTargetCount}x/week - any days`;
   }
 
-  return `${input.cadenceTargetCount}x/month any days`;
+  return input.cadenceTargetCount === 1
+    ? "Monthly - any day"
+    : `${input.cadenceTargetCount}x/month - any days`;
 }
 
 function buildTargetLabel(input: {
@@ -830,7 +841,7 @@ function buildTargetLabel(input: {
     const unit = input.targetUnit ?? "minutes";
     return `Timer ${value} ${unit}`;
   }
-  if (input.habitType === "binary") return "Done once";
+  if (input.habitType === "binary") return "Done only";
   if (input.habitType === "time_of_day") {
     const time = input.targetTime?.slice(0, 5) ?? "";
     return input.targetOperator === "after" ? `After ${time}` : `Before ${time}`;
@@ -1039,6 +1050,7 @@ export function isHabitScheduledForDate(
 
 function getHabitPriorityGroup(
   habit: HabitDefinitionView,
+  evaluation: HabitEvaluation,
   cadenceProgress: HabitCadenceProgress,
   isScheduledForDate: boolean,
   date: string
@@ -1046,6 +1058,9 @@ function getHabitPriorityGroup(
   if (habit.status === "archived") return "archived";
   if (isAfterHabitDate(habit.startDate, date)) return "not_due";
   if (habit.habitMode === "quit") return "quit_status";
+  if (evaluation.isSatisfied || cadenceProgress.isTargetMet) {
+    return habit.cadencePeriod === "daily" ? "done_today" : "done_period";
+  }
   if (!isScheduledForDate || !cadenceProgress.isDueToday) return "not_due";
   return habit.habitMode === "timed" ? "due_timed" : "due_build";
 }
@@ -1055,8 +1070,10 @@ function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
     due_build: 0,
     due_timed: 1,
     quit_status: 2,
-    not_due: 3,
-    archived: 4,
+    done_today: 3,
+    done_period: 4,
+    not_due: 5,
+    archived: 6,
   };
   const cadenceOrder: Record<HabitCadencePeriod, number> = {
     daily: 0,
@@ -1090,7 +1107,13 @@ export function buildHabitDaySummary(
         evaluation,
         cadenceProgress,
         isScheduledForDate,
-        priorityGroup: getHabitPriorityGroup(habit, cadenceProgress, isScheduledForDate, date),
+        priorityGroup: getHabitPriorityGroup(
+          habit,
+          evaluation,
+          cadenceProgress,
+          isScheduledForDate,
+          date
+        ),
       };
     })
     .sort(compareHabitDayItems);

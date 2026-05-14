@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from "react";
 import { Bubbles, CheckCircle2, ListChecks, Trash2, Undo2 } from "lucide-react";
 import {
   getDrylandMicroBlockReleaseDate,
@@ -37,9 +45,22 @@ type ExecutionMode = "ordered" | "bubbles";
 type PatchPlanOptions = {
   applyResponse?: boolean;
 };
+type UpdateBlockOptions = { visualOrigin?: ExecutionMode };
+type UpdateBlockFn = (
+  blockId: string,
+  blockStatus: DrylandMicroBlockStatus,
+  options?: UpdateBlockOptions
+) => Promise<void>;
 type CompletedUndoItem = {
   blockId: string;
   title: string;
+};
+type BubbleTimerState = {
+  blockId: string;
+  durationSeconds: number;
+  remainingSeconds: number;
+  startedAtMs: number | null;
+  isConfirmingDone: boolean;
 };
 
 const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; label: string }> = [
@@ -203,6 +224,26 @@ function getBubbleTargetLabel(block: DrylandMicroBlockSnapshot) {
   return block.targetLabel.split("·")[0]?.trim() || block.targetLabel;
 }
 
+function getBubbleDurationSeconds(block: DrylandMicroBlockSnapshot) {
+  if (block.targetType !== "duration" || block.targetValue === null || block.targetValue <= 0) {
+    return null;
+  }
+  return block.targetValue;
+}
+
+function formatBubbleCountdown(seconds: number) {
+  const safeSeconds = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainder = safeSeconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function getBubbleRemainingSeconds(timer: BubbleTimerState, nowMs: number) {
+  if (timer.startedAtMs === null) return timer.remainingSeconds;
+  const elapsedSeconds = Math.floor((nowMs - timer.startedAtMs) / 1000);
+  return Math.max(0, timer.remainingSeconds - Math.max(0, elapsedSeconds));
+}
+
 function formatSetCountLabel(count: number) {
   return `${count} set${count === 1 ? "" : "s"}`;
 }
@@ -225,11 +266,12 @@ function getUnitSummaryParts(units: UnitView[]) {
   return parts;
 }
 
-function getBubbleVisualStyle(unit: UnitView): CSSProperties {
+function getBubbleVisualStyle(unit: UnitView, isActiveTimer = false): CSSProperties {
   const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
   const targetLabel = getBubbleTargetLabel(unit.block);
   const contentWeight = unit.block.title.length + Math.round(targetLabel.length * 0.55);
-  const size = Math.min(7.5, Math.max(5.75, 5.25 + contentWeight * 0.07));
+  const baseSize = Math.min(7.5, Math.max(5.75, 5.25 + contentWeight * 0.07));
+  const size = isActiveTimer ? Math.min(8.25, baseSize + 0.75) : baseSize;
   const rawOffset =
     BUBBLE_OFFSETS_PX[(unit.index + unit.block.setIndex) % BUBBLE_OFFSETS_PX.length] ??
     BUBBLE_OFFSETS_PX[0];
@@ -277,11 +319,14 @@ export default function DrylandMicroPlanPanel({
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("ordered");
   const [armedBubbleId, setArmedBubbleId] = useState<string | null>(null);
+  const [bubbleTimer, setBubbleTimer] = useState<BubbleTimerState | null>(null);
+  const [bubbleNowMs, setBubbleNowMs] = useState(() => Date.now());
   const [poppingBubbleId, setPoppingBubbleId] = useState<string | null>(null);
   const [completedUndoStack, setCompletedUndoStack] = useState<CompletedUndoItem[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const progressLabelId = useId();
+  const updateBlockRef = useRef<UpdateBlockFn | null>(null);
 
   useEffect(() => {
     setPlan(initialPlan);
@@ -301,6 +346,8 @@ export default function DrylandMicroPlanPanel({
     setIsClearConfirmOpen(false);
     setExecutionMode("ordered");
     setArmedBubbleId(null);
+    setBubbleTimer(null);
+    setBubbleNowMs(Date.now());
     setPoppingBubbleId(null);
     setCompletedUndoStack([]);
   }, [initialEditorOpen, initialPlan]);
@@ -308,6 +355,33 @@ export default function DrylandMicroPlanPanel({
   useEffect(() => {
     setExecutionMode(getPreferredClientExecutionMode(preferMobileBubbles));
   }, [initialPlan, preferMobileBubbles]);
+
+  useEffect(() => {
+    if (bubbleTimer?.startedAtMs === null || !bubbleTimer) return;
+
+    const interval = window.setInterval(() => setBubbleNowMs(Date.now()), 250);
+    return () => window.clearInterval(interval);
+  }, [bubbleTimer]);
+
+  useEffect(() => {
+    if (!bubbleTimer || bubbleTimer.startedAtMs === null) return;
+    if (pendingBlockId === bubbleTimer.blockId) return;
+    const remainingSeconds = getBubbleRemainingSeconds(bubbleTimer, bubbleNowMs);
+    if (remainingSeconds > 0) return;
+
+    const blockId = bubbleTimer.blockId;
+    setBubbleTimer((current) =>
+      current?.blockId === blockId
+        ? {
+            ...current,
+            remainingSeconds: 0,
+            startedAtMs: null,
+            isConfirmingDone: false,
+          }
+        : current
+    );
+    void updateBlockRef.current?.(blockId, "completed", { visualOrigin: "bubbles" });
+  }, [bubbleNowMs, bubbleTimer, pendingBlockId]);
 
   useEffect(() => {
     onSourceSelectionChange?.(schemaReady && ((!plan && isCreating) || Boolean(plan && isEditing)));
@@ -402,6 +476,14 @@ export default function DrylandMicroPlanPanel({
         ? current
         : null;
     });
+    setBubbleTimer((current) => {
+      if (!current) return null;
+      return nextPlan.blocks.some(
+        (block) => block.id === current.blockId && block.status === "queued" && !block.isArchived
+      )
+        ? current
+        : null;
+    });
     setCompletedUndoStack((current) =>
       current.filter(
         (item) =>
@@ -418,6 +500,7 @@ export default function DrylandMicroPlanPanel({
     setError("");
     setSuccess("");
     setArmedBubbleId(null);
+    setBubbleTimer(null);
   }
 
   async function createPlan() {
@@ -537,7 +620,7 @@ export default function DrylandMicroPlanPanel({
   async function updateBlock(
     blockId: string,
     blockStatus: DrylandMicroBlockStatus,
-    options: { visualOrigin?: ExecutionMode } = {}
+    options: UpdateBlockOptions = {}
   ) {
     const targetBlock = plan?.blocks.find((block) => block.id === blockId) ?? null;
     setPendingBlockId(blockId);
@@ -592,6 +675,8 @@ export default function DrylandMicroPlanPanel({
     }
   }
 
+  updateBlockRef.current = updateBlock;
+
   function handleBubbleClick(unit: UnitView) {
     setError("");
     setSuccess("");
@@ -600,6 +685,53 @@ export default function DrylandMicroPlanPanel({
       return;
     }
 
+    const durationSeconds = getBubbleDurationSeconds(unit.block);
+    if (durationSeconds !== null) {
+      const isActiveTimer = bubbleTimer?.blockId === unit.block.id;
+      const remainingSeconds = isActiveTimer
+        ? getBubbleRemainingSeconds(bubbleTimer, bubbleNowMs)
+        : durationSeconds;
+
+      if (!isActiveTimer) {
+        setArmedBubbleId(unit.block.id);
+        setBubbleTimer({
+          blockId: unit.block.id,
+          durationSeconds,
+          remainingSeconds: durationSeconds,
+          startedAtMs: null,
+          isConfirmingDone: false,
+        });
+        setBubbleNowMs(Date.now());
+        return;
+      }
+
+      if (bubbleTimer.isConfirmingDone || remainingSeconds <= 0) {
+        void updateBlock(unit.block.id, "completed", { visualOrigin: "bubbles" });
+        return;
+      }
+
+      if (bubbleTimer.startedAtMs === null) {
+        const now = Date.now();
+        setBubbleTimer({
+          ...bubbleTimer,
+          remainingSeconds,
+          startedAtMs: now,
+          isConfirmingDone: false,
+        });
+        setBubbleNowMs(now);
+        return;
+      }
+
+      setBubbleTimer({
+        ...bubbleTimer,
+        remainingSeconds,
+        startedAtMs: null,
+        isConfirmingDone: true,
+      });
+      return;
+    }
+
+    setBubbleTimer(null);
     if (armedBubbleId === unit.block.id) {
       void updateBlock(unit.block.id, "completed", { visualOrigin: "bubbles" });
       return;
@@ -612,6 +744,19 @@ export default function DrylandMicroPlanPanel({
     if (event.key === "Escape") {
       if (armedBubbleId === unit.block.id) {
         event.preventDefault();
+        const durationSeconds = getBubbleDurationSeconds(unit.block);
+        if (durationSeconds !== null && bubbleTimer?.blockId === unit.block.id) {
+          if (bubbleTimer.isConfirmingDone) {
+            setBubbleTimer({
+              ...bubbleTimer,
+              startedAtMs: Date.now(),
+              isConfirmingDone: false,
+            });
+            setBubbleNowMs(Date.now());
+            return;
+          }
+          setBubbleTimer(null);
+        }
         setArmedBubbleId(null);
       }
       return;
@@ -681,6 +826,7 @@ export default function DrylandMicroPlanPanel({
       setIsCreating(false);
       setIsClearConfirmOpen(false);
       setArmedBubbleId(null);
+      setBubbleTimer(null);
       setPoppingBubbleId(null);
       setSuccess("Micro session cleared.");
     } catch (updateError) {
@@ -1111,6 +1257,39 @@ export default function DrylandMicroPlanPanel({
             const isArmed = armedBubbleId === unit.block.id;
             const isPending = pendingBlockId === unit.block.id;
             const isPopping = poppingBubbleId === unit.block.id;
+            const durationSeconds = getBubbleDurationSeconds(unit.block);
+            const isTimedBubble = durationSeconds !== null;
+            const isTimedActive = isTimedBubble && bubbleTimer?.blockId === unit.block.id;
+            const remainingSeconds =
+              isTimedActive && bubbleTimer
+                ? getBubbleRemainingSeconds(bubbleTimer, bubbleNowMs)
+                : (durationSeconds ?? 0);
+            const isTimerRunning = Boolean(isTimedActive && bubbleTimer?.startedAtMs !== null);
+            const timerActionLabel = isPending
+              ? "Saving..."
+              : isTimedActive && bubbleTimer?.isConfirmingDone
+                ? "Done?"
+                : isTimerRunning
+                  ? formatBubbleCountdown(remainingSeconds)
+                  : isTimedActive && remainingSeconds <= 0
+                    ? "Done"
+                    : isTimedActive
+                      ? "Start"
+                      : null;
+            const ariaLabel =
+              isTimedBubble && !isTimedActive
+                ? `Open timer for ${unit.block.title}, ${getBubbleTargetLabel(unit.block)}`
+                : isTimedActive && bubbleTimer?.isConfirmingDone
+                  ? `Confirm ${unit.block.title} done`
+                  : isTimedActive && isTimerRunning
+                    ? `Mark ${unit.block.title} done early, ${formatBubbleCountdown(
+                        remainingSeconds
+                      )} remaining`
+                    : isTimedActive && remainingSeconds <= 0
+                      ? `Complete ${unit.block.title}, ${getBubbleTargetLabel(unit.block)}`
+                      : isTimedActive
+                        ? `Start ${unit.block.title} timer, ${getBubbleTargetLabel(unit.block)}`
+                        : `Complete ${unit.block.title}, ${getBubbleTargetLabel(unit.block)}`;
             return (
               <div
                 key={unit.block.id}
@@ -1120,16 +1299,16 @@ export default function DrylandMicroPlanPanel({
                 <button
                   type="button"
                   data-testid={`dryland-micro-bubble-${unit.index}`}
-                  aria-pressed={isArmed}
-                  aria-label={`Complete ${unit.block.title}, ${getBubbleTargetLabel(unit.block)}`}
+                  aria-pressed={isArmed || isTimedActive}
+                  aria-label={ariaLabel}
                   onClick={() => handleBubbleClick(unit)}
                   onKeyDown={(event) => handleBubbleKeyDown(event, unit)}
                   disabled={plan?.status === "paused" || isPending}
-                  style={{ ...getBubbleVisualStyle(unit), marginTop: undefined }}
+                  style={{ ...getBubbleVisualStyle(unit, isTimedActive), marginTop: undefined }}
                   className={`dryland-micro-bubble dryland-micro-bubble-float ui-press relative flex min-h-24 min-w-24 flex-none flex-col items-center justify-center rounded-full border p-2.5 text-center shadow-sm transition sm:p-3 ${getBubbleToneClasses(
                     unit
                   )} ${
-                    isArmed
+                    isArmed || isTimedActive
                       ? "ring-4 ring-blue-300 ring-offset-2"
                       : "hover:border-blue-300 hover:bg-white"
                   } ${
@@ -1142,12 +1321,17 @@ export default function DrylandMicroPlanPanel({
                   <span className="mt-1 block text-[11px] leading-tight font-medium break-words text-slate-700 sm:text-xs">
                     {getBubbleTargetLabel(unit.block)}
                   </span>
-                  {isArmed && !isPending ? (
+                  {isTimedBubble && timerActionLabel ? (
+                    <span className="mt-2 inline-flex min-h-6 items-center rounded-full bg-white/85 px-2 text-[11px] leading-none font-bold text-blue-700 shadow-sm ring-1 ring-blue-100">
+                      {timerActionLabel}
+                    </span>
+                  ) : null}
+                  {!isTimedBubble && isArmed && !isPending ? (
                     <span className="mt-2 inline-flex min-h-6 items-center rounded-full bg-white/85 px-2 text-[11px] leading-none font-bold text-blue-700 shadow-sm ring-1 ring-blue-100">
                       Complete?
                     </span>
                   ) : null}
-                  {isPending ? (
+                  {isPending && !isTimedBubble ? (
                     <span className="absolute inset-x-0 bottom-3 text-xs font-semibold text-slate-600">
                       Saving...
                     </span>
