@@ -21,6 +21,8 @@ import {
   HABIT_MODE_VALUES,
   HABIT_TYPE_VALUES,
   type HabitDefinitionView,
+  type HabitCadenceDayPolicy,
+  type HabitCadencePeriod,
   type HabitDayItem,
   type HabitMode,
   type HabitSnapshot,
@@ -51,7 +53,9 @@ type HabitDraft = {
   targetTime: string;
   startDate: string;
   notes: string;
-  scheduleMode: ScheduleMode;
+  cadencePeriod: HabitCadencePeriod;
+  cadenceTargetCount: string;
+  cadenceDayPolicy: HabitCadenceDayPolicy;
   scheduleDays: HabitWeekday[];
 };
 
@@ -59,8 +63,6 @@ type TimerState = {
   elapsedSeconds: number;
   startedAtMs: number | null;
 };
-
-type ScheduleMode = "daily" | "weekly" | "custom";
 
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
@@ -93,7 +95,9 @@ function buildDefaultDraft(selectedDate: string): HabitDraft {
     targetTime: "05:00",
     startDate: selectedDate,
     notes: "",
-    scheduleMode: "daily",
+    cadencePeriod: "daily",
+    cadenceTargetCount: "1",
+    cadenceDayPolicy: "fixed",
     scheduleDays: [...ALL_HABIT_WEEKDAYS],
   };
 }
@@ -104,23 +108,25 @@ function getWeekdayForDate(date: string): HabitWeekday {
   return ALL_HABIT_WEEKDAYS[(new Date(parsed).getUTCDay() + 6) % 7] ?? "monday";
 }
 
-function getScheduleModeFromDays(days: HabitWeekday[]): ScheduleMode {
-  if (days.length >= 7) return "daily";
-  if (days.length === 1) return "weekly";
-  return "custom";
-}
-
 function normalizeDraftScheduleDays(days: HabitWeekday[]) {
   const uniqueDays = ALL_HABIT_WEEKDAYS.filter((day) => days.includes(day));
   return uniqueDays.length > 0 ? uniqueDays : [...ALL_HABIT_WEEKDAYS];
 }
 
 function getScheduleDaysForDraft(draft: HabitDraft) {
-  if (draft.scheduleMode === "daily") return [...ALL_HABIT_WEEKDAYS];
-  if (draft.scheduleMode === "weekly") {
-    return [draft.scheduleDays[0] ?? "monday"];
+  if (draft.cadencePeriod === "daily" || draft.cadenceDayPolicy === "any") {
+    return [...ALL_HABIT_WEEKDAYS];
   }
   return normalizeDraftScheduleDays(draft.scheduleDays);
+}
+
+function getCadenceTargetCountForDraft(draft: HabitDraft) {
+  if (draft.cadencePeriod === "daily") return 1;
+  if (draft.cadenceDayPolicy === "fixed") return getScheduleDaysForDraft(draft).length;
+  const max = draft.cadencePeriod === "monthly" ? 31 : 7;
+  const parsed = Number(draft.cadenceTargetCount);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.max(1, Math.min(max, Math.round(parsed)));
 }
 
 function buildDraftFromHabit(habit: HabitDefinitionView): HabitDraft {
@@ -145,7 +151,9 @@ function buildDraftFromHabit(habit: HabitDefinitionView): HabitDraft {
     targetTime: habit.targetTime?.slice(0, 5) ?? "05:00",
     startDate: habit.startDate,
     notes: habit.notes ?? "",
-    scheduleMode: getScheduleModeFromDays(scheduleDays),
+    cadencePeriod: habit.cadencePeriod,
+    cadenceTargetCount: String(habit.cadenceTargetCount),
+    cadenceDayPolicy: habit.cadenceDayPolicy,
     scheduleDays,
   };
 }
@@ -245,13 +253,6 @@ function getTimedStatusLabel(item: HabitDayItem, timerSeconds: number) {
   return `${formatTimer(progressSeconds)} / ${formatTimer(targetSeconds)} today`;
 }
 
-function getHabitCadenceLabel(habit: HabitDefinitionView) {
-  const scheduledDays = habit.scheduleDays.length;
-  if (scheduledDays >= 7) return "Daily";
-  if (scheduledDays === 1) return "Weekly";
-  return `${scheduledDays} days/wk`;
-}
-
 function getWeekdayLabel(date: string) {
   const parsed = Date.parse(`${date}T00:00:00.000Z`);
   if (Number.isNaN(parsed)) return date;
@@ -296,6 +297,22 @@ function getHabitModeLabel(mode: HabitMode) {
     case "build":
     default:
       return "Build";
+  }
+}
+
+function getPriorityGroupLabel(group: HabitDayItem["priorityGroup"]) {
+  switch (group) {
+    case "due_build":
+      return "Action needed";
+    case "due_timed":
+      return "Timed today";
+    case "quit_status":
+      return "Quit status";
+    case "archived":
+      return "Archived";
+    case "not_due":
+    default:
+      return "Later";
   }
 }
 
@@ -523,6 +540,9 @@ export default function HabitPerfectDayHub({
           targetUnit: habitMode === "quit" ? "times" : draft.targetUnit,
           timerEnabled: habitMode === "timed",
           timerTargetSeconds,
+          cadencePeriod: draft.cadencePeriod,
+          cadenceTargetCount: getCadenceTargetCountForDraft(draft),
+          cadenceDayPolicy: draft.cadenceDayPolicy,
           scheduleDays: getScheduleDaysForDraft(draft),
           selectedDate: snapshot.selectedDate,
           isPerfectDayItem: true,
@@ -578,6 +598,9 @@ export default function HabitPerfectDayHub({
           startDate: editDraft.startDate,
           timerEnabled: habitMode === "timed",
           timerTargetSeconds,
+          cadencePeriod: editDraft.cadencePeriod,
+          cadenceTargetCount: getCadenceTargetCountForDraft(editDraft),
+          cadenceDayPolicy: editDraft.cadenceDayPolicy,
           scheduleDays: getScheduleDaysForDraft(editDraft),
           selectedDate: snapshot.selectedDate,
         }),
@@ -730,23 +753,33 @@ export default function HabitPerfectDayHub({
     updateDraft: (updater: (current: HabitDraft) => HabitDraft) => void,
     idPrefix: string
   ) {
-    const weeklyDay = currentDraft.scheduleDays[0] ?? getWeekdayForDate(snapshot.selectedDate);
-
-    function setScheduleMode(scheduleMode: ScheduleMode) {
+    function setCadencePeriod(cadencePeriod: HabitCadencePeriod) {
       updateDraft((current) => {
-        if (scheduleMode === "daily") {
-          return { ...current, scheduleMode, scheduleDays: [...ALL_HABIT_WEEKDAYS] };
-        }
-        if (scheduleMode === "weekly") {
+        if (cadencePeriod === "daily") {
           return {
             ...current,
-            scheduleMode,
-            scheduleDays: [current.scheduleDays[0] ?? getWeekdayForDate(snapshot.selectedDate)],
+            cadencePeriod,
+            cadenceTargetCount: "1",
+            cadenceDayPolicy: "fixed",
+            scheduleDays: [...ALL_HABIT_WEEKDAYS],
           };
         }
+
+        if (cadencePeriod === "monthly") {
+          return {
+            ...current,
+            cadencePeriod,
+            cadenceTargetCount: current.cadenceTargetCount || "1",
+            cadenceDayPolicy: "any",
+            scheduleDays: [...ALL_HABIT_WEEKDAYS],
+          };
+        }
+
         return {
           ...current,
-          scheduleMode,
+          cadencePeriod,
+          cadenceTargetCount: current.cadenceTargetCount || "1",
+          cadenceDayPolicy: current.cadencePeriod === "weekly" ? current.cadenceDayPolicy : "any",
           scheduleDays:
             current.scheduleDays.length > 0
               ? normalizeDraftScheduleDays(current.scheduleDays)
@@ -756,23 +789,23 @@ export default function HabitPerfectDayHub({
     }
 
     return (
-      <div className="md:col-span-2">
-        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Schedule
-        </span>
+      <fieldset className="md:col-span-2">
+        <legend className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          Cadence
+        </legend>
         <div className="mt-1 grid gap-2 sm:grid-cols-3">
           {[
             ["daily", "Daily"],
-            ["weekly", "1x/week"],
-            ["custom", "Custom days"],
+            ["weekly", "Weekly target"],
+            ["monthly", "Monthly target"],
           ].map(([mode, label]) => (
             <button
               key={mode}
               type="button"
-              aria-pressed={currentDraft.scheduleMode === mode}
-              onClick={() => setScheduleMode(mode as ScheduleMode)}
+              aria-pressed={currentDraft.cadencePeriod === mode}
+              onClick={() => setCadencePeriod(mode as HabitCadencePeriod)}
               className={`min-h-10 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                currentDraft.scheduleMode === mode
+                currentDraft.cadencePeriod === mode
                   ? "border-blue-600 bg-blue-50 text-blue-900"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
@@ -782,35 +815,109 @@ export default function HabitPerfectDayHub({
           ))}
         </div>
 
-        {currentDraft.scheduleMode === "weekly" ? (
-          <label className="mt-3 block">
-            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Weekday
-            </span>
-            <select
-              aria-label={`${idPrefix} weekly weekday`}
-              value={weeklyDay}
-              onChange={(event) =>
-                updateDraft((current) => ({
-                  ...current,
-                  scheduleDays: [event.target.value as HabitWeekday],
-                }))
-              }
-              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {ALL_HABIT_WEEKDAYS.map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day]}
-                </option>
-              ))}
-            </select>
-          </label>
+        {currentDraft.cadencePeriod === "weekly" ? (
+          <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div>
+              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Days
+              </span>
+              <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                {[
+                  ["any", "Any days"],
+                  ["fixed", "Fixed days"],
+                ].map(([policy, label]) => (
+                  <button
+                    key={policy}
+                    type="button"
+                    aria-pressed={currentDraft.cadenceDayPolicy === policy}
+                    onClick={() =>
+                      updateDraft((current) => ({
+                        ...current,
+                        cadenceDayPolicy: policy as HabitCadenceDayPolicy,
+                        scheduleDays:
+                          policy === "any"
+                            ? [...ALL_HABIT_WEEKDAYS]
+                            : current.cadenceDayPolicy === "any"
+                              ? [getWeekdayForDate(snapshot.selectedDate)]
+                              : current.scheduleDays.length > 0
+                                ? normalizeDraftScheduleDays(current.scheduleDays)
+                                : [getWeekdayForDate(snapshot.selectedDate)],
+                      }))
+                    }
+                    className={`min-h-10 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                      currentDraft.cadenceDayPolicy === policy
+                        ? "border-blue-600 bg-blue-50 text-blue-900"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {currentDraft.cadenceDayPolicy === "any" ? (
+              <label className="block">
+                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Times per week
+                </span>
+                <input
+                  aria-label={`${idPrefix} times per week`}
+                  type="number"
+                  min={1}
+                  max={7}
+                  step={1}
+                  value={currentDraft.cadenceTargetCount}
+                  onChange={(event) =>
+                    updateDraft((current) => ({
+                      ...current,
+                      cadenceTargetCount: event.target.value,
+                    }))
+                  }
+                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
+            ) : null}
+          </div>
         ) : null}
 
-        {currentDraft.scheduleMode === "custom" ? (
+        {currentDraft.cadencePeriod === "monthly" ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Times per month
+              </span>
+              <input
+                aria-label={`${idPrefix} times per month`}
+                type="number"
+                min={1}
+                max={31}
+                step={1}
+                value={currentDraft.cadenceTargetCount}
+                onChange={(event) =>
+                  updateDraft((current) => ({
+                    ...current,
+                    cadenceTargetCount: event.target.value,
+                  }))
+                }
+                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <div>
+              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Days
+              </span>
+              <div className="mt-1 flex min-h-11 items-center rounded-xl border border-blue-100 bg-blue-50 px-3 text-sm font-semibold text-blue-900">
+                Any days
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {currentDraft.cadencePeriod === "weekly" && currentDraft.cadenceDayPolicy === "fixed" ? (
           <fieldset className="mt-3">
             <legend className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Days
+              Fixed weekdays
             </legend>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {ALL_HABIT_WEEKDAYS.map((day) => {
@@ -850,19 +957,15 @@ export default function HabitPerfectDayHub({
             </div>
           </fieldset>
         ) : null}
-      </div>
+      </fieldset>
     );
   }
 
   function getCountHabitStatus(item: HabitDayItem) {
     const todayValue = item.checkIn?.valueNumeric ?? 0;
-    const scheduledDays = snapshot.weekSummary.days
-      .map((day) => day.items.find((candidate) => candidate.habit.id === item.habit.id) ?? null)
-      .filter((candidate): candidate is HabitDayItem => candidate !== null);
-    const satisfiedDays = scheduledDays.filter((candidate) => candidate.evaluation.isSatisfied);
     return `${formatCountValue(todayValue, item.habit.targetUnit)} today · ${
-      satisfiedDays.length
-    }/${scheduledDays.length || 7} days this week`;
+      item.cadenceProgress.completedCount
+    }/${item.cadenceProgress.targetCount} ${item.cadenceProgress.periodLabel}`;
   }
 
   if (!snapshot.schemaReady) {
@@ -1005,7 +1108,7 @@ export default function HabitPerfectDayHub({
           </div>
         ) : (
           <div className="mt-4 space-y-3">
-            {snapshot.daySummary.items.map((item) => {
+            {snapshot.daySummary.items.map((item, index) => {
               const habit = item.habit;
               const disabled = pendingKey !== null;
               const isSatisfied = item.evaluation.isSatisfied;
@@ -1015,507 +1118,128 @@ export default function HabitPerfectDayHub({
               const isTimerRunning = timers[habit.id]?.startedAtMs != null;
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
-              const cadenceLabel = getHabitCadenceLabel(habit);
+              const cadenceLabel = habit.cadenceLabel;
               const timerTargetSeconds = getTimerTargetDisplaySeconds(habit);
-              const quickStatusLabel = isQuit
-                ? `${item.evaluation.valueLabel} · ${
-                    item.evaluation.stateLabel === "Lapse logged"
-                      ? "Slip logged today"
-                      : "On track today"
-                  }`
-                : isTimed
-                  ? getTimedStatusLabel(item, timerSeconds)
-                  : habit.habitType === "count"
-                    ? getCountHabitStatus(item)
-                    : item.evaluation.valueLabel;
+              const canEditTodaysCheckIn = item.isScheduledForDate || item.checkIn !== null;
+              const statusLabel =
+                !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                  ? "Later"
+                  : item.evaluation.stateLabel;
+              const showGroupHeading =
+                index === 0 ||
+                snapshot.daySummary.items[index - 1]?.priorityGroup !== item.priorityGroup;
+              const quickStatusLabel =
+                !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                  ? "Not due today"
+                  : isQuit
+                    ? `${item.evaluation.valueLabel} · ${
+                        item.evaluation.stateLabel === "Lapse logged"
+                          ? "Slip logged today"
+                          : "On track today"
+                      }`
+                    : isTimed
+                      ? getTimedStatusLabel(item, timerSeconds)
+                      : habit.habitType === "count"
+                        ? getCountHabitStatus(item)
+                        : item.evaluation.valueLabel;
               return (
-                <article
-                  key={habit.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                >
-                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="min-w-0 text-base font-semibold text-slate-900">
-                          {habit.title}
-                        </h3>
-                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
-                          {getHabitModeLabel(habit.habitMode)}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {cadenceLabel}
-                        </span>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            isSatisfied
-                              ? "bg-emerald-50 text-emerald-800"
-                              : "bg-white text-slate-600"
-                          }`}
-                        >
-                          {item.evaluation.stateLabel}
-                        </span>
+                <div key={habit.id} className="space-y-2">
+                  {showGroupHeading ? (
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      {getPriorityGroupLabel(item.priorityGroup)}
+                    </p>
+                  ) : null}
+                  <article className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="min-w-0 text-base font-semibold text-slate-900">
+                            {habit.title}
+                          </h3>
+                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                            {getHabitModeLabel(habit.habitMode)}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                            {cadenceLabel}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              isSatisfied
+                                ? "bg-emerald-50 text-emerald-800"
+                                : "bg-white text-slate-600"
+                            }`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-medium text-slate-600">
+                          {quickStatusLabel}
+                        </p>
                       </div>
-                      <p className="mt-1 text-sm font-medium text-slate-600">{quickStatusLabel}</p>
-                    </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                      {habit.habitType === "binary" && !isQuit ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            item.checkIn ? resetCheckIn(item) : saveCheckIn(item, true)
-                          }
-                          disabled={disabled}
-                          className={`inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                            item.checkIn
-                              ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                              : "bg-blue-600 text-white hover:bg-blue-500"
-                          }`}
-                        >
-                          {item.checkIn ? (
-                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                          )}
-                          {item.checkIn ? "Undo" : "Done"}
-                        </button>
-                      ) : null}
-
-                      {isTimed ? (
-                        <>
-                          <div className="flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
-                            <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
-                            {formatTimer(timerSeconds)}
-                          </div>
+                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                        {canEditTodaysCheckIn && habit.habitType === "binary" && !isQuit ? (
                           <button
                             type="button"
                             onClick={() =>
-                              isTimerRunning ? pauseTimer(habit.id) : startTimer(habit.id)
+                              item.checkIn ? resetCheckIn(item) : saveCheckIn(item, true)
                             }
                             disabled={disabled}
-                            className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={`inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                              item.checkIn
+                                ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                : "bg-blue-600 text-white hover:bg-blue-500"
+                            }`}
                           >
-                            {isTimerRunning ? (
-                              <Pause className="h-4 w-4" aria-hidden="true" />
+                            {item.checkIn ? (
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
                             ) : (
-                              <Play className="h-4 w-4" aria-hidden="true" />
+                              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                             )}
-                            {isTimerRunning ? "Pause" : "Start"}
-                          </button>
-                        </>
-                      ) : null}
-
-                      {!isQuit && !isTimed && habit.habitType !== "binary" ? (
-                        <div className="flex flex-wrap items-end gap-2">
-                          <label className="block">
-                            <span className="sr-only">
-                              {habit.title} {habit.habitType === "time_of_day" ? "time" : "value"}
-                            </span>
-                            <input
-                              type={habit.habitType === "time_of_day" ? "time" : "number"}
-                              min={habit.habitType === "time_of_day" ? undefined : 0}
-                              step={habit.habitType === "time_of_day" ? undefined : "0.25"}
-                              aria-label={`${habit.title} ${
-                                habit.habitType === "time_of_day" ? "time" : "value"
-                              }`}
-                              value={checkInInputs[habit.id] ?? ""}
-                              onChange={(event) =>
-                                setCheckInInputs((current) => ({
-                                  ...current,
-                                  [habit.id]: event.target.value,
-                                }))
-                              }
-                              className="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => saveCheckIn(item)}
-                            disabled={disabled}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <Save className="h-4 w-4" aria-hidden="true" />
-                            Save
-                          </button>
-                        </div>
-                      ) : null}
-
-                      {isQuit ? (
-                        <button
-                          type="button"
-                          onClick={() => logLapse(item)}
-                          disabled={disabled || item.checkIn !== null}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <Flag className="h-4 w-4" aria-hidden="true" />
-                          Log slip
-                        </button>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={() => startEditingHabit(habit)}
-                        disabled={disabled}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        aria-expanded={isExpanded}
-                        aria-controls={detailsId}
-                        onClick={() => toggleHabitDetails(habit.id)}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        Details
-                      </button>
-                    </div>
-                  </div>
-
-                  {editingHabitId === habit.id && editDraft ? (
-                    <form
-                      data-testid={`habit-edit-form-${habit.id}`}
-                      onSubmit={(event) => updateHabit(event, habit.id)}
-                      className="mt-4 grid gap-3 rounded-2xl border border-blue-100 bg-white p-4 md:grid-cols-2"
-                    >
-                      <p className="text-sm text-slate-600 md:col-span-2">
-                        Updates this habit definition. Check-ins and history stay attached.
-                      </p>
-
-                      <label className="block md:col-span-2">
-                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          Name
-                        </span>
-                        <input
-                          value={editDraft.title}
-                          onChange={(event) =>
-                            setEditDraft((current) =>
-                              current ? { ...current, title: event.target.value } : current
-                            )
-                          }
-                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </label>
-
-                      <div className="md:col-span-2">
-                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          Mode
-                        </span>
-                        <div className="mt-1 grid gap-2 sm:grid-cols-3">
-                          {HABIT_MODE_VALUES.map((modeOption) => (
-                            <button
-                              key={modeOption}
-                              type="button"
-                              aria-pressed={editDraft.habitMode === modeOption}
-                              onClick={() =>
-                                setEditDraft((current) =>
-                                  current ? applyHabitModeToDraft(current, modeOption) : current
-                                )
-                              }
-                              className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                                editDraft.habitMode === modeOption
-                                  ? "border-blue-600 bg-blue-50 text-blue-900"
-                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                              }`}
-                            >
-                              {getHabitModeLabel(modeOption)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {editDraft.habitMode === "build" ? (
-                        <label className="block">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Type
-                          </span>
-                          <select
-                            value={editDraft.habitType}
-                            onChange={(event) => {
-                              const habitType = event.target.value as HabitType;
-                              const unitOptions = getUnitOptions(habitType);
-                              setEditDraft((current) =>
-                                current
-                                  ? {
-                                      ...current,
-                                      habitType,
-                                      targetUnit: unitOptions[0] ?? "times",
-                                      targetValueNumeric:
-                                        habitType === "avoidance"
-                                          ? "0"
-                                          : current.targetValueNumeric,
-                                    }
-                                  : current
-                              );
-                            }}
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          >
-                            {HABIT_TYPE_VALUES.map((type) => (
-                              <option key={type} value={type}>
-                                {getHabitTypeLabel(type)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : null}
-
-                      <label className="block">
-                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          Category
-                        </span>
-                        <select
-                          value={editDraft.category}
-                          onChange={(event) =>
-                            setEditDraft((current) =>
-                              current ? { ...current, category: event.target.value } : current
-                            )
-                          }
-                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        >
-                          {HABIT_CATEGORY_VALUES.map((category) => (
-                            <option key={category} value={category}>
-                              {getCategoryLabel(category)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-
-                      <label className="block">
-                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          {editDraft.habitMode === "quit" ? "Quit date" : "Start date"}
-                        </span>
-                        <input
-                          type="date"
-                          value={editDraft.startDate}
-                          max={snapshot.selectedDate}
-                          onChange={(event) =>
-                            setEditDraft((current) =>
-                              current ? { ...current, startDate: event.target.value } : current
-                            )
-                          }
-                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </label>
-
-                      {editDraft.habitMode === "build" && editDraft.habitType === "time_of_day" ? (
-                        <label className="block">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Target time
-                          </span>
-                          <input
-                            type="time"
-                            value={editDraft.targetTime}
-                            onChange={(event) =>
-                              setEditDraft((current) =>
-                                current ? { ...current, targetTime: event.target.value } : current
-                              )
-                            }
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          />
-                        </label>
-                      ) : null}
-
-                      {editDraft.habitMode !== "quit" &&
-                      getResolvedDraftHabitType(editDraft) !== "binary" &&
-                      getResolvedDraftHabitType(editDraft) !== "time_of_day" ? (
-                        <>
-                          <label className="block">
-                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                              {editDraft.habitMode === "timed" ? "Timer target" : "Target"}
-                            </span>
-                            <input
-                              type="number"
-                              min={0}
-                              step="0.25"
-                              value={editDraft.targetValueNumeric}
-                              onChange={(event) =>
-                                setEditDraft((current) =>
-                                  current
-                                    ? { ...current, targetValueNumeric: event.target.value }
-                                    : current
-                                )
-                              }
-                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                              Unit
-                            </span>
-                            <select
-                              value={editDraft.targetUnit}
-                              onChange={(event) =>
-                                setEditDraft((current) =>
-                                  current
-                                    ? {
-                                        ...current,
-                                        targetUnit: event.target.value as HabitUnit,
-                                      }
-                                    : current
-                                )
-                              }
-                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            >
-                              {getUnitOptions(getResolvedDraftHabitType(editDraft)).map((unit) => (
-                                <option key={unit} value={unit}>
-                                  {unit}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </>
-                      ) : null}
-
-                      {renderScheduleControls(
-                        editDraft,
-                        (updater) =>
-                          setEditDraft((current) => (current ? updater(current) : current)),
-                        "Edit habit"
-                      )}
-
-                      <label className="block md:col-span-2">
-                        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          Note
-                        </span>
-                        <input
-                          value={editDraft.notes}
-                          onChange={(event) =>
-                            setEditDraft((current) =>
-                              current ? { ...current, notes: event.target.value } : current
-                            )
-                          }
-                          className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          placeholder="Optional"
-                        />
-                      </label>
-
-                      <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingHabitId(null);
-                            setEditDraft(null);
-                          }}
-                          disabled={pendingKey === `edit-${habit.id}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={pendingKey !== null}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <Save className="h-4 w-4" aria-hidden="true" />
-                          {pendingKey === `edit-${habit.id}` ? "Saving..." : "Save changes"}
-                        </button>
-                      </div>
-                    </form>
-                  ) : null}
-
-                  {isExpanded ? (
-                    <div id={detailsId} className="mt-4 border-t border-slate-200 pt-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {getHabitTypeLabel(habit.habitType)}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {getCategoryLabel(habit.category)}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          Started {getLongDateLabel(habit.startDate)}
-                        </span>
-                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {isTimed && timerTargetSeconds
-                            ? `${cadenceLabel} target ${formatTimer(timerTargetSeconds)}`
-                            : habit.targetLabel}
-                        </span>
-                      </div>
-
-                      {habit.notes ? (
-                        <p className="mt-3 text-sm text-slate-500">{habit.notes}</p>
-                      ) : null}
-
-                      <div className="mt-4 flex flex-wrap items-end gap-2">
-                        {isQuit ? (
-                          <button
-                            type="button"
-                            onClick={() => logLapse(item)}
-                            disabled={disabled || item.checkIn !== null}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <Flag className="h-4 w-4" aria-hidden="true" />
-                            Log slip
+                            {item.checkIn ? "Undo" : "Done"}
                           </button>
                         ) : null}
 
-                        {isTimed ? (
+                        {canEditTodaysCheckIn && isTimed ? (
                           <>
+                            <div className="flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
+                              <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
+                              {formatTimer(timerSeconds)}
+                            </div>
                             <button
                               type="button"
-                              onClick={() => finishTimer(item)}
-                              disabled={disabled || timerSeconds <= 0}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Save className="h-4 w-4" aria-hidden="true" />
-                              Finish
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => resetTimer(habit.id)}
-                              disabled={disabled || timerSeconds <= 0}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                              Timer
-                            </button>
-                            <label className="block">
-                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                Manual min
-                              </span>
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.25"
-                                value={checkInInputs[habit.id] ?? ""}
-                                onChange={(event) =>
-                                  setCheckInInputs((current) => ({
-                                    ...current,
-                                    [habit.id]: event.target.value,
-                                  }))
-                                }
-                                className="mt-1 h-10 w-32 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                              />
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => saveCheckIn(item)}
+                              onClick={() =>
+                                isTimerRunning ? pauseTimer(habit.id) : startTimer(habit.id)
+                              }
                               disabled={disabled}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              <Save className="h-4 w-4" aria-hidden="true" />
-                              Save manual
+                              {isTimerRunning ? (
+                                <Pause className="h-4 w-4" aria-hidden="true" />
+                              ) : (
+                                <Play className="h-4 w-4" aria-hidden="true" />
+                              )}
+                              {isTimerRunning ? "Pause" : "Start"}
                             </button>
                           </>
                         ) : null}
 
-                        {!isQuit && !isTimed && habit.habitType !== "binary" ? (
-                          <>
+                        {canEditTodaysCheckIn &&
+                        !isQuit &&
+                        !isTimed &&
+                        habit.habitType !== "binary" ? (
+                          <div className="flex flex-wrap items-end gap-2">
                             <label className="block">
-                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                {habit.habitType === "time_of_day" ? "Time" : "Value"}
+                              <span className="sr-only">
+                                {habit.title} {habit.habitType === "time_of_day" ? "time" : "value"}
                               </span>
                               <input
                                 type={habit.habitType === "time_of_day" ? "time" : "number"}
                                 min={habit.habitType === "time_of_day" ? undefined : 0}
                                 step={habit.habitType === "time_of_day" ? undefined : "0.25"}
+                                aria-label={`${habit.title} ${
+                                  habit.habitType === "time_of_day" ? "time" : "value"
+                                }`}
                                 value={checkInInputs[habit.id] ?? ""}
                                 onChange={(event) =>
                                   setCheckInInputs((current) => ({
@@ -1523,48 +1247,441 @@ export default function HabitPerfectDayHub({
                                     [habit.id]: event.target.value,
                                   }))
                                 }
-                                className="mt-1 h-10 w-36 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                               />
                             </label>
                             <button
                               type="button"
                               onClick={() => saveCheckIn(item)}
                               disabled={disabled}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               <Save className="h-4 w-4" aria-hidden="true" />
                               Save
                             </button>
-                          </>
-                        ) : null}
-
-                        {item.checkIn && (habit.habitType !== "binary" || isQuit) ? (
-                          <button
-                            type="button"
-                            onClick={() => resetCheckIn(item)}
-                            disabled={disabled}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                            {isQuit ? "Undo slip" : "Reset"}
-                          </button>
+                          </div>
                         ) : null}
 
                         <button
                           type="button"
-                          onClick={() => archiveHabit(habit.id)}
+                          onClick={() => startEditingHabit(habit)}
                           disabled={disabled}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <Archive className="h-4 w-4" aria-hidden="true" />
-                          Archive
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
+                          Edit
                         </button>
 
-                        <p className="text-sm text-slate-500">{item.evaluation.valueLabel}</p>
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
+                          aria-controls={detailsId}
+                          onClick={() => toggleHabitDetails(habit.id)}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          )}
+                          Details
+                        </button>
                       </div>
                     </div>
-                  ) : null}
-                </article>
+
+                    {editingHabitId === habit.id && editDraft ? (
+                      <form
+                        data-testid={`habit-edit-form-${habit.id}`}
+                        onSubmit={(event) => updateHabit(event, habit.id)}
+                        className="mt-4 grid gap-3 rounded-2xl border border-blue-100 bg-white p-4 md:grid-cols-2"
+                      >
+                        <p className="text-sm text-slate-600 md:col-span-2">
+                          Updates this habit definition. Check-ins and history stay attached.
+                        </p>
+
+                        <label className="block md:col-span-2">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Name
+                          </span>
+                          <input
+                            value={editDraft.title}
+                            onChange={(event) =>
+                              setEditDraft((current) =>
+                                current ? { ...current, title: event.target.value } : current
+                              )
+                            }
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          />
+                        </label>
+
+                        <div className="md:col-span-2">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Mode
+                          </span>
+                          <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                            {HABIT_MODE_VALUES.map((modeOption) => (
+                              <button
+                                key={modeOption}
+                                type="button"
+                                aria-pressed={editDraft.habitMode === modeOption}
+                                onClick={() =>
+                                  setEditDraft((current) =>
+                                    current ? applyHabitModeToDraft(current, modeOption) : current
+                                  )
+                                }
+                                className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                                  editDraft.habitMode === modeOption
+                                    ? "border-blue-600 bg-blue-50 text-blue-900"
+                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                {getHabitModeLabel(modeOption)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {editDraft.habitMode === "build" ? (
+                          <label className="block">
+                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              Type
+                            </span>
+                            <select
+                              value={editDraft.habitType}
+                              onChange={(event) => {
+                                const habitType = event.target.value as HabitType;
+                                const unitOptions = getUnitOptions(habitType);
+                                setEditDraft((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        habitType,
+                                        targetUnit: unitOptions[0] ?? "times",
+                                        targetValueNumeric:
+                                          habitType === "avoidance"
+                                            ? "0"
+                                            : current.targetValueNumeric,
+                                      }
+                                    : current
+                                );
+                              }}
+                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            >
+                              {HABIT_TYPE_VALUES.map((type) => (
+                                <option key={type} value={type}>
+                                  {getHabitTypeLabel(type)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+
+                        <label className="block">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Category
+                          </span>
+                          <select
+                            value={editDraft.category}
+                            onChange={(event) =>
+                              setEditDraft((current) =>
+                                current ? { ...current, category: event.target.value } : current
+                              )
+                            }
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          >
+                            {HABIT_CATEGORY_VALUES.map((category) => (
+                              <option key={category} value={category}>
+                                {getCategoryLabel(category)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            {editDraft.habitMode === "quit" ? "Quit date" : "Start date"}
+                          </span>
+                          <input
+                            type="date"
+                            value={editDraft.startDate}
+                            max={snapshot.selectedDate}
+                            onChange={(event) =>
+                              setEditDraft((current) =>
+                                current ? { ...current, startDate: event.target.value } : current
+                              )
+                            }
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                          />
+                        </label>
+
+                        {editDraft.habitMode === "build" &&
+                        editDraft.habitType === "time_of_day" ? (
+                          <label className="block">
+                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              Target time
+                            </span>
+                            <input
+                              type="time"
+                              value={editDraft.targetTime}
+                              onChange={(event) =>
+                                setEditDraft((current) =>
+                                  current ? { ...current, targetTime: event.target.value } : current
+                                )
+                              }
+                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                        ) : null}
+
+                        {editDraft.habitMode !== "quit" &&
+                        getResolvedDraftHabitType(editDraft) !== "binary" &&
+                        getResolvedDraftHabitType(editDraft) !== "time_of_day" ? (
+                          <>
+                            <label className="block">
+                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                {editDraft.habitMode === "timed" ? "Timer target" : "Target"}
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.25"
+                                value={editDraft.targetValueNumeric}
+                                onChange={(event) =>
+                                  setEditDraft((current) =>
+                                    current
+                                      ? { ...current, targetValueNumeric: event.target.value }
+                                      : current
+                                  )
+                                }
+                                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                Unit
+                              </span>
+                              <select
+                                value={editDraft.targetUnit}
+                                onChange={(event) =>
+                                  setEditDraft((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          targetUnit: event.target.value as HabitUnit,
+                                        }
+                                      : current
+                                  )
+                                }
+                                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              >
+                                {getUnitOptions(getResolvedDraftHabitType(editDraft)).map(
+                                  (unit) => (
+                                    <option key={unit} value={unit}>
+                                      {unit}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            </label>
+                          </>
+                        ) : null}
+
+                        {renderScheduleControls(
+                          editDraft,
+                          (updater) =>
+                            setEditDraft((current) => (current ? updater(current) : current)),
+                          "Edit habit"
+                        )}
+
+                        <label className="block md:col-span-2">
+                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Note
+                          </span>
+                          <input
+                            value={editDraft.notes}
+                            onChange={(event) =>
+                              setEditDraft((current) =>
+                                current ? { ...current, notes: event.target.value } : current
+                              )
+                            }
+                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            placeholder="Optional"
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingHabitId(null);
+                              setEditDraft(null);
+                            }}
+                            disabled={pendingKey === `edit-${habit.id}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={pendingKey !== null}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Save className="h-4 w-4" aria-hidden="true" />
+                            {pendingKey === `edit-${habit.id}` ? "Saving..." : "Save changes"}
+                          </button>
+                        </div>
+                      </form>
+                    ) : null}
+
+                    {isExpanded ? (
+                      <div id={detailsId} className="mt-4 border-t border-slate-200 pt-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                            {getHabitTypeLabel(habit.habitType)}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                            {getCategoryLabel(habit.category)}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                            Started {getLongDateLabel(habit.startDate)}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                            {isTimed && timerTargetSeconds
+                              ? `${cadenceLabel} target ${formatTimer(timerTargetSeconds)}`
+                              : habit.targetLabel}
+                          </span>
+                        </div>
+
+                        {habit.notes ? (
+                          <p className="mt-3 text-sm text-slate-500">{habit.notes}</p>
+                        ) : null}
+
+                        <div className="mt-4 flex flex-wrap items-end gap-2">
+                          {isQuit ? (
+                            <button
+                              type="button"
+                              onClick={() => logLapse(item)}
+                              disabled={disabled || item.checkIn !== null}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Flag className="h-4 w-4" aria-hidden="true" />
+                              Log slip
+                            </button>
+                          ) : null}
+
+                          {canEditTodaysCheckIn && isTimed ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => finishTimer(item)}
+                                disabled={disabled || timerSeconds <= 0}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Save className="h-4 w-4" aria-hidden="true" />
+                                Finish
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => resetTimer(habit.id)}
+                                disabled={disabled || timerSeconds <= 0}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                                Timer
+                              </button>
+                              <label className="block">
+                                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                  Manual min
+                                </span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step="0.25"
+                                  value={checkInInputs[habit.id] ?? ""}
+                                  onChange={(event) =>
+                                    setCheckInInputs((current) => ({
+                                      ...current,
+                                      [habit.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="mt-1 h-10 w-32 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => saveCheckIn(item)}
+                                disabled={disabled}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Save className="h-4 w-4" aria-hidden="true" />
+                                Save manual
+                              </button>
+                            </>
+                          ) : null}
+
+                          {canEditTodaysCheckIn &&
+                          !isQuit &&
+                          !isTimed &&
+                          habit.habitType !== "binary" ? (
+                            <>
+                              <label className="block">
+                                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                  {habit.habitType === "time_of_day" ? "Time" : "Value"}
+                                </span>
+                                <input
+                                  type={habit.habitType === "time_of_day" ? "time" : "number"}
+                                  min={habit.habitType === "time_of_day" ? undefined : 0}
+                                  step={habit.habitType === "time_of_day" ? undefined : "0.25"}
+                                  value={checkInInputs[habit.id] ?? ""}
+                                  onChange={(event) =>
+                                    setCheckInInputs((current) => ({
+                                      ...current,
+                                      [habit.id]: event.target.value,
+                                    }))
+                                  }
+                                  className="mt-1 h-10 w-36 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => saveCheckIn(item)}
+                                disabled={disabled}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Save className="h-4 w-4" aria-hidden="true" />
+                                Save
+                              </button>
+                            </>
+                          ) : null}
+
+                          {item.checkIn && (habit.habitType !== "binary" || isQuit) ? (
+                            <button
+                              type="button"
+                              onClick={() => resetCheckIn(item)}
+                              disabled={disabled}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                              {isQuit ? "Undo slip" : "Reset"}
+                            </button>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            onClick={() => archiveHabit(habit.id)}
+                            disabled={disabled}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Archive className="h-4 w-4" aria-hidden="true" />
+                            Archive
+                          </button>
+
+                          <p className="text-sm text-slate-500">{item.evaluation.valueLabel}</p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                </div>
               );
             })}
           </div>

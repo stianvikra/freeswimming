@@ -30,6 +30,9 @@ export const HABIT_DEFINITION_SELECT = `
   last_lapse_date,
   timer_enabled,
   timer_target_seconds,
+  cadence_period,
+  cadence_target_count,
+  cadence_day_policy,
   schedule_days,
   is_perfect_day_item,
   status,
@@ -62,6 +65,14 @@ function getWeekStartDate(selectedDate: string) {
   return date.toISOString().slice(0, 10);
 }
 
+function getMonthStartDate(selectedDate: string) {
+  const parsed = Date.parse(`${selectedDate}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
 function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   const daySummary = buildHabitDaySummary([], [], selectedDate);
   return {
@@ -82,6 +93,8 @@ export async function loadHabitSnapshot(
 ): Promise<HabitSnapshot> {
   const selectedDate = normalizeHabitDate(selectedDateInput);
   const weekStart = getWeekStartDate(selectedDate);
+  const monthStart = getMonthStartDate(selectedDate);
+  const checkInStart = weekStart < monthStart ? weekStart : monthStart;
   const [habitResult, checkInResult] = await Promise.all([
     supabase
       .from("habit_definitions")
@@ -93,7 +106,7 @@ export async function loadHabitSnapshot(
       .from("habit_check_ins")
       .select(HABIT_CHECK_IN_SELECT)
       .eq("user_id", userId)
-      .gte("check_in_date", weekStart)
+      .gte("check_in_date", checkInStart)
       .lte("check_in_date", selectedDate),
   ]);
 

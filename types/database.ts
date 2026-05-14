@@ -903,6 +903,9 @@ export type Database = {
       };
       habit_definitions: {
         Row: {
+          cadence_day_policy: string;
+          cadence_period: string;
+          cadence_target_count: number;
           category: string;
           created_at: string;
           habit_mode: string;
@@ -926,6 +929,9 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          cadence_day_policy?: string;
+          cadence_period?: string;
+          cadence_target_count?: number;
           category?: string;
           created_at?: string;
           habit_mode?: string;
@@ -949,6 +955,9 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          cadence_day_policy?: string;
+          cadence_period?: string;
+          cadence_target_count?: number;
           category?: string;
           created_at?: string;
           habit_mode?: string;

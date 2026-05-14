@@ -137,6 +137,9 @@ describe("habits routes", () => {
         habit_type: "avoidance",
         target_operator: "at_most",
         target_value_numeric: 0,
+        cadence_period: "daily",
+        cadence_target_count: 1,
+        cadence_day_policy: "fixed",
       })
     );
     expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
@@ -147,9 +150,50 @@ describe("habits routes", () => {
           habitMode: "build",
           habitType: "avoidance",
           category: "nutrition",
+          cadencePeriod: "daily",
+          cadenceDayPolicy: "fixed",
+          cadenceTargetCount: 1,
         }),
       })
     );
+  });
+
+  it("rejects unsupported monthly fixed-date cadence before writes", async () => {
+    const existingEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+    const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
+    const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
+    const insert = vi.fn();
+    const from = vi.fn(() => ({ select: existingSelect, insert }));
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabit(
+      new Request("http://127.0.0.1:3000/api/my-library/habits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Review technique",
+          cadencePeriod: "monthly",
+          cadenceTargetCount: 5,
+          cadenceDayPolicy: "fixed",
+          selectedDate: "2026-05-10",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Monthly fixed dates are not available yet.");
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it("rejects invalid habit ids before auth work", async () => {
@@ -261,6 +305,9 @@ describe("habits routes", () => {
         habit_type: "count",
         target_value_numeric: 1,
         target_unit: "glasses",
+        cadence_period: "weekly",
+        cadence_target_count: 3,
+        cadence_day_policy: "fixed",
         schedule_days: ["monday", "wednesday", "friday"],
       })
     );

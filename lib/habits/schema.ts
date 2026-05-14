@@ -15,6 +15,9 @@ const HABIT_SCHEMA_MARKERS = [
   "is_perfect_day_item",
   "start_date",
   "timer_enabled",
+  "cadence_period",
+  "cadence_target_count",
+  "cadence_day_policy",
 ];
 
 export function isHabitsSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {

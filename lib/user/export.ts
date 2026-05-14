@@ -157,6 +157,9 @@ type HabitDefinitionRow = Pick<
   | "last_lapse_date"
   | "timer_enabled"
   | "timer_target_seconds"
+  | "cadence_period"
+  | "cadence_target_count"
+  | "cadence_day_policy"
   | "schedule_days"
   | "is_perfect_day_item"
   | "status"
@@ -407,6 +410,9 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       lastLapseDate: row.last_lapse_date,
       timerEnabled: row.timer_enabled,
       timerTargetSeconds: row.timer_target_seconds,
+      cadencePeriod: row.cadence_period,
+      cadenceTargetCount: row.cadence_target_count,
+      cadenceDayPolicy: row.cadence_day_policy,
       scheduleDays: row.schedule_days,
       isPerfectDayItem: row.is_perfect_day_item,
       status: row.status,

@@ -103,6 +103,10 @@ function buildHabit(id: string): HabitDefinitionView {
     lastLapseDate: null,
     timerEnabled: false,
     timerTargetSeconds: null,
+    cadencePeriod: "daily",
+    cadenceTargetCount: 1,
+    cadenceDayPolicy: "fixed",
+    cadenceLabel: "Daily",
     scheduleDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     isPerfectDayItem: true,
     status: "active",
@@ -114,10 +118,12 @@ function buildHabit(id: string): HabitDefinitionView {
 
 function buildHabitSnapshot(options?: {
   activeCount?: number;
+  perfectDayItemCount?: number;
   satisfiedCount?: number;
   schemaReady?: boolean;
 }): HabitSnapshot {
   const activeCount = options?.activeCount ?? 3;
+  const perfectDayItemCount = options?.perfectDayItemCount ?? activeCount;
   const satisfiedCount = options?.satisfiedCount ?? 1;
   const activeHabits = Array.from({ length: activeCount }, (_, index) => buildHabit(String(index)));
 
@@ -130,10 +136,11 @@ function buildHabitSnapshot(options?: {
     daySummary: {
       date: "2026-05-10",
       scheduledHabitCount: activeCount,
-      perfectDayItemCount: activeCount,
+      perfectDayItemCount,
       satisfiedPerfectDayItemCount: satisfiedCount,
-      completionPercent: activeCount === 0 ? 0 : Math.round((satisfiedCount / activeCount) * 100),
-      isPerfectDay: activeCount > 0 && satisfiedCount === activeCount,
+      completionPercent:
+        perfectDayItemCount === 0 ? 0 : Math.round((satisfiedCount / perfectDayItemCount) * 100),
+      isPerfectDay: perfectDayItemCount > 0 && satisfiedCount === perfectDayItemCount,
       completedDurationMinutes: 0,
       completedCountTotal: 0,
       items: [],
@@ -250,6 +257,27 @@ describe("my library today state", () => {
         state: "setup",
       },
     ]);
+  });
+
+  it("keeps Home routine actions on today when active habits are not due", () => {
+    const actions = buildTodayRoutineQuickActions(
+      {
+        microPlanSchemaReady: true,
+        microPlanLoadError: null,
+        microPlan: null,
+        recentSessions: [],
+      },
+      buildHabitSnapshot({ activeCount: 2, perfectDayItemCount: 0, satisfiedCount: 0 }),
+      new Date("2026-05-10T09:00:00.000Z")
+    );
+
+    expect(actions[1]).toEqual({
+      id: "habits",
+      title: "Habits",
+      subtitle: "No habits due",
+      href: "/my-library/habits?view=active#today-habits",
+      state: "ready",
+    });
   });
 
   it("summarizes Perfect Day as progress instead of a streak", () => {
