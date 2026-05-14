@@ -26,6 +26,9 @@ function buildHabitRow(overrides: Partial<HabitDefinitionRow>): HabitDefinitionR
     last_lapse_date: null,
     timer_enabled: false,
     timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
     schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     is_perfect_day_item: true,
     status: "active",
@@ -175,6 +178,73 @@ describe("habits domain helpers", () => {
     });
   });
 
+  it("normalizes weekly and monthly any-day cadence fields on create", () => {
+    const weekly = buildHabitDefinitionInsert(
+      "user-1",
+      {
+        title: "Mobility",
+        cadencePeriod: "weekly",
+        cadenceTargetCount: 3,
+        cadenceDayPolicy: "any",
+        scheduleDays: ["monday"],
+      },
+      1
+    );
+    const monthly = buildHabitDefinitionInsert(
+      "user-1",
+      {
+        title: "Review technique",
+        cadencePeriod: "monthly",
+        cadenceTargetCount: 5,
+        cadenceDayPolicy: "any",
+      },
+      2
+    );
+
+    expect(weekly).toMatchObject({
+      cadence_period: "weekly",
+      cadence_target_count: 3,
+      cadence_day_policy: "any",
+      schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    });
+    expect(monthly).toMatchObject({
+      cadence_period: "monthly",
+      cadence_target_count: 5,
+      cadence_day_policy: "any",
+    });
+  });
+
+  it("rejects unsupported monthly fixed-date cadence", () => {
+    expect(() =>
+      buildHabitDefinitionInsert(
+        "user-1",
+        {
+          title: "Review technique",
+          cadencePeriod: "monthly",
+          cadenceTargetCount: 5,
+          cadenceDayPolicy: "fixed",
+        },
+        1
+      )
+    ).toThrow("Monthly fixed dates are not available yet.");
+  });
+
+  it("keeps legacy schedule-day rows readable as weekly fixed days", () => {
+    const habit = buildHabitDefinitionView({
+      ...buildHabitRow({
+        schedule_days: ["monday", "wednesday", "friday"],
+      }),
+      cadence_period: null as unknown as string,
+      cadence_target_count: null as unknown as number,
+      cadence_day_policy: null as unknown as string,
+    });
+
+    expect(habit.cadencePeriod).toBe("weekly");
+    expect(habit.cadenceTargetCount).toBe(3);
+    expect(habit.cadenceDayPolicy).toBe("fixed");
+    expect(habit.cadenceLabel).toBe("3 fixed days/week");
+  });
+
   it("evaluates mixed perfect-day target types deterministically", () => {
     const binary = buildHabitDefinitionView(buildHabitRow({ title: "Sit in deep squat" }));
     const duration = buildHabitDefinitionView(
@@ -265,6 +335,87 @@ describe("habits domain helpers", () => {
     expect(summary.days).toHaveLength(7);
     expect(summary.perfectDayCount).toBe(2);
     expect(summary.averageCompletionPercent).toBe(29);
+  });
+
+  it("sorts active habits by due action, timed action, quit status, then later rows", () => {
+    const dueBuild = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "11111111-1111-4111-8111-111111111111",
+        title: "Weekly mobility",
+        cadence_period: "weekly",
+        cadence_target_count: 2,
+        cadence_day_policy: "any",
+        schedule_days: [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday",
+        ],
+        sort_order: 4,
+      })
+    );
+    const dueTimed = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "22222222-2222-4222-8222-222222222222",
+        title: "Timer",
+        habit_mode: "timed",
+        habit_type: "duration",
+        category: "movement",
+        target_operator: "at_least",
+        target_value_numeric: 8,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 480,
+        sort_order: 1,
+      })
+    );
+    const quit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "No chips",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        sort_order: 0,
+      })
+    );
+    const done = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "44444444-4444-4444-8444-444444444444",
+        title: "Read",
+        sort_order: 0,
+      })
+    );
+    const doneCheckIn = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: done.id,
+        value_boolean: true,
+      })
+    );
+
+    const summary = buildHabitDaySummary(
+      [done, quit, dueTimed, dueBuild],
+      [doneCheckIn],
+      "2026-05-10"
+    );
+
+    expect(summary.items.map((item) => item.habit.title)).toEqual([
+      "Weekly mobility",
+      "Timer",
+      "No chips",
+      "Read",
+    ]);
+    expect(summary.items.map((item) => item.priorityGroup)).toEqual([
+      "due_build",
+      "due_timed",
+      "quit_status",
+      "not_due",
+    ]);
   });
 
   it("formats singular count units without parenthetical copy", () => {

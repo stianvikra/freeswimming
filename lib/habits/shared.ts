@@ -35,6 +35,8 @@ export const HABIT_WEEKDAY_VALUES = [
   "saturday",
   "sunday",
 ] as const;
+export const HABIT_CADENCE_PERIOD_VALUES = ["daily", "weekly", "monthly"] as const;
+export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
 
 export type HabitType = (typeof HABIT_TYPE_VALUES)[number];
 export type HabitMode = (typeof HABIT_MODE_VALUES)[number];
@@ -42,7 +44,22 @@ export type HabitCategory = (typeof HABIT_CATEGORY_VALUES)[number];
 export type HabitOperator = (typeof HABIT_OPERATOR_VALUES)[number];
 export type HabitUnit = (typeof HABIT_UNIT_VALUES)[number];
 export type HabitWeekday = (typeof HABIT_WEEKDAY_VALUES)[number];
+export type HabitCadencePeriod = (typeof HABIT_CADENCE_PERIOD_VALUES)[number];
+export type HabitCadenceDayPolicy = (typeof HABIT_CADENCE_DAY_POLICY_VALUES)[number];
 export type HabitStatus = "active" | "archived";
+
+export type HabitCadenceProgress = {
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: "today" | "this week" | "this month";
+  completedCount: number;
+  targetCount: number;
+  remainingCount: number;
+  isTargetMet: boolean;
+  isDueToday: boolean;
+};
+
+export type HabitPriorityGroup = "due_build" | "due_timed" | "quit_status" | "not_due" | "archived";
 
 export type HabitDefinitionRow = Database["public"]["Tables"]["habit_definitions"]["Row"];
 export type HabitDefinitionInsert = Database["public"]["Tables"]["habit_definitions"]["Insert"];
@@ -66,6 +83,10 @@ export type HabitDefinitionView = {
   lastLapseDate: string | null;
   timerEnabled: boolean;
   timerTargetSeconds: number | null;
+  cadencePeriod: HabitCadencePeriod;
+  cadenceTargetCount: number;
+  cadenceDayPolicy: HabitCadenceDayPolicy;
+  cadenceLabel: string;
   scheduleDays: HabitWeekday[];
   isPerfectDayItem: boolean;
   status: HabitStatus;
@@ -100,6 +121,9 @@ export type HabitDayItem = {
   habit: HabitDefinitionView;
   checkIn: HabitCheckInView | null;
   evaluation: HabitEvaluation;
+  cadenceProgress: HabitCadenceProgress;
+  isScheduledForDate: boolean;
+  priorityGroup: HabitPriorityGroup;
 };
 
 export type HabitDaySummary = {
@@ -144,6 +168,9 @@ export type HabitCreateRequestBody = {
   startDate?: unknown;
   timerEnabled?: unknown;
   timerTargetSeconds?: unknown;
+  cadencePeriod?: unknown;
+  cadenceTargetCount?: unknown;
+  cadenceDayPolicy?: unknown;
   scheduleDays?: unknown;
   isPerfectDayItem?: unknown;
   selectedDate?: unknown;
@@ -216,6 +243,81 @@ function normalizeScheduleDays(value: unknown): HabitWeekday[] {
   return days.length > 0 ? Array.from(new Set(days)) : DEFAULT_WEEKDAYS;
 }
 
+function clampInteger(value: unknown, min: number, max: number): number | null {
+  const numeric =
+    typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isFinite(numeric)) return null;
+  return Math.max(min, Math.min(max, Math.round(numeric)));
+}
+
+function getLegacyCadencePeriod(scheduleDays: HabitWeekday[]): HabitCadencePeriod {
+  return scheduleDays.length >= 7 ? "daily" : "weekly";
+}
+
+function getCadencePeriod(value: unknown, scheduleDays: HabitWeekday[]): HabitCadencePeriod {
+  if (isOneOf(HABIT_CADENCE_PERIOD_VALUES, value)) return value;
+  return getLegacyCadencePeriod(scheduleDays);
+}
+
+function getCadenceDayPolicy(
+  value: unknown,
+  cadencePeriod: HabitCadencePeriod,
+  scheduleDays: HabitWeekday[]
+): HabitCadenceDayPolicy {
+  if (cadencePeriod === "daily") return "fixed";
+  if (isOneOf(HABIT_CADENCE_DAY_POLICY_VALUES, value)) return value;
+  return scheduleDays.length >= 7 && cadencePeriod !== "weekly" ? "any" : "fixed";
+}
+
+function normalizeCadenceTargetCount(
+  value: unknown,
+  cadencePeriod: HabitCadencePeriod,
+  cadenceDayPolicy: HabitCadenceDayPolicy,
+  scheduleDays: HabitWeekday[]
+): number {
+  if (cadencePeriod === "daily") return 1;
+  if (cadenceDayPolicy === "fixed") return Math.max(1, Math.min(7, scheduleDays.length));
+  const max = cadencePeriod === "monthly" ? 31 : 7;
+  return clampInteger(value, 1, max) ?? 1;
+}
+
+function normalizeCadenceInput(body: {
+  cadencePeriod?: unknown;
+  cadenceTargetCount?: unknown;
+  cadenceDayPolicy?: unknown;
+  scheduleDays?: unknown;
+}) {
+  const requestedScheduleDays = normalizeScheduleDays(body.scheduleDays);
+  const cadencePeriod = getCadencePeriod(body.cadencePeriod, requestedScheduleDays);
+  const cadenceDayPolicy = getCadenceDayPolicy(
+    body.cadenceDayPolicy,
+    cadencePeriod,
+    requestedScheduleDays
+  );
+
+  if (cadencePeriod === "monthly" && cadenceDayPolicy === "fixed") {
+    throw new Error("Monthly fixed dates are not available yet.");
+  }
+
+  const scheduleDays =
+    cadencePeriod === "daily" || cadenceDayPolicy === "any"
+      ? [...DEFAULT_WEEKDAYS]
+      : requestedScheduleDays;
+  const cadenceTargetCount = normalizeCadenceTargetCount(
+    body.cadenceTargetCount,
+    cadencePeriod,
+    cadenceDayPolicy,
+    scheduleDays
+  );
+
+  return {
+    cadencePeriod,
+    cadenceTargetCount,
+    cadenceDayPolicy,
+    scheduleDays,
+  };
+}
+
 function getHabitType(value: unknown): HabitType {
   return isOneOf(HABIT_TYPE_VALUES, value) ? value : "binary";
 }
@@ -258,6 +360,76 @@ function getDayDelta(startDate: string, endDate: string): number {
   const end = Date.parse(`${endDate}T00:00:00.000Z`);
   if (Number.isNaN(start) || Number.isNaN(end)) return 0;
   return Math.max(0, Math.floor((end - start) / 86_400_000));
+}
+
+function addUtcDays(dateKey: string, days: number): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getCalendarWeekStartDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date.toISOString().slice(0, 10);
+}
+
+function getCalendarWeekEndDate(dateKey: string): string {
+  return addUtcDays(getCalendarWeekStartDate(dateKey), 6);
+}
+
+function getCalendarMonthStartDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function getCalendarMonthEndDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function getHabitCadenceWindow(habit: HabitDefinitionView, date: string) {
+  if (habit.cadencePeriod === "monthly") {
+    return {
+      periodStart: getCalendarMonthStartDate(date),
+      periodEnd: getCalendarMonthEndDate(date),
+      periodLabel: "this month" as const,
+    };
+  }
+
+  if (habit.cadencePeriod === "weekly") {
+    return {
+      periodStart: getCalendarWeekStartDate(date),
+      periodEnd: getCalendarWeekEndDate(date),
+      periodLabel: "this week" as const,
+    };
+  }
+
+  return {
+    periodStart: date,
+    periodEnd: date,
+    periodLabel: "today" as const,
+  };
+}
+
+function isWithinDateRange(date: string, start: string, end: string): boolean {
+  return date >= start && date <= end;
+}
+
+function getWeekdayForHabitDate(date: string): HabitWeekday | null {
+  const parsed = Date.parse(`${date}T00:00:00.000Z`);
+  if (Number.isNaN(parsed)) return null;
+  return HABIT_WEEKDAY_VALUES[(new Date(parsed).getUTCDay() + 6) % 7] ?? null;
 }
 
 function normalizeTimerTargetSeconds(
@@ -396,6 +568,7 @@ export function buildHabitDefinitionInsert(
   if (habitMode === "timed" && timerTargetSeconds === null) {
     throw new Error("Choose a timer target.");
   }
+  const cadence = normalizeCadenceInput(body);
 
   return {
     user_id: userId,
@@ -412,7 +585,10 @@ export function buildHabitDefinitionInsert(
     last_lapse_date: null,
     timer_enabled: habitMode === "timed",
     timer_target_seconds: timerTargetSeconds,
-    schedule_days: normalizeScheduleDays(body.scheduleDays),
+    cadence_period: cadence.cadencePeriod,
+    cadence_target_count: cadence.cadenceTargetCount,
+    cadence_day_policy: cadence.cadenceDayPolicy,
+    schedule_days: cadence.scheduleDays,
     is_perfect_day_item: body.isPerfectDayItem === false ? false : true,
     status: "active",
     sort_order: Math.max(0, Math.min(1000, sortOrder)),
@@ -436,8 +612,17 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
     update.category = getHabitCategory(body.category);
   }
 
-  if ("scheduleDays" in body) {
-    update.schedule_days = normalizeScheduleDays(body.scheduleDays);
+  if (
+    "scheduleDays" in body ||
+    "cadencePeriod" in body ||
+    "cadenceTargetCount" in body ||
+    "cadenceDayPolicy" in body
+  ) {
+    const cadence = normalizeCadenceInput(body);
+    update.cadence_period = cadence.cadencePeriod;
+    update.cadence_target_count = cadence.cadenceTargetCount;
+    update.cadence_day_policy = cadence.cadenceDayPolicy;
+    update.schedule_days = cadence.scheduleDays;
   }
 
   if ("isPerfectDayItem" in body) {
@@ -532,6 +717,15 @@ export function buildHabitCheckInInsert(
 }
 
 export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefinitionView {
+  const scheduleDays = normalizeScheduleDays(row.schedule_days);
+  const cadencePeriod = getCadencePeriod(row.cadence_period, scheduleDays);
+  const cadenceDayPolicy = getCadenceDayPolicy(row.cadence_day_policy, cadencePeriod, scheduleDays);
+  const cadenceTargetCount = normalizeCadenceTargetCount(
+    row.cadence_target_count,
+    cadencePeriod,
+    cadenceDayPolicy,
+    scheduleDays
+  );
   const habitType = getHabitType(row.habit_type);
   const habitMode = getHabitMode(row.habit_mode, {
     habitType,
@@ -568,7 +762,16 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
     timerEnabled: row.timer_enabled === true,
     timerTargetSeconds:
       typeof row.timer_target_seconds === "number" ? row.timer_target_seconds : null,
-    scheduleDays: normalizeScheduleDays(row.schedule_days),
+    cadencePeriod,
+    cadenceTargetCount,
+    cadenceDayPolicy,
+    cadenceLabel: buildHabitCadenceLabel({
+      cadencePeriod,
+      cadenceTargetCount,
+      cadenceDayPolicy,
+      scheduleDays,
+    }),
+    scheduleDays,
     isPerfectDayItem: row.is_perfect_day_item,
     status: row.status === "archived" ? "archived" : "active",
     sortOrder: row.sort_order,
@@ -592,6 +795,25 @@ export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function buildHabitCadenceLabel(input: {
+  cadencePeriod: HabitCadencePeriod;
+  cadenceTargetCount: number;
+  cadenceDayPolicy: HabitCadenceDayPolicy;
+  scheduleDays: HabitWeekday[];
+}) {
+  if (input.cadencePeriod === "daily") return "Daily";
+
+  if (input.cadencePeriod === "weekly") {
+    if (input.cadenceDayPolicy === "fixed") {
+      const count = input.scheduleDays.length;
+      return count === 1 ? "Weekly fixed day" : `${count} fixed days/week`;
+    }
+    return `${input.cadenceTargetCount}x/week any days`;
+  }
+
+  return `${input.cadenceTargetCount}x/month any days`;
 }
 
 function buildTargetLabel(input: {
@@ -741,12 +963,114 @@ export function evaluateHabitForDate(
   };
 }
 
-export function isHabitScheduledForDate(habit: HabitDefinitionView, date: string): boolean {
+function getCheckInForHabitDate(
+  habit: HabitDefinitionView,
+  checkIns: HabitCheckInView[],
+  date: string
+): HabitCheckInView | null {
+  return (
+    checkIns.find((checkIn) => checkIn.habitId === habit.id && checkIn.checkInDate === date) ?? null
+  );
+}
+
+function countCadenceCompletions(
+  habit: HabitDefinitionView,
+  checkIns: HabitCheckInView[],
+  periodStart: string,
+  periodEnd: string
+): number {
+  const dates = new Set<string>();
+  for (const checkIn of checkIns) {
+    if (checkIn.habitId !== habit.id) continue;
+    if (!isWithinDateRange(checkIn.checkInDate, periodStart, periodEnd)) continue;
+    if (isAfterHabitDate(habit.startDate, checkIn.checkInDate)) continue;
+    if (habit.cadenceDayPolicy === "fixed") {
+      const weekday = getWeekdayForHabitDate(checkIn.checkInDate);
+      if (!weekday || !habit.scheduleDays.includes(weekday)) continue;
+    }
+    if (evaluateHabitForDate(habit, checkIn, checkIn.checkInDate).isSatisfied) {
+      dates.add(checkIn.checkInDate);
+    }
+  }
+  return dates.size;
+}
+
+function buildHabitCadenceProgress(
+  habit: HabitDefinitionView,
+  checkIns: HabitCheckInView[],
+  date: string
+): HabitCadenceProgress {
+  const { periodStart, periodEnd, periodLabel } = getHabitCadenceWindow(habit, date);
+  const completedCount = countCadenceCompletions(habit, checkIns, periodStart, periodEnd);
+  const targetCount = habit.cadencePeriod === "daily" ? 1 : habit.cadenceTargetCount;
+  const remainingCount = Math.max(0, targetCount - completedCount);
+  const todayCheckIn = getCheckInForHabitDate(habit, checkIns, date);
+  const todaySatisfied = evaluateHabitForDate(habit, todayCheckIn, date).isSatisfied;
+  const isTargetMet = completedCount >= targetCount;
+
+  return {
+    periodStart,
+    periodEnd,
+    periodLabel,
+    completedCount,
+    targetCount,
+    remainingCount,
+    isTargetMet,
+    isDueToday: remainingCount > 0 && !todaySatisfied,
+  };
+}
+
+export function isHabitScheduledForDate(
+  habit: HabitDefinitionView,
+  date: string,
+  checkIns: HabitCheckInView[] = []
+): boolean {
   if (isAfterHabitDate(habit.startDate, date)) return false;
-  const parsed = Date.parse(`${date}T00:00:00.000Z`);
-  if (Number.isNaN(parsed)) return true;
-  const weekday = HABIT_WEEKDAY_VALUES[(new Date(parsed).getUTCDay() + 6) % 7];
-  return habit.scheduleDays.includes(weekday);
+  const todayCheckIn = getCheckInForHabitDate(habit, checkIns, date);
+
+  if (habit.cadenceDayPolicy === "any") {
+    const progress = buildHabitCadenceProgress(habit, checkIns, date);
+    return !progress.isTargetMet || todayCheckIn !== null;
+  }
+
+  const weekday = getWeekdayForHabitDate(date);
+  return weekday ? habit.scheduleDays.includes(weekday) : true;
+}
+
+function getHabitPriorityGroup(
+  habit: HabitDefinitionView,
+  cadenceProgress: HabitCadenceProgress,
+  isScheduledForDate: boolean,
+  date: string
+): HabitPriorityGroup {
+  if (habit.status === "archived") return "archived";
+  if (isAfterHabitDate(habit.startDate, date)) return "not_due";
+  if (habit.habitMode === "quit") return "quit_status";
+  if (!isScheduledForDate || !cadenceProgress.isDueToday) return "not_due";
+  return habit.habitMode === "timed" ? "due_timed" : "due_build";
+}
+
+function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
+  const priorityOrder: Record<HabitPriorityGroup, number> = {
+    due_build: 0,
+    due_timed: 1,
+    quit_status: 2,
+    not_due: 3,
+    archived: 4,
+  };
+  const cadenceOrder: Record<HabitCadencePeriod, number> = {
+    daily: 0,
+    weekly: 1,
+    monthly: 2,
+  };
+  const priorityDelta = priorityOrder[left.priorityGroup] - priorityOrder[right.priorityGroup];
+  if (priorityDelta !== 0) return priorityDelta;
+  const cadenceDelta =
+    cadenceOrder[left.habit.cadencePeriod] - cadenceOrder[right.habit.cadencePeriod];
+  if (cadenceDelta !== 0) return cadenceDelta;
+  const sortDelta = left.habit.sortOrder - right.habit.sortOrder;
+  if (sortDelta !== 0) return sortDelta;
+  return left.habit.updatedAt < right.habit.updatedAt ? 1 : -1;
 }
 
 export function buildHabitDaySummary(
@@ -754,17 +1078,25 @@ export function buildHabitDaySummary(
   checkIns: HabitCheckInView[],
   date: string
 ): HabitDaySummary {
-  const checkInByHabitId = new Map(checkIns.map((checkIn) => [checkIn.habitId, checkIn]));
-  const scheduledHabits = habits.filter((habit) => isHabitScheduledForDate(habit, date));
-  const items = scheduledHabits.map((habit) => {
-    const checkIn = checkInByHabitId.get(habit.id) ?? null;
-    return {
-      habit,
-      checkIn,
-      evaluation: evaluateHabitForDate(habit, checkIn, date),
-    };
-  });
-  const perfectDayItems = items.filter((item) => item.habit.isPerfectDayItem);
+  const items = habits
+    .map((habit) => {
+      const checkIn = getCheckInForHabitDate(habit, checkIns, date);
+      const evaluation = evaluateHabitForDate(habit, checkIn, date);
+      const cadenceProgress = buildHabitCadenceProgress(habit, checkIns, date);
+      const isScheduledForDate = isHabitScheduledForDate(habit, date, checkIns);
+      return {
+        habit,
+        checkIn,
+        evaluation,
+        cadenceProgress,
+        isScheduledForDate,
+        priorityGroup: getHabitPriorityGroup(habit, cadenceProgress, isScheduledForDate, date),
+      };
+    })
+    .sort(compareHabitDayItems);
+  const perfectDayItems = items.filter(
+    (item) => item.isScheduledForDate && item.habit.isPerfectDayItem
+  );
   const satisfiedPerfectDayItemCount = perfectDayItems.filter(
     (item) => item.evaluation.isSatisfied
   ).length;
@@ -780,7 +1112,7 @@ export function buildHabitDaySummary(
 
   return {
     date,
-    scheduledHabitCount: scheduledHabits.length,
+    scheduledHabitCount: items.filter((item) => item.isScheduledForDate).length,
     perfectDayItemCount,
     satisfiedPerfectDayItemCount,
     completionPercent:
@@ -805,11 +1137,7 @@ export function buildHabitWeekSummary(
     const date = new Date(baseDate);
     date.setUTCDate(baseDate.getUTCDate() - (6 - index));
     const dateKey = date.toISOString().slice(0, 10);
-    return buildHabitDaySummary(
-      habits,
-      checkIns.filter((checkIn) => checkIn.checkInDate === dateKey),
-      dateKey
-    );
+    return buildHabitDaySummary(habits, checkIns, dateKey);
   });
   const daysWithItems = days.filter((day) => day.perfectDayItemCount > 0);
 

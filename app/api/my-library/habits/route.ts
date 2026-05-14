@@ -141,6 +141,9 @@ export async function POST(request: Request) {
       hasTargetValue: insertPayload.target_value_numeric !== null,
       targetUnit: insertPayload.target_unit,
       timerEnabled: insertPayload.timer_enabled,
+      cadencePeriod: insertPayload.cadence_period,
+      cadenceDayPolicy: insertPayload.cadence_day_policy,
+      cadenceTargetCount: insertPayload.cadence_target_count,
       activeHabitCountBefore: activeRows.length,
     },
   });

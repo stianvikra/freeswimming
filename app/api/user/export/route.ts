@@ -154,7 +154,7 @@ export async function GET() {
     supabase
       .from("habit_definitions")
       .select(
-        "id, title, notes, habit_mode, habit_type, category, target_operator, target_value_numeric, target_unit, target_time, start_date, last_lapse_date, timer_enabled, timer_target_seconds, schedule_days, is_perfect_day_item, status, sort_order, created_at, updated_at"
+        "id, title, notes, habit_mode, habit_type, category, target_operator, target_value_numeric, target_unit, target_time, start_date, last_lapse_date, timer_enabled, timer_target_seconds, cadence_period, cadence_target_count, cadence_day_policy, schedule_days, is_perfect_day_item, status, sort_order, created_at, updated_at"
       )
       .eq("user_id", userId)
       .order("sort_order", { ascending: true }),

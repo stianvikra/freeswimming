@@ -111,6 +111,9 @@ export async function PATCH(request: Request, { params }: Props) {
       status: updateResult.data.status,
       archived: updateResult.data.status === "archived",
       changedStatus: typeof body.status === "string",
+      cadencePeriod: updateResult.data.cadence_period ?? "daily",
+      cadenceDayPolicy: updateResult.data.cadence_day_policy ?? "fixed",
+      cadenceTargetCount: updateResult.data.cadence_target_count ?? 1,
     },
   });
   return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));

@@ -198,13 +198,26 @@ export function buildTodayHabitsState(habitSnapshot: HabitSnapshot): TodaySurfac
   const satisfiedCount = habitSnapshot.daySummary.satisfiedPerfectDayItemCount;
   const activeCount = habitSnapshot.activeHabits.length;
 
-  if (activeCount === 0 || perfectDayTotal === 0) {
+  if (activeCount === 0) {
     return {
       state: "setup",
       title: "Habits",
       detail: "Start with a few small habits that define a good day.",
       progressLabel: "No habits yet",
       progressPercent: 0,
+      actionLabel: "Open",
+      href: "/my-library/habits",
+      editHref: "/my-library/habits",
+    };
+  }
+
+  if (perfectDayTotal === 0) {
+    return {
+      state: "ready",
+      title: "Habits",
+      detail: "No habits are due today.",
+      progressLabel: "No habits due",
+      progressPercent: 100,
       actionLabel: "Open",
       href: "/my-library/habits",
       editHref: "/my-library/habits",

@@ -28,6 +28,9 @@ function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinition
     last_lapse_date: null,
     timer_enabled: false,
     timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
     schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     is_perfect_day_item: true,
     status: "active",
@@ -135,6 +138,30 @@ function buildCountSnapshot(): HabitSnapshot {
     archivedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildNotDueFixedDaySnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "55555555-5555-4555-8555-555555555555",
+      title: "Long relaxed swim",
+      cadence_period: "weekly",
+      cadence_target_count: 1,
+      cadence_day_policy: "fixed",
+      schedule_days: ["monday"],
+    })
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
   };
 }
 
@@ -340,8 +367,18 @@ describe("HabitPerfectDayHub", () => {
   it("keeps count habit status compact with singular units and weekly adherence", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCountSnapshot()} />);
 
-    expect(screen.getByText("1 glass today · 1/7 days this week")).toBeVisible();
+    expect(screen.getByText("1 glass today · 1/1 today")).toBeVisible();
     expect(screen.getByText("At least 1 glass")).toBeVisible();
+  });
+
+  it("shows not-due fixed-day habits without a quick check-in action", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildNotDueFixedDaySnapshot()} />);
+
+    expect(screen.getAllByText("Later").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Not due today")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
   });
 
   it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
@@ -350,14 +387,62 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
     expect(screen.getByText("1/1 on target today")).toBeVisible();
-    expect(screen.getByText("1 glass today · 1/7 days this week")).toBeVisible();
+    expect(screen.getByText("1 glass today · 1/1 today")).toBeVisible();
     expect(screen.getByLabelText("Water value")).toBeVisible();
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
     });
   });
 
-  it("creates weekly habits with the selected schedule day", async () => {
+  it("creates weekly any-day habits with a frequency target", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Mobility" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Weekly target" }));
+    fireEvent.change(screen.getByLabelText("Add habit times per week"), {
+      target: { value: "3" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits",
+        expect.objectContaining({
+          method: "POST",
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      cadencePeriod: string;
+      cadenceTargetCount: number;
+      cadenceDayPolicy: string;
+      scheduleDays: string[];
+    };
+    expect(body.cadencePeriod).toBe("weekly");
+    expect(body.cadenceTargetCount).toBe(3);
+    expect(body.cadenceDayPolicy).toBe("any");
+    expect(body.scheduleDays).toEqual([
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ]);
+  });
+
+  it("creates weekly fixed-day habits with selected weekdays", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -372,10 +457,10 @@ describe("HabitPerfectDayHub", () => {
       target: { value: "W: Fasting" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Quit" }));
-    fireEvent.click(screen.getByRole("button", { name: "1x/week" }));
-    fireEvent.change(screen.getByLabelText("Add habit weekly weekday"), {
-      target: { value: "wednesday" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Weekly target" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fixed days" }));
+    fireEvent.click(screen.getByLabelText("Wed"));
+    fireEvent.click(screen.getByLabelText("Sun"));
     fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
 
     await waitFor(() => {
@@ -389,17 +474,64 @@ describe("HabitPerfectDayHub", () => {
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
       title: string;
       habitMode: string;
+      cadencePeriod: string;
+      cadenceDayPolicy: string;
+      cadenceTargetCount: number;
       scheduleDays: string[];
     };
     expect(body.title).toBe("W: Fasting");
     expect(body.habitMode).toBe("quit");
+    expect(body.cadencePeriod).toBe("weekly");
+    expect(body.cadenceDayPolicy).toBe("fixed");
+    expect(body.cadenceTargetCount).toBe(1);
     expect(body.scheduleDays).toEqual(["wednesday"]);
+  });
+
+  it("creates monthly any-day habits with a frequency target", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Review technique" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Monthly target" }));
+    fireEvent.change(screen.getByLabelText("Add habit times per month"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits",
+        expect.objectContaining({
+          method: "POST",
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      cadencePeriod: string;
+      cadenceTargetCount: number;
+      cadenceDayPolicy: string;
+    };
+    expect(body.cadencePeriod).toBe("monthly");
+    expect(body.cadenceTargetCount).toBe(5);
+    expect(body.cadenceDayPolicy).toBe("any");
   });
 
   it("edits an active habit definition while keeping the returned history", async () => {
     const completedSnapshot = buildSnapshot({ withHabit: true, completed: true });
     const updatedHabitRow = buildHabitRow({
       title: "Read deeply",
+      cadence_period: "weekly",
+      cadence_target_count: 3,
+      cadence_day_policy: "fixed",
       schedule_days: ["monday", "wednesday", "friday"],
     });
     const updatedHabit = buildHabitDefinitionView(updatedHabitRow);
@@ -428,10 +560,11 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.change(screen.getByDisplayValue("Read"), {
       target: { value: "Read deeply" },
     });
-    fireEvent.click(within(editForm).getByRole("button", { name: "Custom days" }));
-    fireEvent.click(within(editForm).getByLabelText("Tue"));
-    fireEvent.click(within(editForm).getByLabelText("Thu"));
-    fireEvent.click(within(editForm).getByLabelText("Sat"));
+    fireEvent.click(within(editForm).getByRole("button", { name: "Weekly target" }));
+    fireEvent.click(within(editForm).getByRole("button", { name: "Fixed days" }));
+    fireEvent.click(within(editForm).getByLabelText("Mon"));
+    fireEvent.click(within(editForm).getByLabelText("Wed"));
+    fireEvent.click(within(editForm).getByLabelText("Fri"));
     fireEvent.click(within(editForm).getByLabelText("Sun"));
     fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
 
@@ -445,9 +578,15 @@ describe("HabitPerfectDayHub", () => {
     });
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
       title: string;
+      cadencePeriod: string;
+      cadenceDayPolicy: string;
+      cadenceTargetCount: number;
       scheduleDays: string[];
     };
     expect(body.title).toBe("Read deeply");
+    expect(body.cadencePeriod).toBe("weekly");
+    expect(body.cadenceDayPolicy).toBe("fixed");
+    expect(body.cadenceTargetCount).toBe(3);
     expect(body.scheduleDays).toEqual(["monday", "wednesday", "friday"]);
     expect(
       await screen.findByText("Habit updated. Check-ins and history were kept.")
