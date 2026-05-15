@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useId,
@@ -10,7 +11,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import { Bubbles, CheckCircle2, ListChecks, Trash2, Undo2 } from "lucide-react";
+import { Bubbles, CheckCircle2, ListChecks, RefreshCcw, Trash2, Undo2 } from "lucide-react";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -39,6 +40,16 @@ type UnitView = {
   index: number;
   isAvailable: boolean;
   releaseDate: Date | null;
+};
+
+type HistoryUnitGroup = {
+  key: string;
+  status: Exclude<DrylandMicroBlockStatus, "queued">;
+  title: string;
+  units: UnitView[];
+  sortIndex: number;
+  isArchived: boolean;
+  seriesLabel: string;
 };
 
 type ExecutionMode = "ordered" | "bubbles";
@@ -94,17 +105,6 @@ function formatDateLabel(value: string) {
     month: "short",
     day: "numeric",
   });
-}
-
-function getBlockStatusLabel(status: DrylandMicroBlockStatus) {
-  switch (status) {
-    case "completed":
-      return "Complete";
-    case "skipped":
-      return "Skipped";
-    default:
-      return "Queued";
-  }
 }
 
 function getPlanStatusLabel(plan: DrylandMicroPlanRecord) {
@@ -292,6 +292,86 @@ function getUnitSummaryParts(units: UnitView[]) {
   return parts;
 }
 
+function buildHistorySeriesLabel(units: UnitView[]) {
+  const firstUnit = units[0];
+  if (!firstUnit) return "";
+
+  if (firstUnit.block.targetType === "reps") {
+    const repsValues = units.map((unit) =>
+      typeof unit.block.targetValue === "number"
+        ? String(unit.block.targetValue)
+        : getBubbleTargetLabel(unit.block)
+    );
+    return `Reps: ${repsValues.join(" + ")}`;
+  }
+
+  if (firstUnit.block.targetType === "duration") {
+    const numericValues = units
+      .map((unit) => unit.block.targetValue)
+      .filter((value): value is number => typeof value === "number");
+    if (numericValues.length === units.length) {
+      return `Time: ${numericValues.join(" + ")} sec`;
+    }
+
+    const timeValues = units.map((unit) =>
+      typeof unit.block.targetValue === "number"
+        ? (formatSecondsLabel(unit.block.targetValue) ?? `${unit.block.targetValue} sec`)
+        : getBubbleTargetLabel(unit.block)
+    );
+    return `Time: ${timeValues.join(" + ")}`;
+  }
+
+  return `Targets: ${units.map((unit) => getBubbleTargetLabel(unit.block)).join(" + ")}`;
+}
+
+function groupHistoryUnits(units: UnitView[]) {
+  const groups = new Map<string, HistoryUnitGroup>();
+
+  for (const unit of units) {
+    if (unit.block.status === "queued") continue;
+
+    const key = [
+      unit.block.status,
+      unit.block.sourceDrylandSessionId ?? unit.block.sourceSessionIndex,
+      unit.block.sourceExerciseId,
+      unit.block.title.trim().toLowerCase(),
+      unit.block.targetType,
+    ].join(":");
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.units.push(unit);
+      existing.sortIndex = Math.min(existing.sortIndex, unit.index);
+      existing.isArchived = existing.isArchived || unit.block.isArchived;
+      existing.seriesLabel = buildHistorySeriesLabel(existing.units);
+      continue;
+    }
+
+    groups.set(key, {
+      key,
+      status: unit.block.status,
+      title: unit.block.title,
+      units: [unit],
+      sortIndex: unit.index,
+      isArchived: unit.block.isArchived,
+      seriesLabel: buildHistorySeriesLabel([unit]),
+    });
+  }
+
+  const statusOrder: Record<HistoryUnitGroup["status"], number> = {
+    completed: 0,
+    skipped: 1,
+  };
+
+  return Array.from(groups.values()).sort((first, second) => {
+    const statusDelta = statusOrder[first.status] - statusOrder[second.status];
+    if (statusDelta !== 0) return statusDelta;
+    const titleDelta = first.title.localeCompare(second.title, "en", { sensitivity: "base" });
+    if (titleDelta !== 0) return titleDelta;
+    return first.sortIndex - second.sortIndex;
+  });
+}
+
 function getBubbleVisualStyle(unit: UnitView, isActiveTimer = false): CSSProperties {
   const seed = hashBubbleSeed(getBubbleExerciseKey(unit.block));
   const targetLabel = getBubbleTargetLabel(unit.block);
@@ -324,6 +404,7 @@ export default function DrylandMicroPlanPanel({
   onSourceSelectionChange,
   onPlanChange,
 }: Props) {
+  const router = useRouter();
   const [plan, setPlan] = useState(initialPlan);
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>(
     buildInitialSelectedSessionIds(initialPlan)
@@ -349,6 +430,7 @@ export default function DrylandMicroPlanPanel({
   const [bubbleNowMs, setBubbleNowMs] = useState(() => Date.now());
   const [poppingBubbleId, setPoppingBubbleId] = useState<string | null>(null);
   const [completedUndoStack, setCompletedUndoStack] = useState<CompletedUndoItem[]>([]);
+  const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const progressLabelId = useId();
@@ -443,17 +525,31 @@ export default function DrylandMicroPlanPanel({
     }));
   }, [plan]);
 
-  const availableUnits = unitViews
-    .filter((unit) => unit.block.status === "queued" && unit.isAvailable && !unit.block.isArchived)
-    .sort(sortUnitsByRelease);
-  const upcomingUnits = unitViews
-    .filter((unit) => unit.block.status === "queued" && !unit.isAvailable && !unit.block.isArchived)
-    .sort(sortUnitsByRelease);
-  const historyUnits = unitViews
-    .filter((unit) => unit.block.status !== "queued")
-    .sort((first, second) => first.index - second.index);
-  const visibleUnitCount = unitViews.filter((unit) => !unit.block.isArchived).length;
-  const sessionIds = new Set(sessions.map((session) => session.id));
+  const { availableUnits, upcomingUnits, historyUnitGroups, historyUnitCount, visibleUnitCount } =
+    useMemo(() => {
+      const available = unitViews
+        .filter(
+          (unit) => unit.block.status === "queued" && unit.isAvailable && !unit.block.isArchived
+        )
+        .sort(sortUnitsByRelease);
+      const upcoming = unitViews
+        .filter(
+          (unit) => unit.block.status === "queued" && !unit.isAvailable && !unit.block.isArchived
+        )
+        .sort(sortUnitsByRelease);
+      const history = unitViews
+        .filter((unit) => unit.block.status !== "queued")
+        .sort((first, second) => first.index - second.index);
+
+      return {
+        availableUnits: available,
+        upcomingUnits: upcoming,
+        historyUnitGroups: groupHistoryUnits(history),
+        historyUnitCount: history.length,
+        visibleUnitCount: unitViews.filter((unit) => !unit.block.isArchived).length,
+      };
+    }, [unitViews]);
+  const sessionIds = useMemo(() => new Set(sessions.map((session) => session.id)), [sessions]);
   const sourceSessionIds =
     plan?.sourceSessionSnapshots
       .map((source) => source.sourceDrylandSessionId)
@@ -493,6 +589,17 @@ export default function DrylandMicroPlanPanel({
       .filter((unit) => !unit.block.isArchived)
       .sort((first, second) => first.index - second.index)
   );
+
+  function retryRouteRefresh() {
+    setIsRouteRefreshing(true);
+    if (typeof window !== "undefined" && window.navigator && !window.navigator.onLine) {
+      window.location.reload();
+      return;
+    }
+
+    router.refresh();
+    window.setTimeout(() => setIsRouteRefreshing(false), 1200);
+  }
 
   function toggleSelectedSession(sessionId: string) {
     setSelectedSessionIds((current) => {
@@ -1195,6 +1302,45 @@ export default function DrylandMicroPlanPanel({
     );
   }
 
+  function renderHistoryGroupControls(group: HistoryUnitGroup) {
+    const latestUnit = group.units[group.units.length - 1];
+    if (!latestUnit) return null;
+
+    const isPending = pendingBlockId === latestUnit.block.id;
+    const isPaused = plan?.status === "paused";
+
+    if (group.status === "completed") {
+      return (
+        <button
+          type="button"
+          data-testid={`dryland-micro-history-undo-${group.sortIndex}`}
+          aria-pressed="true"
+          aria-label={`Completed ${group.title}. Undo latest completion`}
+          onClick={() => void updateBlock(latestUnit.block.id, "queued")}
+          disabled={isPending || isPaused}
+          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 active:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+          {isPending ? "Saving..." : "Completed"}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        data-testid={`dryland-micro-history-undo-${group.sortIndex}`}
+        aria-label={`Skipped ${group.title}. Undo latest skipped unit`}
+        onClick={() => void updateBlock(latestUnit.block.id, "queued")}
+        disabled={isPending || isPaused}
+        className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
+      >
+        <Undo2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+        {isPending ? "Saving..." : "Undo"}
+      </button>
+    );
+  }
+
   function renderExecutionModeSwitch() {
     const modes: Array<{
       value: ExecutionMode;
@@ -1406,8 +1552,8 @@ export default function DrylandMicroPlanPanel({
             <h4 className="text-base font-semibold text-slate-950">{copy.title}</h4>
             <p className="mt-1 max-w-[62ch] text-sm text-slate-600">{copy.body}</p>
             <p className="mt-2 text-sm text-slate-600">
-              {availableUnits.length} ready · {upcomingUnits.length} upcoming ·{" "}
-              {historyUnits.length} completed or skipped
+              {availableUnits.length} ready · {upcomingUnits.length} upcoming · {historyUnitCount}{" "}
+              completed or skipped
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1482,17 +1628,35 @@ export default function DrylandMicroPlanPanel({
       </div>
 
       {!schemaReady ? (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-white p-4">
-          <p className="text-sm text-amber-900">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-4">
+          <p className="max-w-[58ch] text-sm text-amber-900">
             Micro Sessions are still syncing in this environment. Saved dryland sessions remain
-            available while the micro-plan table is applied.
+            available.
           </p>
+          <button
+            type="button"
+            onClick={retryRouteRefresh}
+            disabled={isRouteRefreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            {isRouteRefreshing ? "Retrying..." : "Retry"}
+          </button>
         </div>
       ) : null}
 
       {loadError ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-white p-4">
-          <p className="text-sm text-rose-900">{loadError}</p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-white p-4">
+          <p className="max-w-[58ch] text-sm text-rose-900">{loadError}</p>
+          <button
+            type="button"
+            onClick={retryRouteRefresh}
+            disabled={isRouteRefreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            {isRouteRefreshing ? "Retrying..." : "Retry"}
+          </button>
         </div>
       ) : null}
 
@@ -1773,27 +1937,30 @@ export default function DrylandMicroPlanPanel({
                   </div>
                 ) : null}
 
-                {historyUnits.length > 0 ? (
+                {historyUnitGroups.length > 0 ? (
                   <div className="rounded-2xl bg-slate-50/70 p-4">
                     <h4 className="text-base font-semibold text-slate-950">
                       Completed and skipped
                     </h4>
                     <div className="mt-3 grid gap-2">
-                      {historyUnits.map((unit) => (
+                      {historyUnitGroups.map((group) => (
                         <div
-                          key={unit.block.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-100"
+                          key={group.key}
+                          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-100"
                         >
-                          <div>
-                            <p className="text-sm font-semibold text-slate-950">
-                              {unit.block.title} · {getBubbleTargetLabel(unit.block)}
-                            </p>
-                            <p className="mt-1 text-sm text-slate-600">
-                              {getBlockStatusLabel(unit.block.status)}
-                              {unit.block.isArchived ? " · source removed from active plan" : ""}
-                            </p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-950">{group.title}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                              <span>{group.seriesLabel}</span>
+                              {group.isArchived ? (
+                                <>
+                                  <span className="text-slate-400">·</span>
+                                  <span>source removed from active plan</span>
+                                </>
+                              ) : null}
+                            </div>
                           </div>
-                          {renderUnitControls(unit)}
+                          {renderHistoryGroupControls(group)}
                         </div>
                       ))}
                     </div>

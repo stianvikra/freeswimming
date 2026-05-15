@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No internet | Freeswimming</title>
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #eef5ff;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: #dbe4ef;
+        --blue: #2563eb;
+        --blue-dark: #1d4ed8;
+        --blue-deep: #2343b8;
+        --status: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--bg);
+      }
+
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: linear-gradient(180deg, #dbeafe 0%, #eef5ff 54%, #f8fbff 100%);
+        color: var(--text);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .topbar {
+        min-height: calc(64px + env(safe-area-inset-top));
+        display: flex;
+        align-items: center;
+        background: linear-gradient(90deg, var(--blue-deep), #4678f0);
+        padding: env(safe-area-inset-top) 16px 0;
+      }
+
+      .brand {
+        width: min(100%, 1100px);
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 190px;
+        height: auto;
+      }
+
+      main {
+        width: min(100%, 460px);
+        margin: 0 auto;
+        padding: 22px 20px max(32px, env(safe-area-inset-bottom));
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--card);
+        padding: 24px;
+        box-shadow: 0 18px 50px rgb(15 23 42 / 12%);
+      }
+
+      p {
+        margin: 0;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #92400e;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--status);
+      }
+
+      h1 {
+        margin: 12px 0 0;
+        font-size: clamp(34px, 11vw, 44px);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .copy {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.45;
+      }
+
+      button {
+        width: 100%;
+        min-height: 52px;
+        margin-top: 24px;
+        border: 0;
+        border-radius: 16px;
+        background: var(--blue);
+        color: white;
+        font: inherit;
+        font-size: 18px;
+        font-weight: 750;
+      }
+
+      button:active {
+        background: var(--blue-dark);
+      }
+
+      button:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar" aria-label="freeswimming.org">
+      <div class="brand">
+        <img
+          class="brand-logo"
+          src="/logos/brand/lockup-domain-white.svg"
+          alt="freeswimming.org"
+          width="2307"
+          height="340"
+        />
+      </div>
+    </header>
+    <main>
+      <section class="card" aria-labelledby="offline-title">
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span>Offline</p>
+        <h1 id="offline-title">No internet</h1>
+        <p class="copy">Reconnect, then tap Retry.</p>
+        <button type="button" onclick="window.location.reload()">Retry</button>
+      </section>
+    </main>
+    <script>
+      window.addEventListener("online", () => {
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>

@@ -13,6 +13,8 @@ const BYPASSED_EXACT_PATHS = new Set<string>([
   "/robots.txt",
   "/sitemap.xml",
   "/manifest.webmanifest",
+  "/offline.html",
+  "/sw.js",
 ]);
 
 const BYPASSED_PREFIX_PATHS = [

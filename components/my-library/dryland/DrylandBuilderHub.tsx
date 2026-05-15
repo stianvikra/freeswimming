@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { RefreshCcw } from "lucide-react";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import DrylandSessionEditor from "@/components/my-library/dryland/DrylandSessionEditor";
@@ -130,6 +131,7 @@ export default function DrylandBuilderHub({
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [isMicroSourceSelectionActive, setIsMicroSourceSelectionActive] = useState(false);
   const [clientReady, setClientReady] = useState(false);
+  const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const hasUnsavedChanges = haveDrylandDraftChanges(draft, savedSession?.draft ?? null);
   const shouldPrioritizeMicroPlan = browseOnly && isMicroFocused && Boolean(activeMicroPlan);
 
@@ -138,6 +140,17 @@ export default function DrylandBuilderHub({
   useEffect(() => {
     setClientReady(true);
   }, []);
+
+  function retryRouteRefresh() {
+    setIsRouteRefreshing(true);
+    if (typeof window !== "undefined" && window.navigator && !window.navigator.onLine) {
+      window.location.reload();
+      return;
+    }
+
+    router.refresh();
+    window.setTimeout(() => setIsRouteRefreshing(false), 1200);
+  }
 
   useEffect(() => {
     setSavedSession(drylandLibrary.selectedSession);
@@ -352,7 +365,7 @@ export default function DrylandBuilderHub({
               {browseOnly && isMicroFocused
                 ? "Build a micro session"
                 : browseOnly
-                  ? "Dryland Sessions"
+                  ? "Create session"
                   : "Dryland builder"}
             </h2>
             {!browseOnly ? (
@@ -389,17 +402,35 @@ export default function DrylandBuilderHub({
       ) : null}
 
       {!drylandLibrary.schemaReady ? (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-          <p className="text-sm text-amber-900">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+          <p className="max-w-[58ch] text-sm text-amber-900">
             Dryland builder is still syncing in this environment. Come back once the foundation
             table is live to create or edit saved dryland sessions here.
           </p>
+          <button
+            type="button"
+            onClick={retryRouteRefresh}
+            disabled={isRouteRefreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            {isRouteRefreshing ? "Retrying..." : "Retry"}
+          </button>
         </div>
       ) : null}
 
       {drylandLibrary.loadError ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-          <p className="text-sm text-rose-900">{drylandLibrary.loadError}</p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+          <p className="max-w-[58ch] text-sm text-rose-900">{drylandLibrary.loadError}</p>
+          <button
+            type="button"
+            onClick={retryRouteRefresh}
+            disabled={isRouteRefreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+            {isRouteRefreshing ? "Retrying..." : "Retry"}
+          </button>
         </div>
       ) : null}
 
@@ -425,7 +456,7 @@ export default function DrylandBuilderHub({
       ) : null}
 
       <div className="mt-6 space-y-5">
-        {browseOnly ? (
+        {browseOnly && isMicroFocused ? (
           <DrylandMicroPlanPanel
             initialPlan={activeMicroPlan}
             sessions={recentSessions}
@@ -440,89 +471,98 @@ export default function DrylandBuilderHub({
 
         {browseOnly ? (
           isMicroSourceSelectionActive ? null : recentSessions.length > 0 ? (
-            <div
-              className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${
-                isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""
-              }`}
-            >
-              {recentSessions.map((session) => {
-                const isPendingDelete = pendingDeleteSessionId === session.id;
-                return (
-                  <article
-                    key={session.id}
-                    className="border-b border-slate-200 p-4 last:border-b-0 sm:p-5"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-semibold text-slate-900">{session.title}</h3>
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                            {getDrylandSessionKindLabel(session.sessionKind)}
-                          </span>
+            <>
+              <div className={isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""}>
+                <h2 className="text-lg font-semibold text-slate-950">Your sessions</h2>
+              </div>
+              <div
+                className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${
+                  isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""
+                }`}
+              >
+                {recentSessions.map((session) => {
+                  const isPendingDelete = pendingDeleteSessionId === session.id;
+                  return (
+                    <article
+                      key={session.id}
+                      className="border-b border-slate-200 p-4 last:border-b-0 sm:p-5"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold text-slate-900">
+                              {session.title}
+                            </h3>
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                              {getDrylandSessionKindLabel(session.sessionKind)}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm text-slate-600">
+                            {buildDrylandSessionSummarySubtitle(session)}
+                          </p>
                         </div>
-                        <p className="mt-2 text-sm text-slate-600">
-                          {buildDrylandSessionSummarySubtitle(session)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Link
-                          href={`/my-library/dryland/${session.id}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                        >
-                          Edit
-                        </Link>
-                        <Link
-                          href={`/my-library/dryland/${session.id}`}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                        >
-                          Open
-                        </Link>
-                        <button
-                          type="button"
-                          data-testid={`dryland-delete-session-${session.id}`}
-                          onClick={() => {
-                            setPendingDeleteSessionId((current) =>
-                              current === session.id ? null : session.id
-                            );
-                            setError("");
-                            setSuccess("");
-                          }}
-                          disabled={deletingSessionId === session.id}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {deletingSessionId === session.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {isPendingDelete ? (
-                      <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-                        <p className="text-sm font-medium text-rose-900">Delete {session.title}?</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            data-testid={`dryland-confirm-delete-session-${session.id}`}
-                            onClick={() => void confirmDeleteSession(session)}
-                            disabled={deletingSessionId === session.id}
-                            className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        <div className="flex flex-wrap gap-2">
+                          <Link
+                            href={`/my-library/dryland/${session.id}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                           >
-                            {deletingSessionId === session.id ? "Deleting..." : "Delete session"}
-                          </button>
+                            Edit
+                          </Link>
+                          <Link
+                            href={`/my-library/dryland/${session.id}`}
+                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                          >
+                            Open
+                          </Link>
                           <button
                             type="button"
-                            onClick={() => setPendingDeleteSessionId(null)}
+                            data-testid={`dryland-delete-session-${session.id}`}
+                            onClick={() => {
+                              setPendingDeleteSessionId((current) =>
+                                current === session.id ? null : session.id
+                              );
+                              setError("");
+                              setSuccess("");
+                            }}
                             disabled={deletingSessionId === session.id}
                             className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            Cancel
+                            {deletingSessionId === session.id ? "Deleting..." : "Delete"}
                           </button>
                         </div>
                       </div>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
+
+                      {isPendingDelete ? (
+                        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+                          <p className="text-sm font-medium text-rose-900">
+                            Delete {session.title}?
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              data-testid={`dryland-confirm-delete-session-${session.id}`}
+                              onClick={() => void confirmDeleteSession(session)}
+                              disabled={deletingSessionId === session.id}
+                              className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deletingSessionId === session.id ? "Deleting..." : "Delete session"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPendingDeleteSessionId(null)}
+                              disabled={deletingSessionId === session.id}
+                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-sm font-medium text-slate-900">No dryland sessions yet.</p>
@@ -573,6 +613,19 @@ export default function DrylandBuilderHub({
             onResetToSaved={resetDraftToSavedSession}
           />
         )}
+
+        {browseOnly && !isMicroFocused ? (
+          <DrylandMicroPlanPanel
+            initialPlan={activeMicroPlan}
+            sessions={recentSessions}
+            schemaReady={drylandLibrary.microPlanSchemaReady}
+            loadError={drylandLibrary.microPlanLoadError}
+            initialEditorOpen={initialMicroPlanEditorOpen}
+            preferMobileBubbles={preferMobileBubbles}
+            onSourceSelectionChange={setIsMicroSourceSelectionActive}
+            onPlanChange={setActiveMicroPlan}
+          />
+        ) : null}
       </div>
     </section>
   );

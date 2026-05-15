@@ -85,8 +85,8 @@ export function buildTodayMicroSessionsState(
       progressLabel: "Syncing",
       progressPercent: 0,
       actionLabel: "Open",
-      href: "/my-library/dryland",
-      editHref: "/my-library/dryland?micro=edit",
+      href: "/my-library/dryland#micro-sessions",
+      editHref: "/my-library/dryland?micro=edit#micro-sessions",
     };
   }
 
@@ -98,8 +98,8 @@ export function buildTodayMicroSessionsState(
       progressLabel: "Not loaded",
       progressPercent: 0,
       actionLabel: "Open",
-      href: "/my-library/dryland",
-      editHref: "/my-library/dryland?micro=edit",
+      href: "/my-library/dryland#micro-sessions",
+      editHref: "/my-library/dryland?micro=edit#micro-sessions",
     };
   }
 
@@ -115,8 +115,11 @@ export function buildTodayMicroSessionsState(
       progressLabel: "No active plan",
       progressPercent: 0,
       actionLabel: "Open",
-      href: "/my-library/dryland",
-      editHref: "/my-library/dryland?micro=edit",
+      href:
+        drylandLibrary.recentSessions.length > 0
+          ? "/my-library/dryland?micro=edit#micro-sessions"
+          : "/my-library/dryland?micro=setup#micro-sessions",
+      editHref: "/my-library/dryland?micro=edit#micro-sessions",
     };
   }
 
@@ -131,8 +134,8 @@ export function buildTodayMicroSessionsState(
       progressLabel,
       progressPercent: plan.progress.progressPercent,
       actionLabel: "Open",
-      href: "/my-library/dryland",
-      editHref: "/my-library/dryland?micro=edit",
+      href: "/my-library/dryland?micro=active&view=auto#micro-sessions",
+      editHref: "/my-library/dryland?micro=edit#micro-sessions",
     };
   }
 
@@ -147,8 +150,8 @@ export function buildTodayMicroSessionsState(
       progressLabel,
       progressPercent: plan.progress.progressPercent,
       actionLabel: "Open",
-      href: "/my-library/dryland",
-      editHref: "/my-library/dryland?micro=edit",
+      href: "/my-library/dryland?micro=active&view=auto#micro-sessions",
+      editHref: "/my-library/dryland?micro=edit#micro-sessions",
     };
   }
 
@@ -162,8 +165,8 @@ export function buildTodayMicroSessionsState(
     progressLabel,
     progressPercent: plan.progress.progressPercent,
     actionLabel: "Open",
-    href: "/my-library/dryland",
-    editHref: "/my-library/dryland?micro=edit",
+    href: "/my-library/dryland?micro=active&view=auto#micro-sessions",
+    editHref: "/my-library/dryland?micro=edit#micro-sessions",
   };
 }
 

@@ -117,6 +117,10 @@ test.describe("my library dryland builder", () => {
 
     await page.getByTestId("dryland-session-details-toggle").click();
     await page.getByTestId("dryland-draft-title").fill(`QA dryland ${Date.now()}`);
+    await page
+      .getByTestId("dryland-simple-exercise-row-0")
+      .getByRole("button", { name: "Edit" })
+      .click();
     await page.getByTestId("dryland-manual-exercise-name-0").fill("Single-leg squat");
     await page.getByTestId("dryland-manual-exercise-set-count-0").fill("2");
     await page.getByTestId("dryland-manual-exercise-target-0").fill("6");
@@ -124,7 +128,7 @@ test.describe("my library dryland builder", () => {
     await page.getByTestId("dryland-manual-exercise-load-0").fill("12.5");
     await page
       .getByTestId("dryland-simple-exercise-row-0")
-      .getByRole("button", { name: "Edit sets" })
+      .getByRole("button", { name: "Customize sets" })
       .click();
     await page.getByTestId("dryland-manual-exercise-notes-0").fill("Control the knee line.");
     await expect(page.getByTestId("dryland-draft-start-timer")).toHaveCount(0);
@@ -173,6 +177,10 @@ test.describe("my library dryland builder", () => {
     await gotoWithTransientRetry(page, `/my-library/dryland/${createdSessionId}`, 60_000);
     await waitForDrylandBuilderClientReady(page);
     await page.getByTestId("dryland-mode-build").click();
+    await page
+      .getByTestId("dryland-simple-exercise-row-0")
+      .getByRole("button", { name: "Edit" })
+      .click();
     await expect(page.getByTestId("dryland-manual-exercise-name-0")).toHaveValue(
       "Single-leg squat"
     );

@@ -103,11 +103,11 @@ describe("TodayTabsPanel", () => {
     expect(microSessionsTab).toHaveAttribute("aria-selected", "true");
     expect(within(panel).getByRole("link", { name: "Open" })).toHaveAttribute(
       "href",
-      "/my-library/dryland"
+      "/my-library/dryland?micro=active&view=auto#micro-sessions"
     );
     expect(within(panel).getByRole("link", { name: "Edit" })).toHaveAttribute(
       "href",
-      "/my-library/dryland?micro=edit"
+      "/my-library/dryland?micro=edit#micro-sessions"
     );
     expect(
       within(panel)

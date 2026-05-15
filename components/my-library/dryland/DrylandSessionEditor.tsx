@@ -207,6 +207,33 @@ function countCompletedSets(exercise: DrylandExerciseDraft) {
   return exercise.sets.filter((set) => set.isCompleted).length;
 }
 
+function buildQuickExerciseSummary(
+  exercise: DrylandExerciseDraft,
+  sessionKind: DrylandSessionKind
+) {
+  const firstSet = exercise.sets[0] ?? null;
+  const targetType = getTargetTypeForExercise(exercise, sessionKind);
+  const targetValue = getTargetValueForSet(firstSet, targetType);
+  const targetLabel =
+    targetValue === ""
+      ? "No target"
+      : targetType === "duration"
+        ? `Hold ${targetValue} sec`
+        : `${targetValue} reps`;
+  const restLabel = formatSecondsLabel(firstSet?.restSeconds ?? null);
+  const loadLabel =
+    sessionKind === "strength" && typeof firstSet?.loadKg === "number"
+      ? `${firstSet.loadKg} kg`
+      : null;
+
+  return [
+    `${exercise.sets.length} set${exercise.sets.length === 1 ? "" : "s"}`,
+    targetLabel,
+    restLabel ? `Rest ${restLabel}` : null,
+    loadLabel,
+  ].filter((part): part is string => Boolean(part));
+}
+
 function SetMetricLabel({ children }: { children: string }) {
   return <span className="text-xs font-medium text-slate-500 sm:hidden">{children}</span>;
 }
@@ -233,6 +260,7 @@ export default function DrylandSessionEditor({
     isOpen: false,
     key: sessionDetailsResetKey,
   });
+  const [openQuickExerciseId, setOpenQuickExerciseId] = useState<string | null>(null);
   const [openBuildExerciseIds, setOpenBuildExerciseIds] = useState<Set<string>>(() => new Set());
   const [simpleInputValues, setSimpleInputValues] = useState<Record<string, string>>({});
   const exerciseInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -395,6 +423,7 @@ export default function DrylandSessionEditor({
       ...draft,
       exercises: draft.exercises.filter((exercise) => exercise.id !== exerciseId),
     });
+    setOpenQuickExerciseId((current) => (current === exerciseId ? null : current));
     setOpenBuildExerciseIds((current) => {
       const next = new Set(current);
       next.delete(exerciseId);
@@ -405,6 +434,8 @@ export default function DrylandSessionEditor({
   function addCustomExercise(kind: DrylandSessionKind) {
     const nextExercise = buildCustomDrylandExercise(kind);
     pendingFocusExerciseIdRef.current = nextExercise.id;
+    setOpenQuickExerciseId(nextExercise.id);
+    setOpenBuildExerciseIds(new Set());
     onDraftChange({
       ...draft,
       exercises: [...draft.exercises, nextExercise],
@@ -539,8 +570,12 @@ export default function DrylandSessionEditor({
   function setBuildExerciseOpen(exerciseId: string, isOpen: boolean) {
     setOpenBuildExerciseIds((current) => {
       const next = new Set(current);
-      if (isOpen) next.add(exerciseId);
-      else next.delete(exerciseId);
+      if (isOpen) {
+        next.clear();
+        next.add(exerciseId);
+      } else {
+        next.delete(exerciseId);
+      }
       return next;
     });
   }
@@ -964,16 +999,13 @@ export default function DrylandSessionEditor({
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-amber-950">
-                  This session feeds the current Micro Session
-                </p>
+                <p className="text-sm font-semibold text-amber-950">Future micro sessions</p>
                 <p className="mt-1 max-w-[68ch] text-sm text-amber-900">
-                  Saving this Dryland Session is used from the next Micro Session by default. Update
-                  the current Micro Session only when you want remaining queued units rebuilt from
-                  the saved session.
+                  Saved changes apply to future micro sessions. Update the current micro session
+                  only if you want remaining queued units rebuilt now.
                 </p>
                 <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
-                  Default: use from next micro session
+                  Default: future micro sessions
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -982,7 +1014,7 @@ export default function DrylandSessionEditor({
                   data-testid="dryland-go-current-micro-session"
                   className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
                 >
-                  Go to current micro session
+                  Open current micro session
                 </Link>
                 <button
                   type="button"
@@ -1347,174 +1379,238 @@ export default function DrylandSessionEditor({
             ) : null}
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">
-              <div
-                aria-hidden="true"
-                className="hidden grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] gap-3 border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 lg:grid"
-              >
-                <span>Exercise</span>
-                <span>Sets</span>
-                <span>Target</span>
-                <span>Rest sec</span>
-                <span>Load kg</span>
-                <span className="text-right">Actions</span>
-              </div>
               {draft.exercises.map((exercise, exerciseIndex) => {
                 const firstSet = exercise.sets[0] ?? null;
                 const targetType = getTargetTypeForExercise(exercise, draft.sessionKind);
                 const setTargetValue = getTargetValueForSet(firstSet, targetType);
+                const isQuickExerciseOpen = openQuickExerciseId === exercise.id;
                 const isBuildExerciseOpen = openBuildExerciseIds.has(exercise.id);
                 const setEditorId = `dryland-exercise-card-${exerciseIndex}`;
+                const quickEditorId = `dryland-quick-exercise-editor-${exerciseIndex}`;
+                const exerciseLabel = exercise.title.trim() || `Exercise ${exerciseIndex + 1}`;
+                const summaryParts = buildQuickExerciseSummary(exercise, draft.sessionKind);
+
                 return (
                   <article
                     key={exercise.id}
                     data-testid={`dryland-simple-exercise-row-${exerciseIndex}`}
-                    className="border-b border-slate-200 p-3 last:border-b-0 sm:p-4"
+                    className="border-b border-slate-200 bg-white/70 last:border-b-0"
                   >
-                    <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] lg:items-end">
-                      <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
-                          Exercise
-                        </span>
-                        <input
-                          ref={(node) => {
-                            exerciseInputRefs.current[exercise.id] = node;
-                          }}
-                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} name`}
-                          data-testid={`dryland-manual-exercise-name-${exerciseIndex}`}
-                          value={exercise.title}
-                          onChange={(event) => updateExerciseTitle(exercise.id, event.target.value)}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 transition outline-none focus:border-blue-400"
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900 lg:sr-only">Sets</span>
-                        <input
-                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} set count`}
-                          data-testid={`dryland-manual-exercise-set-count-${exerciseIndex}`}
-                          value={getSimpleInputValue(exercise.id, "setCount", exercise.sets.length)}
-                          onChange={(event) =>
-                            updateExerciseSetCount(exercise.id, event.target.value)
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
+                      <button
+                        type="button"
+                        aria-expanded={isQuickExerciseOpen}
+                        aria-controls={quickEditorId}
+                        onClick={() => {
+                          setOpenQuickExerciseId(isQuickExerciseOpen ? null : exercise.id);
+                          if (isQuickExerciseOpen) {
+                            setBuildExerciseOpen(exercise.id, false);
                           }
-                          inputMode="numeric"
-                          min={DRYLAND_MIN_SETS_PER_EXERCISE}
-                          max={DRYLAND_MAX_SETS_PER_EXERCISE}
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                        />
-                      </label>
-
-                      <div className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
-                          Target
+                        }}
+                        className="min-w-0 flex-1 rounded-xl px-1 py-1 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+                      >
+                        <span className="block text-sm font-semibold text-slate-950">
+                          {exerciseLabel}
                         </span>
-                        <div className="flex h-11 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
-                          <input
-                            aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} ${getTargetInputLabel(targetType).toLowerCase()}`}
-                            data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
-                            value={getSimpleInputValue(exercise.id, "target", setTargetValue)}
-                            onChange={(event) =>
-                              updateAllExerciseSetField(
-                                exercise.id,
-                                targetType === "duration" ? "holdSeconds" : "reps",
-                                event.target.value
-                              )
-                            }
-                            inputMode="numeric"
-                            className="min-w-0 flex-1 border-0 bg-white px-3 text-sm text-slate-900 outline-none"
-                          />
-                          {renderTargetUnitControl(
-                            targetType,
-                            getTargetUnitControlLabel(
-                              exercise.title || `Exercise ${exerciseIndex + 1}`,
-                              targetType
-                            ),
-                            (nextTargetType) =>
-                              updateExerciseTargetType(exercise.id, nextTargetType),
-                            `dryland-manual-exercise-target-unit-${exerciseIndex}`
-                          )}
-                        </div>
-                      </div>
-
-                      <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
-                          Rest sec
+                        <span
+                          data-testid={`dryland-simple-exercise-summary-${exerciseIndex}`}
+                          className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-slate-600 sm:gap-x-1.5"
+                          aria-label={summaryParts.join(" · ")}
+                        >
+                          {summaryParts.map((part, summaryIndex) => (
+                            <span
+                              key={`${exercise.id}-${part}`}
+                              className="inline-flex whitespace-nowrap"
+                            >
+                              {summaryIndex > 0 ? (
+                                <span aria-hidden="true" className="mr-1.5 hidden sm:inline">
+                                  ·
+                                </span>
+                              ) : null}
+                              {part}
+                            </span>
+                          ))}
                         </span>
-                        <input
-                          aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} rest seconds`}
-                          data-testid={`dryland-manual-exercise-rest-${exerciseIndex}`}
-                          value={getSimpleInputValue(
-                            exercise.id,
-                            "rest",
-                            firstSet?.restSeconds ?? ""
-                          )}
-                          onChange={(event) =>
-                            updateAllExerciseSetField(
-                              exercise.id,
-                              "restSeconds",
-                              event.target.value
-                            )
-                          }
-                          inputMode="numeric"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                        />
-                      </label>
-
-                      <label className="grid gap-1">
-                        <span className="text-sm font-medium text-slate-900 lg:sr-only">
-                          Load kg
-                        </span>
-                        {draft.sessionKind === "strength" ? (
-                          <input
-                            aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} load kg`}
-                            data-testid={`dryland-manual-exercise-load-${exerciseIndex}`}
-                            value={getSimpleInputValue(exercise.id, "load", firstSet?.loadKg ?? "")}
-                            onChange={(event) =>
-                              updateAllExerciseSetField(exercise.id, "loadKg", event.target.value)
-                            }
-                            onKeyDown={(event) => {
-                              if (
-                                event.key === "Enter" &&
-                                exerciseIndex === draft.exercises.length - 1
-                              ) {
-                                event.preventDefault();
-                                addCustomExercise(draft.sessionKind);
-                              }
-                            }}
-                            inputMode="decimal"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
-                          />
-                        ) : (
-                          <span className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
-                            N/A
-                          </span>
-                        )}
-                      </label>
-
-                      <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:justify-end">
+                      </button>
+                      <div className="flex flex-wrap justify-end gap-2">
                         <button
                           type="button"
-                          aria-expanded={isBuildExerciseOpen}
-                          aria-controls={setEditorId}
-                          onClick={() => setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)}
-                          className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:bg-blue-100"
+                          aria-expanded={isQuickExerciseOpen}
+                          aria-controls={quickEditorId}
+                          onClick={() => {
+                            setOpenQuickExerciseId(isQuickExerciseOpen ? null : exercise.id);
+                            if (isQuickExerciseOpen) {
+                              setBuildExerciseOpen(exercise.id, false);
+                            }
+                          }}
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                         >
-                          {isBuildExerciseOpen ? "Close edits" : "Edit sets"}
+                          {isQuickExerciseOpen ? "Done" : "Edit"}
                         </button>
                         <button
                           type="button"
                           data-testid={`dryland-exercise-remove-${exerciseIndex}`}
                           onClick={() => removeExercise(exercise.id)}
                           disabled={draft.exercises.length === 1}
-                          className="inline-flex h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Remove
                         </button>
                       </div>
                     </div>
 
-                    {isBuildExerciseOpen
-                      ? renderExerciseDetails(exercise, exerciseIndex, setEditorId)
-                      : null}
+                    {isQuickExerciseOpen ? (
+                      <div
+                        id={quickEditorId}
+                        data-testid={`dryland-quick-exercise-editor-${exerciseIndex}`}
+                        className="border-t border-slate-200 bg-slate-50/70 p-3 sm:p-4"
+                      >
+                        <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] lg:items-end">
+                          <label className="grid gap-1">
+                            <span className="text-sm font-medium text-slate-900">Exercise</span>
+                            <input
+                              ref={(node) => {
+                                exerciseInputRefs.current[exercise.id] = node;
+                              }}
+                              aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} name`}
+                              data-testid={`dryland-manual-exercise-name-${exerciseIndex}`}
+                              value={exercise.title}
+                              onChange={(event) =>
+                                updateExerciseTitle(exercise.id, event.target.value)
+                              }
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 transition outline-none focus:border-blue-400"
+                            />
+                          </label>
+
+                          <label className="grid gap-1">
+                            <span className="text-sm font-medium text-slate-900">Sets</span>
+                            <input
+                              aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} set count`}
+                              data-testid={`dryland-manual-exercise-set-count-${exerciseIndex}`}
+                              value={getSimpleInputValue(
+                                exercise.id,
+                                "setCount",
+                                exercise.sets.length
+                              )}
+                              onChange={(event) =>
+                                updateExerciseSetCount(exercise.id, event.target.value)
+                              }
+                              inputMode="numeric"
+                              min={DRYLAND_MIN_SETS_PER_EXERCISE}
+                              max={DRYLAND_MAX_SETS_PER_EXERCISE}
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                            />
+                          </label>
+
+                          <div className="grid gap-1">
+                            <span className="text-sm font-medium text-slate-900">Target</span>
+                            <div className="flex h-11 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
+                              <input
+                                aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} ${getTargetInputLabel(targetType).toLowerCase()}`}
+                                data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
+                                value={getSimpleInputValue(exercise.id, "target", setTargetValue)}
+                                onChange={(event) =>
+                                  updateAllExerciseSetField(
+                                    exercise.id,
+                                    targetType === "duration" ? "holdSeconds" : "reps",
+                                    event.target.value
+                                  )
+                                }
+                                inputMode="numeric"
+                                className="min-w-0 flex-1 border-0 bg-white px-3 text-sm text-slate-900 outline-none"
+                              />
+                              {renderTargetUnitControl(
+                                targetType,
+                                getTargetUnitControlLabel(
+                                  exercise.title || `Exercise ${exerciseIndex + 1}`,
+                                  targetType
+                                ),
+                                (nextTargetType) =>
+                                  updateExerciseTargetType(exercise.id, nextTargetType),
+                                `dryland-manual-exercise-target-unit-${exerciseIndex}`
+                              )}
+                            </div>
+                          </div>
+
+                          <label className="grid gap-1">
+                            <span className="text-sm font-medium text-slate-900">Rest sec</span>
+                            <input
+                              aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} rest seconds`}
+                              data-testid={`dryland-manual-exercise-rest-${exerciseIndex}`}
+                              value={getSimpleInputValue(
+                                exercise.id,
+                                "rest",
+                                firstSet?.restSeconds ?? ""
+                              )}
+                              onChange={(event) =>
+                                updateAllExerciseSetField(
+                                  exercise.id,
+                                  "restSeconds",
+                                  event.target.value
+                                )
+                              }
+                              inputMode="numeric"
+                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                            />
+                          </label>
+
+                          <label className="grid gap-1">
+                            <span className="text-sm font-medium text-slate-900">Load kg</span>
+                            {draft.sessionKind === "strength" ? (
+                              <input
+                                aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} load kg`}
+                                data-testid={`dryland-manual-exercise-load-${exerciseIndex}`}
+                                value={getSimpleInputValue(
+                                  exercise.id,
+                                  "load",
+                                  firstSet?.loadKg ?? ""
+                                )}
+                                onChange={(event) =>
+                                  updateAllExerciseSetField(
+                                    exercise.id,
+                                    "loadKg",
+                                    event.target.value
+                                  )
+                                }
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" &&
+                                    exerciseIndex === draft.exercises.length - 1
+                                  ) {
+                                    event.preventDefault();
+                                    addCustomExercise(draft.sessionKind);
+                                  }
+                                }}
+                                inputMode="decimal"
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                              />
+                            ) : (
+                              <span className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
+                                N/A
+                              </span>
+                            )}
+                          </label>
+
+                          <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:justify-end">
+                            <button
+                              type="button"
+                              aria-expanded={isBuildExerciseOpen}
+                              aria-controls={setEditorId}
+                              onClick={() =>
+                                setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)
+                              }
+                              className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:bg-blue-100"
+                            >
+                              {isBuildExerciseOpen ? "Close sets" : "Customize sets"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isBuildExerciseOpen
+                          ? renderExerciseDetails(exercise, exerciseIndex, setEditorId)
+                          : null}
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}

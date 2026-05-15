@@ -4,6 +4,14 @@ import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroP
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type { DrylandSessionSummary } from "@/lib/dryland/shared";
 
+const navigationState = vi.hoisted(() => ({
+  refresh: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigationState,
+}));
+
 function buildSummary(overrides?: Partial<DrylandSessionSummary>): DrylandSessionSummary {
   return {
     id: "11111111-1111-4111-8111-111111111111",
@@ -423,6 +431,96 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(group).getByRole("button", { name: "Complete Set 2 · 12 reps" })).toBeVisible();
     expect(within(group).getByRole("button", { name: "Complete Set 3 · 12 reps" })).toBeVisible();
     expect(within(group).queryByRole("button", { name: "Skip today" })).toBeNull();
+  });
+
+  it("groups completed history without redundant unit count", () => {
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = [
+      ...Array.from({ length: 3 }, (_, index) => ({
+        ...basePlan.blocks[0]!,
+        id: `completed-push-ups-set-${index + 1}`,
+        sourceExerciseId: "push-ups",
+        sourceSetId: `push-up-set-${index + 1}`,
+        setIndex: index,
+        title: "Push ups",
+        summary: "Chest and core",
+        targetLabel: "5 reps · 30 sec rest",
+        targetValue: 5,
+        loadKg: null,
+        restSeconds: 30,
+        status: "completed" as const,
+        completedAt: `2026-05-11T10:0${index}:00.000Z`,
+      })),
+      basePlan.blocks[1]!,
+    ];
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          blocks,
+          progress: {
+            totalBlockCount: 4,
+            completedBlockCount: 3,
+            skippedBlockCount: 0,
+            remainingBlockCount: 1,
+            progressPercent: 75,
+          },
+        })}
+        sessions={[buildSummary({ setCount: 3 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.getByText("Completed and skipped")).toBeVisible();
+    expect(screen.getByText("Reps: 5 + 5 + 5")).toBeVisible();
+    expect(screen.queryByText("3 units")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Completed Push ups. Undo latest completion" })
+    ).toBeVisible();
+  });
+
+  it("keeps completed duration history compact", () => {
+    const basePlan = buildPlan();
+    const blocks: DrylandMicroBlockSnapshot[] = [
+      ...[0, 1].map((index) => ({
+        ...basePlan.blocks[0]!,
+        id: `completed-wall-sit-set-${index + 1}`,
+        sourceExerciseId: "wall-sit",
+        sourceSetId: `wall-sit-set-${index + 1}`,
+        setIndex: index,
+        title: "Wall Sit",
+        targetLabel: "30 sec · 45 sec rest",
+        targetType: "duration" as const,
+        targetValue: 30,
+        targetUnit: "sec" as const,
+        loadKg: null,
+        restSeconds: 45,
+        status: "completed" as const,
+        completedAt: `2026-05-11T10:1${index}:00.000Z`,
+      })),
+      basePlan.blocks[1]!,
+    ];
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          blocks,
+          progress: {
+            totalBlockCount: 3,
+            completedBlockCount: 2,
+            skippedBlockCount: 0,
+            remainingBlockCount: 1,
+            progressPercent: 67,
+          },
+        })}
+        sessions={[buildSummary({ setCount: 2 })]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    expect(screen.getByText("Time: 30 + 30 sec")).toBeVisible();
   });
 
   it("renders bubbles mode as a direct task surface with armed bubble confirmation", () => {
