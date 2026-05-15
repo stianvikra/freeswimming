@@ -8,6 +8,15 @@
 - `created`: `2026-02-28`
 - `updated`: `2026-05-01`
 
+## Brief Audit Record
+
+- `last_audited`: `2026-05-15`
+- `base`: `main@b2a211f`
+- `audit_status`: `revise-before-use`
+- `decision`: Refresh this brief before execution.
+- `reason`: Existing lifecycle brief predates the Brief Audit Record standard and was not fully re-audited in this governance slice; current scope, paths, scorecard mapping, validation lane, Help/Guide impact, and support-surface impact must be checked before use.
+- `must_refresh_before_execution_if`: Always refresh before use, and refresh again if AGENTS.md, scorecard categories, verification lanes, route labels, Help/Guide, runbooks, support surfaces, provider facts, or relevant repo paths change.
+
 ## Goal
 
 Generate AI-authored swim session/program drafts across explicit planning horizons so users can choose anything from one session to a fixed-duration, custom date-range, or competition-date plan while keeping deterministic safety, schema correctness, Garmin-ready step structure, threshold-based targeting, and predictable quality.

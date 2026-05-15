@@ -8,6 +8,15 @@
 - `created`: `2026-05-06`
 - `updated`: `2026-05-07`
 
+## Brief Audit Record
+
+- `last_audited`: `2026-05-15`
+- `base`: `main@b2a211f`
+- `audit_status`: `revise-before-use`
+- `decision`: Refresh this brief before execution.
+- `reason`: Existing lifecycle brief predates the Brief Audit Record standard and was not fully re-audited in this governance slice; current scope, paths, scorecard mapping, validation lane, Help/Guide impact, and support-surface impact must be checked before use.
+- `must_refresh_before_execution_if`: Always refresh before use, and refresh again if AGENTS.md, scorecard categories, verification lanes, route labels, Help/Guide, runbooks, support surfaces, provider facts, or relevant repo paths change.
+
 ## Goal
 
 Create the parent contract for a provider-independent admin message management system where inbound requests are stored in the app first, admin can diagnose and triage from the dashboard, email remains the daily reply surface for v1, and email providers can change later without losing intake history.
