@@ -22,7 +22,7 @@ export default async function MyLibraryRoutinesPage() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-20 pb-20 sm:pt-28">
         <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

@@ -191,7 +191,7 @@ describe("my library today state", () => {
     expect(state.state).toBe("setup");
     expect(state.title).toBe("Micro Sessions");
     expect(state.detail).toBe("Create a dryland exercise before building micro sessions.");
-    expect(state.href).toBe("/my-library/dryland");
+    expect(state.href).toBe("/my-library/dryland?micro=setup#micro-sessions");
   });
 
   it("builds direct Home routine actions for active micro sessions and habits", () => {

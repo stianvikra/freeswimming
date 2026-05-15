@@ -258,7 +258,12 @@ describe("DrylandBuilderHub", () => {
 
     fireEvent.click(
       within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
-        name: "Edit sets",
+        name: "Edit",
+      })
+    );
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Customize sets",
       })
     );
 
@@ -346,9 +351,9 @@ describe("DrylandBuilderHub", () => {
     });
 
     expect(screen.getByTestId("dryland-source-impact-warning")).toHaveTextContent(
-      "Saving this Dryland Session is used from the next Micro Session by default"
+      "Saved changes apply to future micro sessions"
     );
-    expect(screen.getByText("Default: use from next micro session")).toBeVisible();
+    expect(screen.getByText("Default: future micro sessions")).toBeVisible();
     expect(screen.getByTestId("dryland-go-current-micro-session")).toHaveAttribute(
       "href",
       "/my-library/dryland?micro=edit"
@@ -449,6 +454,11 @@ describe("DrylandBuilderHub", () => {
     expect(screen.queryByTestId("dryland-advanced-bank")).not.toBeInTheDocument();
     expect(screen.queryByTestId("dryland-manual-exercise-notes-0")).not.toBeInTheDocument();
 
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Edit",
+      })
+    );
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
       target: { value: "Single-leg squat" },
     });
@@ -466,7 +476,7 @@ describe("DrylandBuilderHub", () => {
     });
     fireEvent.click(
       within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
-        name: "Edit sets",
+        name: "Customize sets",
       })
     );
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
@@ -549,9 +559,18 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Edit",
+      })
+    );
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
       target: { value: "Plank" },
     });
+    expect(screen.getByTestId("dryland-simple-exercise-summary-0")).toHaveAttribute(
+      "aria-label",
+      "1 set · Hold 45 sec · Rest 1 min"
+    );
 
     const targetUnitButton = screen.getByTestId("dryland-manual-exercise-target-unit-0");
     expect(targetUnitButton).toHaveTextContent("sec");
@@ -569,6 +588,10 @@ describe("DrylandBuilderHub", () => {
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-target-0"), {
       target: { value: "60" },
     });
+    expect(screen.getByTestId("dryland-simple-exercise-summary-0")).toHaveAttribute(
+      "aria-label",
+      "1 set · Hold 60 sec · Rest 1 min"
+    );
     fireEvent.keyDown(screen.getByTestId("dryland-manual-exercise-load-0"), {
       key: "Enter",
       code: "Enter",
@@ -726,6 +749,11 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
+    fireEvent.click(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Edit",
+      })
+    );
     const setCountInput = screen.getByTestId("dryland-manual-exercise-set-count-0");
     fireEvent.change(setCountInput, { target: { value: "" } });
     expect(setCountInput).toHaveValue("");

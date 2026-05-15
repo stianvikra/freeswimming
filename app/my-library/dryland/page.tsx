@@ -34,7 +34,7 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
     <SiteChrome>
       <section
         className={`mx-auto min-h-screen w-full max-w-[1080px] pb-20 ${
-          isMicroFocused ? "px-4 pt-20 sm:px-6 sm:pt-28" : "px-6 pt-28"
+          isMicroFocused ? "px-4 pt-20 sm:px-6 sm:pt-28" : "px-6 pt-20 sm:pt-28"
         }`}
       >
         <div className="space-y-8">
