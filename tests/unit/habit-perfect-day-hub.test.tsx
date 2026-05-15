@@ -165,6 +165,16 @@ function buildNotDueFixedDaySnapshot(): HabitSnapshot {
   };
 }
 
+function openAddHabitForm() {
+  const addToggle = screen.getByRole("button", { name: "Add habit" });
+  expect(addToggle).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(addToggle);
+  expect(screen.getByRole("button", { name: "Close form" })).toHaveAttribute(
+    "aria-expanded",
+    "true"
+  );
+}
+
 describe("HabitPerfectDayHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -188,6 +198,8 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
+    expect(screen.getByRole("button", { name: "Do" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Done only" })).toBeVisible();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Read 10 pages" },
@@ -203,8 +215,37 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      habitMode: string;
+    };
+    expect(body.habitMode).toBe("build");
     expect(await screen.findByText("Habit added.")).toBeVisible();
     expect(screen.getByText("Read")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+  });
+
+  it("keeps the add form collapsed until requested", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByLabelText("Name")).toBeNull();
+
+    openAddHabitForm();
+    expect(screen.getByLabelText("Name")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByLabelText("Name")).toBeNull();
   });
 
   it("creates quit habits with a quit date payload", async () => {
@@ -218,6 +259,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Eating chips" },
     });
@@ -255,6 +297,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Mobility" },
     });
@@ -286,12 +329,15 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getAllByText("Daily").length).toBeGreaterThan(0);
     expect(screen.getByText("0:00 / 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Start" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+
     expect(await screen.findByRole("button", { name: "Finish" })).toBeDisabled();
     expect(await screen.findByText("Daily target 8:00")).toBeVisible();
     expect(await screen.findByText("No check-in")).toBeVisible();
   });
 
-  it("collapses seen rows for returning visits and keeps details available", async () => {
+  it("collapses rows by default and keeps details available", async () => {
     window.localStorage.setItem(
       "freeswimming:habits:v2:seen-row-ids",
       JSON.stringify(["11111111-1111-4111-8111-111111111111"])
@@ -309,6 +355,15 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Archive" })).toBeVisible();
+  });
+
+  it("shows a binary Do habit with only one Done only detail label", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    expect(screen.getByText("Do")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+
+    expect(screen.getAllByText("Done only")).toHaveLength(1);
   });
 
   it("marks a binary habit done through the check-in API", async () => {
@@ -371,6 +426,7 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCountSnapshot()} />);
 
     expect(screen.getByText("1 glass today · Done today")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.getByText("At least 1 glass")).toBeVisible();
   });
 
@@ -414,6 +470,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Mobility" },
     });
@@ -462,6 +519,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "W: Fasting" },
     });
@@ -507,6 +565,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    openAddHabitForm();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Review technique" },
     });

@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-14-habits-my-library-density-and-language-polish`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-14`
-- `updated`: `2026-05-14`
+- `updated`: `2026-05-15`
 
 ## Goal
 
@@ -22,6 +22,14 @@ Owner UI audit on `2026-05-14` identified these Habits issues:
 4. The text under the `Habits` heading wraps to two lines and feels heavier than the job requires.
 5. `Build` is unclear as a habit mode label; the recommended mode labels are `Do`, `Quit`, and `Timed`.
 
+Implementation audit on `2026-05-15` confirmed the slice should stay display-first and avoid data migration:
+
+1. `habit_mode` is an existing persisted text contract with a database check constraint for `build`, `quit`, and `timed`; changing storage to `do` would require a migration and export/API compatibility work that is not needed for this polish slice.
+2. `getHabitModeLabel()` is the main display seam for row chips and add/edit mode controls, so `build` can remain the internal value while rendering as `Do`.
+3. Desktop currently opens the add form by default; mobile active focus already collapses it when active habits exist. The implementation should make the compact collapsed default consistent while preserving the empty-state path.
+4. The duplicate `Done only` comes from showing both the binary habit target/status and the expanded details type/target chips. The implementation should suppress redundant details chips for binary `build` habits instead of changing the domain target label.
+5. Support-language fallout is concentrated in `docs/user-flow-map.md` and `docs/runbooks/auth-account-support.md`; unrelated `Build` usage in workouts, guides, course content, and task briefs is out of scope.
+
 ## Product Decision
 
 Habits should open as a compact management surface: active habits first, details collapsed by default, and creation behind a clear `Add habit` action. The habit mode vocabulary should be literal:
@@ -29,6 +37,8 @@ Habits should open as a compact management surface: active habits first, details
 - `Do`: a habit the swimmer wants to perform.
 - `Quit`: a habit the swimmer wants to stop.
 - `Timed`: a habit measured by duration.
+
+Storage/API decision: keep persisted `habit_mode = "build"` and render it as `Do` in user-facing Habits UI and support copy. No Supabase migration, generated database type update, or export schema change is planned for this slice.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -77,11 +87,11 @@ Critical target categories for a `10/10` claim:
   - reuse the existing Habits/My Library route and components;
   - do not introduce a new route for adding habits unless the audit proves inline collapse is not viable.
 - TypeScript/domain contracts:
-  - preserve existing habit mode/type/check-in contracts unless a deliberate migration is scoped;
-  - if `Build` is stored as a persisted enum, decide display-only rename vs migration before implementation.
+  - preserve existing habit mode/type/check-in contracts;
+  - use a display-only label mapping from stored `build` to user-facing `Do`.
 - Supabase/data layer:
-  - default expectation is no schema/RLS/generated type change;
-  - if enum/storage changes are required, add explicit migration and negative-path tests.
+  - no schema/RLS/generated type change is expected;
+  - no enum/storage migration is scoped.
 - UI system:
   - use existing My Library/Habits primitives, compact cards, labelled disclosure controls, and screenshot handoff.
 - Testing:
@@ -111,7 +121,8 @@ Critical target categories for a `10/10` claim:
 - Human-readable identifiers:
   - habit names remain renameable display labels.
 - Mode labels:
-  - `Do`, `Quit`, `Timed` are user-facing labels; storage values must be explicitly mapped or migrated.
+  - `Do`, `Quit`, `Timed` are user-facing labels;
+  - storage remains `build`, `quit`, `timed`.
 - Rename vs repurpose policy:
   - changing a habit name does not repurpose historical check-ins unless the user explicitly edits the habit.
 - Compatibility:
@@ -120,12 +131,12 @@ Critical target categories for a `10/10` claim:
 ## Scope
 
 - Remove duplicate `Done only` display for habit rows/cards.
-- Rename user-facing mode labels to `Do`, `Quit`, `Timed` if contract-safe.
+- Rename user-facing mode labels to `Do`, `Quit`, `Timed` using display-only mapping.
 - Collapse `Add habit` by default and expose a primary `Add habit` action near the top of Habits.
 - Keep active habits visible before the creation form.
 - Shorten or remove the explanatory copy under `Habits`.
 - Keep details/edit/archive behind explicit row actions.
-- Update tests, docs, Help/Guide surfaces, and screenshot handoff.
+- Update targeted tests, docs/support surfaces, and screenshot handoff.
 
 ## Out Of Scope
 
@@ -134,6 +145,8 @@ Critical target categories for a `10/10` claim:
 - Habit streak algorithm redesign.
 - Dryland/Micro Session changes.
 - Commerce, admin, course, or public marketing changes.
+- Habit mode storage migration from `build` to `do`.
+- Unrelated `Build` labels for swim workouts, guides, course content, or implementation task briefs.
 
 ## Acceptance Criteria
 
@@ -191,6 +204,25 @@ Run targeted sweep before broad gates for:
 
 Surfaces to check: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, task briefs, and Help/Guide assertions where relevant.
 
+Implementation-audit sweep completed on `2026-05-15`:
+
+- Product route/header: `app/my-library/habits/page.tsx`.
+- Primary UI and reference surface: `components/my-library/habits/HabitPerfectDayHub.tsx`.
+- Domain/storage contract: `lib/habits/shared.ts`, `lib/habits/server.ts`, `app/api/my-library/habits/**`, `supabase/migrations/20260512103000_habits_v2_build_quit_timed_tracking.sql`.
+- User-flow/support fallout: `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`.
+- Tests to update: `tests/unit/habit-perfect-day-hub.test.tsx`, `tests/unit/habits.test.ts`, `tests/e2e/my-library-habits.spec.ts` if screenshot/route smoke assertions need stable text.
+
+Route/label/support sweep completed on `2026-05-15`:
+
+- identifiers searched: `Habits`, `Add habit`, `Build`, `Do`, `Quit`, `Timed`, `Done only`, `Cold Water`, `/my-library/habits`, `habit_mode`, `HABIT_MODE_VALUES`, `build_quit_timed`.
+- surfaces checked: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, Supabase migrations, generated database type references, and active task briefs.
+- fallout handled: Habits route heading copy, `HabitPerfectDayHub` labels/collapse/details behavior, component tests, `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, and this active brief.
+- fallout intentionally retained: stored/API/export `habit_mode = build`, migration filenames, analytics payload keys, and unrelated swim-session/workout/course `Build` labels because they are outside this Habits user-facing mode vocabulary slice.
+
 ## Checkpoint Log
 
 - `2026-05-14 | planned | owner UI audit captured Habits density/language findings while Dryland/offline recovery slice was in progress; scope parked as a separate planned brief to keep Dryland PR clean | next: start this brief after Dryland/offline recovery PR is reviewed/merged`
+- `2026-05-15 | in-progress | branch habits-my-library-density-language-polish created; implementation audit completed; scope clarified as display-only mode language polish with no habit_mode migration | next: owner scope confirmation before product-code implementation`
+- `2026-05-15 | implemented + screenshot stop | implemented compact Habits management surface: add form is collapsed behind Add habit, active rows/details are collapsed by default, stored build mode renders as Do, binary details show Done only once, header copy is shorter, and support/user-flow docs are aligned | validation: targeted Habits Vitest PASS (3 files, 36 tests), npm run typecheck PASS, npm run lint PASS, npm run lint:briefs -- --all PASS, git diff --check PASS, targeted Habits Playwright exited 0 with 4 skips because local dev-login Supabase returned HTML instead of JSON; screenshots captured at output/habits-density-language-polish-2026-05-15-091053 using a temporary local fixture route that was removed before handoff | next: owner screenshot approval before npm run verify:pre-pr, commit, push, and PR automation`
+- `2026-05-15 | screenshot approved | owner approved screenshot handoff and asked to check top spacing; Habits top spacing matches existing My Library route shell spacing (`pt-24 sm:pt-28` / rounded white shell), so no product-rendering change was made after capture | next: run npm run verify:pre-pr`
+- `2026-05-15 | pre-pr gate passed | npm run verify:pre-pr PASS after route/label/support sweep evidence was added to this brief; full lane passed lint, typecheck, unit tests, build, perf budgets, and Playwright with expected auth-dependent skips from local dev-login/Supabase returning HTML; perf budget trend recommended tightening after 5 consecutive weekly green runs, but this Habits UI slice holds budgets unchanged and records the tighten decision as a follow-up governance prompt instead of expanding scope | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`

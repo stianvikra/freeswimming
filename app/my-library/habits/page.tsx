@@ -58,8 +58,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-900">Habits</h1>
               <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
-                My Perfect Day keeps small training and life habits private, measurable, and easy to
-                reset.
+                Private habit check-ins for today.
               </p>
             </div>
             <Link
