@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-15-habits-mobile-execution-hardening-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-15`
-- `updated`: `2026-05-15`
+- `updated`: `2026-05-16`
 - `execution mode`: `end-to-end implementation after owner explicitly asked to execute brief`
 
 ## Brief Audit Record
@@ -82,6 +82,43 @@ Critical target categories for a `10/10` claim:
 | Testing and QA automation                     | `target` | Unit/component/domain tests cover timer restore, cleanup, create focus/scroll, inline success, label semantics, and deadline sorting; Playwright/screenshot handoff covers mobile-first create and execution flows before PR gates. | targeted Vitest + targeted Playwright + screenshot handoff + `verify:pre-pr`/`verify:pre-merge` | `5/5`                   |
 | Scalability and cost efficiency               | `target` | Timer persistence and due sorting remain bounded by the current habit snapshot; no polling, broad history scans, service-worker timer loops, or new persisted timer event stream.                                                   | code review + tests for bounded local state                                                     | `5/5`                   |
 | DevOps and rollback readiness                 | `target` | Prefer no migration; rollback is a UI/domain revert with localStorage cleanup compatibility; if a schema/type change becomes unavoidable, use additive migration and generated type evidence.                                       | no-migration review or migration/rollback notes + gate logs                                     | `5/5`                   |
+
+## Completion Record
+
+- `completed`: `2026-05-16`
+- `merged_pr`: `#720`
+- `merge_commit`: `fed28c1`
+- `implementation_commit`: `46ffebe`
+- `closeout_branch`: `closeout/habits-mobile-execution-hardening`
+- `10/10 claim`: yes for the Habits Mobile Execution Hardening scope; all critical target categories are scored `5/5`.
+- `screenshot_artifacts`: `output/habits-mobile-execution-hardening-2026-05-15-220958`
+- `visual_capture`: Captured `2026-05-15 22:14` Europe/Oslo; owner approved the refreshed mobile/desktop handoff before PR gates.
+- `local_gates`: `npm run verify:pre-pr` PASS on `46ffebe`; `npm run verify:pre-merge` PASS on `46ffebe` before merge.
+- `ci_gates`: GitHub `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, and Vercel all PASS before merge.
+- `remaining_gaps`: none for this scoped brief. Perf trend tightening was intentionally deferred to a separate performance-governance follow-up because it is not a Habits UI correctness requirement.
+- `rollback`: `git revert fed28c1`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                          | Gaps / Notes                                                      |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #720 shipped the focused Habits execution flow: visible create, inline success, timer restore, clearer action labels, and due-order sorting.   | No remaining scoped gap.                                          |
+| UX flow clarity                               | `5/5`          | Screenshot handoff plus component tests cover add-form visibility, new-card return, `Mark done`, timer pause/resume/reset, and restored state.    | No remaining scoped gap.                                          |
+| Visual design quality                         | `5/5`          | Owner-approved screenshots cover mobile add form, desktop add form, create success, completed state, and one-exit add-form cleanup.               | No rendering files changed after approved capture.                |
+| Business logic correctness and data integrity | `5/5`          | Timer restore is local-only, never auto-writes server completion; due sorting is deterministic and covered by unit tests.                         | No schema migration required.                                     |
+| Accessibility (a11y)                          | `5/5`          | Focus return, inline `role=status`, button labels, keyboard-reachable controls, and status copy are covered by Testing Library and visual review. | No remaining scoped gap.                                          |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency added; full `verify:pre-pr` build and perf budgets passed for current HEAD.                                                         | Perf target tightening deferred to separate governance follow-up. |
+| Data placement and sync boundaries            | `5/5`          | Brief and implementation define server-canonical habits/check-ins and local-only timer metadata, add-form state, focus, and highlight state.      | No remaining scoped gap.                                          |
+| Caching and invalidation strategy             | `5/5`          | Successful create/save/mark-done paths refresh state; tests cover cleanup and new-card success placement.                                         | No remaining scoped gap.                                          |
+| Reliability and failure handling              | `5/5`          | Tests cover paused/running restore, cleanup after timed save, stale/invalid storage handling, and safe fallback behavior.                         | No remaining scoped gap.                                          |
+| Security and authz                            | `5/5`          | No protected route contract changed; local timer state cannot bypass existing authenticated server mutations.                                     | Existing fail-closed route tests remained green.                  |
+| Privacy and compliance                        | `5/5`          | Timer persistence stores metadata only, not habit titles, notes, or private labels; no new analytics payloads were added.                         | No remaining scoped gap.                                          |
+| Content governance                            | `5/5`          | Route/label/support sweep updated code, tests, user-flow docs, support runbook, and brief around `Mark done`, `Done`, and `Habit added`.          | No remaining scoped gap.                                          |
+| Analytics and KPI observability               | `5/5`          | No analytics contract changed; existing event paths remain free of raw habit content.                                                             | No new KPI instrumentation required for this UI hardening slice.  |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` now covers timer restore, stale local state, hidden form, misplaced success, and due-order confusion.     | No remaining scoped gap.                                          |
+| i18n operational readiness                    | `5/5`          | Changed labels are short, explicit, and tested: `Build`, `Mark done`, `Done`, `Habit added`, `Resume`, `Pause`, `Reset`, and due group labels.    | Full localization remains outside current platform scope.         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, shared habit domain helpers, current mutation routes, Tailwind/UI patterns, Vitest, and Playwright; no dependency.   | No remaining scoped gap.                                          |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests plus full `verify:pre-pr`, CI `verify`, and `verify:pre-merge` passed on the merged implementation.                           | No remaining scoped gap.                                          |
+| Scalability and cost efficiency               | `5/5`          | Timer persistence and due sorting are bounded by current habit snapshot and one active interval; no polling or event stream added.                | No remaining scoped gap.                                          |
+| DevOps and rollback readiness                 | `5/5`          | PR #720 merged as `fed28c1`; rollback is a single revert; post-merge preflight surfaced this docs-only closeout.                                  | Closeout PR is docs-only and non-runtime.                         |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -287,3 +324,4 @@ The handoff must include:
 - `2026-05-15 | screenshot handoff prepared | before/after artifacts captured in `output/habits-mobile-execution-hardening-2026-05-15-220958`; after screenshots were regenerated after the duplicate close/cancel cleanup so visible UI now has one add-form exit action (`Cancel`); timer restore is covered by component tests instead of visual capture because same-day local timer persistence is localStorage state and should not force a server write during screenshot setup | next: wait for owner visual approval or correction request before `npm run verify:pre-pr`, PR creation/update, and `npm run verify:pre-merge``
 - `2026-05-15 | screenshot approved | owner approved the refreshed screenshot handoff in `output/habits-mobile-execution-hardening-2026-05-15-220958`, including the one-exit add-form cleanup | next: run `npm run verify:pre-pr`, commit, push, open PR, monitor CI, then run `npm run verify:pre-merge` when PR checks are green`
 - `2026-05-15 | pre-pr gate passed | `npm run verify:pre-pr` passed full lane: branch-current, quality gates, lint, typecheck, 191 unit files / 1085 tests, production build, perf budgets, and Playwright E2E with 84 passed / 408 skipped in open public mode; perf trend recommended tightening one stretch target after 5 green runs, decision: hold tightening out of this UI slice and recommend a separate performance-governance follow-up | next: commit, push, open PR, and monitor CI`
+- `2026-05-16 | done | PR #720 merged to main as `fed28c1`after owner approval, green required CI, green local`verify:pre-pr`, and green local `verify:pre-merge`; post-merge preflight surfaced this repo-managed docs-only closeout, moved brief from in-progress to done, and recorded achieved scores/evidence | next: docs-only closeout PR`
