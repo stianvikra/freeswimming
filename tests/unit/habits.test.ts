@@ -337,24 +337,12 @@ describe("habits domain helpers", () => {
     expect(summary.averageCompletionPercent).toBe(29);
   });
 
-  it("sorts active habits by due action, timed action, quit status, done status, then later rows", () => {
+  it("sorts active habits by nearest deadline before status and completion rows", () => {
     const dueBuild = buildHabitDefinitionView(
       buildHabitRow({
         id: "11111111-1111-4111-8111-111111111111",
-        title: "Weekly mobility",
-        cadence_period: "weekly",
-        cadence_target_count: 2,
-        cadence_day_policy: "any",
-        schedule_days: [
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday",
-          "sunday",
-        ],
-        sort_order: 4,
+        title: "Drink water",
+        sort_order: 5,
       })
     );
     const dueTimed = buildHabitDefinitionView(
@@ -372,9 +360,38 @@ describe("habits domain helpers", () => {
         sort_order: 1,
       })
     );
-    const quit = buildHabitDefinitionView(
+    const dueWeekly = buildHabitDefinitionView(
       buildHabitRow({
         id: "33333333-3333-4333-8333-333333333333",
+        title: "Weekly mobility",
+        cadence_period: "weekly",
+        cadence_target_count: 2,
+        cadence_day_policy: "any",
+        schedule_days: [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday",
+        ],
+        sort_order: 4,
+      })
+    );
+    const dueMonthly = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "44444444-4444-4444-8444-444444444444",
+        title: "Review technique",
+        cadence_period: "monthly",
+        cadence_target_count: 1,
+        cadence_day_policy: "any",
+        sort_order: 2,
+      })
+    );
+    const quit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "55555555-5555-4555-8555-555555555555",
         title: "No chips",
         habit_mode: "quit",
         habit_type: "avoidance",
@@ -386,7 +403,7 @@ describe("habits domain helpers", () => {
     );
     const done = buildHabitDefinitionView(
       buildHabitRow({
-        id: "44444444-4444-4444-8444-444444444444",
+        id: "66666666-6666-4666-8666-666666666666",
         title: "Read",
         sort_order: 0,
       })
@@ -399,20 +416,24 @@ describe("habits domain helpers", () => {
     );
 
     const summary = buildHabitDaySummary(
-      [done, quit, dueTimed, dueBuild],
+      [done, quit, dueMonthly, dueWeekly, dueTimed, dueBuild],
       [doneCheckIn],
       "2026-05-10"
     );
 
     expect(summary.items.map((item) => item.habit.title)).toEqual([
-      "Weekly mobility",
+      "Drink water",
       "Timer",
+      "Weekly mobility",
+      "Review technique",
       "No chips",
       "Read",
     ]);
     expect(summary.items.map((item) => item.priorityGroup)).toEqual([
       "due_build",
       "due_timed",
+      "due_weekly",
+      "due_monthly",
       "quit_status",
       "done_today",
     ]);

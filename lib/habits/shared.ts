@@ -62,6 +62,8 @@ export type HabitCadenceProgress = {
 export type HabitPriorityGroup =
   | "due_build"
   | "due_timed"
+  | "due_weekly"
+  | "due_monthly"
   | "quit_status"
   | "done_today"
   | "done_period"
@@ -1062,6 +1064,10 @@ function getHabitPriorityGroup(
     return habit.cadencePeriod === "daily" ? "done_today" : "done_period";
   }
   if (!isScheduledForDate || !cadenceProgress.isDueToday) return "not_due";
+  if (habit.cadencePeriod === "weekly" && habit.cadenceDayPolicy === "any") {
+    return "due_weekly";
+  }
+  if (habit.cadencePeriod === "monthly") return "due_monthly";
   return habit.habitMode === "timed" ? "due_timed" : "due_build";
 }
 
@@ -1069,11 +1075,13 @@ function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
   const priorityOrder: Record<HabitPriorityGroup, number> = {
     due_build: 0,
     due_timed: 1,
-    quit_status: 2,
-    done_today: 3,
-    done_period: 4,
-    not_due: 5,
-    archived: 6,
+    due_weekly: 2,
+    due_monthly: 3,
+    quit_status: 4,
+    done_today: 5,
+    done_period: 6,
+    not_due: 7,
+    archived: 8,
   };
   const cadenceOrder: Record<HabitCadencePeriod, number> = {
     daily: 0,

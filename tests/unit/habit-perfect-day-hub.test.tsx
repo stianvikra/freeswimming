@@ -106,6 +106,26 @@ function buildTimedSnapshot(): HabitSnapshot {
   };
 }
 
+function buildCompletedTimedSnapshot(): HabitSnapshot {
+  const base = buildTimedSnapshot();
+  const habit = base.activeHabits[0]!;
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        value_boolean: null,
+        value_numeric: 2.08,
+      })
+    ),
+  ];
+
+  return {
+    ...base,
+    daySummary: buildHabitDaySummary(base.activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(base.activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
 function buildCountSnapshot(): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
@@ -169,10 +189,8 @@ function openAddHabitForm() {
   const addToggle = screen.getByRole("button", { name: "Add habit" });
   expect(addToggle).toHaveAttribute("aria-expanded", "false");
   fireEvent.click(addToggle);
-  expect(screen.getByRole("button", { name: "Close form" })).toHaveAttribute(
-    "aria-expanded",
-    "true"
-  );
+  expect(screen.queryByRole("button", { name: "Add habit" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
 }
 
 describe("HabitPerfectDayHub", () => {
@@ -183,8 +201,9 @@ describe("HabitPerfectDayHub", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("creates a first habit for My Perfect Day", async () => {
@@ -199,12 +218,12 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
     openAddHabitForm();
-    expect(screen.getByRole("button", { name: "Do" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Build" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Done only" })).toBeVisible();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Read 10 pages" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -219,7 +238,7 @@ describe("HabitPerfectDayHub", () => {
       habitMode: string;
     };
     expect(body.habitMode).toBe("build");
-    expect(await screen.findByText("Habit added.")).toBeVisible();
+    expect(await screen.findByText("Habit added")).toBeVisible();
     expect(screen.getByText("Read")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
       "aria-expanded",
@@ -239,7 +258,7 @@ describe("HabitPerfectDayHub", () => {
     openAddHabitForm();
     expect(screen.getByLabelText("Name")).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
       "aria-expanded",
@@ -267,7 +286,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.change(screen.getByLabelText("Quit date"), {
       target: { value: "2026-05-07" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -305,7 +324,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.change(screen.getByLabelText("Timer target"), {
       target: { value: "8" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -337,6 +356,90 @@ describe("HabitPerfectDayHub", () => {
     expect(await screen.findByText("No check-in")).toBeVisible();
   });
 
+  it("restores a paused timed habit timer from local user-date storage", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 125,
+          startedAtMs: null,
+          targetSeconds: 480,
+          updatedAtMs: Date.now(),
+        },
+      })
+    );
+
+    render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
+
+    expect(await screen.findByText("2:05 / 8:00 today")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
+  });
+
+  it("restores a running timed habit timer using wall-clock elapsed time", async () => {
+    const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
+    vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 20,
+          startedAtMs: nowMs - 45_000,
+          targetSeconds: 480,
+          updatedAtMs: nowMs - 45_000,
+        },
+      })
+    );
+
+    render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
+
+    expect(await screen.findByText("1:05 / 8:00 today")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Pause" })).toBeVisible();
+  });
+
+  it("clears persisted timed habit state after a successful timer save", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 125,
+          startedAtMs: null,
+          targetSeconds: 480,
+          updatedAtMs: Date.now(),
+        },
+      })
+    );
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildCompletedTimedSnapshot(),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Finish" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"valueNumeric":"2.08"'),
+        })
+      );
+    });
+    await waitFor(() => {
+      expect(
+        window.localStorage.getItem("freeswimming:habits:v3:timers:user-1:2026-05-10")
+      ).toBeNull();
+    });
+  });
+
   it("collapses rows by default and keeps details available", async () => {
     window.localStorage.setItem(
       "freeswimming:habits:v2:seen-row-ids",
@@ -348,7 +451,7 @@ describe("HabitPerfectDayHub", () => {
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
     });
-    expect(screen.getByRole("button", { name: "Done" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
@@ -357,10 +460,10 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Archive" })).toBeVisible();
   });
 
-  it("shows a binary Do habit with only one Done only detail label", () => {
+  it("shows a binary Build habit with only one Done only detail label", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
-    expect(screen.getByText("Do")).toBeVisible();
+    expect(screen.getByText("Build")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getAllByText("Done only")).toHaveLength(1);
@@ -377,7 +480,7 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -439,7 +542,7 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getAllByText("Later").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Not due today")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
     expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
@@ -478,7 +581,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.change(screen.getByLabelText("Add habit times per week"), {
       target: { value: "3" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -528,7 +631,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fixed days" }));
     fireEvent.click(screen.getByLabelText("Wed"));
     fireEvent.click(screen.getByLabelText("Sun"));
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -573,7 +676,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.change(screen.getByLabelText("Add habit times per month"), {
       target: { value: "5" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add habit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
