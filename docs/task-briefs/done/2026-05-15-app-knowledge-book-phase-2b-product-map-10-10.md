@@ -3,10 +3,111 @@
 ## Metadata
 
 - `id`: `2026-05-15-app-knowledge-book-phase-2b-product-map-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-15`
 - `updated`: `2026-05-15`
+
+## Closeout Status
+
+Done. Phase 2B shipped in PR `#718` and merged on `2026-05-15` as `4d45183`. The merged scope is
+docs-only and created the second owner-readable App Knowledge Book chapter without runtime, UI, API,
+schema, workflow, provider, config, script, route, sitemap, metadata, robots, or generated-inventory
+changes.
+
+## Completion Record
+
+- PR: `https://github.com/stianvikra/freeswimming/pull/718`
+- Merge: `docs/app-knowledge-product-map` -> `main`
+- Merge commit: `4d45183`
+- Delivered files:
+  - `docs/app-knowledge-book/chapters/02-product-map.md`
+  - `docs/app-knowledge-book/README.md`
+  - `docs/task-briefs/in-progress/2026-05-15-app-knowledge-book-phase-2b-product-map-10-10.md`
+- Lifecycle closeout:
+  - this brief moved to `docs/task-briefs/done/`.
+- DevOps/workflow changes:
+  - none; no scripts, workflows, release gates, runtime code, provider settings, routes, sitemap,
+    metadata, robots, or config changed.
+- Secrets used:
+  - none. No secret values, raw env values, cookies, tokens, request IPs, provider responses,
+    personal data, or user free-text content were added.
+- Validation evidence:
+  - `git diff --check`: PASS
+  - targeted support-surface sweep for `App Knowledge Book`, `Product Map`, `Phase 2B`,
+    `02-product-map`, `docs/system-state`, and `Unknown / To Verify`: docs-scope only
+  - `npm run lint:briefs:all`: PASS
+  - `npm run verify:pre-pr`: PASS, docs-only lane
+  - GitHub checks on PR `#718`: PASS (`verify`, `CodeQL`, `Vercel Preview Comments`,
+    `site-lock-smoke`, `e2e-smoke`, `size-check`, `Analyze (javascript-typescript)`,
+    `deploy-preview`, `Vercel`)
+  - `npm run verify:pre-merge`: PASS, docs-only lane
+
+10/10 claim: yes, for the Phase 2B docs-only Product Map scope.
+
+Critical target categories for the 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Content governance
+- Admin workflow and editability
+- Analytics and KPI observability
+- Commerce and revenue ops
+- Incident response and support operations
+- Finance and reporting operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- Scalability and cost efficiency
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Product Map explains major product areas, route groups, audiences, and jobs.   |
+| UX flow clarity                               | `5/5`          | Chapter gives owner paths from product area to routes, docs, runbooks, tests.  |
+| Business logic correctness and data integrity | `5/5`          | Repo-proven behavior is separated from `Unknown / To Verify` facts.            |
+| Admin editor ergonomics                       | `5/5`          | Admin workspace areas, Help/Guide, and admin-safe docs are linked.             |
+| Data placement and sync boundaries            | `5/5`          | Server, provider, local-only, and generated-doc boundaries are explicit.       |
+| Reliability and failure handling              | `5/5`          | Support, incident, auth, contact, Supabase, visual-debug, and release paths.   |
+| Security and authz                            | `5/5`          | Auth/admin/private-gate surfaces are named; no secrets or provider overclaims. |
+| Privacy and compliance                        | `5/5`          | Sensitive-data exclusions and GDPR/privacy docs are linked.                    |
+| Content governance                            | `5/5`          | Stable manual chapter links canonical docs and defers generated inventories.   |
+| Admin workflow and editability                | `5/5`          | Admin workflow/support update triggers are documented.                         |
+| Analytics and KPI observability               | `5/5`          | Analytics/KPI surfaces and safe-payload boundaries are mapped.                 |
+| Commerce and revenue ops                      | `5/5`          | Commerce, checkout, entitlement, finance, and reconciliation surfaces mapped.  |
+| Incident response and support operations      | `5/5`          | Support, incident, rollback, and debugging runbooks linked without raw logs.   |
+| Finance and reporting operations              | `5/5`          | Finance/reconciliation docs linked; live provider facts remain unknown.        |
+| i18n operational readiness                    | `5/5`          | Single-language posture and future i18n readiness docs are linked.             |
+| Stack-fit and dependency discipline           | `5/5`          | Diff is Markdown-only, no tooling/dependency/runtime changes.                  |
+| Testing and QA automation                     | `5/5`          | Brief lint, docs-only pre-PR, CI, and pre-merge gates passed.                  |
+| Scalability and cost efficiency               | `5/5`          | Chapter links canonical docs instead of duplicating volatile inventories.      |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only rollback is normal git revert; release/post-merge docs are linked.   |
+
+Supporting categories confirmed `5/5` within docs-only scope:
+
+- Performance: linked to existing performance/testing docs without changing route payloads.
+- Caching and invalidation strategy: linked to route/cache contract docs without changing cache
+  behavior.
+- SEO and crawlability: linked to sitemap/robots/private-posture surfaces without changing metadata
+  or crawl behavior.
+- AI discoverability: improved owner-readable repo navigation without changing public structured
+  data or crawl policy.
+
+Remaining gaps:
+
+- None within the scoped docs-only implementation.
+- Provider/control-plane facts remain intentionally marked `Unknown / To Verify`.
+
+Continuity:
+
+- Reconstruct from PR `#718`, merge commit `4d45183`, this done brief, and
+  `docs/app-knowledge-book/chapters/02-product-map.md`.
 
 ## Brief Audit Record
 
