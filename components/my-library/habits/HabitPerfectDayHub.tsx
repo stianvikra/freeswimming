@@ -36,6 +36,7 @@ import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 type Props = {
   initialSnapshot: HabitSnapshot;
   preferMobileActiveFocus?: boolean;
+  userId?: string;
 };
 
 type ApiResponse = {
@@ -66,6 +67,8 @@ type TimerState = {
 };
 
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
+const HABIT_TIMER_STORAGE_PREFIX = "freeswimming:habits:v3:timers";
+const HABIT_TIMER_STORAGE_VERSION = 1;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
   monday: "Mon",
   tuesday: "Tue",
@@ -297,7 +300,7 @@ function getHabitModeLabel(mode: HabitMode) {
       return "Timed";
     case "build":
     default:
-      return "Do";
+      return "Build";
   }
 }
 
@@ -319,6 +322,10 @@ function getPriorityGroupLabel(item: HabitDayItem) {
       return "Action needed";
     case "due_timed":
       return "Timed today";
+    case "due_weekly":
+      return "This week";
+    case "due_monthly":
+      return "This month";
     case "quit_status":
       return "Quit status";
     case "done_today":
@@ -388,9 +395,126 @@ function writeSeenHabitRowIds(ids: Set<string>) {
   }
 }
 
+function getTimerStorageUserKey(userId: string | undefined) {
+  const normalized = userId?.trim();
+  return encodeURIComponent(normalized || "current-user");
+}
+
+function getTimerStorageKey(userId: string | undefined, date: string) {
+  return `${HABIT_TIMER_STORAGE_PREFIX}:${getTimerStorageUserKey(userId)}:${date}`;
+}
+
+function clearStaleTimerStorageForUser(userId: string | undefined, selectedDate: string) {
+  if (typeof window === "undefined") return;
+
+  const currentKey = getTimerStorageKey(userId, selectedDate);
+  const prefix = `${HABIT_TIMER_STORAGE_PREFIX}:${getTimerStorageUserKey(userId)}:`;
+
+  try {
+    for (const key of Object.keys(window.localStorage)) {
+      if (key.startsWith(prefix) && key !== currentKey) {
+        window.localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // Local execution recovery only; server-canonical habit tracking must keep working.
+  }
+}
+
+function parsePersistedTimerRecord(
+  value: unknown
+): (TimerState & { targetSeconds: number | null }) | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as {
+    version?: unknown;
+    elapsedSeconds?: unknown;
+    startedAtMs?: unknown;
+    targetSeconds?: unknown;
+  };
+  if (record.version !== HABIT_TIMER_STORAGE_VERSION) return null;
+  if (typeof record.elapsedSeconds !== "number" || !Number.isFinite(record.elapsedSeconds)) {
+    return null;
+  }
+  const elapsedSeconds = Math.max(0, Math.floor(record.elapsedSeconds));
+  const startedAtMs =
+    typeof record.startedAtMs === "number" && Number.isFinite(record.startedAtMs)
+      ? record.startedAtMs
+      : null;
+  const targetSeconds =
+    typeof record.targetSeconds === "number" && Number.isFinite(record.targetSeconds)
+      ? Math.max(1, Math.floor(record.targetSeconds))
+      : null;
+
+  return {
+    elapsedSeconds,
+    startedAtMs,
+    targetSeconds,
+  };
+}
+
+function readPersistedTimerRecords(userId: string | undefined, selectedDate: string) {
+  if (typeof window === "undefined")
+    return new Map<string, TimerState & { targetSeconds: number | null }>();
+
+  try {
+    const raw = window.localStorage.getItem(getTimerStorageKey(userId, selectedDate));
+    if (!raw) return new Map<string, TimerState & { targetSeconds: number | null }>();
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return new Map<string, TimerState & { targetSeconds: number | null }>();
+    }
+
+    const records = new Map<string, TimerState & { targetSeconds: number | null }>();
+    for (const [habitId, value] of Object.entries(parsed)) {
+      const record = parsePersistedTimerRecord(value);
+      if (record) records.set(habitId, record);
+    }
+    return records;
+  } catch {
+    return new Map<string, TimerState & { targetSeconds: number | null }>();
+  }
+}
+
+function writePersistedTimerRecords(
+  userId: string | undefined,
+  selectedDate: string,
+  records: Record<string, TimerState & { targetSeconds: number | null }>
+) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const storageKey = getTimerStorageKey(userId, selectedDate);
+    if (Object.keys(records).length === 0) {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(records).map(([habitId, record]) => [
+            habitId,
+            {
+              version: HABIT_TIMER_STORAGE_VERSION,
+              elapsedSeconds: Math.max(0, Math.floor(record.elapsedSeconds)),
+              startedAtMs: record.startedAtMs,
+              targetSeconds: record.targetSeconds,
+              updatedAtMs: Date.now(),
+            },
+          ])
+        )
+      )
+    );
+  } catch {
+    // Local execution recovery only; failed persistence should not block check-ins.
+  }
+}
+
 export default function HabitPerfectDayHub({
   initialSnapshot,
   preferMobileActiveFocus = false,
+  userId,
 }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [draft, setDraft] = useState<HabitDraft>(() =>
@@ -404,15 +528,25 @@ export default function HabitPerfectDayHub({
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const [expandedHabitIds, setExpandedHabitIds] = useState<string[]>([]);
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
+  const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialSnapshot.loadError);
   const hasLoadedRowPreferencesRef = useRef(false);
+  const hasHydratedTimersRef = useRef(false);
+  const habitsSectionRef = useRef<HTMLElement | null>(null);
+  const addHabitSectionRef = useRef<HTMLElement | null>(null);
+  const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
+  const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     setCheckInInputs(buildInputState(snapshot));
   }, [snapshot]);
+
+  useEffect(() => {
+    hasHydratedTimersRef.current = false;
+  }, [snapshot.selectedDate, userId]);
 
   useEffect(() => {
     const activeIds = snapshot.activeHabits.map((habit) => habit.id);
@@ -436,6 +570,9 @@ export default function HabitPerfectDayHub({
     function openFromHash() {
       if (window.location.hash === "#add-habit") {
         setIsAddHabitOpen(true);
+        setRecentlyCreatedHabitId(null);
+        setNotice(null);
+        setError(null);
       }
     }
 
@@ -452,6 +589,96 @@ export default function HabitPerfectDayHub({
     return () => window.clearInterval(interval);
   }, [timers]);
 
+  useEffect(() => {
+    clearStaleTimerStorageForUser(userId, snapshot.selectedDate);
+    const persistedRecords = readPersistedTimerRecords(userId, snapshot.selectedDate);
+    const timedItems = snapshot.daySummary.items.filter(
+      (item) =>
+        item.habit.habitMode === "timed" &&
+        item.habit.status === "active" &&
+        item.priorityGroup !== "done_today" &&
+        item.priorityGroup !== "done_period"
+    );
+    const allowedTargets = new Map(
+      timedItems.map((item) => [item.habit.id, getTimerTargetDisplaySeconds(item.habit)])
+    );
+
+    setTimers((current) => {
+      const next: Record<string, TimerState> = {};
+      for (const [habitId, targetSeconds] of allowedTargets) {
+        const currentTimer = current[habitId];
+        if (currentTimer) {
+          next[habitId] = currentTimer;
+          continue;
+        }
+        const persistedTimer = persistedRecords.get(habitId);
+        if (!persistedTimer) continue;
+        if (targetSeconds !== persistedTimer.targetSeconds) continue;
+        next[habitId] = {
+          elapsedSeconds: persistedTimer.elapsedSeconds,
+          startedAtMs: persistedTimer.startedAtMs,
+        };
+      }
+      return next;
+    });
+    hasHydratedTimersRef.current = true;
+  }, [snapshot.daySummary.items, snapshot.selectedDate, userId]);
+
+  useEffect(() => {
+    if (!hasHydratedTimersRef.current) return;
+
+    const eligibleTargets = new Map(
+      snapshot.daySummary.items
+        .filter(
+          (item) =>
+            item.habit.habitMode === "timed" &&
+            item.habit.status === "active" &&
+            item.priorityGroup !== "done_today" &&
+            item.priorityGroup !== "done_period"
+        )
+        .map((item) => [item.habit.id, getTimerTargetDisplaySeconds(item.habit)])
+    );
+    const records: Record<string, TimerState & { targetSeconds: number | null }> = {};
+
+    for (const [habitId, timer] of Object.entries(timers)) {
+      if (!eligibleTargets.has(habitId)) continue;
+      if (timer.elapsedSeconds <= 0 && timer.startedAtMs === null) continue;
+      records[habitId] = {
+        ...timer,
+        targetSeconds: eligibleTargets.get(habitId) ?? null,
+      };
+    }
+
+    writePersistedTimerRecords(userId, snapshot.selectedDate, records);
+  }, [snapshot.daySummary.items, snapshot.selectedDate, timers, userId]);
+
+  useEffect(() => {
+    if (!isAddHabitOpen) return;
+    const timeout = window.setTimeout(() => {
+      habitsSectionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+      addHabitNameInputRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [isAddHabitOpen]);
+
+  useEffect(() => {
+    if (!recentlyCreatedHabitId) return;
+    const exists = snapshot.daySummary.items.some(
+      (item) => item.habit.id === recentlyCreatedHabitId
+    );
+    if (!exists) {
+      setRecentlyCreatedHabitId(null);
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const card = habitCardRefs.current[recentlyCreatedHabitId];
+      card?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      card?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [recentlyCreatedHabitId, snapshot.daySummary.items]);
+
   const activeCount = snapshot.activeHabits.length;
   const preferredCountLabel =
     activeCount === 0
@@ -462,6 +689,22 @@ export default function HabitPerfectDayHub({
 
   const draftHabitType = getResolvedDraftHabitType(draft);
   const draftUnitOptions = useMemo(() => getUnitOptions(draftHabitType), [draftHabitType]);
+
+  function openAddHabitForm() {
+    setIsAddHabitOpen(true);
+    setRecentlyCreatedHabitId(null);
+    setNotice(null);
+    setError(null);
+  }
+
+  function closeAddHabitForm() {
+    setIsAddHabitOpen(false);
+    setError(null);
+  }
+
+  function clearCreatedHabitNotice() {
+    setRecentlyCreatedHabitId(null);
+  }
 
   function getTimerSeconds(habitId: string) {
     const timer = timers[habitId];
@@ -514,6 +757,15 @@ export default function HabitPerfectDayHub({
     setCheckInInputs((current) => ({ ...current, [habitId]: "" }));
   }
 
+  function clearTimer(habitId: string) {
+    setTimers((current) => {
+      if (!(habitId in current)) return current;
+      const next = { ...current };
+      delete next[habitId];
+      return next;
+    });
+  }
+
   function toggleHabitDetails(habitId: string) {
     setExpandedHabitIds((current) =>
       current.includes(habitId) ? current.filter((id) => id !== habitId) : [...current, habitId]
@@ -553,6 +805,7 @@ export default function HabitPerfectDayHub({
     setNotice(null);
     setError(null);
     try {
+      const existingHabitIds = new Set(snapshot.activeHabits.map((habit) => habit.id));
       const response = await fetch("/api/my-library/habits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -572,10 +825,13 @@ export default function HabitPerfectDayHub({
           isPerfectDayItem: true,
         }),
       });
-      await applyResponse(response, "Could not create that habit right now.");
-      setDraft(buildDefaultDraft(snapshot.selectedDate));
+      const nextSnapshot = await applyResponse(response, "Could not create that habit right now.");
+      const createdHabit =
+        nextSnapshot.activeHabits.find((habit) => !existingHabitIds.has(habit.id)) ??
+        nextSnapshot.activeHabits.find((habit) => habit.title === draft.title.trim());
+      setDraft(buildDefaultDraft(nextSnapshot.selectedDate));
       setIsAddHabitOpen(false);
-      setNotice("Habit added.");
+      setRecentlyCreatedHabitId(createdHabit?.id ?? null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not create that habit right now.");
     } finally {
@@ -650,6 +906,7 @@ export default function HabitPerfectDayHub({
         }),
       });
       await applyResponse(response, "Could not archive that habit right now.");
+      clearTimer(habitId);
       setNotice("Habit archived.");
     } catch (caught) {
       setError(
@@ -688,6 +945,7 @@ export default function HabitPerfectDayHub({
       });
       await applyResponse(response, "Could not save that check-in right now.");
       collapseHabitDetails(habit.id);
+      clearTimer(habit.id);
       setNotice("Check-in saved.");
     } catch (caught) {
       setError(
@@ -758,6 +1016,7 @@ export default function HabitPerfectDayHub({
       });
       await applyResponse(response, "Could not reset that check-in right now.");
       collapseHabitDetails(item.habit.id);
+      clearTimer(item.habit.id);
       setNotice("Check-in reset.");
     } catch (caught) {
       setError(
@@ -1082,8 +1341,9 @@ export default function HabitPerfectDayHub({
 
       <section
         id="today-habits"
+        ref={habitsSectionRef}
         data-testid="habit-active-list"
-        className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+        className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -1095,24 +1355,18 @@ export default function HabitPerfectDayHub({
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              aria-expanded={isAddHabitOpen}
-              aria-controls="add-habit"
-              onClick={() => setIsAddHabitOpen((current) => !current)}
-              className={`inline-flex h-9 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition ${
-                isAddHabitOpen
-                  ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-                  : "bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700"
-              }`}
-            >
-              {isAddHabitOpen ? (
-                <X className="h-4 w-4" aria-hidden="true" />
-              ) : (
+            {isAddHabitOpen ? null : (
+              <button
+                type="button"
+                aria-expanded="false"
+                aria-controls="add-habit"
+                onClick={openAddHabitForm}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+              >
                 <Plus className="h-4 w-4" aria-hidden="true" />
-              )}
-              {isAddHabitOpen ? "Close form" : "Add habit"}
-            </button>
+                Add habit
+              </button>
+            )}
             {online === false ? (
               <p className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
                 Offline
@@ -1121,13 +1375,235 @@ export default function HabitPerfectDayHub({
           </div>
         </div>
 
+        <section
+          id="add-habit"
+          ref={addHabitSectionRef}
+          hidden={!isAddHabitOpen}
+          className="scroll-mt-28 pb-4 max-sm:pb-24"
+        >
+          {isAddHabitOpen ? (
+            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-slate-900">Add habit</h2>
+                <button
+                  type="button"
+                  onClick={closeAddHabitForm}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  Cancel
+                </button>
+              </div>
+              <form onSubmit={createHabit} className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="block md:col-span-2">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Name
+                  </span>
+                  <input
+                    ref={addHabitNameInputRef}
+                    value={draft.title}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, title: event.target.value }))
+                    }
+                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Read 10 pages"
+                  />
+                </label>
+
+                <div className="md:col-span-2">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Mode
+                  </span>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-3">
+                    {HABIT_MODE_VALUES.map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={draft.habitMode === mode}
+                        onClick={() => setDraft((current) => applyHabitModeToDraft(current, mode))}
+                        className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
+                          draft.habitMode === mode
+                            ? "border-blue-600 bg-blue-50 text-blue-900"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {getHabitModeLabel(mode)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {draft.habitMode === "build" ? (
+                  <label className="block">
+                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      Type
+                    </span>
+                    <select
+                      value={draft.habitType}
+                      onChange={(event) => {
+                        const habitType = event.target.value as HabitType;
+                        const unitOptions = getUnitOptions(habitType);
+                        setDraft((current) => ({
+                          ...current,
+                          habitType,
+                          targetUnit: unitOptions[0] ?? "times",
+                          targetValueNumeric:
+                            habitType === "avoidance" ? "0" : current.targetValueNumeric,
+                        }));
+                      }}
+                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      {HABIT_TYPE_VALUES.map((type) => (
+                        <option key={type} value={type}>
+                          {getHabitTypeLabel(type)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+
+                <label className="block">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Category
+                  </span>
+                  <select
+                    value={draft.category}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, category: event.target.value }))
+                    }
+                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {HABIT_CATEGORY_VALUES.map((category) => (
+                      <option key={category} value={category}>
+                        {getCategoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    {draft.habitMode === "quit" ? "Quit date" : "Start date"}
+                  </span>
+                  <input
+                    type="date"
+                    value={draft.startDate}
+                    max={snapshot.selectedDate}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, startDate: event.target.value }))
+                    }
+                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
+
+                {draft.habitMode === "build" && draft.habitType === "time_of_day" ? (
+                  <label className="block">
+                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      Target time
+                    </span>
+                    <input
+                      type="time"
+                      value={draft.targetTime}
+                      onChange={(event) =>
+                        setDraft((current) => ({ ...current, targetTime: event.target.value }))
+                      }
+                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+                ) : null}
+
+                {draft.habitMode !== "quit" &&
+                draftHabitType !== "binary" &&
+                draftHabitType !== "time_of_day" ? (
+                  <>
+                    <label className="block">
+                      <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        {draft.habitMode === "timed" ? "Timer target" : "Target"}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.25"
+                        value={draft.targetValueNumeric}
+                        onChange={(event) =>
+                          setDraft((current) => ({
+                            ...current,
+                            targetValueNumeric: event.target.value,
+                          }))
+                        }
+                        className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        Unit
+                      </span>
+                      <select
+                        value={draft.targetUnit}
+                        onChange={(event) =>
+                          setDraft((current) => ({
+                            ...current,
+                            targetUnit: event.target.value as HabitUnit,
+                          }))
+                        }
+                        className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      >
+                        {draftUnitOptions.map((unit) => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                ) : null}
+
+                {renderScheduleControls(draft, setDraft, "Add habit")}
+
+                <label className="block md:col-span-2">
+                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Note
+                  </span>
+                  <input
+                    value={draft.notes}
+                    onChange={(event) =>
+                      setDraft((current) => ({ ...current, notes: event.target.value }))
+                    }
+                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Optional"
+                  />
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={pendingKey !== null}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Create habit
+                  </button>
+                  <p className="inline-flex items-center gap-2 text-sm text-slate-500">
+                    <Target className="h-4 w-4" aria-hidden="true" />
+                    Best with 3-7 active habits.
+                  </p>
+                </div>
+              </form>
+            </div>
+          ) : null}
+        </section>
+
         {snapshot.daySummary.items.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+          <div
+            className={`mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 ${
+              isAddHabitOpen ? "max-sm:hidden" : ""
+            }`}
+          >
             <p className="text-sm font-medium text-slate-900">No active habits</p>
             <p className="mt-1 text-sm text-slate-600">Use Add habit to start tracking today.</p>
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className={`mt-4 space-y-3 ${isAddHabitOpen ? "max-sm:hidden" : ""}`}>
             {snapshot.daySummary.items.map((item, index) => {
               const habit = item.habit;
               const disabled = pendingKey !== null;
@@ -1138,11 +1614,17 @@ export default function HabitPerfectDayHub({
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const timerSeconds = getTimerSeconds(habit.id);
               const isTimerRunning = timers[habit.id]?.startedAtMs != null;
+              const timerActionLabel = isTimerRunning
+                ? "Pause"
+                : timerSeconds > 0
+                  ? "Resume"
+                  : "Start";
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
               const cadenceLabel = habit.cadenceLabel;
               const timerTargetSeconds = getTimerTargetDisplaySeconds(habit);
               const habitTypeLabel = getHabitTypeLabel(habit.habitType);
+              const isNewlyCreated = recentlyCreatedHabitId === habit.id;
               const habitTargetLabel =
                 isTimed && timerTargetSeconds
                   ? `${cadenceLabel} target ${formatTimer(timerTargetSeconds)}`
@@ -1188,9 +1670,28 @@ export default function HabitPerfectDayHub({
                       {getPriorityGroupLabel(item)}
                     </p>
                   ) : null}
-                  <article className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <article
+                    ref={(element) => {
+                      habitCardRefs.current[habit.id] = element;
+                    }}
+                    tabIndex={-1}
+                    data-testid={`habit-card-${habit.id}`}
+                    className={`scroll-mt-28 rounded-2xl border p-4 transition outline-none focus:ring-2 focus:ring-blue-100 ${
+                      isNewlyCreated
+                        ? "border-emerald-200 bg-emerald-50/50"
+                        : "border-slate-200 bg-slate-50/70"
+                    }`}
+                  >
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                       <div className="min-w-0">
+                        {isNewlyCreated ? (
+                          <p
+                            role="status"
+                            className="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"
+                          >
+                            Habit added
+                          </p>
+                        ) : null}
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="min-w-0 text-base font-semibold text-slate-900">
                             {habit.title}
@@ -1220,9 +1721,10 @@ export default function HabitPerfectDayHub({
                         {canEditTodaysCheckIn && habit.habitType === "binary" && !isQuit ? (
                           <button
                             type="button"
-                            onClick={() =>
-                              item.checkIn ? resetCheckIn(item) : saveCheckIn(item, true)
-                            }
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              return item.checkIn ? resetCheckIn(item) : saveCheckIn(item, true);
+                            }}
                             disabled={disabled}
                             className={`inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                               item.checkIn
@@ -1235,7 +1737,7 @@ export default function HabitPerfectDayHub({
                             ) : (
                               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                             )}
-                            {item.checkIn ? "Undo" : "Done"}
+                            {item.checkIn ? "Undo" : "Mark done"}
                           </button>
                         ) : null}
 
@@ -1247,9 +1749,14 @@ export default function HabitPerfectDayHub({
                             </div>
                             <button
                               type="button"
-                              onClick={() =>
-                                isTimerRunning ? pauseTimer(habit.id) : startTimer(habit.id)
-                              }
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                if (isTimerRunning) {
+                                  pauseTimer(habit.id);
+                                } else {
+                                  startTimer(habit.id);
+                                }
+                              }}
                               disabled={disabled}
                               className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1258,7 +1765,7 @@ export default function HabitPerfectDayHub({
                               ) : (
                                 <Play className="h-4 w-4" aria-hidden="true" />
                               )}
-                              {isTimerRunning ? "Pause" : "Start"}
+                              {timerActionLabel}
                             </button>
                           </>
                         ) : null}
@@ -1292,7 +1799,10 @@ export default function HabitPerfectDayHub({
                             </label>
                             <button
                               type="button"
-                              onClick={() => saveCheckIn(item)}
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                return saveCheckIn(item);
+                              }}
                               disabled={disabled}
                               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1306,7 +1816,10 @@ export default function HabitPerfectDayHub({
                           type="button"
                           aria-expanded={isExpanded}
                           aria-controls={detailsId}
-                          onClick={() => toggleHabitDetails(habit.id)}
+                          onClick={() => {
+                            clearCreatedHabitNotice();
+                            toggleHabitDetails(habit.id);
+                          }}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                         >
                           {isExpanded ? (
@@ -1590,7 +2103,10 @@ export default function HabitPerfectDayHub({
                           {isQuit ? (
                             <button
                               type="button"
-                              onClick={() => logLapse(item)}
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                return logLapse(item);
+                              }}
                               disabled={disabled || item.checkIn !== null}
                               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1603,7 +2119,10 @@ export default function HabitPerfectDayHub({
                             <>
                               <button
                                 type="button"
-                                onClick={() => finishTimer(item)}
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  return finishTimer(item);
+                                }}
                                 disabled={disabled || timerSeconds <= 0}
                                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
@@ -1612,12 +2131,15 @@ export default function HabitPerfectDayHub({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => resetTimer(habit.id)}
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  resetTimer(habit.id);
+                                }}
                                 disabled={disabled || timerSeconds <= 0}
                                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                                Timer
+                                Reset
                               </button>
                               <label className="block">
                                 <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
@@ -1639,7 +2161,10 @@ export default function HabitPerfectDayHub({
                               </label>
                               <button
                                 type="button"
-                                onClick={() => saveCheckIn(item)}
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  return saveCheckIn(item);
+                                }}
                                 disabled={disabled}
                                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                               >
@@ -1674,7 +2199,10 @@ export default function HabitPerfectDayHub({
                               </label>
                               <button
                                 type="button"
-                                onClick={() => saveCheckIn(item)}
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  return saveCheckIn(item);
+                                }}
                                 disabled={disabled}
                                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                               >
@@ -1687,7 +2215,10 @@ export default function HabitPerfectDayHub({
                           {item.checkIn && (habit.habitType !== "binary" || isQuit) ? (
                             <button
                               type="button"
-                              onClick={() => resetCheckIn(item)}
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                return resetCheckIn(item);
+                              }}
                               disabled={disabled}
                               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -1698,7 +2229,10 @@ export default function HabitPerfectDayHub({
 
                           <button
                             type="button"
-                            onClick={() => startEditingHabit(habit)}
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              startEditingHabit(habit);
+                            }}
                             disabled={disabled}
                             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
@@ -1708,7 +2242,10 @@ export default function HabitPerfectDayHub({
 
                           <button
                             type="button"
-                            onClick={() => archiveHabit(habit.id)}
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              return archiveHabit(habit.id);
+                            }}
                             disabled={disabled}
                             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
@@ -1726,222 +2263,6 @@ export default function HabitPerfectDayHub({
             })}
           </div>
         )}
-      </section>
-
-      <section
-        id="add-habit"
-        hidden={!isAddHabitOpen}
-        className="rounded-2xl border border-slate-200 bg-white p-5"
-      >
-        {isAddHabitOpen ? (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">Add habit</h2>
-              <button
-                type="button"
-                onClick={() => setIsAddHabitOpen(false)}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-                Close
-              </button>
-            </div>
-            <form onSubmit={createHabit} className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="block md:col-span-2">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Name
-                </span>
-                <input
-                  value={draft.title}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, title: event.target.value }))
-                  }
-                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="Read 10 pages"
-                />
-              </label>
-
-              <div className="md:col-span-2">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Mode
-                </span>
-                <div className="mt-1 grid gap-2 sm:grid-cols-3">
-                  {HABIT_MODE_VALUES.map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      aria-pressed={draft.habitMode === mode}
-                      onClick={() => setDraft((current) => applyHabitModeToDraft(current, mode))}
-                      className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                        draft.habitMode === mode
-                          ? "border-blue-600 bg-blue-50 text-blue-900"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      {getHabitModeLabel(mode)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {draft.habitMode === "build" ? (
-                <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Type
-                  </span>
-                  <select
-                    value={draft.habitType}
-                    onChange={(event) => {
-                      const habitType = event.target.value as HabitType;
-                      const unitOptions = getUnitOptions(habitType);
-                      setDraft((current) => ({
-                        ...current,
-                        habitType,
-                        targetUnit: unitOptions[0] ?? "times",
-                        targetValueNumeric:
-                          habitType === "avoidance" ? "0" : current.targetValueNumeric,
-                      }));
-                    }}
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    {HABIT_TYPE_VALUES.map((type) => (
-                      <option key={type} value={type}>
-                        {getHabitTypeLabel(type)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-
-              <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Category
-                </span>
-                <select
-                  value={draft.category}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, category: event.target.value }))
-                  }
-                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  {HABIT_CATEGORY_VALUES.map((category) => (
-                    <option key={category} value={category}>
-                      {getCategoryLabel(category)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  {draft.habitMode === "quit" ? "Quit date" : "Start date"}
-                </span>
-                <input
-                  type="date"
-                  value={draft.startDate}
-                  max={snapshot.selectedDate}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, startDate: event.target.value }))
-                  }
-                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
-
-              {draft.habitMode === "build" && draft.habitType === "time_of_day" ? (
-                <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Target time
-                  </span>
-                  <input
-                    type="time"
-                    value={draft.targetTime}
-                    onChange={(event) =>
-                      setDraft((current) => ({ ...current, targetTime: event.target.value }))
-                    }
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </label>
-              ) : null}
-
-              {draft.habitMode !== "quit" &&
-              draftHabitType !== "binary" &&
-              draftHabitType !== "time_of_day" ? (
-                <>
-                  <label className="block">
-                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      {draft.habitMode === "timed" ? "Timer target" : "Target"}
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.25"
-                      value={draft.targetValueNumeric}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          targetValueNumeric: event.target.value,
-                        }))
-                      }
-                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      Unit
-                    </span>
-                    <select
-                      value={draft.targetUnit}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          targetUnit: event.target.value as HabitUnit,
-                        }))
-                      }
-                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    >
-                      {draftUnitOptions.map((unit) => (
-                        <option key={unit} value={unit}>
-                          {unit}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
-              ) : null}
-
-              {renderScheduleControls(draft, setDraft, "Add habit")}
-
-              <label className="block md:col-span-2">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Note
-                </span>
-                <input
-                  value={draft.notes}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, notes: event.target.value }))
-                  }
-                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  placeholder="Optional"
-                />
-              </label>
-
-              <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-                <button
-                  type="submit"
-                  disabled={pendingKey !== null}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  Add habit
-                </button>
-                <p className="inline-flex items-center gap-2 text-sm text-slate-500">
-                  <Target className="h-4 w-4" aria-hidden="true" />
-                  Best with 3-7 active habits.
-                </p>
-              </div>
-            </form>
-          </>
-        ) : null}
       </section>
 
       <div aria-live="polite" className="min-h-6">

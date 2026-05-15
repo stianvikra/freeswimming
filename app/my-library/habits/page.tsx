@@ -73,6 +73,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
             <HabitPerfectDayHub
               initialSnapshot={initialSnapshot}
               preferMobileActiveFocus={preferMobileActiveFocus}
+              userId={user.id}
             />
           </div>
         </div>
