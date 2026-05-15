@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-05-07-app-knowledge-book-phase-1-repo-audit-and-doc-architecture-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-07`
 - `updated`: `2026-05-15`
 
-## Draft Status
+## Closeout Status
 
-This brief is a draft planning artifact until execution starts. Before implementation, the owner and assistant must review and finalize scope, output structure, acceptance criteria, validation gates, scorecard targets, and execution order. Move the brief to `in-progress` only after that final pre-start review is complete.
+Done. Phase 1 shipped in PR #712 and merged on 2026-05-15 as `66a888a`. The merged scope is docs-only and creates the App Knowledge Book audit/architecture foundation without runtime, UI, API, schema, workflow, provider, or config changes.
 
 ## Goal
 
@@ -350,7 +350,7 @@ Closeout candidate after the Phase 1 docs were created:
 | Finance and reporting operations              | `5/5` | `00-repo-audit.md` records finance/reporting-relevant Stripe and reconciliation surfaces with unknowns.            | None.         |
 | i18n operational readiness                    | `5/5` | `00-repo-audit.md` records current i18n docs, root language, and locale-routing unknowns.                          | None.         |
 | Stack-fit and dependency discipline           | `5/5` | Diff remains Markdown-only under `docs/`; no dependencies, scripts, workflows, runtime, or schema changes.         | None.         |
-| Testing and QA automation                     | `5/5` | `git diff --check`, `npm run lint:briefs:all`, and `npm run verify:pre-pr` passed.                                 | None.         |
+| Testing and QA automation                     | `5/5` | `git diff --check`, `npm run lint:briefs:all`, `npm run verify:pre-pr`, `npm run verify:pre-merge`, and CI passed. | None.         |
 | Scalability and cost efficiency               | `5/5` | `living-documentation-plan.md` avoids blind full regeneration and defers tooling until owner-approved.             | None.         |
 | DevOps and rollback readiness                 | `5/5` | `living-documentation-plan.md` defines docs rollback as git revert and future report-only checks first.            | None.         |
 
@@ -395,3 +395,4 @@ Required as an audit-only sweep:
 - 2026-05-15 | implementation-started | Owner explicitly requested execution; brief moved to `in-progress` on branch `app-knowledge-book-phase-1`; scope remains docs-only Phase 1 files, no runtime/UI/API/schema/tooling changes | next: create the seven `docs/app-knowledge-book/` Phase 1 files and run docs-only validation
 - 2026-05-15 | phase-1-docs-created | Created the seven Phase 1 docs under `docs/app-knowledge-book/`: repo audit, README, quality checklist, proposed structure, proposed diagrams, living-documentation plan, and unknowns/risks; no `docs/system-state/*`, scripts, workflows, runtime code, UI, API, schema, provider, or config changes were added | validation: `git diff --check` PASS before release gate | next: run docs-only verification, commit, push, open PR, monitor CI, and run pre-merge gate
 - 2026-05-15 | pre-pr-green | `npm run verify:pre-pr` passed on docs-only lane with 9 changed docs/governance files; `lint:briefs:all`, `lint:quality-gates`, `lint:admin-audit`, `lint:env-parity`, and generated PR body lint passed | next: commit, push, open PR, monitor CI, and run `npm run verify:pre-merge`
+- 2026-05-15 | merged | PR #712 merged as `66a888a`; CI checks were green and `npm run verify:pre-merge` passed on the docs-only lane before merge | next: repo-managed closeout moved this brief to `done`
