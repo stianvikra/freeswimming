@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-15-app-knowledge-book-phase-2-owner-overview-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-15`
 - `updated`: `2026-05-15`
@@ -11,10 +11,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-15`
-- `base`: `main@b2a211f`
+- `base`: `main@fdacbb0`
 - `audit_status`: `ready`
-- `decision`: Use this as the next App Knowledge Book Phase 2A docs-only implementation slice after the owner explicitly says `execute`, `build`, or `implement`.
-- `reason`: Scope was selected after Phase 1 PR `#712` and closeout PR `#713` merged; it is narrow, docs-only, and explicitly avoids generated inventories, scripts, runtime code, UI, schema, provider, and config changes.
+- `decision`: Execute this App Knowledge Book Phase 2A docs-only implementation slice now.
+- `reason`: Scope was refreshed after PR `#714` and repo-managed closeout PR `#715`; the diff remains narrow, docs-only, scorecard-complete, and explicitly avoids generated inventories, scripts, runtime code, UI, schema, provider, and config changes.
 - `must_refresh_before_execution_if`: Phase 1 App Knowledge Book docs change, the owner chooses a different Phase 2 priority, scorecard/audit-gate rules change, or implementation starts from a newer `main` after significant docs/runtime changes.
 
 ## Goal
@@ -75,19 +75,33 @@ The chapter must include:
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for a `10/10` claim in this Phase 2A docs slice:
+Critical target categories for a `10/10` claim in this Phase 2A docs slice are every category mapped
+`target`:
 
 - Product goals and IA
 - UX flow clarity
 - Business logic correctness and data integrity
+- Admin editor ergonomics
+- Data placement and sync boundaries
 - Reliability and failure handling
 - Security and authz
 - Privacy and compliance
 - Content governance
+- Admin workflow and editability
+- Commerce and revenue ops
 - Incident response and support operations
+- Finance and reporting operations
+- i18n operational readiness
 - Stack-fit and dependency discipline
 - Testing and QA automation
+- Scalability and cost efficiency
 - DevOps and rollback readiness
+
+Strict `10/10` mode for this slice:
+
+- every `target` category must close out at `5/5`,
+- every `supporting` category must include enough linked evidence to score `5/5` for the limited docs-only support role,
+- `N/A` is limited to categories that cannot be changed by Markdown-only documentation.
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                | Evidence                                                                  | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------- |
@@ -97,17 +111,17 @@ Critical target categories for a `10/10` claim in this Phase 2A docs slice:
 | Business logic correctness and data integrity | `target`     | Chapter separates repo-proven behavior from `Unknown / To Verify` and does not describe planned features as shipped behavior.                                     | evidence citations + unknown markers                                      | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | Owner overview names admin workspace purpose, high-frequency admin surfaces, Help/Guide, and safe owner paths without duplicating the admin runbooks.             | chapter admin section + links to admin docs/runbooks                      | `5/5`                   |
 | Accessibility (a11y)                          | `N/A`        | N/A because this Markdown-only slice does not change interactive semantics, focus behavior, labels, contrast, or screen-reader flow.                              | docs-only diff review                                                     | `N/A`                   |
-| Performance (CWV + payloads)                  | `supporting` | Supporting only: overview must point to existing performance budgets and verification docs; it does not change route payloads or CWV behavior.                    | link to performance/testing docs                                          | `4/5`                   |
+| Performance (CWV + payloads)                  | `supporting` | Supporting only: overview must point to existing performance budgets and verification docs; it does not change route payloads or CWV behavior.                    | link to performance/testing docs                                          | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Overview names owner-level data boundaries: server-canonical, provider-canonical, local-only, and generated-doc state at a high level.                            | chapter data-boundary section + Phase 1 audit references                  | `5/5`                   |
-| Caching and invalidation strategy             | `supporting` | Supporting only: chapter links to cache/dynamic-route docs where relevant; it does not change any cache or revalidation behavior.                                 | exact links to architecture/testing docs                                  | `4/5`                   |
+| Caching and invalidation strategy             | `supporting` | Supporting only: chapter links to cache/dynamic-route docs where relevant; it does not change any cache or revalidation behavior.                                 | exact links to architecture/testing docs                                  | `5/5`                   |
 | Reliability and failure handling              | `target`     | Chapter gives owner-safe debugging direction and links to incident/support runbooks without inventing unverified recovery paths.                                  | debugging/recovery section + runbook links                                | `5/5`                   |
 | Security and authz                            | `target`     | Chapter explains private gate, auth, admin access, and secret-handling boundaries at owner level, with no secret values or overclaims about provider settings.    | auth/access/security section + no-secret review                           | `5/5`                   |
 | Privacy and compliance                        | `target`     | Chapter avoids personal data and links to existing privacy/GDPR/policy docs for real procedures rather than copying sensitive examples.                           | privacy section + safe examples review                                    | `5/5`                   |
 | Content governance                            | `target`     | Chapter states that stable book chapters are manual and evidence-linked, while volatile inventories remain deferred until explicitly approved.                    | overview maintenance section + README update                              | `5/5`                   |
 | Admin workflow and editability                | `target`     | Overview describes where owner/admin workflows live and when Help/Guide/runbooks must be updated after workflow label/action changes.                             | admin/workflow section + links to Help/Guide/runbooks                     | `5/5`                   |
-| SEO and crawlability                          | `supporting` | Supporting only: overview should point to sitemap/robots/private-posture docs; it does not change metadata, crawl rules, or public route rendering.               | links to SEO/crawl docs                                                   | `4/5`                   |
-| AI discoverability                            | `supporting` | Supporting only: overview should explain that owner-readable docs help human/AI navigation, but no public structured-data or crawl behavior changes.              | AI discoverability note + scope review                                    | `4/5`                   |
-| Analytics and KPI observability               | `supporting` | Supporting only: overview links to analytics/KPI surfaces and safe-payload rules; it does not add or change events.                                               | analytics section + existing docs links                                   | `4/5`                   |
+| SEO and crawlability                          | `supporting` | Supporting only: overview should point to sitemap/robots/private-posture docs; it does not change metadata, crawl rules, or public route rendering.               | links to SEO/crawl docs                                                   | `5/5`                   |
+| AI discoverability                            | `supporting` | Supporting only: overview should explain that owner-readable docs help human/AI navigation, but no public structured-data or crawl behavior changes.              | AI discoverability note + scope review                                    | `5/5`                   |
+| Analytics and KPI observability               | `supporting` | Supporting only: overview links to analytics/KPI surfaces and safe-payload rules; it does not add or change events.                                               | analytics section + existing docs links                                   | `5/5`                   |
 | Commerce and revenue ops                      | `target`     | Owner overview names commerce, checkout, entitlement, finance, and reconciliation docs without asserting Stripe dashboard state beyond repo evidence.             | commerce/revenue section + `Unknown / To Verify` where needed             | `5/5`                   |
 | Incident response and support operations      | `target`     | Chapter provides owner-level path to support, incident, rollback, and debugging runbooks; no raw logs, tickets, messages, or provider responses are copied.       | support/incident section + runbook links                                  | `5/5`                   |
 | Finance and reporting operations              | `target`     | Chapter points to finance/reporting and entitlement reconciliation docs and marks live payout/reporting/provider facts as `Unknown / To Verify` unless evidenced. | finance section + unknown markers                                         | `5/5`                   |
@@ -209,3 +223,5 @@ Owner review should focus on whether the chapter is understandable, accurate, an
 ## Checkpoint Log
 
 - `2026-05-15 | planning | Phase 2A owner overview scope approved after Phase 1 PR #712 and closeout PR #713 merged; planned brief created to lock scope before implementation | next: wait for explicit execute/build/implement before moving brief to in-progress and writing the chapter`
+- `2026-05-15 | main@fdacbb0 | execution started after owner requested strict 10/10 category review and execution; refreshed audit base after task-brief audit gate PR #714 and closeout PR #715, kept the slice docs-only, and moved brief to in-progress | next: write owner overview chapter, update README link, run targeted support-surface sweep and docs-only validation`
+- `2026-05-15 | working tree | owner overview chapter implemented and README linked; targeted support-surface sweep for App Knowledge Book / Owner overview / Phase 2 / docs/system-state / Unknown / To Verify found only docs-scope references; validation PASS: git diff --check, lint:briefs:all, and npm run verify:pre-pr docs-only lane | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`

@@ -10,6 +10,14 @@ repository or was explicitly provided by the owner.
 
 Use `Unknown / To Verify` as the boundary marker for facts that need external confirmation.
 
+## Stable Chapters
+
+Read stable owner-facing chapters first when you want a practical explanation rather than an audit.
+
+1. `chapters/01-owner-overview.md`
+   - What FreeSwimming.org is, who uses it, where the main surfaces live, what not to change
+     casually, how to verify common owner questions, and which facts remain `Unknown / To Verify`.
+
 ## Phase 1 Files
 
 Read in this order:
@@ -32,7 +40,8 @@ Read in this order:
 
 For a new owner:
 
-- Start with `00-repo-audit.md`.
+- Start with `chapters/01-owner-overview.md`.
+- Then read `00-repo-audit.md`.
 - Then read `proposed-structure.md`.
 - Use `quality-checklist.md` before approving any Phase 2 chapter generation.
 
