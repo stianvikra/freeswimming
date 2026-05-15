@@ -17,6 +17,9 @@ Read stable owner-facing chapters first when you want a practical explanation ra
 1. `chapters/01-owner-overview.md`
    - What FreeSwimming.org is, who uses it, where the main surfaces live, what not to change
      casually, how to verify common owner questions, and which facts remain `Unknown / To Verify`.
+2. `chapters/02-product-map.md`
+   - How the main product areas, audiences, route groups, code paths, canonical docs, and known
+     unknowns fit together.
 
 ## Phase 1 Files
 
@@ -41,6 +44,7 @@ Read in this order:
 For a new owner:
 
 - Start with `chapters/01-owner-overview.md`.
+- Then read `chapters/02-product-map.md`.
 - Then read `00-repo-audit.md`.
 - Then read `proposed-structure.md`.
 - Use `quality-checklist.md` before approving any Phase 2 chapter generation.
@@ -73,7 +77,8 @@ For auth, admin access, and private gate:
 
 For course, video/content, progress, workouts, programs, dryland, and habits:
 
-- Start with `00-repo-audit.md`.
+- Start with `chapters/02-product-map.md`.
+- Then use `00-repo-audit.md`.
 - Then use the route inventory, API registry, migrations, `lib/` domain modules, and targeted tests
   named in the audit.
 
