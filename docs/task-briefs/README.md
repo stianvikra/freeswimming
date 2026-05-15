@@ -13,14 +13,43 @@ Store concrete task briefs in this folder using lifecycle subfolders.
 Default flow:
 
 1. create in `planned/`
-2. move to `in-progress/` when implementation starts
-3. move to `done/` after merge
-4. move explicit postponed scope to `deferred/` with rationale and re-entry trigger
+2. refresh or add the Brief Audit Record before use
+3. move to `in-progress/` when implementation starts
+4. move to `done/` after merge
+5. move explicit postponed scope to `deferred/` with rationale and re-entry trigger
+
+## Brief Audit Gate
+
+Before creating, moving, or executing a task brief, add or refresh `## Brief Audit Record`.
+
+Required fields:
+
+- `last_audited`
+- `base`
+- `audit_status`
+- `decision`
+- `reason`
+- `must_refresh_before_execution_if`
+
+Allowed `audit_status` values:
+
+- `ready`: scope, paths, scorecard mapping, validation lane, Help/Guide impact, and support/runbook
+  impact were checked against the stated base.
+- `revise-before-use`: do not execute yet; refresh the brief before implementation.
+- `blocked`: do not execute until the blocker is resolved.
+- `superseded`: do not execute; use the replacement brief named in the decision.
+
+Conservative default for old planned or long-running in-progress briefs is `revise-before-use`.
+Do not mark an old brief `ready` just because it has a scorecard table; current repo scope, paths,
+validation lane, and support-surface impact must be checked first.
+
+Use `docs/runbooks/task-brief-audit-gate.md` as the operational checklist.
 
 Deferred re-entry flow:
 
 1. move from `deferred/` to `planned/` when reprioritized
-2. resume standard lifecycle (`planned` -> `in-progress` -> `done`)
+2. refresh `## Brief Audit Record`
+3. resume standard lifecycle (`planned` -> `in-progress` -> `done`)
 
 When moving to `done/`, add a completion record:
 

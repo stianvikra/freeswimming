@@ -59,6 +59,32 @@ Handoff must include:
 - `created`: `YYYY-MM-DD`
 - `updated`: `YYYY-MM-DD`
 
+## Brief Audit Record
+
+Use this before creating, moving, or executing a brief. The record should be refreshed whenever a
+planned or long-running in-progress brief is picked up after meaningful repo, scorecard, scope, or
+workflow changes.
+
+- `last_audited`: `YYYY-MM-DD`
+- `base`: `main@<short-sha>` or current branch/base evidence
+- `audit_status`: `ready | revise-before-use | blocked | superseded`
+- `decision`: one sentence describing whether this brief should be used now, revised first, blocked,
+  or replaced.
+- `reason`: concise evidence for the decision.
+- `must_refresh_before_execution_if`: concrete triggers that make this audit stale.
+
+Status meanings:
+
+- `ready`: current scope, paths, scorecard mapping, validation lane, and support/Help impact have
+  been checked against the stated base.
+- `revise-before-use`: do not execute yet; refresh scope, paths, scorecard mapping, validation lane,
+  and checkpoint log first.
+- `blocked`: do not execute until the listed external dependency, credential, product decision, or
+  provider fact is resolved.
+- `superseded`: do not execute; use the replacement brief or backlog item named in the decision.
+
+See `docs/runbooks/task-brief-audit-gate.md` for the pre-use checklist.
+
 ## Goal
 
 One sentence: what should be true after this task is done?
