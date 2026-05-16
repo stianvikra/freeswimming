@@ -112,7 +112,7 @@ export default async function PlansPage() {
 
   return (
     <SiteChrome>
-      <PageTemplate size="wide">
+      <PageTemplate size="wide" topInset="flush">
         <TrackEventOnMount
           eventName="plans_viewed"
           payload={{
@@ -174,7 +174,7 @@ export default async function PlansPage() {
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4">
+        <div className="mt-4 grid gap-7 sm:gap-4">
           {products.map((product) => (
             <PlanCard key={product.id} product={product} />
           ))}

@@ -8,7 +8,7 @@ type Props = {
   size?: "default" | "wide";
   surfaceTone?: "default" | "brand";
   showBack?: boolean;
-  topInset?: "default" | "compact" | "tight";
+  topInset?: "default" | "compact" | "tight" | "flush";
 
   /**
    * Best practice:
@@ -56,11 +56,13 @@ export default function PageTemplate({
     <div
       className={[
         "mx-auto w-full px-4",
-        topInset === "tight"
-          ? "pt-[4.25rem] sm:pt-20"
-          : topInset === "compact"
-            ? "pt-20 sm:pt-24"
-            : "pt-24 sm:pt-28",
+        topInset === "flush"
+          ? "pt-10 sm:pt-20"
+          : topInset === "tight"
+            ? "pt-[4.25rem] sm:pt-20"
+            : topInset === "compact"
+              ? "pt-20 sm:pt-24"
+              : "pt-24 sm:pt-28",
         // keep content above any fixed bottom UI (default nav or custom bottom bar)
         withBottomSafeArea ? "pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-10" : "pb-10",
         // helps pages with little content not feel “floating”
