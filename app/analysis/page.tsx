@@ -8,7 +8,7 @@ import ContactForm from "@/components/ContactForm";
 export default function AnalysisPage() {
   return (
     <SiteChrome>
-      <PageTemplate size="wide">
+      <PageTemplate size="wide" topInset="flush">
         <div className="mx-auto max-w-[720px]">
           <ContactForm variant="analysis" />
         </div>

@@ -27,7 +27,7 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
     <SiteChrome mobileNavMode={variant === "preview_access_notify" ? "hidden" : "default"}>
       <PageTemplate
         surfaceTone={variant === "preview_access_notify" ? "brand" : "default"}
-        topInset="tight"
+        topInset={variant === "preview_access_notify" ? "tight" : "flush"}
         withBottomSafeArea={variant === "preview_access_notify" ? false : true}
       >
         <ContactForm variant={variant} />

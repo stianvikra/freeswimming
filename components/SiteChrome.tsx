@@ -289,7 +289,7 @@ function DefaultMobileNavShell({ items }: { items: MobileSegmentedNavItem[] }) {
   return (
     <div
       data-testid="mobile-fixed-nav"
-      className="fixed inset-x-0 bottom-0 z-50 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 bg-gradient-to-t from-white via-white/95 to-white/0 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] sm:hidden"
     >
       <div className="mx-auto max-w-[520px]">
         <MobileSegmentedNav items={items} />
