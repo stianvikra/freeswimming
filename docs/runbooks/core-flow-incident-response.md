@@ -46,7 +46,7 @@ Provide a deterministic first-response flow for production incidents on core rou
 Additional `My Library` sub-route checks:
 
 - `/my-library/goals` -> `/my-library/training` (`My Training`, contextual focus/notes route retained outside top-level My Library cards)
-  - confirm `Use as focus` and `Add note` links include a canonical `goalId` query param,
+  - open the goal row's `Details`, then confirm `Use as focus` and `Add note` links include a canonical `goalId` query param,
   - confirm opening the linked training route preselects the intended goal without mutating the goal row,
   - confirm existing local focus/note draft text is preserved when goal-prefill is applied.
   - confirm collapsed `Add focus` / `Add note` composers reopen with the same local draft text and linked goal context still intact.
