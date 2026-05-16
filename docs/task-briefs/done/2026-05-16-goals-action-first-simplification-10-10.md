@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-16-goals-action-first-simplification-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-16`
 - `updated`: `2026-05-16`
@@ -11,10 +11,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-16`
-- `base`: `main@475c946`
-- `audit_status`: `ready`
-- `decision`: Implement the locked scope on branch `goals-action-first-simplification`.
-- `reason`: `main` is clean; current Goals paths, reference surfaces, scorecard requirements, UI screenshot handoff rules, and the coaching CTA decision were audited and locked; existing in-progress briefs are `revise-before-use` and should not be reused for this slice.
+- `base`: `main@560ab1c`
+- `audit_status`: `closed`
+- `decision`: Implemented and merged via PR #726; post-merge closeout moved this brief to `done`.
+- `reason`: `main` contains the scoped Goals simplification; local pre-merge and required GitHub checks passed before merge; post-merge preflight requested only this repo-managed docs-only lifecycle closeout.
 - `must_refresh_before_execution_if`: `main` changes around Goals, My Training, Habits, Micro Sessions, route labels, support docs, scorecard/lint rules, or the owner changes any scope decision below.
 
 ## Goal
@@ -383,3 +383,4 @@ If any product-rendering files, styles, assets, or export HTML change after capt
 - `2026-05-16` - Validation so far: `./node_modules/.bin/vitest run tests/unit/goals-hub.test.tsx` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm run lint:briefs:all` PASS. Targeted route/label/support sweep completed; current stale `Browse templates` / `Open creator` / moved-action support wording was either updated or confirmed historical/unrelated. Targeted Playwright `npx playwright test tests/e2e/my-library-training-context.spec.ts --project=desktop-chromium` exited `0` but skipped all 4 tests because local dev-login/Supabase test config returned an HTML auth response instead of JSON; full authenticated browser coverage remains for the normal pre-PR/CI gates.
 - `2026-05-16` - Owner explicitly waived the screenshot approval stop and approved merge when done. Adjusted the visible goal-card primary action buttons from dark slate to the same blue primary action style used elsewhere in Goals; reran `./node_modules/.bin/vitest run tests/unit/goals-hub.test.tsx` PASS. Next: run `npm run verify:pre-pr`, commit/push, open PR, monitor CI, run `npm run verify:pre-merge`, then merge if gates stay green.
 - `2026-05-16` - `npm run verify:pre-pr` PASS on the full public lane: lint/quality gates/admin audit/env parity/generated PR-body lint/lint/typecheck/unit/build/perf/e2e completed; Playwright reported `84 passed`, `408 skipped`. Perf budget trend recommended tightening one stretch target after consecutive green runs; hold/defer for this Goals UI slice and record as separate performance-governance follow-up if owner wants to tune budgets next.
+- `2026-05-16` - PR #726 merged to `main` as `560ab1c` after required GitHub checks were green and `npm run verify:pre-merge` PASS on `eadaa90` (`84 passed`, `408 skipped`, pass marker `artifacts/verify-pre-merge/20260516-152920.json`). `npm run post-merge:preflight` requested only this docs-only lifecycle move; closeout branch `goals-action-first-closeout` moves the brief to `done`.
