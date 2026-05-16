@@ -76,5 +76,6 @@ export function isSwimCapabilityLimitsSchemaMissing(
     "max_repeat_distance_m",
     "max_total_distance_m",
     "target_total_distance_m",
+    "replace_swim_capability_limits",
   ]);
 }

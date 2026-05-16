@@ -27,13 +27,16 @@ export default async function MyLibraryProfilePage() {
             hasCssMetric: Boolean(initialSnapshot.cssMetric),
             hasPreferences: Boolean(initialSnapshot.preferences),
             personalRecordCount: initialSnapshot.personalRecords.length,
+            hasSwimCapabilityLimits: initialSnapshot.swimCapabilityLimits.length > 0,
+            swimCapabilityLimitCount: initialSnapshot.swimCapabilityLimits.length,
             profileSchemaReady: initialSnapshot.profileSchemaReady,
             metricsSchemaReady: initialSnapshot.metricsSchemaReady,
             preferencesSchemaReady: initialSnapshot.preferencesSchemaReady,
             personalRecordsSchemaReady: initialSnapshot.personalRecordsSchemaReady,
+            swimCapabilityLimitsSchemaReady: initialSnapshot.swimCapabilityLimitsSchemaReady,
           }}
         />
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
+        <div className="space-y-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">

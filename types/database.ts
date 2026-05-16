@@ -1596,6 +1596,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      replace_swim_capability_limits: {
+        Args: { p_limits: Json };
+        Returns: undefined;
+      };
       training_focus_set_primary: {
         Args: { p_focus_id: string };
         Returns: {

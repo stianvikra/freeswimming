@@ -1,9 +1,11 @@
 "use client";
 
+import { CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   SWIM_CAPABILITY_STROKES,
+  formatSwimCapabilityLimitSummary,
   getSwimCapabilityStrokeLabel,
   type SwimCapabilityLimitInput,
   type SwimCapabilityStroke,
@@ -105,12 +107,46 @@ type SectionSummaryCopy = {
   hasData: boolean;
 };
 
+type ReadinessCard = {
+  key: ProfileSectionKey;
+  label: string;
+  scope: string;
+  summary: string;
+  detail: string;
+  hasData: boolean;
+  hasUnsavedChanges: boolean;
+  isAdvanced?: boolean;
+};
+
+const PROFILE_SECTION_ORDER: ProfileSectionKey[] = [
+  "profile",
+  "css",
+  "preferences",
+  "records",
+  "capabilities",
+];
+const CORE_PROFILE_SECTION_ORDER: ProfileSectionKey[] = [
+  "profile",
+  "css",
+  "preferences",
+  "records",
+];
+const SECTION_LABELS: Record<ProfileSectionKey, string> = {
+  profile: "swimmer identity",
+  css: "CSS",
+  preferences: "training defaults",
+  records: "best times",
+  capabilities: "advanced generator limits",
+};
 const CAPABILITY_INPUT_CLASS =
   "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 const PROFILE_SECTION_HEADER_CLASS =
   "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between";
 const PROFILE_SECTION_TOGGLE_CLASS =
-  "inline-flex h-10 items-center justify-center self-end rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:self-auto";
+  "inline-flex h-10 min-w-10 items-center justify-center gap-2 self-end rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:self-auto";
+const PROFILE_PRIMARY_BUTTON_CLASS =
+  "inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300";
+const PROFILE_SECTION_CLASS = "rounded-2xl border border-slate-200 bg-white p-4 sm:p-5";
 
 function CapabilityInputField({
   label,
@@ -147,6 +183,37 @@ function CapabilityInputField({
         </span>
       </span>
     </label>
+  );
+}
+
+function SectionToggleButton({
+  isOpen,
+  label,
+  testId,
+  controls,
+  onClick,
+}: {
+  isOpen: boolean;
+  label: string;
+  testId: string;
+  controls: string;
+  onClick: () => void;
+}) {
+  const Icon = isOpen ? ChevronDown : ChevronRight;
+
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-label={`${isOpen ? "Hide" : "Edit"} ${label}`}
+      aria-expanded={isOpen}
+      aria-controls={controls}
+      onClick={onClick}
+      className={PROFILE_SECTION_TOGGLE_CLASS}
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      <span className="hidden sm:inline">{isOpen ? "Hide" : "Edit"}</span>
+    </button>
   );
 }
 
@@ -318,6 +385,55 @@ function findRecordById(records: PersonalRecordView[], recordId: string | null) 
   return records.find((record) => record.id === recordId) ?? null;
 }
 
+function getSectionHasData(snapshot: AthleteProfileSnapshot, section: ProfileSectionKey) {
+  switch (section) {
+    case "profile":
+      return Boolean(snapshot.profile);
+    case "css":
+      return Boolean(snapshot.cssMetric);
+    case "preferences":
+      return Boolean(snapshot.preferences);
+    case "capabilities":
+      return snapshot.swimCapabilityLimits.length > 0;
+    case "records":
+      return snapshot.personalRecords.length > 0;
+  }
+}
+
+function getSectionHasIssue(snapshot: AthleteProfileSnapshot, section: ProfileSectionKey) {
+  switch (section) {
+    case "profile":
+      return !snapshot.profileSchemaReady || Boolean(snapshot.loadError);
+    case "css":
+      return !snapshot.metricsSchemaReady || Boolean(snapshot.metricsLoadError);
+    case "preferences":
+      return !snapshot.preferencesSchemaReady || Boolean(snapshot.preferencesLoadError);
+    case "capabilities":
+      return (
+        !snapshot.swimCapabilityLimitsSchemaReady || Boolean(snapshot.swimCapabilityLimitsLoadError)
+      );
+    case "records":
+      return !snapshot.personalRecordsSchemaReady || Boolean(snapshot.personalRecordsLoadError);
+  }
+}
+
+function getRecommendedSetupSection(snapshot: AthleteProfileSnapshot): ProfileSectionKey | null {
+  const coreSection = CORE_PROFILE_SECTION_ORDER.find(
+    (section) => getSectionHasIssue(snapshot, section) || !getSectionHasData(snapshot, section)
+  );
+
+  if (coreSection) return coreSection;
+
+  if (
+    getSectionHasIssue(snapshot, "capabilities") ||
+    !getSectionHasData(snapshot, "capabilities")
+  ) {
+    return "capabilities";
+  }
+
+  return null;
+}
+
 function buildDefaultDisclosureState({
   snapshot,
   hasProfileDraft,
@@ -333,33 +449,24 @@ function buildDefaultDisclosureState({
   hasCapabilitiesDraft: boolean;
   hasRecordDraft: boolean;
 }): SectionDisclosureState {
-  return {
-    profile:
-      hasProfileDraft ||
-      !snapshot.profileSchemaReady ||
-      Boolean(snapshot.loadError) ||
-      !snapshot.profile,
-    css:
-      hasCssDraft ||
-      !snapshot.metricsSchemaReady ||
-      Boolean(snapshot.metricsLoadError) ||
-      !snapshot.cssMetric,
-    preferences:
-      hasPreferencesDraft ||
-      !snapshot.preferencesSchemaReady ||
-      Boolean(snapshot.preferencesLoadError) ||
-      !snapshot.preferences,
-    capabilities:
-      hasCapabilitiesDraft ||
-      !snapshot.swimCapabilityLimitsSchemaReady ||
-      Boolean(snapshot.swimCapabilityLimitsLoadError) ||
-      snapshot.swimCapabilityLimits.length === 0,
-    records:
-      hasRecordDraft ||
-      !snapshot.personalRecordsSchemaReady ||
-      Boolean(snapshot.personalRecordsLoadError) ||
-      snapshot.personalRecords.length === 0,
+  const draftState: SectionDisclosureState = {
+    profile: hasProfileDraft,
+    css: hasCssDraft,
+    preferences: hasPreferencesDraft,
+    capabilities: hasCapabilitiesDraft,
+    records: hasRecordDraft,
   };
+
+  if (Object.values(draftState).some(Boolean)) {
+    return draftState;
+  }
+
+  const recommendedSection = getRecommendedSetupSection(snapshot);
+
+  return PROFILE_SECTION_ORDER.reduce((result, section) => {
+    result[section] = section === recommendedSection;
+    return result;
+  }, {} as SectionDisclosureState);
 }
 
 function normalizeDisclosureState(
@@ -523,6 +630,44 @@ function buildRecordsSectionSummary(snapshot: AthleteProfileSnapshot): SectionSu
     detail: snapshot.personalRecords
       .slice(0, 2)
       .map((record) => record.eventLabel)
+      .join(" · "),
+    hasData: true,
+  };
+}
+
+function buildCapabilitiesSectionSummary(snapshot: AthleteProfileSnapshot): SectionSummaryCopy {
+  if (!snapshot.swimCapabilityLimitsSchemaReady) {
+    return {
+      summary: "Advanced generator limits are still syncing.",
+      detail: "Open this section later if generated sessions need stricter stroke or skill caps.",
+      hasData: false,
+    };
+  }
+
+  if (snapshot.swimCapabilityLimitsLoadError) {
+    return {
+      summary: "Could not load advanced generator limits.",
+      detail: snapshot.swimCapabilityLimitsLoadError,
+      hasData: false,
+    };
+  }
+
+  if (snapshot.swimCapabilityLimits.length === 0) {
+    return {
+      summary: "No advanced generator limits saved yet.",
+      detail:
+        "Optional caps for strokes, drills, and kick when generated sessions need guardrails.",
+      hasData: false,
+    };
+  }
+
+  return {
+    summary: `${snapshot.swimCapabilityLimits.length} generator limit${
+      snapshot.swimCapabilityLimits.length === 1 ? "" : "s"
+    } saved.`,
+    detail: snapshot.swimCapabilityLimits
+      .slice(0, 2)
+      .map((limit) => formatSwimCapabilityLimitSummary(limit))
       .join(" · "),
     hasData: true,
   };
@@ -797,6 +942,16 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
   function setSectionOpen(section: ProfileSectionKey, nextOpen: boolean) {
     setSectionOpenState((current) => ({ ...current, [section]: nextOpen }));
+  }
+
+  function openSectionFromReadiness(section: ProfileSectionKey) {
+    setSectionOpen(section, true);
+    window.setTimeout(() => {
+      document.querySelector(`[data-profile-section="${section}"]`)?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }, 0);
   }
 
   function getSectionNotice(section: ProfileSectionKey) {
@@ -1362,7 +1517,62 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
   const profileSummary = buildProfileSectionSummary(snapshot);
   const cssSummary = buildCssSectionSummary(snapshot);
   const preferencesSummary = buildPreferencesSectionSummary(snapshot);
+  const capabilitiesSummary = buildCapabilitiesSectionSummary(snapshot);
   const recordsSummary = buildRecordsSectionSummary(snapshot);
+  const readinessCards: ReadinessCard[] = [
+    {
+      key: "profile",
+      label: "Identity",
+      scope: "Core",
+      summary: profileSummary.summary,
+      detail: profileSummary.detail,
+      hasData: profileSummary.hasData,
+      hasUnsavedChanges: hasUnsavedProfileChanges,
+    },
+    {
+      key: "css",
+      label: "CSS",
+      scope: "Core",
+      summary: cssSummary.summary,
+      detail: cssSummary.detail,
+      hasData: cssSummary.hasData,
+      hasUnsavedChanges: hasUnsavedCssChanges,
+    },
+    {
+      key: "preferences",
+      label: "Defaults",
+      scope: "Core",
+      summary: preferencesSummary.summary,
+      detail: preferencesSummary.detail,
+      hasData: preferencesSummary.hasData,
+      hasUnsavedChanges: hasUnsavedPreferencesChanges,
+    },
+    {
+      key: "records",
+      label: "Best times",
+      scope: "Core",
+      summary: recordsSummary.summary,
+      detail: recordsSummary.detail,
+      hasData: recordsSummary.hasData,
+      hasUnsavedChanges: hasUnsavedRecordChanges,
+    },
+    {
+      key: "capabilities",
+      label: "Generator limits",
+      scope: "Advanced",
+      summary: capabilitiesSummary.summary,
+      detail: capabilitiesSummary.detail,
+      hasData: capabilitiesSummary.hasData,
+      hasUnsavedChanges: hasUnsavedCapabilityLimitsChanges,
+      isAdvanced: true,
+    },
+  ];
+  const recommendedSection =
+    readinessCards.find((card) => card.hasUnsavedChanges)?.key ??
+    getRecommendedSetupSection(snapshot);
+  const recommendedCard = readinessCards.find((card) => card.key === recommendedSection) ?? null;
+  const readyCoreCount = readinessCards.filter((card) => !card.isAdvanced && card.hasData).length;
+  const savedSetupCount = readinessCards.filter((card) => card.hasData).length;
   const profileNotice = getSectionNotice("profile");
   const cssNotice = getSectionNotice("css");
   const preferencesNotice = getSectionNotice("preferences");
@@ -1433,9 +1643,104 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       ) : null}
 
       <section
+        data-testid="athlete-profile-readiness"
+        className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 sm:p-5"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl space-y-2">
+            <p className="text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+              Profile readiness
+            </p>
+            <h2 className="text-lg font-semibold text-slate-950">
+              {recommendedCard ? "Next setup action" : "Profile setup is ready"}
+            </h2>
+            <p className="text-sm text-slate-700">
+              {recommendedCard
+                ? `${recommendedCard.label}: ${recommendedCard.summary}`
+                : "Core profile setup is complete. Advanced generator limits stay available when you need tighter session guardrails."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-800">
+              {readyCoreCount}/4 core ready
+            </span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+              {savedSetupCount}/5 saved
+            </span>
+            {recommendedCard ? (
+              <button
+                type="button"
+                data-testid="athlete-profile-next-action"
+                onClick={() => openSectionFromReadiness(recommendedCard.key)}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+              >
+                {recommendedCard.hasUnsavedChanges
+                  ? `Resume ${SECTION_LABELS[recommendedCard.key]}`
+                  : `Set up ${SECTION_LABELS[recommendedCard.key]}`}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 xl:grid xl:grid-cols-5 xl:overflow-visible xl:pb-0">
+          {readinessCards.map((card) => {
+            const isRecommended = card.key === recommendedSection;
+            const statusLabel = card.hasUnsavedChanges
+              ? "Unsaved"
+              : card.hasData
+                ? "Ready"
+                : card.isAdvanced
+                  ? "Optional"
+                  : "Needs setup";
+
+            return (
+              <button
+                key={card.key}
+                type="button"
+                data-testid={`athlete-profile-readiness-${card.key}`}
+                onClick={() => openSectionFromReadiness(card.key)}
+                className={`min-w-40 flex-1 rounded-2xl border bg-white p-3 text-left transition hover:border-blue-200 hover:bg-white xl:min-w-0 ${
+                  isRecommended ? "border-blue-300 shadow-sm" : "border-slate-200"
+                }`}
+              >
+                <span className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                  <span className="text-xs font-semibold text-slate-500 uppercase">
+                    {card.scope}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      card.hasUnsavedChanges
+                        ? "bg-amber-50 text-amber-800"
+                        : card.hasData
+                          ? "bg-emerald-50 text-emerald-800"
+                          : card.isAdvanced
+                            ? "bg-slate-100 text-slate-600"
+                            : "bg-blue-50 text-blue-800"
+                    }`}
+                  >
+                    {card.hasData ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    ) : null}
+                    {statusLabel}
+                  </span>
+                </span>
+                <span className="mt-2 block text-sm font-semibold text-slate-950">
+                  {card.label}
+                </span>
+                <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-600">
+                  {card.summary}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
         data-testid="athlete-profile-section-profile"
+        data-profile-section="profile"
         data-section-open={sectionOpenState.profile ? "true" : "false"}
-        className="rounded-3xl border border-slate-200 bg-white p-5"
+        className={PROFILE_SECTION_CLASS}
       >
         <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
@@ -1453,16 +1758,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <p className="text-sm font-medium text-slate-900">{profileSummary.summary}</p>
             <p className="text-sm text-slate-600">{profileSummary.detail}</p>
           </div>
-          <button
-            type="button"
-            data-testid="athlete-profile-section-toggle-profile"
-            aria-expanded={sectionOpenState.profile}
-            aria-controls="athlete-profile-section-body-profile"
+          <SectionToggleButton
+            isOpen={sectionOpenState.profile}
+            label="swimmer identity"
+            testId="athlete-profile-section-toggle-profile"
+            controls="athlete-profile-section-body-profile"
             onClick={() => toggleSection("profile")}
-            className={PROFILE_SECTION_TOGGLE_CLASS}
-          >
-            {sectionOpenState.profile ? "Collapse" : "Edit"}
-          </button>
+          />
         </div>
 
         {profileNotice && !sectionOpenState.profile ? (
@@ -1571,7 +1873,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 data-testid="athlete-profile-save"
                 type="submit"
                 disabled={pendingProfileSave || !isOnline}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className={PROFILE_PRIMARY_BUTTON_CLASS}
               >
                 {pendingProfileSave ? "Saving..." : "Save swimmer profile"}
               </button>
@@ -1590,8 +1892,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       <section
         data-testid="athlete-profile-section-css"
+        data-profile-section="css"
         data-section-open={sectionOpenState.css ? "true" : "false"}
-        className="rounded-3xl border border-slate-200 bg-white p-5"
+        className={PROFILE_SECTION_CLASS}
       >
         <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
@@ -1607,16 +1910,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <p className="text-sm font-medium text-slate-900">{cssSummary.summary}</p>
             <p className="text-sm text-slate-600">{cssSummary.detail}</p>
           </div>
-          <button
-            type="button"
-            data-testid="athlete-profile-section-toggle-css"
-            aria-expanded={sectionOpenState.css}
-            aria-controls="athlete-profile-section-body-css"
+          <SectionToggleButton
+            isOpen={sectionOpenState.css}
+            label="CSS"
+            testId="athlete-profile-section-toggle-css"
+            controls="athlete-profile-section-body-css"
             onClick={() => toggleSection("css")}
-            className={PROFILE_SECTION_TOGGLE_CLASS}
-          >
-            {sectionOpenState.css ? "Collapse" : "Edit"}
-          </button>
+          />
         </div>
 
         {cssNotice && !sectionOpenState.css ? (
@@ -1704,7 +2004,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 data-testid="athlete-profile-css-save"
                 type="submit"
                 disabled={pendingCssSave || !isOnline}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className={PROFILE_PRIMARY_BUTTON_CLASS}
               >
                 {pendingCssSave ? "Saving..." : "Save CSS"}
               </button>
@@ -1724,8 +2024,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       <section
         data-testid="athlete-profile-section-preferences"
+        data-profile-section="preferences"
         data-section-open={sectionOpenState.preferences ? "true" : "false"}
-        className="rounded-3xl border border-slate-200 bg-white p-5"
+        className={PROFILE_SECTION_CLASS}
       >
         <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
@@ -1743,16 +2044,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <p className="text-sm font-medium text-slate-900">{preferencesSummary.summary}</p>
             <p className="text-sm text-slate-600">{preferencesSummary.detail}</p>
           </div>
-          <button
-            type="button"
-            data-testid="athlete-profile-section-toggle-preferences"
-            aria-expanded={sectionOpenState.preferences}
-            aria-controls="athlete-profile-section-body-preferences"
+          <SectionToggleButton
+            isOpen={sectionOpenState.preferences}
+            label="training defaults"
+            testId="athlete-profile-section-toggle-preferences"
+            controls="athlete-profile-section-body-preferences"
             onClick={() => toggleSection("preferences")}
-            className={PROFILE_SECTION_TOGGLE_CLASS}
-          >
-            {sectionOpenState.preferences ? "Collapse" : "Edit"}
-          </button>
+          />
         </div>
 
         {preferencesNotice && !sectionOpenState.preferences ? (
@@ -1888,7 +2186,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 data-testid="athlete-preferences-save"
                 type="submit"
                 disabled={pendingPreferencesSave || !isOnline}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className={PROFILE_PRIMARY_BUTTON_CLASS}
               >
                 {pendingPreferencesSave ? "Saving..." : "Save preferences"}
               </button>
@@ -1908,13 +2206,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       <section
         data-testid="athlete-profile-section-capabilities"
+        data-profile-section="capabilities"
         data-section-open={sectionOpenState.capabilities ? "true" : "false"}
-        className="rounded-3xl border border-slate-200 bg-white p-5"
+        className={PROFILE_SECTION_CLASS}
       >
         <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
-              Swim capabilities
+              Advanced generator limits
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Stroke and skill limits</h2>
@@ -1924,17 +2223,16 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 </span>
               ) : null}
             </div>
+            <p className="text-sm font-medium text-slate-900">{capabilitiesSummary.summary}</p>
+            <p className="text-sm text-slate-600">{capabilitiesSummary.detail}</p>
           </div>
-          <button
-            type="button"
-            data-testid="athlete-profile-section-toggle-capabilities"
-            aria-expanded={sectionOpenState.capabilities}
-            aria-controls="athlete-profile-section-body-capabilities"
+          <SectionToggleButton
+            isOpen={sectionOpenState.capabilities}
+            label="advanced generator limits"
+            testId="athlete-profile-section-toggle-capabilities"
+            controls="athlete-profile-section-body-capabilities"
             onClick={() => toggleSection("capabilities")}
-            className={PROFILE_SECTION_TOGGLE_CLASS}
-          >
-            {sectionOpenState.capabilities ? "Collapse" : "Edit"}
-          </button>
+          />
         </div>
 
         {capabilitiesNotice && !sectionOpenState.capabilities ? (
@@ -2073,7 +2371,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     data-testid="athlete-capabilities-save"
                     type="submit"
                     disabled={pendingCapabilityLimitsSave || !isOnline}
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className={PROFILE_PRIMARY_BUTTON_CLASS}
                   >
                     {pendingCapabilityLimitsSave ? "Saving..." : "Save limits"}
                   </button>
@@ -2095,8 +2393,9 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       <section
         data-testid="athlete-profile-section-records"
+        data-profile-section="records"
         data-section-open={sectionOpenState.records ? "true" : "false"}
-        className="rounded-3xl border border-slate-200 bg-white p-5"
+        className={PROFILE_SECTION_CLASS}
       >
         <div className={PROFILE_SECTION_HEADER_CLASS}>
           <div className="space-y-2">
@@ -2114,16 +2413,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <p className="text-sm font-medium text-slate-900">{recordsSummary.summary}</p>
             <p className="text-sm text-slate-600">{recordsSummary.detail}</p>
           </div>
-          <button
-            type="button"
-            data-testid="athlete-profile-section-toggle-records"
-            aria-expanded={sectionOpenState.records}
-            aria-controls="athlete-profile-section-body-records"
+          <SectionToggleButton
+            isOpen={sectionOpenState.records}
+            label="best times"
+            testId="athlete-profile-section-toggle-records"
+            controls="athlete-profile-section-body-records"
             onClick={() => toggleSection("records")}
-            className={PROFILE_SECTION_TOGGLE_CLASS}
-          >
-            {sectionOpenState.records ? "Collapse" : "Edit"}
-          </button>
+          />
         </div>
 
         {recordsNotice && !sectionOpenState.records ? (
@@ -2355,7 +2651,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       data-testid="athlete-record-save"
                       type="submit"
                       disabled={pendingRecordSave || !isOnline}
-                      className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      className={PROFILE_PRIMARY_BUTTON_CLASS}
                     >
                       {pendingRecordSave
                         ? "Saving..."

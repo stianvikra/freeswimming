@@ -3,6 +3,7 @@ import { buildSwimCapabilityLimitUpserts } from "@/lib/athlete-profile/capabilit
 import { isSwimCapabilityLimitsSchemaMissing } from "@/lib/athlete-profile/schema";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
+import type { Json } from "@/types/database";
 
 type SwimCapabilityLimitsRequestBody = Parameters<typeof buildSwimCapabilityLimitUpserts>[0];
 
@@ -51,41 +52,20 @@ export async function PUT(request: Request) {
     );
   }
 
-  const deleteResult = await supabase
-    .from("swim_capability_limits")
-    .delete()
-    .eq("user_id", user.id);
+  const replaceResult = await supabase.rpc("replace_swim_capability_limits", {
+    p_limits: nextLimits.value as unknown as Json,
+  });
 
-  if (isSwimCapabilityLimitsSchemaMissing(deleteResult.error)) {
+  if (isSwimCapabilityLimitsSchemaMissing(replaceResult.error)) {
     return applySupabaseCookies(noStoreJson({ ok: false, error: SYNCING_ERROR }, { status: 503 }));
   }
 
-  if (deleteResult.error) {
-    console.error("[AthleteProfileApi] Could not clear swim capability limits", deleteResult.error);
-    return applySupabaseCookies(noStoreJson({ ok: false, error: SAVE_ERROR }, { status: 500 }));
-  }
-
-  if (nextLimits.value.length > 0) {
-    const insertResult = await supabase.from("swim_capability_limits").insert(
-      nextLimits.value.map((limit) => ({
-        user_id: user.id,
-        ...limit,
-      }))
+  if (replaceResult.error) {
+    console.error(
+      "[AthleteProfileApi] Could not replace swim capability limits",
+      replaceResult.error
     );
-
-    if (isSwimCapabilityLimitsSchemaMissing(insertResult.error)) {
-      return applySupabaseCookies(
-        noStoreJson({ ok: false, error: SYNCING_ERROR }, { status: 503 })
-      );
-    }
-
-    if (insertResult.error) {
-      console.error(
-        "[AthleteProfileApi] Could not save swim capability limits",
-        insertResult.error
-      );
-      return applySupabaseCookies(noStoreJson({ ok: false, error: SAVE_ERROR }, { status: 500 }));
-    }
+    return applySupabaseCookies(noStoreJson({ ok: false, error: SAVE_ERROR }, { status: 500 }));
   }
 
   return applySupabaseCookies(
