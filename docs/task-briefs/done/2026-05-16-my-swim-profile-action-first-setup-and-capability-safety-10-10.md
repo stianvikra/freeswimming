@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-16`
 - `updated`: `2026-05-16`
@@ -243,6 +243,54 @@ Implementation validation when this brief is executed:
 - Mobile and desktop viewport screenshots.
 - Vercel preview after PR checks are green.
 
+## Completion Record
+
+- `merged_pr`: `#728`
+- `merge_commit`: `a9daafb Make profile setup action-first and capability saves atomic (#728)`
+- `completed`: `2026-05-16`
+- `implementation_commit`: `c4d0c78`
+- `validation`: targeted Vitest PASS for `tests/unit/athlete-profile-hub.test.tsx`, `tests/unit/athlete-profile-routes.test.ts`, and `tests/unit/swim-capability-limits.test.ts`; `npm run lint`, `npm run typecheck`, and `npm run verify:pre-pr` PASS full lane on `c4d0c78`; `npm run verify:pre-merge` PASS on `c4d0c78`; GitHub required checks PASS including `verify`.
+- `screenshot_handoff`: owner-approved before PR gates; artifacts at `output/my-swim-profile-action-first-2026-05-16-193012`; no product-rendering files changed after final capture.
+- `support_impact`: `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, and related registry docs updated for readiness, advanced generator limits, and failed save diagnosis.
+- `policy_impact`: PASS in PR body; no privacy/cookie/GDPR policy text change required because the slice adds no new processor, consent boundary, retention category, or public data surface.
+- `perf_budget_decision`: `hold`; full gate reported repeated green weekly runs, but this Profile slice changed no route budget and deferred tightening to a separate performance-governance slice.
+- `10/10 claim`: yes for the scoped My Swim Profile action-first setup and capability-save safety workstream.
+
+Critical target categories for `10/10` claim all achieved `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Accessibility (a11y)
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                                                        | Remaining Gap                                  |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Profile now opens around setup readiness, one recommended action, compact status rows, and advanced generator limits hierarchy. | None for scoped Profile setup.                 |
+| UX flow clarity                               | `5/5`          | First-use disclosure, readiness actions, advanced limits placement, and existing-data summaries are covered by tests/screens.   | None.                                          |
+| Visual design quality                         | `5/5`          | Owner-approved mobile/desktop before/after screenshot handoff confirms reduced clutter and scan-friendly layout.                | None.                                          |
+| Business logic correctness and data integrity | `5/5`          | Capability save route uses atomic replacement RPC; tests cover success, validation failure, and persistence failure no-loss.    | None.                                          |
+| Accessibility (a11y)                          | `5/5`          | Section toggles/actions remain labelled and keyboard reachable; component tests assert accessible controls and status copy.     | None.                                          |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency or broad data fetch; build/perf budgets passed in `verify:pre-pr` and `verify:pre-merge`.                     | Budget tightening deferred outside this slice. |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical profile/capability data and local-only disclosure/draft state stayed explicit in code, tests, and docs.        | None.                                          |
+| Caching and invalidation strategy             | `5/5`          | Successful saves refresh local route state/readiness; failed saves keep prior server truth and actionable recovery state.       | None.                                          |
+| Reliability and failure handling              | `5/5`          | Failed saves preserve existing capability rows and keep the relevant section open with recoverable error behavior.              | None.                                          |
+| Security and authz                            | `5/5`          | Authenticated owner-scoped API routes remain fail-closed; unauthenticated and invalid payload paths are covered by tests.       | None.                                          |
+| Privacy and compliance                        | `5/5`          | Analytics/log review kept raw profile, record, CSS, preference, and capability values out of unsafe payloads.                   | None.                                          |
+| Content governance                            | `5/5`          | Route/label/support sweep aligned Profile, readiness, advanced generator limits, docs, and test assertions.                     | None.                                          |
+| Analytics and KPI observability               | `5/5`          | Safe profile action/readiness context remained non-sensitive and adequate for setup flow observation.                           | None.                                          |
+| Incident response and support operations      | `5/5`          | Auth/account support runbook documents hidden sections, failed saves, stale readiness, draft restore, and advanced limits.      | None.                                          |
+| i18n operational readiness                    | `5/5`          | Changed labels are short, stable, and not grammar-coupled; key copy is asserted in component tests.                             | None.                                          |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AthleteProfileHub`, existing API/test/Supabase patterns, Tailwind tokens, and generated DB type workflow; no dep added. | None.                                          |
+| Testing and QA automation                     | `5/5`          | Targeted unit/API tests, screenshot handoff, full `verify:pre-pr`, full `verify:pre-merge`, and green CI covered the slice.     | None.                                          |
+| Scalability and cost efficiency               | `5/5`          | Readiness and limits logic stay bounded by existing profile sections and capability row count; no polling/background job added. | None.                                          |
+| DevOps and rollback readiness                 | `5/5`          | Additive Supabase RPC migration was applied before final gate; rollback is revert of `a9daafb` plus migration review.           | None.                                          |
+
 ## Help / Guide Impact
 
 Required unless implementation proves labels and support behavior did not change:
@@ -311,3 +359,4 @@ Evidence:
 - `2026-05-16 | screenshot handoff stop | captured required before/after mobile and desktop screenshots in \`output/my-swim-profile-action-first-2026-05-16-193012\` after regenerating after-screenshots for the final mobile readiness-row adjustment; no product-rendering files changed after the final capture; next: wait for owner screenshot approval before \`npm run verify:pre-pr\`, commit/push, and PR flow`
 - `2026-05-16 | owner approved screenshots | owner approved the screenshot handoff; the linked Supabase remote database was updated with \`20260516120000_replace_swim_capability_limits_rpc.sql\` after the first pre-PR run found migration drift; next: rerun \`npm run verify:pre-pr\` after adding explicit route/label/support sweep evidence`
 - `2026-05-16 | pre-pr gate passed | \`npm run verify:pre-pr\` passed full lane after the Supabase migration was applied and route/label/support evidence was added; result included lint, typecheck, unit tests, build, perf budgets, and Playwright (84 passed, 408 skipped in existing dev-login-gated matrix); perf trend reported 5 consecutive weekly green runs, and this Profile slice records a hold/defer decision for budget tightening because no route budget is being changed here; next: commit, push, open PR, monitor CI, then run \`npm run verify:pre-merge\` before merge recommendation`
+- `2026-05-16 | done | PR #728 merged to main as \`a9daafb\` after owner approval, green GitHub CI, green local \`verify:pre-pr\`, and green local \`verify:pre-merge\`; post-merge preflight surfaced this repo-managed docs-only closeout, moved brief from in-progress to done, and recorded achieved 10/10 target evidence | next: validate, merge, sync, and rerun post-merge preflight for the closeout PR`
