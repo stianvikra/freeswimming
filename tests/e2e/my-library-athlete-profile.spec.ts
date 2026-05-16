@@ -128,9 +128,6 @@ test.describe("my library athlete profile", () => {
     if ((await displayNameInput.count()) === 0) {
       test.skip(true, "Athlete profile schema is not available in this environment.");
     }
-    const personalRecordDistanceInput = page.getByTestId("athlete-record-distance-m");
-    const hasPersonalRecordControls = (await personalRecordDistanceInput.count()) > 0;
-
     await displayNameInput.fill("Pool draft");
     await openAthleteProfileSection(page, "css");
     await page.getByTestId("athlete-profile-css-pace").fill("1:58");
@@ -138,8 +135,10 @@ test.describe("my library athlete profile", () => {
     await page.getByTestId("athlete-preferences-day-monday").check();
     await page.getByTestId("athlete-preferences-weekly-session-count").fill("13");
     await page.getByTestId("athlete-preferences-session-minutes").selectOption("60");
+    await openAthleteProfileSection(page, "records");
+    const personalRecordDistanceInput = page.getByTestId("athlete-record-distance-m");
+    const hasPersonalRecordControls = (await personalRecordDistanceInput.count()) > 0;
     if (hasPersonalRecordControls) {
-      await openAthleteProfileSection(page, "records");
       await personalRecordDistanceInput.fill("200");
       await page.getByTestId("athlete-record-stroke").selectOption("freestyle");
       await page.getByTestId("athlete-record-course").selectOption("pool_25m");
@@ -194,6 +193,7 @@ test.describe("my library athlete profile", () => {
     ).toBeVisible();
     await waitForAthleteProfileClientReady(page);
 
+    await openAthleteProfileSection(page, "records");
     const distanceInput = page.getByTestId("athlete-record-distance-m");
     if ((await distanceInput.count()) === 0) {
       test.skip(true, "Personal records schema is not available in this environment.");

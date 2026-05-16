@@ -75,6 +75,36 @@ describe("AthleteProfileHub", () => {
     ).toBeInTheDocument();
   });
 
+  it("opens only the recommended missing setup section by default", () => {
+    render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+
+    expect(screen.getByTestId("athlete-profile-readiness")).toBeInTheDocument();
+    expect(screen.getByTestId("athlete-profile-next-action")).toHaveTextContent(
+      "Set up swimmer identity"
+    );
+    expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
+      "data-section-open",
+      "true"
+    );
+    expect(screen.getByTestId("athlete-profile-section-css")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
+    expect(screen.getByTestId("athlete-profile-section-preferences")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
+    expect(screen.getByTestId("athlete-profile-section-records")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
+    expect(screen.getByTestId("athlete-profile-section-capabilities")).toHaveAttribute(
+      "data-section-open",
+      "false"
+    );
+    expect(screen.getAllByText("Advanced generator limits").length).toBeGreaterThan(0);
+  });
+
   it("saves profile updates and refreshes current snapshot", async () => {
     vi.stubGlobal(
       "fetch",
@@ -206,6 +236,7 @@ describe("AthleteProfileHub", () => {
 
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-css"));
     fireEvent.change(screen.getByTestId("athlete-profile-css-pace"), {
       target: { value: "1:58" },
     });
@@ -218,6 +249,7 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("CSS saved.")).toBeInTheDocument();
     });
 
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-preferences"));
     fireEvent.change(screen.getByTestId("athlete-preferences-pool-length"), {
       target: { value: "25" },
     });
@@ -235,8 +267,8 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("Training preferences saved.")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("1:58/100m")).toBeInTheDocument();
-    expect(screen.getAllByText("25m pool").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1:58/100m").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/25m pool/).length).toBeGreaterThan(0);
   });
 
   it("saves and deletes personal records", async () => {
@@ -290,6 +322,7 @@ describe("AthleteProfileHub", () => {
 
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-records"));
     fireEvent.change(screen.getByTestId("athlete-record-distance-m"), {
       target: { value: "100" },
     });
@@ -362,6 +395,46 @@ describe("AthleteProfileHub", () => {
       "true"
     );
     expect(screen.getByTestId("athlete-profile-display-name")).toHaveValue("Poolside Stian");
+  });
+
+  it("keeps advanced generator limits open when save fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: "Could not save stroke and skill limits right now.",
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+      )
+    );
+
+    render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
+
+    fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-capabilities"));
+    fireEvent.change(screen.getByTestId("athlete-capability-drill-max-repeat"), {
+      target: { value: "25" },
+    });
+    fireEvent.click(screen.getByTestId("athlete-capabilities-save"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Could not save stroke and skill limits right now.")
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("athlete-profile-section-capabilities")).toHaveAttribute(
+      "data-section-open",
+      "true"
+    );
+    expect(screen.getByTestId("athlete-capability-drill-max-repeat")).toHaveValue("25");
   });
 
   it("persists disclosure state locally without storing sensitive values", async () => {

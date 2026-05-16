@@ -24,6 +24,7 @@ import {
   GET as getAthleteProfile,
   PUT as putAthleteProfile,
 } from "@/app/api/my-library/profile/route";
+import { PUT as putAthleteCapabilities } from "@/app/api/my-library/profile/capabilities/route";
 
 function applyResponseCookiesIdentity<T>(response: T): T {
   return response;
@@ -44,26 +45,30 @@ function buildRouteClient(userId: string | null) {
   };
 }
 
+function buildEmptyProfileSnapshot() {
+  return {
+    profileSchemaReady: true,
+    metricsSchemaReady: true,
+    preferencesSchemaReady: true,
+    personalRecordsSchemaReady: true,
+    swimCapabilityLimitsSchemaReady: true,
+    loadError: null,
+    metricsLoadError: null,
+    preferencesLoadError: null,
+    personalRecordsLoadError: null,
+    swimCapabilityLimitsLoadError: null,
+    profile: null,
+    cssMetric: null,
+    preferences: null,
+    personalRecords: [],
+    swimCapabilityLimits: [],
+  };
+}
+
 describe("athlete profile routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
-    loadAthleteProfileSnapshotMock.mockResolvedValue({
-      profileSchemaReady: true,
-      metricsSchemaReady: true,
-      preferencesSchemaReady: true,
-      personalRecordsSchemaReady: true,
-      swimCapabilityLimitsSchemaReady: true,
-      loadError: null,
-      metricsLoadError: null,
-      preferencesLoadError: null,
-      personalRecordsLoadError: null,
-      swimCapabilityLimitsLoadError: null,
-      profile: null,
-      cssMetric: null,
-      preferences: null,
-      personalRecords: [],
-      swimCapabilityLimits: [],
-    });
+    loadAthleteProfileSnapshotMock.mockResolvedValue(buildEmptyProfileSnapshot());
   });
 
   afterEach(() => {
@@ -184,5 +189,163 @@ describe("athlete profile routes", () => {
       },
       { onConflict: "user_id" }
     );
+  });
+
+  it("fails closed for unauthenticated swim capability limits PUT", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue(buildRouteClient(null));
+
+    const response = await putAthleteCapabilities(
+      new Request("http://127.0.0.1:3000/api/my-library/profile/capabilities", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ limits: [] }),
+      })
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects invalid swim capability limit payloads before persistence", async () => {
+    const rpc = vi.fn();
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: { id: "user-1" } },
+          }),
+        },
+        rpc,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await putAthleteCapabilities(
+      new Request("http://127.0.0.1:3000/api/my-library/profile/capabilities", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          limits: [{ kind: "stroke", stroke: "dogpaddle", maxRepeatDistanceM: 25 }],
+        }),
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("replaces swim capability limits through one atomic owner-scoped RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const supabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "user-1" } },
+        }),
+      },
+      rpc,
+    };
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase,
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+    loadAthleteProfileSnapshotMock.mockResolvedValue({
+      ...buildEmptyProfileSnapshot(),
+      swimCapabilityLimits: [
+        {
+          id: "limit-1",
+          kind: "drill",
+          stroke: null,
+          strokeLabel: null,
+          maxRepeatDistanceM: 25,
+          maxRepeatDistanceLabel: "25m",
+          maxTotalDistanceM: null,
+          maxTotalDistanceLabel: null,
+          targetTotalDistanceM: 200,
+          targetTotalDistanceLabel: "200m",
+          createdAt: "2026-05-16T10:00:00.000Z",
+          updatedAt: "2026-05-16T10:00:00.000Z",
+        },
+      ],
+    });
+
+    const response = await putAthleteCapabilities(
+      new Request("http://127.0.0.1:3000/api/my-library/profile/capabilities", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          limits: [{ kind: "drill", maxRepeatDistanceM: 25, targetTotalDistanceM: 200 }],
+        }),
+      })
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(rpc).toHaveBeenCalledWith("replace_swim_capability_limits", {
+      p_limits: [
+        {
+          limit_kind: "drill",
+          stroke: null,
+          max_repeat_distance_m: 25,
+          max_total_distance_m: null,
+          target_total_distance_m: 200,
+        },
+      ],
+    });
+    expect(loadAthleteProfileSnapshotMock).toHaveBeenCalledWith(supabase, "user-1");
+  });
+
+  it("does not reload or report success when atomic capability replacement fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const rpc = vi.fn().mockResolvedValue({
+      error: {
+        code: "23514",
+        message: "constraint failed",
+      },
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: { id: "user-1" } },
+          }),
+        },
+        rpc,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await putAthleteCapabilities(
+      new Request("http://127.0.0.1:3000/api/my-library/profile/capabilities", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          limits: [{ kind: "kick", maxRepeatDistanceM: 25, targetTotalDistanceM: 200 }],
+        }),
+      })
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Could not save stroke and skill limits right now.");
+    expect(consoleError).toHaveBeenCalledWith(
+      "[AthleteProfileApi] Could not replace swim capability limits",
+      {
+        code: "23514",
+        message: "constraint failed",
+      }
+    );
+    expect(loadAthleteProfileSnapshotMock).not.toHaveBeenCalled();
   });
 });
