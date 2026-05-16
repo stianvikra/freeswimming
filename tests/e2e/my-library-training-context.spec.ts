@@ -62,9 +62,20 @@ async function ensureGoalAvailableForBridge(page: Page): Promise<GoalBridgeSelec
   let useAsFocusLink = page.getByRole("link", { name: "Use as focus" }).first();
 
   if ((await useAsFocusLink.count()) === 0) {
-    const browseTemplatesButton = page.getByRole("button", { name: "Browse templates" });
-    if ((await browseTemplatesButton.count()) > 0) {
-      await browseTemplatesButton.click();
+    const firstDetailsButton = page.getByRole("button", { name: "Details" }).first();
+    if ((await firstDetailsButton.count()) > 0) {
+      await firstDetailsButton.click();
+      useAsFocusLink = page.getByRole("link", { name: "Use as focus" }).first();
+    }
+  }
+
+  if ((await useAsFocusLink.count()) === 0) {
+    const useTemplateButton = page.getByRole("button", { name: "Use template" }).first();
+    if ((await useTemplateButton.count()) === 0) {
+      const addGoalButton = page.getByRole("button", { name: "Add goal" });
+      if ((await addGoalButton.count()) > 0) {
+        await addGoalButton.click();
+      }
     }
     createdGoalTitle = "1000m under 10:00";
     const createGoalResponse = page.waitForResponse(
@@ -80,8 +91,10 @@ async function ensureGoalAvailableForBridge(page: Page): Promise<GoalBridgeSelec
       .click();
     await createGoalResponse;
 
+    const createdGoalCard = page.locator("article").filter({ hasText: createdGoalTitle }).first();
+    await createdGoalCard.getByRole("button", { name: "Details" }).click();
     useAsFocusLink = page
-      .locator("article")
+      .getByTestId(/^goal-card-/)
       .filter({ hasText: createdGoalTitle })
       .getByRole("link", {
         name: "Use as focus",
@@ -120,13 +133,18 @@ async function archiveCreatedGoalIfNeeded(
 
   await gotoWithTransientRetry(page, "/my-library/goals", 60_000);
   await waitForGoalsHubClientReady(page);
+  const goalCard = page.getByTestId(`goal-card-${goalId}`);
+  const detailsButton = goalCard.getByRole("button", { name: "Details" });
+  if ((await detailsButton.getAttribute("aria-expanded")) !== "true") {
+    await detailsButton.click();
+  }
   const archiveGoalResponse = page.waitForResponse(
     (response) =>
       response.request().method() === "PATCH" &&
       response.url().includes(`/api/goals/${goalId}`) &&
       response.ok()
   );
-  await page.getByTestId(`goal-card-${goalId}`).getByRole("button", { name: "Archive" }).click();
+  await goalCard.getByRole("button", { name: "Archive" }).click();
   await archiveGoalResponse;
 }
 

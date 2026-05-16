@@ -60,13 +60,9 @@ describe("GoalsHub", () => {
   it("shows explicit bridge actions into My Training for active goals", () => {
     render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
 
-    expect(
-      screen.getByRole("heading", { name: "Turn goals into next-session work" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open My Training" })).toHaveAttribute(
-      "href",
-      "/my-library/training"
-    );
+    expect(screen.getByRole("heading", { name: "Your goals" })).toBeInTheDocument();
+    expect(screen.queryByTestId("goal-use-focus-goal-1")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("goal-details-toggle-goal-1"));
     expect(screen.getByTestId("goal-use-focus-goal-1")).toHaveAttribute(
       "href",
       "/my-library/training?goalId=goal-1&intent=focus"
@@ -119,19 +115,20 @@ describe("GoalsHub", () => {
     );
 
     expect(screen.queryByText("A calm starting point.")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Browse templates" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add goal" }));
     expect(screen.getByText("A calm starting point.")).toBeInTheDocument();
   });
 
-  it("collapses the custom goal creator when the user already has goals", () => {
+  it("collapses the add goal surface when the user already has goals", () => {
     render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
 
     expect(screen.queryByLabelText("Goal title")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Open creator" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add goal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     expect(screen.getByLabelText("Goal title")).toBeInTheDocument();
   });
 
-  it("filters the goals list from the summary cards", () => {
+  it("filters the goals list from one filter control", () => {
     render(
       <GoalsHub
         initialGoals={[
@@ -152,6 +149,8 @@ describe("GoalsHub", () => {
       />
     );
 
+    expect(screen.getByTestId("goals-filter-control")).toBeInTheDocument();
+    expect(screen.getAllByTestId(/goals-filter-/)).toHaveLength(5);
     fireEvent.click(screen.getByTestId("goals-filter-achieved"));
 
     expect(screen.getByTestId("goal-card-goal-achieved")).toBeInTheDocument();
@@ -200,6 +199,7 @@ describe("GoalsHub", () => {
       />
     );
 
+    fireEvent.click(screen.getByTestId("goal-details-toggle-goal-1"));
     fireEvent.click(screen.getByRole("button", { name: "Clear best result" }));
 
     await waitFor(() => {
