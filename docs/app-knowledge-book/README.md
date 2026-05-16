@@ -23,6 +23,9 @@ Read stable owner-facing chapters first when you want a practical explanation ra
 3. `chapters/03-stack-and-runtime.md`
    - The stable technical foundation: framework, runtime, package tooling, config boundaries,
      verification gates, CI/release surfaces, and what remains `Unknown / To Verify`.
+4. `chapters/04-auth-access-and-private-gate.md`
+   - Current sign-in, Supabase session, admin access, preview access, private gate/site lock,
+     dev-bypass, support, and future refresh boundaries.
 
 ## Phase 1 Files
 
@@ -82,7 +85,8 @@ For payments, entitlements, and finance:
 
 For auth, admin access, and private gate:
 
-- Start with the auth and access section in `00-repo-audit.md`.
+- Start with `chapters/04-auth-access-and-private-gate.md`.
+- Then use the auth and access section in `00-repo-audit.md`.
 - Then open `docs/architecture/data-access-authz-cache-contract-registry.md`,
   `docs/runbooks/private-access-gate.md`, and `docs/runbooks/auth-account-support.md`.
 

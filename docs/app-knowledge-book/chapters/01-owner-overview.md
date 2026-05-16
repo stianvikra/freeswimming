@@ -248,6 +248,16 @@ Update this chapter when any of these change:
 
 Keep updates small. Link to canonical docs instead of copying large tables that will drift.
 
+## Known Future Refresh Points
+
+Refresh this chapter when these planned or likely workstreams change repo-proven behavior:
+
+- Auth/access changes such as passkeys, admin user management, tester access, or private-gate
+  launch posture changes.
+- New primary product areas, route groups, or owner workflows move from planned to shipped.
+- Generated `docs/system-state/*` inventories are approved or created.
+- Provider/control-plane facts are owner-verified and should replace `Unknown / To Verify` markers.
+
 ## Next Reading Paths
 
 Owner learning:

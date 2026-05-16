@@ -20,6 +20,8 @@ A chapter is acceptable only when it meets all of these checks:
 - It explains the owner-facing purpose before implementation detail.
 - It links to canonical existing docs instead of copying large blocks that will drift.
 - It names the maintenance trigger: what kind of code or product change should update the chapter.
+- It includes `Known Future Refresh Points` when planned or likely workstreams should revisit the
+  chapter later.
 - It keeps examples small and safe.
 - It has a clear last-review or evidence-date note when external/control-plane facts are involved.
 
@@ -102,6 +104,7 @@ Do not create diagrams that are decorative, overly broad, or hard to update.
 Each chapter must declare:
 
 - Update trigger.
+- Known future refresh points when planned or likely work should revisit the chapter.
 - Primary owner or owning surface.
 - Source-of-truth paths.
 - Whether updates are manual, generated, or both.
@@ -130,6 +133,8 @@ Before approving a Phase 2+ chapter:
 - [ ] Tests or verification commands are named.
 - [ ] Existing canonical docs are linked instead of duplicated.
 - [ ] Maintenance trigger is documented.
+- [ ] Known future refresh points are documented when planned or likely changes should revisit the
+      chapter.
 - [ ] The chapter can be reviewed independently in a PR.
 
 ## Strict 10/10 Phase 1 Closeout Checks
