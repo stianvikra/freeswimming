@@ -20,6 +20,9 @@ Read stable owner-facing chapters first when you want a practical explanation ra
 2. `chapters/02-product-map.md`
    - How the main product areas, audiences, route groups, code paths, canonical docs, and known
      unknowns fit together.
+3. `chapters/03-stack-and-runtime.md`
+   - The stable technical foundation: framework, runtime, package tooling, config boundaries,
+     verification gates, CI/release surfaces, and what remains `Unknown / To Verify`.
 
 ## Phase 1 Files
 
@@ -45,6 +48,7 @@ For a new owner:
 
 - Start with `chapters/01-owner-overview.md`.
 - Then read `chapters/02-product-map.md`.
+- Then read `chapters/03-stack-and-runtime.md` when you need the technical foundation.
 - Then read `00-repo-audit.md`.
 - Then read `proposed-structure.md`.
 - Use `quality-checklist.md` before approving any Phase 2 chapter generation.
@@ -58,9 +62,16 @@ For debugging:
 
 For deployment and release:
 
-- Start with `living-documentation-plan.md`.
+- Start with `chapters/03-stack-and-runtime.md`.
+- Then use `living-documentation-plan.md`.
 - Then use `docs/testing-strategy.md`, `docs/checklists/release-pr-checklist.md`,
   `docs/runbooks/post-merge-local-sync.md`, and the verification scripts listed in `package.json`.
+
+For stack and local runtime:
+
+- Start with `living-documentation-plan.md`.
+- Then use `chapters/03-stack-and-runtime.md`, `docs/architecture.md`, `package.json`,
+  `.nvmrc`, `next.config.ts`, and `playwright.config.ts`.
 
 For payments, entitlements, and finance:
 
