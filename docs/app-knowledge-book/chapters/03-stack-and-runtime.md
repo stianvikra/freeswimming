@@ -325,6 +325,17 @@ Update this chapter when any of these change:
 
 Keep updates small. Link to canonical files and runbooks instead of copying generated inventories.
 
+## Known Future Refresh Points
+
+Refresh this chapter when these planned or likely workstreams change repo-proven behavior:
+
+- Node, Next.js, React, TypeScript, Tailwind, ESLint, Playwright, Vitest, or dependency policy
+  changes.
+- Verification lanes, branch protection, CI checks, PR automation, or post-merge closeout behavior
+  changes.
+- Supabase, Stripe, email, Upstash, Vercel, private-gate, or secret/config boundaries change.
+- Generated `docs/system-state/*` inventories are approved or created.
+
 ## Next Reading Paths
 
 Owner orientation:

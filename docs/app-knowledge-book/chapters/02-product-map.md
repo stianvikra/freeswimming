@@ -490,6 +490,16 @@ Update this chapter when any of these change:
 
 Keep updates small. Link to canonical docs instead of copying large inventories.
 
+## Known Future Refresh Points
+
+Refresh this chapter when these planned or likely workstreams change repo-proven behavior:
+
+- Admin user management, tester access, passkeys, or private-gate launch posture changes.
+- Visual coaching, AI/program planning, workouts, dryland, habits, or training-domain epics ship
+  new primary surfaces.
+- Commerce, finance, contact/messages, analytics, SEO, or i18n provider boundaries change.
+- Generated `docs/system-state/*` inventories are approved or created.
+
 ## Next Reading Paths
 
 Owner learning:
