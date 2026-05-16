@@ -3,10 +3,93 @@
 ## Metadata
 
 - `id`: `2026-05-16-app-knowledge-book-phase-2d-auth-access-private-gate-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-16`
 - `updated`: `2026-05-16`
+
+## Closeout Status
+
+Done. Phase 2D shipped in PR `#724` and merged on `2026-05-16` as `a97105e`. The merged scope is
+docs-only and created the fourth owner-readable App Knowledge Book chapter without runtime, UI, API,
+schema, workflow, provider, config, script, route, sitemap, metadata, robots, dependency, package,
+lockfile, or generated-inventory changes.
+
+## Completion Record
+
+- PR: `https://github.com/stianvikra/freeswimming/pull/724`
+- Merge: `docs/app-knowledge-auth-access-private-gate` -> `main`
+- Merge commit: `a97105e`
+- Delivered files:
+  - `docs/app-knowledge-book/chapters/04-auth-access-and-private-gate.md`
+  - `docs/app-knowledge-book/README.md`
+  - `docs/app-knowledge-book/quality-checklist.md`
+  - `docs/app-knowledge-book/chapters/01-owner-overview.md`
+  - `docs/app-knowledge-book/chapters/02-product-map.md`
+  - `docs/app-knowledge-book/chapters/03-stack-and-runtime.md`
+  - `docs/task-briefs/in-progress/2026-05-16-app-knowledge-book-phase-2d-auth-access-private-gate-10-10.md`
+- Lifecycle closeout:
+  - this brief moved to `docs/task-briefs/done/`.
+- DevOps/workflow changes:
+  - none; no scripts, workflows, release gates, runtime code, provider settings, routes, sitemap,
+    metadata, robots, config, package, dependency, or lockfile changed.
+- Secrets used:
+  - none. No secret values, raw env values, cookies, tokens, request IPs, provider responses,
+    personal data, sign-in codes, or user free-text content were added.
+- Validation evidence:
+  - Prettier write: PASS
+  - `git diff --check`: PASS
+  - targeted route/label/support-surface sweep for `App Knowledge Book`, `Auth Access`,
+    `Private Gate`, `Private Access`, `Phase 2D`, `04-auth-access-and-private-gate`,
+    `Maintenance Trigger`, `Known Future Refresh Points`, `docs/system-state`, and
+    `Unknown / To Verify`: docs-scope only
+  - targeted brief lint: PASS
+  - `npm run lint:briefs:all`: PASS
+  - `npm run verify:pre-pr`: PASS, docs-only lane
+  - GitHub checks on PR `#724`: PASS (`verify`, `Analyze (javascript-typescript)`, `CodeQL`,
+    `Vercel`, `Vercel Preview Comments`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`,
+    `size-check`)
+  - `npm run verify:pre-merge`: PASS, docs-only lane
+
+10/10 claim: yes, for the Phase 2D docs-only Auth, Access, and Private Gate scope.
+
+Critical target categories for the 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Content governance
+- Admin workflow and editability
+- Incident response and support operations
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- Scalability and cost efficiency
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                  |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Chapter explains what auth/access/private-gate protects and where owner paths start.      |
+| UX flow clarity                               | `5/5`          | Owner paths cover sign-in, preview access, admin access, support, and safe-change checks. |
+| Business logic correctness and data integrity | `5/5`          | Current repo-proven behavior is separated from planned and unknown provider facts.        |
+| Admin editor ergonomics                       | `5/5`          | Admin role levels and support docs are named without changing admin workflows.            |
+| Data placement and sync boundaries            | `5/5`          | Session, provider, cookie/local, server, and generated-doc boundaries are explicit.       |
+| Caching and invalidation strategy             | `5/5`          | Route auth/cache contracts are linked without changing cache behavior.                    |
+| Reliability and failure handling              | `5/5`          | Sign-in, preview unlock, admin access, and private-gate failures point to runbooks.       |
+| Security and authz                            | `5/5`          | Fail-closed boundaries and secret-handling rules are documented without raw values.       |
+| Privacy and compliance                        | `5/5`          | Chapter avoids personal data, sign-in codes, provider responses, and raw logs.            |
+| Content governance                            | `5/5`          | Stable chapters now include future-refresh guidance and checklist enforcement.            |
+| Admin workflow and editability                | `5/5`          | Access-related support/update triggers are documented without Help/Guide behavior change. |
+| Incident response and support operations      | `5/5`          | Owner-level support/runbook paths are linked for auth/access/private-gate failures.       |
+| Stack-fit and dependency discipline           | `5/5`          | Diff is Markdown-only with no package, dependency, tooling, or config change.             |
+| Testing and QA automation                     | `5/5`          | Brief lint, docs-only pre-PR, CI, and pre-merge gates passed.                             |
+| Scalability and cost efficiency               | `5/5`          | Chapter stays concise and defers volatile/generated inventories.                          |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only rollback is normal git revert; no release tooling changed.                      |
 
 ## Brief Audit Record
 
@@ -296,3 +379,4 @@ Owner review should verify:
 - `2026-05-16 | planning | owner approved creating this planned Phase 2D brief and asked to make chapter maintainability explicit now instead of waiting; scope keeps implementation gated and adds the rule that stable chapters need both Maintenance Trigger and Known Future Refresh Points | next: wait for owner to say execute/build/implement before moving this brief to in-progress and writing 04-auth-access-and-private-gate.md`
 - `2026-05-16 | in-progress | owner explicitly requested execution; moved brief to in-progress on branch docs/app-knowledge-auth-access-private-gate and started docs-only implementation for docs/app-knowledge-book/chapters/04-auth-access-and-private-gate.md plus README/checklist/chapter refresh-point updates | next: finish docs, run support sweep and docs-only validation gates`
 - `2026-05-16 | pre-pr-ready | implemented docs/app-knowledge-book/chapters/04-auth-access-and-private-gate.md, README link, quality-checklist refresh-point rule, and Known Future Refresh Points in chapters 01-03; targeted support-surface sweep for App Knowledge Book / Auth Access / Private Gate / Phase 2D / 04-auth-access-and-private-gate / Maintenance Trigger / Known Future Refresh Points / docs/system-state / Unknown To Verify found docs-scope references only; validation PASS: Prettier write, git diff --check, targeted brief lint, npm run lint:briefs:all, and npm run verify:pre-pr docs-only lane | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`
+- `2026-05-16 | merged + closeout | PR #724 merged to main as a97105e after local npm run verify:pre-merge and required GitHub checks passed; repo-managed closeout moved this brief from in-progress to done and recorded shipped scope, validation evidence, and 10/10 target-category scores | next: none`
