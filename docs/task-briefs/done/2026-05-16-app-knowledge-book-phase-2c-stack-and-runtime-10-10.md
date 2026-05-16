@@ -3,10 +3,84 @@
 ## Metadata
 
 - `id`: `2026-05-16-app-knowledge-book-phase-2c-stack-and-runtime-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-16`
 - `updated`: `2026-05-16`
+
+## Closeout Status
+
+Done. Phase 2C shipped in PR `#722` and merged on `2026-05-16` as `b6e6d83`. The merged scope is
+docs-only and created the third owner-readable App Knowledge Book chapter without runtime, UI, API,
+schema, workflow, provider, config, script, route, sitemap, metadata, robots, dependency, package,
+lockfile, or generated-inventory changes.
+
+## Completion Record
+
+- PR: `https://github.com/stianvikra/freeswimming/pull/722`
+- Merge: `docs/app-knowledge-stack-runtime` -> `main`
+- Merge commit: `b6e6d83`
+- Delivered files:
+  - `docs/app-knowledge-book/chapters/03-stack-and-runtime.md`
+  - `docs/app-knowledge-book/README.md`
+  - `docs/task-briefs/in-progress/2026-05-16-app-knowledge-book-phase-2c-stack-and-runtime-10-10.md`
+- Lifecycle closeout:
+  - this brief moved to `docs/task-briefs/done/`.
+- DevOps/workflow changes:
+  - none; no scripts, workflows, release gates, runtime code, provider settings, routes, sitemap,
+    metadata, robots, config, package, dependency, or lockfile changed.
+- Secrets used:
+  - none. No secret values, raw env values, cookies, tokens, request IPs, provider responses,
+    personal data, or user free-text content were added.
+- Validation evidence:
+  - `git diff --check`: PASS
+  - targeted route/label/support-surface sweep for `App Knowledge Book`, `Stack and Runtime`,
+    `Stack And Runtime`, `Phase 2C`, `03-stack-and-runtime`, `docs/system-state`, and
+    `Unknown / To Verify`: docs-scope only
+  - `npm run lint:briefs:all`: PASS
+  - `npm run verify:pre-pr`: PASS, docs-only lane
+  - GitHub checks on PR `#722`: PASS (`verify`, `Analyze (javascript-typescript)`, `CodeQL`,
+    `Vercel`, `Vercel Preview Comments`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`,
+    `size-check`)
+  - `npm run verify:pre-merge`: PASS, docs-only lane
+
+10/10 claim: yes, for the Phase 2C docs-only Stack and Runtime scope.
+
+Critical target categories for the 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Performance (CWV + payloads)
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Content governance
+- Incident response and support operations
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- Scalability and cost efficiency
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                          |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Chapter explains the platform foundation and where stack/runtime facts live.      |
+| UX flow clarity                               | `5/5`          | Owner paths cover stack, runtime, setup, verification, CI, release, and risk.     |
+| Business logic correctness and data integrity | `5/5`          | Repo-proven facts are separated from provider facts marked `Unknown / To Verify`. |
+| Performance (CWV + payloads)                  | `5/5`          | Performance-budget ownership and verification commands are named.                 |
+| Data placement and sync boundaries            | `5/5`          | Repo, config, provider, local, and generated-doc boundaries are explicit.         |
+| Caching and invalidation strategy             | `5/5`          | Cache and route freshness contracts are linked without behavior changes.          |
+| Reliability and failure handling              | `5/5`          | Verification, CI, release, incident, sandbox, and debug runbooks are linked.      |
+| Security and authz                            | `5/5`          | Env, secret, private-gate, admin, and server/client boundaries are documented.    |
+| Privacy and compliance                        | `5/5`          | Sensitive data is excluded and privacy/compliance docs are linked.                |
+| Content governance                            | `5/5`          | Stable manual chapter links canonical docs and includes a maintenance trigger.    |
+| Incident response and support operations      | `5/5`          | Owner-level support and rollback paths are linked without raw logs.               |
+| Stack-fit and dependency discipline           | `5/5`          | Diff is Markdown-only with no dependency, package, tooling, or config change.     |
+| Testing and QA automation                     | `5/5`          | Brief lint, docs-only pre-PR, CI, and pre-merge gates passed.                     |
+| Scalability and cost efficiency               | `5/5`          | Chapter stays concise and defers volatile generated inventories.                  |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only rollback is normal git revert; release/post-merge docs are linked.      |
 
 ## Brief Audit Record
 
