@@ -36,7 +36,7 @@ function skipUnlessMobileChromium(testInfo: TestInfo) {
 }
 
 async function getPlansPrimaryAction(page: Page) {
-  const purchaseActions = page.getByRole("button", { name: "Buy now" });
+  const purchaseActions = page.getByRole("button", { name: /^(Buy now|Open secure checkout)$/ });
   if ((await purchaseActions.count()) > 0) {
     return purchaseActions.first();
   }

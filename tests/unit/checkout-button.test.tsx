@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
@@ -9,6 +9,7 @@ vi.mock("@/lib/analytics/client", () => ({
 
 describe("CheckoutButton", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
@@ -42,5 +43,12 @@ describe("CheckoutButton", () => {
       productId: "guide_poolside",
       cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
     });
+  });
+
+  it("allows a clearer visible checkout label without changing the default contract", () => {
+    render(<CheckoutButton productId="guide_poolside" label="Open secure checkout" />);
+
+    expect(screen.getByRole("button", { name: "Open secure checkout" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Buy now" })).not.toBeInTheDocument();
   });
 });
