@@ -34,7 +34,7 @@ export default function AuthErrorNotice({ message, cooldownUntilMs }: Props) {
 
   const content = useMemo(() => {
     if (!hasCooldown) return message;
-    if (remainingSeconds <= 0) return "You can request a new login code now.";
+    if (remainingSeconds <= 0) return "You can request a new sign-in email now.";
     return formatLoginCodeCooldownMessageFromSeconds(remainingSeconds);
   }, [hasCooldown, message, remainingSeconds]);
 

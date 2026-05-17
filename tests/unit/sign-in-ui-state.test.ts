@@ -57,7 +57,7 @@ describe("sign-in ui state helpers", () => {
     const state = deriveSignInRequestState(
       {
         sent: true,
-        error: "Could not verify sign-in code.",
+        error: "Could not verify the one-time code.",
       },
       3_000
     );

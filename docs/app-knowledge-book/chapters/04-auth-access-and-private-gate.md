@@ -11,12 +11,12 @@ Evidence boundary:
 - Confirmed repo facts cite exact paths.
 - Provider dashboards, live auth settings, deployed env settings, and production control-plane state
   are `Unknown / To Verify` unless repo or owner-provided evidence proves them.
-- This chapter does not include secret values, raw env values, cookies, tokens, sign-in codes,
+- This chapter does not include secret values, raw env values, cookies, tokens, one-time codes,
   request IPs, provider responses, personal data, or user free-text content.
 
 Evidence date:
 
-- Reviewed on `2026-05-16` against `main@c6b8e2b`.
+- Reviewed on `2026-05-17` against `main@eae8817`.
 - External/control-plane facts remain `Unknown / To Verify` unless explicitly marked otherwise.
 
 ## Why It Matters
@@ -83,8 +83,16 @@ The user-facing sign-in page is `app/auth/sign-in/page.tsx`.
 
 Current behavior:
 
-- Users enter an email address and receive a one-time code.
-- The code form verifies through `verifySignInCode()` in `app/auth/sign-in/actions.ts`.
+- Users enter an email address and receive a secure sign-in email.
+- The primary path is the secure email link; the same email also includes a one-time code fallback.
+- iPhone Home Screen app users may see the email link open in Safari instead of the installed app;
+  the robust recovery path is to return to the Home Screen app and enter the one-time code there.
+- The Supabase Magic Link email template must include `{{ .ConfirmationURL }}` for the primary
+  sign-in link and `{{ .Token }}` for the fallback code; the recommended brand image is the hosted
+  PNG lockup at `/logos/brand/lockup-domain-blue.png`.
+- `/auth/callback` uses the route-handler Supabase client so successful link callbacks apply
+  session cookies to the redirect response before sending the user to the safe `next` path.
+- The fallback code form verifies through `verifySignInCode()` in `app/auth/sign-in/actions.ts`.
 - Safe redirect targets are normalized through `lib/auth/next-path.ts`.
 - Request cooldown and resend behavior are handled by helpers in `lib/auth/`.
 - Email send errors are classified so support can distinguish cooldowns, provider limits, delivery

@@ -70,7 +70,7 @@ export default async function ClaimPage({ searchParams }: Props) {
               href={signInHref}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
-              I already have a sign-in code
+              I already requested a sign-in email
             </Link>
             <Link
               href="/programs"

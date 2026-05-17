@@ -43,7 +43,7 @@ export function classifySignInEmailError(
   if (status === 429 || message.includes("rate limit") || code.includes("rate_limit")) {
     return {
       kind: "rate_limited",
-      userMessage: "Please wait about a minute before requesting a new login code.",
+      userMessage: "Please wait about a minute before requesting a new sign-in email.",
     };
   }
 

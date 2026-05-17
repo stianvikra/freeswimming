@@ -33,8 +33,8 @@ export default function AuthResendButton({ cooldownUntilMs }: Props) {
   const label = pending
     ? "Resending..."
     : hasCooldown
-      ? `Resend in ${remainingSeconds}s`
-      : "Resend code";
+      ? `Resend email in ${remainingSeconds}s`
+      : "Resend sign-in email";
 
   return (
     <button

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getEmailOtpType } from "@/lib/auth/email-otp";
 import { getSafeNextPath } from "@/lib/auth/next-path";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -9,24 +9,29 @@ export async function GET(request: Request) {
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = getEmailOtpType(requestUrl.searchParams.get("type"));
   const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"));
-  const supabase = await createServerSupabaseClient();
+  const hasAuthCallbackInput = Boolean(code || (tokenHash && type));
+  const routeClient = hasAuthCallbackInput ? await createRouteHandlerSupabaseClient() : null;
 
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (code && routeClient) {
+    const { error } = await routeClient.supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+      return routeClient.applySupabaseCookies(
+        NextResponse.redirect(new URL(nextPath, requestUrl.origin))
+      );
     }
   }
 
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
+  if (tokenHash && type && routeClient) {
+    const { error } = await routeClient.supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type,
     });
 
     if (!error) {
-      return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+      return routeClient.applySupabaseCookies(
+        NextResponse.redirect(new URL(nextPath, requestUrl.origin))
+      );
     }
   }
 
@@ -34,8 +39,9 @@ export async function GET(request: Request) {
   fallback.searchParams.set("next", nextPath);
   fallback.searchParams.set(
     "error",
-    "Could not verify sign-in. Request a new login code and try again."
+    "Could not verify sign-in. Request a new sign-in email and try again."
   );
 
-  return NextResponse.redirect(fallback);
+  const response = NextResponse.redirect(fallback);
+  return routeClient ? routeClient.applySupabaseCookies(response) : response;
 }
