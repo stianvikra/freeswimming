@@ -15,7 +15,7 @@ describe("sign-in email error classification", () => {
       })
     ).toEqual({
       kind: "rate_limited",
-      userMessage: "Please wait about a minute before requesting a new login code.",
+      userMessage: "Please wait about a minute before requesting a new sign-in email.",
     });
   });
 

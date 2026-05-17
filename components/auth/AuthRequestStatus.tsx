@@ -56,9 +56,9 @@ export default function AuthRequestStatus({ sent, error, cooldownUntilMs }: Prop
     state === "cooldown"
       ? remainingSeconds > 0
         ? formatLoginCodeCooldownMessageFromSeconds(remainingSeconds)
-        : "You can request a new login code now."
+        : "You can request a new sign-in email now."
       : state === "sent"
-        ? "Code sent. Check your email, then enter it below. If you don't see it, check your spam/junk folder."
+        ? "Sign-in email sent. Open the secure link first. If you're using the iPhone Home Screen app or the link opens in Safari, enter the one-time code below instead. Check spam/junk if needed."
         : error;
 
   const style = STYLE_BY_STATE[state];

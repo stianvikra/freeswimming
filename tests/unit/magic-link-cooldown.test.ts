@@ -15,10 +15,10 @@ describe("magic link cooldown helpers", () => {
 
   it("formats cooldown message with proper singular/plural", () => {
     expect(formatLoginCodeCooldownMessageFromSeconds(1)).toBe(
-      "Please wait 1 second before requesting a new login code."
+      "Please wait 1 second before requesting a new sign-in email."
     );
     expect(formatLoginCodeCooldownMessage(2_000)).toBe(
-      "Please wait 2 seconds before requesting a new login code."
+      "Please wait 2 seconds before requesting a new sign-in email."
     );
   });
 

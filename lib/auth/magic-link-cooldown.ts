@@ -7,7 +7,7 @@ export function toRetrySeconds(retryAfterMs: number): number {
 }
 
 export function formatLoginCodeCooldownMessageFromSeconds(seconds: number): string {
-  return `Please wait ${seconds} second${seconds === 1 ? "" : "s"} before requesting a new login code.`;
+  return `Please wait ${seconds} second${seconds === 1 ? "" : "s"} before requesting a new sign-in email.`;
 }
 
 export function formatLoginCodeCooldownMessage(retryAfterMs: number): string {

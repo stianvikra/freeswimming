@@ -475,7 +475,7 @@ export async function verifySignInCode(formData: FormData) {
   if (!/^[A-Za-z0-9]{6,10}$/.test(token)) {
     redirect(
       buildSignInPath(nextPath, {
-        error: "Enter the sign-in code from your email.",
+        error: "Enter the one-time code from your sign-in email.",
         sent: "1",
         email,
       })
@@ -524,7 +524,7 @@ export async function verifySignInCode(formData: FormData) {
 
   redirect(
     buildSignInPath(nextPath, {
-      error: "Could not verify sign-in code. Request a new email and try again.",
+      error: "Could not verify the one-time code. Request a new sign-in email and try again.",
       sent: "1",
       email,
     })

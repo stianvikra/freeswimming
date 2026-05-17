@@ -16,7 +16,7 @@ type Props = {
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in to My Library with an email code.",
+  description: "Sign in to My Library with a secure email link or one-time code.",
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -37,7 +37,7 @@ export default async function SignInPage({ searchParams }: Props) {
   const tokenMode = sent && email.length > 0;
 
   return (
-    <SiteChrome>
+    <SiteChrome mobileNavMode="hidden">
       <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 pt-28 pb-16">
         <div className="w-full rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.16)]">
           <h1 className="text-3xl font-bold text-slate-900">Sign in to My Library</h1>
@@ -47,13 +47,20 @@ export default async function SignInPage({ searchParams }: Props) {
           <section className="mt-6 rounded-2xl border border-blue-100 bg-blue-50/35 p-5">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {tokenMode ? "Enter code" : "Get a code"}
+                {tokenMode ? "Check your email" : "Email sign-in link"}
               </h2>
               {!tokenMode ? (
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  We&apos;ll email a one-time code to sign you in.
+                  We&apos;ll email a secure sign-in link and a one-time code. If you&apos;re using
+                  the iPhone Home Screen app and the link opens in Safari, enter the code here
+                  instead.
                 </p>
-              ) : null}
+              ) : (
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Open the secure link sent to {email}. If you&apos;re using the Home Screen app or
+                  the link opens in Safari, enter the one-time code below.
+                </p>
+              )}
             </div>
 
             {tokenMode ? (
@@ -84,8 +91,12 @@ export default async function SignInPage({ searchParams }: Props) {
                         htmlFor="code"
                         className="mb-2 block text-sm font-medium text-slate-700"
                       >
-                        Code
+                        One-time code
                       </label>
+                      <p id="code-help" className="mb-2 text-xs leading-relaxed text-slate-600">
+                        Use this in the Home Screen app if the link opens in Safari or does not
+                        open.
+                      </p>
                       <input
                         id="code"
                         name="code"
@@ -94,12 +105,13 @@ export default async function SignInPage({ searchParams }: Props) {
                         autoComplete="one-time-code"
                         autoFocus
                         required
+                        aria-describedby="code-help"
                         className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 shadow-sm ring-blue-300 transition outline-none focus:ring-2"
                         placeholder="123456"
                       />
                     </div>
                     <AuthSubmitButton
-                      idleLabel="Sign in"
+                      idleLabel="Sign in with code"
                       pendingLabel="Signing in..."
                       testId="auth-submit-code"
                       className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
@@ -133,7 +145,7 @@ export default async function SignInPage({ searchParams }: Props) {
                   />
                 </div>
                 <AuthSubmitButton
-                  idleLabel="Send code"
+                  idleLabel="Email sign-in link"
                   pendingLabel="Sending..."
                   testId="auth-submit-request"
                   className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"

@@ -8,7 +8,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - The signed-in email is shown on `My Library`.
 - `Manage billing` lives on `My Library` and opens the Stripe Billing Portal for the authenticated user's Stripe customer.
 - `Sign out` lives on `My Library`.
-- `/auth/sign-in` owns one-time email-code sign-in, resend, cooldown, and spam/junk-folder guidance.
+- `/auth/sign-in` owns secure email-link sign-in plus one-time-code fallback, resend, cooldown, and spam/junk-folder guidance.
 - `/preview-access` owns private preview unlock guidance when site-lock is enabled.
 - `/my-library/security` is a legacy protected route that redirects signed-in users to `My Library`.
 
@@ -36,7 +36,12 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - verify the Checkout Session has `payment_status=paid`,
   - verify `invoice_creation.enabled=true` and an invoice ID exists for the session,
   - treat older sandbox purchases made before invoice creation was enabled as receipt/charge-only records; they do not retroactively gain portal invoice history.
-- If a sign-in code does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new code on `/auth/sign-in`.
+- If a sign-in email does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new sign-in email on `/auth/sign-in`.
+- If the secure email link does not open: ask them to enter the one-time code from the same email on `/auth/sign-in`.
+- If an iPhone Home Screen app user says the email link opens in Safari or Safari denies the sign-in:
+  ask them to return to the Home Screen app and enter the one-time code from the same email.
+- If the email only contains a code and no button/link: check the Supabase Magic Link email template
+  includes both `{{ .ConfirmationURL }}` and `{{ .Token }}` plus the hosted PNG brand lockup.
 - If `/auth/sign-in` shows "Sign-in is temporarily unavailable because a service limit was reached":
   - check Vercel logs for `[Auth] Could not request sign-in email` with `kind: "service_restricted"`,
   - confirm the admin incident alert `auth_sign_in_service_restricted` was sent or intentionally disabled by `INCIDENT_ALERTS_ENABLED=0`,
@@ -47,7 +52,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - check Vercel logs for `[Auth] Could not request sign-in email` with `kind: "email_delivery"`,
   - confirm the admin incident alert `auth_sign_in_email_delivery_failed` was sent or intentionally disabled,
   - inspect `MESSAGE_DELIVERY_*`/Supabase email provider state before asking the user to retry.
-- If a code expires or fails: request a new code from `/auth/sign-in`.
+- If a one-time code expires or fails: request a new sign-in email from `/auth/sign-in`.
 - If preview access is blocked while the site is private: authenticated admins should be issued access automatically through `/preview-access/admin-unlock`; anonymous visitors and non-admin testers still use `/preview-access` until the test-user access brief ships. A `preview_access_unlock_failed` incident alert means an authenticated admin passed the admin gate, but strong session claims could not be verified.
 - If the `My Routines` route looks stale: diagnose the underlying `Habits` and `Dryland Sessions` data separately. `My Routines` has local-only tab state and no reminder table, push subscription, background job, or persisted pinning state in V1.
 - If a user cannot find `Use as focus`, `Add note`, `Archive`, `Restore`, or `Clear best result` on `Goals`: ask them to open the goal row's `Details`. The visible row keeps one primary action; management and My Training bridge actions are intentionally tucked behind `Details`.
@@ -74,7 +79,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 
 ## Security Rules
 
-- Do not ask users to send sign-in codes, session cookies, or raw auth errors.
+- Do not ask users to send sign-in links, one-time codes, session cookies, or raw auth errors.
 - Do not expose another user's email, Stripe customer, invoice, or entitlement data while diagnosing support cases.
 - Account email is display identity, not a route identifier or authorization key by itself.
 - Passkeys and Face ID are not live account-management features until a separate auth architecture brief ships them.
