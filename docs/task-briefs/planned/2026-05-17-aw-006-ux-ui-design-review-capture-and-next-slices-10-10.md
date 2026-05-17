@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-17`
-- `base`: `main@65059ee`
+- `base`: `main@6724077`
 - `audit_status`: `ready`
 - `decision`: Use this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -79,32 +79,28 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Auth sign-in fallback clarity  | `partial` | `#732/#733`, `docs/task-briefs/done/2026-05-17-auth-sign-in-link-first-otp-fallback-clarity-10-10.md`             | Covered link-first + one-time-code fallback and iPhone Home Screen guidance; contextual `next` copy still needs a focused audit before marking the review item fully done. |
 | Goals action-first             | `done`    | `#726/#727`, `docs/task-briefs/done/2026-05-16-goals-action-first-simplification-10-10.md`                        | Shipped before the captured full review; aligns with the review's action-first dashboard/member direction.                                                                 |
 | My Swim Profile action-first   | `done`    | `#728/#729`, `docs/task-briefs/done/2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10.md` | Shipped before the captured full review; aligns with onboarding/member readiness findings.                                                                                 |
+| Course desktop player polish   | `done`    | `#735/#736`, `docs/task-briefs/done/2026-05-17-course-desktop-player-polish-10-10.md`                             | Shipped the first viewport desktop course/player polish that was originally the top remaining AW-006 item.                                                                 |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Course desktop player polish`
-   - Objective: make the desktop course/player first viewport feel finished before play, with visible title, play CTA, poster/preview, and no optional progress console noise.
-   - Likely files: `app/course/page.tsx`, course/player components, course tests/screenshots.
-   - Risks: video/course UX, progress behavior, screenshot approval.
-   - Protected areas: video/course experience; not auth/payments/database unless implementation discovers a direct dependency.
-2. `Plans conversion baseline`
+1. `Plans conversion baseline`
    - Objective: add clear price/value/proof/checkout expectations without changing Stripe mechanics.
    - Likely files: `app/plans/page.tsx`, `CheckoutButton`, catalog/product copy, plans tests/screenshots.
    - Risks: payment copy can imply unsupported entitlements or guarantees.
    - Protected areas: payments/commerce copy and checkout entry; no Stripe API changes unless separately scoped.
-3. `Contextual sign-in clarity audit`
+2. `Contextual sign-in clarity audit`
    - Objective: verify whether `#732/#733` fully covers `next=/admin`, `/my-library`, checkout/portal, and claim/download entry contexts; patch only remaining copy gaps.
    - Likely files: `app/auth/sign-in/page.tsx`, auth tests, support docs.
    - Risks: auth messaging, redirect context.
    - Protected areas: auth.
-4. `Public IA / about cleanup`
+3. `Public IA / about cleanup`
    - Objective: remove or make real any unclear `/about` or method route surface, and keep nav/docs/metadata aligned.
    - Likely files: `app/about/**`, nav config, sitemap/metadata docs/tests.
    - Risks: route/SEO/support references.
    - Protected areas: route/SEO.
-5. `Design token foundation`
+4. `Design token foundation`
    - Objective: establish color/type/spacing/radius/shadow tokens and migrate one low-risk public surface as proof.
    - Likely files: `app/globals.css`, `components/ui/*`, `components/PageTemplate.tsx`, one selected public route.
    - Risks: global visual regression.
@@ -282,3 +278,4 @@ Required only as a documentation-link sweep for this capture.
 ## Checkpoint Log
 
 - `2026-05-17 | planned | captured the owner-provided 2026-05-16 UX/UI design review into a repo-backed AW-006 child brief from clean main@65059ee; no runtime code, UI, tests, scripts, configs, or screenshots are in scope | next: run brief lint and docs-only verification, then commit/push/open PR`
+- `2026-05-17 | planned | refreshed after Course desktop player polish #735/#736 on clean main@6724077; marked course desktop done and promoted Plans conversion baseline as the next remaining PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`

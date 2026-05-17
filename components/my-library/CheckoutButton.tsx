@@ -7,6 +7,7 @@ type Props = {
   productId: string;
   cancelPath?: string;
   analyticsSource?: "plans" | "library_explore" | "unknown";
+  label?: string;
   className?: string;
 };
 
@@ -20,6 +21,7 @@ export default function CheckoutButton({
   productId,
   cancelPath = "/my-library",
   analyticsSource = "unknown",
+  label = "Buy now",
   className = "",
 }: Props) {
   const [pending, setPending] = useState(false);
@@ -76,7 +78,7 @@ export default function CheckoutButton({
         disabled={pending}
         className={`inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
-        {pending ? "Opening checkout..." : "Buy now"}
+        {pending ? "Opening checkout..." : label}
       </button>
       {error ? <p className="text-xs text-rose-700">{error}</p> : null}
     </div>
