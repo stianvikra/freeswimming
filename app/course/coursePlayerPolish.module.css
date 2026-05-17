@@ -1,0 +1,122 @@
+.playerStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.overviewPanel {
+  order: 1;
+}
+
+.playerPanel {
+  order: 2;
+}
+
+.posterScrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(15, 23, 42, 0.82) 0%,
+      rgba(15, 23, 42, 0.46) 48%,
+      rgba(15, 23, 42, 0.24) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.3) 0%,
+      rgba(15, 23, 42, 0.1) 42%,
+      rgba(15, 23, 42, 0.72) 100%
+    );
+}
+
+.overlayLayout {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.videoCopy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 0.5rem;
+  text-align: center;
+}
+
+.videoTitle {
+  display: -webkit-box;
+  max-width: 26ch;
+  margin-inline: auto;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-shadow: 0 2px 12px rgba(15, 23, 42, 0.55);
+}
+
+.videoGoal {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .overviewPanel {
+    order: 2;
+  }
+
+  .playerPanel {
+    order: 1;
+  }
+
+  .videoCopy {
+    max-width: 560px;
+    align-items: flex-start;
+    padding-bottom: 0;
+    text-align: left;
+  }
+
+  .videoTitle {
+    max-width: 24ch;
+    margin-inline: 0;
+    font-size: 34px;
+    line-height: 1.04;
+  }
+
+  .videoGoal {
+    display: -webkit-box;
+    max-width: 54ch;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+    text-shadow: 0 1px 8px rgba(15, 23, 42, 0.45);
+  }
+
+  .posterScrim {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(15, 23, 42, 0.82) 0%,
+        rgba(15, 23, 42, 0.46) 48%,
+        rgba(15, 23, 42, 0.24) 100%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(15, 23, 42, 0.26) 0%,
+        rgba(15, 23, 42, 0.08) 45%,
+        rgba(15, 23, 42, 0.48) 100%
+      );
+  }
+}

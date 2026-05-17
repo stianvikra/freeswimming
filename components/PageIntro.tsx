@@ -9,8 +9,11 @@ type Props = {
   subtitle?: string;
   variant?: "default" | "compact";
   rightSlot?: React.ReactNode;
+  rightSlotClassName?: string;
   belowDivider?: React.ReactNode;
   className?: string;
+  brandMarkClassName?: string;
+  brandMarkTestId?: string;
 };
 
 export default function PageIntro({
@@ -18,8 +21,11 @@ export default function PageIntro({
   subtitle,
   variant = "default",
   rightSlot,
+  rightSlotClassName,
   belowDivider,
   className,
+  brandMarkClassName,
+  brandMarkTestId,
 }: Props) {
   const compact = variant === "compact";
   const displaySubtitle = subtitle ?? "Learn. Drill. Swim.";
@@ -35,12 +41,13 @@ export default function PageIntro({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-4">
           <div
+            data-testid={brandMarkTestId}
             className={cx("relative shrink-0", compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12")}
           >
             <BrandImage
               asset={BRAND_USAGE.pageIntroSymbol}
               decorative
-              className="h-full w-auto"
+              className={brandMarkClassName ?? "h-full w-auto"}
               sizes={compact ? "44px" : "48px"}
             />
           </div>
@@ -65,7 +72,7 @@ export default function PageIntro({
           </div>
         </div>
 
-        {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}
+        {rightSlot ? <div className={cx("shrink-0", rightSlotClassName)}>{rightSlot}</div> : null}
       </div>
 
       <div className="mt-4 h-px w-full bg-gradient-to-r from-blue-200/70 via-blue-100/60 to-transparent" />
