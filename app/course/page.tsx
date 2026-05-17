@@ -2,6 +2,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -69,6 +70,7 @@ import {
   type CourseModule,
   type CourseLesson,
 } from "./courseData";
+import styles from "./coursePlayerPolish.module.css";
 
 const AdminContextNotesPanel = dynamic(() => import("@/components/admin/AdminContextNotesPanel"), {
   loading: () => null,
@@ -1601,6 +1603,10 @@ function CoursePageClient() {
     () => `https://www.youtube.com/watch?v=${activeLesson.youtubeId}`,
     [activeLesson.youtubeId]
   );
+  const activeLessonPosterUrl = useMemo(
+    () => `https://i.ytimg.com/vi/${activeLesson.youtubeId}/hqdefault.jpg`,
+    [activeLesson.youtubeId]
+  );
 
   const overviewLabel = useMemo(() => {
     const modNum = moduleInfo.moduleIndex >= 0 ? moduleInfo.moduleIndex + 1 : 1;
@@ -1742,7 +1748,7 @@ function CoursePageClient() {
         : courseSyncStatus === "syncing"
           ? "Syncing lesson progress to your account..."
           : formatSyncStatusAgeLabel(lastCourseSyncAtMs)
-      : "Lesson and playback progress saved on this device.";
+      : null;
 
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_14px_34px_rgba(15,23,42,0.08)]";
@@ -2462,6 +2468,9 @@ function CoursePageClient() {
             title="Free Course"
             subtitle="Learn. Drill. Swim."
             variant="compact"
+            brandMarkClassName="h-auto w-full"
+            brandMarkTestId="course-intro-brand-mark"
+            rightSlotClassName="hidden sm:block"
             belowDivider={
               <div className="flex items-baseline gap-1 text-[12px] font-medium sm:text-[13px]">
                 <span className="shrink-0 text-slate-500">Current lesson:</span>
@@ -2545,6 +2554,9 @@ function CoursePageClient() {
             title="Free Course"
             subtitle="Learn. Drill. Swim."
             variant="compact"
+            brandMarkClassName="h-auto w-full"
+            brandMarkTestId="course-intro-brand-mark"
+            rightSlotClassName="hidden sm:block"
             belowDivider={
               <div className="flex items-baseline gap-1 text-[12px] font-medium sm:text-[13px]">
                 <span className="shrink-0 text-slate-500">Current lesson:</span>
@@ -2556,7 +2568,6 @@ function CoursePageClient() {
                 grow={false}
                 skin="neutral"
                 onClick={() => toggleDrawer("course")}
-                className="hidden sm:inline-flex"
                 ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
               >
                 {isCourseDrawerOpen ? "Close" : "Lessons"}
@@ -2565,427 +2576,459 @@ function CoursePageClient() {
           />
           {previewBanner}
 
-          <section className="mt-2 rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
-                    <span>{overviewLabel.lesson}</span>
-                    <span className="text-slate-300">•</span>
-                    <span>{overviewLabel.module}</span>
-                    <span className="text-slate-300">•</span>
-                    <span
-                      data-testid="course-lesson-status-chip"
+          <div className={styles.playerStack}>
+            <section
+              className={cx(
+                styles.overviewPanel,
+                "rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]"
+              )}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
+                      <span>{overviewLabel.lesson}</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{overviewLabel.module}</span>
+                      <span className="text-slate-300">•</span>
+                      <span
+                        data-testid="course-lesson-status-chip"
+                        className={cx(
+                          "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
+                          activeLessonStatusMeta.className
+                        )}
+                      >
+                        {activeLessonStatusMeta.label}
+                      </span>
+                    </div>
+                    <PressButton
+                      tier="nav"
+                      onClick={toggleLessonDone}
+                      disabled={markDoneBlockedByGate}
+                      aria-pressed={isLessonDone}
+                      aria-describedby={doneGateFeedback ? "course-done-gate-feedback" : undefined}
+                      data-testid="course-mark-done-button"
                       className={cx(
-                        "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
-                        activeLessonStatusMeta.className
+                        "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
+                        isLessonDone
+                          ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                          : markDoneBlockedByGate
+                            ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                            : "bg-white/92 text-slate-700 ring-slate-200/72"
                       )}
                     >
-                      {activeLessonStatusMeta.label}
-                    </span>
+                      {isLessonDone ? "Done" : "Mark as done"}
+                    </PressButton>
                   </div>
+                  {overviewExpanded ? (
+                    <div className="mt-1 text-[13px] font-medium text-slate-700">
+                      {overviewLabel.moduleName}
+                      {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
+                    </div>
+                  ) : null}
+                  {!lessonContentReady ? (
+                    <p
+                      id="course-done-gate-feedback"
+                      className="mt-1 text-[12px] font-medium text-slate-600"
+                    >
+                      Loading lesson details...
+                    </p>
+                  ) : markDoneBlockedByGate ? (
+                    <p
+                      id="course-done-gate-feedback"
+                      className="mt-1 text-[12px] font-medium text-amber-700"
+                    >
+                      Check pass criteria below to unlock Mark as done.
+                    </p>
+                  ) : doneGateFeedback ? (
+                    <p
+                      id="course-done-gate-feedback"
+                      className="mt-1 text-[12px] font-medium text-amber-700"
+                    >
+                      {doneGateFeedback}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="hidden gap-2 sm:flex sm:pt-1">
+                  {isFirstLesson ? (
+                    <CourseNavButton
+                      grow={false}
+                      disabled
+                      skin="muted"
+                      className="px-4 py-2"
+                      ariaLabel="No previous lesson"
+                    >
+                      Prev
+                    </CourseNavButton>
+                  ) : (
+                    <CourseNavButton
+                      grow={false}
+                      onClick={() => prevId && goToLesson(prevId)}
+                      skin="muted"
+                      className="px-4 py-2"
+                    >
+                      Prev
+                    </CourseNavButton>
+                  )}
+
+                  {isLastLesson ? (
+                    <CourseNavButton
+                      grow={false}
+                      onClick={() => router.push("/programs")}
+                      skin="primary"
+                      className="px-4 py-2"
+                    >
+                      Programs
+                    </CourseNavButton>
+                  ) : (
+                    <CourseNavButton
+                      grow={false}
+                      onClick={() => nextId && goToLesson(nextId)}
+                      skin="primary"
+                      className="px-4 py-2"
+                    >
+                      Next
+                    </CourseNavButton>
+                  )}
+
                   <PressButton
                     tier="nav"
-                    onClick={toggleLessonDone}
-                    disabled={markDoneBlockedByGate}
-                    aria-pressed={isLessonDone}
-                    aria-describedby={doneGateFeedback ? "course-done-gate-feedback" : undefined}
-                    data-testid="course-mark-done-button"
-                    className={cx(
-                      "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
-                      isLessonDone
-                        ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                        : markDoneBlockedByGate
-                          ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                          : "bg-white/92 text-slate-700 ring-slate-200/72"
-                    )}
+                    onClick={toggleOverview}
+                    aria-expanded={overviewExpanded}
+                    aria-controls="course-overview-details"
+                    className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
                   >
-                    {isLessonDone ? "Done" : "Mark as done"}
+                    {overviewExpanded ? "Hide details" : "Overview details"}
                   </PressButton>
                 </div>
-                {overviewExpanded ? (
-                  <div className="mt-1 text-[13px] font-medium text-slate-700">
-                    {overviewLabel.moduleName}
-                    {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
-                  </div>
-                ) : null}
-                {!lessonContentReady ? (
-                  <p
-                    id="course-done-gate-feedback"
-                    className="mt-1 text-[12px] font-medium text-slate-600"
-                  >
-                    Loading lesson details...
-                  </p>
-                ) : markDoneBlockedByGate ? (
-                  <p
-                    id="course-done-gate-feedback"
-                    className="mt-1 text-[12px] font-medium text-amber-700"
-                  >
-                    Check pass criteria below to unlock Mark as done.
-                  </p>
-                ) : doneGateFeedback ? (
-                  <p
-                    id="course-done-gate-feedback"
-                    className="mt-1 text-[12px] font-medium text-amber-700"
-                  >
-                    {doneGateFeedback}
-                  </p>
-                ) : null}
               </div>
 
-              <div className="hidden gap-2 sm:flex sm:pt-1">
-                {isFirstLesson ? (
-                  <CourseNavButton
-                    grow={false}
-                    disabled
-                    skin="muted"
-                    className="px-4 py-2"
-                    ariaLabel="No previous lesson"
-                  >
-                    Prev
-                  </CourseNavButton>
-                ) : (
-                  <CourseNavButton
-                    grow={false}
-                    onClick={() => prevId && goToLesson(prevId)}
-                    skin="muted"
-                    className="px-4 py-2"
-                  >
-                    Prev
-                  </CourseNavButton>
-                )}
+              <div className="mt-2 flex items-center gap-3">
+                <div
+                  className="flex-1 overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] ring-1 ring-slate-200/75"
+                  role="progressbar"
+                  aria-label="Course progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={donePct}
+                  aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%), ${inProgressLessonsCount} in progress. Current: ${overviewLabel.lesson}.`}
+                >
+                  <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
+                    {courseLessonsFlat.map((lesson, index) => {
+                      const isCurrentSegment = index === currentLessonIndex;
+                      const lessonProgressStatus =
+                        lessonProgressStatusById[lesson.id] ?? "not_started";
+                      const isDoneSegment = lessonProgressStatus === "done";
+                      const isInProgressSegment = lessonProgressStatus === "in_progress";
+                      const isFirstSegment = index === 0;
+                      const isLastSegment = index === totalLessons - 1;
 
-                {isLastLesson ? (
-                  <CourseNavButton
-                    grow={false}
-                    onClick={() => router.push("/programs")}
-                    skin="primary"
-                    className="px-4 py-2"
-                  >
-                    Programs
-                  </CourseNavButton>
-                ) : (
-                  <CourseNavButton
-                    grow={false}
-                    onClick={() => nextId && goToLesson(nextId)}
-                    skin="primary"
-                    className="px-4 py-2"
-                  >
-                    Next
-                  </CourseNavButton>
-                )}
+                      return (
+                        <span
+                          key={lesson.id}
+                          aria-hidden
+                          className={cx(
+                            "h-full min-w-0 flex-1 transition-colors duration-200",
+                            !isLastSegment && "border-r border-slate-100/70",
+                            isFirstSegment && "rounded-l-full",
+                            isLastSegment && "rounded-r-full",
+                            isCurrentSegment
+                              ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
+                              : isDoneSegment
+                                ? "bg-blue-500"
+                                : isInProgressSegment
+                                  ? "bg-amber-400/90"
+                                  : "bg-slate-300/78"
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
+                  {donePct}%
+                </div>
+              </div>
 
+              <div className="mt-2 sm:hidden">
                 <PressButton
                   tier="nav"
                   onClick={toggleOverview}
                   aria-expanded={overviewExpanded}
                   aria-controls="course-overview-details"
-                  className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
+                  className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65 lg:bg-white lg:ring-slate-300/70"
                 >
                   {overviewExpanded ? "Hide details" : "Overview details"}
                 </PressButton>
               </div>
-            </div>
 
-            <div className="mt-2 flex items-center gap-3">
-              <div
-                className="flex-1 overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] ring-1 ring-slate-200/75"
-                role="progressbar"
-                aria-label="Course progress"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={donePct}
-                aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%), ${inProgressLessonsCount} in progress. Current: ${overviewLabel.lesson}.`}
-              >
-                <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
-                  {courseLessonsFlat.map((lesson, index) => {
-                    const isCurrentSegment = index === currentLessonIndex;
-                    const lessonProgressStatus =
-                      lessonProgressStatusById[lesson.id] ?? "not_started";
-                    const isDoneSegment = lessonProgressStatus === "done";
-                    const isInProgressSegment = lessonProgressStatus === "in_progress";
-                    const isFirstSegment = index === 0;
-                    const isLastSegment = index === totalLessons - 1;
-
-                    return (
-                      <span
-                        key={lesson.id}
-                        aria-hidden
-                        className={cx(
-                          "h-full min-w-0 flex-1 transition-colors duration-200",
-                          !isLastSegment && "border-r border-slate-100/70",
-                          isFirstSegment && "rounded-l-full",
-                          isLastSegment && "rounded-r-full",
-                          isCurrentSegment
-                            ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
-                            : isDoneSegment
-                              ? "bg-blue-500"
-                              : isInProgressSegment
-                                ? "bg-amber-400/90"
-                                : "bg-slate-300/78"
-                        )}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
-                {donePct}%
-              </div>
-            </div>
-
-            <div className="mt-2 sm:hidden">
-              <PressButton
-                tier="nav"
-                onClick={toggleOverview}
-                aria-expanded={overviewExpanded}
-                aria-controls="course-overview-details"
-                className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65 lg:bg-white lg:ring-slate-300/70"
-              >
-                {overviewExpanded ? "Hide details" : "Overview details"}
-              </PressButton>
-            </div>
-
-            {overviewExpanded ? (
-              <div
-                id="course-overview-details"
-                className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3 lg:border-slate-300/65 lg:bg-white/92"
-              >
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
-                  <div className="text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-                    Jump to lesson
-                  </div>
-                  {previewLessonMeta ? (
-                    <>
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="truncate text-[13px] font-semibold text-slate-900">
-                            {previewLessonMeta.lesson.title}
-                          </div>
-                          <div className="truncate text-[12px] font-medium text-slate-600">
-                            {previewLessonMeta.moduleTitle}
-                          </div>
-                        </div>
-                        <span
-                          className={cx(
-                            "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
-                            previewLessonMeta.lesson.id === activeLesson.id
-                              ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                              : lessonProgressStatusById[previewLessonMeta.lesson.id] === "done"
-                                ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
-                                : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
-                                    "in_progress"
-                                  ? "bg-amber-50 text-amber-700 ring-amber-200/80"
-                                  : "bg-white text-slate-700 ring-slate-200/75",
-                            isOverviewJumpDragging &&
-                              "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
-                          )}
-                        >
-                          <span className="block leading-[1.15]">
-                            Module {previewLessonMeta.moduleIndex} of{" "}
-                            {previewLessonMeta.moduleCount}
-                          </span>
-                          <span className="mt-0.5 block text-[10px] leading-[1.15] font-medium text-slate-600">
-                            Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
-                          </span>
-                        </span>
-                      </div>
-
-                      <input
-                        type="range"
-                        min={1}
-                        max={Math.max(1, totalLessons)}
-                        value={safePreviewLessonIndex + 1}
-                        onChange={(event) => {
-                          const next = Number(event.target.value);
-                          if (Number.isNaN(next)) return;
-                          setOverviewJumpIndex(next - 1);
-                        }}
-                        onPointerDown={handleOverviewSliderPointerDown}
-                        onPointerUp={() => {
-                          if (!overviewJumpDraggingRef.current) return;
-                          commitOverviewJump();
-                        }}
-                        onPointerCancel={() => setOverviewDragging(false)}
-                        onBlur={() => {
-                          if (!overviewJumpDraggingRef.current) return;
-                          if (overviewJumpIndex == null) {
-                            setOverviewDragging(false);
-                            return;
-                          }
-                          commitOverviewJump();
-                        }}
-                        aria-label="Jump to lesson"
-                        aria-valuetext={`${previewLessonMeta.lesson.title}. Lesson ${safePreviewLessonIndex + 1} of ${totalLessons}.`}
-                        className={cx(
-                          "lesson-jump-slider mt-2 h-2.5 w-full cursor-pointer appearance-none rounded-full",
-                          isOverviewJumpDragging && "is-dragging"
-                        )}
-                        style={{ background: sliderTrackBackground }}
-                      />
-                    </>
-                  ) : null}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="mt-3 text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-                    Additional information
-                  </div>
-                </div>
-                <div className="mt-1 text-[12px] font-medium text-slate-600">
-                  {isLastLesson
-                    ? "Last lesson in this course."
-                    : "Use Lessons to jump to any module or lesson."}
-                  <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
-                  {isSignedIn && courseSyncStatus === "error" ? (
-                    <PressButton
-                      tier="nav"
-                      onClick={() => void syncCourseProgressNow({ force: true })}
-                      className="ml-2 inline-flex min-h-[24px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70"
-                    >
-                      Retry now
-                    </PressButton>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="mt-3 rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white">
-            <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
-              {!showVideoOverlay ? (
-                <>
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-0 left-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
-                    onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
-                    onTouchMove={(event) => {
-                      event.stopPropagation();
-                      handleSwipeMove(event);
-                    }}
-                    onTouchEnd={(event) => {
-                      event.stopPropagation();
-                      handleSwipeEnd(event);
-                    }}
-                    onTouchCancel={(event) => {
-                      event.stopPropagation();
-                      resetSwipeGesture();
-                    }}
-                  />
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-0 right-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
-                    onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
-                    onTouchMove={(event) => {
-                      event.stopPropagation();
-                      handleSwipeMove(event);
-                    }}
-                    onTouchEnd={(event) => {
-                      event.stopPropagation();
-                      handleSwipeEnd(event);
-                    }}
-                    onTouchCancel={(event) => {
-                      event.stopPropagation();
-                      resetSwipeGesture();
-                    }}
-                  />
-                </>
-              ) : null}
-
-              <div className="aspect-video w-full bg-slate-950">
-                <div ref={videoFrameRef} className="h-full w-full" />
-              </div>
-
-              {showVideoOverlay ? (
-                <PressButton
-                  tier="card"
-                  onClick={videoStarted ? resumePlayback : startVideoPlayback}
-                  className="absolute inset-0 z-[2] w-full overflow-hidden bg-[radial-gradient(140%_115%_at_6%_0%,rgba(147,197,253,0.24),rgba(241,245,249,0.96)),linear-gradient(180deg,rgba(241,245,249,0.98),rgba(255,255,255,0.99))] p-4 text-left sm:p-5"
-                  aria-label={
-                    showResumeCta
-                      ? `Resume lesson: ${activeLesson.title}`
-                      : `Play lesson: ${activeLesson.title}`
-                  }
+              {overviewExpanded ? (
+                <div
+                  id="course-overview-details"
+                  className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3 lg:border-slate-300/65 lg:bg-white/92"
                 >
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(59,130,246,0.06),rgba(255,255,255,0))]" />
-                  <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/16 via-slate-900/5 to-transparent" />
-                  <div className="relative flex h-full flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <BrandImage
-                          asset={BRAND_USAGE.compactSymbol}
-                          decorative
-                          className="h-8 w-auto shrink-0"
-                          sizes="32px"
-                        />
-                        <span className="truncate rounded-full bg-white/82 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-slate-600 uppercase ring-1 ring-slate-200/70">
-                          {overviewLabel.moduleName}
-                        </span>
-                      </span>
-                      {overviewLabel.duration ? (
-                        <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
-                          {overviewLabel.duration}
-                        </span>
-                      ) : null}
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
+                    <div className="text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                      Jump to lesson
                     </div>
-
-                    <div className="mt-auto pb-4 text-center sm:pb-5">
-                      <div className="mx-auto line-clamp-2 max-w-[26ch] text-[18px] leading-tight font-semibold text-slate-900 sm:text-[20px]">
-                        {activeLesson.title}
-                      </div>
-                      <div className="mt-3 flex items-center justify-center">
-                        <span
-                          className={cx(
-                            "inline-flex min-h-[38px] w-full max-w-[250px] items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)] ring-1 ring-white/20 transition-colors duration-200 sm:min-h-[40px] sm:text-[14px]",
-                            showResumeCta
-                              ? "bg-gradient-to-b from-blue-400 to-blue-500"
-                              : "bg-gradient-to-b from-blue-500 to-blue-600"
-                          )}
-                        >
+                    {previewLessonMeta ? (
+                      <>
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-[13px] font-semibold text-slate-900">
+                              {previewLessonMeta.lesson.title}
+                            </div>
+                            <div className="truncate text-[12px] font-medium text-slate-600">
+                              {previewLessonMeta.moduleTitle}
+                            </div>
+                          </div>
                           <span
-                            aria-hidden
-                            className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-white"
-                          />
-                          {showResumeCta ? "Resume" : "Play"}
-                        </span>
-                      </div>
+                            className={cx(
+                              "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
+                              previewLessonMeta.lesson.id === activeLesson.id
+                                ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                                : lessonProgressStatusById[previewLessonMeta.lesson.id] === "done"
+                                  ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
+                                  : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
+                                      "in_progress"
+                                    ? "bg-amber-50 text-amber-700 ring-amber-200/80"
+                                    : "bg-white text-slate-700 ring-slate-200/75",
+                              isOverviewJumpDragging &&
+                                "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
+                            )}
+                          >
+                            <span className="block leading-[1.15]">
+                              Module {previewLessonMeta.moduleIndex} of{" "}
+                              {previewLessonMeta.moduleCount}
+                            </span>
+                            <span className="mt-0.5 block text-[10px] leading-[1.15] font-medium text-slate-600">
+                              Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
+                            </span>
+                          </span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min={1}
+                          max={Math.max(1, totalLessons)}
+                          value={safePreviewLessonIndex + 1}
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            if (Number.isNaN(next)) return;
+                            setOverviewJumpIndex(next - 1);
+                          }}
+                          onPointerDown={handleOverviewSliderPointerDown}
+                          onPointerUp={() => {
+                            if (!overviewJumpDraggingRef.current) return;
+                            commitOverviewJump();
+                          }}
+                          onPointerCancel={() => setOverviewDragging(false)}
+                          onBlur={() => {
+                            if (!overviewJumpDraggingRef.current) return;
+                            if (overviewJumpIndex == null) {
+                              setOverviewDragging(false);
+                              return;
+                            }
+                            commitOverviewJump();
+                          }}
+                          aria-label="Jump to lesson"
+                          aria-valuetext={`${previewLessonMeta.lesson.title}. Lesson ${safePreviewLessonIndex + 1} of ${totalLessons}.`}
+                          className={cx(
+                            "lesson-jump-slider mt-2 h-2.5 w-full cursor-pointer appearance-none rounded-full",
+                            isOverviewJumpDragging && "is-dragging"
+                          )}
+                          style={{ background: sliderTrackBackground }}
+                        />
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="mt-3 text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                      Additional information
                     </div>
                   </div>
-                </PressButton>
-              ) : null}
-            </div>
-
-            {videoStarted && !videoPaused ? (
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12px] font-medium text-slate-700">
-                <div className="min-w-0">
-                  {nextLesson ? (
-                    <>
-                      Up next:{" "}
-                      <span className="font-semibold text-slate-800">{nextLesson.title}</span>
-                    </>
-                  ) : (
-                    <span className="font-semibold text-slate-800">Last lesson in this course</span>
-                  )}
+                  <div className="mt-1 text-[12px] font-medium text-slate-600">
+                    {isLastLesson
+                      ? "Last lesson in this course."
+                      : "Use Lessons to jump to any module or lesson."}
+                    {courseProgressStatusCopy ? (
+                      <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
+                    ) : null}
+                    {isSignedIn && courseSyncStatus === "error" ? (
+                      <PressButton
+                        tier="nav"
+                        onClick={() => void syncCourseProgressNow({ force: true })}
+                        className="ml-2 inline-flex min-h-[24px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70"
+                      >
+                        Retry now
+                      </PressButton>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </section>
 
-            {videoLoadState === "failed" ? (
-              <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
-                Video did not load.{" "}
-                <PressLink
-                  tier="nav"
-                  href={youtubeWatchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-slate-800 underline"
-                  aria-label="Open video on YouTube"
-                >
-                  Open on YouTube
-                </PressLink>
+            <section
+              data-testid="course-player-card"
+              className={cx(
+                styles.playerPanel,
+                "rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white lg:p-4"
+              )}
+            >
+              <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
+                {!showVideoOverlay ? (
+                  <>
+                    <div
+                      aria-hidden
+                      className="absolute inset-y-0 left-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
+                      onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
+                      onTouchMove={(event) => {
+                        event.stopPropagation();
+                        handleSwipeMove(event);
+                      }}
+                      onTouchEnd={(event) => {
+                        event.stopPropagation();
+                        handleSwipeEnd(event);
+                      }}
+                      onTouchCancel={(event) => {
+                        event.stopPropagation();
+                        resetSwipeGesture();
+                      }}
+                    />
+                    <div
+                      aria-hidden
+                      className="absolute inset-y-0 right-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
+                      onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
+                      onTouchMove={(event) => {
+                        event.stopPropagation();
+                        handleSwipeMove(event);
+                      }}
+                      onTouchEnd={(event) => {
+                        event.stopPropagation();
+                        handleSwipeEnd(event);
+                      }}
+                      onTouchCancel={(event) => {
+                        event.stopPropagation();
+                        resetSwipeGesture();
+                      }}
+                    />
+                  </>
+                ) : null}
+
+                <div className="aspect-video w-full bg-slate-950">
+                  <div ref={videoFrameRef} className="h-full w-full" />
+                </div>
+
+                {showVideoOverlay ? (
+                  <PressButton
+                    tier="card"
+                    onClick={videoStarted ? resumePlayback : startVideoPlayback}
+                    data-testid="course-video-overlay"
+                    className="absolute inset-0 z-[2] w-full overflow-hidden bg-slate-950 p-4 text-left sm:p-5 lg:p-7"
+                    aria-label={
+                      showResumeCta
+                        ? `Resume lesson: ${activeLesson.title}`
+                        : `Play lesson: ${activeLesson.title}`
+                    }
+                  >
+                    <Image
+                      data-testid="course-video-poster"
+                      src={activeLessonPosterUrl}
+                      alt=""
+                      aria-hidden="true"
+                      fill
+                      priority
+                      unoptimized
+                      sizes="(max-width: 640px) 282px, 880px"
+                      className="object-cover opacity-[0.82] saturate-[0.92]"
+                    />
+                    <div className={styles.posterScrim} />
+                    <div className={styles.overlayLayout}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <BrandImage
+                            asset={BRAND_USAGE.compactSymbol}
+                            decorative
+                            className="h-8 w-auto shrink-0 drop-shadow-[0_2px_8px_rgba(15,23,42,0.35)]"
+                            sizes="32px"
+                          />
+                          <span className="truncate rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-slate-700 uppercase ring-1 ring-white/50">
+                            {overviewLabel.moduleName}
+                          </span>
+                        </span>
+                        {overviewLabel.duration ? (
+                          <span className="shrink-0 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-white/50">
+                            {overviewLabel.duration}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className={styles.videoCopy}>
+                        <div data-testid="course-video-title" className={styles.videoTitle}>
+                          {activeLesson.title}
+                        </div>
+                        {activeLesson.goal ? (
+                          <p className={styles.videoGoal}>{activeLesson.goal}</p>
+                        ) : null}
+                        <div className="mt-3 flex items-center justify-center lg:justify-start">
+                          <span
+                            data-testid="course-video-play-cta"
+                            className={cx(
+                              "inline-flex min-h-[38px] w-full max-w-[250px] items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.30)] ring-1 ring-white/25 transition-colors duration-200 sm:min-h-[40px] sm:text-[14px] lg:min-h-[46px] lg:max-w-[180px] lg:px-5 lg:text-[15px]",
+                              showResumeCta
+                                ? "bg-gradient-to-b from-blue-400 to-blue-500"
+                                : "bg-gradient-to-b from-blue-500 to-blue-600"
+                            )}
+                          >
+                            <span
+                              aria-hidden
+                              className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-white"
+                            />
+                            {showResumeCta ? "Resume" : "Play"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </PressButton>
+                ) : null}
               </div>
-            ) : null}
-          </section>
+
+              {videoStarted && !videoPaused ? (
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12px] font-medium text-slate-700">
+                  <div className="min-w-0">
+                    {nextLesson ? (
+                      <>
+                        Up next:{" "}
+                        <span className="font-semibold text-slate-800">{nextLesson.title}</span>
+                      </>
+                    ) : (
+                      <span className="font-semibold text-slate-800">
+                        Last lesson in this course
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {videoLoadState === "failed" ? (
+                <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
+                  Video did not load.{" "}
+                  <PressLink
+                    tier="nav"
+                    href={youtubeWatchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-slate-800 underline"
+                    aria-label="Open video on YouTube"
+                  >
+                    Open on YouTube
+                  </PressLink>
+                </div>
+              ) : null}
+            </section>
+          </div>
 
           {showLessonPrimaryColumn || showLessonSecondaryColumn ? (
             <section className="mt-4 grid gap-3 lg:grid-cols-3">
