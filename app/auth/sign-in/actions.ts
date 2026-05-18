@@ -11,13 +11,25 @@ import {
 } from "@/lib/auth/magic-link-cooldown";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { classifySignInEmailError } from "@/lib/auth/sign-in-email-error";
+import { buildAuthCallbackUrl, getSafeSignInContextSource } from "@/lib/auth/sign-in-context";
 import { isResendRequestFlag, shouldApplyMagicLinkCooldown } from "@/lib/auth/sign-in-request";
 import { reportAdminIncident, type AdminIncidentInput } from "@/lib/admin/incidents";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-function buildSignInPath(nextPath: string, params: Record<string, string>) {
-  const query = new URLSearchParams({ next: nextPath, ...params });
+function buildSignInPath(
+  nextPath: string,
+  params: Record<string, string>,
+  sourceInput?: string | null
+) {
+  const query = new URLSearchParams({ next: nextPath });
+  const source = getSafeSignInContextSource(sourceInput);
+  if (source) {
+    query.set("source", source);
+  }
+  for (const [key, value] of Object.entries(params)) {
+    query.set(key, value);
+  }
   return `/auth/sign-in?${query.toString()}`;
 }
 
@@ -70,6 +82,10 @@ function getNormalizedEmail(formData: FormData): string {
 
 function getNextPath(formData: FormData): string {
   return getSafeNextPath(String(formData.get("next") ?? ""));
+}
+
+function getSignInSource(formData: FormData) {
+  return getSafeSignInContextSource(String(formData.get("source") ?? ""));
 }
 
 function splitHeaderValue(value: string | null): string[] {
@@ -323,10 +339,11 @@ async function enforceRateLimitSet(rules: RateLimitRule[]) {
 export async function requestMagicLink(formData: FormData) {
   const email = getNormalizedEmail(formData);
   const nextPath = getNextPath(formData);
+  const source = getSignInSource(formData);
   const isResendRequest = isResendRequestFlag(formData.get("resend"));
 
   if (!email || !EMAIL_REGEX.test(email)) {
-    redirect(buildSignInPath(nextPath, { error: "Enter a valid email address." }));
+    redirect(buildSignInPath(nextPath, { error: "Enter a valid email address." }, source));
   }
 
   const headerStore = await headers();
@@ -338,12 +355,16 @@ export async function requestMagicLink(formData: FormData) {
   const activeCooldownMs = await getCooldownTtlMs(cooldownLockKey);
   if (shouldApplyMagicLinkCooldown(activeCooldownMs, isResendRequest)) {
     redirect(
-      buildSignInPath(nextPath, {
-        error: formatLoginCodeCooldownMessage(activeCooldownMs),
-        cooldownUntil: String(Date.now() + activeCooldownMs),
-        sent: "1",
-        email,
-      })
+      buildSignInPath(
+        nextPath,
+        {
+          error: formatLoginCodeCooldownMessage(activeCooldownMs),
+          cooldownUntil: String(Date.now() + activeCooldownMs),
+          sent: "1",
+          email,
+        },
+        source
+      )
     );
   }
 
@@ -370,11 +391,11 @@ export async function requestMagicLink(formData: FormData) {
       params.sent = "1";
     }
 
-    redirect(buildSignInPath(nextPath, params));
+    redirect(buildSignInPath(nextPath, params, source));
   }
 
   const origin = headerStore.get("origin") ?? getAppUrl();
-  const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  const emailRedirectTo = buildAuthCallbackUrl(origin, nextPath, source);
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithOtp({
@@ -396,7 +417,7 @@ export async function requestMagicLink(formData: FormData) {
         params.sent = "1";
       }
 
-      redirect(buildSignInPath(nextPath, params));
+      redirect(buildSignInPath(nextPath, params, source));
     }
 
     console.error("[Auth] Could not request sign-in email.", {
@@ -441,7 +462,7 @@ export async function requestMagicLink(formData: FormData) {
       params.sent = "1";
     }
 
-    redirect(buildSignInPath(nextPath, params));
+    redirect(buildSignInPath(nextPath, params, source));
   }
 
   const cadenceCounterKey = `rate:auth:magic-link:cadence:${sessionScopedEmailHash}`;
@@ -453,11 +474,15 @@ export async function requestMagicLink(formData: FormData) {
   await setCooldownTtl(cooldownLockKey, cadenceCooldownMs);
 
   redirect(
-    buildSignInPath(nextPath, {
-      sent: "1",
-      email,
-      cooldownUntil: String(Date.now() + cadenceCooldownMs),
-    })
+    buildSignInPath(
+      nextPath,
+      {
+        sent: "1",
+        email,
+        cooldownUntil: String(Date.now() + cadenceCooldownMs),
+      },
+      source
+    )
   );
 }
 
@@ -467,18 +492,25 @@ export async function verifySignInCode(formData: FormData) {
     .trim()
     .replace(/\s+/g, "");
   const nextPath = getNextPath(formData);
+  const source = getSignInSource(formData);
 
   if (!email || !EMAIL_REGEX.test(email)) {
-    redirect(buildSignInPath(nextPath, { error: "Enter a valid email address.", sent: "1" }));
+    redirect(
+      buildSignInPath(nextPath, { error: "Enter a valid email address.", sent: "1" }, source)
+    );
   }
 
   if (!/^[A-Za-z0-9]{6,10}$/.test(token)) {
     redirect(
-      buildSignInPath(nextPath, {
-        error: "Enter the one-time code from your sign-in email.",
-        sent: "1",
-        email,
-      })
+      buildSignInPath(
+        nextPath,
+        {
+          error: "Enter the one-time code from your sign-in email.",
+          sent: "1",
+          email,
+        },
+        source
+      )
     );
   }
 
@@ -500,12 +532,16 @@ export async function verifySignInCode(formData: FormData) {
 
   if (!limitResult.ok) {
     redirect(
-      buildSignInPath(nextPath, {
-        error: `Too many sign-in attempts. Wait ${toRetrySeconds(limitResult.retryAfterMs)} seconds and try again.`,
-        cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
-        sent: "1",
-        email,
-      })
+      buildSignInPath(
+        nextPath,
+        {
+          error: `Too many sign-in attempts. Wait ${toRetrySeconds(limitResult.retryAfterMs)} seconds and try again.`,
+          cooldownUntil: String(Date.now() + limitResult.retryAfterMs),
+          sent: "1",
+          email,
+        },
+        source
+      )
     );
   }
 
@@ -523,10 +559,14 @@ export async function verifySignInCode(formData: FormData) {
   }
 
   redirect(
-    buildSignInPath(nextPath, {
-      error: "Could not verify the one-time code. Request a new sign-in email and try again.",
-      sent: "1",
-      email,
-    })
+    buildSignInPath(
+      nextPath,
+      {
+        error: "Could not verify the one-time code. Request a new sign-in email and try again.",
+        sent: "1",
+        email,
+      },
+      source
+    )
   );
 }

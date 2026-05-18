@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
+import { buildAuthCallbackUrl } from "@/lib/auth/sign-in-context";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -316,7 +317,7 @@ export async function POST(request: Request) {
     }
 
     const origin = getRequestOrigin(request);
-    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    const emailRedirectTo = buildAuthCallbackUrl(origin, nextPath, source);
     const supabase = await createServerSupabaseClient();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,

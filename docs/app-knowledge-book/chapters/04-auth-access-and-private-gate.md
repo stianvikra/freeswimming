@@ -14,9 +14,7 @@ Evidence boundary:
 - This chapter does not include secret values, raw env values, cookies, tokens, one-time codes,
   request IPs, provider responses, personal data, or user free-text content.
 
-Evidence date:
-
-- Reviewed on `2026-05-17` against `main@eae8817`.
+- Reviewed on `2026-05-18` against `main@c6e0657` plus the contextual sign-in clarity slice.
 - External/control-plane facts remain `Unknown / To Verify` unless explicitly marked otherwise.
 
 ## Why It Matters
@@ -84,6 +82,10 @@ The user-facing sign-in page is `app/auth/sign-in/page.tsx`.
 Current behavior:
 
 - Users enter an email address and receive a secure sign-in email.
+- The sign-in page can explain the current safe entry context: Admin, My Library, checkout success,
+  or claim/download recovery.
+- Context text is explanatory only. It does not authorize admin access, billing portal access,
+  entitlements, downloads, or another user's data.
 - The primary path is the secure email link; the same email also includes a one-time code fallback.
 - iPhone Home Screen app users may see the email link open in Safari instead of the installed app;
   the robust recovery path is to return to the Home Screen app and enter the one-time code there.
@@ -94,6 +96,7 @@ Current behavior:
   session cookies to the redirect response before sending the user to the safe `next` path.
 - The fallback code form verifies through `verifySignInCode()` in `app/auth/sign-in/actions.ts`.
 - Safe redirect targets are normalized through `lib/auth/next-path.ts`.
+- Safe sign-in context copy is normalized through `lib/auth/sign-in-context.ts`.
 - Request cooldown and resend behavior are handled by helpers in `lib/auth/`.
 - Email send errors are classified so support can distinguish cooldowns, provider limits, delivery
   failures, and unknown errors.
@@ -104,6 +107,8 @@ Important boundary:
 
 - Signing in proves identity. It does not automatically grant admin access, billing access,
   entitlement access, or access to another user's data.
+- Checkout and claim contexts should ask for the checkout email, but access remains pending until
+  entitlement, billing, and download checks complete.
 - Protected route handlers must still enforce their own route class from
   `docs/architecture/data-access-authz-cache-contract-registry.md`.
 

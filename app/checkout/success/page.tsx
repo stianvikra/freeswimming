@@ -16,7 +16,11 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const rawSessionId = typeof params.session_id === "string" ? params.session_id : "";
   const sessionId = rawSessionId.startsWith("{") ? "" : rawSessionId;
   const { user } = await getServerSupabaseUserIfAuthCookiePresent();
-  const libraryHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
+  const signInQuery = new URLSearchParams({
+    next: "/my-library",
+    source: "checkout_success",
+  });
+  const libraryHref = user ? "/my-library" : `/auth/sign-in?${signInQuery.toString()}`;
   const libraryCta = user ? "Download from My Library" : "Sign in to My Library";
   const claimHref = "/claim?next=%2Fmy-library";
 

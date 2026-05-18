@@ -36,15 +36,15 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Later related auth work:
   - `docs/task-briefs/done/2026-05-17-auth-sign-in-link-first-otp-fallback-clarity-10-10.md`
   - shipped via `#732/#733`.
-- Parked auth follow-up:
+- Current auth follow-up:
   - `docs/task-briefs/planned/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`
-  - keep this from being forgotten, but execute it when auth, checkout success, claim/download, billing portal, or admin sign-in is touched next.
+  - moved to `docs/task-briefs/in-progress/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md` as the next AW-006 UX/UI slice after Programs shipped.
 - Latest shipped follow-up execution:
-  - `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`
-  - shipped through `#742/#743` after Public IA cleanup shipped through `#740/#741`.
+  - `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`
+  - shipped through `#744/#745` after Design token foundation proof shipped through `#742/#743`.
 - Current follow-up execution:
-  - `docs/task-briefs/in-progress/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`
-  - scoped to the next small AW-006 public UX/UI token adoption on `/programs`, using Poolside Guide and Poolside/PDF print as maturity references without changing entitlement, checkout, PDF, or guide internals.
+  - `docs/task-briefs/in-progress/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`
+  - scoped to contextual `/auth/sign-in` explanation copy for admin, My Library, checkout success, and claim/download entry contexts without changing Supabase Auth, Stripe, admin authorization, entitlement, or billing behavior.
 
 ## Executive Summary From The Review
 
@@ -92,22 +92,17 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Plans conversion baseline      | `done`    | `#737/#738`, `docs/task-briefs/done/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`                         | Shipped clearer `/plans` value, proof, and checkout expectation copy without changing Stripe mechanics.                                                                    |
 | Public IA / about cleanup      | `done`    | `#740/#741`, `docs/task-briefs/done/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`                           | Retired the stale `/about` page surface, corrected legacy redirect behavior, and made `/our-method` the canonical method page.                                             |
 | Design token foundation proof  | `done`    | `#742/#743`, `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`              | Established the first global token foundation and proved it on `/our-method` only.                                                                                         |
+| Programs Poolside PDF polish   | `done`    | `#744/#745`, `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`                | Applied the token foundation to `/programs` Poolside/PDF cards and refreshed the public value path without changing checkout, entitlement, guide, or PDF internals.        |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Programs Poolside PDF token polish` (current)
-   - Objective: apply the token foundation to the public `/programs` Poolside PDF/program cards, remove mobile fixed-nav overlap, and keep the Poolside/PDF value path credible without touching checkout, entitlement, guide, or PDF internals.
-   - Likely files: `app/programs/page.tsx`, `app/globals.css`, `tests/unit/design-token-contract.test.ts`, `tests/e2e/public-ia.spec.ts`, `tests/e2e/mobile-nav-state.spec.ts`.
-   - Risks: public CTA hierarchy and mobile nav expectations.
-   - Protected areas: UI/layout/brand; screenshot handoff required.
-2. `Contextual sign-in clarity audit` (parked trigger-based follow-up)
+1. `Contextual sign-in clarity audit` (current)
    - Objective: verify whether `#732/#733` fully covers `next=/admin`, `/my-library`, checkout/portal, and claim/download entry contexts; patch only remaining copy gaps.
-   - Trigger: pick this up when auth, checkout success, claim/download, billing portal, or admin sign-in is next touched.
    - Likely files: `app/auth/sign-in/page.tsx`, auth tests, support docs.
    - Risks: auth messaging, redirect context.
-   - Protected areas: auth.
+   - Protected areas: auth and UI copy; screenshot handoff required before broad gates.
 
 ## 10/10 Phase Plan Capture
 
