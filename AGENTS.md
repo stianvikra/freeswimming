@@ -103,6 +103,11 @@ This file defines how coding agents should collaborate in this repository.
 - Default to one actionable step at a time when guiding the repository owner in UI or terminal flows.
 - Keep instructions short and concrete.
 - Only provide multi-step batches when explicitly requested.
+- Before starting a new brief or implementation slice, Codex must first give a short Norwegian explanation for a non-programmer:
+  - what will be done,
+  - why it matters,
+  - what is intentionally out of scope.
+- Do not begin implementation until that explanation has been given, unless the owner already provided an equally clear explanation in the current request.
 - Automation-first default:
   - assistant should execute implement/test/git/PR prep steps directly whenever tooling + permissions allow,
   - assistant should only hand off manual steps when they require owner credentials, UI-only actions, or explicit escalation approval.
@@ -374,3 +379,4 @@ Store briefs in lifecycle folders:
 
 When implementation starts, move brief to `in-progress`.
 When merged, move brief to `done`.
+Every new brief or slice must start with the pre-implementation owner explanation from Collaboration Preferences before implementation begins.

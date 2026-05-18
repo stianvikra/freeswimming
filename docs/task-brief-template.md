@@ -7,6 +7,7 @@ Save new briefs in `docs/task-briefs/planned/` with date-based filenames.
 
 Use this quick check so the task execution is precise:
 
+- Start with a short Norwegian explanation for a non-programmer: what will be done, why it matters, and what is intentionally out of scope
 - Reference exact brief path (for example `docs/task-briefs/planned/YYYY-MM-DD-xxx.md`)
 - State execution mode (`end-to-end` or `plan only`)
 - State deliverables (implementation, tests, commit, push, PR handoff)
@@ -88,6 +89,16 @@ See `docs/runbooks/task-brief-audit-gate.md` for the pre-use checklist.
 ## Goal
 
 One sentence: what should be true after this task is done?
+
+## Pre-Implementation Owner Explanation
+
+Write this before implementation starts. It should be short, in Norwegian, and readable by a non-programmer:
+
+- what Codex will do,
+- why it matters,
+- what is intentionally out of scope.
+
+If the owner already gave this explanation clearly in the current request, quote or summarize it here before proceeding.
 
 ## Platform 10/10 Scorecard Mapping (Required)
 
