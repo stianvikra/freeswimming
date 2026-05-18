@@ -19,27 +19,20 @@ async function waitForProgramsPageToSettle(page: Page) {
   await expect(compilingIndicator).toHaveCount(0, { timeout: 60_000 });
 }
 
-test("route-aware bottom nav marks the current section while header menu owns drawer state", async ({
-  page,
-}) => {
+test("programs hides fixed bottom nav while header menu owns drawer state", async ({ page }) => {
   test.slow();
 
   await page.goto("/programs", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await waitForProgramsPageToSettle(page);
 
   const menu = page.getByTestId("header-menu-toggle");
-  const home = page.getByTestId("mobile-nav-home");
-  const course = page.getByTestId("mobile-nav-course");
-  const programs = page.getByTestId("mobile-nav-programs");
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
 
+  await expect(page.getByRole("heading", { name: "Swim Programs", exact: true })).toBeVisible();
+  await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
   await expect(page.getByTestId("mobile-nav-menu")).toHaveCount(0);
   await expect(menu).toBeVisible();
   await expect(menu).toHaveAttribute("aria-expanded", "false");
-  await expect(home).not.toHaveAttribute("aria-current", "page");
-  await expect(course).not.toHaveAttribute("aria-current", "page");
-  await expect(programs).toHaveAttribute("aria-current", "page");
-  await expect(programs).toHaveClass(/from-blue-500/);
 
   const openAttempts: Array<() => Promise<void>> = [
     async () => {
