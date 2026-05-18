@@ -3,6 +3,91 @@
 @source "../app";
 @source "../components";
 
+:root {
+  --fs-color-ink: #0f172a;
+  --fs-color-ink-strong: #020617;
+  --fs-color-muted: #475569;
+  --fs-color-brand-50: #eff6ff;
+  --fs-color-brand-100: #dbeafe;
+  --fs-color-brand-500: #3b82f6;
+  --fs-color-brand-600: #2563eb;
+  --fs-color-brand-700: #1d4ed8;
+  --fs-color-emerald-100: #d1fae5;
+  --fs-color-emerald-700: #047857;
+  --fs-color-cyan-100: #cffafe;
+  --fs-color-cyan-700: #0e7490;
+  --fs-surface-elevated: rgba(255, 255, 255, 0.92);
+  --fs-surface-subtle: rgba(255, 255, 255, 0.68);
+  --fs-border-soft: rgba(226, 232, 240, 0.82);
+  --fs-border-brand: rgba(191, 219, 254, 0.88);
+  --fs-radius-card: 8px;
+  --fs-radius-control: 8px;
+  --fs-radius-panel: 24px;
+  --fs-space-card: 20px;
+  --fs-space-cluster: 12px;
+  --fs-text-display: 56px;
+  --fs-text-display-mobile: 42px;
+  --fs-text-body: 17px;
+  --fs-text-card-title: 21px;
+  --fs-shadow-card: 0 14px 34px rgba(15, 23, 42, 0.08);
+  --fs-shadow-card-strong: 0 18px 44px rgba(24, 58, 107, 0.12);
+  --fs-shadow-control: 0 12px 28px rgba(37, 99, 235, 0.2);
+}
+
+.fs-surface-card {
+  border-radius: var(--fs-radius-card);
+  border: 1px solid var(--fs-border-soft);
+  background: var(--fs-surface-elevated);
+  box-shadow: var(--fs-shadow-card);
+}
+
+.fs-method-step-card {
+  border-color: var(--fs-tone-border, var(--fs-border-soft));
+  padding: var(--fs-space-card);
+}
+
+.fs-method-step-badge {
+  border-radius: var(--fs-radius-control);
+  background: var(--fs-tone-bg, var(--fs-color-brand-700));
+}
+
+.fs-method-proof-pill {
+  border-radius: var(--fs-radius-card);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  background: var(--fs-surface-subtle);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
+.fs-cta-primary {
+  border-radius: var(--fs-radius-control);
+  background: linear-gradient(180deg, #5aa6ff 0%, var(--fs-color-brand-600) 100%);
+  color: white;
+  box-shadow: var(--fs-shadow-control);
+}
+
+.fs-cta-secondary {
+  border-radius: var(--fs-radius-control);
+  border: 1px solid rgba(203, 213, 225, 0.92);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--fs-color-ink);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.fs-tone-blue {
+  --fs-tone-bg: var(--fs-color-brand-700);
+  --fs-tone-border: var(--fs-color-brand-100);
+}
+
+.fs-tone-emerald {
+  --fs-tone-bg: var(--fs-color-emerald-700);
+  --fs-tone-border: var(--fs-color-emerald-100);
+}
+
+.fs-tone-cyan {
+  --fs-tone-bg: var(--fs-color-cyan-700);
+  --fs-tone-border: var(--fs-color-cyan-100);
+}
+
 /* Base reset */
 html,
 body {
