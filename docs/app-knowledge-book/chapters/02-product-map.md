@@ -39,13 +39,13 @@ testing, and risk evidence.
 
 ## Audience Map
 
-| Audience            | Main job                                                                | Primary surfaces                                                                                        | Canonical docs                                                                                           |
-| ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Public visitor      | Understand FreeSwimming.org, course/program value, method, and contact. | `app/page.tsx`, `app/course/page.tsx`, `app/programs/page.tsx`, `app/analysis/page.tsx`, `app/contact/` | `docs/app-knowledge-book/00-repo-audit.md`, `docs/product-rules.md`                                      |
-| Signed-in member    | Continue learning and manage personal training tools.                   | `app/my-library/**`, progress APIs, profile/training/workout/program/dryland/habit APIs                 | `docs/architecture/data-access-authz-cache-contract-registry.md`, `docs/api-contracts.md`                |
-| Admin/editor/viewer | Manage content, commerce, messages, notes, QR links, operations, help.  | `app/admin/`, `components/admin/`, `app/api/admin/**`, `lib/admin/`                                     | `docs/architecture/admin-workspace-module-contracts.md`, `docs/runbooks/`                                |
-| Owner/operator      | Review releases, verify safety, handle support and incidents.           | Task briefs, runbooks, PRs, CI, verification scripts                                                    | `docs/testing-strategy.md`, `docs/checklists/release-pr-checklist.md`, `docs/runbooks/`                  |
-| External providers  | Own provider-canonical state outside the repo.                          | Supabase, Stripe, email provider, Upstash, Vercel, GitHub                                               | `docs/architecture/external-service-contract-matrix.md`, `docs/app-knowledge-book/unknowns-and-risks.md` |
+| Audience            | Main job                                                                | Primary surfaces                                                                                                                                         | Canonical docs                                                                                           |
+| ------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Public visitor      | Understand FreeSwimming.org, course/program value, method, and contact. | `app/page.tsx`, `app/course/page.tsx`, `app/programs/page.tsx`, `app/plans/page.tsx`, `app/analysis/page.tsx`, `app/our-method/page.tsx`, `app/contact/` | `docs/app-knowledge-book/00-repo-audit.md`, `docs/product-rules.md`                                      |
+| Signed-in member    | Continue learning and manage personal training tools.                   | `app/my-library/**`, progress APIs, profile/training/workout/program/dryland/habit APIs                                                                  | `docs/architecture/data-access-authz-cache-contract-registry.md`, `docs/api-contracts.md`                |
+| Admin/editor/viewer | Manage content, commerce, messages, notes, QR links, operations, help.  | `app/admin/`, `components/admin/`, `app/api/admin/**`, `lib/admin/`                                                                                      | `docs/architecture/admin-workspace-module-contracts.md`, `docs/runbooks/`                                |
+| Owner/operator      | Review releases, verify safety, handle support and incidents.           | Task briefs, runbooks, PRs, CI, verification scripts                                                                                                     | `docs/testing-strategy.md`, `docs/checklists/release-pr-checklist.md`, `docs/runbooks/`                  |
+| External providers  | Own provider-canonical state outside the repo.                          | Supabase, Stripe, email provider, Upstash, Vercel, GitHub                                                                                                | `docs/architecture/external-service-contract-matrix.md`, `docs/app-knowledge-book/unknowns-and-risks.md` |
 
 ## Public Entry And Marketing
 
@@ -63,7 +63,6 @@ Where it lives:
 - `app/plans/page.tsx`
 - `app/analysis/page.tsx`
 - `app/our-method/page.tsx`
-- `app/about/page.tsx`
 - `app/contact/page.tsx`
 - `app/privacy/page.tsx`
 - `app/cookies/page.tsx`
@@ -85,8 +84,6 @@ What not to change casually:
 
 Unknown / To Verify:
 
-- Whether the `/about` to `/how-we-teach` redirect behavior noted in
-  `docs/app-knowledge-book/unknowns-and-risks.md` is intentional, stale, or needs route cleanup.
 - Final public launch posture and when private/site-lock mode should be removed or changed.
 
 ## Course And Guides

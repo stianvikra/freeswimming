@@ -228,8 +228,6 @@ Keep these as `Unknown / To Verify` until a scoped owner or provider check prove
   alert delivery health.
 - Current Upstash database isolation, token health, and production traffic limits.
 - Current branch protection and required GitHub check configuration beyond repo docs/workflows.
-- Whether the `/about` to `/how-we-teach` redirect in `next.config.ts` is intentional, stale, or
-  missing a route.
 - Final public launch posture and when private/site-lock mode should be removed or changed.
 
 The full Phase 1 list lives in `docs/app-knowledge-book/unknowns-and-risks.md`.

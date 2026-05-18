@@ -23,8 +23,6 @@ fact.
 
 ## Product And Route Unknowns
 
-- `Unknown / To Verify`: whether the `/about` to `/how-we-teach` redirect in `next.config.ts` is
-  intentional, stale, or missing a route.
 - `Unknown / To Verify`: final public launch posture and when private/site-lock mode should be
   removed or changed.
 - `Unknown / To Verify`: which planned large epics should shape Phase 2 first: admin user
@@ -117,7 +115,6 @@ Mitigation:
 2. Decide whether Phase 2 should prioritize owner learning, launch operations, or domain/product
    architecture.
 3. Decide which generated inventories are worth building first.
-4. Confirm whether `/about` to `/how-we-teach` needs route cleanup before final public-route docs.
-5. Confirm which provider/control-plane facts the owner wants verified outside the repo.
-6. Decide whether App Knowledge Book chapters should be kept in one folder or split into owner,
+4. Confirm which provider/control-plane facts the owner wants verified outside the repo.
+5. Decide whether App Knowledge Book chapters should be kept in one folder or split into owner,
    developer, and operations sections.

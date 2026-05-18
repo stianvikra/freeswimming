@@ -132,6 +132,7 @@ function getBubbleBackgroundClass(element: HTMLElement) {
 
 describe("DrylandMicroPlanPanel", () => {
   beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-12T10:00:00.000Z").getTime());
     vi.stubGlobal("fetch", vi.fn());
   });
 
@@ -139,6 +140,7 @@ describe("DrylandMicroPlanPanel", () => {
     cleanup();
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 

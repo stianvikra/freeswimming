@@ -141,3 +141,32 @@ test("preview notify route hides fixed mobile nav and keeps header menu access",
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
 });
+
+test("method page hides fixed mobile nav and keeps header menu access", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Method-page mobile navigation behavior is validated only on mobile projects."
+  );
+  test.slow();
+
+  await page.goto("/our-method", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await waitForPageToSettle(page);
+
+  await expect(page.getByRole("heading", { name: "Our Method", exact: true })).toBeVisible();
+  await expect(page.getByTestId("mobile-fixed-nav")).toBeHidden();
+
+  const menu = page.getByTestId("header-menu-toggle");
+  const drawer = page.getByRole("dialog", { name: "Navigation menu" });
+
+  await expect(menu).toBeVisible();
+  await openNavigationDrawer(page, menu, drawer);
+  await expect(drawer).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+});

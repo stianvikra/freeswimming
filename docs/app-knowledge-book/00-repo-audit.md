@@ -90,10 +90,9 @@ Admin route:
 
 Route redirect evidence:
 
-- `next.config.ts` redirects `/about` to `/how-we-teach`, but the visible page inventory contains
-  `app/about/page.tsx` and `app/our-method/page.tsx`.
-- `Unknown / To Verify`: whether `/how-we-teach` is intentionally handled elsewhere, stale config,
-  or a missing route. This needs owner/product confirmation before a future route cleanup.
+- `next.config.ts` redirects legacy `/about` to canonical `/our-method`.
+- `/our-method` is the maintained method page in `app/our-method/page.tsx`; `/about` is not a
+  separate page surface.
 
 ## API Surface Inventory
 
@@ -519,8 +518,7 @@ Repo-evidenced risks:
 - Route/label/support changes have high fallout risk; the repo already has a dedicated sweep
   runbook for this.
 - Control-plane facts are easy to overstate; docs must preserve `Unknown / To Verify`.
-- The `/about` to `/how-we-teach` redirect needs clarification before future route docs claim final
-  public IA.
+- Legacy `/about` redirects to `/our-method`, so public method IA has one maintained page surface.
 
 Phase 1 recommendation:
 
