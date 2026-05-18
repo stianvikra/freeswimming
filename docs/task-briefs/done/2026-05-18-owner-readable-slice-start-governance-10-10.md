@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-18-owner-readable-slice-start-governance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-18`
 - `updated`: `2026-05-18`
@@ -170,7 +170,55 @@ N/A because this slice does not change rendered UI, browser behavior, print/expo
 
 Owner review should focus on whether the new start explanation rule is easy to understand and lightweight enough for every future brief/slice.
 
+## Completion Record
+
+- `completed`: `2026-05-18`
+- `merged_pr`: `#752`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/752`
+- `squash_commit`: `edf7436`
+- `implementation_commit`: `1428473`
+- `result`: Shipped a docs-only governance rule that requires a short Norwegian non-programmer explanation before each new brief or implementation slice starts.
+- `10/10 claim`: yes - all critical target categories scored `5/5` with canonical docs alignment, brief lint, docs-only pre-PR/pre-merge gates, and green GitHub checks.
+
+Plain-language done summary:
+
+- Codex must now start each new brief or slice by explaining in Norwegian what will be done, why it matters, and what is intentionally out of scope.
+- The rule is recorded in the agent contract, task-brief template, task-brief lifecycle README, and brief-audit runbook so it is visible at the normal start points for work.
+- No app screens, user data, payments, auth, analytics, runtime code, or UI behavior changed.
+
+Delivered changes:
+
+- `AGENTS.md`: added the pre-implementation owner explanation rule.
+- `docs/task-brief-template.md`: added a `Pre-Implementation Owner Explanation` section.
+- `docs/task-briefs/README.md`: added the rule to lifecycle and agent guidance.
+- `docs/runbooks/task-brief-audit-gate.md`: added the explanation check before a brief is marked ready.
+
+Validation evidence:
+
+- `npm run lint:briefs:all`: pass.
+- `git diff --check`: pass.
+- `npm run verify:pre-pr`: pass, docs-only lane, `artifacts/test-runs/20260518-211225/verify.log`.
+- GitHub PR #752 checks: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `CodeQL`, `Analyze (javascript-typescript)`, Vercel, and Vercel Preview Comments all passed.
+- `npm run verify:pre-merge`: pass, docs-only lane, `artifacts/verify-pre-merge/20260518-191507.json`.
+
+Risk and rollback:
+
+- Runtime risk is low because the shipped diff is Markdown-only governance.
+- Rollback is `git revert edf7436` if the rule proves too heavy or needs a different wording.
+
+| Category                            | Achieved Score | Evidence                                                                                                      | Gaps / Notes                                           |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Product goals and IA                | `5/5`          | `AGENTS.md`, task-brief template, README, and audit runbook all define the same start-of-slice owner context. | No product IA changed.                                 |
+| UX flow clarity                     | `5/5`          | The start rule names the three required owner-readable points: what, why, and out-of-scope.                   | Process UX only; no runtime flow changed.              |
+| Reliability and failure handling    | `5/5`          | `AGENTS.md` says implementation should not begin until the explanation exists unless owner already gave it.   | No automated parser in this intentionally small slice. |
+| Content governance                  | `5/5`          | Canonical collaboration docs and lifecycle docs were updated together; brief lint passed.                     | Historical done briefs intentionally unchanged.        |
+| i18n operational readiness          | `5/5`          | The rule explicitly requires Norwegian for owner communication while leaving app localization untouched.      | No translation architecture changed.                   |
+| Stack-fit and dependency discipline | `5/5`          | Markdown-only diff; no dependency, script, workflow, runtime, or config changes.                              | No new tooling introduced.                             |
+| Testing and QA automation           | `5/5`          | `lint:briefs:all`, docs-only `verify:pre-pr`, green GitHub checks, and docs-only `verify:pre-merge` passed.   | Screenshot QA not applicable.                          |
+| DevOps and rollback readiness       | `5/5`          | PR #752 merged as `edf7436`; rollback is a normal git revert; post-merge preflight surfaced this closeout.    | Closeout PR is docs-only.                              |
+
 ## Implementation Checkpoint Log
 
 - `2026-05-18 | working tree | started branch codex/governance-owner-brief-explanation from main@cfeae0e after clean git status and post-merge preflight found no pending closeout; created active docs-only governance brief and scoped the start-explanation rule to AGENTS.md, task-brief template, task-brief README, and brief-audit runbook | next: patch canonical docs, run docs-only validation, commit, push, open PR, monitor CI, and run verify:pre-merge`
 - `2026-05-18 | working tree | implemented the docs-only start-explanation rule, recorded route/label/support-surface sweep evidence, and passed npm run lint:briefs:all, git diff --check, and npm run verify:pre-pr using the docs-only lane with log artifacts/test-runs/20260518-211149/verify.log | next: rerun pre-PR after checkpoint-log update, commit, push, open PR, monitor CI, and run verify:pre-merge`
+- `2026-05-18 | edf7436 | PR #752 merged to main, local main synced, remote feature branch pruned, and post-merge preflight surfaced this repo-managed docs-only closeout | next: validate and merge closeout PR, sync main, rerun post-merge preflight, then make chat-handoff assessment`
