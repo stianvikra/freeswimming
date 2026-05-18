@@ -3,13 +3,16 @@
 ## Metadata
 
 - `id`: `2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-18`
 - `updated`: `2026-05-18`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `aw-006-programs-token-polish`
+- `pr`: `#744`
+- `merged`: `2026-05-18`
+- `merge_commit`: `6e679bd`
 
 ## Brief Audit Record
 
@@ -170,6 +173,31 @@ Required because `/programs` visible route content and mobile nav behavior chang
   - PR required CI checks
   - `npm run verify:pre-merge`
 
+## Closeout Evidence
+
+- Plain-language done summary: `/programs` now presents Swim Programs with the FreeSwimming symbol on the left, `Learn. Drill. Swim.` beneath the title, token-backed 8px program cards/CTAs, and no fixed mobile bottom-nav overlap on the Poolside PDF surface.
+- Screenshot artifacts: `output/programs-token-polish-2026-05-18-122237/` (`before/after` desktop and mobile, refreshed on the merged PR commit before merge).
+- Local validation:
+  - `npm run verify:pre-pr`: PASS, full public lane.
+  - `npm run verify:pre-merge`: PASS for `2e800a5`, full lane, private-gate regression skipped because `SITE_LOCK_ENABLED!=1`.
+  - `npm run merge:preflight -- --assert-ready`: PASS before merge.
+- CI validation on PR `#744`: PASS for CodeQL, Vercel, deploy preview, size-check, e2e-smoke, site-lock-smoke, and `verify` (`15m02s`).
+- `10/10 claim`: yes. Critical target categories `UX flow clarity`, `Visual design quality`, `Accessibility (a11y)`, `Testing and QA automation`, and `DevOps and rollback readiness` are each scored `5/5`.
+- Remaining gaps: none for this PR scope.
+- Defer/fix recommendation: none. Perf budget trend recommended tightening one stretch target after 6 green weekly runs; this slice held thresholds unchanged because performance policy changes are out of scope.
+
+| Target Category                     | Achieved Score | Evidence                                                                                                   |
+| ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                | `5/5`          | `/programs` H1, Poolside PDF/Video Analysis CTA contract, public IA E2E, screenshot review                 |
+| UX flow clarity                     | `5/5`          | mobile-nav E2E confirms fixed nav hidden and header menu available; mobile screenshots show no CTA overlap |
+| Visual design quality               | `5/5`          | token-backed 8px card/CTA checks, no nested intro card stack, before/after screenshots                     |
+| Accessibility (a11y)                | `5/5`          | one visible H1, semantic sections/lists, focusable links, header menu access, E2E coverage                 |
+| Performance (CWV + payloads)        | `5/5`          | no dependency/media/API additions; build and perf budgets passed                                           |
+| Content governance                  | `5/5`          | public copy remains truthful; AW-006 queue updated; route-label/support sweep recorded                     |
+| Stack-fit and dependency discipline | `5/5`          | reused `SiteChrome`, `BrandImage`, `PressLink`, `cx`, existing token CSS; no new dependency                |
+| Testing and QA automation           | `5/5`          | targeted unit/E2E, `verify:pre-pr`, CI, and `verify:pre-merge` passed                                      |
+| DevOps and rollback readiness       | `5/5`          | no migration/dependency/flag; revert of `6e679bd` restores prior state                                     |
+
 ## Checkpoint Log
 
 - `2026-05-18 | in-progress | started from clean main@7778eca after AW-006 design token proof closeout #743; post-merge preflight found no closeout; created branch aw-006-programs-token-polish; selected /programs as the next small AW-006 public UX/UI slice because public IA and design-token proof are already shipped and before screenshots show fixed mobile nav overlap on the Poolside PDF CTA | next: implement tokenized /programs layout, targeted tests, and after screenshots before owner screenshot approval`
@@ -178,3 +206,4 @@ Required because `/programs` visible route content and mobile nav behavior chang
 - `2026-05-18 | screenshot-approved | owner approved the corrected /programs lockup screenshot handoff; continuing into npm run verify:pre-pr, commit, push, PR, CI, and npm run verify:pre-merge while still stopping before merge | next: run broad pre-PR gate`
 - `2026-05-18 | pre-pr-gate-fix | npm run verify:pre-pr initially failed in lint:quality-gates because the Route / Label / Support Surface Sweep evidence used noncanonical headings; updated the brief to use Identifiers searched and Surfaces checked wording while preserving the same sweep evidence | next: rerun npm run verify:pre-pr`
 - `2026-05-18 | pre-pr-pass | npm run verify:pre-pr passed the full public lane after the brief evidence wording fix: lint, typecheck, 1100 unit tests, production build, perf budgets, and 94 passed / 452 skipped Playwright E2E tests; perf budget trend reported 6 consecutive weekly green runs with a tighten recommendation, but this UI slice holds budget thresholds unchanged and records the tighten prompt for owner follow-up in the PR summary because changing performance policy is out of scope for this route polish | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-18 | merged | PR #744 merged to main at 6e679bd after green CI, local npm run verify:pre-merge, and merge preflight; post-merge preflight surfaced this repo-managed docs-only closeout, moved the brief to done, and recorded closeout evidence | next: closeout PR`
