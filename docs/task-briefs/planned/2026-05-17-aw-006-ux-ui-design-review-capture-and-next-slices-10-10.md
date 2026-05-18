@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-18`
-- `base`: `main@2ed797f`
+- `base`: `main@88ff6ee`
 - `audit_status`: `ready`
 - `decision`: Use this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -42,12 +42,18 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Recently shipped follow-up execution:
   - `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`
   - shipped through `#744/#745` after Design token foundation proof shipped through `#742/#743`.
-- Latest shipped follow-up execution:
+- Prior shipped follow-up execution:
   - `docs/task-briefs/done/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`
   - shipped through `#748/#749`, scoped to public `/contact` and `/analysis` trust copy, response expectation, privacy boundary, and input guidance without changing contact API, provider delivery, admin messages, Stripe, Supabase, or analytics behavior.
+- Completed anonymous-course follow-up:
+  - `docs/task-briefs/done/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
+  - shipped through `#750/#751`, scoped to public `/course` anonymous background noise: guest progress stays local-only and guest course browsing no longer mounts the admin lesson-notes panel or calls protected admin notes APIs, without changing signed-in progress sync, admin notes authorization, Supabase, course content, or visible course design.
+- Completed governance follow-up:
+  - `docs/task-briefs/done/2026-05-18-owner-readable-slice-start-governance-10-10.md`
+  - shipped through `#752/#753`, adding the required Norwegian non-programmer explanation before each new brief or implementation slice.
 - Current follow-up execution:
-  - `docs/task-briefs/in-progress/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
-  - scoped to public `/course` anonymous background noise: keep guest progress local-only and prevent guest course browsing from mounting the admin lesson-notes panel or calling protected admin notes APIs, without changing signed-in progress sync, admin notes authorization, Supabase, course content, or visible course design.
+  - `docs/task-briefs/in-progress/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`
+  - scoped to truthful public sample/proof expectations for Poolside PDF and Video Analysis on `/programs` and `/analysis`, without changing Stripe, contact API delivery, entitlements, generated PDFs, analytics, Supabase, Help/Guide, or broad design-system behavior.
 
 ## Executive Summary From The Review
 
@@ -98,21 +104,23 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Programs Poolside PDF polish    | `done`    | `#744/#745`, `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`                | Applied the token foundation to `/programs` Poolside/PDF cards and refreshed the public value path without changing checkout, entitlement, guide, or PDF internals.        |
 | Contextual sign-in clarity      | `done`    | `#746/#747`, `docs/task-briefs/done/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`                  | Added contextual `/auth/sign-in` explanation for admin, My Library, checkout success, and claim/download contexts without changing auth, Stripe, or entitlement behavior.  |
 | Contact and analysis trust copy | `done`    | `#748/#749`, `docs/task-briefs/done/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`                       | Strengthened `/contact` and `/analysis` trust copy, response expectation, privacy boundary, and input guidance without changing contact delivery behavior.                 |
+| Anonymous course progress noise | `done`    | `#750/#751`, `docs/task-briefs/done/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`                   | Stopped guest `/course` browsing from mounting admin lesson notes or calling protected admin notes APIs while preserving signed-in progress/admin behavior.                |
+| Owner-readable slice start gate | `done`    | `#752/#753`, `docs/task-briefs/done/2026-05-18-owner-readable-slice-start-governance-10-10.md`                    | Added the required Norwegian non-programmer explanation before each new brief or implementation slice.                                                                     |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Anonymous course-progress console noise` (current)
-   - Objective: reduce optional anonymous course-progress/admin-support noise during public course browsing, without changing signed-in progress sync, admin notes authorization, or authenticated member behavior.
-   - Likely files: `app/course/page.tsx`, course/admin contextual tests, progress request tests.
-   - Risks: admin contextual lesson notes visibility for allowlisted admins, guest local progress, course first viewport.
-   - Protected areas: course progress reliability and admin support surfaces; screenshot handoff required before broad gates because `/course` rendering is touched.
-2. `Sample deliverable proof`
+1. `Sample deliverable proof` (current)
    - Objective: add accurate sample/proof expectations for PDF/video analysis where the product can substantiate them.
-   - Likely files: `/programs`, `/analysis`, public tests/docs.
-   - Risks: overpromising paid/support outcomes.
-   - Protected areas: commerce/trust copy; screenshot handoff required before broad gates.
+   - Likely files: `app/programs/page.tsx`, `components/ContactForm.tsx`, public tests/docs.
+   - Risks: overpromising paid/support outcomes or implying a generated artifact/testimonial that does not exist.
+   - Protected areas: commerce/trust copy, contact request expectations, CTA destinations; screenshot handoff required before broad gates because `/programs` and `/analysis` rendering are touched.
+2. `Re-audit remaining AW-006 queue after sample proof`
+   - Objective: refresh this canonical queue again before selecting the next implementation slice, because most quick-win review items have now shipped.
+   - Likely files: AW-006 planned/current brief only, unless the next slice is selected immediately.
+   - Risks: accidentally restarting completed work from the original review list.
+   - Protected areas: task-brief accuracy and owner-readable slice selection.
 
 ## 10/10 Phase Plan Capture
 
@@ -123,7 +131,8 @@ Recommended order unless the owner explicitly reprioritizes:
 - Improve course desktop first viewport.
 - Improve plans price/value/trust/expectation copy without changing checkout mechanics.
 - Clarify `/about` versus method/about IA and remove under-quality method-page presentation found during screenshot review.
-- Reduce optional anonymous course-progress console noise if still present.
+- Reduce optional anonymous course-progress console noise if still present. Status: `done`.
+- Add truthful sample deliverable proof for Poolside PDF and Video Analysis. Status: `current`.
 
 ### Phase 2: Core UX / Design System
 
@@ -289,3 +298,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-17 | planned | refreshed after Course desktop player polish #735/#736 on clean main@6724077; marked course desktop done and promoted Plans conversion baseline as the next remaining PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`
 - `2026-05-18 | planned | refreshed after Contextual Sign-In Clarity #746/#747 on clean main@b9f3b7d; marked contextual sign-in done and promoted Contact and Analysis Trust Copy as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`
 - `2026-05-18 | planned | refreshed after Contact/Analysis Trust Copy #748/#749 on clean main@2ed797f; marked contact/analysis done and promoted Anonymous Course Progress Noise as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
+- `2026-05-18 | planned | refreshed after Anonymous Course Progress Noise #750/#751 and Owner-Readable Slice Start Governance #752/#753 on clean main@88ff6ee; marked anonymous course noise and start-governance done, and promoted Sample Deliverable Proof as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`

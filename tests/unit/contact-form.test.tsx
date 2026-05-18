@@ -50,6 +50,14 @@ describe("ContactForm", () => {
     expect(screen.getByText("Useful context")).toBeInTheDocument();
     expect(screen.getByText("No payment details, passwords, or sign-in codes")).toBeInTheDocument();
     expect(screen.getByText("Send the smallest useful sample")).toBeInTheDocument();
+    expect(screen.getByText("What the analysis reply looks like")).toBeInTheDocument();
+    expect(screen.getByText("Priority")).toBeInTheDocument();
+    expect(screen.getByText("Next pool task")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The final reply depends on the clip and context you send; we do not need payment details or private medical information."
+      )
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Useful: current level, target distance or pace, what you feel in the water, and one shareable video link if you have it."
