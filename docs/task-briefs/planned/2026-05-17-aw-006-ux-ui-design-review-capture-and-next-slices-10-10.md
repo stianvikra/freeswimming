@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-05-17`
+- `updated`: `2026-05-18`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
@@ -39,9 +39,12 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Parked auth follow-up:
   - `docs/task-briefs/planned/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`
   - keep this from being forgotten, but execute it when auth, checkout success, claim/download, billing portal, or admin sign-in is touched next.
+- Latest shipped follow-up execution:
+  - `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`
+  - shipped through `#742/#743` after Public IA cleanup shipped through `#740/#741`.
 - Current follow-up execution:
-  - `docs/task-briefs/in-progress/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`
-  - scoped to the next small AW-006 UX/UI route/IA cleanup and narrow `/our-method` visual correction after Plans conversion baseline shipped through `#737/#738`.
+  - `docs/task-briefs/in-progress/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`
+  - scoped to the next small AW-006 public UX/UI token adoption on `/programs`, using Poolside Guide and Poolside/PDF print as maturity references without changing entitlement, checkout, PDF, or guide internals.
 
 ## Executive Summary From The Review
 
@@ -87,22 +90,19 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | My Swim Profile action-first   | `done`    | `#728/#729`, `docs/task-briefs/done/2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10.md` | Shipped before the captured full review; aligns with onboarding/member readiness findings.                                                                                 |
 | Course desktop player polish   | `done`    | `#735/#736`, `docs/task-briefs/done/2026-05-17-course-desktop-player-polish-10-10.md`                             | Shipped the first viewport desktop course/player polish that was originally the top remaining AW-006 item.                                                                 |
 | Plans conversion baseline      | `done`    | `#737/#738`, `docs/task-briefs/done/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`                         | Shipped clearer `/plans` value, proof, and checkout expectation copy without changing Stripe mechanics.                                                                    |
+| Public IA / about cleanup      | `done`    | `#740/#741`, `docs/task-briefs/done/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`                           | Retired the stale `/about` page surface, corrected legacy redirect behavior, and made `/our-method` the canonical method page.                                             |
+| Design token foundation proof  | `done`    | `#742/#743`, `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`              | Established the first global token foundation and proved it on `/our-method` only.                                                                                         |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Public IA / about cleanup`
-   - Objective: remove or make real any unclear `/about` or method route surface, improve the canonical method landing enough for desktop/mobile screenshot review, and keep nav/docs/metadata aligned.
-   - Likely files: `app/about/**`, `app/our-method/**`, redirect config, sitemap/metadata docs/tests.
-   - Risks: route/SEO/support references.
-   - Protected areas: route/SEO.
-2. `Design token foundation`
-   - Objective: establish color/type/spacing/radius/shadow tokens and migrate one low-risk public surface as proof.
-   - Likely files: `app/globals.css`, `components/ui/*`, `components/PageTemplate.tsx`, one selected public route.
-   - Risks: global visual regression.
+1. `Programs Poolside PDF token polish` (current)
+   - Objective: apply the token foundation to the public `/programs` Poolside PDF/program cards, remove mobile fixed-nav overlap, and keep the Poolside/PDF value path credible without touching checkout, entitlement, guide, or PDF internals.
+   - Likely files: `app/programs/page.tsx`, `app/globals.css`, `tests/unit/design-token-contract.test.ts`, `tests/e2e/public-ia.spec.ts`, `tests/e2e/mobile-nav-state.spec.ts`.
+   - Risks: public CTA hierarchy and mobile nav expectations.
    - Protected areas: UI/layout/brand; screenshot handoff required.
-3. `Contextual sign-in clarity audit` (parked trigger-based follow-up)
+2. `Contextual sign-in clarity audit` (parked trigger-based follow-up)
    - Objective: verify whether `#732/#733` fully covers `next=/admin`, `/my-library`, checkout/portal, and claim/download entry contexts; patch only remaining copy gaps.
    - Trigger: pick this up when auth, checkout success, claim/download, billing portal, or admin sign-in is next touched.
    - Likely files: `app/auth/sign-in/page.tsx`, auth tests, support docs.

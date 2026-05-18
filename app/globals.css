@@ -58,6 +58,21 @@
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 
+.fs-program-card {
+  border-radius: var(--fs-radius-card);
+  border: 1px solid var(--fs-border-soft);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9));
+  box-shadow: var(--fs-shadow-card);
+}
+
+.fs-program-card-highlight {
+  border-color: var(--fs-border-brand);
+  background:
+    radial-gradient(520px 220px at 15% 0%, rgba(99, 168, 255, 0.13), rgba(255, 255, 255, 0) 66%),
+    linear-gradient(180deg, rgba(244, 248, 255, 0.96), rgba(239, 246, 255, 0.88));
+  box-shadow: var(--fs-shadow-card-strong);
+}
+
 .fs-cta-primary {
   border-radius: var(--fs-radius-control);
   background: linear-gradient(180deg, #5aa6ff 0%, var(--fs-color-brand-600) 100%);

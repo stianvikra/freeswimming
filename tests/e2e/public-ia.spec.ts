@@ -45,4 +45,36 @@ test.describe("public route IA", () => {
       "8px"
     );
   });
+
+  test("keeps programs cards token-backed with clear CTA destinations", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await gotoWithTransientRetry(page, "/programs");
+
+    await expect(page.getByRole("heading", { name: "Swim Programs", exact: true })).toBeVisible();
+    await expect(
+      page.getByTestId("programs-hero-lockup").getByText("Learn. Drill. Swim.")
+    ).toBeVisible();
+
+    const poolsideCard = page.getByTestId("program-card-poolside-pdf");
+    const analysisCard = page.getByTestId("program-card-video-analysis");
+
+    await expect(poolsideCard.getByRole("heading", { name: "Poolside PDF Guide" })).toBeVisible();
+    await expect(
+      analysisCard.getByRole("heading", { name: "Video Analysis", exact: true })
+    ).toBeVisible();
+    await expect(poolsideCard).toHaveCSS("border-radius", "8px");
+    await expect(analysisCard).toHaveCSS("border-radius", "8px");
+
+    const pdfCta = poolsideCard.getByRole("link", { name: "Join PDF waitlist" });
+    const analysisCta = analysisCard.getByRole("link", { name: "Get feedback" });
+
+    await expect(pdfCta).toHaveAttribute("href", "/contact");
+    await expect(analysisCta).toHaveAttribute("href", "/analysis");
+    await expect(pdfCta).toHaveCSS("border-radius", "8px");
+    await expect(analysisCta).toHaveCSS("border-radius", "8px");
+    await expect(page.getByText("GET PDF UPDATES")).toHaveCount(0);
+  });
 });

@@ -2,59 +2,119 @@
 "use client";
 
 import SiteChrome from "@/components/SiteChrome";
-import PageTemplate from "@/components/PageTemplate";
-import ActionButton from "@/components/ActionButton";
-import PageIntro from "@/components/PageIntro";
+import BrandImage from "@/components/brand/BrandImage";
+import PressLink from "@/components/ui/PressLink";
+import { cx } from "@/components/ui/cx";
+import { BRAND_USAGE } from "@/lib/brand";
+
+const PROGRAM_CARDS = [
+  {
+    id: "poolside-pdf",
+    eyebrow: "Poolside + PDF",
+    title: "Poolside PDF Guide",
+    body: "A pool-ready drill guide with simple structure, QR-linked videos, and enough direction to choose the right focus before you swim.",
+    bullets: [
+      "Quick structure for what to do today",
+      "Balance and body-position drills first",
+      "Works alongside the free course lessons",
+    ],
+    href: "/contact",
+    action: "Join PDF waitlist",
+    actionClassName: "fs-cta-secondary text-[color:var(--fs-color-ink)]",
+    cardClassName: "fs-program-card",
+  },
+  {
+    id: "video-analysis",
+    eyebrow: "Personal feedback",
+    title: "Video Analysis",
+    body: "Send a short clip and get a focused next step, so your pool work connects to the technique issue that matters most.",
+    bullets: [
+      "One clear priority from your stroke video",
+      "Practical drills you can take to the pool",
+      "Useful when self-correction has stalled",
+    ],
+    href: "/analysis",
+    action: "Get feedback",
+    actionClassName: "fs-cta-primary",
+    cardClassName: "fs-program-card fs-program-card-highlight",
+  },
+] as const;
 
 export default function ProgramsPage() {
   return (
-    <SiteChrome>
-      <PageTemplate size="wide">
-        <PageIntro title="Swim Programs" subtitle="Learn. Drill. Swim." />
-
-        <div className="mt-4 grid gap-4">
-          <div className="relative overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] p-6 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
-            <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
-              Most popular
-            </div>
-            <h2 className="mt-2 text-[18px] font-semibold text-slate-900">Poolside PDF Guide</h2>
-            <p className="mt-2 text-[15px] leading-7 text-slate-700">
-              A simple drill library you can bring to the pool — with QR links to the videos.
-            </p>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-[14px] leading-6 text-slate-700">
-              <li>Quick “what to do today” structure</li>
-              <li>Best drills for balance + body position</li>
-              <li>Works with the free course lessons</li>
-            </ul>
-
-            <div className="mt-5">
-              <ActionButton
-                title="GET PDF UPDATES"
-                subtitle="Join waitlist"
-                href="/contact"
-                variant="secondary"
-              />
+    <SiteChrome mobileNavMode="hidden">
+      <section className="mx-auto min-h-screen w-full max-w-[980px] px-4 pt-12 pb-20 sm:px-6 sm:pt-16 lg:pt-20">
+        <div className="max-w-[700px]">
+          <div
+            data-testid="programs-hero-lockup"
+            className="border-b border-[color:var(--fs-border-brand)] pb-5"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-[76px] shrink-0 items-center justify-center sm:h-14 sm:w-[90px]">
+                <BrandImage
+                  asset={BRAND_USAGE.pageIntroSymbol}
+                  decorative
+                  className="h-full w-auto object-contain"
+                  sizes="(max-width: 640px) 76px, 90px"
+                  priority
+                />
+              </div>
+              <div>
+                <h1 className="text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
+                  Swim Programs
+                </h1>
+                <p className="mt-2 text-[17px] leading-6 font-semibold text-[color:var(--fs-color-muted)]">
+                  Learn. Drill. Swim.
+                </p>
+              </div>
             </div>
           </div>
-
-          <div className="relative overflow-hidden rounded-[22px] border border-blue-100/70 bg-[radial-gradient(520px_220px_at_15%_0%,rgba(99,168,255,0.13),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(244,248,255,0.95),rgba(239,246,255,0.88))] p-6 shadow-[0_14px_34px_rgba(37,99,235,0.1)]">
-            <div className="opacity-72 absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent" />
-            <h2 className="text-[18px] font-semibold text-slate-900">Want personal guidance?</h2>
-            <p className="mt-2 text-[15px] leading-7 text-slate-700">
-              Send a short clip and we’ll tell you exactly what to focus on next.
-            </p>
-            <div className="mt-5">
-              <ActionButton
-                title="VIDEO ANALYSIS"
-                subtitle="Get feedback (optional)"
-                href="/analysis"
-                variant="primary"
-              />
-            </div>
-          </div>
+          <p className="mt-5 text-[length:var(--fs-text-body)] leading-8 text-[color:var(--fs-color-muted)]">
+            Poolside resources for adult swimmers who want clear practice structure, simple drill
+            choices, and a path from self-guided learning to personal feedback.
+          </p>
         </div>
-      </PageTemplate>
+
+        <div className="mt-7 grid gap-4 lg:grid-cols-2">
+          {PROGRAM_CARDS.map((card) => (
+            <section
+              key={card.id}
+              data-testid={`program-card-${card.id}`}
+              className={cx(card.cardClassName, "flex min-h-full flex-col p-5 sm:p-6")}
+            >
+              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                {card.eyebrow}
+              </p>
+              <h2 className="mt-2 text-[length:var(--fs-text-card-title)] font-semibold text-[color:var(--fs-color-ink-strong)]">
+                {card.title}
+              </h2>
+              <p className="mt-3 text-[15px] leading-7 text-[color:var(--fs-color-muted)]">
+                {card.body}
+              </p>
+              <ul className="mt-4 space-y-2 text-[14px] leading-6 text-slate-700">
+                {card.bullets.map((bullet) => (
+                  <li key={bullet} className="flex gap-2">
+                    <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--fs-color-brand-500)]" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 flex flex-1 items-end">
+                <PressLink
+                  tier="cta"
+                  href={card.href}
+                  className={cx(
+                    card.actionClassName,
+                    "inline-flex min-h-12 w-full items-center justify-center px-5 text-[15px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:w-auto"
+                  )}
+                >
+                  {card.action}
+                </PressLink>
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
     </SiteChrome>
   );
 }
