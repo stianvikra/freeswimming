@@ -3263,14 +3263,16 @@ function CoursePageClient() {
             </section>
           ) : null}
 
-          <AdminContextNotesPanel
-            contextType="course_lesson"
-            contextRef={activeLesson.id}
-            contextLabel={`Lesson: ${activeLesson.title} (${activeLesson.id})`}
-            includeModuleContextForCourseLesson
-            collapsedByDefault
-            className="mt-4"
-          />
+          {dashboardVisible ? (
+            <AdminContextNotesPanel
+              contextType="course_lesson"
+              contextRef={activeLesson.id}
+              contextLabel={`Lesson: ${activeLesson.title} (${activeLesson.id})`}
+              includeModuleContextForCourseLesson
+              collapsedByDefault
+              className="mt-4"
+            />
+          ) : null}
 
           <div className="h-6 sm:hidden" aria-hidden />
 

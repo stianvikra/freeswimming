@@ -21,7 +21,16 @@ test("course desktop player pre-play state shows title, CTA, poster, and no gues
   test.skip(!isDesktopProject(testInfo), "Runs on desktop profiles only.");
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
+  const backgroundApiRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === "/api/progress/course" || url.pathname === "/api/admin/notes") {
+      backgroundApiRequests.push(`${request.method()} ${url.pathname}${url.search}`);
+    }
+  });
+
   await gotoCourse(page);
+  await page.waitForTimeout(1_500);
 
   const viewportHeight = page.viewportSize()?.height ?? 900;
   const player = page.getByTestId("course-player-card");
@@ -51,6 +60,7 @@ test("course desktop player pre-play state shows title, CTA, poster, and no gues
   await expect(poster).toHaveAttribute("src", /https:\/\/i\.ytimg\.com\/vi\/.+\/hqdefault\.jpg/);
   await expect(poster).toHaveAttribute("alt", "");
   await expect(poster).toHaveAttribute("aria-hidden", "true");
+  expect(backgroundApiRequests).toEqual([]);
   await page.getByRole("button", { name: "Overview details" }).click();
   await expect(page.getByText("Lesson and playback progress saved on this device.")).toHaveCount(0);
 });
