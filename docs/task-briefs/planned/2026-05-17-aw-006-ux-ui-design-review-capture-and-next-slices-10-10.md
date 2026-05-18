@@ -12,11 +12,11 @@
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-17`
-- `base`: `main@6724077`
+- `last_audited`: `2026-05-18`
+- `base`: `main@2ed797f`
 - `audit_status`: `ready`
 - `decision`: Use this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, and the remaining review queue needs a repo-backed source before more UX/UI implementation starts.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -43,11 +43,11 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
   - `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`
   - shipped through `#744/#745` after Design token foundation proof shipped through `#742/#743`.
 - Latest shipped follow-up execution:
-  - `docs/task-briefs/done/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`
-  - shipped through `#746/#747`, scoped to contextual `/auth/sign-in` explanation copy for admin, My Library, checkout success, and claim/download entry contexts without changing Supabase Auth, Stripe, admin authorization, entitlement, or billing behavior.
+  - `docs/task-briefs/done/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`
+  - shipped through `#748/#749`, scoped to public `/contact` and `/analysis` trust copy, response expectation, privacy boundary, and input guidance without changing contact API, provider delivery, admin messages, Stripe, Supabase, or analytics behavior.
 - Current follow-up execution:
-  - `docs/task-briefs/in-progress/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`
-  - scoped to public `/contact` and `/analysis` trust copy, response expectation, privacy boundary, and input guidance without changing contact API, provider delivery, admin messages, Stripe, Supabase, or analytics behavior.
+  - `docs/task-briefs/in-progress/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
+  - scoped to public `/course` anonymous background noise: keep guest progress local-only and prevent guest course browsing from mounting the admin lesson-notes panel or calling protected admin notes APIs, without changing signed-in progress sync, admin notes authorization, Supabase, course content, or visible course design.
 
 ## Executive Summary From The Review
 
@@ -85,34 +85,30 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Shipped Since The Review
 
-| Slice                          | Status    | Evidence                                                                                                          | Notes                                                                                                                                                                      |
-| ------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mobile CTA safe-area hardening | `done`    | `#730/#731`, `docs/task-briefs/done/2026-05-16-mobile-cta-safe-area-hardening-10-10.md`                           | Completed the first approved UX/UI audit task.                                                                                                                             |
-| Auth sign-in fallback clarity  | `partial` | `#732/#733`, `docs/task-briefs/done/2026-05-17-auth-sign-in-link-first-otp-fallback-clarity-10-10.md`             | Covered link-first + one-time-code fallback and iPhone Home Screen guidance; contextual `next` copy still needs a focused audit before marking the review item fully done. |
-| Goals action-first             | `done`    | `#726/#727`, `docs/task-briefs/done/2026-05-16-goals-action-first-simplification-10-10.md`                        | Shipped before the captured full review; aligns with the review's action-first dashboard/member direction.                                                                 |
-| My Swim Profile action-first   | `done`    | `#728/#729`, `docs/task-briefs/done/2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10.md` | Shipped before the captured full review; aligns with onboarding/member readiness findings.                                                                                 |
-| Course desktop player polish   | `done`    | `#735/#736`, `docs/task-briefs/done/2026-05-17-course-desktop-player-polish-10-10.md`                             | Shipped the first viewport desktop course/player polish that was originally the top remaining AW-006 item.                                                                 |
-| Plans conversion baseline      | `done`    | `#737/#738`, `docs/task-briefs/done/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`                         | Shipped clearer `/plans` value, proof, and checkout expectation copy without changing Stripe mechanics.                                                                    |
-| Public IA / about cleanup      | `done`    | `#740/#741`, `docs/task-briefs/done/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`                           | Retired the stale `/about` page surface, corrected legacy redirect behavior, and made `/our-method` the canonical method page.                                             |
-| Design token foundation proof  | `done`    | `#742/#743`, `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`              | Established the first global token foundation and proved it on `/our-method` only.                                                                                         |
-| Programs Poolside PDF polish   | `done`    | `#744/#745`, `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`                | Applied the token foundation to `/programs` Poolside/PDF cards and refreshed the public value path without changing checkout, entitlement, guide, or PDF internals.        |
-| Contextual sign-in clarity     | `done`    | `#746/#747`, `docs/task-briefs/done/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`                  | Added contextual `/auth/sign-in` explanation for admin, My Library, checkout success, and claim/download contexts without changing auth, Stripe, or entitlement behavior.  |
+| Slice                           | Status    | Evidence                                                                                                          | Notes                                                                                                                                                                      |
+| ------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mobile CTA safe-area hardening  | `done`    | `#730/#731`, `docs/task-briefs/done/2026-05-16-mobile-cta-safe-area-hardening-10-10.md`                           | Completed the first approved UX/UI audit task.                                                                                                                             |
+| Auth sign-in fallback clarity   | `partial` | `#732/#733`, `docs/task-briefs/done/2026-05-17-auth-sign-in-link-first-otp-fallback-clarity-10-10.md`             | Covered link-first + one-time-code fallback and iPhone Home Screen guidance; contextual `next` copy still needs a focused audit before marking the review item fully done. |
+| Goals action-first              | `done`    | `#726/#727`, `docs/task-briefs/done/2026-05-16-goals-action-first-simplification-10-10.md`                        | Shipped before the captured full review; aligns with the review's action-first dashboard/member direction.                                                                 |
+| My Swim Profile action-first    | `done`    | `#728/#729`, `docs/task-briefs/done/2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10.md` | Shipped before the captured full review; aligns with onboarding/member readiness findings.                                                                                 |
+| Course desktop player polish    | `done`    | `#735/#736`, `docs/task-briefs/done/2026-05-17-course-desktop-player-polish-10-10.md`                             | Shipped the first viewport desktop course/player polish that was originally the top remaining AW-006 item.                                                                 |
+| Plans conversion baseline       | `done`    | `#737/#738`, `docs/task-briefs/done/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`                         | Shipped clearer `/plans` value, proof, and checkout expectation copy without changing Stripe mechanics.                                                                    |
+| Public IA / about cleanup       | `done`    | `#740/#741`, `docs/task-briefs/done/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`                           | Retired the stale `/about` page surface, corrected legacy redirect behavior, and made `/our-method` the canonical method page.                                             |
+| Design token foundation proof   | `done`    | `#742/#743`, `docs/task-briefs/done/2026-05-18-aw-006-design-token-foundation-public-proof-10-10.md`              | Established the first global token foundation and proved it on `/our-method` only.                                                                                         |
+| Programs Poolside PDF polish    | `done`    | `#744/#745`, `docs/task-briefs/done/2026-05-18-aw-006-programs-poolside-pdf-token-polish-10-10.md`                | Applied the token foundation to `/programs` Poolside/PDF cards and refreshed the public value path without changing checkout, entitlement, guide, or PDF internals.        |
+| Contextual sign-in clarity      | `done`    | `#746/#747`, `docs/task-briefs/done/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`                  | Added contextual `/auth/sign-in` explanation for admin, My Library, checkout success, and claim/download contexts without changing auth, Stripe, or entitlement behavior.  |
+| Contact and analysis trust copy | `done`    | `#748/#749`, `docs/task-briefs/done/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`                       | Strengthened `/contact` and `/analysis` trust copy, response expectation, privacy boundary, and input guidance without changing contact delivery behavior.                 |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Contact and analysis trust copy` (current)
-   - Objective: strengthen `/contact` and `/analysis` trust copy, reply expectation, safe information boundary, and input guidance without changing contact delivery behavior.
-   - Likely files: `app/contact/page.tsx`, `app/analysis/page.tsx`, `components/ContactForm.tsx`, contact/public/mobile tests.
-   - Risks: contact submission copy, mobile submit/nav spacing, public conversion tone.
-   - Protected areas: public request UI only; screenshot handoff required before broad gates.
-2. `Anonymous course-progress console noise`
-   - Objective: reduce optional anonymous course-progress noise if it still appears during public course browsing, without changing progress sync or authenticated member behavior.
-   - Likely files: course progress client/runtime helpers, progress tests.
-   - Risks: error-state semantics, member progress sync.
-   - Protected areas: course progress reliability; screenshot handoff optional unless visible UI changes.
-3. `Sample deliverable proof`
+1. `Anonymous course-progress console noise` (current)
+   - Objective: reduce optional anonymous course-progress/admin-support noise during public course browsing, without changing signed-in progress sync, admin notes authorization, or authenticated member behavior.
+   - Likely files: `app/course/page.tsx`, course/admin contextual tests, progress request tests.
+   - Risks: admin contextual lesson notes visibility for allowlisted admins, guest local progress, course first viewport.
+   - Protected areas: course progress reliability and admin support surfaces; screenshot handoff required before broad gates because `/course` rendering is touched.
+2. `Sample deliverable proof`
    - Objective: add accurate sample/proof expectations for PDF/video analysis where the product can substantiate them.
    - Likely files: `/programs`, `/analysis`, public tests/docs.
    - Risks: overpromising paid/support outcomes.
@@ -292,3 +288,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-17 | planned | captured the owner-provided 2026-05-16 UX/UI design review into a repo-backed AW-006 child brief from clean main@65059ee; no runtime code, UI, tests, scripts, configs, or screenshots are in scope | next: run brief lint and docs-only verification, then commit/push/open PR`
 - `2026-05-17 | planned | refreshed after Course desktop player polish #735/#736 on clean main@6724077; marked course desktop done and promoted Plans conversion baseline as the next remaining PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`
 - `2026-05-18 | planned | refreshed after Contextual Sign-In Clarity #746/#747 on clean main@b9f3b7d; marked contextual sign-in done and promoted Contact and Analysis Trust Copy as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-contact-analysis-trust-copy-10-10.md`
+- `2026-05-18 | planned | refreshed after Contact/Analysis Trust Copy #748/#749 on clean main@2ed797f; marked contact/analysis done and promoted Anonymous Course Progress Noise as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
