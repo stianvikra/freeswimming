@@ -54,13 +54,15 @@ test.describe("mobile bottom nav safe area", () => {
     await expectAboveBottomNav(page, await getPlansPrimaryAction(page));
   });
 
-  test("contact submit action clears the fixed bottom nav on first view", async ({
+  test("contact submit action clears the fixed bottom nav when scrolled into view", async ({
     page,
   }, testInfo) => {
     skipUnlessMobileChromium(testInfo);
     await openMobileRoute(page, "/contact");
 
-    await expectAboveBottomNav(page, page.getByRole("button", { name: "Send message" }));
+    const submit = page.getByRole("button", { name: "Send message" });
+    await submit.scrollIntoViewIfNeeded();
+    await expectAboveBottomNav(page, submit);
   });
 
   test("analysis submit action clears the fixed bottom nav when scrolled into view", async ({

@@ -2,7 +2,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  ListChecks,
+  MailCheck,
+  ShieldCheck,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import BrandImage from "@/components/brand/BrandImage";
 import PressButton from "@/components/ui/PressButton";
 import PageIntro from "@/components/PageIntro";
@@ -13,6 +21,12 @@ type Status = "idle" | "sending" | "success" | "error";
 
 type Props = {
   variant?: Variant;
+};
+
+type TrustSignal = {
+  label: string;
+  text: string;
+  icon: LucideIcon;
 };
 
 type ApiResponse = { ok: boolean; error?: string };
@@ -118,27 +132,49 @@ export default function ContactForm({ variant = "contact" }: Props) {
     if (variant === "analysis") {
       return {
         pageTitle: "Video Analysis",
-        pageSubtitle: "Send a short clip — we’ll tell you exactly what to work on next.",
+        pageSubtitle: "Send a short clip and get one clear technical priority by email.",
+        trustSignals: [
+          {
+            label: "Reply window",
+            text: "Usually 24–48 hours",
+            icon: Clock3,
+          },
+          {
+            label: "Useful context",
+            text: "Level, goal, and what feels stuck",
+            icon: ListChecks,
+          },
+          {
+            label: "Safe to send",
+            text: "No payment details, passwords, or sign-in codes",
+            icon: ShieldCheck,
+          },
+        ] satisfies TrustSignal[],
 
-        helperTitle: "What to include",
+        helperTitle: "Send the smallest useful sample",
         helperBullets: [
-          "Your level (adult beginner / triathlete / etc.)",
-          "What you struggle with (breathing, balance, arm pull…)",
-          "A video link (YouTube / Drive) if you have it",
+          "Your current level and main swim goal",
+          "The issue you want checked first",
+          "A shareable video link if you already have one",
         ],
-        helperLine1: "Best results: 10–20 seconds from the side + 10–20 seconds from the front.",
-        helperLine2: "No pressure — if you don’t have a video yet, just describe the problem.",
+        helperLine1: "Best clip: 10–20 seconds from the side plus 10–20 seconds from the front.",
+        helperLine2: "No video yet? Describe what feels stuck and we’ll tell you what to capture.",
 
         formTitle: "Request Video Analysis",
-        formSubtitle: "Tell us what you want feedback on — and what your goal is.",
+        formSubtitle: "Tell us what you want feedback on and what you want the next swim to fix.",
 
-        messagePlaceholder: "Describe your goal + what you want feedback on…",
+        messagePlaceholder:
+          "Describe your goal, what feels stuck, and paste a video link if ready…",
+        messageHint:
+          "Useful: current level, target distance or pace, what you feel in the water, and one shareable video link if you have it.",
+        privacyHint:
+          "Do not include passwords, sign-in codes, payment details, or private medical details.",
 
-        exampleTitle: "Example",
+        exampleTitle: "A useful request includes",
         exampleLines: [
-          "Skill level (adult beginner / triathlete / etc.)",
-          "What you struggle with (breathing, balance, arm pull…)",
-          "Video link (YouTube/Drive) if you have it",
+          "Skill level and swim goal",
+          "Specific blocker such as breathing, balance, catch, or timing",
+          "Video link if it is already uploaded",
         ],
 
         successTitle: "Request received",
@@ -146,7 +182,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
           "Thanks! We’ve received your request and will reply by email within 24–48 hours.",
         successHint: "You can safely close this page — or tap X to send another request.",
 
-        micro: "We usually reply within 24–48 hours.",
+        micro: "We reply by email, usually within 24–48 hours.",
         messageRequired: true,
         showGoalsIntake: false,
       };
@@ -157,6 +193,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
         pageTitle: "Goals Coaching",
         pageSubtitle:
           "Get a structured training schedule built around your current level and target.",
+        trustSignals: [] as TrustSignal[],
 
         helperTitle: "What we use to build your plan",
         helperBullets: [
@@ -172,6 +209,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
         messagePlaceholder:
           "Optional details: current blockers, upcoming race/open-water date, or injury notes.",
+        messageHint: "",
+        privacyHint: "",
 
         exampleTitle: "What helps us most",
         exampleLines: [
@@ -195,6 +234,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       return {
         pageTitle: "Apply for early access",
         pageSubtitle: "Apply for earlier access to freeswimming.",
+        trustSignals: [] as TrustSignal[],
 
         helperTitle: "",
         helperBullets: [] as string[],
@@ -205,6 +245,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
         formSubtitle: "",
 
         messagePlaceholder: "Optional: whether you'd like earlier tester access.",
+        messageHint: "",
+        privacyHint: "",
 
         exampleTitle: "",
         exampleLines: [] as string[],
@@ -221,7 +263,25 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
     return {
       pageTitle: "Contact",
-      pageSubtitle: "Tell us where you are — and where you want to be.",
+      pageSubtitle:
+        "Questions, early access, or feedback. Tell us what you need and the next step you want.",
+      trustSignals: [
+        {
+          label: "Reply by email",
+          text: "Usually 24–48 hours",
+          icon: MailCheck,
+        },
+        {
+          label: "Useful context",
+          text: "Goal, level, and where you are stuck",
+          icon: ListChecks,
+        },
+        {
+          label: "Safe to send",
+          text: "No payment details, passwords, or sign-in codes",
+          icon: ShieldCheck,
+        },
+      ] satisfies TrustSignal[],
 
       helperTitle: "",
       helperBullets: [] as string[],
@@ -231,16 +291,21 @@ export default function ContactForm({ variant = "contact" }: Props) {
       formTitle: "",
       formSubtitle: "",
 
-      messagePlaceholder: "Write your message…",
+      messagePlaceholder: "Tell us what you need help with and what outcome you want…",
+      messageHint:
+        "A short message is enough: your current level, what you are trying to do, and what would help next.",
+      privacyHint:
+        "Do not include passwords, sign-in codes, payment details, or private medical details.",
 
       exampleTitle: "",
       exampleLines: [] as string[],
 
       successTitle: "Message received",
-      successBody: "Thanks! We’ve received your message and will reply by email when we can.",
+      successBody:
+        "Thanks! We’ve received your message and will reply by email, usually within 24–48 hours.",
       successHint: "You can safely close this page — or tap X to send another message.",
 
-      micro: "",
+      micro: "We reply by email, usually within 24–48 hours.",
       messageRequired: true,
       showGoalsIntake: false,
     };
@@ -383,10 +448,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   }
 
   // Buttons: structure/skin only. Motion/hover is in globals via ui-press.
-  const btnPrimary =
-    "w-full rounded-2xl px-5 py-4 text-[16px] font-semibold text-white " +
-    "bg-gradient-to-b from-blue-500 to-blue-600 " +
-    "shadow-[0_18px_50px_rgba(37,99,235,0.28)]";
+  const btnPrimary = "fs-cta-primary w-full min-h-12 px-5 py-4 text-[16px] font-semibold";
 
   const btnIcon =
     "inline-flex h-10 w-10 items-center justify-center rounded-full " +
@@ -397,6 +459,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const showExampleCard = copy.exampleLines.length > 0 && !isPreviewNotify;
   const showFormIntro = Boolean(copy.formTitle || copy.formSubtitle);
   const formCardTopMargin = isPreviewNotify ? "mt-4" : "mt-5";
+  const showTrustStrip = copy.trustSignals.length > 0 && !isPreviewNotify;
+  const fieldClassName = "ui-field mt-2 rounded-[var(--fs-radius-control)]";
   const messageLabel = isPreviewNotify
     ? "OPTIONAL NOTE"
     : copy.messageRequired
@@ -430,12 +494,19 @@ export default function ContactForm({ variant = "contact" }: Props) {
       <h1 className="mt-5 text-[30px] leading-[1.04] font-semibold tracking-[-0.02em] text-slate-900 sm:text-[34px]">
         Contact
       </h1>
-      <p className="mt-3 max-w-[30ch] text-[16px] leading-7 text-slate-700">
-        Questions, early access, or feedback.
-      </p>
+      <p className="mt-3 max-w-[30ch] text-[16px] leading-7 text-slate-700">{copy.pageSubtitle}</p>
     </div>
   ) : (
-    <PageIntro title={copy.pageTitle} subtitle="Learn. Drill. Swim." />
+    <PageIntro
+      title={copy.pageTitle}
+      subtitle="Learn. Drill. Swim."
+      brandMarkTestId={`${variant}-intro-brand-mark`}
+      belowDivider={
+        <p className="text-[15px] leading-6 text-[color:var(--fs-color-muted)]">
+          {copy.pageSubtitle}
+        </p>
+      }
+    />
   );
 
   // ✅ Success view
@@ -444,7 +515,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
       <div>
         {intro}
 
-        <div className="relative mt-6 overflow-hidden rounded-[24px] border border-emerald-200/75 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(52,211,153,0.12),rgba(255,255,255,0)_70%),linear-gradient(180deg,rgba(236,253,245,0.94),rgba(236,253,245,0.84))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
+        <div className="fs-surface-card relative mt-6 overflow-hidden border-emerald-200/75 bg-[linear-gradient(180deg,rgba(236,253,245,0.96),rgba(236,253,245,0.88))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
           <PressButton
             tier="icon"
             onClick={reset}
@@ -481,9 +552,39 @@ export default function ContactForm({ variant = "contact" }: Props) {
     <div>
       {intro}
 
+      {showTrustStrip ? (
+        <div
+          data-testid={`${variant}-trust-strip`}
+          className="mt-5 grid gap-2 sm:grid-cols-3"
+          aria-label={`${copy.pageTitle} request guidance`}
+        >
+          {copy.trustSignals.map((signal) => {
+            const Icon = signal.icon;
+            return (
+              <div
+                key={signal.label}
+                className="rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-brand)] bg-white/76 p-3 shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
+              >
+                <div className="flex items-start gap-2">
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--fs-color-brand-700)]" />
+                  <div>
+                    <p className="text-[12px] font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {signal.label}
+                    </p>
+                    <p className="mt-1 text-[13px] leading-5 text-[color:var(--fs-color-muted)]">
+                      {signal.text}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       {/* Helper card (analysis + goals coaching) */}
       {showHelperCard && (
-        <div className="relative mt-5 overflow-hidden rounded-[22px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)]">
+        <div className="fs-surface-card relative mt-5 overflow-hidden p-5 sm:p-6">
           <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#5aa6ff] via-[#93c8ff] to-transparent opacity-70" />
           <h2 className="text-[18px] font-semibold text-slate-900">{copy.helperTitle}</h2>
 
@@ -503,7 +604,8 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
       {/* Form card */}
       <div
-        className={`relative ${formCardTopMargin} overflow-hidden rounded-[22px] border border-blue-100/65 bg-[radial-gradient(560px_220px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_66%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.88))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.08)] sm:p-6`}
+        data-testid={`${variant}-form-card`}
+        className={`fs-program-card relative ${formCardTopMargin} overflow-hidden p-5 sm:p-6`}
       >
         <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#4b96f1] via-[#8dc5ff] to-transparent opacity-72" />
         {showFormIntro ? (
@@ -551,7 +653,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
               disabled={isSending}
               aria-invalid={fieldError === "name" ? true : undefined}
               aria-describedby={fieldError === "name" ? errorId : undefined}
-              className="ui-field mt-2"
+              className={fieldClassName}
               placeholder="Your name"
               autoComplete="name"
               enterKeyHint="next"
@@ -576,7 +678,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
               disabled={isSending}
               aria-invalid={fieldError === "email" ? true : undefined}
               aria-describedby={fieldError === "email" ? errorId : undefined}
-              className="ui-field mt-2"
+              className={fieldClassName}
               placeholder="your@email.com"
               type="email"
               inputMode="email"
@@ -611,7 +713,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
                   disabled={isSending}
                   aria-invalid={fieldError === "primary_goal" ? true : undefined}
                   aria-describedby={fieldError === "primary_goal" ? errorId : undefined}
-                  className="ui-field mt-2"
+                  className={fieldClassName}
                   placeholder="Example: 1000m under 18:00"
                 />
               </div>
@@ -628,7 +730,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
                   disabled={isSending}
                   aria-invalid={fieldError === "level" ? true : undefined}
                   aria-describedby={fieldError === "level" ? errorId : undefined}
-                  className="ui-field mt-2"
+                  className={fieldClassName}
                 >
                   <option value="">Select level</option>
                   {GOALS_COACHING_LEVEL_OPTIONS.map((option) => (
@@ -651,7 +753,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
                   disabled={isSending}
                   aria-invalid={fieldError === "training_days" ? true : undefined}
                   aria-describedby={fieldError === "training_days" ? errorId : undefined}
-                  className="ui-field mt-2"
+                  className={fieldClassName}
                 >
                   <option value="1">1 day</option>
                   <option value="2">2 days</option>
@@ -675,7 +777,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
                   disabled={isSending}
                   aria-invalid={fieldError === "weekly_volume" ? true : undefined}
                   aria-describedby={fieldError === "weekly_volume" ? errorId : undefined}
-                  className="ui-field mt-2"
+                  className={fieldClassName}
                   placeholder="Example: 3 sessions, ~2500m total"
                 />
               </div>
@@ -690,7 +792,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
                   value={targetDate}
                   onChange={(e) => setTargetDate(e.target.value)}
                   disabled={isSending}
-                  className="ui-field mt-2"
+                  className={fieldClassName}
                 />
               </div>
             </>
@@ -708,12 +810,23 @@ export default function ContactForm({ variant = "contact" }: Props) {
               disabled={isSending}
               aria-invalid={fieldError === "message" ? true : undefined}
               aria-describedby={fieldError === "message" ? errorId : undefined}
-              className={`ui-field mt-2 resize-none leading-6 ${isPreviewNotify ? "min-h-[120px]" : "min-h-[150px]"}`}
+              className={`${fieldClassName} resize-none leading-6 ${isPreviewNotify ? "min-h-[120px]" : isContact ? "min-h-[116px]" : "min-h-[150px]"}`}
               placeholder={copy.messagePlaceholder}
             />
 
+            {copy.messageHint ? (
+              <p className="mt-3 text-[13px] leading-5 text-[color:var(--fs-color-muted)]">
+                {copy.messageHint}
+              </p>
+            ) : null}
+            {copy.privacyHint ? (
+              <p className="mt-2 text-[13px] leading-5 font-semibold text-slate-700">
+                {copy.privacyHint}
+              </p>
+            ) : null}
+
             {showExampleCard ? (
-              <div className="mt-3 rounded-2xl border border-blue-100/70 bg-white/78 p-4">
+              <div className="mt-3 rounded-[var(--fs-radius-card)] border border-blue-100/70 bg-white/78 p-4">
                 <p className="text-[13px] font-semibold text-slate-700">{copy.exampleTitle}</p>
                 <ul className="mt-2 space-y-1 text-[13px] leading-5 text-slate-600">
                   {copy.exampleLines.map((line) => (

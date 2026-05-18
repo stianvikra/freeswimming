@@ -23,6 +23,16 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
         ? "preview_access_notify"
         : "contact";
 
+  if (variant === "contact") {
+    return (
+      <SiteChrome>
+        <section className="mx-auto min-h-screen w-full max-w-[720px] px-4 pt-9 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-16 sm:pb-16">
+          <ContactForm variant={variant} />
+        </section>
+      </SiteChrome>
+    );
+  }
+
   return (
     <SiteChrome mobileNavMode={variant === "preview_access_notify" ? "hidden" : "default"}>
       <PageTemplate

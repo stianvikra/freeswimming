@@ -42,13 +42,16 @@ export default function PageIntro({
         <div className="flex items-center gap-4">
           <div
             data-testid={brandMarkTestId}
-            className={cx("relative shrink-0", compact ? "h-10 w-10 sm:h-11 sm:w-11" : "h-12 w-12")}
+            className={cx(
+              "relative shrink-0",
+              compact ? "h-10 w-16 sm:h-11 sm:w-[70px]" : "h-12 w-[76px]"
+            )}
           >
             <BrandImage
               asset={BRAND_USAGE.pageIntroSymbol}
               decorative
-              className={brandMarkClassName ?? "h-full w-auto"}
-              sizes={compact ? "44px" : "48px"}
+              className={brandMarkClassName ?? "h-full w-full object-contain"}
+              sizes={compact ? "70px" : "76px"}
             />
           </div>
 
