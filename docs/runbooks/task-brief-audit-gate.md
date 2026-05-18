@@ -64,6 +64,7 @@ Every new or refreshed brief should include:
 Before marking a brief `ready`, check:
 
 - lifecycle status matches the folder,
+- Codex has given the owner a short Norwegian explanation for a non-programmer covering what will be done, why it matters, and what is intentionally out of scope,
 - scope still matches the current repo and owner request,
 - affected paths still exist,
 - scorecard categories are correct for the current scope,

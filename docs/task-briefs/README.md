@@ -13,10 +13,11 @@ Store concrete task briefs in this folder using lifecycle subfolders.
 Default flow:
 
 1. create in `planned/`
-2. refresh or add the Brief Audit Record before use
-3. move to `in-progress/` when implementation starts
-4. move to `done/` after merge
-5. move explicit postponed scope to `deferred/` with rationale and re-entry trigger
+2. give the owner a short Norwegian non-programmer explanation of what will be done, why it matters, and what is out of scope
+3. refresh or add the Brief Audit Record before use
+4. move to `in-progress/` when implementation starts
+5. move to `done/` after merge
+6. move explicit postponed scope to `deferred/` with rationale and re-entry trigger
 
 ## Brief Audit Gate
 
@@ -118,6 +119,8 @@ Example:
 - `2026-02-14-add-to-home-screen.md`
 
 ## Agent Rule
+
+Before starting a new brief or implementation slice, the agent must first explain in Norwegian, for a non-programmer, what it will do, why it matters, and what is intentionally out of scope.
 
 When an agent starts implementing a brief, it should move that brief from `planned/` to `in-progress/`.
 After the related PR is merged, move it from `in-progress/` to `done/`.
