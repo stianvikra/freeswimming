@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/about",
-        destination: "/how-we-teach",
-        permanent: true,
+        destination: "/our-method",
+        permanent: false,
       },
     ];
   },

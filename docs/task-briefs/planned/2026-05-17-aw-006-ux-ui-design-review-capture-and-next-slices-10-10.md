@@ -36,6 +36,12 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Later related auth work:
   - `docs/task-briefs/done/2026-05-17-auth-sign-in-link-first-otp-fallback-clarity-10-10.md`
   - shipped via `#732/#733`.
+- Parked auth follow-up:
+  - `docs/task-briefs/planned/2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10.md`
+  - keep this from being forgotten, but execute it when auth, checkout success, claim/download, billing portal, or admin sign-in is touched next.
+- Current follow-up execution:
+  - `docs/task-briefs/in-progress/2026-05-17-aw-006-public-ia-about-cleanup-10-10.md`
+  - scoped to the next small AW-006 UX/UI route/IA cleanup and narrow `/our-method` visual correction after Plans conversion baseline shipped through `#737/#738`.
 
 ## Executive Summary From The Review
 
@@ -80,31 +86,28 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Goals action-first             | `done`    | `#726/#727`, `docs/task-briefs/done/2026-05-16-goals-action-first-simplification-10-10.md`                        | Shipped before the captured full review; aligns with the review's action-first dashboard/member direction.                                                                 |
 | My Swim Profile action-first   | `done`    | `#728/#729`, `docs/task-briefs/done/2026-05-16-my-swim-profile-action-first-setup-and-capability-safety-10-10.md` | Shipped before the captured full review; aligns with onboarding/member readiness findings.                                                                                 |
 | Course desktop player polish   | `done`    | `#735/#736`, `docs/task-briefs/done/2026-05-17-course-desktop-player-polish-10-10.md`                             | Shipped the first viewport desktop course/player polish that was originally the top remaining AW-006 item.                                                                 |
+| Plans conversion baseline      | `done`    | `#737/#738`, `docs/task-briefs/done/2026-05-17-aw-006-plans-conversion-baseline-10-10.md`                         | Shipped clearer `/plans` value, proof, and checkout expectation copy without changing Stripe mechanics.                                                                    |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Plans conversion baseline`
-   - Objective: add clear price/value/proof/checkout expectations without changing Stripe mechanics.
-   - Likely files: `app/plans/page.tsx`, `CheckoutButton`, catalog/product copy, plans tests/screenshots.
-   - Risks: payment copy can imply unsupported entitlements or guarantees.
-   - Protected areas: payments/commerce copy and checkout entry; no Stripe API changes unless separately scoped.
-2. `Contextual sign-in clarity audit`
-   - Objective: verify whether `#732/#733` fully covers `next=/admin`, `/my-library`, checkout/portal, and claim/download entry contexts; patch only remaining copy gaps.
-   - Likely files: `app/auth/sign-in/page.tsx`, auth tests, support docs.
-   - Risks: auth messaging, redirect context.
-   - Protected areas: auth.
-3. `Public IA / about cleanup`
-   - Objective: remove or make real any unclear `/about` or method route surface, and keep nav/docs/metadata aligned.
-   - Likely files: `app/about/**`, nav config, sitemap/metadata docs/tests.
+1. `Public IA / about cleanup`
+   - Objective: remove or make real any unclear `/about` or method route surface, improve the canonical method landing enough for desktop/mobile screenshot review, and keep nav/docs/metadata aligned.
+   - Likely files: `app/about/**`, `app/our-method/**`, redirect config, sitemap/metadata docs/tests.
    - Risks: route/SEO/support references.
    - Protected areas: route/SEO.
-4. `Design token foundation`
+2. `Design token foundation`
    - Objective: establish color/type/spacing/radius/shadow tokens and migrate one low-risk public surface as proof.
    - Likely files: `app/globals.css`, `components/ui/*`, `components/PageTemplate.tsx`, one selected public route.
    - Risks: global visual regression.
    - Protected areas: UI/layout/brand; screenshot handoff required.
+3. `Contextual sign-in clarity audit` (parked trigger-based follow-up)
+   - Objective: verify whether `#732/#733` fully covers `next=/admin`, `/my-library`, checkout/portal, and claim/download entry contexts; patch only remaining copy gaps.
+   - Trigger: pick this up when auth, checkout success, claim/download, billing portal, or admin sign-in is next touched.
+   - Likely files: `app/auth/sign-in/page.tsx`, auth tests, support docs.
+   - Risks: auth messaging, redirect context.
+   - Protected areas: auth.
 
 ## 10/10 Phase Plan Capture
 
@@ -114,7 +117,7 @@ Recommended order unless the owner explicitly reprioritizes:
 - Verify or finish contextual sign-in clarity for admin/member/checkout contexts.
 - Improve course desktop first viewport.
 - Improve plans price/value/trust/expectation copy without changing checkout mechanics.
-- Clarify `/about` versus method/about IA.
+- Clarify `/about` versus method/about IA and remove under-quality method-page presentation found during screenshot review.
 - Reduce optional anonymous course-progress console noise if still present.
 
 ### Phase 2: Core UX / Design System

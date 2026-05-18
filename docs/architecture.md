@@ -93,7 +93,7 @@
 
 ## Current Feature Areas
 
-- Marketing and informational pages (`/`, `/about`, `/our-method`, `/programs`)
+- Marketing and informational pages (`/`, `/our-method`, `/programs`); legacy `/about` redirects to `/our-method`.
 - Course flow (`/course`, `app/course/courseData.ts`)
 - Contact and analysis intake (`/contact`, `/analysis`, `POST /api/contact`)
 

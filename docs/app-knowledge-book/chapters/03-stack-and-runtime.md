@@ -68,7 +68,7 @@ The repo owns the local and CI runtime contract through:
 - `package.json`: npm package-manager version, Node engine, dependencies, scripts, and validation
   commands.
 - `next.config.ts`: Next.js runtime/build config, optional `NEXT_DIST_DIR`, Turbopack root, and the
-  `/about` redirect.
+  legacy `/about` to `/our-method` redirect.
 - `tsconfig.json`: TypeScript strictness, module resolution, JSX mode, alias imports, and generated
   Next type paths.
 - `eslint.config.mjs`: Next core-web-vitals and TypeScript lint rules plus ignored generated output
@@ -306,8 +306,6 @@ Unknown / To Verify:
 - Current One.com/SMTP/Resend configuration and mailbox delivery health.
 - Current Upstash database isolation, token health, and production traffic limits.
 - Current GitHub branch protection and required-check configuration beyond repo docs/workflows.
-- Whether the `/about` to `/how-we-teach` redirect in `next.config.ts` is intentional, stale, or
-  missing a route target.
 
 ## Maintenance Trigger
 
