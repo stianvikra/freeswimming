@@ -77,4 +77,53 @@ test.describe("public route IA", () => {
     await expect(analysisCta).toHaveCSS("border-radius", "8px");
     await expect(page.getByText("GET PDF UPDATES")).toHaveCount(0);
   });
+
+  test("keeps contact and analysis request guidance clear", async ({ page }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+
+    await gotoWithTransientRetry(page, "/contact");
+
+    await expect(page.getByRole("heading", { name: "Contact", exact: true })).toBeVisible();
+    await expect(
+      page.getByTestId("contact-trust-strip").getByText("Reply by email", { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText("Usually 24–48 hours")).toBeVisible();
+    await expect(page.getByText("No payment details, passwords, or sign-in codes")).toBeVisible();
+
+    const contactFormCard = page.getByTestId("contact-form-card");
+    await expect(contactFormCard).toHaveCSS("border-radius", "8px");
+    await expect(contactFormCard.getByRole("button", { name: "Send message" })).toHaveCSS(
+      "border-radius",
+      "8px"
+    );
+
+    await gotoWithTransientRetry(page, "/analysis");
+
+    await expect(page.getByRole("heading", { name: "Video Analysis", exact: true })).toBeVisible();
+    const analysisBrandMark = page.getByTestId("analysis-intro-brand-mark").locator("img");
+    await expect(analysisBrandMark).toBeVisible();
+    const analysisBrandMetrics = await analysisBrandMark.evaluate((img: HTMLImageElement) => {
+      const box = img.getBoundingClientRect();
+      return {
+        naturalRatio: img.naturalWidth / img.naturalHeight,
+        renderedRatio: box.width / box.height,
+      };
+    });
+    expect(
+      Math.abs(analysisBrandMetrics.renderedRatio - analysisBrandMetrics.naturalRatio),
+      "analysis intro brand mark should render without vertical or horizontal squeeze"
+    ).toBeLessThan(0.05);
+    await expect(
+      page.getByText("Send a short clip and get one clear technical priority by email.")
+    ).toBeVisible();
+    await expect(page.getByText("Send the smallest useful sample")).toBeVisible();
+    await expect(page.getByText("No payment details, passwords, or sign-in codes")).toBeVisible();
+
+    const analysisFormCard = page.getByTestId("analysis-form-card");
+    await expect(analysisFormCard).toHaveCSS("border-radius", "8px");
+    await expect(analysisFormCard.getByRole("button", { name: "Send" })).toHaveCSS(
+      "border-radius",
+      "8px"
+    );
+  });
 });

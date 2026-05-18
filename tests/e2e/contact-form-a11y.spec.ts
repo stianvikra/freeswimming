@@ -31,6 +31,16 @@ test("contact form labels are associated and mobile load does not force focus", 
   await expect(sendButton).toBeVisible();
   await expect(sendButton).toBeEnabled();
   await expect(form).toBeVisible();
+  await expect(
+    page.getByTestId("contact-trust-strip").getByText("Reply by email", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("Usually 24–48 hours")).toBeVisible();
+  await expect(page.getByText("No payment details, passwords, or sign-in codes")).toBeVisible();
+  await expect(
+    page.getByText(
+      "A short message is enough: your current level, what you are trying to do, and what would help next."
+    )
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a message" })).toHaveCount(0);
   await expect(page.getByText("Send us a short message and we’ll reply by email.")).toHaveCount(0);
   await expect(page.getByText("Example")).toHaveCount(0);

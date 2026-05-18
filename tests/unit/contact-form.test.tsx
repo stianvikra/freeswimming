@@ -21,6 +21,14 @@ describe("ContactForm", () => {
     render(<ContactForm variant="contact" />);
 
     expect(screen.getByAltText("Learn. Drill. Swim.")).toBeInTheDocument();
+    expect(screen.getByText("Reply by email")).toBeInTheDocument();
+    expect(screen.getByText("Usually 24–48 hours")).toBeInTheDocument();
+    expect(screen.getByText("No payment details, passwords, or sign-in codes")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A short message is enough: your current level, what you are trying to do, and what would help next."
+      )
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Send a message" })).not.toBeInTheDocument();
     expect(
@@ -29,6 +37,25 @@ describe("ContactForm", () => {
     expect(screen.queryByText("Example")).not.toBeInTheDocument();
     expect(screen.queryByText("We usually reply within 24–48 hours.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("NAME")).not.toHaveFocus();
+  });
+
+  it("shows video analysis trust guidance before submission", () => {
+    render(<ContactForm variant="analysis" />);
+
+    expect(screen.getByRole("heading", { name: "Video Analysis" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Send a short clip and get one clear technical priority by email.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Reply window")).toBeInTheDocument();
+    expect(screen.getByText("Useful context")).toBeInTheDocument();
+    expect(screen.getByText("No payment details, passwords, or sign-in codes")).toBeInTheDocument();
+    expect(screen.getByText("Send the smallest useful sample")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Useful: current level, target distance or pace, what you feel in the water, and one shareable video link if you have it."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send" })).toBeInTheDocument();
   });
 
   it("focuses the first invalid field after submit validation fails", async () => {
@@ -71,6 +98,9 @@ describe("ContactForm", () => {
     expect(screen.queryByText("What to include")).not.toBeInTheDocument();
     expect(screen.queryByText("Optional note ideas")).not.toBeInTheDocument();
     expect(screen.queryByText("No password is sent from this form.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("No payment details, passwords, or sign-in codes")
+    ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText("NAME"), "Test User");
     await user.type(screen.getByLabelText("EMAIL"), "test@example.com");
