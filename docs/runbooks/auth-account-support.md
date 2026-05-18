@@ -9,6 +9,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - `Manage billing` lives on `My Library` and opens the Stripe Billing Portal for the authenticated user's Stripe customer.
 - `Sign out` lives on `My Library`.
 - `/auth/sign-in` owns secure email-link sign-in plus one-time-code fallback, resend, cooldown, and spam/junk-folder guidance.
+- `/auth/sign-in` uses safe `next` and `source` query context for explanation copy only. It does not grant admin, billing, entitlement, or download access.
 - `/preview-access` owns private preview unlock guidance when site-lock is enabled.
 - `/my-library/security` is a legacy protected route that redirects signed-in users to `My Library`.
 
@@ -40,6 +41,10 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - If the secure email link does not open: ask them to enter the one-time code from the same email on `/auth/sign-in`.
 - If an iPhone Home Screen app user says the email link opens in Safari or Safari denies the sign-in:
   ask them to return to the Home Screen app and enter the one-time code from the same email.
+- If `/auth/sign-in?next=/admin` is shown: explain that sign-in confirms identity only. Admin access is checked after sign-in by the app's admin authorization layer.
+- If the user lands on sign-in from My Library: they should verify with the email they use for the app, then return to My Library or the member page they opened.
+- If the user lands on sign-in from checkout success or claim/download recovery: ask them to use the same email they used at checkout. Do not promise that a purchase, invoice, billing portal access, entitlement, or download exists until the normal checks complete.
+- If a checkout/claim link fails and returns to sign-in: the visible context copy may persist through a safe `source` value, but support should still diagnose entitlement, billing, and download ownership separately.
 - If the email only contains a code and no button/link: check the Supabase Magic Link email template
   includes both `{{ .ConfirmationURL }}` and `{{ .Token }}` plus the hosted PNG brand lockup.
 - If `/auth/sign-in` shows "Sign-in is temporarily unavailable because a service limit was reached":

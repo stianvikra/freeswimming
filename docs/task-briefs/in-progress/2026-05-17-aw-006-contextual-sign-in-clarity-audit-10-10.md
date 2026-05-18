@@ -3,20 +3,20 @@
 ## Metadata
 
 - `id`: `2026-05-17-aw-006-contextual-sign-in-clarity-audit-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-05-17`
+- `updated`: `2026-05-18`
 - `parent_review_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
-- `parking_decision`: Park this follow-up until the next auth, checkout success, claim/download, billing portal, or admin sign-in touch.
+- `parking_decision`: Unparked on `2026-05-18` as the next small PR-sized UX/UI slice after Programs Poolside PDF token polish shipped.
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-17`
-- `base`: `main@3eeba4c`
+- `last_audited`: `2026-05-18`
+- `base`: `main@c6e0657`
 - `audit_status`: `ready`
-- `decision`: Keep this as a planned AW-006 follow-up, but do not execute it immediately after the prior sign-in PR.
-- `reason`: `#732/#733` already fixed the main sign-in-link-first and one-time-code fallback issue. The remaining contextual copy audit is legitimate but lower ROI as an immediate back-to-back auth PR, so it should be picked up when a nearby auth/commerce/admin sign-in surface is next touched.
+- `decision`: Execute this as the current AW-006 UX/UI slice.
+- `reason`: Programs Poolside PDF token polish and closeout shipped through `#744/#745`, leaving this as the next small PR-sized item in the canonical AW-006 UX/UI queue.
 - `must_refresh_before_execution_if`: Refresh if `/auth/sign-in`, auth callback behavior, checkout success, claim/download recovery, billing portal entry, support runbooks, scorecard categories, screenshot handoff rules, or verification lanes change before merge.
 
 ## Goal
@@ -113,7 +113,7 @@ Update `docs/runbooks/auth-account-support.md` and the app-knowledge auth chapte
 ## Route / Label / Support Surface Sweep
 
 - Required before broad gates because auth, admin, checkout/claim, and billing support wording are touched.
-- Identifiers to search:
+- Identifiers searched:
   - `/auth/sign-in`
   - `Sign in to My Library`
   - `Sign in to Admin`
@@ -125,7 +125,7 @@ Update `docs/runbooks/auth-account-support.md` and the app-knowledge auth chapte
   - `billing portal`
   - `source=checkout_success`
   - `source=claim_entry`
-- Surfaces to check:
+- Surfaces checked:
   - `app/`
   - `components/`
   - `lib/`
@@ -139,6 +139,14 @@ Update `docs/runbooks/auth-account-support.md` and the app-knowledge auth chapte
   - support/app-knowledge docs,
   - canonical AW-006 queue refresh.
   - no Stripe API, Supabase provider setting, entitlement, route class, sitemap, metadata, Admin Help Center, or database change.
+
+## Failure-Mode Evidence
+
+- No unexpected `500` path is introduced in this slice. Callback failure, invalid email, cooldown, invalid code, and unsafe `source` inputs continue to redirect or render recoverable sign-in states.
+- Failure-mode coverage:
+  - `tests/unit/auth-callback-route.test.ts` covers failed callback recovery with safe source preservation and unsafe source dropping.
+  - `tests/unit/sign-in-context.test.ts` covers safe context parsing, generic fallback copy, and callback URL source filtering.
+  - `tests/e2e/auth-sign-in-ux.spec.ts` covers visible error/cooldown/sent/code fallback states plus admin, claim, and checkout context copy.
 
 ## Scope
 
@@ -186,4 +194,6 @@ Update `docs/runbooks/auth-account-support.md` and the app-knowledge auth chapte
 
 ## Checkpoint Log
 
-- `2026-05-17 | in-progress | started from clean main@3eeba4c after Plans conversion baseline #737 and closeout #738; post-merge preflight found no repo-managed closeout; branch ux/contextual-sign-in-clarity created; scope limited to contextual auth copy, safe source preservation, targeted tests/docs, canonical AW-006 queue refresh, and screenshot handoff | next: implement helper/page/link/docs/tests, run targeted validation, then capture before/after screenshots before broad gates`
+- `2026-05-18 | in-progress | started from clean main@c6e0657 after Programs token polish #744 and closeout #745; post-merge preflight found no repo-managed closeout; branch ux/contextual-sign-in-clarity created; scope limited to contextual auth copy, safe source preservation, targeted tests/docs, canonical AW-006 queue refresh, and screenshot handoff | next: finish implementation, run targeted validation, then capture after screenshots before broad gates`
+- `2026-05-18 | validation | implemented contextual sign-in helper/copy, preserved safe source context through request/resend/callback recovery, updated checkout/claim entry links plus support/app-knowledge docs, and refreshed AW-006 queue; targeted validation passed: npm run lint:briefs, npm run lint:briefs:all, ./node_modules/.bin/vitest run tests/unit/sign-in-context.test.ts tests/unit/auth-callback-route.test.ts, npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=desktop-chromium, and npx playwright test tests/e2e/auth-sign-in-ux.spec.ts --project=mobile-chromium; before/after screenshot artifacts captured in output/contextual-sign-in-clarity-2026-05-18-125759 and owner approved the handoff | next: run npm run verify:pre-pr, then commit/push/open PR`
+- `2026-05-18 | validation | npm run verify:pre-pr passed full lane after brief evidence wording was tightened for failure-mode and route/support sweep evidence; perf trend recommended tightening one stretch target after 6 consecutive weekly green runs, but this UX/UI auth-copy slice holds budgets unchanged and records the tighten prompt for PR/follow-up rather than changing performance thresholds in this PR | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`

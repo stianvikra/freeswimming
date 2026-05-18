@@ -102,4 +102,35 @@ describe("/auth/callback route", () => {
     expect(location.searchParams.get("next")).toBe("/my-library");
     expect(location.searchParams.get("error")).toContain("Request a new sign-in email");
   });
+
+  it("preserves safe source context on failed callback recovery", async () => {
+    const routeClient = buildRouteClient({ exchangeError: new Error("expired") });
+    createRouteHandlerSupabaseClientMock.mockResolvedValue(routeClient);
+
+    const response = await GET(
+      new Request(
+        "https://freeswimming.org/auth/callback?code=expired&next=%2Fmy-library&source=claim_entry"
+      )
+    );
+    const location = new URL(response.headers.get("location") ?? "");
+
+    expect(location.pathname).toBe("/auth/sign-in");
+    expect(location.searchParams.get("next")).toBe("/my-library");
+    expect(location.searchParams.get("source")).toBe("claim_entry");
+    expect(location.searchParams.get("error")).toContain("Request a new sign-in email");
+  });
+
+  it("drops unsafe source context on failed callback recovery", async () => {
+    const response = await GET(
+      new Request(
+        "https://freeswimming.org/auth/callback?next=%2Fmy-library&source=https%3A%2F%2Fevil.example"
+      )
+    );
+    const location = new URL(response.headers.get("location") ?? "");
+
+    expect(createRouteHandlerSupabaseClientMock).not.toHaveBeenCalled();
+    expect(location.pathname).toBe("/auth/sign-in");
+    expect(location.searchParams.get("next")).toBe("/my-library");
+    expect(location.searchParams.get("source")).toBeNull();
+  });
 });

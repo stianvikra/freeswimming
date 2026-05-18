@@ -37,6 +37,7 @@ export default async function ClaimPage({ searchParams }: Props) {
   }
 
   const signInQuery = new URLSearchParams({ next: nextPath });
+  signInQuery.set("source", "claim_entry");
   if (prefilledEmail) {
     signInQuery.set("email", prefilledEmail);
   }
