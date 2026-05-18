@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-18-aw-006-design-token-foundation-public-proof-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-18`
 - `updated`: `2026-05-18`
@@ -177,3 +177,4 @@ Required because `/our-method` is a public route surface and this slice follows 
 - `2026-05-18 | branch aw-006-design-token-foundation-public-proof | post-merge preflight passed on clean main@7d0d1ab; selected Design token foundation from the canonical AW-006 UX/UI queue; captured before screenshots for /our-method | next: implement token foundation, targeted tests, after screenshots, then stop for owner screenshot approval before broad gates`
 - `2026-05-18 | screenshot-review | implemented global fs design tokens and token-backed proof utilities, migrated only /our-method cards/CTAs to the token classes, kept mature swim session builder, micro sessions, dryland training, habits, Poolside Guide, and PDF/print surfaces as reference surfaces only, and added targeted token/public IA coverage; targeted validation passed with npx vitest run tests/unit/design-token-contract.test.ts, npx playwright test tests/e2e/public-ia.spec.ts --project=desktop-chromium after clearing stale .next-playwright CSS cache, npm run lint:briefs:all, and git diff --check; route-label/support sweep searched /our-method, /about, Design token, fs-card, and fs-cta-primary across app, components, tests, docs/task-briefs, docs/app-knowledge-book, and docs/runbooks with no route/support fallout; before/after screenshots captured in output/design-token-foundation-2026-05-18-080750 | next: owner screenshot approval before npm run verify:pre-pr, PR, CI, and npm run verify:pre-merge`
 - `2026-05-18 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed full lane on branch aw-006-design-token-foundation-public-proof with branch-current check, quality gate, lint/typecheck/unit/build/perf/e2e gates green | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-05-18 | merged | PR #742 merged to main as 150d462 after green CI and npm run verify:pre-merge; post-merge preflight requested this repo-managed docs-only lifecycle closeout | next: validate, open, and merge the closeout PR, then rerun post-merge preflight on synced main`
