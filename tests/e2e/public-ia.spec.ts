@@ -24,7 +24,25 @@ test.describe("public route IA", () => {
     await gotoWithTransientRetry(page, "/about");
 
     await expect(page).toHaveURL(/\/our-method$/);
-    await expect(page.getByRole("heading", { name: "Our Method", exact: true })).toBeVisible();
+    const heading = page.getByRole("heading", { name: "Our Method", exact: true });
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveCSS("font-size", "56px");
     await expect(page.getByText("A free, step-by-step freestyle method for adults")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Start the free course" })).toHaveAttribute(
+      "href",
+      "/course"
+    );
+    await expect(page.getByRole("link", { name: "Ask a question" })).toHaveAttribute(
+      "href",
+      "/contact"
+    );
+
+    const learnCard = page.getByTestId("method-step-card-learn");
+    await expect(learnCard).toBeVisible();
+    await expect(learnCard).toHaveCSS("border-radius", "8px");
+    await expect(page.getByRole("link", { name: "Start the free course" })).toHaveCSS(
+      "border-radius",
+      "8px"
+    );
   });
 });
