@@ -54,9 +54,9 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Completed sample/proof follow-up:
   - `docs/task-briefs/done/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`
   - shipped through `#754/#755`, scoped to truthful public sample/proof expectations for Poolside PDF and Video Analysis on `/programs` and `/analysis`, without changing Stripe, contact API delivery, entitlements, generated PDFs, analytics, Supabase, Help/Guide, or broad design-system behavior.
-- Current queue refresh execution:
-  - `docs/task-briefs/in-progress/2026-05-19-aw-006-remaining-queue-reaudit-10-10.md`
-  - scoped to docs-only queue accuracy after `#754/#755`, promoting the next PR-sized AW-006 UX/UI implementation slice without changing rendered UI, product behavior, tests, screenshots, Stripe, Supabase, analytics, Help/Guide, or runtime code.
+- Completed queue refresh execution:
+  - `docs/task-briefs/done/2026-05-19-aw-006-remaining-queue-reaudit-10-10.md`
+  - shipped through `#756`, scoped to docs-only queue accuracy after `#754/#755`, promoting the next PR-sized AW-006 UX/UI implementation slice without changing rendered UI, product behavior, tests, screenshots, Stripe, Supabase, analytics, Help/Guide, or runtime code.
 
 ## Executive Summary From The Review
 
@@ -142,7 +142,7 @@ Recommended order unless the owner explicitly reprioritizes:
 - Clarify `/about` versus method/about IA and remove under-quality method-page presentation found during screenshot review.
 - Reduce optional anonymous course-progress console noise if still present. Status: `done`.
 - Add truthful sample deliverable proof for Poolside PDF and Video Analysis. Status: `done`.
-- Re-audit remaining AW-006 queue after sample proof. Status: `current`.
+- Re-audit remaining AW-006 queue after sample proof. Status: `done`.
 
 ### Phase 2: Core UX / Design System
 
@@ -313,3 +313,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-18 | planned | refreshed after Contact/Analysis Trust Copy #748/#749 on clean main@2ed797f; marked contact/analysis done and promoted Anonymous Course Progress Noise as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-anonymous-course-progress-noise-10-10.md`
 - `2026-05-18 | planned | refreshed after Anonymous Course Progress Noise #750/#751 and Owner-Readable Slice Start Governance #752/#753 on clean main@88ff6ee; marked anonymous course noise and start-governance done, and promoted Sample Deliverable Proof as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`
 - `2026-05-19 | planned | refreshed after Sample Deliverable Proof #754/#755 on clean main@61d7f8a; marked sample proof done, recorded this docs-only re-audit slice, and promoted My Library surface token and action hierarchy polish as the next small AW-006 UX/UI implementation slice | next: execute a new active brief for /my-library surface token and action hierarchy polish`
+- `2026-05-19 | planned | refreshed after AW-006 queue re-audit #756 on clean main@7963705; marked the re-audit done and kept My Library surface token and action hierarchy polish as the next small AW-006 UX/UI implementation slice | next: create and execute a new active brief for /my-library surface token and action hierarchy polish`
