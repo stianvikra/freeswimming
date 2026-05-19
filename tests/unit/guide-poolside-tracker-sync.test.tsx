@@ -1,4 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PoolsideGuideTracker from "@/components/guides/PoolsideGuideTracker";
 import type { PoolsideDrill } from "@/lib/guides/guide-poolside";
@@ -35,6 +36,10 @@ function setNavigatorOnline(value: boolean) {
     configurable: true,
     value,
   });
+}
+
+function getProgressApiCallCount(fetchMock: ReturnType<typeof vi.fn>): number {
+  return fetchMock.mock.calls.filter((call) => String(call[0]) === "/api/progress/guide").length;
 }
 
 describe("PoolsideGuideTracker sync", () => {
@@ -77,7 +82,88 @@ describe("PoolsideGuideTracker sync", () => {
       expect(screen.getByText("1/2")).toBeInTheDocument();
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-poolside-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "synced"
+      );
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
     expect(screen.getByRole("button", { name: "Completed" })).toBeInTheDocument();
+  });
+
+  it("shows an offline status without calling the progress API", async () => {
+    setNavigatorOnline(false);
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ notes: [] }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PoolsideGuideTracker guideSlug="poolside" drills={TEST_DRILLS} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-poolside-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "offline"
+      );
+    });
+
+    expect(getProgressApiCallCount(fetchMock)).toBe(0);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Offline mode: changes stay on this device and sync when connection returns."
+    );
+    expect(screen.getByRole("button", { name: "Retry sync" })).toBeInTheDocument();
+  });
+
+  it("retries the existing progress load path after a recoverable hydrate error", async () => {
+    const user = userEvent.setup();
+    setNavigatorOnline(true);
+
+    const progressResponses = [
+      {
+        ok: false,
+        status: 500,
+      },
+      {
+        ok: true,
+        json: async () => ({ rows: [] }),
+      },
+    ];
+    const fetchMock = vi.fn(async (input) => {
+      if (String(input) === "/api/progress/guide") {
+        return progressResponses.shift();
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ notes: [] }),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PoolsideGuideTracker guideSlug="poolside" drills={TEST_DRILLS} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-poolside-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "error"
+      );
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Drill progress hydrate failed (500).");
+
+    await user.click(screen.getByRole("button", { name: "Retry sync" }));
+
+    await waitFor(() => {
+      expect(getProgressApiCallCount(fetchMock)).toBe(2);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-poolside-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "synced"
+      );
+    });
   });
 
   it("merges local and remote rows, then upserts merged progress", async () => {
