@@ -3,13 +3,15 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-shared-notice-empty-state-pattern-inventory-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `aw-006-notice-empty-state-inventory`
+- `merged_pr`: `#760`
+- `merge_commit`: `main@1d41a847b49dbec6ea29e5344b753406ee95d734`
 
 ## Brief Audit Record
 
@@ -180,3 +182,39 @@ Required as a documentation and surface-impact sweep because the slice classifie
 - `2026-05-19 | in-progress | started from clean main@5f6f27e after PR #758 and repo-managed closeout #759; selected Shared notice and empty-state pattern inventory as the next AW-006 queue item because My Library surface polish is already done | next: inventory repeated state patterns, update canonical queue, run docs-only validation, then commit/push/open PR`
 - `2026-05-19 | in-progress | inventoried representative public, member, guide, and admin notice/empty/loading/error states; chose Admin management feedback and list-state primitive pilot as the next bounded implementation candidate; updated the canonical AW-006 queue; npm run lint:briefs:all and git diff --check passed | next: run npm run verify:pre-pr`
 - `2026-05-19 | in-progress | npm run verify:pre-pr passed through the docs-only lane for the three docs/governance files, including branch-current, docs-only verification, brief lint, quality gate, admin audit lint, env parity lint, and generated PR body lint | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-19 | done | PR #760 merged as main@1d41a847b49dbec6ea29e5344b753406ee95d734 after docs-only verify:pre-pr, required CI, and docs-only verify:pre-merge passed; repo-managed closeout moved this brief to done and recorded achieved scores | next: rerun post-merge:preflight after the closeout PR merges`
+
+## Closeout Evidence
+
+- `implementation_pr`: `#760`
+- `merge_commit`: `main@1d41a847b49dbec6ea29e5344b753406ee95d734`
+- `docs_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
+- `recommended_next_slice`: `Admin management feedback and list-state primitive pilot`
+- `npm run lint:briefs:all`: PASS on branch `aw-006-notice-empty-state-inventory`.
+- `git diff --check`: PASS on branch `aw-006-notice-empty-state-inventory`.
+- `npm run verify:pre-pr`: PASS docs-only lane on branch `aw-006-notice-empty-state-inventory`.
+- `npm run verify:pre-merge`: PASS docs-only lane on branch `aw-006-notice-empty-state-inventory`.
+- `required_ci`: PASS for PR `#760` (`verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `CodeQL`, Vercel, and deploy preview).
+- `screenshot_review`: N/A because this PR changed docs/governance only and no rendered UI, print, layout, or brand surface.
+- `remaining_gaps`: No blocking gaps. The actual primitive implementation remains intentionally deferred to the recommended next slice.
+- `10/10 claim`: yes for this inventory slice.
+- `critical_target_categories`: `Product goals and IA`, `UX flow clarity`, `Reliability and failure handling`, `Content governance`, `Stack-fit and dependency discipline`, and `Testing and QA automation` each achieved `5/5`.
+
+Achieved target scores:
+
+- `Product goals and IA`: `5/5`
+- `UX flow clarity`: `5/5`
+- `Visual design quality`: `5/5`
+- `Accessibility (a11y)`: `5/5`
+- `Reliability and failure handling`: `5/5`
+- `Content governance`: `5/5`
+- `Stack-fit and dependency discipline`: `5/5`
+- `Testing and QA automation`: `5/5`
+- `DevOps and rollback readiness`: `5/5`
+
+Achieved supporting scores:
+
+- `Admin editor ergonomics`: `4/5`
+- `Admin workflow and editability`: `4/5`
+- `Analytics and KPI observability`: `4/5`
+- `Scalability and cost efficiency`: `4/5`

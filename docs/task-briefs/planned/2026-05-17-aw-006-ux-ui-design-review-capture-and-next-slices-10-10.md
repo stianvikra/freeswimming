@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-19`
-- `base`: `main@5f6f27e`
+- `base`: `main@1d41a84`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, and My Library surface polish shipped through `#758/#759`. The remaining review queue now needs the shared notice/empty-state inventory slice before the first primitive-consolidation implementation.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, and Shared notice/empty-state inventory shipped through `#760`. The remaining review queue now needs the first primitive-consolidation implementation slice.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -60,6 +60,9 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Completed signed-in hub polish:
   - `docs/task-briefs/done/2026-05-19-aw-006-my-library-surface-token-action-hierarchy-polish-10-10.md`
   - shipped through `#758/#759`, applying the AW-006 token/action hierarchy direction to `/my-library` without changing member data, auth behavior, entitlement truth, commerce destinations, or child route behavior.
+- Completed shared state inventory:
+  - `docs/task-briefs/done/2026-05-19-aw-006-shared-notice-empty-state-pattern-inventory-10-10.md`
+  - shipped through `#760`, inventorying representative public, member, guide, and admin notice/empty/loading/error states and selecting an admin-local primitive pilot without changing runtime UI.
 
 ## Executive Summary From The Review
 
@@ -114,23 +117,18 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Owner-readable slice start gate | `done`    | `#752/#753`, `docs/task-briefs/done/2026-05-18-owner-readable-slice-start-governance-10-10.md`                    | Added the required Norwegian non-programmer explanation before each new brief or implementation slice.                                                                                            |
 | Sample deliverable proof        | `done`    | `#754/#755`, `docs/task-briefs/done/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`                          | Added truthful sample/proof expectations for Poolside PDF and Video Analysis on `/programs` and `/analysis` without changing checkout, contact delivery, entitlements, or generated deliverables. |
 | My Library surface polish       | `done`    | `#758/#759`, `docs/task-briefs/done/2026-05-19-aw-006-my-library-surface-token-action-hierarchy-polish-10-10.md`  | Applied AW-006 token-backed hierarchy to the signed-in `/my-library` hub with screenshot-reviewed desktop/mobile polish and no member data, auth, commerce, or child route behavior changes.      |
+| Shared notice/empty inventory   | `done`    | `#760`, `docs/task-briefs/done/2026-05-19-aw-006-shared-notice-empty-state-pattern-inventory-10-10.md`            | Inventoried repeated state treatments and selected the admin management feedback/list-state primitive pilot without changing rendered UI or runtime behavior.                                     |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Shared notice and empty-state pattern inventory` (current active slice)
-   - Objective: inventory repeated notice/empty/loading/error treatments across member/admin/public surfaces and choose one narrow primitive-consolidation slice, instead of starting a broad design-system rewrite.
-   - Active brief: `docs/task-briefs/in-progress/2026-05-19-aw-006-shared-notice-empty-state-pattern-inventory-10-10.md`.
-   - Likely files: `docs/design/notice-empty-state-pattern-inventory.md`, this canonical queue, and the active task brief.
-   - Risks: boiling the ocean across shared components or changing copy/state behavior under a visual-polish label.
-   - Protected areas: reusable UI contracts, required states, Help/Guide impact if workflow labels/recovery copy changes; screenshot handoff is N/A unless rendered UI changes.
-2. `Admin management feedback and list-state primitive pilot` (recommended next implementation slice after inventory)
+1. `Admin management feedback and list-state primitive pilot` (recommended next implementation slice)
    - Objective: create one small admin-local helper for repeated loading/warning/error+retry/action notice/empty/no-results treatments and migrate a low-risk subset of admin manager surfaces first.
    - Likely files: `components/admin/` helper plus `AdminCommerceManager`, `AdminOperationsManager`, and either `AdminQrLinksManager` or `AdminEmailTemplatesManager`, with focused component/unit coverage and screenshot handoff if rendered UI changes.
    - Risks: accidentally changing admin copy, retry callbacks, schema warning behavior, authz boundaries, mutation logic, or dense recovery behavior under a visual primitive label.
    - Protected areas: admin workflow clarity, Help/Guide impact if labels or recovery actions change, live-region semantics, status color contrast, and no broad admin notes/content recovery migration in the first pilot.
-3. `Stable visual baseline snapshot pilot`
+2. `Stable visual baseline snapshot pilot`
    - Objective: add or document a small baseline screenshot capture path for the highest-value AW-006 routes after recent public quick wins.
    - Likely files: screenshot/runbook or focused test tooling brief, with route selection limited to a small pilot set.
    - Risks: adding brittle screenshot automation, large artifacts, or a full visual-regression platform before route contracts are stable.
@@ -153,7 +151,8 @@ Recommended order unless the owner explicitly reprioritizes:
 
 - Introduce disciplined tokens for color, radius, shadow, spacing, and type.
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
-- Inventory shared Notice/EmptyState/Loading/Error patterns, then start with one admin-local primitive pilot before any broad shared-component rollout.
+- Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
+- Start with one admin-local primitive pilot before any broad shared-component rollout.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.
@@ -325,3 +324,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-19 | planned | refreshed after AW-006 queue re-audit #756 on clean main@7963705; marked the re-audit done and kept My Library surface token and action hierarchy polish as the next small AW-006 UX/UI implementation slice | next: create and execute a new active brief for /my-library surface token and action hierarchy polish`
 - `2026-05-19 | planned | refreshed after repo-managed closeout #757 on clean main@9b5c05f; linked the active /my-library surface token and action hierarchy polish brief as the current canonical AW-006 implementation slice | next: complete screenshot-reviewed implementation before broad gates`
 - `2026-05-19 | planned | refreshed after My Library surface polish #758/#759 on clean main@5f6f27e; marked My Library done and promoted Shared notice and empty-state pattern inventory as the current AW-006 slice, with an admin management feedback/list-state primitive pilot as the recommended next implementation slice after inventory | next: complete docs-only inventory and validation`
+- `2026-05-19 | planned | refreshed after Shared notice and empty-state inventory #760 on clean main@1d41a84; marked inventory done and promoted Admin management feedback and list-state primitive pilot as the next small AW-006 UX/UI implementation slice | next: create and execute a new active brief for the admin management feedback/list-state primitive pilot`
