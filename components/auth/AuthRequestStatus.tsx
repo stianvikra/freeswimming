@@ -12,6 +12,7 @@ type Props = {
   sent: boolean;
   error: string;
   cooldownUntilMs?: number | null;
+  initialNowMs?: number;
 };
 
 const STYLE_BY_STATE: Record<Exclude<SignInRequestState, "idle" | "sending">, string> = {
@@ -20,33 +21,40 @@ const STYLE_BY_STATE: Record<Exclude<SignInRequestState, "idle" | "sending">, st
   error: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-export default function AuthRequestStatus({ sent, error, cooldownUntilMs }: Props) {
-  const [nowMs, setNowMs] = useState(() => Date.now());
+export default function AuthRequestStatus({ sent, error, cooldownUntilMs, initialNowMs }: Props) {
+  const [nowMs, setNowMs] = useState<number | null>(() => initialNowMs ?? null);
 
   useEffect(() => {
     if (!cooldownUntilMs) return;
 
-    const interval = window.setInterval(() => {
+    const tick = () => {
       setNowMs(Date.now());
-    }, 1_000);
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 1_000);
 
     return () => {
       window.clearInterval(interval);
     };
   }, [cooldownUntilMs]);
 
-  const remainingSeconds = getSignInCooldownRemainingSeconds(cooldownUntilMs, nowMs);
+  const hasCooldownSignal = typeof cooldownUntilMs === "number" && Number.isFinite(cooldownUntilMs);
+  const remainingSeconds =
+    nowMs === null ? null : getSignInCooldownRemainingSeconds(cooldownUntilMs, nowMs);
 
-  const state = useMemo(
-    () =>
-      deriveSignInRequestState({
-        sent,
-        error,
-        cooldownUntilMs,
-        remainingCooldownSeconds: remainingSeconds,
-      }),
-    [cooldownUntilMs, error, remainingSeconds, sent]
-  );
+  const state = useMemo(() => {
+    if (remainingSeconds === null && error.trim().length > 0 && hasCooldownSignal) {
+      return "cooldown";
+    }
+
+    return deriveSignInRequestState({
+      sent,
+      error,
+      cooldownUntilMs,
+      remainingCooldownSeconds: remainingSeconds ?? undefined,
+    });
+  }, [cooldownUntilMs, error, hasCooldownSignal, remainingSeconds, sent]);
 
   if (state === "idle" || state === "sending") {
     return null;
@@ -54,9 +62,11 @@ export default function AuthRequestStatus({ sent, error, cooldownUntilMs }: Prop
 
   const text =
     state === "cooldown"
-      ? remainingSeconds > 0
-        ? formatLoginCodeCooldownMessageFromSeconds(remainingSeconds)
-        : "You can request a new sign-in email now."
+      ? remainingSeconds === null
+        ? "Please wait before requesting a new sign-in email."
+        : remainingSeconds > 0
+          ? formatLoginCodeCooldownMessageFromSeconds(remainingSeconds)
+          : "You can request a new sign-in email now."
       : state === "sent"
         ? "Sign-in email sent. Open the secure link first. If you're using the iPhone Home Screen app or the link opens in Safari, enter the one-time code below instead. Check spam/junk if needed."
         : error;

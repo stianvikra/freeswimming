@@ -6,11 +6,12 @@ import { getSignInCooldownRemainingSeconds } from "@/lib/auth/sign-in-ui-state";
 
 type Props = {
   cooldownUntilMs?: number | null;
+  initialNowMs?: number;
 };
 
-export default function AuthResendButton({ cooldownUntilMs }: Props) {
+export default function AuthResendButton({ cooldownUntilMs, initialNowMs }: Props) {
   const { pending } = useFormStatus();
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState<number | null>(() => initialNowMs ?? null);
 
   useEffect(() => {
     if (!cooldownUntilMs) {
@@ -26,15 +27,19 @@ export default function AuthResendButton({ cooldownUntilMs }: Props) {
     };
   }, [cooldownUntilMs]);
 
-  const remainingSeconds = getSignInCooldownRemainingSeconds(cooldownUntilMs, nowMs);
+  const hasCooldownSignal = typeof cooldownUntilMs === "number" && Number.isFinite(cooldownUntilMs);
+  const remainingSeconds =
+    nowMs === null ? null : getSignInCooldownRemainingSeconds(cooldownUntilMs, nowMs);
 
-  const hasCooldown = remainingSeconds > 0;
+  const hasCooldown = remainingSeconds === null ? hasCooldownSignal : remainingSeconds > 0;
   const disabled = pending || hasCooldown;
   const label = pending
     ? "Resending..."
-    : hasCooldown
+    : remainingSeconds !== null && remainingSeconds > 0
       ? `Resend email in ${remainingSeconds}s`
-      : "Resend sign-in email";
+      : hasCooldown
+        ? "Resend email soon"
+        : "Resend sign-in email";
 
   return (
     <button
