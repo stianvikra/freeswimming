@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-19`
-- `base`: `main@efdb262`
+- `base`: `main@310de37`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, Shared notice/empty-state inventory shipped through `#760`, admin management feedback/list-state primitive pilot shipped through `#762/#763`, and stable visual baseline snapshot pilot shipped through `#764/#765`. Canonical queue lifecycle automation is now the active AW-006 slice so future closeouts catch stale active-brief references before a separate cleanup slice is needed.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, Shared notice/empty-state inventory shipped through `#760`, admin management feedback/list-state primitive pilot shipped through `#762/#763`, stable visual baseline snapshot pilot shipped through `#764/#765`, and canonical queue lifecycle automation shipped through `#766/#767`. The next AW-006 implementation candidate is Shared notice/empty-state primitive expansion, and future closeouts now catch stale active-brief references before a separate cleanup slice is needed.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -69,9 +69,9 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Completed visual baseline pilot:
   - `docs/task-briefs/done/2026-05-19-aw-006-stable-visual-baseline-snapshot-pilot-10-10.md`
   - shipped through `#764/#765`, adding an on-demand AW-006 reference screenshot capture path without changing rendered UI, product behavior, runtime data, checkout, auth, or CI gating.
-- Current lifecycle automation:
-  - `docs/task-briefs/in-progress/2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10.md`
-  - active slice to correct this queue after `#764/#765` and add lint/preflight coverage so completed active child briefs cannot keep pointing at stale `in-progress` queue entries.
+- Completed lifecycle automation:
+  - `docs/task-briefs/done/2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10.md`
+  - shipped through `#766/#767`, correcting this queue after `#764/#765` and adding lint/preflight coverage so completed active child briefs cannot keep pointing at stale `in-progress` queue entries.
 
 ## Executive Summary From The Review
 
@@ -129,18 +129,13 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Shared notice/empty inventory   | `done`    | `#760`, `docs/task-briefs/done/2026-05-19-aw-006-shared-notice-empty-state-pattern-inventory-10-10.md`               | Inventoried repeated state treatments and selected the admin management feedback/list-state primitive pilot without changing rendered UI or runtime behavior.                                     |
 | Admin state primitive pilot     | `done`    | `#762/#763`, `docs/task-briefs/done/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md` | Added a bounded admin-local state helper for Commerce, Operations, and QR registry loading/warning/error/action/empty/no-results states without changing admin data, authz, mutations, or labels. |
 | Stable visual baseline pilot    | `done`    | `#764/#765`, `docs/task-briefs/done/2026-05-19-aw-006-stable-visual-baseline-snapshot-pilot-10-10.md`                | Added on-demand mobile/desktop reference screenshots for the public AW-006 route set without committing artifacts or changing product rendering.                                                  |
+| Queue lifecycle automation      | `done`    | `#766/#767`, `docs/task-briefs/done/2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10.md`                 | Added lint and post-merge preflight coverage so done child briefs with canonical queues cannot remain listed as active in-progress queue items unnoticed.                                         |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Canonical queue lifecycle automation` (active implementation slice)
-   - Active brief: `docs/task-briefs/in-progress/2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10.md`.
-   - Objective: correct this queue after the visual baseline closeout and add lint/preflight coverage so a done child brief cannot remain listed as the active `in-progress` queue item.
-   - Likely files: `scripts/lint-task-brief-scorecard.mjs`, `scripts/post-merge-preflight.mjs`, targeted unit tests, this queue, and the active brief.
-   - Risks: over-automating product priority decisions or creating false positives from historical checkpoint logs.
-   - Protected areas: task-brief lifecycle, closeout cadence, verification lanes, and canonical queue history.
-2. `Shared notice/empty-state primitive expansion` (recommended next implementation slice after automation)
+1. `Shared notice/empty-state primitive expansion` (recommended next implementation slice)
    - Objective: after the inventory and admin-local pilot, apply the proven notice/list-state contract to one additional bounded surface or shared primitive without broad design-system churn.
    - Likely files: a new active brief, the existing admin/member/public state helper or UI primitive surface selected in that brief, and targeted tests.
    - Risks: turning a PR-sized primitive expansion into a broad Button/Card/PageShell redesign.
@@ -340,3 +335,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-19 | planned | refreshed after repo-managed closeout #761 on clean main@20320df; linked the active Admin management feedback and list-state primitive pilot brief as the current canonical AW-006 implementation slice | next: complete screenshot-reviewed implementation before broad gates`
 - `2026-05-19 | planned | refreshed after Admin management feedback/list-state primitive pilot #762 and repo-managed closeout #763 on clean main@6a2cada; marked admin primitive done and linked the active Stable visual baseline snapshot pilot as the current canonical AW-006 implementation slice | next: complete bounded on-demand screenshot baseline tooling and validation`
 - `2026-05-19 | planned | refreshed after Stable visual baseline snapshot pilot #764 and repo-managed closeout #765 on clean main@efdb262; marked visual baseline done and linked the active Canonical queue lifecycle automation slice so future done child briefs with canonical queues cannot leave stale active in-progress references unnoticed | next: complete lint/preflight automation, then use the updated queue to start the shared notice/empty-state primitive expansion candidate`
+- `2026-05-19 | planned | refreshed after Canonical queue lifecycle automation #766 and repo-managed closeout #767 on clean main@310de37; marked queue automation done and promoted Shared notice/empty-state primitive expansion as the next AW-006 implementation candidate | next: create and execute a new active brief for the shared notice/empty-state primitive expansion slice`

@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -172,3 +172,4 @@ Required as a task-brief lifecycle and AW-006 queue sweep.
 - `2026-05-19 | in-progress | started from clean main@efdb262 after PR #764 and repo-managed closeout PR #765; post-merge preflight found no pending closeout, but the canonical AW-006 queue still pointed at the done visual baseline pilot as active | next: update queue, add lint/preflight stale queue detection, and run targeted validation`
 - `2026-05-19 | in-progress | updated the canonical AW-006 queue, added stale active canonical queue detection to brief lint and post-merge preflight, and added targeted Vitest coverage; npm run lint:briefs:all, targeted Vitest, git diff --check, npm run lint, npm run typecheck, npm run lint:quality-gates, and targeted lifecycle sweep passed | next: run npm run verify:pre-pr before commit/push/PR handoff`
 - `2026-05-19 | in-progress | npm run verify:pre-pr passed the full lane at 15:14: branch-current, migration drift skip, quality gates, admin/env/pr-body lints, eslint, typecheck, 1120 unit tests, build, performance budgets, and Playwright 98 passed / 478 skipped | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge after CI is green`
+- `2026-05-19 | done | merged through PR #766 on main@310de37; CI verify passed, npm run verify:pre-merge passed, and post-merge preflight requested this repo-managed closeout move to done through PR #767 | next: merge closeout, rerun post-merge preflight, then continue AW-006 from the canonical queue`
