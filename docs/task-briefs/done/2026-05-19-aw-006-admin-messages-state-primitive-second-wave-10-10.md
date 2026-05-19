@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-admin-messages-state-primitive-second-wave-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -199,3 +199,67 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-19 | screenshot-review | migrated AdminMessagesManager warning, load error+retry, action feedback, list loading, storage-not-ready warning, empty/no-results, and no-selection states to AdminManagerState; added targeted component tests; lint:briefs:all, targeted vitest, lint, typecheck, route/label sweep, and git diff --check passed; captured after/reference screenshots in output/aw-006-admin-messages-state-2026-05-19-201053 at 2026-05-19 20:10 using a temporary local dev-only route that rendered the production AdminWorkspace with mocked browser API responses; the temporary route/script were removed before handoff | next: wait for owner screenshot approval before verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-19 | screenshot-approved | owner approved the after/reference screenshot handoff for Messages empty, load error, warning, and Commerce empty reference states; no product-rendering files changed after screenshot capture | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-19 | pre-pr-ready | npm run verify:pre-pr passed on the full-public lane with exit-code 0; evidence: artifacts/test-runs/20260519-201323/verify.log and artifacts/test-runs/20260519-201323/meta.json; unit suite reported 200 files / 1136 tests passed, build passed, E2E reported 98 passed / 478 skipped under local auth config, and performance budgets held with a hold recommendation because worst margin was 14.7% | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-19 | done | PR #772 merged as main@49c8a3f after green CI and npm run verify:pre-merge; repo-managed closeout moved this brief to done and refreshed the canonical AW-006 queue | next: complete closeout PR validation and merge`
+
+## Completion Record
+
+- `completed`: `2026-05-19`
+- `merged_pr`: `#772`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/772`
+- `squash_commit`: `49c8a3f`
+- `implementation_commits`: `d9c048f`, `3482c19`
+- `result`: Shipped the Admin Messages state primitive second-wave by migrating scoped warning, load error+retry, action feedback, list loading, storage-not-ready, empty/no-results, and no-selection states to the existing `AdminManagerState` helper with focused component coverage and approved screenshot evidence.
+- `10/10 claim`: yes - all critical target categories scored `5/5`; the work reused the admin-local helper, preserved message API/data/auth/workflow behavior, passed local and CI gates, and is closed by this repo-managed docs-only closeout.
+
+Plain-language done summary:
+
+- Admin Messages now uses the same clear admin feedback pattern as the newer admin manager screens.
+- Message data, status changes, filters, pagination, delivery diagnostics, labels, copy, auth, and support procedures stayed unchanged.
+- The only visible change is more consistent admin loading, empty, warning, retry/error, action feedback, and no-selection presentation.
+
+Validation evidence:
+
+- Targeted component tests covered loading, warning, load error+retry, empty/no-results, no-selection, success feedback, delete success feedback, and action-error behavior.
+- Screenshot handoff approved from `output/aw-006-admin-messages-state-2026-05-19-201053` at `2026-05-19 20:10`.
+- `npm run verify:pre-pr`: pass, full-public lane, evidence `artifacts/test-runs/20260519-202704/verify.log`.
+- GitHub PR `#772` checks: pass for `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL/Analyze, Vercel, and Vercel Preview Comments.
+- `npm run verify:pre-merge`: pass, evidence `artifacts/verify-pre-merge/20260519-184935.json`.
+
+Risk and rollback:
+
+- Runtime risk stayed low because the slice reused an existing helper and changed no API, auth, schema, config, package, workflow, or dependency surface.
+- Rollback is a normal revert of `49c8a3f` plus this repo-managed closeout commit if lifecycle metadata also needs to move back.
+
+Critical target categories confirmed `5/5`:
+
+- UX flow clarity
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                     | Gaps / Notes                                      |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Admin Messages completion stayed inside AW-006 and canonical queue lifecycle was updated in this closeout.                                   | None for this slice.                              |
+| UX flow clarity                               | `5/5`          | Scoped loading, warning, retryable error, action feedback, empty/no-results, and no-selection states moved to the shared admin-local helper. | None for this slice.                              |
+| Visual design quality                         | `5/5`          | Approved after/reference screenshot handoff compared migrated Messages states to the admin manager family.                                   | None for this slice.                              |
+| Business logic correctness and data integrity | `5/5`          | Tests and diff review preserved fetch paths, retry callback, pagination, filters, status payloads, selection behavior, and fallback strings. | None for this slice.                              |
+| Admin editor ergonomics                       | `5/5`          | Admins kept clear refresh/retry/action feedback and no-selection guidance while managing inbound messages.                                   | None for this slice.                              |
+| Accessibility (a11y)                          | `5/5`          | Tests verified polite dynamic status semantics and non-live static empty/no-selection states.                                                | None for this slice.                              |
+| Reliability and failure handling              | `5/5`          | Retry remained wired to the same loader; empty/no-selection and mutation-error states stayed deterministic.                                  | None for this slice.                              |
+| Security and authz                            | `5/5`          | Admin API routes, credentials, secrets, cookies, and role behavior were untouched.                                                           | None for this slice.                              |
+| Content governance                            | `5/5`          | Existing admin message copy was preserved and AW-006 documentation was updated in the same workstream.                                       | None for this slice.                              |
+| Admin workflow and editability                | `5/5`          | Existing refresh, filtering, selection, status changes, delete confirmation, restore, and external inbox behavior stayed unchanged.          | None for this slice.                              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused the existing admin-local helper and added no dependencies or app-wide primitive.                                                      | None for this slice.                              |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, full pre-PR, green CI, and pre-merge gates passed.                                                      | None for this slice.                              |
+| DevOps and rollback readiness                 | `5/5`          | PR `#772` merged as `49c8a3f`; rollback is normal git revert.                                                                                | No migration or provider rollback needed.         |
+| Performance (CWV + payloads)                  | `4/5`          | Pre-PR and pre-merge build/perf gates passed without dependency or fetch-surface changes.                                                    | Supporting category; no route-level perf changed. |
+| Analytics and KPI observability               | `4/5`          | Existing admin action behavior continued without event taxonomy or payload changes.                                                          | Supporting category; no analytics change needed.  |
+| i18n operational readiness                    | `4/5`          | Existing English admin strings were preserved; no translation workflow changed.                                                              | Supporting category for future localization.      |
+| Scalability and cost efficiency               | `4/5`          | Reused shared admin-local markup without adding runtime services or recurring cost.                                                          | Supporting category.                              |
+
+Remaining gaps: none for this scoped Admin Messages state primitive second-wave.
+
+Defer/fix recommendation: none; all target categories are `5/5`, and all supporting categories met their scoped thresholds.
