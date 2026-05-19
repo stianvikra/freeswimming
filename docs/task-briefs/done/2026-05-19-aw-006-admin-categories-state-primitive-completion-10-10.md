@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-admin-categories-state-primitive-completion-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -195,3 +195,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-19 | screenshot-review | migrated AdminCategoriesManager warning, loading, load error+retry, empty, and action-error states to AdminManagerState; added targeted component tests; lint:briefs:all, targeted vitest, lint, typecheck, git diff --check, and route/label sweep passed; captured after/reference screenshots in output/aw-006-admin-categories-state-2026-05-19-191423 at 2026-05-19 19:14 using a temporary local dev-only route that rendered the production AdminWorkspace with mocked browser API responses; the temporary route/script were removed before handoff | next: wait for owner screenshot approval before verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-19 | screenshot-approved | owner approved the after/reference screenshot handoff for Categories empty, load error, warning, and Commerce empty reference states; no product-rendering files changed after screenshot capture | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-19 | pre-pr-ready | npm run verify:pre-pr passed the full lane with lint, quality gates, admin/env/PR-body lint, eslint, typecheck, 1131 unit tests, build, performance budgets, and Playwright 98 passed / 478 skipped under expected local auth gating; verify log artifacts/test-runs/20260519-192004/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-19 | done | PR #770 merged as main@431c5c2 after green CI and npm run verify:pre-merge; repo-managed closeout PR #771 moved this brief to done on main@c9fb29d | next: continue AW-006 from the canonical queue`

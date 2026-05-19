@@ -14,6 +14,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import type { AdminRole } from "@/lib/admin/access";
 import {
   ADMIN_MESSAGE_SOURCE_FILTER_VALUES,
@@ -385,32 +386,36 @@ export default function AdminMessagesManager({ adminRole }: Props) {
         </div>
       </div>
 
-      <div aria-live="polite" className="sr-only">
-        {notice ?? actionError ?? error ?? warning ?? ""}
-      </div>
-
-      {warning ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          {warning}
-        </div>
-      ) : null}
+      {warning ? <AdminManagerState tone="warning">{warning}</AdminManagerState> : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+        <AdminManagerState
+          tone="error"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadMessages()}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-800 transition hover:bg-rose-50"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              Retry
+            </button>
+          }
+        >
           {error}
-        </div>
+        </AdminManagerState>
       ) : null}
 
       {notice ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <AdminManagerState tone="success" density="compact">
           {notice}
-        </div>
+        </AdminManagerState>
       ) : null}
 
       {actionError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+        <AdminManagerState tone="error" announcement="polite" density="compact">
           {actionError}
-        </div>
+        </AdminManagerState>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
@@ -421,13 +426,22 @@ export default function AdminMessagesManager({ adminRole }: Props) {
           </div>
 
           {loading ? (
-            <div className="px-4 py-8 text-sm text-slate-600">Loading messages...</div>
+            <AdminManagerState tone="loading" density="spacious" className="m-4 !mt-4">
+              Loading messages...
+            </AdminManagerState>
           ) : !schemaReady ? (
-            <div className="px-4 py-8 text-sm text-slate-600">Message storage is not ready.</div>
+            <AdminManagerState tone="warning" density="spacious" className="m-4 !mt-4">
+              Message storage is not ready.
+            </AdminManagerState>
           ) : items.length === 0 ? (
-            <div className="px-4 py-8 text-sm text-slate-600">
+            <AdminManagerState
+              tone="no-results"
+              density="spacious"
+              className="m-4 !mt-4"
+              testId="admin-messages-empty-state"
+            >
               No messages match the current filters.
-            </div>
+            </AdminManagerState>
           ) : (
             <div className="divide-y divide-slate-100">
               {items.map((item) => {
@@ -490,9 +504,14 @@ export default function AdminMessagesManager({ adminRole }: Props) {
 
         <div className="rounded-2xl border border-slate-200 bg-white">
           {!selectedItem ? (
-            <div className="px-5 py-10 text-sm text-slate-600">
+            <AdminManagerState
+              tone="empty"
+              density="spacious"
+              className="m-5 !mt-5"
+              testId="admin-messages-no-selection-state"
+            >
               Select a message to inspect details and diagnostics.
-            </div>
+            </AdminManagerState>
           ) : (
             <div className="space-y-5 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">

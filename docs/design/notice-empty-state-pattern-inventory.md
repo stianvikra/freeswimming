@@ -81,17 +81,17 @@ Do not include:
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
-## Active Primitive Completion Slice
+## Completed Primitive Completion Slice
 
-Active AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Admin Categories state primitive completion`
 
-Active implementation brief:
+Done implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-19-aw-006-admin-categories-state-primitive-completion-10-10.md`
+`docs/task-briefs/done/2026-05-19-aw-006-admin-categories-state-primitive-completion-10-10.md`
 
-Scope direction:
+Completed scope:
 
 - Reuse the existing admin-local `AdminManagerState` helper on one remaining low-risk admin management surface:
   - `AdminCategoriesManager`
@@ -105,6 +105,35 @@ Do not include:
 - category copy or workflow label changes,
 - admin notes/content upload recovery,
 - admin messages two-pane selection states,
+- guide offline/sync states,
+- dryland/micro session state flows,
+- public visual redesign,
+- Supabase, Stripe, auth, analytics, or API behavior.
+
+## Active Second-Wave Primitive Slice
+
+Active AW-006 implementation slice:
+
+`Admin Messages state primitive second-wave`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-19-aw-006-admin-messages-state-primitive-second-wave-10-10.md`
+
+Scope direction:
+
+- Reuse the existing admin-local `AdminManagerState` helper on the primary state renderings in:
+  - `AdminMessagesManager`
+- Preserve copy, fetch behavior, retry callbacks, authz, filter behavior, pagination, status mutation logic, selection behavior, delete confirmation, delivery diagnostics, and external inbox behavior.
+- Add focused component/unit coverage around Messages loading, warning, load error+retry, action feedback, empty/no-results list, and no selected message.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
+
+Do not include:
+
+- message API changes,
+- message copy or workflow label changes,
+- provider delivery diagnostics changes,
+- admin notes/content upload recovery,
 - guide offline/sync states,
 - dryland/micro session state flows,
 - public visual redesign,

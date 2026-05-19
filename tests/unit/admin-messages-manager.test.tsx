@@ -41,17 +41,42 @@ const baseItem: AdminMessageItem = {
   ],
 };
 
-function listResponse(items: AdminMessageItem[] = [baseItem], role: AdminRole = "admin") {
+function listResponse(
+  items: AdminMessageItem[] = [baseItem],
+  options:
+    | AdminRole
+    | {
+        role?: AdminRole;
+        schemaReady?: boolean;
+        warning?: string | null;
+        nextCursor?: string | null;
+      } = "admin"
+) {
+  const role = typeof options === "string" ? options : (options.role ?? "admin");
+  const schemaReady = typeof options === "string" ? true : (options.schemaReady ?? true);
+  const warning = typeof options === "string" ? null : (options.warning ?? null);
+  const nextCursor = typeof options === "string" ? null : (options.nextCursor ?? null);
+
   return {
     ok: true,
     json: async () => ({
       ok: true,
       role,
       items,
-      schemaReady: true,
-      warning: null,
+      schemaReady,
+      warning,
       pageSize: 25,
-      nextCursor: null,
+      nextCursor,
+    }),
+  };
+}
+
+function listErrorResponse(error = "Could not load messages.") {
+  return {
+    ok: false,
+    json: async () => ({
+      ok: false,
+      error,
     }),
   };
 }
@@ -67,10 +92,95 @@ function mutationResponse(item: AdminMessageItem) {
   };
 }
 
+function mutationErrorResponse(error = "Could not update message.") {
+  return {
+    ok: false,
+    json: async () => ({
+      ok: false,
+      error,
+    }),
+  };
+}
+
 describe("AdminMessagesManager", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it("shows a polite loading state before messages resolve", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(listResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    const loading = screen.getByRole("status");
+    expect(loading).toHaveTextContent("Loading messages...");
+    expect(loading).toHaveAttribute("aria-live", "polite");
+
+    await screen.findByText("Test Swimmer");
+  });
+
+  it("keeps load error retry wired to the original messages loader", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(listErrorResponse())
+      .mockResolvedValueOnce(listResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not load messages.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await screen.findByText("Test Swimmer");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/admin/messages?pageSize=25", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  });
+
+  it("keeps schema warnings polite while preserving the storage-not-ready state", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      listResponse([], {
+        schemaReady: false,
+        warning: "Message schema is not ready.",
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    const warningText = await screen.findByText("Message schema is not ready.");
+    const warning = warningText.closest("div");
+    if (!warning) {
+      throw new Error("Expected warning state wrapper to render.");
+    }
+    expect(warning).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByText("Message storage is not ready.")).toBeInTheDocument();
+  });
+
+  it("renders unchanged empty and no-selection guidance without live-region noise", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(listResponse([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    const emptyState = await screen.findByTestId("admin-messages-empty-state");
+    expect(emptyState).toHaveTextContent("No messages match the current filters.");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+
+    const noSelectionState = screen.getByTestId("admin-messages-no-selection-state");
+    expect(noSelectionState).toHaveTextContent(
+      "Select a message to inspect details and diagnostics."
+    );
+    expect(noSelectionState).not.toHaveAttribute("role");
+    expect(noSelectionState).not.toHaveAttribute("aria-live");
   });
 
   it("loads messages and marks a selected message as needs reply", async () => {
@@ -98,7 +208,9 @@ describe("AdminMessagesManager", () => {
     expect(actions).toBeTruthy();
     fireEvent.click(within(actions as HTMLElement).getByRole("button", { name: "Needs reply" }));
 
-    expect(await screen.findAllByText("Needs reply completed.")).toHaveLength(2);
+    const status = await screen.findByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveTextContent("Needs reply completed.");
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
@@ -170,9 +282,33 @@ describe("AdminMessagesManager", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
 
-    expect(await screen.findAllByText("Move to deleted completed.")).toHaveLength(2);
+    const status = await screen.findByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveTextContent("Move to deleted completed.");
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
       action: "delete",
+    });
+  });
+
+  it("announces update action errors politely without changing the payload", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(listResponse())
+      .mockResolvedValueOnce(mutationErrorResponse("Message status update failed."));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    await screen.findByText("Test Swimmer");
+    const actions = (await screen.findByText("Actions")).parentElement;
+    expect(actions).toBeTruthy();
+    fireEvent.click(within(actions as HTMLElement).getByRole("button", { name: "Needs reply" }));
+
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("Message status update failed.");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      action: "needs_reply",
     });
   });
 });
