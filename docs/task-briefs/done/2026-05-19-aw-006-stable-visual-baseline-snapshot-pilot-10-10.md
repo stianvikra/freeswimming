@@ -187,8 +187,43 @@ Required as a targeted screenshot-tooling and route-list sweep because this slic
 - Node.js/npm available through the repo's normal `nvm use --silent` path.
 - For Codex, local Playwright/server and release-gate commands should use escalation-first strategy per repo instructions.
 
+## Closeout Outcome
+
+- `10/10 claim`: yes for the Stable Visual Baseline Snapshot Pilot scope. All critical target categories are scored `5/5`; full visual-regression CI, committed screenshot artifacts, product UI changes, runtime behavior changes, auth, checkout, analytics, and DB/schema work remain intentionally out of scope.
+- Shipped in PR `#764` as `9918257`.
+- Screenshot artifacts: `output/aw-006-visual-baseline-2026-05-19-123939`.
+- Captured: `2026-05-19 12:41`.
+- Comparison type: `reference-only`.
+- No product-rendering files changed after capture.
+
+Validation evidence:
+
+- `SCREENSHOT_DIR=output/aw-006-visual-baseline-2026-05-19-123939 npm run screenshots:aw006-baseline`: pass, 14 mobile/desktop reference screenshots.
+- `npm run lint:briefs:all`, `npm run typecheck`, `npm run lint`, `git diff --check`, `npm run lint:quality-gates`, and targeted route/support sweep: pass.
+- `npm run verify:pre-pr`: pass, full lane, `artifacts/test-runs/20260519-125215`.
+- GitHub PR `#764` checks: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `CodeQL`, `Analyze (javascript-typescript)`, Vercel, and Vercel Preview Comments all passed.
+- `npm run verify:pre-merge`: pass for `963b305`, recorded at `artifacts/verify-pre-merge/20260519-110958.json`.
+
+Risk and rollback:
+
+- Runtime risk is low because the shipped behavior is on-demand screenshot tooling plus docs/runbook lifecycle updates; no app runtime path, workflow, dependency install, secret, schema, or deployment setting changed.
+- Rollback is `git revert 9918257` if the pilot proves too broad or should be redesigned.
+
+| Category                            | Achieved Score | Evidence                                                                                                   | Gaps / Notes                                      |
+| ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                | `5/5`          | Route matrix covers `/`, `/course`, `/plans`, `/programs`, `/analysis`, `/our-method`, and `/contact`.     | Pilot route list only; broader AW-006 remains.    |
+| Visual design quality               | `5/5`          | Full-page mobile/desktop reference screenshots were captured with stable `reference-*` naming.             | No visual assertions or committed snapshots.      |
+| Performance (CWV + payloads)        | `5/5`          | Tooling is env-gated, on-demand, Chromium-only for the pilot, and adds no dependency.                      | No recurring CI visual gate by design.            |
+| Reliability and failure handling    | `5/5`          | Spec waits for route markers, load state, fonts/images when available, and is skipped without the env var. | Test-env fallback logs are known non-blockers.    |
+| Content governance                  | `5/5`          | Runbook documents route list, artifact folder naming, regeneration rules, and handoff boundaries.          | Artifacts remain local and intentionally omitted. |
+| Stack-fit and dependency discipline | `5/5`          | Reuses existing Playwright config/projects and npm script conventions; no new platform added.              | None.                                             |
+| Testing and QA automation           | `5/5`          | Targeted screenshot capture, static checks, full pre-PR gate, green CI, and pre-merge gate passed.         | None.                                             |
+| Scalability and cost efficiency     | `5/5`          | Screenshots are local/on-demand and not committed, avoiding repo and CI artifact growth.                   | None.                                             |
+| DevOps and rollback readiness       | `5/5`          | PR `#764` merged as `9918257`; rollback is a normal git revert; post-merge preflight surfaced closeout.    | Closeout PR is docs-only.                         |
+
 ## Checkpoint Log
 
 - `2026-05-19 | in-progress | started from clean main@6a2cada after PR #762 and repo-managed closeout #763; post-merge preflight found no pending closeout; created branch aw-006-visual-baseline-pilot and active brief for the canonical Stable visual baseline snapshot pilot | next: implement the env-gated Playwright capture, runbook, npm script, and canonical queue update`
 - `2026-05-19 | in-progress | added the env-gated AW-006 visual baseline Playwright spec, npm script, runbook, and canonical queue update; lint:briefs:all, typecheck, lint, git diff --check, quality gates, targeted route/support sweep, and SCREENSHOT_DIR=output/aw-006-visual-baseline-2026-05-19-123939 npm run screenshots:aw006-baseline all passed; captured 14 reference-only mobile/desktop artifacts at 2026-05-19 12:41 with no product-rendering file changes in this slice | next: run npm run verify:pre-pr before PR creation`
 - `2026-05-19 | in-progress | npm run verify:pre-pr passed full lane at 2026-05-19 12:51: branch-current, migration drift skip, quality gates, admin/env/pr-body lints, eslint, typecheck, 1117 unit tests, build, performance budgets, and E2E 98 passed / 478 skipped; performance trend recommendation was hold | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-19 | 9918257 | PR #764 merged to main, local main synced, remote feature branch pruned, and post-merge preflight surfaced this repo-managed docs-only closeout | next: validate and merge closeout PR, sync main, rerun post-merge preflight, then make chat-handoff assessment`
