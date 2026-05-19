@@ -120,6 +120,15 @@ test.describe("public route IA", () => {
     await expect(page.getByRole("heading", { name: "Video Analysis", exact: true })).toBeVisible();
     const analysisBrandMark = page.getByTestId("analysis-intro-brand-mark").locator("img");
     await expect(analysisBrandMark).toBeVisible();
+    await expect
+      .poll(
+        async () =>
+          analysisBrandMark.evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0 && img.naturalHeight > 0
+          ),
+        { message: "analysis intro brand mark should finish loading before ratio check" }
+      )
+      .toBe(true);
     const analysisBrandMetrics = await analysisBrandMark.evaluate((img: HTMLImageElement) => {
       const box = img.getBoundingClientRect();
       return {

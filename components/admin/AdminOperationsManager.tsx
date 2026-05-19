@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import type { AdminRuntimeFlagRow } from "@/lib/admin/runtime-flags";
 
 type SiteLockSnapshot = {
@@ -162,28 +163,28 @@ export default function AdminOperationsManager() {
       </div>
 
       {loading ? (
-        <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Loading operations state…
-        </p>
+        <AdminManagerState tone="loading">Loading operations state…</AdminManagerState>
       ) : null}
 
       {!loading && error ? (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <p className="text-sm font-medium text-rose-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => void loadOperations()}
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-          >
-            Retry
-          </button>
-        </div>
+        <AdminManagerState
+          tone="error"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadOperations()}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Retry
+            </button>
+          }
+        >
+          {error}
+        </AdminManagerState>
       ) : null}
 
       {!schemaReady && warning ? (
-        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {warning}
-        </p>
+        <AdminManagerState tone="warning">{warning}</AdminManagerState>
       ) : null}
 
       {!loading && !error && siteLock ? (
@@ -269,9 +270,9 @@ export default function AdminOperationsManager() {
       ) : null}
 
       {actionError ? (
-        <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <AdminManagerState tone="error" announcement="polite" density="compact">
           {actionError}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {!loading && !error && flags.length > 0 ? (

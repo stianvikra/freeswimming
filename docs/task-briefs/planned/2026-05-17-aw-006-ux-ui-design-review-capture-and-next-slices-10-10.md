@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-19`
-- `base`: `main@1d41a84`
+- `base`: `main@20320df`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, and Shared notice/empty-state inventory shipped through `#760`. The remaining review queue now needs the first primitive-consolidation implementation slice.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, Shared notice/empty-state inventory shipped through `#760`, and repo-managed closeout shipped through `#761`. The first primitive-consolidation implementation slice is now active.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -124,6 +124,7 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 Recommended order unless the owner explicitly reprioritizes:
 
 1. `Admin management feedback and list-state primitive pilot` (recommended next implementation slice)
+   - Active brief: `docs/task-briefs/in-progress/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md`.
    - Objective: create one small admin-local helper for repeated loading/warning/error+retry/action notice/empty/no-results treatments and migrate a low-risk subset of admin manager surfaces first.
    - Likely files: `components/admin/` helper plus `AdminCommerceManager`, `AdminOperationsManager`, and either `AdminQrLinksManager` or `AdminEmailTemplatesManager`, with focused component/unit coverage and screenshot handoff if rendered UI changes.
    - Risks: accidentally changing admin copy, retry callbacks, schema warning behavior, authz boundaries, mutation logic, or dense recovery behavior under a visual primitive label.
@@ -325,3 +326,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-19 | planned | refreshed after repo-managed closeout #757 on clean main@9b5c05f; linked the active /my-library surface token and action hierarchy polish brief as the current canonical AW-006 implementation slice | next: complete screenshot-reviewed implementation before broad gates`
 - `2026-05-19 | planned | refreshed after My Library surface polish #758/#759 on clean main@5f6f27e; marked My Library done and promoted Shared notice and empty-state pattern inventory as the current AW-006 slice, with an admin management feedback/list-state primitive pilot as the recommended next implementation slice after inventory | next: complete docs-only inventory and validation`
 - `2026-05-19 | planned | refreshed after Shared notice and empty-state inventory #760 on clean main@1d41a84; marked inventory done and promoted Admin management feedback and list-state primitive pilot as the next small AW-006 UX/UI implementation slice | next: create and execute a new active brief for the admin management feedback/list-state primitive pilot`
+- `2026-05-19 | planned | refreshed after repo-managed closeout #761 on clean main@20320df; linked the active Admin management feedback and list-state primitive pilot brief as the current canonical AW-006 implementation slice | next: complete screenshot-reviewed implementation before broad gates`

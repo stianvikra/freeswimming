@@ -37,6 +37,10 @@ Recommended next AW-006 implementation slice:
 
 `Admin management feedback and list-state primitive pilot`
 
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md`
+
 Scope direction:
 
 - Build one small admin-local helper for manager feedback/list states, likely under `components/admin/`.

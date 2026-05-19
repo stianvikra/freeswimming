@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import { parseAdminQrPrefillFromSearch } from "@/lib/qr-links/admin-prefill";
 import { generateQrAssets } from "@/lib/qr-links/codegen";
@@ -614,40 +615,38 @@ export default function AdminQrLinksManager() {
       </div>
 
       {!schemaReady && warning ? (
-        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {warning}
-        </p>
+        <AdminManagerState tone="warning">{warning}</AdminManagerState>
       ) : null}
 
-      {loading ? (
-        <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Loading QR registry…
-        </p>
-      ) : null}
+      {loading ? <AdminManagerState tone="loading">Loading QR registry…</AdminManagerState> : null}
 
       {!loading && error ? (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <p className="text-sm font-medium text-rose-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => void loadData()}
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-          >
-            Retry
-          </button>
-        </div>
+        <AdminManagerState
+          tone="error"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadData()}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Retry
+            </button>
+          }
+        >
+          {error}
+        </AdminManagerState>
       ) : null}
 
       {actionError ? (
-        <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <AdminManagerState tone="error" announcement="polite" density="compact">
           {actionError}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {actionNotice ? (
-        <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <AdminManagerState tone="success" density="compact">
           {actionNotice}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -680,45 +679,51 @@ export default function AdminQrLinksManager() {
       </div>
 
       {showEmptyState ? (
-        <div
-          className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4"
-          data-testid="admin-qr-empty-state"
+        <AdminManagerState
+          tone="empty"
+          title="No QR links yet"
+          density="spacious"
+          testId="admin-qr-empty-state"
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={openCreatePanel}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+              >
+                Create first QR link
+              </button>
+              <button
+                type="button"
+                onClick={applyExampleDraft}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                Use example values
+              </button>
+            </>
+          }
         >
-          <p className="text-sm font-semibold text-slate-900">No QR links yet</p>
-          <p className="mt-1 text-sm text-slate-600">
-            Start with one stable slug. Example stable link:{" "}
-            <span className="font-medium text-slate-800">{exampleStableLink}</span>
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={openCreatePanel}
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
-            >
-              Create first QR link
-            </button>
-            <button
-              type="button"
-              onClick={applyExampleDraft}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-            >
-              Use example values
-            </button>
-          </div>
-        </div>
+          Start with one stable slug. Example stable link:{" "}
+          <span className="font-medium text-slate-800">{exampleStableLink}</span>
+        </AdminManagerState>
       ) : null}
 
       {showNoMatches ? (
-        <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          <p>No QR links match current filters.</p>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-          >
-            Clear filters
-          </button>
-        </div>
+        <AdminManagerState
+          tone="no-results"
+          actionsClassName="mt-2"
+          actions={
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              Clear filters
+            </button>
+          }
+        >
+          No QR links match current filters.
+        </AdminManagerState>
       ) : null}
 
       {hasFilteredItems ? (
@@ -855,7 +860,7 @@ export default function AdminQrLinksManager() {
 
                     {isQrPreviewOpen ? (
                       <div className="mt-3 rounded-lg border border-teal-200 bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-teal-800">
+                        <p className="text-xs font-semibold tracking-wide text-teal-800 uppercase">
                           QR preview
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
