@@ -3,13 +3,15 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-remaining-queue-reaudit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `docs/aw-006-queue-reaudit`
+- `merged_pr`: `#756`
+- `merged_commit`: `7963705`
 
 ## Goal
 
@@ -139,7 +141,8 @@ Required as a docs/task-brief accuracy sweep only.
   - no product code, Help/Guide, runbook, support workflow, route label, or rendered UI changes.
 - Sweep evidence:
   - `2026-05-19`: ran `rg -n 'Sample deliverable proof|Re-audit remaining AW-006 queue after sample proof|Sample deliverable proof.*current|Status: \`current\`|Current follow-up execution|My Library surface token|#754|#755|Remaining PR-Sized UX/UI Slices' docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md docs/task-briefs/in-progress/2026-05-19-aw-006-remaining-queue-reaudit-10-10.md docs/task-briefs/done/2026-05-18-aw-006-sample-deliverable-proof-10-10.md docs/design docs/runbooks`.
-  - Expected fallout was limited to the canonical AW-006 queue, this active brief, and the done Sample Deliverable Proof brief evidence. The only remaining `Status: \`current\`` line is this re-audit slice, not the already-shipped sample-proof slice.
+  - At PR `#756` handoff, expected fallout was limited to the canonical AW-006 queue, this brief, and the done Sample Deliverable Proof brief evidence. The only remaining `Status: \`current\`` line was this re-audit slice, not the already-shipped sample-proof slice.
+  - `2026-05-19` closeout: after PR `#756` merged, the canonical AW-006 queue was updated again so the re-audit is marked `done` and no current implementation slice is active until the owner starts the next `/my-library` brief.
 
 ## Acceptance Criteria
 
@@ -166,11 +169,70 @@ N/A because this PR changes no rendered UI, browser behavior, print/export outpu
 
 Owner review should focus on whether the chosen next AW-006 slice is the right next small implementation target.
 
+## Completion Record
+
+- `completed`: `2026-05-19`
+- `merged_pr`: `#756`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/756`
+- `squash_commit`: `7963705`
+- `implementation_commit`: `f70709b`
+- `result`: Shipped a docs-only AW-006 queue re-audit that marks Sample Deliverable Proof done and promotes My Library surface token and action hierarchy polish as the next PR-sized UX/UI implementation slice.
+- `10/10 claim`: yes - all critical target categories scored `5/5` with canonical queue evidence, route/label/support sweep evidence, docs-only local gates, green GitHub checks, and docs-only pre-merge evidence.
+
+Plain-language done summary:
+
+- AW-006 now shows that Sample Deliverable Proof is finished through `#754/#755`.
+- The queue no longer points at an already-shipped `current` slice.
+- The next recommended small UX/UI implementation slice is `/my-library` surface token and action hierarchy polish.
+
+Delivered changes:
+
+- Added this closeout-ready AW-006 re-audit brief.
+- Updated the canonical AW-006 queue with current shipped status and next-slice recommendation.
+- Kept the change Markdown-only with no runtime, UI, Stripe, Supabase, analytics, Help/Guide, screenshot, or product behavior changes.
+
+Validation evidence:
+
+- `npm run lint:briefs:all`: pass.
+- `git diff --check`: pass.
+- `npm run verify:pre-pr`: pass, docs-only lane, latest pre-PR artifact `artifacts/test-runs/20260519-055820/verify.log`.
+- GitHub PR `#756` checks: pass for `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `CodeQL`, `Analyze (javascript-typescript)`, Vercel, and Vercel Preview Comments.
+- `npm run verify:pre-merge`: pass, docs-only lane, `artifacts/verify-pre-merge/20260519-040057.json`.
+
+Risk and rollback:
+
+- Runtime risk is low because the shipped PR is Markdown-only.
+- Rollback is a normal revert of `7963705` if the selected next AW-006 slice needs to change.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Reliability and failure handling
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                            | Achieved Score | Evidence                                                                                                 | Gaps / Notes                                      |
+| ----------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                | `5/5`          | Canonical queue marks shipped work accurately and names one next implementation slice.                   | No product IA changed.                            |
+| UX flow clarity                     | `5/5`          | Next slice includes objective, likely files, risks, protected areas, and screenshot requirement.         | Implementation brief still required next.         |
+| Reliability and failure handling    | `5/5`          | Queue no longer routes future work to the completed sample-proof slice.                                  | Runtime failure behavior unchanged.               |
+| Content governance                  | `5/5`          | `#754/#755` and `#756` lifecycle truth recorded in repo-backed task briefs.                              | No Help/Guide impact for this docs-only slice.    |
+| Stack-fit and dependency discipline | `5/5`          | Markdown-only diff; no dependency, script, workflow, runtime component, provider, or architecture shift. | Future UI slice must identify reference surfaces. |
+| Testing and QA automation           | `5/5`          | Brief lint, docs-only pre-PR, green GitHub checks, and docs-only pre-merge passed.                       | Screenshot QA not applicable.                     |
+| DevOps and rollback readiness       | `5/5`          | PR `#756` merged as `7963705`; rollback is a normal git revert.                                          | No migration or provider rollback needed.         |
+
+Remaining gaps: none for this scoped docs-only re-audit.
+
+Defer/fix recommendation: none; all target categories are `5/5`.
+
 ## Session Continuity And Recovery
 
 - Canonical source of truth:
   - branch `docs/aw-006-queue-reaudit`,
-  - this active brief,
+  - this done brief,
   - canonical AW-006 queue brief.
 - Recovery protocol:
   1. `git status -sb`
@@ -182,3 +244,4 @@ Owner review should focus on whether the chosen next AW-006 slice is the right n
 - `2026-05-19 | working tree | started from clean main@61d7f8a after PR #754 and closeout #755; post-merge preflight found no pending repo-managed closeout; created branch docs/aw-006-queue-reaudit and scoped this as docs-only queue accuracy work | next: update canonical AW-006 queue, run docs-only validation, commit, push, open PR, monitor CI, and run verify:pre-merge`
 - `2026-05-19 | working tree | updated the canonical queue to mark Sample Deliverable Proof done, promoted My Library surface token and action hierarchy polish as the next small implementation slice, recorded route/label/support sweep evidence, and passed npm run lint:briefs:all plus git diff --check | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-19 | working tree | npm run verify:pre-pr passed the docs-only lane twice, first with log artifacts/test-runs/20260519-055711/verify.log and again after checkpoint evidence with log artifacts/test-runs/20260519-055725/verify.log; branch-current, brief lint, quality-gate summary, admin-audit lint, env-parity lint, and generated PR-body lint passed | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-19 | 7963705 | PR #756 merged to main, local main synced, remote feature branch pruned, and post-merge preflight surfaced this repo-managed docs-only closeout | next: validate and merge closeout PR, sync main, rerun post-merge preflight, then make chat-handoff assessment`
