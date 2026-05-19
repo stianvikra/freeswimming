@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
+import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
@@ -189,6 +190,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
   const [syncError, setSyncError] = useState("");
   const [lastSyncAtMs, setLastSyncAtMs] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(readNavigatorOnlineState);
+  const [hydrateRetryKey, setHydrateRetryKey] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [visualDrillId, setVisualDrillId] = useState<string | null>(null);
@@ -386,7 +388,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [allowedSectionIds, applyProgressRows, guideSlug, persistRowsToServer]);
+  }, [allowedSectionIds, applyProgressRows, guideSlug, hydrateRetryKey, persistRowsToServer]);
 
   useEffect(() => {
     if (hydrationState !== "ready") return;
@@ -572,6 +574,16 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
     return "Signed in. Drill progress sync is active.";
   }, [isOnline, lastSyncAtMs, syncError, syncState]);
 
+  const retryGuideProgressSync = useCallback(() => {
+    if (syncState === "error") {
+      setHydrationState("loading");
+      setHydrateRetryKey((value) => value + 1);
+      return;
+    }
+
+    void syncGuideProgressNow({ force: true });
+  }, [syncGuideProgressNow, syncState]);
+
   const canGoPrev = activeIndex > 0;
   const canGoNext = activeIndex < drills.length - 1;
 
@@ -750,7 +762,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
               Completed
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -758,21 +770,24 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
               Current drill
             </p>
             <p className="mt-1 text-lg font-bold text-slate-900">{activeIndex + 1}</p>
           </div>
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Progress</p>
+            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Progress</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{completionPercent}%</p>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <p className="text-xs text-slate-600" aria-live="polite">
-            {syncLabel}
-          </p>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <GuideSyncStatus
+            state={syncState}
+            label={syncLabel}
+            onRetry={retryGuideProgressSync}
+            testId="guide-poolside-sync-status"
+          />
           {lastDrill ? (
             <button
               type="button"
@@ -799,17 +814,6 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           >
             Open next drill
           </button>
-          {(syncState === "error" || syncState === "offline") && (
-            <button
-              type="button"
-              onClick={() => {
-                void syncGuideProgressNow({ force: true });
-              }}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Retry sync
-            </button>
-          )}
         </div>
       </section>
 
@@ -849,7 +853,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                               : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
                         }`}
                       >
-                        <span className="block text-xs font-semibold uppercase tracking-wide">
+                        <span className="block text-xs font-semibold tracking-wide uppercase">
                           {drill.id}
                         </span>
                         <span className="mt-1 line-clamp-2 block font-medium">{drill.title}</span>
@@ -932,7 +936,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Drill {activeIndex + 1} of {drills.length} - {currentDrill.id}
               </p>
               <h2 className="mt-1 text-xl font-semibold text-slate-900">{currentDrill.title}</h2>
@@ -955,14 +959,14 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-4">
               <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Setup
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">{currentDrill.setup}</p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   What to think about
                 </p>
                 <ul className="mt-2 space-y-2 text-sm text-slate-700">
@@ -978,7 +982,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <label
                   htmlFor={`poolside-note-${currentDrill.id}`}
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                  className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
                 >
                   Drill notes
                 </label>
@@ -990,7 +994,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   }}
                   rows={4}
                   placeholder="Write what worked and what you will focus on next time."
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                 />
                 <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
                   <span>
@@ -1058,7 +1062,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
       ) : null}
 
       {visualDrill ? (
-        <div className="bg-slate-950/92 fixed inset-0 z-[80]" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[80] bg-slate-950/92" role="dialog" aria-modal="true">
           <button
             type="button"
             onClick={closeVisualView}
@@ -1068,7 +1072,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           <div className="relative z-[1] flex h-full flex-col">
             <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-200">
+                <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-200 uppercase">
                   Visual view
                 </p>
                 <p className="text-sm font-semibold">
@@ -1187,7 +1191,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   height={1000}
                   unoptimized
                   draggable={false}
-                  className="h-full max-h-full w-full max-w-[1200px] select-none object-contain"
+                  className="h-full max-h-full w-full max-w-[1200px] object-contain select-none"
                   style={{
                     transform: `scale(${visualScale})`,
                     transformOrigin: "center center",

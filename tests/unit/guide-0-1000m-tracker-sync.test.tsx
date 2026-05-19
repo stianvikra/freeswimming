@@ -1,4 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
 import type { Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
@@ -69,7 +70,75 @@ describe("Guide0To1000Tracker sync", () => {
       expect(screen.getByText("1/2")).toBeInTheDocument();
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-0-1000m-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "synced"
+      );
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
     expect(screen.getByText("Completed sessions (1)")).toBeInTheDocument();
+  });
+
+  it("shows an offline status without calling the progress API", async () => {
+    setNavigatorOnline(false);
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Guide0To1000Tracker guideSlug="0-1000m" sessions={TEST_SESSIONS} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-0-1000m-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "offline"
+      );
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Offline mode: changes stay on this device and sync when connection returns."
+    );
+    expect(screen.getByRole("button", { name: "Retry sync" })).toBeInTheDocument();
+  });
+
+  it("retries the existing progress load path after a recoverable hydrate error", async () => {
+    const user = userEvent.setup();
+    setNavigatorOnline(true);
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ rows: [] }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Guide0To1000Tracker guideSlug="0-1000m" sessions={TEST_SESSIONS} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-0-1000m-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "error"
+      );
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Guide progress hydrate failed (500).");
+
+    await user.click(screen.getByRole("button", { name: "Retry sync" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("guide-0-1000m-sync-status")).toHaveAttribute(
+        "data-sync-state",
+        "synced"
+      );
+    });
   });
 
   it("merges local and remote rows, then upserts merged progress", async () => {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
+import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
@@ -167,6 +168,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
   const [syncError, setSyncError] = useState("");
   const [lastSyncAtMs, setLastSyncAtMs] = useState<number | null>(null);
   const [isOnline, setIsOnline] = useState(readNavigatorOnlineState);
+  const [hydrateRetryKey, setHydrateRetryKey] = useState(0);
   const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
   const [expandedCompletedWeeks, setExpandedCompletedWeeks] = useState<Record<number, boolean>>({});
   const [lastSessionId, setLastSessionId] = useState<string | null>(null);
@@ -346,7 +348,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [allowedSectionIds, applyProgressRows, guideSlug, persistRowsToServer]);
+  }, [allowedSectionIds, applyProgressRows, guideSlug, hydrateRetryKey, persistRowsToServer]);
 
   useEffect(() => {
     if (hydrationState !== "ready") return;
@@ -599,6 +601,16 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     return "Signed in. Guide progress sync is active.";
   }, [isOnline, lastSyncAtMs, syncError, syncState]);
 
+  const retryGuideProgressSync = useCallback(() => {
+    if (syncState === "error") {
+      setHydrationState("loading");
+      setHydrateRetryKey((value) => value + 1);
+      return;
+    }
+
+    void syncGuideProgressNow({ force: true });
+  }, [syncGuideProgressNow, syncState]);
+
   const undoLatestCompletion = useCallback(() => {
     if (!completionUndoState) return;
     const timestamp = new Date().toISOString();
@@ -691,7 +703,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Session {session.id}
             </p>
             <h3 className="mt-1 text-base font-semibold text-slate-900">{session.title}</h3>
@@ -736,7 +748,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             }}
             rows={3}
             placeholder="Write what felt good, what to adjust next time, and pacing notes."
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
           />
           <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
             <span>
@@ -771,7 +783,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
               Completed
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -779,21 +791,24 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
               Remaining
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{remainingCount}</p>
           </div>
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Progress</p>
+            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Progress</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{completionPercent}%</p>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <p className="text-xs text-slate-600" aria-live="polite">
-            {syncLabel}
-          </p>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <GuideSyncStatus
+            state={syncState}
+            label={syncLabel}
+            onRetry={retryGuideProgressSync}
+            testId="guide-0-1000m-sync-status"
+          />
           {lastSession ? (
             <button
               type="button"
@@ -814,17 +829,6 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
           >
             Open next session full screen
           </button>
-          {(syncState === "error" || syncState === "offline") && (
-            <button
-              type="button"
-              onClick={() => {
-                void syncGuideProgressNow({ force: true });
-              }}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Retry sync
-            </button>
-          )}
         </div>
       </section>
 
@@ -896,7 +900,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       )}
 
       {focusedSession ? (
-        <div className="bg-slate-950/92 fixed inset-0 z-[80]">
+        <div className="fixed inset-0 z-[80] bg-slate-950/92">
           <button
             type="button"
             onClick={closeSessionFullscreen}
@@ -904,10 +908,10 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             aria-label="Close full screen session view"
           />
 
-          <div className="relative z-[1] mx-auto flex h-full w-full max-w-[980px] flex-col px-3 pb-4 pt-3 sm:px-6 sm:pb-6 sm:pt-5">
+          <div className="relative z-[1] mx-auto flex h-full w-full max-w-[980px] flex-col px-3 pt-3 pb-4 sm:px-6 sm:pt-5 sm:pb-6">
             <div className="flex flex-wrap items-center justify-between gap-3 text-white">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-200">
+                <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-200 uppercase">
                   Session full screen
                 </p>
                 <p className="text-sm font-semibold">
@@ -917,7 +921,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             </div>
 
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-3xl border border-white/20 bg-white p-4 shadow-[0_20px_60px_rgba(2,6,23,0.45)] sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Session {focusedSession.id}
               </p>
               <h3 className="mt-1 text-2xl font-semibold text-slate-900">{focusedSession.title}</h3>
@@ -949,7 +953,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                   }}
                   rows={8}
                   placeholder="Write what felt good, what to adjust next time, and pacing notes."
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                 />
                 <p className="text-xs text-slate-500">
                   {(focusedSessionProgress?.notes ?? "").length}/{MAX_NOTES_LENGTH}
