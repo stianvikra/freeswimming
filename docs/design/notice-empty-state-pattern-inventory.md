@@ -31,17 +31,17 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 | Dryland and micro sessions        | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`                                                                                                                         | schema warning, load error, route refresh, action error/success, empty sessions                  | Complex stateful training flows with many local/server boundaries.                                                                    | Defer until a route-owned dryland cleanup slice needs these states.                                                                    |
 | Poolside PDF/download             | `components/guides/GuidePdfDownloadButton.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`                                                                                                                           | download pending, error, save/export status                                                      | Export states are artifact-specific and have image/PDF validation risk.                                                               | Defer; do not pull into generic notice work.                                                                                           |
 
-## Chosen Next Primitive Slice
+## Completed Primitive Pilot
 
-Recommended next AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Admin management feedback and list-state primitive pilot`
 
-Active implementation brief:
+Completed implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md`
+`docs/task-briefs/done/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md`
 
-Scope direction:
+Completed scope:
 
 - Build one small admin-local helper for manager feedback/list states, likely under `components/admin/`.
 - Start with low-risk admin manager surfaces that already share the same structure:
@@ -51,6 +51,24 @@ Scope direction:
 - Preserve copy, fetch behavior, retry callbacks, authz, schema warning behavior, and mutation logic.
 - Add focused component/unit coverage around the helper and one migrated manager.
 - Use `after/reference` screenshot handoff if rendered admin UI changes.
+
+## Current Primitive Expansion Slice
+
+Current AW-006 implementation slice:
+
+`Shared notice/empty-state primitive expansion`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10.md`
+
+Scope direction:
+
+- Reuse the existing admin-local `AdminManagerState` helper on one additional bounded surface:
+  - `AdminEmailTemplatesManager`
+- Preserve copy, fetch behavior, retry callbacks, authz, schema warning behavior, create/update/status mutation logic, and revision-history behavior.
+- Add focused component/unit coverage around Email templates loading, load error+retry, empty list, action feedback, and revision-history states.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
 
 Do not include:
 

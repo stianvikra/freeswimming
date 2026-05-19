@@ -9,6 +9,7 @@ import {
   type AdminEmailTemplateRow,
   type AdminEmailTemplateStatus,
 } from "@/lib/admin/email-templates";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 
 type AdminEmailTemplatesResponse =
   | {
@@ -582,40 +583,40 @@ export default function AdminEmailTemplatesManager() {
       </div>
 
       {!schemaReady && warning ? (
-        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {warning}
-        </p>
+        <AdminManagerState tone="warning">{warning}</AdminManagerState>
       ) : null}
 
       {loading ? (
-        <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Loading email templates…
-        </p>
+        <AdminManagerState tone="loading">Loading email templates…</AdminManagerState>
       ) : null}
 
       {!loading && error ? (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <p className="text-sm font-medium text-rose-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => void loadTemplates()}
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-          >
-            Retry
-          </button>
-        </div>
+        <AdminManagerState
+          tone="error"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadTemplates()}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Retry
+            </button>
+          }
+        >
+          {error}
+        </AdminManagerState>
       ) : null}
 
       {actionError ? (
-        <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <AdminManagerState tone="error" announcement="polite" density="compact">
           {actionError}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {actionNotice ? (
-        <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <AdminManagerState tone="success" density="compact">
           {actionNotice}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       <form
@@ -766,7 +767,7 @@ export default function AdminEmailTemplatesManager() {
             </p>
             <p className="font-semibold text-slate-700">Rendered body:</p>
             <pre
-              className="whitespace-pre-wrap font-mono text-xs text-slate-700"
+              className="font-mono text-xs whitespace-pre-wrap text-slate-700"
               data-testid="admin-email-template-create-preview-body"
             >
               {createRenderedPreview.body || "—"}
@@ -799,9 +800,9 @@ export default function AdminEmailTemplatesManager() {
       </form>
 
       {!loading && !error && items.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <AdminManagerState tone="empty" testId="admin-email-templates-empty-state">
           No templates created yet.
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {!loading && !error && items.length > 0 ? (
@@ -1030,7 +1031,7 @@ export default function AdminEmailTemplatesManager() {
                           {editRenderedPreview.subject || "—"}
                         </p>
                         <p className="font-semibold text-slate-700">Rendered body:</p>
-                        <pre className="whitespace-pre-wrap font-mono text-xs text-slate-700">
+                        <pre className="font-mono text-xs whitespace-pre-wrap text-slate-700">
                           {editRenderedPreview.body || "—"}
                         </pre>
                         {editRenderedPreview.usedFallbackKeys.length > 0 ? (
@@ -1079,7 +1080,7 @@ export default function AdminEmailTemplatesManager() {
                     data-testid="admin-email-template-history-panel"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                      <p className="text-xs font-semibold tracking-wide text-slate-700 uppercase">
                         Revision history (latest 25)
                       </p>
                       <button
@@ -1093,28 +1094,35 @@ export default function AdminEmailTemplatesManager() {
                     </div>
 
                     {isHistoryLoading ? (
-                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <AdminManagerState tone="loading" density="compact" className="!mt-0">
                         Loading template history…
-                      </p>
+                      </AdminManagerState>
                     ) : null}
 
                     {!isHistoryLoading && historyError ? (
-                      <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
-                        <p className="text-xs text-rose-700">{historyError}</p>
-                        <button
-                          type="button"
-                          onClick={() => void loadTemplateHistory(item.id)}
-                          className="mt-2 inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
-                        >
-                          Retry
-                        </button>
-                      </div>
+                      <AdminManagerState
+                        tone="error"
+                        density="compact"
+                        className="!mt-0"
+                        actionsClassName="mt-2 flex flex-wrap gap-2"
+                        actions={
+                          <button
+                            type="button"
+                            onClick={() => void loadTemplateHistory(item.id)}
+                            className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+                          >
+                            Retry
+                          </button>
+                        }
+                      >
+                        {historyError}
+                      </AdminManagerState>
                     ) : null}
 
                     {!isHistoryLoading && !historyError && historyItems.length === 0 ? (
-                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <AdminManagerState tone="empty" density="compact" className="!mt-0">
                         No revision entries yet.
-                      </p>
+                      </AdminManagerState>
                     ) : null}
 
                     {!isHistoryLoading && !historyError && historyItems.length > 0 ? (
