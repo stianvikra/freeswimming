@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import type { Database } from "@/types/database";
 
 type AdminProductRow = Database["public"]["Tables"]["products"]["Row"];
@@ -179,40 +180,40 @@ export default function AdminCommerceManager() {
       </div>
 
       {loading ? (
-        <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Loading product catalog…
-        </p>
+        <AdminManagerState tone="loading">Loading product catalog…</AdminManagerState>
       ) : null}
 
       {!loading && error ? (
-        <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <p className="text-sm font-medium text-rose-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => void loadProducts()}
-            className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-          >
-            Retry
-          </button>
-        </div>
+        <AdminManagerState
+          tone="error"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadProducts()}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Retry
+            </button>
+          }
+        >
+          {error}
+        </AdminManagerState>
       ) : null}
 
       {!schemaReady && warning ? (
-        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {warning}
-        </p>
+        <AdminManagerState tone="warning">{warning}</AdminManagerState>
       ) : null}
 
       {!loading && !error && items.length === 0 ? (
-        <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <AdminManagerState tone="empty">
           Product catalog is empty. Checkout flows depend on seeded products.
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {actionError ? (
-        <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <AdminManagerState tone="error" announcement="polite" density="compact">
           {actionError}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {!loading && !error && items.length > 0 ? (
@@ -228,7 +229,7 @@ export default function AdminCommerceManager() {
               <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Product id: {item.id}
                     </p>
                   </div>
@@ -247,24 +248,24 @@ export default function AdminCommerceManager() {
                   </label>
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
                       Slug
                     </p>
                     <p className="mt-1 text-sm text-slate-700">/{item.slug}</p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
                       Kind
                     </p>
                     <p className="mt-1 text-sm text-slate-700">{item.kind}</p>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
                       Stripe price id
                     </p>
-                    <p className="mt-1 break-all text-sm text-slate-700">{item.stripe_price_id}</p>
+                    <p className="mt-1 text-sm break-all text-slate-700">{item.stripe_price_id}</p>
                   </div>
 
                   <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
