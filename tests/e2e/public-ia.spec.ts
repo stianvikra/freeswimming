@@ -67,6 +67,24 @@ test.describe("public route IA", () => {
     ).toBeVisible();
     await expect(poolsideCard).toHaveCSS("border-radius", "8px");
     await expect(analysisCard).toHaveCSS("border-radius", "8px");
+    await expect(
+      poolsideCard
+        .getByTestId("program-card-poolside-pdf-proof")
+        .getByText("What the Poolside PDF shows")
+    ).toBeVisible();
+    await expect(poolsideCard.getByText("Pool cue")).toBeVisible();
+    await expect(
+      poolsideCard.getByText("It is a compact practice guide, not a custom coaching report.")
+    ).toBeVisible();
+    await expect(
+      analysisCard
+        .getByTestId("program-card-video-analysis-proof")
+        .getByText("What the feedback reply includes")
+    ).toBeVisible();
+    await expect(analysisCard.getByText("Next swim")).toBeVisible();
+    await expect(
+      analysisCard.getByText("The exact feedback depends on the clip and context you send.")
+    ).toBeVisible();
 
     const pdfCta = poolsideCard.getByRole("link", { name: "Join PDF waitlist" });
     const analysisCta = analysisCard.getByRole("link", { name: "Get feedback" });
@@ -117,6 +135,13 @@ test.describe("public route IA", () => {
       page.getByText("Send a short clip and get one clear technical priority by email.")
     ).toBeVisible();
     await expect(page.getByText("Send the smallest useful sample")).toBeVisible();
+    await expect(page.getByText("What the analysis reply looks like")).toBeVisible();
+    await expect(page.getByText("Next pool task")).toBeVisible();
+    await expect(
+      page.getByText(
+        "The final reply depends on the clip and context you send; we do not need payment details or private medical information."
+      )
+    ).toBeVisible();
     await expect(page.getByText("No payment details, passwords, or sign-in codes")).toBeVisible();
 
     const analysisFormCard = page.getByTestId("analysis-form-card");

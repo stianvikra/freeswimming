@@ -18,6 +18,22 @@ const PROGRAM_CARDS = [
       "Balance and body-position drills first",
       "Works alongside the free course lessons",
     ],
+    proofTitle: "What the Poolside PDF shows",
+    proofRows: [
+      {
+        label: "Focus",
+        text: "which drill or body-position cue to use before you get in",
+      },
+      {
+        label: "Pool cue",
+        text: "one plain-language reminder you can keep on deck",
+      },
+      {
+        label: "Video link",
+        text: "where a QR-linked demo helps the drill make sense",
+      },
+    ],
+    proofNote: "It is a compact practice guide, not a custom coaching report.",
     href: "/contact",
     action: "Join PDF waitlist",
     actionClassName: "fs-cta-secondary text-[color:var(--fs-color-ink)]",
@@ -33,6 +49,22 @@ const PROGRAM_CARDS = [
       "Practical drills you can take to the pool",
       "Useful when self-correction has stalled",
     ],
+    proofTitle: "What the feedback reply includes",
+    proofRows: [
+      {
+        label: "Priority",
+        text: "the stroke issue to fix first instead of a long correction list",
+      },
+      {
+        label: "Reason",
+        text: "why that issue affects balance, breathing, timing, or catch",
+      },
+      {
+        label: "Next swim",
+        text: "a practical cue or drill to test in your next session",
+      },
+    ],
+    proofNote: "The exact feedback depends on the clip and context you send.",
     href: "/analysis",
     action: "Get feedback",
     actionClassName: "fs-cta-primary",
@@ -99,6 +131,27 @@ export default function ProgramsPage() {
                   </li>
                 ))}
               </ul>
+              <div
+                data-testid={`program-card-${card.id}-proof`}
+                className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-4"
+              >
+                <p className="text-[13px] font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  {card.proofTitle}
+                </p>
+                <dl className="mt-3 space-y-3 text-[14px] leading-6 text-slate-700">
+                  {card.proofRows.map((row) => (
+                    <div key={row.label} className="grid gap-1 sm:grid-cols-[82px_minmax(0,1fr)]">
+                      <dt className="font-semibold text-[color:var(--fs-color-ink-strong)]">
+                        {row.label}
+                      </dt>
+                      <dd>{row.text}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-3 text-[13px] leading-5 text-[color:var(--fs-color-muted)]">
+                  {card.proofNote}
+                </p>
+              </div>
               <div className="mt-6 flex flex-1 items-end">
                 <PressLink
                   tier="cta"

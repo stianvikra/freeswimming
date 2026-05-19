@@ -29,6 +29,11 @@ type TrustSignal = {
   icon: LucideIcon;
 };
 
+type DeliverableProofRow = {
+  label: string;
+  text: string;
+};
+
 type ApiResponse = { ok: boolean; error?: string };
 const GOALS_COACHING_LEVEL_OPTIONS = [
   { value: "learning_freestyle", label: "Learning freestyle (2:00+ /100m)" },
@@ -159,6 +164,23 @@ export default function ContactForm({ variant = "contact" }: Props) {
         ],
         helperLine1: "Best clip: 10–20 seconds from the side plus 10–20 seconds from the front.",
         helperLine2: "No video yet? Describe what feels stuck and we’ll tell you what to capture.",
+        deliverableTitle: "What the analysis reply looks like",
+        deliverableRows: [
+          {
+            label: "Priority",
+            text: "the stroke issue to fix first, not a long list of corrections",
+          },
+          {
+            label: "Why it matters",
+            text: "how the issue affects balance, breathing, timing, or catch",
+          },
+          {
+            label: "Next pool task",
+            text: "one cue or drill to test in the next session",
+          },
+        ] satisfies DeliverableProofRow[],
+        deliverableNote:
+          "The final reply depends on the clip and context you send; we do not need payment details or private medical information.",
 
         formTitle: "Request Video Analysis",
         formSubtitle: "Tell us what you want feedback on and what you want the next swim to fix.",
@@ -203,6 +225,9 @@ export default function ContactForm({ variant = "contact" }: Props) {
         ],
         helperLine1: "This helps us recommend realistic weekly progressions and recovery balance.",
         helperLine2: "We reply with a clear step-by-step schedule you can follow right away.",
+        deliverableTitle: "",
+        deliverableRows: [] as DeliverableProofRow[],
+        deliverableNote: "",
 
         formTitle: "Request Goal-Based Training Schedule",
         formSubtitle: "Complete the intake so we can tailor your next training block.",
@@ -240,6 +265,9 @@ export default function ContactForm({ variant = "contact" }: Props) {
         helperBullets: [] as string[],
         helperLine1: "",
         helperLine2: "",
+        deliverableTitle: "",
+        deliverableRows: [] as DeliverableProofRow[],
+        deliverableNote: "",
 
         formTitle: "",
         formSubtitle: "",
@@ -287,6 +315,9 @@ export default function ContactForm({ variant = "contact" }: Props) {
       helperBullets: [] as string[],
       helperLine1: "",
       helperLine2: "",
+      deliverableTitle: "",
+      deliverableRows: [] as DeliverableProofRow[],
+      deliverableNote: "",
 
       formTitle: "",
       formSubtitle: "",
@@ -457,6 +488,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const isPreviewNotify = variant === "preview_access_notify";
   const showHelperCard = variant !== "contact" && !isPreviewNotify;
   const showExampleCard = copy.exampleLines.length > 0 && !isPreviewNotify;
+  const showDeliverableProof = copy.deliverableRows.length > 0 && !isPreviewNotify;
   const showFormIntro = Boolean(copy.formTitle || copy.formSubtitle);
   const formCardTopMargin = isPreviewNotify ? "mt-4" : "mt-5";
   const showTrustStrip = copy.trustSignals.length > 0 && !isPreviewNotify;
@@ -599,6 +631,26 @@ export default function ContactForm({ variant = "contact" }: Props) {
 
           <p className="mt-5 text-[16px] leading-7 text-slate-600">{copy.helperLine1}</p>
           <p className="mt-2 text-[16px] leading-7 text-slate-600">{copy.helperLine2}</p>
+
+          {showDeliverableProof ? (
+            <div
+              data-testid={`${variant}-deliverable-proof`}
+              className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-5"
+            >
+              <h3 className="text-[15px] font-semibold text-slate-900">{copy.deliverableTitle}</h3>
+              <dl className="mt-3 space-y-3 text-[15px] leading-6 text-slate-700">
+                {copy.deliverableRows.map((row) => (
+                  <div key={row.label} className="grid gap-1 sm:grid-cols-[118px_minmax(0,1fr)]">
+                    <dt className="font-semibold text-slate-900">{row.label}</dt>
+                    <dd>{row.text}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-3 text-[13px] leading-5 text-[color:var(--fs-color-muted)]">
+                {copy.deliverableNote}
+              </p>
+            </div>
+          ) : null}
         </div>
       )}
 
