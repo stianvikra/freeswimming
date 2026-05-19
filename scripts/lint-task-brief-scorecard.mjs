@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 const BRIEF_ROOT = "docs/task-briefs";
 const SCORECARD_PATH = "docs/quality/platform-10-10-scorecard.md";
 const BRIEF_PATH_PATTERN =
   /^docs\/task-briefs\/(planned|in-progress|done|deferred|blocked)\/\d{4}-\d{2}-\d{2}-.+\.md$/;
+const DONE_BRIEF_PATTERN = /^docs\/task-briefs\/done\/([^/]+\.md)$/;
 const EXPLICIT_NA_RATIONALE_CATEGORIES = new Set([
   "incident response and support operations",
   "finance and reporting operations",
@@ -94,6 +95,14 @@ function normalizeMapping(input) {
 
 function normalizeCellText(input) {
   return input.replace(/[`*_]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function escapeRegExp(input) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizePath(filePath) {
+  return filePath.replace(/\\/g, "/").replace(/^\.\//, "").trim();
 }
 
 function nonEmptyValue(input) {
@@ -276,6 +285,58 @@ function parseCloseoutClaim(content) {
   }
 
   return null;
+}
+
+function parseCanonicalQueuePath(content) {
+  const match = content.match(/^\s*-\s*`?canonical_queue`?\s*:\s*`([^`]+)`\s*$/im);
+  return normalizePath(match?.[1] ?? "");
+}
+
+function readCanonicalQueueText(queuePath, options = {}) {
+  const textByPath = options.canonicalQueueTextByPath;
+
+  if (textByPath instanceof Map && textByPath.has(queuePath)) {
+    return String(textByPath.get(queuePath) ?? "");
+  }
+
+  if (
+    textByPath &&
+    typeof textByPath === "object" &&
+    Object.prototype.hasOwnProperty.call(textByPath, queuePath)
+  ) {
+    return String(textByPath[queuePath] ?? "");
+  }
+
+  if (!existsSync(queuePath)) return "";
+  return readFileSync(queuePath, "utf8");
+}
+
+export function findStaleCanonicalQueueActiveReferences(filePath, content, options = {}) {
+  const doneMatch = normalizePath(filePath).match(DONE_BRIEF_PATTERN);
+  if (!doneMatch) return [];
+
+  const queuePath = parseCanonicalQueuePath(content);
+  if (!queuePath) return [];
+
+  const fileName = doneMatch[1];
+  const staleActivePath = `docs/task-briefs/in-progress/${fileName}`;
+  const queueText = readCanonicalQueueText(queuePath, options);
+  if (!queueText) return [];
+
+  const activeBriefPattern = new RegExp(
+    `^\\s*-\\s*Active brief:\\s*\`?${escapeRegExp(staleActivePath)}\`?\\.?\\s*$`,
+    "m"
+  );
+
+  if (!activeBriefPattern.test(queueText)) return [];
+
+  return [
+    {
+      doneBriefPath: normalizePath(filePath),
+      canonicalQueuePath: queuePath,
+      staleActivePath,
+    },
+  ];
 }
 
 function validateDoneBriefCloseout(content, targetCategories) {
@@ -464,6 +525,12 @@ export function lintBriefText(filePath, content, canonicalCategories, options = 
 
   if (options.enforceDoneCloseout === true && parseLifecycleStatus(filePath, content) === "done") {
     errors.push(...validateDoneBriefCloseout(content, targetCategories));
+  }
+
+  for (const staleReference of findStaleCanonicalQueueActiveReferences(filePath, content, options)) {
+    errors.push(
+      `Canonical queue "${staleReference.canonicalQueuePath}" still lists done brief "${staleReference.doneBriefPath}" as active via "${staleReference.staleActivePath}". Update the queue in the same closeout PR before starting the next slice.`
+    );
   }
 
   return { filePath, errors, warnings };

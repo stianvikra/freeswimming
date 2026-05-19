@@ -10,9 +10,11 @@ const canonicalCategories = [
 
 function buildBrief({
   status = "in-progress",
+  canonicalQueuePath = "",
   completionRecord = "",
 }: {
   status?: "planned" | "in-progress" | "done";
+  canonicalQueuePath?: string;
   completionRecord?: string;
 } = {}) {
   return `# Task Brief: Example
@@ -20,6 +22,7 @@ function buildBrief({
 ## Metadata
 
 - \`status\`: \`${status}\`
+${canonicalQueuePath ? `- \`canonical_queue\`: \`${canonicalQueuePath}\`\n` : ""}
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -124,6 +127,62 @@ describe("task brief scorecard lint", () => {
         "| Business logic correctness and data integrity | `4/5` |"
       );
     const result = lint(buildBrief({ status: "done", completionRecord }));
+
+    expect(result.errors).toEqual([]);
+  });
+
+  it("fails a changed done brief when its canonical queue still lists it as the active in-progress brief", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      buildBrief({
+        status: "done",
+        canonicalQueuePath: queuePath,
+        completionRecord: passingCompletionRecord,
+      }),
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        canonicalQueueTextByPath: {
+          [queuePath]: [
+            "## Remaining PR-Sized UX/UI Slices",
+            "",
+            "1. `Example` (active implementation slice)",
+            "   - Active brief: `docs/task-briefs/in-progress/2026-05-03-example.md`.",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain("still lists done brief");
+  });
+
+  it("allows historical queue log references when the done brief is no longer the active item", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      buildBrief({
+        status: "done",
+        canonicalQueuePath: queuePath,
+        completionRecord: passingCompletionRecord,
+      }),
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        canonicalQueueTextByPath: {
+          [queuePath]: [
+            "## Checkpoint Log",
+            "",
+            "- `2026-05-03 | planned | next: execute docs/task-briefs/in-progress/2026-05-03-example.md`",
+            "",
+            "## Remaining PR-Sized UX/UI Slices",
+            "",
+            "1. `Next Example` (active implementation slice)",
+            "   - Active brief: `docs/task-briefs/in-progress/2026-05-04-next-example.md`.",
+          ].join("\n"),
+        },
+      }
+    );
 
     expect(result.errors).toEqual([]);
   });

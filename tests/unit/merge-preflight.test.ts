@@ -117,4 +117,23 @@ describe("post-merge preflight", () => {
       "npm run post-merge:preflight",
     ]);
   });
+
+  it("reports stale canonical queue active references for changed done briefs", () => {
+    const report = buildPostMergePreflightReport({
+      branch: "main",
+      baseBranch: "main",
+      ref: "HEAD",
+      changedFiles: ["docs/task-briefs/done/2026-05-03-example.md"],
+      staleCanonicalQueueReferences: [
+        {
+          doneBriefPath: "docs/task-briefs/done/2026-05-03-example.md",
+          canonicalQueuePath: "docs/task-briefs/planned/2026-05-17-example-queue.md",
+          staleActivePath: "docs/task-briefs/in-progress/2026-05-03-example.md",
+        },
+      ],
+    });
+
+    expect(report.staleCanonicalQueueReferences).toHaveLength(1);
+    expect(report.warnings.join("\n")).toContain("still appear as the active item");
+  });
 });
