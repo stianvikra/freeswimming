@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 import { execSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+import { findStaleCanonicalQueueActiveReferences } from "./lint-task-brief-scorecard.mjs";
+
 const IN_PROGRESS_BRIEF_PATTERN = /^docs\/task-briefs\/in-progress\/.+\.md$/;
+const DONE_BRIEF_PATTERN = /^docs\/task-briefs\/done\/.+\.md$/;
 
 function run(command) {
   try {
@@ -37,6 +40,22 @@ function extractChangedInProgressBriefs(changedFiles) {
   return changedFiles.filter((filePath) => IN_PROGRESS_BRIEF_PATTERN.test(filePath));
 }
 
+function extractChangedDoneBriefs(changedFiles) {
+  return changedFiles.filter((filePath) => DONE_BRIEF_PATTERN.test(filePath));
+}
+
+function detectStaleCanonicalQueueReferences(changedFiles) {
+  const staleReferences = [];
+
+  for (const filePath of extractChangedDoneBriefs(changedFiles)) {
+    if (!existsSync(filePath)) continue;
+    const content = readFileSync(filePath, "utf8");
+    staleReferences.push(...findStaleCanonicalQueueActiveReferences(filePath, content));
+  }
+
+  return staleReferences;
+}
+
 export function buildPostMergePreflightReport(options = {}) {
   const baseBranch = String(options.baseBranch ?? "main").trim() || "main";
   const branch = String(options.branch ?? "").trim();
@@ -45,6 +64,8 @@ export function buildPostMergePreflightReport(options = {}) {
   const mergedBranch = String(options.mergedBranch ?? "").trim();
   const changedInProgressBriefs = extractChangedInProgressBriefs(changedFiles);
   const pendingCloseoutBriefs = changedInProgressBriefs.filter((filePath) => existsSync(filePath));
+  const staleCanonicalQueueReferences =
+    options.staleCanonicalQueueReferences ?? detectStaleCanonicalQueueReferences(changedFiles);
   const warnings = [];
   const actions = [];
 
@@ -72,6 +93,12 @@ export function buildPostMergePreflightReport(options = {}) {
     warnings.push("No pending `in-progress` brief closeout was detected in the inspected commit.");
   }
 
+  if (branch === baseBranch && staleCanonicalQueueReferences.length > 0) {
+    warnings.push(
+      "One or more changed `done` briefs still appear as the active item in their canonical queue."
+    );
+  }
+
   return {
     branch,
     baseBranch,
@@ -79,6 +106,7 @@ export function buildPostMergePreflightReport(options = {}) {
     changedFiles,
     changedInProgressBriefs,
     pendingCloseoutBriefs,
+    staleCanonicalQueueReferences,
     warnings,
     actions,
   };
@@ -148,12 +176,21 @@ function printSummary(report) {
     }
   }
 
+  if (report.staleCanonicalQueueReferences.length > 0) {
+    console.log("[post-merge-preflight] Required canonical queue updates:");
+    for (const staleReference of report.staleCanonicalQueueReferences) {
+      console.log(
+        `- ${staleReference.canonicalQueuePath}: replace stale active reference ${staleReference.staleActivePath} for done brief ${staleReference.doneBriefPath}.`
+      );
+    }
+  }
+
   if (report.actions.length > 0) {
     console.log("[post-merge-preflight] Suggested next commands:");
     for (const action of report.actions) {
       console.log(`- ${action}`);
     }
-  } else {
+  } else if (report.staleCanonicalQueueReferences.length === 0) {
     console.log("[post-merge-preflight] No further repo-managed closeout command is required from this commit snapshot.");
   }
 }
