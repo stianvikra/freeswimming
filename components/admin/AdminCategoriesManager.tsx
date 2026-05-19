@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import type { AdminCategoryRow, AdminCategoryScope } from "@/lib/admin/categories";
 
 type AdminCategoriesResponse =
@@ -290,34 +291,32 @@ export default function AdminCategoriesManager() {
         </div>
 
         {!schemaReady && warning ? (
-          <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {warning}
-          </p>
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
         ) : null}
 
-        {loading ? (
-          <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Loading categories…
-          </p>
-        ) : null}
+        {loading ? <AdminManagerState tone="loading">Loading categories…</AdminManagerState> : null}
 
         {!loading && error ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-            <p className="text-sm font-medium text-rose-700">{error}</p>
-            <button
-              type="button"
-              onClick={() => void loadCategories(scope)}
-              className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          </div>
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadCategories(scope)}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
         ) : null}
 
         {!loading && !error && items.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="empty" testId="admin-categories-empty-state">
             No categories created yet for this scope.
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {!loading && !error && items.length > 0 ? (
@@ -410,9 +409,14 @@ export default function AdminCategoriesManager() {
           </label>
 
           {actionError ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
+            <AdminManagerState
+              tone="error"
+              announcement="polite"
+              density="compact"
+              className="!mt-0 sm:col-span-2"
+            >
               {actionError}
-            </p>
+            </AdminManagerState>
           ) : null}
 
           <div className="sm:col-span-2">
