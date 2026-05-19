@@ -52,15 +52,15 @@ Completed scope:
 - Add focused component/unit coverage around the helper and one migrated manager.
 - Use `after/reference` screenshot handoff if rendered admin UI changes.
 
-## Current Primitive Expansion Slice
+## Completed Primitive Expansion Slice
 
-Current AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Shared notice/empty-state primitive expansion`
 
-Active implementation brief:
+Done implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10.md`
+`docs/task-briefs/done/2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10.md`
 
 Scope direction:
 

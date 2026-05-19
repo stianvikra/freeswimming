@@ -130,17 +130,13 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin state primitive pilot     | `done`    | `#762/#763`, `docs/task-briefs/done/2026-05-19-aw-006-admin-management-feedback-list-state-primitive-pilot-10-10.md` | Added a bounded admin-local state helper for Commerce, Operations, and QR registry loading/warning/error/action/empty/no-results states without changing admin data, authz, mutations, or labels. |
 | Stable visual baseline pilot    | `done`    | `#764/#765`, `docs/task-briefs/done/2026-05-19-aw-006-stable-visual-baseline-snapshot-pilot-10-10.md`                | Added on-demand mobile/desktop reference screenshots for the public AW-006 route set without committing artifacts or changing product rendering.                                                  |
 | Queue lifecycle automation      | `done`    | `#766/#767`, `docs/task-briefs/done/2026-05-19-aw-006-canonical-queue-lifecycle-automation-10-10.md`                 | Added lint and post-merge preflight coverage so done child briefs with canonical queues cannot remain listed as active in-progress queue items unnoticed.                                         |
+| Shared notice/state expansion   | `done`    | `#768`, `docs/task-briefs/done/2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10.md`             | Expanded the admin-local state helper to Email templates loading, warning, error, action, empty, and revision-history states without changing admin data, authz, mutations, or labels.            |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-1. `Shared notice/empty-state primitive expansion` (current implementation slice)
-   - Objective: after the inventory and admin-local pilot, apply the proven notice/list-state contract to one additional bounded surface or shared primitive without broad design-system churn.
-   - Active brief: `docs/task-briefs/in-progress/2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10.md`
-   - Likely files: `components/admin/AdminEmailTemplatesManager.tsx`, `components/admin/AdminManagerState.tsx` if a tiny compatibility adjustment is needed, targeted unit tests, and this queue.
-   - Risks: turning a PR-sized primitive expansion into a broad Button/Card/PageShell redesign.
-   - Protected areas: admin/member data, authz, recovery actions, Help/Guide if workflow labels change, screenshot handoff if rendered UI changes.
+No remaining PR-sized slice is currently promoted in this captured queue. Before the next AW-006 implementation branch, choose a fresh slice from the review findings or create a new dated queue entry with the same 10/10 scorecard mapping.
 
 ## 10/10 Phase Plan Capture
 

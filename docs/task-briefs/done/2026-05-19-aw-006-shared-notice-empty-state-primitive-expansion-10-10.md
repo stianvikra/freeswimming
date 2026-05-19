@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-shared-notice-empty-state-primitive-expansion-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -203,3 +203,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-19 | screenshot-review | captured after/reference screenshots in output/aw-006-email-state-expansion-2026-05-19-161232 at 2026-05-19 16:12 using a temporary local dev-only route that rendered the production AdminWorkspace with mocked browser API responses; the temporary route was removed before validation; targeted vitest, lint:briefs:all, and git diff --check passed after cleanup | next: wait for owner screenshot approval before verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-19 | screenshot-approved | owner approved the after/reference screenshot handoff for Email templates empty, load error, revision-history error, and Commerce empty reference states | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-19 | pre-pr-ready | npm run verify:pre-pr passed on branch aw-006-shared-state-expansion; full lane covered lint, typecheck, unit tests, build, performance budgets, and Playwright with local environment skips only | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-19 | done | PR #768 merged as main@ba8e597 after green CI and npm run verify:pre-merge; post-merge preflight moved this brief to done in the repo-managed docs-only closeout | next: complete closeout PR validation and merge`
