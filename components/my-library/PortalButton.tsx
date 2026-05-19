@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cx } from "@/components/ui/cx";
 
 type Props = {
   returnPath?: string;
@@ -15,6 +16,8 @@ type PortalResponse = {
 };
 
 const DEFAULT_ERROR_MESSAGE = "Could not open billing portal right now. Please try again.";
+const buttonClassName =
+  "fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function redirectToUrl(url: string) {
   window.location.assign(url);
@@ -63,7 +66,7 @@ export default function PortalButton({
         onClick={onClick}
         disabled={pending}
         data-testid="my-library-portal-button"
-        className={`inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+        className={cx(buttonClassName, className)}
       >
         {pending ? "Opening billing..." : "Manage billing"}
       </button>

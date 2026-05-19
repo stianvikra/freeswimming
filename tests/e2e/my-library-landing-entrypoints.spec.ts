@@ -79,14 +79,20 @@ test.describe("my library landing entrypoints", () => {
     const freeCourseCard = page
       .getByRole("heading", { name: "Free Course" })
       .locator("xpath=ancestor::section[1]");
+    await expect(freeCourseCard).toHaveClass(/fs-library-card-accent/);
     await expect(freeCourseCard.getByRole("link", { name: /^(Start|Continue)$/ })).toBeVisible();
+    await expect(freeCourseCard.getByRole("link", { name: /^(Start|Continue)$/ })).toHaveClass(
+      /fs-cta-primary/
+    );
 
     const routinesRow = page.getByTestId("my-library-routines-row");
+    await expect(routinesRow).toHaveClass(/fs-library-card/);
     await expect(routinesRow.getByRole("heading", { name: "My Routines" })).toBeVisible();
     await expect(routinesRow.getByRole("link", { name: "Open" })).toHaveAttribute(
       "href",
       "/my-library/routines"
     );
+    await expect(routinesRow.getByRole("link", { name: "Open" })).toHaveClass(/fs-cta-primary/);
     await expect(routinesRow.locator("p")).toHaveCount(0);
     await expect(page.getByRole("tab", { name: "Micro Sessions" })).toHaveCount(0);
     await expect(page.getByRole("tab", { name: "Habits" })).toHaveCount(0);
@@ -95,6 +101,7 @@ test.describe("my library landing entrypoints", () => {
       .getByRole("heading", { name: "My Swim Profile" })
       .locator("xpath=ancestor::section[1]");
     await expect(profileCard.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(profileCard.getByRole("link", { name: "Open" })).toHaveClass(/fs-cta-secondary/);
     await expect(profileCard.locator("p")).toHaveCount(0);
 
     const goalsCard = page
@@ -106,7 +113,9 @@ test.describe("my library landing entrypoints", () => {
       .getByRole("heading", { name: "Swim Sessions" })
       .locator("xpath=ancestor::section[1]");
     await expect(swimSessionsCard.getByRole("link", { name: "Open" })).toBeVisible();
-    await expect(swimSessionsCard.getByRole("link", { name: "Open" })).toHaveClass(/bg-blue-600/);
+    await expect(swimSessionsCard.getByRole("link", { name: "Open" })).toHaveClass(
+      /fs-cta-secondary/
+    );
     await expect(swimSessionsCard.getByText("Build pool session")).toHaveCount(0);
     await expect(swimSessionsCard.getByText("Build open water session")).toHaveCount(0);
     await expect(swimSessionsCard.getByText("AI session generator")).toHaveCount(0);

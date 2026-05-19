@@ -31,6 +31,9 @@ function buildLessonHref(lessonId: string | null): string {
   return `/course?lesson=${encodeURIComponent(lessonId)}`;
 }
 
+const quietButtonClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 text-xs font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 export default function MyLibraryNewContentNotice({ userId }: Props) {
   const storageKey = useMemo(() => buildMyLibrarySeenStorageKey(userId), [userId]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -152,9 +155,9 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
     return (
       <section
         data-testid="my-library-new-content-notice-loading"
-        className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+        className="fs-library-card fs-library-card-muted px-4 py-3"
       >
-        <p className="text-sm text-slate-600">Checking for new lessons...</p>
+        <p className="text-sm text-[color:var(--fs-color-muted)]">Checking for new lessons...</p>
       </section>
     );
   }
@@ -163,10 +166,10 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
     return (
       <section
         data-testid="my-library-new-content-notice-error"
-        className="rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+        className="fs-library-card fs-library-card-muted px-4 py-3"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[color:var(--fs-color-muted)]">
             {errorMessage ?? "Could not check for new lessons."}
           </p>
           <button
@@ -176,7 +179,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
               setErrorMessage(null);
               void loadSignal();
             }}
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className={quietButtonClass}
           >
             Retry
           </button>
@@ -192,14 +195,14 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
   return (
     <section
       data-testid="my-library-new-content-notice"
-      className="rounded-2xl border border-blue-100 bg-slate-50/70 p-5"
+      className="fs-library-card fs-library-card-muted p-5"
       role="status"
       aria-live="polite"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold tracking-[0.24em] text-blue-700 uppercase ring-1 ring-blue-100">
+            <p className="inline-flex items-center rounded-[var(--fs-radius-control)] bg-white/85 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--fs-color-brand-700)] ring-1 ring-[color:var(--fs-border-brand)]">
               New lessons
             </p>
           </div>
@@ -211,7 +214,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
             onClick={() => setDetailsExpanded((current) => !current)}
             aria-expanded={detailsExpanded}
             aria-controls="my-library-new-content-details"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+            className="fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
           >
             {detailsExpanded ? "Hide list" : "Show list"}
           </button>
@@ -220,7 +223,7 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
             type="button"
             onClick={handleDismiss}
             aria-label="Dismiss new lesson notice"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex min-h-11 w-11 shrink-0 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 text-sm font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
           >
             X
           </button>
@@ -230,9 +233,9 @@ export default function MyLibraryNewContentNotice({ userId }: Props) {
       {detailsExpanded ? (
         <div
           id="my-library-new-content-details"
-          className="mt-4 rounded-2xl border border-white/80 bg-white/85 px-4 py-3 ring-1 ring-blue-100/70"
+          className="mt-4 rounded-[var(--fs-radius-card)] border border-white/80 bg-white/85 px-4 py-3 ring-1 ring-blue-100/70"
         >
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
             New lesson list
           </p>
           <ul data-testid="my-library-new-content-list" className="mt-3 space-y-2">

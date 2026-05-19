@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-19`
-- `base`: `main@61d7f8a`
+- `base`: `main@9b5c05f`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, and Sample Deliverable Proof shipped through `#754/#755`. The remaining review queue now needs to move past Phase 1 quick wins and name the next small Phase 2 UX/UI implementation slice.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, and the queue re-audit plus closeout shipped through `#756/#757`. The remaining review queue now needs the first signed-in Phase 2 UX/UI implementation slice.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -117,6 +117,7 @@ Recommended order unless the owner explicitly reprioritizes:
 
 1. `My Library surface token and action hierarchy polish` (recommended next implementation slice)
    - Objective: make the signed-in `/my-library` hub feel less like a stack of equal-weight mobile cards by aligning the outer shell, repeated rows, and primary/secondary actions with the AW-006 token direction already proven on public routes.
+   - Active brief: `docs/task-briefs/in-progress/2026-05-19-aw-006-my-library-surface-token-action-hierarchy-polish-10-10.md`.
    - Likely files: `app/my-library/page.tsx`, `components/my-library/ContinueCourseCard.tsx`, `components/my-library/MyLibraryNewContentNotice.tsx`, focused unit/E2E coverage, and a new active task brief.
    - Risks: accidentally changing sign-in redirects, entitlement/catalog truth, claim/download recovery, checkout/portal links, sign-out behavior, or member data loading while polishing the layout.
    - Protected areas: authenticated member hub, commerce/entitlement actions, dashboard navigation, action hierarchy, mobile text fit; screenshot handoff required before broad gates because `/my-library` rendering is touched.
@@ -314,3 +315,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-18 | planned | refreshed after Anonymous Course Progress Noise #750/#751 and Owner-Readable Slice Start Governance #752/#753 on clean main@88ff6ee; marked anonymous course noise and start-governance done, and promoted Sample Deliverable Proof as the next small PR-sized AW-006 UX/UI slice | next: execute docs/task-briefs/in-progress/2026-05-18-aw-006-sample-deliverable-proof-10-10.md`
 - `2026-05-19 | planned | refreshed after Sample Deliverable Proof #754/#755 on clean main@61d7f8a; marked sample proof done, recorded this docs-only re-audit slice, and promoted My Library surface token and action hierarchy polish as the next small AW-006 UX/UI implementation slice | next: execute a new active brief for /my-library surface token and action hierarchy polish`
 - `2026-05-19 | planned | refreshed after AW-006 queue re-audit #756 on clean main@7963705; marked the re-audit done and kept My Library surface token and action hierarchy polish as the next small AW-006 UX/UI implementation slice | next: create and execute a new active brief for /my-library surface token and action hierarchy polish`
+- `2026-05-19 | planned | refreshed after repo-managed closeout #757 on clean main@9b5c05f; linked the active /my-library surface token and action hierarchy polish brief as the current canonical AW-006 implementation slice | next: complete screenshot-reviewed implementation before broad gates`

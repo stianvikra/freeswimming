@@ -73,6 +73,26 @@
   box-shadow: var(--fs-shadow-card-strong);
 }
 
+.fs-library-card {
+  border-radius: var(--fs-radius-card);
+  border: 1px solid var(--fs-border-soft);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.fs-library-card-accent {
+  border-color: var(--fs-border-brand);
+  background:
+    radial-gradient(520px 180px at 12% 0%, rgba(99, 168, 255, 0.15), rgba(255, 255, 255, 0) 70%),
+    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.9));
+  box-shadow: var(--fs-shadow-card-strong);
+}
+
+.fs-library-card-muted {
+  background: rgba(248, 250, 252, 0.78);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+}
+
 .fs-cta-primary {
   border-radius: var(--fs-radius-control);
   background: linear-gradient(180deg, #5aa6ff 0%, var(--fs-color-brand-600) 100%);
