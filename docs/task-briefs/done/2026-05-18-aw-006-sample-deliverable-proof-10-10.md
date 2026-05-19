@@ -3,13 +3,15 @@
 ## Metadata
 
 - `id`: `2026-05-18-aw-006-sample-deliverable-proof-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-18`
-- `updated`: `2026-05-18`
+- `updated`: `2026-05-19`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `feat/aw-006-sample-deliverable-proof`
+- `merged_pr`: `#754`
+- `merged_commit`: `e68d713`
 
 ## Pre-Implementation Owner Explanation
 
@@ -50,7 +52,7 @@ Critical target categories for a `10/10` claim:
 - `Testing and QA automation`
 - `DevOps and rollback readiness`
 
-| Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                          | Evidence                                                         | Expected Closeout Score |
+| Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                          | Evidence                                                         | Achieved Closeout Score |
 | --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------- |
 | Product goals and IA                          | `target`     | `/programs` still presents Poolside PDF and Video Analysis as the public program paths; `/analysis` remains the Video Analysis request route with no route identity change. | public IA E2E + screenshot handoff                               | `5/5`                   |
 | UX flow clarity                               | `target`     | Each changed public surface explains the sample deliverable shape, then keeps the existing CTA path visible and understandable.                                             | public IA E2E + screenshot handoff                               | `5/5`                   |
@@ -97,6 +99,30 @@ Critical target categories for a `10/10` claim:
   - Unit: `ContactForm` analysis proof copy and unchanged submit path.
   - E2E: public IA assertions for `/programs` and `/analysis` proof copy and CTA destinations.
   - Screenshot handoff before `npm run verify:pre-pr`.
+
+## Closeout
+
+- `10/10 claim`: `yes`
+- `merged_pr`: `#754`
+- `merged_commit`: `e68d713`
+- `merge_date`: `2026-05-19`
+- Critical target categories confirmed `5/5`:
+  - Product goals and IA
+  - UX flow clarity
+  - Visual design quality
+  - Content governance
+  - Commerce and revenue ops
+  - Accessibility (a11y)
+  - Testing and QA automation
+  - DevOps and rollback readiness
+- Remaining gaps: none for the scoped slice.
+- Defer/fix recommendation: none; all target categories are `5/5`.
+- Screenshot artifacts: `output/aw-006-sample-deliverable-proof-current-head-2026-05-18-223204`
+- Validation evidence:
+  - `npm run verify:pre-pr`: PASS on `a3ca557`
+  - GitHub CI for PR `#754`: PASS
+  - `npm run verify:pre-merge`: PASS on `a3ca557`
+  - `npm run merge:preflight -- --assert-ready`: PASS before merge
 
 ## Data Placement And Sync Contract
 
