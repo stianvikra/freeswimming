@@ -81,6 +81,35 @@ Do not include:
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
+## Active Primitive Completion Slice
+
+Active AW-006 implementation slice:
+
+`Admin Categories state primitive completion`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-19-aw-006-admin-categories-state-primitive-completion-10-10.md`
+
+Scope direction:
+
+- Reuse the existing admin-local `AdminManagerState` helper on one remaining low-risk admin management surface:
+  - `AdminCategoriesManager`
+- Preserve copy, fetch behavior, retry callbacks, authz, schema warning behavior, create/update/delete mutation logic, scope switching, sort behavior, and delete confirmation behavior.
+- Add focused component/unit coverage around Categories loading, warning, load error+retry, empty list, and action-error states.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
+
+Do not include:
+
+- category API changes,
+- category copy or workflow label changes,
+- admin notes/content upload recovery,
+- admin messages two-pane selection states,
+- guide offline/sync states,
+- dryland/micro session state flows,
+- public visual redesign,
+- Supabase, Stripe, auth, analytics, or API behavior.
+
 ## Reuse Rules For Later Implementation
 
 1. Keep the primitive narrow and admin-local until at least one low-risk manager proves it.
