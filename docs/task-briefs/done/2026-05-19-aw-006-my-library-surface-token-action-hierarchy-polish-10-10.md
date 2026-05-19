@@ -3,13 +3,15 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-my-library-surface-token-action-hierarchy-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `aw-006-my-library-surface-polish`
+- `merged_pr`: `#758`
+- `merge_commit`: `main@3658eaf191f577a8d467f8d0af7551a510aa891c`
 
 ## Brief Audit Record
 
@@ -197,9 +199,48 @@ Required because `/my-library` route layout, visible labels, action hierarchy, a
 - Node.js/npm available through the repo's normal `nvm use --silent` path.
 - Local screenshots use `env SITE_LOCK_ENABLED=0 npm exec next dev -- -H 127.0.0.1 -p 3000` and capture against `http://127.0.0.1:3000`.
 
+## Closeout Evidence
+
+- `implementation_pr`: `#758`
+- `merge_commit`: `main@3658eaf191f577a8d467f8d0af7551a510aa891c`
+- `final_screenshot_artifacts`: `output/my-library-surface-polish-final-2026-05-19-085506`
+- `screenshot_review`: owner approved the screenshot handoff before broad gates; final screenshots were regenerated after the last render-text change and no product-rendering files changed after that capture.
+- `npm run verify:pre-pr`: PASS full lane on branch `aw-006-my-library-surface-polish`.
+- `npm run verify:pre-merge`: PASS full lane on branch `aw-006-my-library-surface-polish`.
+- `required_ci`: PASS for PR `#758` (`verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `CodeQL`, `Vercel`, and deploy preview).
+- `perf_budget`: PASS; `/my-library` JS 273.0kb and CSS 103.5kb. Stretch-tighten recommendation was `hold`, not tighten, because worst margin was 14.7% against the 15.0% threshold.
+- `remaining_gaps`: No blocking gaps. Final screenshots used deterministic local preview data because auth-backed local capture is intentionally constrained by the safe Supabase/dev-login environment.
+- `10/10 claim`: yes for this active slice.
+- `critical_target_categories`: `Product goals and IA`, `UX flow clarity`, `Visual design quality`, `Accessibility (a11y)`, `Security and authz`, and `Testing and QA automation` each achieved `5/5`.
+
+Achieved target scores:
+
+- `Product goals and IA`: `5/5`
+- `UX flow clarity`: `5/5`
+- `Visual design quality`: `5/5`
+- `Business logic correctness and data integrity`: `5/5`
+- `Accessibility (a11y)`: `5/5`
+- `Performance (CWV + payloads)`: `5/5`
+- `Data placement and sync boundaries`: `5/5`
+- `Caching and invalidation strategy`: `5/5`
+- `Reliability and failure handling`: `5/5`
+- `Security and authz`: `5/5`
+- `Privacy and compliance`: `5/5`
+- `Content governance`: `5/5`
+- `Commerce and revenue ops`: `5/5`
+- `Stack-fit and dependency discipline`: `5/5`
+- `Testing and QA automation`: `5/5`
+- `DevOps and rollback readiness`: `5/5`
+
+Achieved supporting scores:
+
+- `Analytics and KPI observability`: `4/5`
+- `Scalability and cost efficiency`: `4/5`
+
 ## Checkpoint Log
 
 - `2026-05-19 | in-progress | started from clean main@9b5c05f after PR #756 and repo-managed closeout #757; post-merge preflight found no pending closeout; created branch aw-006-my-library-surface-polish; scoped the canonical next AW-006 UI slice to /my-library surface token and action hierarchy polish with screenshot approval stop before broad gates | next: capture before screenshots, implement route-local token/action hierarchy polish, run targeted validation, and present before/after screenshot handoff`
 - `2026-05-19 | in-progress | extracted the signed-in /my-library hub into a route-local server presentation component, applied token-backed My Library card/action classes, demoted account/recovery actions, hid the fixed mobile bottom nav on the top-level hub to prevent obstruction, updated focused token/component/e2e coverage, and captured before/after desktop/mobile screenshots in output/my-library-surface-polish-2026-05-19-062325; owner approved screenshot handoff | next: remove temporary capture-only preview files, rerun targeted validation, run verify:pre-pr, then commit/push/open PR`
 - `2026-05-19 | in-progress | removed capture-only preview files from the final diff; route/label/support sweep found expected /my-library, label, fs-library token, and mobile-fixed-nav references with fallout handled in product code, tests, docs/user-flow-map.md, and this brief; npm run lint:briefs:all passed; npm run typecheck passed; npx vitest run tests/unit/design-token-contract.test.ts tests/unit/continue-course-card.test.tsx tests/unit/my-library-new-content-notice-component.test.tsx tests/unit/portal-button.test.tsx passed; npx playwright test tests/e2e/my-library-landing-entrypoints.spec.ts --project=desktop-chromium passed with the safe-env auth-dependent cases skipped and the anonymous protected-route assertion passing; git diff --check passed | next: run npm run verify:pre-pr`
 - `2026-05-19 | in-progress | npm run verify:pre-pr passed full lane: lint/quality gates/typecheck/195 unit files/1108 unit tests/build/perf budgets/full Playwright matrix with 98 passed and 472 skipped in the safe local environment; perf trend recorded PASS with hold recommendation, not tighten, because worst margin was 14.7% against the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-19 | done | PR #758 merged as main@3658eaf191f577a8d467f8d0af7551a510aa891c after screenshot approval, local verify:pre-pr, required CI, and local verify:pre-merge all passed; repo-managed closeout moved this brief to done and recorded achieved scores | next: rerun post-merge:preflight after the closeout PR merges`
