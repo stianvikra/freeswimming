@@ -17,7 +17,9 @@ describe("PortalButton", () => {
     const onNavigate = vi.fn();
 
     render(<PortalButton returnPath="/my-library" onNavigate={onNavigate} />);
-    fireEvent.click(screen.getByRole("button", { name: "Manage billing" }));
+    const button = screen.getByRole("button", { name: "Manage billing" });
+    expect(button).toHaveClass("fs-cta-secondary");
+    fireEvent.click(button);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/portal", {

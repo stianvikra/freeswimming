@@ -29,6 +29,9 @@ describe("design token foundation", () => {
     expect(css).toContain(".fs-method-proof-pill");
     expect(css).toContain(".fs-program-card");
     expect(css).toContain(".fs-program-card-highlight");
+    expect(css).toContain(".fs-library-card");
+    expect(css).toContain(".fs-library-card-accent");
+    expect(css).toContain(".fs-library-card-muted");
     expect(css).toContain(".fs-cta-primary");
     expect(css).toContain(".fs-cta-secondary");
     expect(css).toContain(".fs-tone-blue");

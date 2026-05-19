@@ -85,6 +85,7 @@ describe("MyLibraryNewContentNotice", () => {
     await waitFor(() => {
       expect(screen.getByTestId("my-library-new-content-notice")).toBeInTheDocument();
     });
+    expect(screen.getByTestId("my-library-new-content-notice")).toHaveClass("fs-library-card");
     expect(screen.getByText("New lessons")).toBeInTheDocument();
     expect(screen.queryByText("New content")).not.toBeInTheDocument();
     expect(screen.queryByText("2 new lessons")).not.toBeInTheDocument();
@@ -95,6 +96,7 @@ describe("MyLibraryNewContentNotice", () => {
       "false"
     );
     expect(screen.getByTestId("my-library-new-content-toggle")).toHaveTextContent("Show list");
+    expect(screen.getByTestId("my-library-new-content-toggle")).toHaveClass("fs-cta-secondary");
 
     fireEvent.click(screen.getByTestId("my-library-new-content-toggle"));
 

@@ -40,9 +40,13 @@ describe("ContinueCourseCard", () => {
 
     expect(screen.getByRole("heading", { name: "Free Course" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Continue Free Course" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Free Course" }).closest("section")).toHaveClass(
+      "fs-library-card-accent"
+    );
 
     const link = screen.getByRole("link", { name: "Start" });
     expect(link).toHaveAttribute("href", "/course");
+    expect(link).toHaveClass("fs-cta-primary");
 
     fireEvent.click(link);
 

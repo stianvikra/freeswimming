@@ -29,13 +29,15 @@ export default function ContinueCourseCard() {
   }
 
   return (
-    <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5">
+    <section className="fs-library-card fs-library-card-accent p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">Free Course</h2>
+        <h2 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+          Free Course
+        </h2>
         <Link
           href={continueHref}
           onClick={onResumeClick}
-          className="inline-flex h-10 items-center justify-center self-start rounded-xl bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-500 active:bg-blue-700"
+          className="fs-cta-primary inline-flex min-h-11 items-center justify-center self-start px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
         >
           {hasSavedProgress ? "Continue" : "Start"}
         </Link>
