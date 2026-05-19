@@ -38,7 +38,6 @@ Critical target categories for a `10/10` claim:
 
 - `UX flow clarity`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Stack-fit and dependency discipline`
