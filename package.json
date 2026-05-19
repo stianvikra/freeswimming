@@ -54,6 +54,7 @@
     "pr:create:safari": "bash ./scripts/pr-create-safari.sh",
     "screenshots:mobile": "playwright test tests/e2e/mobile-screenshots.spec.ts --project=mobile-chromium",
     "screenshots:iphone": "playwright test tests/e2e/mobile-screenshots.spec.ts --project=mobile-iphone-13-pro-max",
+    "screenshots:aw006-baseline": "FS_AW006_VISUAL_BASELINE=1 playwright test tests/e2e/aw-006-visual-baseline-screenshots.spec.ts --project=mobile-chromium --project=desktop-chromium",
     "task-brief:move": "bash ./scripts/task-brief-move.sh",
     "branch-protection:apply": "bash ./scripts/apply-branch-protection.sh",
     "verify": "npm run lint:briefs && npm run lint:quality-gates && npm run lint:admin-audit && npm run lint:env-parity && npm run lint:pr-body:generated && npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:perf:budgets && npm run test:e2e"
