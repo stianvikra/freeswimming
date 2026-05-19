@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-guide-tracker-sync-state-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -215,3 +215,4 @@ Required as a targeted guide-state sweep because this slice changes user-facing 
 - `2026-05-19 | in-progress | started from clean main@79c0d9d after PR #774 and repo-managed closeout PR #775; post-merge preflight found no pending closeout; owner approved the guide tracker sync-state clarity slice after a short AW-006 queue re-audit | next: update canonical queue/design inventory, implement guide-local sync status, add targeted tests, and capture screenshot handoff before pre-pr`
 - `2026-05-19 | screenshot-review | updated the canonical AW-006 queue and notice/state inventory, added a guide-local GuideSyncStatus treatment, wired both guide trackers to the same saved/syncing/offline/error/retry UI, and made recoverable hydrate errors retry the existing progress load path; targeted guide Vitest, npm run lint, npm run typecheck, npm run lint:briefs:all, npm run lint:quality-gates, route/label/support sweep, and git diff --check passed; captured after/reference screenshot artifacts in output/aw-006-guide-sync-state-2026-05-19-223553 at 2026-05-19 22:35 using a local CSS harness because protected guide routes were blocked by the local Supabase egress guard, while unit tests cover the actual tracker behavior | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
 - `2026-05-19 | pre-pr-ready | owner approved the screenshot handoff; npm run verify:pre-pr passed the full lane with lint, quality gates, unit tests, build, performance budgets, and Playwright e2e green; perf budget trend recommendation was hold at 6/2 green runs because worst margin was 14.7% against the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-19 | merged | PR #776 merged to main at 6319694 after local npm run verify:pre-pr, CI, and npm run verify:pre-merge passed; post-merge preflight requested the repo-managed docs-only lifecycle closeout | next: closeout PR moves this brief to done and verifies docs-only gates`
