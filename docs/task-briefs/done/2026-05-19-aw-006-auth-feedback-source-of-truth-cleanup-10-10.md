@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-19-aw-006-auth-feedback-source-of-truth-cleanup-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-19`
 - `updated`: `2026-05-19`
@@ -191,3 +191,4 @@ Required as a targeted auth-surface sweep because this slice removes or retires 
 - `2026-05-19 | in-progress | removed unused AuthErrorNotice, refreshed the canonical AW-006 queue and design inventory, added AuthRequestStatus component coverage for idle, sent, cooldown, expired-cooldown, and error states, and after screenshot capture exposed a cooldown hydration drift caused by client/server Date.now differences; adjusted AuthRequestStatus and AuthResendButton to render hydration-safe cooldown markup first and start ticking after client mount without changing cooldown cadence, primary strings after hydration, server actions, redirects, provider calls, or auth state derivation | next: rerun targeted tests, regenerate screenshot artifacts, and stop for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-19 | screenshot-review | targeted Vitest, npm run lint, npm run typecheck, targeted auth Playwright desktop, npm run lint:briefs:all, npm run lint:quality-gates, route/label/support sweep, and git diff --check passed; regenerated after/reference screenshot artifacts in output/aw-006-auth-feedback-2026-05-19-213512 at 2026-05-19 21:35 after the hydration-safe cooldown fix, with no hydration mismatch in the devserver log; no product-rendering files changed after this capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
 - `2026-05-19 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed the full lane, including lint, typecheck, unit, build, performance budgets, and Playwright; no product-rendering files changed after screenshot capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-19 | done | implementation PR #774 merged to main at f88473b after green required CI and local npm run verify:pre-merge; repo-managed closeout moved this brief to done | next: no implementation follow-up for this slice`
