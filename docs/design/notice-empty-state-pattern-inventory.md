@@ -265,11 +265,15 @@ Do not include:
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
-## Recommended Next Admin Notes Manager Top-Level State Parity Slice
+## Current Admin Notes Manager Top-Level State Parity Slice
 
-Recommended next AW-006 UI implementation slice after the closeout queue/gate repair:
+Current AW-006 UI implementation slice after the closeout queue/gate repair:
 
 `Admin Notes Manager top-level state primitive parity`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-20-aw-006-admin-notes-manager-top-level-state-primitive-parity-10-10.md`
 
 Scope direction:
 
