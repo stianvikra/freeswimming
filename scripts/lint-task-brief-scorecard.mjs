@@ -327,8 +327,12 @@ export function findStaleCanonicalQueueActiveReferences(filePath, content, optio
     `^\\s*-\\s*Active brief:\\s*\`?${escapeRegExp(staleActivePath)}\`?\\.?\\s*$`,
     "m"
   );
+  const activeTableRowPattern = new RegExp(
+    `^\\s*\\|(?=.*${escapeRegExp(staleActivePath)})(?=.*\\b(?:current|active)\\b).*\\|\\s*$`,
+    "im"
+  );
 
-  if (!activeBriefPattern.test(queueText)) return [];
+  if (!activeBriefPattern.test(queueText) && !activeTableRowPattern.test(queueText)) return [];
 
   return [
     {

@@ -157,6 +157,31 @@ describe("task brief scorecard lint", () => {
     expect(result.errors.join("\n")).toContain("still lists done brief");
   });
 
+  it("fails a changed done brief when a queue table still marks the old in-progress path current", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      buildBrief({
+        status: "done",
+        canonicalQueuePath: queuePath,
+        completionRecord: passingCompletionRecord,
+      }),
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        canonicalQueueTextByPath: {
+          [queuePath]: [
+            "| Slice | Status | Active brief |",
+            "| --- | --- | --- |",
+            "| Example | `current` | `docs/task-briefs/in-progress/2026-05-03-example.md` |",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain("still lists done brief");
+  });
+
   it("allows historical queue log references when the done brief is no longer the active item", () => {
     const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
     const result = lintBriefText(

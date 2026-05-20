@@ -26,8 +26,8 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 | My Library hub empty/member cards   | `components/my-library/MyLibraryHub.tsx`                                                                                                                                                                                                 | owned/explore empty-ish cards, commerce/account guidance                                         | Recently polished with route-local token hierarchy.                                                                                                                 | Do not disturb immediately after My Library surface polish.                                                                            |
 | Admin management panels             | `components/admin/AdminCommerceManager.tsx`, `components/admin/AdminOperationsManager.tsx`, `components/admin/AdminQrLinksManager.tsx`, `components/admin/AdminEmailTemplatesManager.tsx`, `components/admin/AdminCategoriesManager.tsx` | loading, schema warning, load error + retry, action error, action notice, empty list, no matches | These repeat the same card classes, copy shape, retry button, and dashed empty containers across one bounded admin family.                                          | Best next primitive pilot: create one small admin feedback/list-state helper and migrate two or three low-risk manager surfaces first. |
 | Admin messages                      | `components/admin/AdminMessagesManager.tsx`                                                                                                                                                                                              | warning, error, notice, action error, loading list, no matches, no selection                     | Similar to other admin managers, but has a two-pane selection model and delivery diagnostics.                                                                       | Completed second-wave consumer; keep as a reference for two-pane admin state rendering.                                                |
-| Admin context QR panel              | `components/admin/AdminContextQrPanel.tsx`                                                                                                                                                                                               | schema warning, action error, action notice, loading, load error + retry, no attached QR links   | Contextual QR state rendering still used route-local cards while full QR Registry already uses the admin-local helper.                                              | Active parity slice: reuse `AdminManagerState` here without changing QR APIs, copy, labels, or editor workflow behavior.               |
-| Admin notes/content managers        | `components/admin/AdminNotesManager.tsx`, `components/admin/AdminContextNotesPanel.tsx`, `components/admin/AdminContentManager.tsx`                                                                                                      | loading, warning, errors, recovery warnings, upload retry, empty, no matches                     | Dense, high-value operator workflows with staged uploads, related records, and recovery behavior.                                                                   | Defer. They need workflow-specific regression coverage before shared primitive migration.                                              |
+| Admin context QR panel              | `components/admin/AdminContextQrPanel.tsx`                                                                                                                                                                                               | schema warning, action error, action notice, loading, load error + retry, no attached QR links   | PR `#780/#781` moved contextual QR state rendering to the admin-local helper while preserving QR APIs, copy, labels, and editor workflow behavior.                  | Completed parity consumer; keep as the contextual QR reference beside full QR Registry.                                                |
+| Admin notes/content managers        | `components/admin/AdminNotesManager.tsx`, `components/admin/AdminContextNotesPanel.tsx`, `components/admin/AdminContentManager.tsx`                                                                                                      | loading, warning, errors, recovery warnings, upload retry, empty, no matches                     | Dense, high-value operator workflows with staged uploads, related records, and recovery behavior. Admin Notes top-level states are the lowest-risk next candidate.  | Next candidate: Admin Notes Manager top-level state parity only; continue deferring Context Notes and Content Manager recovery states. |
 | Guide progress trackers             | `components/guides/Guide0To1000Tracker.tsx`, `components/guides/PoolsideGuideTracker.tsx`                                                                                                                                                | loading skeletons, offline/sync error, retry sync, saved status                                  | The two guide trackers are sibling surfaces and share a domain-specific sync/offline model, and PR `#776/#777` moved them to one guide-local sync-status treatment. | Completed cleanup; keep as a reference for domain-local sync/offline status, not as an app-wide notice primitive.                      |
 | Checkout success and claim recovery | `app/checkout/success/page.tsx`, `app/claim/page.tsx`, `components/commerce/DownloadResendForm.tsx`                                                                                                                                      | payment received, sign-in/claim next step, resend access link, privacy-safe recovery             | Post-purchase recovery is a conversion-critical route-owned flow with privacy-safe generic responses and entitlement checks outside the page UI.                    | Completed cleanup; keep as a reference for route-owned recovery clarity, not as an app-wide notice primitive.                          |
 | Dryland and micro sessions          | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`                                                                                                                         | schema warning, load error, route refresh, action error/success, empty sessions                  | Complex stateful training flows with many local/server boundaries.                                                                                                  | Defer until a route-owned dryland cleanup slice needs these states.                                                                    |
@@ -235,17 +235,17 @@ Do not include:
 - Supabase, database, finance, or reporting behavior,
 - app-wide notice primitive rollout.
 
-## Active Admin Context QR Panel State Primitive Parity Slice
+## Completed Admin Context QR Panel State Primitive Parity Slice
 
-Active AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Admin Context QR Panel state primitive parity`
 
-Active implementation brief:
+Done implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-20-aw-006-admin-context-qr-panel-state-primitive-parity-10-10.md`
+`docs/task-briefs/done/2026-05-20-aw-006-admin-context-qr-panel-state-primitive-parity-10-10.md`
 
-Scope direction:
+Completed scope:
 
 - Reuse the existing admin-local `AdminManagerState` helper on the contextual QR panel embedded in admin content editing:
   - `AdminContextQrPanel`
@@ -260,6 +260,34 @@ Do not include:
 - full QR Registry changes beyond reference comparison,
 - admin content editor layout redesign,
 - admin notes/content upload recovery,
+- guide offline/sync states,
+- dryland/micro session state flows,
+- public visual redesign,
+- Supabase, Stripe, auth, analytics, or API behavior.
+
+## Recommended Next Admin Notes Manager Top-Level State Parity Slice
+
+Recommended next AW-006 UI implementation slice after the closeout queue/gate repair:
+
+`Admin Notes Manager top-level state primitive parity`
+
+Scope direction:
+
+- Reuse the existing admin-local `AdminManagerState` helper on the top-level Admin Notes manager states:
+  - `AdminNotesManager`
+- Preserve notes fetch behavior, categories fetch behavior, retry callbacks, search/filter URL behavior, item sorting, note create/update/delete payloads, attachment upload and recovery behavior, related-note linking, action copy, and authz boundaries.
+- Add focused component/unit coverage around Admin Notes loading, schema warning, load error+retry, action error/notice, empty list, and filtered no-results states.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
+
+Do not include:
+
+- contextual `AdminContextNotesPanel`,
+- `AdminContentManager`,
+- attachment upload/recovery behavior changes,
+- related-note link/unlink behavior changes,
+- note API changes,
+- note copy or workflow label changes,
+- admin content editor redesign,
 - guide offline/sync states,
 - dryland/micro session state flows,
 - public visual redesign,

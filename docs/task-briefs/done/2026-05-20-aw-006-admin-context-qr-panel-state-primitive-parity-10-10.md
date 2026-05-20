@@ -198,7 +198,7 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - PR required CI checks: pass on PR `#780`, including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `size-check`, Vercel, and Vercel Preview Comments.
   - `npm run verify:pre-merge`: pass on `0c97b32`; full lane selected, 204 unit test files / 1155 tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped; private-gate regression skipped because `SITE_LOCK_ENABLED!=1`; pass marker `artifacts/verify-pre-merge/20260520-113635.json`.
 
-## Closeout Evidence
+## Completion Record
 
 - PR: `#780`
 - Merge SHA: `main@0c98935`
