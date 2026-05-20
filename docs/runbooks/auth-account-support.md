@@ -45,6 +45,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - If the user lands on sign-in from My Library: they should verify with the email they use for the app, then return to My Library or the member page they opened.
 - If the user lands on sign-in from checkout success or claim/download recovery: ask them to use the same email they used at checkout. Do not promise that a purchase, invoice, billing portal access, entitlement, or download exists until the normal checks complete.
 - If a checkout/claim link fails and returns to sign-in: the visible context copy may persist through a safe `source` value, but support should still diagnose entitlement, billing, and download ownership separately.
+- If a user is on `/checkout/success` or `/claim`: the supported recovery path is `Continue to My Library` or `Sign in to My Library` first, then the access-link resend form with the checkout email if they still cannot open owned items. The resend response is intentionally generic and does not confirm whether that email has a purchase.
 - If the email only contains a code and no button/link: check the Supabase Magic Link email template
   includes both `{{ .ConfirmationURL }}` and `{{ .Token }}` plus the hosted PNG brand lockup.
 - If `/auth/sign-in` shows "Sign-in is temporarily unavailable because a service limit was reached":
