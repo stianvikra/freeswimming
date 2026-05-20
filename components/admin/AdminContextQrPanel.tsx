@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import { buildAdminQrPrefillHref } from "@/lib/qr-links/admin-prefill";
 import { type QrLinkStatus, type QrRedirectLinkRow } from "@/lib/qr-links/admin";
 
@@ -441,7 +442,7 @@ export default function AdminContextQrPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">{title}</h4>
+          <h4 className="text-xs font-semibold tracking-wide text-slate-600 uppercase">{title}</h4>
           <p className="mt-1 text-xs text-slate-500">{description}</p>
         </div>
         <a
@@ -453,48 +454,61 @@ export default function AdminContextQrPanel({
       </div>
 
       {!schemaReady && warning ? (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <AdminManagerState tone="warning" density="compact" className="mt-3">
           {warning}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {actionError ? (
-        <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <AdminManagerState tone="error" announcement="polite" density="compact" className="mt-3">
           {actionError}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {actionNotice ? (
-        <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+        <AdminManagerState tone="success" density="compact" className="mt-3">
           {actionNotice}
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {loading ? (
-        <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+        <AdminManagerState tone="loading" density="compact" className="mt-3">
           Loading QR links for this content…
-        </p>
+        </AdminManagerState>
       ) : null}
 
       {!loading && error ? (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
-          <p className="text-xs text-rose-700">{error}</p>
-          <button
-            type="button"
-            onClick={() => void loadItems()}
-            className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
-          >
-            Retry
-          </button>
-        </div>
+        <AdminManagerState
+          tone="error"
+          density="compact"
+          className="mt-3"
+          actionsClassName="mt-2"
+          actions={
+            <button
+              type="button"
+              onClick={() => void loadItems()}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+            >
+              Retry
+            </button>
+          }
+        >
+          {error}
+        </AdminManagerState>
       ) : null}
 
       {!loading && !error ? (
         <>
           {items.length === 0 ? (
-            <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-600">
-              No QR links attached yet. Create the first stable `/go/v/` link from this editor.
-            </p>
+            <AdminManagerState
+              tone="empty"
+              title="No QR links attached yet"
+              density="spacious"
+              className="mt-3 border-blue-200 bg-blue-50/60 text-blue-800"
+              testId="admin-context-qr-empty-state"
+            >
+              Create the first stable `/go/v/` link from this editor.
+            </AdminManagerState>
           ) : (
             <ul className="mt-3 space-y-2">
               {items.map((item) => {
