@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-20-aw-006-closeout-queue-gate-repair-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-20`
 - `updated`: `2026-05-20`
@@ -180,8 +180,28 @@ Required as a task-brief lifecycle and AW-006 queue sweep.
 - Node.js/npm available through the repo's normal `nvm use --silent` path.
 - Because scripts/tests change, this is not docs-only; full validation lane is required.
 
+## Completion Record
+
+- PR: `#782`
+- Merge SHA: `main@af6e641`
+- Implementation SHA: `c4b8ae7`
+- Rollback: `git revert af6e641`
+- `10/10 claim`: yes for the bounded AW-006 closeout queue/gate repair scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                   | Gaps / Notes                                           |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#782` updated the canonical AW-006 queue so Context QR is done, this repair shipped, and Admin Notes Manager is the next UI candidate. | No UI slice was started in this closeout repair.       |
+| Business logic correctness and data integrity | `5/5`          | `verify:docs-only` now runs strict changed-brief lint, and unit coverage catches stale `current`/`active` queue rows for done briefs.      | No runtime data or product entity changed.             |
+| Performance (CWV + payloads)                  | `5/5`          | PR changed docs/tooling/tests only; local full gate and CI build/perf gates passed with no runtime dependency or payload changes.          | No route-level performance behavior changed.           |
+| Reliability and failure handling              | `5/5`          | Clean-main brief lint failure was fixed; future docs-only closeouts fail before merge if required done-brief evidence is missing.          | No production fallback behavior changed.               |
+| Content governance                            | `5/5`          | Done heading, AW-006 queue, design inventory, active brief, PR body, local gates, and CI evidence were aligned.                            | Follow-up UI candidate remains unimplemented.          |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing brief lint, docs-only verification, queue, inventory, and Vitest surface; no dependencies or new framework added.          | No broader lifecycle framework change claimed.         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, strict brief lint, `verify:pre-pr`, required CI, and `verify:pre-merge` passed for PR `#782`.                             | Private-gate local rerun skipped; CI site-lock passed. |
+| DevOps and rollback readiness                 | `5/5`          | PR `#782` merged as `main@af6e641`; rollback is a normal git revert; no migrations, secrets, workflows, or production config changed.      | Repo-managed closeout is docs-only.                    |
+
 ## Checkpoint Log
 
 - `2026-05-20 | in-progress | started from clean main@ac82cbf after PR #780 and repo-managed closeout PR #781; post-merge preflight found no pending closeout, but npm run lint:briefs failed on the latest done brief and AW-006 queue/inventory still marked Context QR active | next: repair completion heading, queue/inventory status, docs-only gate, stale current-row detection, and targeted tests`
 - `2026-05-20 | in-progress | repaired the Admin Context QR completion heading, refreshed AW-006 queue/inventory state, added strict changed-brief lint to verify:docs-only, and extended stale current-row detection; validation passed: npm run lint:briefs:all, targeted Vitest for task-brief/merge-preflight helpers (2 files / 15 tests), npm run lint, npm run typecheck, git diff --check, and targeted route/label/support sweep | next: commit, run npm run verify:pre-pr, push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
-- `2026-05-20 | in-progress | committed b47ebce and ran npm run verify:pre-pr in full-public mode; gate passed with lint:briefs, quality/admin/env/pr-body gates, eslint, typecheck, unit tests (204 files / 1156 tests), build, performance budgets, and Playwright E2E (98 passed / 478 skipped); evidence: artifacts/test-runs/20260520-151607/verify.log, exit-code 0 | next: amend this checkpoint, rerun npm run verify:pre-pr after the checkpoint-only doc update, push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-20 | pre-pr-gate | committed c4b8ae7 and ran npm run verify:pre-pr in full-public mode after the checkpoint amend; gate passed with lint:briefs, quality/admin/env/pr-body gates, eslint, typecheck, unit tests (204 files / 1156 tests), build, performance budgets, and Playwright E2E (98 passed / 478 skipped); evidence: artifacts/test-runs/20260520-152355/verify.log, exit-code 0 | next: push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-20 | done | PR #782 merged as main@af6e641 after green local pre-PR, required CI, and pre-merge gates; repo-managed closeout moved this brief to done and recorded achieved target scores | next: post-merge preflight should report no pending closeout before starting the next AW-006 UI slice`
