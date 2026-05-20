@@ -46,6 +46,7 @@ echo "[verify-docs-only] Output log: ${log_file}"
 status=0
 if {
   node ./scripts/verification-scope.mjs --summary --assert-docs-only
+  npm run lint:briefs
   npm run lint:briefs:all
   npm run lint:quality-gates
   npm run lint:admin-audit
