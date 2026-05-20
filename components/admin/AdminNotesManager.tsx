@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import {
@@ -990,47 +991,41 @@ export default function AdminNotesManager() {
         </div>
 
         {!schemaReady && warning ? (
-          <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {warning}
-          </p>
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
         ) : null}
 
-        {loading ? (
-          <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Loading notes…
-          </p>
-        ) : null}
+        {loading ? <AdminManagerState tone="loading">Loading notes…</AdminManagerState> : null}
 
         {!loading && error ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-            <p className="text-sm font-medium text-rose-700">{error}</p>
-            <button
-              type="button"
-              onClick={() => void loadNotes()}
-              className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          </div>
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadNotes()}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
         ) : null}
 
         {!loading && !error && items.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="empty" testId="admin-notes-empty-state">
             No notes created yet. Add your first admin note below.
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {actionError ? (
-          <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AdminManagerState tone="error" announcement="polite">
             {actionError}
-          </p>
+          </AdminManagerState>
         ) : null}
 
-        {actionNotice ? (
-          <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {actionNotice}
-          </p>
-        ) : null}
+        {actionNotice ? <AdminManagerState tone="success">{actionNotice}</AdminManagerState> : null}
 
         {!loading && !error && items.length > 0 ? (
           <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -1927,10 +1922,10 @@ export default function AdminNotesManager() {
         ) : null}
 
         {!loading && !error && items.length > 0 && filteredItems.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="no-results" testId="admin-notes-no-results-state">
             No notes match the current filters. Clear filters or switch to done archive to find
             older notes.
-          </p>
+          </AdminManagerState>
         ) : null}
       </section>
 
