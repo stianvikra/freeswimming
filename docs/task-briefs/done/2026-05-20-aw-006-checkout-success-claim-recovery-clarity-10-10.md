@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-20-aw-006-checkout-success-claim-recovery-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-20`
 - `updated`: `2026-05-20`
@@ -202,8 +202,8 @@ Required before broad gates because this slice touches public/transactional rout
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr`: pass; full lane selected, 204 unit test files / 1151 tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped.
   - Perf budget recommendation from the gate: `hold`, because the weekly green-run count is met but worst margin is 14.7% against the 15.0% tighten threshold.
-  - PR required CI checks
-  - `npm run verify:pre-merge`
+  - PR required CI checks: pass on PR `#778`, including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `size-check`, Vercel, and Vercel Preview Comments.
+  - `npm run verify:pre-merge`: pass; full lane selected, 204 unit test files / 1151 tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped; private-gate regression skipped because `SITE_LOCK_ENABLED!=1`.
 
 ## Local Tooling Prerequisite
 
@@ -216,3 +216,4 @@ Required before broad gates because this slice touches public/transactional rout
 - `2026-05-20 | in-progress | implemented route-local checkout success and claim recovery clarity, updated AW-006 queue/design inventory/support runbook, added focused route tests, passed targeted validation, and captured before/after desktop/mobile screenshot artifacts in output/aw-006-checkout-claim-recovery-2026-05-20-060420 | next: owner screenshot review before verify:pre-pr`
 - `2026-05-20 | in-progress | owner approved screenshot handoff; no visual/rendering files changed after capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-20 | in-progress | npm run verify:pre-pr passed in full lane; perf budget gate recommended hold because margin is 14.7% against the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-20 | done | PR #778 merged at main@c2d1caa after green local pre-merge and CI checks; repo-managed closeout moved this brief to done | next: post-merge preflight should report no pending closeout`
