@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-20-aw-006-admin-context-qr-panel-state-primitive-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-20`
 - `updated`: `2026-05-20`
@@ -195,8 +195,33 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
     - Build: passed.
     - Perf budgets: passed; trend recommendation `hold` (6/2 green runs, worst margin 14.7% against 15.0% tighten threshold).
     - E2E: 98 passed / 478 skipped.
-  - PR required CI checks
-  - `npm run verify:pre-merge`
+  - PR required CI checks: pass on PR `#780`, including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `size-check`, Vercel, and Vercel Preview Comments.
+  - `npm run verify:pre-merge`: pass on `0c97b32`; full lane selected, 204 unit test files / 1155 tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped; private-gate regression skipped because `SITE_LOCK_ENABLED!=1`; pass marker `artifacts/verify-pre-merge/20260520-113635.json`.
+
+## Closeout Evidence
+
+- PR: `#780`
+- Merge SHA: `main@0c98935`
+- Rollback: `git revert 0c98935`
+- Screenshot artifacts: `output/aw-006-admin-context-qr-state-2026-05-20-124131`, captured 2026-05-20 12:42, comparison type `after/reference`.
+- Final visual note: no product-rendering files changed after the approved screenshot capture.
+- `10/10 claim`: yes for the bounded Admin Context QR Panel state primitive parity scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                   | Gaps / Notes                                             |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#780`, canonical AW-006 queue update, design inventory update, and merged scope stayed inside the contextual QR panel. | No broader AW-006 queue slice claimed.                   |
+| UX flow clarity                               | `5/5`          | Migrated warning, loading, load error+retry, action feedback, and empty states; screenshot handoff approved.               | No QR workflow label changes.                            |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; after/reference screenshots compare Context QR states with QR Registry reference.              | Temporary screenshot route was local-only and removed.   |
+| Business logic correctness and data integrity | `5/5`          | Focused tests prove prefill, retry, empty, action feedback, and unchanged create payload behavior.                         | No API, schema, status, slug, or payload behavior moved. |
+| Admin editor ergonomics                       | `5/5`          | Admin Context QR panel now shows consistent inline loading, retry, empty guidance, warning, and mutation feedback.         | Full content editor redesign remains out of scope.       |
+| Accessibility (a11y)                          | `5/5`          | Tests assert status/error semantics and non-live static empty state behavior.                                              | Manual screenshot review complements role assertions.    |
+| Reliability and failure handling              | `5/5`          | Retry remains wired to the same loader; load/action error states stay visible and recoverable.                             | No new fallback or offline behavior introduced.          |
+| Security and authz                            | `5/5`          | Admin API routes, credentials, authz boundaries, secrets, cookies, and roles were untouched; CI/security checks passed.    | No additional negative-path API tests required.          |
+| Content governance                            | `5/5`          | Active brief, canonical queue, and design inventory were updated; copy/workflow labels stayed scoped.                      | Help/Guide was N/A because procedures did not change.    |
+| Admin workflow and editability                | `5/5`          | Create, retry, edit, activate/deactivate, copy, open, reset, and delete contracts were preserved by tests/diff review.     | No workflow actions were renamed.                        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and Tailwind/admin classes; no dependency/package/config changes.                       | App-wide state primitive remains out of scope.           |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                       | Private-gate local rerun skipped; CI site-lock passed.   |
+| DevOps and rollback readiness                 | `5/5`          | PR `#780` merged cleanly as `main@0c98935`; rollback is a normal git revert; no migrations/config/workflows changed.       | Closeout PR is docs-only.                                |
 
 ## Local Tooling Prerequisite
 
@@ -211,3 +236,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-20 | screenshot-review | owner flagged missing color/visual weight in the empty state; added a stronger contextual empty-state title and blue-tinted treatment while preserving QR copy, actions, and data behavior; refreshed after/reference screenshots in output/aw-006-admin-context-qr-state-2026-05-20-124131 at 2026-05-20 12:42; temporary route and capture script were removed after capture | next: wait for owner screenshot approval before verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-20 | screenshot-approved | owner approved the refreshed after/reference screenshot handoff in output/aw-006-admin-context-qr-state-2026-05-20-124131; no final product-rendering files changed after the approved capture | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-20 | pre-pr-gate | npm run verify:pre-pr passed full lane with branch-current current to origin/main@92ef0db, lint/typecheck/unit/build/perf/e2e green; artifact log artifacts/test-runs/20260520-124614/verify.log; perf trend recommendation hold, so no stretch-target tightening recorded for this slice | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-20 | done | PR #780 merged at main@0c98935 after green local pre-merge and CI checks; repo-managed closeout moved this brief to done and recorded achieved target scores | next: post-merge preflight should report no pending closeout`
