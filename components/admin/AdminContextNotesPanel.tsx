@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
@@ -719,7 +720,9 @@ export default function AdminContextNotesPanel({
         files,
       });
       applyMutatedItem(itemId, updatedItem);
-      setActionNotice(updatedItem.attachments.length === 1 ? "Image uploaded." : "Images uploaded.");
+      setActionNotice(
+        updatedItem.attachments.length === 1 ? "Image uploaded." : "Images uploaded."
+      );
       return updatedItem;
     } catch (uploadError) {
       setActionError(
@@ -807,7 +810,7 @@ export default function AdminContextNotesPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+          <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
             Admin notes
           </h3>
           <p className="mt-1 text-sm text-slate-700">{contextLabel}</p>
@@ -844,28 +847,35 @@ export default function AdminContextNotesPanel({
       {expanded ? (
         <div className="mt-4 space-y-4">
           {!schemaReady && warning ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <AdminManagerState tone="warning" density="compact" className="!mt-0">
               {warning}
-            </p>
+            </AdminManagerState>
           ) : null}
 
           {loading ? (
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <AdminManagerState tone="loading" density="compact" className="!mt-0">
               Loading notes…
-            </p>
+            </AdminManagerState>
           ) : null}
 
           {!loading && error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
-              <p className="text-sm text-rose-700">{error}</p>
-              <button
-                type="button"
-                onClick={() => void loadNotes()}
-                className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-700"
-              >
-                Retry
-              </button>
-            </div>
+            <AdminManagerState
+              tone="error"
+              density="compact"
+              className="!mt-0"
+              actionsClassName="mt-2"
+              actions={
+                <button
+                  type="button"
+                  onClick={() => void loadNotes()}
+                  className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-700"
+                >
+                  Retry
+                </button>
+              }
+            >
+              {error}
+            </AdminManagerState>
           ) : null}
 
           {canMutateNotes ? (
@@ -967,7 +977,7 @@ export default function AdminContextNotesPanel({
                   <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 sm:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                           Image evidence
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
@@ -1126,24 +1136,36 @@ export default function AdminContextNotesPanel({
           ) : null}
 
           {actionError ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <AdminManagerState
+              tone="error"
+              announcement="polite"
+              density="compact"
+              className="!mt-0"
+            >
               {actionError}
-            </p>
+            </AdminManagerState>
           ) : null}
 
           {actionNotice ? (
-            <p
-              className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-              data-testid="admin-context-note-action-notice"
+            <AdminManagerState
+              tone="success"
+              density="compact"
+              className="!mt-0"
+              testId="admin-context-note-action-notice"
             >
               {actionNotice}
-            </p>
+            </AdminManagerState>
           ) : null}
 
           {!loading && !error && items.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <AdminManagerState
+              tone="empty"
+              density="compact"
+              className="!mt-0"
+              testId="admin-context-notes-empty-state"
+            >
               No admin notes attached yet.
-            </p>
+            </AdminManagerState>
           ) : null}
 
           {!loading && !error && items.length > 0 ? (
@@ -1183,7 +1205,7 @@ export default function AdminContextNotesPanel({
                         </div>
                         {contextType === "course_lesson" &&
                         item.context_type === "course_module" ? (
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                          <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
                             Inherited from module
                           </p>
                         ) : null}
@@ -1196,10 +1218,10 @@ export default function AdminContextNotesPanel({
                               checked={item.is_done}
                               disabled={Boolean(
                                 updatingId ||
-                                  deletingId ||
-                                  editingId ||
-                                  uploadingNoteId ||
-                                  deletingAttachmentId
+                                deletingId ||
+                                editingId ||
+                                uploadingNoteId ||
+                                deletingAttachmentId
                               )}
                               onChange={() => {
                                 void toggleDone(item);
@@ -1212,10 +1234,10 @@ export default function AdminContextNotesPanel({
                             type="button"
                             disabled={Boolean(
                               updatingId ||
-                                deletingId ||
-                                editingId ||
-                                uploadingNoteId ||
-                                deletingAttachmentId
+                              deletingId ||
+                              editingId ||
+                              uploadingNoteId ||
+                              deletingAttachmentId
                             )}
                             onClick={() => startEdit(item)}
                             className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -1321,167 +1343,167 @@ export default function AdminContextNotesPanel({
                           />
                         </label>
 
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="text-xs font-semibold text-slate-900">Images</p>
-                            <p className="mt-1 text-[11px] text-slate-600">
-                              Add or remove image evidence on this saved note.
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <AdminNoteClipboardPasteButton
-                              buttonTestId="admin-context-note-edit-paste-image"
-                              onPasteReady={async (file) => {
-                                setActionError(null);
-                                setActionNotice(null);
-                                await uploadFilesForNote(item.id, [file]);
-                              }}
-                              onError={(message) => {
-                                setActionError(message);
-                                setActionNotice(null);
-                              }}
-                              disabled={Boolean(
-                                isUploading || deletingAttachmentId || updatingId || deletingId
-                              )}
-                            />
-                            <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
-                              <span>{isUploading ? "Uploading…" : "Upload images"}</span>
-                              <input
-                                type="file"
-                                multiple
-                                accept="image/png,image/jpeg,image/webp,image/gif"
-                                className="sr-only"
-                                aria-label="Upload images to saved note"
-                                data-testid="admin-context-note-edit-attachment-input"
+                        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-semibold text-slate-900">Images</p>
+                              <p className="mt-1 text-[11px] text-slate-600">
+                                Add or remove image evidence on this saved note.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <AdminNoteClipboardPasteButton
+                                buttonTestId="admin-context-note-edit-paste-image"
+                                onPasteReady={async (file) => {
+                                  setActionError(null);
+                                  setActionNotice(null);
+                                  await uploadFilesForNote(item.id, [file]);
+                                }}
+                                onError={(message) => {
+                                  setActionError(message);
+                                  setActionNotice(null);
+                                }}
                                 disabled={Boolean(
                                   isUploading || deletingAttachmentId || updatingId || deletingId
                                 )}
-                                onChange={(event) => {
-                                  void uploadAttachments(item, event.target.files);
-                                  event.currentTarget.value = "";
-                                }}
                               />
-                            </label>
+                              <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                                <span>{isUploading ? "Uploading…" : "Upload images"}</span>
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept="image/png,image/jpeg,image/webp,image/gif"
+                                  className="sr-only"
+                                  aria-label="Upload images to saved note"
+                                  data-testid="admin-context-note-edit-attachment-input"
+                                  disabled={Boolean(
+                                    isUploading || deletingAttachmentId || updatingId || deletingId
+                                  )}
+                                  onChange={(event) => {
+                                    void uploadAttachments(item, event.target.files);
+                                    event.currentTarget.value = "";
+                                  }}
+                                />
+                              </label>
+                            </div>
                           </div>
-                        </div>
 
-                        {item.attachments.length > 0 ? (
-                          <ul className="space-y-2">
-                            {item.attachments.map((attachment, index) => {
-                              const isDeletingAttachment = deletingAttachmentId === attachment.id;
-                              return (
-                                <li
-                                  key={attachment.id}
-                                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
-                                >
-                                  <div className="flex min-w-0 items-center gap-3">
-                                    {attachment.signed_url ? (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img
-                                        src={attachment.signed_url}
-                                        alt={attachment.file_name}
-                                        className="h-12 w-12 rounded-md object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-200 text-[10px] font-medium text-slate-600">
-                                        No preview
+                          {item.attachments.length > 0 ? (
+                            <ul className="space-y-2">
+                              {item.attachments.map((attachment, index) => {
+                                const isDeletingAttachment = deletingAttachmentId === attachment.id;
+                                return (
+                                  <li
+                                    key={attachment.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                                  >
+                                    <div className="flex min-w-0 items-center gap-3">
+                                      {attachment.signed_url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                          src={attachment.signed_url}
+                                          alt={attachment.file_name}
+                                          className="h-12 w-12 rounded-md object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-200 text-[10px] font-medium text-slate-600">
+                                          No preview
+                                        </div>
+                                      )}
+                                      <div className="min-w-0">
+                                        <p className="text-[11px] font-semibold text-slate-900">
+                                          {buildAdminNoteAttachmentOrdinalLabel(
+                                            index,
+                                            item.attachments.length
+                                          )}
+                                        </p>
+                                        <p className="truncate text-xs font-medium text-slate-700">
+                                          {attachment.file_name}
+                                        </p>
+                                        <p className="text-[11px] text-slate-500">
+                                          {buildAdminNoteAttachmentEvidenceSummary({
+                                            mimeType: attachment.mime_type,
+                                            sizeBytes: attachment.size_bytes,
+                                            createdAt: attachment.created_at,
+                                          })}
+                                        </p>
                                       </div>
-                                    )}
-                                    <div className="min-w-0">
-                                      <p className="text-[11px] font-semibold text-slate-900">
-                                        {buildAdminNoteAttachmentOrdinalLabel(
-                                          index,
-                                          item.attachments.length
-                                        )}
-                                      </p>
-                                      <p className="truncate text-xs font-medium text-slate-700">
-                                        {attachment.file_name}
-                                      </p>
-                                      <p className="text-[11px] text-slate-500">
-                                        {buildAdminNoteAttachmentEvidenceSummary({
-                                          mimeType: attachment.mime_type,
-                                          sizeBytes: attachment.size_bytes,
-                                          createdAt: attachment.created_at,
-                                        })}
-                                      </p>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {attachment.signed_url ? (
-                                      <a
-                                        href={attachment.signed_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                                      >
-                                        Open
-                                      </a>
-                                    ) : null}
-                                    <button
-                                      type="button"
-                                      data-testid="admin-context-note-attachment-delete"
-                                      disabled={Boolean(
-                                        isDeletingAttachment ||
+                                    <div className="flex items-center gap-2">
+                                      {attachment.signed_url ? (
+                                        <a
+                                          href={attachment.signed_url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                          Open
+                                        </a>
+                                      ) : null}
+                                      <button
+                                        type="button"
+                                        data-testid="admin-context-note-attachment-delete"
+                                        disabled={Boolean(
+                                          isDeletingAttachment ||
                                           isUploading ||
                                           updatingId ||
                                           deletingId
-                                      )}
-                                      onClick={() => {
-                                        void deleteAttachment(item.id, attachment.id);
-                                      }}
-                                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      {isDeletingAttachment ? "Deleting…" : "Delete image"}
-                                    </button>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        ) : (
-                          <p className="text-[11px] text-slate-600">No images attached yet.</p>
-                        )}
-                      </div>
-
-                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
-                        <input
-                          type="checkbox"
-                          checked={editState.isDone}
-                          onChange={(e) =>
-                            setEditField((prev) => ({ ...prev, isDone: e.target.checked }))
-                          }
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                        />
-                        Mark as done
-                      </label>
-
-                      <div className="flex items-center gap-2 sm:col-span-2">
-                        <button
-                          type="submit"
-                          disabled={Boolean(
-                            updatingId || deletingId || uploadingNoteId || deletingAttachmentId
+                                        )}
+                                        onClick={() => {
+                                          void deleteAttachment(item.id, attachment.id);
+                                        }}
+                                        className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {isDeletingAttachment ? "Deleting…" : "Delete image"}
+                                      </button>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="text-[11px] text-slate-600">No images attached yet.</p>
                           )}
-                          className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                        >
-                          {isUpdating ? "Saving…" : "Save changes"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelEdit}
-                          disabled={Boolean(
-                            updatingId || deletingId || uploadingNoteId || deletingAttachmentId
-                          )}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                        </div>
+
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                          <input
+                            type="checkbox"
+                            checked={editState.isDone}
+                            onChange={(e) =>
+                              setEditField((prev) => ({ ...prev, isDone: e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                          />
+                          Mark as done
+                        </label>
+
+                        <div className="flex items-center gap-2 sm:col-span-2">
+                          <button
+                            type="submit"
+                            disabled={Boolean(
+                              updatingId || deletingId || uploadingNoteId || deletingAttachmentId
+                            )}
+                            className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                          >
+                            {isUpdating ? "Saving…" : "Save changes"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            disabled={Boolean(
+                              updatingId || deletingId || uploadingNoteId || deletingAttachmentId
+                            )}
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </form>
                     ) : (
                       <div className="mt-2 space-y-3">
                         {item.body ? (
-                          <p className="whitespace-pre-wrap text-sm text-slate-700">{item.body}</p>
+                          <p className="text-sm whitespace-pre-wrap text-slate-700">{item.body}</p>
                         ) : null}
 
                         {item.related_notes.length > 0 ? (
