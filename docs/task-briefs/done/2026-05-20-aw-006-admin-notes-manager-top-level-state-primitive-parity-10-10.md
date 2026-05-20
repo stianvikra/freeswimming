@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-20-aw-006-admin-notes-manager-top-level-state-primitive-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-20`
 - `updated`: `2026-05-20`
@@ -203,8 +203,33 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
     - Build: passed.
     - Perf budgets: passed; trend recommendation `hold` (6/2 green runs, worst margin 14.7% against 15.0% tighten threshold).
     - E2E: 98 passed / 478 skipped.
-  - PR required CI checks
-  - `npm run verify:pre-merge`
+  - PR required CI checks: pass on PR `#784` after one rerun of an unrelated public-route Playwright flake; final checks passed for `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `size-check`, Vercel, and Vercel Preview Comments.
+  - `npm run verify:pre-merge`: pass on `8e6d4d7`; reused the fresh full public verify artifact, private-gate regression skipped because `SITE_LOCK_ENABLED!=1`; pass marker recorded by the local pre-merge gate.
+
+## Completion Record
+
+- PR: `#784`
+- Merge SHA: `main@a8ae452`
+- Rollback: `git revert a8ae452`
+- Screenshot artifacts: `output/aw-006-admin-notes-state-20260520195631`, captured 2026-05-20 19:56, comparison type `after/reference`.
+- Final visual note: no committed product-rendering file changed after the final screenshot capture.
+- `10/10 claim`: yes for the bounded Admin Notes Manager top-level state primitive parity scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                             | Gaps / Notes                                                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#784`, canonical AW-006 queue update, design inventory update, and merged scope stayed inside Admin Notes top-level states.      | No broader AW-006 queue slice claimed.                             |
+| UX flow clarity                               | `5/5`          | Migrated warning, loading, load error+retry, action feedback, empty, and no-results states; screenshot handoff approved.             | No Admin Notes workflow labels changed.                            |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; after/reference screenshots compare Notes states with mature admin manager references.                   | Temporary screenshot route was local-only and removed.             |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved fetches, retry, filters, sorting, mutations, attachment recovery, and related-note behavior. | No API, schema, payload, or URL-filter behavior moved.             |
+| Admin editor ergonomics                       | `5/5`          | Admin Notes now shows consistent warning, loading, retry, action feedback, empty, and filtered no-results guidance.                  | No broader notes editor redesign.                                  |
+| Accessibility (a11y)                          | `5/5`          | Tests assert status/error semantics and non-live static empty/no-results behavior.                                                   | Manual screenshot review complements role assertions.              |
+| Reliability and failure handling              | `5/5`          | Retry remains wired to the same loader; action and load feedback stay visible and recoverable.                                       | No new offline or conflict behavior introduced.                    |
+| Security and authz                            | `5/5`          | Admin notes API routes, credentials, authz boundaries, secrets, cookies, and roles were untouched; CI/security checks passed.        | No additional negative-path API tests required for rendering-only. |
+| Content governance                            | `5/5`          | Active brief, canonical queue, and design inventory were updated; copy/workflow labels stayed scoped.                                | Help/Guide was N/A because procedures did not change.              |
+| Admin workflow and editability                | `5/5`          | Create, refresh, search, filter, edit, done/reopen, delete, attachment, upload recovery, and related-note contracts were preserved.  | No workflow actions were renamed.                                  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and Tailwind/admin classes; no dependency/package/config changes.                                 | App-wide state primitive remains out of scope.                     |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                                 | CI needed one rerun for an unrelated Playwright route flake.       |
+| DevOps and rollback readiness                 | `5/5`          | PR `#784` merged cleanly as `main@a8ae452`; rollback is a normal git revert; no migrations/config/workflows changed.                 | Closeout PR is docs-only.                                          |
 
 ## Local Tooling Prerequisite
 
@@ -218,3 +243,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-20 | screenshot-approved | owner approved the after/reference screenshot handoff for Notes empty, Notes load error, Notes warning mobile, and Categories empty reference states | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-20 | pre-pr-ready | npm run verify:pre-pr passed the full lane with branch-current, migration drift skip, quality gates, eslint, typecheck, unit tests (205 files / 1162 tests), build, performance budgets, and Playwright E2E (98 passed / 478 skipped); evidence: artifacts/test-runs/20260520-194624/verify.log; perf trend recommendation hold | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-20 | final-screenshot-refresh | after commit 3e769f6 and pre-commit formatting, regenerated the after/reference screenshot artifacts from the committed UI diff in output/aw-006-admin-notes-state-20260520195631; removed the temporary local visual route and capture script again; no committed product-rendering file changed after this final capture | next: amend the brief evidence into the commit and rerun npm run verify:pre-pr on the final diff`
+- `2026-05-20 | done | PR #784 merged at main@a8ae452 after green local pre-merge and required CI checks; repo-managed closeout moved this brief to done and recorded achieved target scores | next: post-merge preflight should report no pending closeout after the closeout PR merges`
