@@ -24,11 +24,235 @@ function buildItem(overrides?: Partial<AdminNoteItem>): AdminNoteItem {
   };
 }
 
+function okJson(payload: unknown, init?: Partial<Response>): Response {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => payload,
+    ...init,
+  } as Response;
+}
+
+function errorJson(payload: unknown, init?: Partial<Response>): Response {
+  return {
+    ok: false,
+    status: 500,
+    json: async () => payload,
+    ...init,
+  } as Response;
+}
+
+function buildNotesPayload(overrides?: {
+  items?: AdminNoteItem[];
+  schemaReady?: boolean;
+  warning?: string | null;
+}) {
+  return {
+    ok: true,
+    role: "editor",
+    items: overrides?.items ?? [],
+    schemaReady: overrides?.schemaReady ?? true,
+    warning: overrides?.warning ?? null,
+  };
+}
+
+function buildCategoriesPayload() {
+  return {
+    ok: true,
+    items: [{ id: "category-1", title: "Operations", is_active: true }],
+  };
+}
+
 describe("AdminContextNotesPanel", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("renders contextual warning and empty states through the admin state primitive", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        return okJson(
+          buildNotesPayload({
+            schemaReady: false,
+            warning: "Admin notes schema is not ready.",
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-warning-empty"
+        contextLabel="Context warning"
+        collapsedByDefault={false}
+      />
+    );
+
+    const warning = await screen.findByText("Admin notes schema is not ready.");
+    expect(warning.closest('[role="status"]')).toHaveAttribute("aria-live", "polite");
+
+    const emptyState = await screen.findByTestId("admin-context-notes-empty-state");
+    expect(emptyState).toHaveTextContent("No admin notes attached yet.");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+  });
+
+  it("renders contextual loading through the admin state primitive during context refresh", async () => {
+    let resolveSecondNotes!: (value: Response) => void;
+    const secondNotesPromise = new Promise<Response>((resolve) => {
+      resolveSecondNotes = resolve;
+    });
+
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes("contextRef=%2Fcontext-loading-a")) {
+        return Promise.resolve(okJson(buildNotesPayload()));
+      }
+
+      if (url.includes("contextRef=%2Fcontext-loading-b")) {
+        return secondNotesPromise;
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return Promise.resolve(okJson(buildCategoriesPayload()));
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { rerender } = render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-loading-a"
+        contextLabel="Context loading A"
+        collapsedByDefault={false}
+      />
+    );
+
+    await screen.findByTestId("admin-context-notes-empty-state");
+
+    rerender(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-loading-b"
+        contextLabel="Context loading B"
+        collapsedByDefault={false}
+      />
+    );
+
+    const loading = await screen.findByText("Loading notes…");
+    expect(loading.closest('[role="status"]')).toHaveAttribute("aria-live", "polite");
+
+    resolveSecondNotes(okJson(buildNotesPayload()));
+    await screen.findByTestId("admin-context-notes-empty-state");
+  });
+
+  it("keeps contextual load errors announced and retries with the same loader", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        const notesRequestCount = fetchMock.mock.calls.filter(([callInput]) =>
+          String(callInput).startsWith("/api/admin/notes?")
+        ).length;
+
+        if (notesRequestCount === 1) {
+          return errorJson({
+            ok: false,
+            error: "Could not load context notes.",
+          });
+        }
+
+        return okJson(buildNotesPayload());
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-load-error"
+        contextLabel="Context load error"
+        collapsedByDefault={false}
+      />
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not load context notes.");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await screen.findByTestId("admin-context-notes-empty-state");
+    expect(
+      fetchMock.mock.calls.filter(([input]) => String(input).startsWith("/api/admin/notes?"))
+    ).toHaveLength(2);
+  });
+
+  it("renders contextual action errors through polite admin state feedback", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        return okJson(buildNotesPayload());
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      if (url === "/api/admin/notes" && init?.method === "POST") {
+        return errorJson({
+          ok: false,
+          error: "Could not save note.",
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-action-error"
+        contextLabel="Context action error"
+        collapsedByDefault={false}
+      />
+    );
+
+    const createForm = await screen.findByTestId("admin-context-note-create-form");
+    fireEvent.change(within(createForm).getByLabelText("Title"), {
+      target: { value: "Broken save" },
+    });
+    fireEvent.click(within(createForm).getByRole("button", { name: "Save note" }));
+
+    const actionError = await screen.findByText("Could not save note.");
+    expect(actionError.closest('[role="status"]')).toHaveAttribute("aria-live", "polite");
   });
 
   it("lets operators add and remove images on an already-saved contextual note", async () => {
@@ -130,6 +354,10 @@ describe("AdminContextNotesPanel", () => {
     });
 
     expect(await screen.findByText("Image uploaded.")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-context-note-action-notice")).toHaveAttribute(
+      "aria-live",
+      "polite"
+    );
     expect(within(editForm).getByText("context-proof.png")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("admin-context-note-attachment-delete"));
