@@ -6,17 +6,17 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-05-19`
+- `updated`: `2026-05-20`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-19`
-- `base`: `main@79c0d9d`
+- `last_audited`: `2026-05-20`
+- `base`: `main@7529c73`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, Shared notice/empty-state inventory shipped through `#760`, admin management feedback/list-state primitive pilot shipped through `#762/#763`, stable visual baseline snapshot pilot shipped through `#764/#765`, canonical queue lifecycle automation shipped through `#766/#767`, shared notice/state expansion shipped through `#768/#769`, Admin Categories state primitive completion shipped through `#770/#771`, Admin Messages state primitive second-wave shipped through `#772/#773`, and Auth Feedback Source Of Truth Cleanup shipped through `#774/#775`. A short re-audit on clean `main@79c0d9d` promoted Guide Tracker Sync State Clarity as the next bounded AW-006 implementation slice.
+- `reason`: The original review lived only in chat after `main@be554e9`; Mobile CTA Safe Area shipped through `#730/#731`, Auth sign-in fallback shipped through `#732/#733`, Course desktop player polish shipped through `#735/#736`, Contact/Analysis trust copy shipped through `#748/#749`, Anonymous Course Progress Noise shipped through `#750/#751`, Owner-Readable Slice Start Governance shipped through `#752/#753`, Sample Deliverable Proof shipped through `#754/#755`, the queue re-audit plus closeout shipped through `#756/#757`, My Library surface polish shipped through `#758/#759`, Shared notice/empty-state inventory shipped through `#760`, admin management feedback/list-state primitive pilot shipped through `#762/#763`, stable visual baseline snapshot pilot shipped through `#764/#765`, canonical queue lifecycle automation shipped through `#766/#767`, shared notice/state expansion shipped through `#768/#769`, Admin Categories state primitive completion shipped through `#770/#771`, Admin Messages state primitive second-wave shipped through `#772/#773`, Auth Feedback Source Of Truth Cleanup shipped through `#774/#775`, and Guide Tracker Sync State Clarity shipped through `#776/#777`. A short re-audit on clean `main@7529c73` promoted Checkout Success And Claim Recovery Clarity as the next bounded AW-006 implementation slice.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -78,6 +78,12 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Completed auth feedback cleanup:
   - `docs/task-briefs/done/2026-05-19-aw-006-auth-feedback-source-of-truth-cleanup-10-10.md`
   - shipped through `#774/#775`, scoped to keeping `/auth/sign-in` on one maintained request-feedback source and hydration-safe cooldown labels without changing auth behavior, cooldown cadence, redirects, provider calls, or sign-in copy.
+- Completed guide tracker follow-up:
+  - `docs/task-briefs/done/2026-05-19-aw-006-guide-tracker-sync-state-clarity-10-10.md`
+  - shipped through `#776/#777`, scoped to making 0-1000m and Poolside guide tracker saved/syncing/offline/error status clearer and consistent without changing guide progress storage, API shape, auth, entitlements, or localStorage keys.
+- Current follow-up execution:
+  - `docs/task-briefs/in-progress/2026-05-20-aw-006-checkout-success-claim-recovery-clarity-10-10.md`
+  - scoped to improving `/checkout/success` and `/claim` post-purchase recovery clarity without changing Stripe Checkout Sessions, webhooks, entitlements, auth, email delivery, Supabase, analytics taxonomy, or finance behavior.
 
 ## Executive Summary From The Review
 
@@ -140,15 +146,16 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Categories state primitive completion | `done`    | `#770/#771`, `docs/task-briefs/done/2026-05-19-aw-006-admin-categories-state-primitive-completion-10-10.md`          | Completed the low-risk admin-management state primitive pass on Admin Categories warning, loading, error+retry, empty, and action-error states without changing admin data, authz, mutations, labels, or support procedures.                     |
 | Admin Messages state primitive second-wave  | `done`    | `#772/#773`, `docs/task-briefs/done/2026-05-19-aw-006-admin-messages-state-primitive-second-wave-10-10.md`           | Applied the admin-local state helper to Admin Messages loading, warning, load error+retry, action feedback, empty/no-results, and no-selection states without changing message data, authz, delivery diagnostics, labels, or support procedures. |
 | Auth feedback source-of-truth cleanup       | `done`    | `#774/#775`, `docs/task-briefs/done/2026-05-19-aw-006-auth-feedback-source-of-truth-cleanup-10-10.md`                | Cleaned up overlapping auth feedback ownership so `/auth/sign-in` keeps one maintained request-feedback source and stable cooldown hydration without changing auth behavior, cooldown rules, redirects, or copy.                                 |
-| Guide tracker sync-state clarity            | `current` | `docs/task-briefs/in-progress/2026-05-19-aw-006-guide-tracker-sync-state-clarity-10-10.md`                           | Makes 0-1000m and Poolside guide tracker saved/syncing/offline/error status clearer and consistent without changing guide progress storage, API shape, auth, entitlements, or localStorage keys.                                                 |
+| Guide tracker sync-state clarity            | `done`    | `#776/#777`, `docs/task-briefs/done/2026-05-19-aw-006-guide-tracker-sync-state-clarity-10-10.md`                     | Makes 0-1000m and Poolside guide tracker saved/syncing/offline/error status clearer and consistent without changing guide progress storage, API shape, auth, entitlements, or localStorage keys.                                                 |
+| Checkout success and claim recovery clarity | `current` | `docs/task-briefs/in-progress/2026-05-20-aw-006-checkout-success-claim-recovery-clarity-10-10.md`                    | Improves `/checkout/success` and `/claim` post-purchase next-step clarity and recovery presentation without changing Stripe, auth, entitlement, email, Supabase, analytics, or finance behavior.                                                 |
 
 ## Remaining PR-Sized UX/UI Slices
 
 Recommended order unless the owner explicitly reprioritizes:
 
-| Slice                            | Status    | Objective                                                                                                                                                | Likely files                                                                                                                                                                                                                         | Risks / protected areas                                                                                                                                                                                         | Screenshot gate                  |
-| -------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| Guide tracker sync-state clarity | `current` | Make 0-1000m and Poolside guide tracker sync/offline/error/retry status consistent, readable, and non-dead-end while preserving progress data contracts. | `components/guides/Guide0To1000Tracker.tsx`, `components/guides/PoolsideGuideTracker.tsx`, `components/guides/`, `tests/unit/guide-*-tracker-sync.test.tsx`, this queue brief, `docs/design/notice-empty-state-pattern-inventory.md` | Preserve guide progress API shape, auth/entitlement redirects, localStorage keys, progress merge/upsert behavior, guide content, PDF/export behavior, Stripe, Supabase, analytics, and broad notice primitives. | Required before `verify:pre-pr`. |
+| Slice                                       | Status    | Objective                                                                                                                        | Likely files                                                                                                                                                                                                          | Risks / protected areas                                                                                                                                                                                             | Screenshot gate                  |
+| ------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Checkout success and claim recovery clarity | `current` | Make post-purchase success and claim-access recovery clearer, calmer, and non-overpromising while preserving commerce contracts. | `app/checkout/success/page.tsx`, `app/claim/page.tsx`, `components/commerce/DownloadResendForm.tsx`, `tests/unit/checkout-success-page.test.tsx`, `tests/unit/claim-page.test.tsx`, this queue brief, support runbook | Preserve Stripe Checkout Sessions, checkout/session payloads, webhooks, entitlements, auth redirects, resend API payload shape, privacy-safe generic responses, Supabase, analytics taxonomy, and finance behavior. | Required before `verify:pre-pr`. |
 
 ## 10/10 Phase Plan Capture
 
@@ -177,7 +184,7 @@ Recommended order unless the owner explicitly reprioritizes:
 
 - Redesign `/plans` as comparison plus proof plus secure checkout expectations.
 - Add sample deliverables for PDF/video analysis where accurate. Status: `done`.
-- Improve post-purchase expectation/recovery flow.
+- Improve post-purchase expectation/recovery flow. Status: `current`.
 - Add safe funnel instrumentation for price seen, checkout clicked, and recovery clicked if not already present.
 - Strengthen contact/analysis trust copy, response expectation, and input guidance.
 
@@ -351,3 +358,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-19 | planned | refreshed after Admin Messages state primitive second-wave #772 on clean main@49c8a3f; marked Admin Messages done and replaced the stale active implementation pointer with a queue re-audit next step | next: start a new chat before selecting the next AW-006 implementation slice`
 - `2026-05-19 | planned | refreshed after Admin Messages closeout #773 on clean main@53b569b; post-merge preflight found no pending closeout and a short re-audit promoted Auth Feedback Source Of Truth Cleanup as the current bounded AW-006 implementation slice | next: execute docs/task-briefs/in-progress/2026-05-19-aw-006-auth-feedback-source-of-truth-cleanup-10-10.md`
 - `2026-05-19 | planned | refreshed after Auth Feedback Source Of Truth Cleanup #774 and repo-managed closeout #775 on clean main@79c0d9d; post-merge preflight found no pending closeout and a short re-audit promoted Guide Tracker Sync State Clarity as the current bounded AW-006 implementation slice | next: execute docs/task-briefs/in-progress/2026-05-19-aw-006-guide-tracker-sync-state-clarity-10-10.md`
+- `2026-05-20 | planned | refreshed after Guide Tracker Sync State Clarity #776 and repo-managed closeout #777 on clean main@7529c73; post-merge preflight found no pending closeout and a short re-audit promoted Checkout Success And Claim Recovery Clarity as the current bounded AW-006 implementation slice | next: execute docs/task-briefs/in-progress/2026-05-20-aw-006-checkout-success-claim-recovery-clarity-10-10.md`
