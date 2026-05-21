@@ -337,7 +337,7 @@ Do not include:
 
 ## Current Candidate Status
 
-No state-primitive implementation candidate is selected after PR `#790/#791`. Run a fresh canonical queue/design/code re-audit after the closeout reference guard completes before selecting the next AW-006 UI slice.
+No state-primitive implementation is selected after PR `#792`. Run a fresh canonical queue/design/code re-audit before selecting the next AW-006 UI slice.
 
 ## Reuse Rules For Later Implementation
 
