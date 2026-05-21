@@ -67,6 +67,32 @@ function buildCategoriesPayload() {
   };
 }
 
+function buildRevision(overrides?: Partial<Record<string, unknown>>) {
+  return {
+    id: "revision-1",
+    revisionNumber: 2,
+    action: "update",
+    changedByEmail: "admin@example.com",
+    createdAt: "2026-05-21T09:00:00.000Z",
+    snapshotTitle: "Plans",
+    snapshotStatus: "draft",
+    ...overrides,
+  };
+}
+
+function buildRevisionsPayload(
+  overrides?: Partial<{
+    items: unknown[];
+    canRestore: boolean;
+  }>
+) {
+  return {
+    ok: true,
+    items: overrides?.items ?? [],
+    canRestore: overrides?.canRestore ?? true,
+  };
+}
+
 function useAllContentView(scope: "all" | AdminContentItemRow["content_type"] = "all") {
   window.localStorage.setItem(CONTENT_PRIMARY_VIEW_STORAGE_KEY, "all_content");
   window.localStorage.setItem(ALL_CONTENT_SCOPE_STORAGE_KEY, scope);
@@ -276,5 +302,171 @@ describe("AdminContentManager state rendering", () => {
         )
       ).toBe(true)
     );
+  });
+
+  it("renders revision-history loading and empty states through the admin state primitive", async () => {
+    useAllContentView();
+    let resolveRevisions!: (value: Response) => void;
+    const revisionsPromise = new Promise<Response>((resolve) => {
+      resolveRevisions = resolve;
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [buildContentItem()] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      if (url === "/api/admin/content/content-1/revisions") {
+        return revisionsPromise;
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByText("Plans");
+    fireEvent.click(screen.getByRole("button", { name: "Revisions" }));
+
+    const revisionPanel = await screen.findByTestId("admin-content-revision-history-panel");
+    const revisionLoading = within(revisionPanel).getByRole("status");
+    expect(revisionLoading).toHaveTextContent("Loading revisions…");
+    expect(revisionLoading).toHaveAttribute("aria-live", "polite");
+
+    resolveRevisions(okJson(buildRevisionsPayload()));
+
+    await waitFor(() => {
+      expect(within(revisionPanel).getByText("No revisions yet.")).toBeInTheDocument();
+    });
+    const emptyHistory = within(revisionPanel).getByText("No revisions yet.").closest("div");
+    expect(emptyHistory).not.toHaveAttribute("role");
+    expect(emptyHistory).not.toHaveAttribute("aria-live");
+  });
+
+  it("keeps revision-history error retry wired to the original revision loader", async () => {
+    useAllContentView();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [buildContentItem()] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      if (url === "/api/admin/content/content-1/revisions") {
+        const revisionRequestCount = fetchMock.mock.calls.filter(
+          ([callInput]) => String(callInput) === "/api/admin/content/content-1/revisions"
+        ).length;
+
+        if (revisionRequestCount === 1) {
+          return errorJson({
+            ok: false,
+            error: "Could not load revision history.",
+          });
+        }
+
+        return okJson(buildRevisionsPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByText("Plans");
+    fireEvent.click(screen.getByRole("button", { name: "Revisions" }));
+
+    const revisionPanel = await screen.findByTestId("admin-content-revision-history-panel");
+    const revisionError = await within(revisionPanel).findByRole("alert");
+    expect(revisionError).toHaveTextContent("Could not load revision history.");
+
+    fireEvent.click(within(revisionPanel).getByRole("button", { name: "Retry" }));
+
+    await within(revisionPanel).findByText("No revisions yet.");
+    expect(
+      fetchMock.mock.calls.filter(
+        ([input]) => String(input) === "/api/admin/content/content-1/revisions"
+      )
+    ).toHaveLength(2);
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/admin/content/content-1/revisions", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  });
+
+  it("preserves revision restore action behavior when history entries render", async () => {
+    useAllContentView();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const restoredItem = buildContentItem({ title: "Plans restored" });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [buildContentItem()] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      if (url === "/api/admin/content/content-1/revisions" && init?.method === "POST") {
+        return okJson({
+          ok: true,
+          item: restoredItem,
+          restoredRevisionId: "revision-1",
+        });
+      }
+
+      if (url === "/api/admin/content/content-1/revisions") {
+        return okJson(buildRevisionsPayload({ items: [buildRevision()] }));
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByText("Plans");
+    fireEvent.click(screen.getByRole("button", { name: "Revisions" }));
+
+    const revisionPanel = await screen.findByTestId("admin-content-revision-history-panel");
+    const revisionItem = await within(revisionPanel).findByTestId("admin-content-revision-item");
+    expect(revisionItem).toHaveTextContent("Rev 2 · update");
+
+    const restoreButton = within(revisionItem).getByRole("button", { name: "Restore" });
+    expect(restoreButton).not.toBeDisabled();
+
+    fireEvent.click(restoreButton);
+
+    await screen.findByTestId("admin-content-action-notice-state");
+    expect(screen.getByTestId("admin-content-action-notice-state")).toHaveTextContent(
+      "Revision restored."
+    );
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Restore "Plans" to this revision? Current values will be replaced.'
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input) === "/api/admin/content/content-1/revisions" &&
+          init?.method === "POST" &&
+          init.body === JSON.stringify({ revisionId: "revision-1" })
+      )
+    ).toBe(true);
   });
 });

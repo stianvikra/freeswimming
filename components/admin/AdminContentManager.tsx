@@ -715,6 +715,9 @@ export default function AdminContentManager() {
     {}
   );
   const [canRestoreByItemId, setCanRestoreByItemId] = useState<Record<string, boolean>>({});
+  const [revisionErrorByItemId, setRevisionErrorByItemId] = useState<Record<string, string | null>>(
+    {}
+  );
   const [revisionsLoadingItemId, setRevisionsLoadingItemId] = useState<string | null>(null);
   const [restoringRevisionId, setRestoringRevisionId] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -2134,12 +2137,16 @@ export default function AdminContentManager() {
   }
 
   async function loadRevisionsForItem(itemId: string, force = false): Promise<boolean> {
-    if (!force && revisionsByItemId[itemId]) {
+    if (!force && revisionsByItemId[itemId] && !revisionErrorByItemId[itemId]) {
       return true;
     }
 
     setRevisionsLoadingItemId(itemId);
     setActionError(null);
+    setRevisionErrorByItemId((prev) => ({
+      ...prev,
+      [itemId]: null,
+    }));
     try {
       const response = await fetch(`/api/admin/content/${itemId}/revisions`, {
         method: "GET",
@@ -2148,11 +2155,16 @@ export default function AdminContentManager() {
       });
       const payload = (await response.json()) as AdminContentRevisionsResponse;
       if (!response.ok || !payload.ok) {
-        setActionError(
-          payload.ok
+        setRevisionErrorByItemId((prev) => ({
+          ...prev,
+          [itemId]: payload.ok
             ? "Could not load revision history."
-            : (payload.error ?? "Could not load revision history.")
-        );
+            : (payload.error ?? "Could not load revision history."),
+        }));
+        setRevisionsByItemId((prev) => ({
+          ...prev,
+          [itemId]: [],
+        }));
         return false;
       }
 
@@ -2164,25 +2176,38 @@ export default function AdminContentManager() {
         ...prev,
         [itemId]: payload.canRestore,
       }));
+      setRevisionErrorByItemId((prev) => ({
+        ...prev,
+        [itemId]: null,
+      }));
       return true;
     } catch {
-      setActionError("Could not load revision history.");
+      setRevisionErrorByItemId((prev) => ({
+        ...prev,
+        [itemId]: "Could not load revision history.",
+      }));
+      setRevisionsByItemId((prev) => ({
+        ...prev,
+        [itemId]: [],
+      }));
       return false;
     } finally {
       setRevisionsLoadingItemId(null);
     }
   }
 
-  async function handleToggleRevisions(itemId: string) {
+  function handleToggleRevisions(itemId: string) {
     if (openRevisionsItemId === itemId) {
       setOpenRevisionsItemId(null);
       return;
     }
 
-    const loaded = await loadRevisionsForItem(itemId);
-    if (!loaded) return;
-
     setOpenRevisionsItemId(itemId);
+    if (revisionsByItemId[itemId] && !revisionErrorByItemId[itemId]) {
+      return;
+    }
+
+    void loadRevisionsForItem(itemId);
   }
 
   async function handleRestoreRevision(item: AdminContentItemRow, revisionId: string) {
@@ -3336,6 +3361,9 @@ export default function AdminContentManager() {
                 item.content_type === "course_lesson"
                   ? lessonMoveBoundsById.get(item.id)
                   : undefined;
+              const revisionItems = revisionsByItemId[item.id] ?? [];
+              const revisionError = revisionErrorByItemId[item.id] ?? null;
+              const isRevisionLoading = revisionsLoadingItemId === item.id;
 
               return (
                 <li
@@ -4223,21 +4251,47 @@ export default function AdminContentManager() {
                     </div>
                   </div>
                   {openRevisionsItemId === item.id ? (
-                    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                      <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                        Revision history
-                      </h4>
-                      {revisionsLoadingItemId === item.id ? (
-                        <p className="mt-2 text-xs text-slate-500">Loading revisions…</p>
+                    <div
+                      className="mt-3 rounded-lg border border-slate-200 bg-white p-3"
+                      data-testid="admin-content-revision-history-panel"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Revision history
+                        </h4>
+                      </div>
+                      {isRevisionLoading ? (
+                        <AdminManagerState tone="loading" density="compact" className="!mt-2">
+                          Loading revisions…
+                        </AdminManagerState>
                       ) : null}
-                      {revisionsLoadingItemId !== item.id &&
-                      (revisionsByItemId[item.id] ?? []).length === 0 ? (
-                        <p className="mt-2 text-xs text-slate-500">No revisions yet.</p>
+                      {!isRevisionLoading && revisionError ? (
+                        <AdminManagerState
+                          tone="error"
+                          density="compact"
+                          className="!mt-2"
+                          actionsClassName="mt-2 flex flex-wrap gap-2"
+                          actions={
+                            <button
+                              type="button"
+                              onClick={() => void loadRevisionsForItem(item.id, true)}
+                              className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+                            >
+                              Retry
+                            </button>
+                          }
+                        >
+                          {revisionError}
+                        </AdminManagerState>
                       ) : null}
-                      {revisionsLoadingItemId !== item.id &&
-                      (revisionsByItemId[item.id] ?? []).length > 0 ? (
+                      {!isRevisionLoading && !revisionError && revisionItems.length === 0 ? (
+                        <AdminManagerState tone="empty" density="compact" className="!mt-2">
+                          No revisions yet.
+                        </AdminManagerState>
+                      ) : null}
+                      {!isRevisionLoading && !revisionError && revisionItems.length > 0 ? (
                         <ul className="mt-2 space-y-2">
-                          {(revisionsByItemId[item.id] ?? []).map((revision) => (
+                          {revisionItems.map((revision) => (
                             <li
                               key={revision.id}
                               data-testid="admin-content-revision-item"
