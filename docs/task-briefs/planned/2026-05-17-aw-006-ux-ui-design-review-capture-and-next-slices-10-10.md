@@ -172,16 +172,16 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | AW-006 closeout reference guard                           | `done`    | `#792`, `docs/task-briefs/done/2026-05-21-aw-006-closeout-reference-guard-10-10.md`                                  | Added lint and post-merge preflight coverage for stale completed-slice status references in the canonical queue and design inventory without changing runtime UI or product behavior.                                                                             |
 | Admin Content Manager revision-history state parity       | `done`    | `#794`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-revision-history-state-parity-10-10.md`       | Applied the admin-local state primitive to Admin Content Manager revision-history loading, error+retry, and empty states using Email templates revision history as the reference, without changing content revision APIs, restore payloads, labels, or workflows. |
 | Admin Content Manager course workspace empty-state parity | `done`    | `#796`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for scoped course-workspace empty states without changing content APIs, module/lesson behavior, labels, ordering, Context Notes, or QR.                                                                         |
+| Admin Content Manager inline form feedback state parity   | `done`    | `#798`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md`   | Reused the admin-local `AdminManagerState` helper for inline form feedback without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.                                                           |
 
 ## Remaining PR-Sized UX/UI Slices
 
-The previous `#796/#797` AW-006 UI slice has shipped.
+The previous `#798` AW-006 UI slice has shipped and its repo-managed closeout is in progress.
 
-Active AW-006 implementation slice after the fresh queue/design/code re-audit:
+No active AW-006 implementation slice is selected after the `#798` merge.
 
-- `Admin Content Manager inline form feedback state parity`
-- Active brief: `docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md`
-- Scope: reuse the admin-local `AdminManagerState` helper for scoped inline form feedback in `AdminContentManager` without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.
+- Next selection rule: run a fresh queue/design/code re-audit before starting another bounded AW-006 UI slice.
+- Recently shipped: the Admin Content Manager inline feedback parity pass (`#798`; closeout pending in this PR).
 
 ## 10/10 Phase Plan Capture
 
@@ -202,7 +202,7 @@ Active AW-006 implementation slice after the fresh queue/design/code re-audit:
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
 - Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
 - Start with one admin-local primitive pilot before any broad shared-component rollout.
-- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; the active pass is Admin Content Manager inline form feedback state parity.
+- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; no active admin-local primitive parity pass is selected after `#798` until the next fresh re-audit.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.
@@ -399,3 +399,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-21 | closeout | refreshed after closeout reference guard #792 on clean main@601a5bc; moved the guard brief to done and left no next AW-006 UI slice selected | next: run a fresh queue/design/code re-audit before selecting another AW-006 implementation slice`
 - `2026-05-21 | closeout | PR #794 shipped the latest Admin Content Manager revision-history state work and this repo-managed closeout moves its brief to done; the queue/design inventory now leave no selected next AW-006 UI slice | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-21 | planned | refreshed after Admin Content Manager course workspace empty-state parity #796 and repo-managed closeout #797 on clean main@44df95d; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin Content Manager inline form feedback state parity as the next bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md`
+- `2026-05-22 | closeout | PR #798 shipped the selected Admin Content Manager inline feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`

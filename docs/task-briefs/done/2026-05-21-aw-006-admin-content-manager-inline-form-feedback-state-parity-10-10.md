@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-21`
-- `updated`: `2026-05-21`
+- `updated`: `2026-05-22`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `preceded_by`: `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md`
@@ -196,8 +196,33 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - Broad gates after screenshot approval:
   - PASS: `npm run verify:pre-pr` (full lane; branch-current, quality gates, lint, typecheck, unit, build, performance budgets, and E2E)
   - Performance trend decision: hold current budgets for this slice because the perf gate recommended `hold` (weekly green runs met, worst margin `14.5%` stayed below the `15.0%` tighten threshold).
-  - PR required CI checks
-  - `npm run verify:pre-merge`
+  - PASS: PR required CI checks for `#798`; Analyze, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify were green before merge.
+  - PASS: `npm run verify:pre-merge` (branch-current, public-mode verify reuse, build/perf/E2E evidence; marker `artifacts/verify-pre-merge/20260521-230515.json`, reused run `artifacts/test-runs/20260521-212735`).
+
+## Completion Record
+
+- PR: `#798`
+- Merge SHA: `main@7be94d4`
+- Rollback: `git revert 7be94d4`
+- Screenshot artifacts: `output/aw-006-admin-content-inline-feedback-2026-05-21-210823`, captured 2026-05-21 21:08, comparison type `after/reference`.
+- Final visual note: no product-rendering files changed after the approved screenshot capture.
+- `10/10 claim`: yes for the bounded Admin Content Manager inline form feedback state parity scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                       | Gaps / Notes                                                |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#798`, canonical AW-006 queue update, design inventory update, and merged scope stayed inside selected Admin Content Manager inline feedback states.       | No next AW-006 implementation slice is selected.            |
+| UX flow clarity                               | `5/5`          | Workspace lesson create errors, edit dirty warnings, edit errors, and create-form setup warnings remain visible and close to the owning form context.          | No workflow labels changed.                                 |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; after/reference screenshots compare changed inline feedback states with the mature admin manager reference.                        | Temporary screenshot route was local-only and removed.      |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved fetches, create/update payloads, dirty-state detection, course workspace behavior, Context Notes, and Context QR.      | No API, schema, payload, or ordering behavior changed.      |
+| Admin editor ergonomics                       | `5/5`          | Admins now see consistent inline feedback while creating lessons, editing content, and seeing setup warnings.                                                  | Full admin content editor redesign remains out of scope.    |
+| Accessibility (a11y)                          | `5/5`          | Tests assert appropriate status semantics for dynamic inline feedback and no noisy live region for the static setup warning.                                   | Manual screenshot review complements role assertions.       |
+| Reliability and failure handling              | `5/5`          | Error and warning states remain deterministic from existing component state; retry, loading, mutation, and recovery paths were not changed.                    | No new failure mode introduced.                             |
+| Security and authz                            | `5/5`          | Admin API routes, credentials, authz boundaries, secrets, cookies, and roles were untouched; CI/security checks passed.                                        | No additional negative-path API tests required for UI-only. |
+| Content governance                            | `5/5`          | Existing admin content copy, status model, ordering, queue, and design inventory were preserved or updated for this slice only.                                | Help/Guide remained N/A because procedures did not change.  |
+| Admin workflow and editability                | `5/5`          | Create lesson, save edit, cancel edit, setup warning, module scope, Context Notes, and Context QR actions kept existing labels, disabled states, and behavior. | No workflow actions were renamed.                           |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper; no dependency/package/config changes.                                                                                      | App-wide state primitive remains out of scope.              |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                                                           | Private-gate local rerun skipped; CI site-lock passed.      |
+| DevOps and rollback readiness                 | `5/5`          | PR `#798` merged cleanly as `main@7be94d4`; rollback is a normal git revert; no migrations/config/workflows changed.                                           | Closeout PR is docs-only.                                   |
 
 ## Local Tooling Prerequisite
 
@@ -210,3 +235,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-21 | screenshot-review | migrated scoped inline form feedback states to AdminManagerState, added focused unit coverage, updated AW-006 queue/design inventory, passed targeted Vitest, brief lint, lint, typecheck, targeted route/label/support sweep, and git diff check; captured after/reference screenshots in output/aw-006-admin-content-inline-feedback-2026-05-21-210823 and removed the temporary local visual route/script before handoff | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-21 | screenshot-approved | owner approved the screenshot handoff in chat, allowing the workstream to continue into the pre-PR gate sequence | next: run npm run verify:pre-pr`
 - `2026-05-21 | pre-pr-ready | npm run verify:pre-pr passed the full lane with branch-current, quality gates, lint, typecheck, 206 unit files / 1181 tests, build, performance budgets, and Playwright E2E (98 passed, 478 skipped); performance trend recommendation was hold, not tighten, because worst margin was 14.5% against the 15.0% tighten threshold | next: stage, commit, push, and open PR`
+- `2026-05-22 | done | PR #798 merged to main at 7be94d4 after green CI and local pre-merge gate; repo-managed post-merge preflight surfaced this docs-only closeout and moved the brief to done | next: validate and merge the closeout PR, then rerun post-merge preflight`
