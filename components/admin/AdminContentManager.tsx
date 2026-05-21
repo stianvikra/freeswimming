@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import AdminContextQrPanel from "@/components/admin/AdminContextQrPanel";
 import type { AdminRole } from "@/lib/admin/access";
@@ -2493,9 +2494,9 @@ export default function AdminContentManager() {
         ) : null}
 
         {!schemaReady && warning ? (
-          <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AdminManagerState tone="warning" testId="admin-content-schema-warning-state">
             {warning}
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {isAllContentView && schemaReady && mirror ? (
@@ -2632,7 +2633,7 @@ export default function AdminContentManager() {
               data-testid="admin-course-status-overview"
             >
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Modules
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2643,7 +2644,7 @@ export default function AdminContentManager() {
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Lessons
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">
@@ -2774,7 +2775,7 @@ export default function AdminContentManager() {
                       ) : (
                         <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                               Lesson preview
                             </p>
                             {moduleLessonCount > 0 ? (
@@ -3209,45 +3210,55 @@ export default function AdminContentManager() {
         ) : null}
 
         {loading ? (
-          <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="loading" testId="admin-content-loading-state">
             Loading content list…
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {!loading && error ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-            <p className="text-sm font-medium text-rose-700">{error}</p>
-            <button
-              type="button"
-              onClick={() => void loadItems()}
-              className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          </div>
+          <AdminManagerState
+            tone="error"
+            testId="admin-content-load-error-state"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadItems()}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
         ) : null}
 
         {!loading && !error && courseStructureIntegrityFragments.length > 0 ? (
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-sm text-amber-800">
-              Course structure integrity warning: {courseStructureIntegrityFragments.join(" · ")}.
-            </p>
-            <button
-              type="button"
-              onClick={() =>
-                void runCourseStructureAction(
-                  { action: "normalize" },
-                  {
-                    successNotice: "Course order normalized.",
-                  }
-                )
-              }
-              disabled={courseStructureBusy || moduleDeleteSubmitting}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {courseStructureBusy ? "Normalizing…" : "Normalize order"}
-            </button>
-          </div>
+          <AdminManagerState
+            tone="warning"
+            testId="admin-content-course-structure-warning-state"
+            className="flex flex-wrap items-center justify-between gap-3"
+            actionsClassName="mt-0 flex flex-wrap gap-2"
+            actions={
+              <button
+                type="button"
+                onClick={() =>
+                  void runCourseStructureAction(
+                    { action: "normalize" },
+                    {
+                      successNotice: "Course order normalized.",
+                    }
+                  )
+                }
+                disabled={courseStructureBusy || moduleDeleteSubmitting}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {courseStructureBusy ? "Normalizing…" : "Normalize order"}
+              </button>
+            }
+          >
+            Course structure integrity warning: {courseStructureIntegrityFragments.join(" · ")}.
+          </AdminManagerState>
         ) : null}
 
         {courseStructureMessage ? (
@@ -3257,21 +3268,21 @@ export default function AdminContentManager() {
         ) : null}
 
         {actionNotice ? (
-          <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <AdminManagerState tone="success" testId="admin-content-action-notice-state">
             {actionNotice}
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {isAllContentView && !loading && !error && schemaReady && items.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="empty" testId="admin-content-empty-state">
             No content items created yet. Use the form below to create your first draft.
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {isAllContentView && !loading && !error && items.length > 0 && sortedItems.length === 0 ? (
-          <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <AdminManagerState tone="no-results" testId="admin-content-no-results-state">
             No content items match current search/filter.
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {isAllContentView && !loading && !error && sortedItems.length > 0 ? (
@@ -3470,7 +3481,7 @@ export default function AdminContentManager() {
 
                             {item.content_type === "course_lesson" && editFormState.lessonBody ? (
                               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                <h4 className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                   Lesson body editor
                                 </h4>
                                 <p className="mt-1 text-xs text-slate-500">
@@ -3575,7 +3586,7 @@ export default function AdminContentManager() {
                                   </label>
 
                                   <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
-                                    <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                       Extra help actions
                                     </legend>
                                     <p className="text-xs text-slate-500">
@@ -3731,7 +3742,7 @@ export default function AdminContentManager() {
                                   </label>
 
                                   <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
-                                    <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                       Section visibility
                                     </legend>
                                     <p className="text-xs text-slate-500">
@@ -4213,7 +4224,7 @@ export default function AdminContentManager() {
                   </div>
                   {openRevisionsItemId === item.id ? (
                     <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Revision history
                       </h4>
                       {revisionsLoadingItemId === item.id ? (
@@ -4306,7 +4317,7 @@ export default function AdminContentManager() {
 
                   {pendingModuleDelete.lessonCount > 0 ? (
                     <fieldset className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                         Lesson handling strategy
                       </legend>
                       <label className="flex items-start gap-2 text-sm text-slate-700">
@@ -4587,9 +4598,15 @@ export default function AdminContentManager() {
               </label>
 
               {actionError ? (
-                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 sm:col-span-2">
+                <AdminManagerState
+                  tone="error"
+                  announcement="polite"
+                  density="compact"
+                  className="!mt-0 sm:col-span-2"
+                  testId="admin-content-action-error-state"
+                >
                   {actionError}
-                </p>
+                </AdminManagerState>
               ) : null}
 
               <div className="sm:col-span-2">
