@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-21-aw-006-admin-content-manager-top-level-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-21`
 - `updated`: `2026-05-21`
@@ -200,8 +200,33 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - No committed product-rendering file changed after the final capture.
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr`: PASS (`artifacts/test-runs/20260521-061921/verify.log`; full lane: lint, typecheck, 206 unit files / 1171 tests, build, perf budgets, Playwright 98 passed / 478 skipped).
-  - required CI
-  - `npm run verify:pre-merge`
+  - PR required CI checks: PASS on PR `#790`, including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `CodeQL`, `size-check`, Vercel, and Vercel Preview Comments.
+  - `npm run verify:pre-merge`: PASS on `0d9fbbd`; full public lane selected, 206 unit test files / 1171 tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped; private-gate regression skipped because `SITE_LOCK_ENABLED!=1`; pass marker `artifacts/verify-pre-merge/20260521-043615.json`.
+
+## Completion Record
+
+- PR: `#790`
+- Merge SHA: `main@6500692`
+- Rollback: `git revert 6500692`
+- Screenshot artifacts: `output/aw-006-admin-content-state-20260521-060822`, captured 2026-05-21 06:08, comparison type `after/reference`.
+- Final visual note: no product-rendering files changed after the approved screenshot capture.
+- `10/10 claim`: yes for the bounded Admin Content Manager top-level state parity scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                 | Gaps / Notes                                                    |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#790`, canonical AW-006 queue update, design inventory update, and merged scope stayed inside Admin Content Manager top-level state. | No broader AW-006 queue slice claimed.                          |
+| UX flow clarity                               | `5/5`          | Migrated loading, load error+retry, schema warning, course structure warning, action feedback, empty, and no-results states.             | No admin content workflow label changes.                        |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; after/reference screenshots compare Content Manager states with Admin Notes reference.                       | Temporary screenshot route was local-only and removed.          |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved fetches, mutations, filters, sort, revisions, course structure, Context Notes, and Context QR.   | No API, schema, payload, or status behavior moved.              |
+| Admin editor ergonomics                       | `5/5`          | Admin Content Manager now shows consistent loading, retry, warning, action, empty, and no-results guidance.                              | Full content editor redesign remains out of scope.              |
+| Accessibility (a11y)                          | `5/5`          | Tests assert status/error semantics and non-live static empty/no-results state behavior.                                                 | Manual screenshot review complements role assertions.           |
+| Reliability and failure handling              | `5/5`          | Retry remains wired to the same loader; load/action error states stay visible and recoverable.                                           | No new fallback or offline behavior introduced.                 |
+| Security and authz                            | `5/5`          | Admin API routes, credentials, authz boundaries, secrets, cookies, and roles were untouched; CI/security checks passed.                  | No additional negative-path API tests required for UI-only fix. |
+| Content governance                            | `5/5`          | Active brief, canonical queue, and design inventory were updated; copy/workflow labels stayed scoped.                                    | Help/Guide was N/A because procedures did not change.           |
+| Admin workflow and editability                | `5/5`          | Create, edit, status, delete, course structure, revision, Context Notes, and Context QR contracts were preserved by tests/diff review.   | No workflow actions were renamed.                               |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and Tailwind/admin classes; no dependency/package/config changes.                                     | App-wide state primitive remains out of scope.                  |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                                     | Private-gate local rerun skipped; CI site-lock passed.          |
+| DevOps and rollback readiness                 | `5/5`          | PR `#790` merged cleanly as `main@6500692`; rollback is a normal git revert; no migrations/config/workflows changed.                     | Closeout PR is docs-only.                                       |
 
 ## Local Tooling Prerequisite
 
@@ -214,3 +239,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-21 | screenshot-review | migrated scoped AdminContentManager top-level states to AdminManagerState, added focused unit coverage, updated AW-006 queue and design inventory, passed targeted tests/lint/sweep/diff-check, and captured final screenshot artifacts at output/aw-006-admin-content-state-20260521-060822 after removing the temporary capture route/script | next: wait for owner screenshot approval before running npm run verify:pre-pr`
 - `2026-05-21 | screenshot-approved | owner approved screenshot handoff for output/aw-006-admin-content-state-20260521-060822; no committed product-rendering file changed after the final capture | next: run npm run verify:pre-pr, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-21 | pre-pr-verified | npm run verify:pre-pr passed after clearing stale generated Next dev cache from the removed temporary capture route; evidence log artifacts/test-runs/20260521-061921/verify.log | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-21 | done | PR #790 merged at main@6500692 after green local pre-merge and CI checks; repo-managed closeout moved this brief to done and recorded achieved target scores | next: post-merge preflight should report no pending closeout`
