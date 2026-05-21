@@ -175,9 +175,13 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Remaining PR-Sized UX/UI Slices
 
-Admin Content Manager course workspace empty-state parity shipped through `#796`. The queue now has no selected next AW-006 UI implementation slice until the next fresh queue/design/code re-audit.
+The previous `#796/#797` AW-006 UI slice has shipped.
 
-No active slice is selected in this closeout.
+Active AW-006 implementation slice after the fresh queue/design/code re-audit:
+
+- `Admin Content Manager inline form feedback state parity`
+- Active brief: `docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md`
+- Scope: reuse the admin-local `AdminManagerState` helper for scoped inline form feedback in `AdminContentManager` without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.
 
 ## 10/10 Phase Plan Capture
 
@@ -198,7 +202,7 @@ No active slice is selected in this closeout.
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
 - Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
 - Start with one admin-local primitive pilot before any broad shared-component rollout.
-- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Status: `done` for contextual QR panel, Admin Notes Manager, contextual notes panel, Admin Content Manager top-level state parity, Admin Content Manager revision-history state parity, and Admin Content Manager course workspace empty-state parity.
+- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; the active pass is Admin Content Manager inline form feedback state parity.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.
@@ -394,3 +398,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-21 | planned | refreshed after Admin Content Manager top-level state parity #790 and repo-managed closeout #791 on clean main@0a9aa7d; enhanced local post-merge preflight proved the old guard missed stale title-based active/current/candidate references in this queue and the design inventory | next: execute docs/task-briefs/in-progress/2026-05-21-aw-006-closeout-reference-guard-10-10.md before selecting the next AW-006 UI slice`
 - `2026-05-21 | closeout | refreshed after closeout reference guard #792 on clean main@601a5bc; moved the guard brief to done and left no next AW-006 UI slice selected | next: run a fresh queue/design/code re-audit before selecting another AW-006 implementation slice`
 - `2026-05-21 | closeout | PR #794 shipped the latest Admin Content Manager revision-history state work and this repo-managed closeout moves its brief to done; the queue/design inventory now leave no selected next AW-006 UI slice | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-05-21 | planned | refreshed after Admin Content Manager course workspace empty-state parity #796 and repo-managed closeout #797 on clean main@44df95d; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin Content Manager inline form feedback state parity as the next bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md`

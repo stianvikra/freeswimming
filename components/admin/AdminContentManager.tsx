@@ -3069,9 +3069,15 @@ export default function AdminContentManager() {
                   </label>
 
                   {workspaceLessonCreateError ? (
-                    <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 sm:col-span-2">
+                    <AdminManagerState
+                      tone="error"
+                      announcement="polite"
+                      density="compact"
+                      className="!mt-0 sm:col-span-2"
+                      testId="admin-workspace-lesson-create-error-state"
+                    >
                       {workspaceLessonCreateError}
-                    </p>
+                    </AdminManagerState>
                   ) : null}
 
                   <div className="flex flex-wrap gap-2 sm:col-span-2">
@@ -4101,15 +4107,26 @@ export default function AdminContentManager() {
                           ) : null}
 
                           {isEditDirty ? (
-                            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            <AdminManagerState
+                              tone="warning"
+                              density="compact"
+                              className="!mt-3"
+                              testId="admin-content-edit-dirty-state"
+                            >
                               You have unsaved changes.
-                            </p>
+                            </AdminManagerState>
                           ) : null}
 
                           {editError ? (
-                            <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                            <AdminManagerState
+                              tone="error"
+                              announcement="polite"
+                              density="compact"
+                              className="!mt-3"
+                              testId="admin-content-edit-error-state"
+                            >
                               {editError}
-                            </p>
+                            </AdminManagerState>
                           ) : null}
 
                           <div className="mt-3 flex flex-wrap gap-2">
@@ -4503,9 +4520,13 @@ export default function AdminContentManager() {
             Create and stage content records for modules, lessons, guides, pages, and product copy.
           </p>
           {!schemaReady ? (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AdminManagerState
+              tone="warning"
+              className="!mt-3"
+              testId="admin-content-create-schema-warning-state"
+            >
               Setup is not ready yet. Apply latest admin schema migrations before creating content.
-            </p>
+            </AdminManagerState>
           ) : null}
           <form
             className="mt-5 grid gap-4 sm:grid-cols-2"
