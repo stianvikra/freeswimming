@@ -174,9 +174,11 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Remaining PR-Sized UX/UI Slices
 
-Admin Content Manager revision-history state parity shipped through `#794`. The queue now has no selected next AW-006 UI implementation slice until the next fresh queue/design/code re-audit.
+Admin Content Manager revision-history state parity shipped through `#794`. A fresh queue/design/code re-audit after repo-managed closeout `#795` selected the next bounded UI implementation slice:
 
-No active slice is selected in this closeout.
+| Slice                                                     | Status        | Brief                                                                                                               | Notes                                                                                                                                                                                             |
+| --------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin Content Manager course workspace empty-state parity | `in-progress` | `docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md` | Reuse the existing admin-local `AdminManagerState` helper for scoped course-workspace empty states without changing content APIs, module/lesson behavior, labels, ordering, Context Notes, or QR. |
 
 ## 10/10 Phase Plan Capture
 
@@ -197,7 +199,7 @@ No active slice is selected in this closeout.
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
 - Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
 - Start with one admin-local primitive pilot before any broad shared-component rollout.
-- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Status: `done` for contextual QR panel, Admin Notes Manager, contextual notes panel, Admin Content Manager top-level state parity, and Admin Content Manager revision-history state parity.
+- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Status: `done` for contextual QR panel, Admin Notes Manager, contextual notes panel, Admin Content Manager top-level state parity, and Admin Content Manager revision-history state parity; `in-progress` for Admin Content Manager course workspace empty-state parity.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.

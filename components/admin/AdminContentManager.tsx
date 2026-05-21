@@ -2810,9 +2810,14 @@ export default function AdminContentManager() {
                             ) : null}
                           </div>
                           {moduleLessons.length === 0 ? (
-                            <p className="mt-2 text-xs text-slate-500">
+                            <AdminManagerState
+                              tone="empty"
+                              density="compact"
+                              className="!mt-2"
+                              testId="admin-course-module-lesson-preview-empty-state"
+                            >
                               No lessons linked to this module yet.
-                            </p>
+                            </AdminManagerState>
                           ) : (
                             <div
                               data-testid={`admin-course-module-lesson-preview-${moduleItem.id}`}
@@ -3102,9 +3107,14 @@ export default function AdminContentManager() {
                   controls, create, and deeper lesson edits.
                 </p>
               ) : workspaceLessons.length === 0 ? (
-                <p className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                <AdminManagerState
+                  tone="empty"
+                  density="compact"
+                  className="!mt-3"
+                  testId="admin-course-workspace-empty-state"
+                >
                   No lessons in this module yet.
-                </p>
+                </AdminManagerState>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {workspaceLessons.map((lesson, index) => {

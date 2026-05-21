@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import {
@@ -99,6 +99,13 @@ function useAllContentView(scope: "all" | AdminContentItemRow["content_type"] = 
 }
 
 describe("AdminContentManager state rendering", () => {
+  beforeEach(() => {
+    Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: vi.fn(),
+    });
+  });
+
   afterEach(() => {
     cleanup();
     window.localStorage.clear();
@@ -219,6 +226,89 @@ describe("AdminContentManager state rendering", () => {
     expect(warning).toHaveAttribute("aria-live", "polite");
     expect(warning).toHaveTextContent(
       "Content catalog will appear after admin content setup is ready."
+    );
+  });
+
+  it("renders course-workspace module preview empty states through the admin state primitive", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(
+          buildContentPayload({
+            items: [
+              buildContentItem({
+                id: "module-empty",
+                content_type: "course_module",
+                slug: "course-module-empty",
+                title: "Empty module",
+                category: "Course",
+                body: { moduleId: "empty-module" },
+              }),
+            ],
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const previewEmpty = await screen.findByTestId(
+      "admin-course-module-lesson-preview-empty-state"
+    );
+    expect(previewEmpty).toHaveTextContent("No lessons linked to this module yet.");
+    expect(previewEmpty).not.toHaveAttribute("role");
+    expect(previewEmpty).not.toHaveAttribute("aria-live");
+  });
+
+  it("renders focused module empty states through the admin state primitive", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(
+          buildContentPayload({
+            items: [
+              buildContentItem({
+                id: "module-empty",
+                content_type: "course_module",
+                slug: "course-module-empty",
+                title: "Empty module",
+                category: "Course",
+                body: { moduleId: "empty-module" },
+              }),
+            ],
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open module scope" }));
+
+    const focusedEmpty = await screen.findByTestId("admin-course-workspace-empty-state");
+    expect(focusedEmpty).toHaveTextContent("No lessons in this module yet.");
+    expect(focusedEmpty).not.toHaveAttribute("role");
+    expect(focusedEmpty).not.toHaveAttribute("aria-live");
+    expect(screen.getByTestId("admin-course-workspace-current-scope")).toHaveTextContent(
+      "Empty module"
     );
   });
 
