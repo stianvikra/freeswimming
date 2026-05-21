@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-21`
 - `updated`: `2026-05-21`
@@ -12,6 +12,8 @@
 - `preceded_by`: `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-revision-history-state-parity-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-admin-content-workspace-empty-state-parity`
+- `merged_pr`: `#796`
+- `merged_commit`: `ff9eb34`
 
 ## Brief Audit Record
 
@@ -192,8 +194,33 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - Owner screenshot approval: PASS, approved in chat on `2026-05-21` before broad PR gates.
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr`: PASS, full lane; 1179 unit tests passed, build passed, perf budgets passed, Playwright E2E passed with 98 passed / 478 skipped; log `artifacts/test-runs/20260521-194135/verify.log`.
-  - PR required CI checks
-  - `npm run verify:pre-merge`
+  - PR required CI checks for `#796`: PASS; Analyze, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify were green before merge.
+  - `npm run verify:pre-merge`: PASS, full lane; branch-current, public-mode verify, build, perf budget, and Playwright E2E passed with 98 passed / 478 skipped; marker `artifacts/verify-pre-merge/20260521-181147.json`, log `artifacts/test-runs/20260521-200547/verify.log`.
+
+## Completion Record
+
+- PR: `#796`
+- Merge SHA: `main@ff9eb34`
+- Rollback: `git revert ff9eb34`
+- Screenshot artifacts: `output/aw-006-admin-content-workspace-empty-state-2026-05-21-193533`, captured 2026-05-21 19:35, comparison type `after/reference`.
+- Final visual note: no product-rendering files changed after the approved screenshot capture.
+- `10/10 claim`: yes for the bounded Admin Content Manager course-workspace empty-state parity scope; all critical target categories are scored `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                  | Gaps / Notes                                                    |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#796`, canonical AW-006 queue update, design inventory update, and merged scope stayed inside Admin Content Manager course workspace.                 | No next AW-006 implementation slice is selected.                |
+| UX flow clarity                               | `5/5`          | Module lesson-preview and focused module empty states remain visible, specific, and close to the relevant course-workspace context.                       | No workflow labels changed.                                     |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; after/reference screenshots compare course-workspace empty states with the mature admin manager reference.                    | Temporary screenshot route was local-only and removed.          |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved fetches, grouping, focus mode, create/edit/delete/reorder actions, status actions, Context Notes, and Context QR. | No API, schema, payload, or ordering behavior changed.          |
+| Admin editor ergonomics                       | `5/5`          | Admins now see consistent empty-state guidance while scanning modules and focusing a module with no lessons.                                              | Full admin content editor redesign remains out of scope.        |
+| Accessibility (a11y)                          | `5/5`          | Tests assert static empty states are not live regions and introduce no role noise.                                                                        | Manual screenshot review complements role assertions.           |
+| Reliability and failure handling              | `5/5`          | Empty states remain deterministic from existing module/lesson arrays and focus state; no retry/loading/mutation path changed.                             | No new failure mode introduced.                                 |
+| Security and authz                            | `5/5`          | Admin API routes, credentials, authz boundaries, secrets, cookies, and roles were untouched; CI/security checks passed.                                   | No additional negative-path API tests required for UI-only fix. |
+| Content governance                            | `5/5`          | Brief, queue, and design inventory were updated; copy/workflow labels stayed scoped.                                                                      | Help/Guide remained N/A because procedures did not change.      |
+| Admin workflow and editability                | `5/5`          | Module scope, add lesson, edit module/lesson, delete, preview, move, status, Context Notes, and Context QR actions were preserved.                        | No workflow actions were renamed.                               |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper; no dependency/package/config changes.                                                                                 | App-wide state primitive remains out of scope.                  |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                                                      | Private-gate local rerun skipped; CI site-lock passed.          |
+| DevOps and rollback readiness                 | `5/5`          | PR `#796` merged cleanly as `main@ff9eb34`; rollback is a normal git revert; no migrations/config/workflows changed.                                      | Closeout PR is docs-only.                                       |
 
 ## Local Tooling Prerequisite
 
@@ -205,3 +232,5 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-21 | in-progress | started from clean main@a383562 after PR #794 and repo-managed closeout PR #795; post-merge preflight was green with no pending closeout; selected Admin Content Manager course workspace empty-state parity as the next bounded AW-006 UI slice after a fresh queue/design/code re-audit | next: update queue/inventory, migrate course-workspace empty-state rendering, add focused tests, then capture screenshot handoff before broad gates`
 - `2026-05-21 | screenshot-review | migrated AdminContentManager course-workspace module-preview and focused-module empty states to AdminManagerState; added focused unit coverage and a jsdom scrollIntoView test mock for existing component behavior; updated AW-006 queue and design inventory; validation passed: targeted Vitest, lint:briefs:all, lint, typecheck, targeted route/label/support sweep, and git diff --check; captured after/reference screenshots in output/aw-006-admin-content-workspace-empty-state-2026-05-21-193533 after removing the temporary local visual route/script | next: wait for owner screenshot approval before npm run verify:pre-pr, commit, PR creation, CI, and npm run verify:pre-merge`
 - `2026-05-21 | pre-pr-verified | owner approved screenshot handoff; npm run verify:pre-pr passed full lane with unit, build, perf budget, and Playwright coverage; no committed product-rendering file changed after final screenshot capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-21 | merged | PR #796 merged to main at ff9eb34 after required CI and npm run verify:pre-merge passed; post-merge preflight requested this repo-managed docs-only brief closeout | next: validate, merge closeout PR, sync main, and rerun post-merge preflight`
+- `2026-05-21 | done | repo-managed closeout moved this brief to done, recorded achieved target scores, and cleared the AW-006 queue/inventory active-slice state after PR #796 | next: post-merge preflight should report no pending closeout`
