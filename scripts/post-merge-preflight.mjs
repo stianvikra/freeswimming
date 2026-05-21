@@ -95,7 +95,7 @@ export function buildPostMergePreflightReport(options = {}) {
 
   if (branch === baseBranch && staleCanonicalQueueReferences.length > 0) {
     warnings.push(
-      "One or more changed `done` briefs still appear as the active item in their canonical queue."
+      "One or more changed `done` briefs still appear as the active/current/candidate item in a canonical queue or design inventory."
     );
   }
 
@@ -177,10 +177,10 @@ function printSummary(report) {
   }
 
   if (report.staleCanonicalQueueReferences.length > 0) {
-    console.log("[post-merge-preflight] Required canonical queue updates:");
+    console.log("[post-merge-preflight] Required queue/inventory updates:");
     for (const staleReference of report.staleCanonicalQueueReferences) {
       console.log(
-        `- ${staleReference.canonicalQueuePath}: replace stale active reference ${staleReference.staleActivePath} for done brief ${staleReference.doneBriefPath}.`
+        `- ${staleReference.referencePath ?? staleReference.canonicalQueuePath}: replace stale active/current/candidate reference "${staleReference.matchedText ?? staleReference.staleActivePath}" for done brief ${staleReference.doneBriefPath}.`
       );
     }
   }

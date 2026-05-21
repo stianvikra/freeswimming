@@ -12,12 +12,14 @@ function buildBrief({
   status = "in-progress",
   canonicalQueuePath = "",
   completionRecord = "",
+  title = "Example State Parity",
 }: {
   status?: "planned" | "in-progress" | "done";
   canonicalQueuePath?: string;
   completionRecord?: string;
+  title?: string;
 } = {}) {
-  return `# Task Brief: Example
+  return `# Task Brief: ${title}
 
 ## Metadata
 
@@ -182,6 +184,71 @@ describe("task brief scorecard lint", () => {
     expect(result.errors.join("\n")).toContain("still lists done brief");
   });
 
+  it("fails a changed done brief when its title is still marked active without an in-progress path", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      buildBrief({
+        status: "done",
+        canonicalQueuePath: queuePath,
+        completionRecord: passingCompletionRecord,
+      }),
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [queuePath]: [
+            "## Remaining PR-Sized UX/UI Slices",
+            "",
+            "Example State Parity is the active AW-006 implementation slice after a fresh re-audit.",
+            "",
+            "| Slice | Status | Objective |",
+            "| --- | --- | --- |",
+            "| Example State Parity | `active` | Keep the queue accurate. |",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain("active/current/candidate");
+  });
+
+  it("fails a changed done brief when its design inventory still lists it as current candidate", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const inventoryPath = "docs/design/example-inventory.md";
+    const content = buildBrief({
+      status: "done",
+      canonicalQueuePath: queuePath,
+      completionRecord: passingCompletionRecord,
+    }).replace(
+      "- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-example-queue.md`",
+      [
+        "- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-example-queue.md`",
+        "- `design_inventory`: `docs/design/example-inventory.md`",
+      ].join("\n")
+    );
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      content,
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [queuePath]: "## Remaining PR-Sized UX/UI Slices\n\nNo active slice selected.",
+          [inventoryPath]: [
+            "## Current Candidate Status",
+            "",
+            "Active state-primitive implementation candidate after PR `#123/#124`:",
+            "",
+            "`Example State Parity`",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain(inventoryPath);
+  });
+
   it("allows historical queue log references when the done brief is no longer the active item", () => {
     const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
     const result = lintBriefText(
@@ -204,6 +271,35 @@ describe("task brief scorecard lint", () => {
             "",
             "1. `Next Example` (active implementation slice)",
             "   - Active brief: `docs/task-briefs/in-progress/2026-05-04-next-example.md`.",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
+  it("allows historical title references inside checkpoint logs", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      buildBrief({
+        status: "done",
+        canonicalQueuePath: queuePath,
+        completionRecord: passingCompletionRecord,
+      }),
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [queuePath]: [
+            "## Remaining PR-Sized UX/UI Slices",
+            "",
+            "No active implementation slice is selected.",
+            "",
+            "## Checkpoint Log",
+            "",
+            "- `2026-05-03 | planned | Example State Parity was the active implementation slice before it moved to done.`",
           ].join("\n"),
         },
       }
