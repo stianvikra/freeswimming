@@ -227,6 +227,13 @@ describe("AdminContentManager state rendering", () => {
     expect(warning).toHaveTextContent(
       "Content catalog will appear after admin content setup is ready."
     );
+
+    const createWarning = await screen.findByTestId("admin-content-create-schema-warning-state");
+    expect(createWarning).toHaveAttribute("role", "status");
+    expect(createWarning).toHaveAttribute("aria-live", "polite");
+    expect(createWarning).toHaveTextContent(
+      "Setup is not ready yet. Apply latest admin schema migrations before creating content."
+    );
   });
 
   it("renders course-workspace module preview empty states through the admin state primitive", async () => {
@@ -312,6 +319,60 @@ describe("AdminContentManager state rendering", () => {
     );
   });
 
+  it("renders workspace lesson create errors through polite admin state feedback", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content" && init?.method === "POST") {
+        return errorJson({
+          ok: false,
+          error: "Could not create lesson.",
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(
+          buildContentPayload({
+            items: [
+              buildContentItem({
+                id: "module-empty",
+                content_type: "course_module",
+                slug: "course-module-empty",
+                title: "Empty module",
+                category: "Course",
+                body: { moduleId: "empty-module" },
+              }),
+            ],
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const moduleRow = await screen.findByTestId("admin-course-module-status-row");
+    fireEvent.click(within(moduleRow).getByRole("button", { name: "Add lesson" }));
+
+    const workspaceCreateForm = await screen.findByTestId("admin-workspace-lesson-create-form");
+    fireEvent.change(within(workspaceCreateForm).getByLabelText("Title"), {
+      target: { value: "Broken workspace lesson" },
+    });
+    fireEvent.click(within(workspaceCreateForm).getByRole("button", { name: "Create lesson" }));
+
+    const createError = await screen.findByTestId("admin-workspace-lesson-create-error-state");
+    expect(createError).toHaveAttribute("role", "status");
+    expect(createError).toHaveAttribute("aria-live", "polite");
+    expect(createError).toHaveTextContent("Could not create lesson.");
+  });
+
   it("does not announce no-results content states", async () => {
     useAllContentView("page");
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -392,6 +453,54 @@ describe("AdminContentManager state rendering", () => {
         )
       ).toBe(true)
     );
+  });
+
+  it("renders edit dirty and save errors through polite admin state feedback", async () => {
+    useAllContentView();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/content-1" && init?.method === "PATCH") {
+        return errorJson({
+          ok: false,
+          error: "Could not save content changes.",
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [buildContentItem()] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByText("Plans");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editForm = await screen.findByTestId("admin-content-edit-form");
+    fireEvent.change(within(editForm).getByLabelText("Title"), {
+      target: { value: "Plans updated" },
+    });
+
+    const dirtyState = await screen.findByTestId("admin-content-edit-dirty-state");
+    expect(dirtyState).toHaveAttribute("role", "status");
+    expect(dirtyState).toHaveAttribute("aria-live", "polite");
+    expect(dirtyState).toHaveTextContent("You have unsaved changes.");
+
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    const editError = await screen.findByTestId("admin-content-edit-error-state");
+    expect(editError).toHaveAttribute("role", "status");
+    expect(editError).toHaveAttribute("aria-live", "polite");
+    expect(editError).toHaveTextContent("Could not save content changes.");
   });
 
   it("renders revision-history loading and empty states through the admin state primitive", async () => {
