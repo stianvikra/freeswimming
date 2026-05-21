@@ -335,23 +335,11 @@ Do not include:
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
-## Current Implementation Slice
+## Current Candidate Status
 
-Selected AW-006 implementation slice after PR `#794` and repo-managed closeout `#795`:
+No AW-006 state-primitive implementation slice is selected after PR `#796`.
 
-`Admin Content Manager course workspace empty-state parity`
-
-Active implementation brief:
-
-`docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md`
-
-Scoped target:
-
-- Reuse the existing admin-local `AdminManagerState` helper on two low-risk `AdminContentManager` course-workspace empty states:
-  - module lesson-preview empty state,
-  - focused module empty lesson workspace state.
-- Preserve copy, module/lesson grouping, focus behavior, create/edit/delete/reorder actions, preview links, status actions, Context Notes, Context QR, Help/Guide, and support procedures.
-- Add focused component/unit coverage and use `after/reference` screenshot handoff because rendered admin UI changes.
+Next selection must come from a fresh queue/design/code re-audit. This inventory intentionally has no active implementation brief or candidate path.
 
 Do not include:
 
