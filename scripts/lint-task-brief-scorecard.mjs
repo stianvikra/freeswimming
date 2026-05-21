@@ -287,60 +287,181 @@ function parseCloseoutClaim(content) {
   return null;
 }
 
-function parseCanonicalQueuePath(content) {
-  const match = content.match(/^\s*-\s*`?canonical_queue`?\s*:\s*`([^`]+)`\s*$/im);
+function parseMetadataPath(content, key) {
+  const match = content.match(
+    new RegExp(`^\\s*-\\s*\`?${escapeRegExp(key)}\`?\\s*:\\s*\`([^\`]+)\`\\s*$`, "im")
+  );
   return normalizePath(match?.[1] ?? "");
 }
 
-function readCanonicalQueueText(queuePath, options = {}) {
-  const textByPath = options.canonicalQueueTextByPath;
+function parseCanonicalQueuePath(content) {
+  return parseMetadataPath(content, "canonical_queue");
+}
 
-  if (textByPath instanceof Map && textByPath.has(queuePath)) {
-    return String(textByPath.get(queuePath) ?? "");
+function parseDesignInventoryPath(content) {
+  return parseMetadataPath(content, "design_inventory");
+}
+
+function readReferenceText(referencePath, options = {}) {
+  const textByPath =
+    options.referenceTextByPath ??
+    options.canonicalQueueTextByPath ??
+    options.designInventoryTextByPath;
+
+  if (textByPath instanceof Map && textByPath.has(referencePath)) {
+    return String(textByPath.get(referencePath) ?? "");
   }
 
   if (
     textByPath &&
     typeof textByPath === "object" &&
-    Object.prototype.hasOwnProperty.call(textByPath, queuePath)
+    Object.prototype.hasOwnProperty.call(textByPath, referencePath)
   ) {
-    return String(textByPath[queuePath] ?? "");
+    return String(textByPath[referencePath] ?? "");
   }
 
-  if (!existsSync(queuePath)) return "";
-  return readFileSync(queuePath, "utf8");
+  if (!existsSync(referencePath)) return "";
+  return readFileSync(referencePath, "utf8");
+}
+
+function normalizeReferenceText(input) {
+  return input
+    .toLowerCase()
+    .replace(/[`*_]/g, "")
+    .replace(/[-_/]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseBriefTitleCandidates(fileName, content) {
+  const candidates = [];
+  const heading = content.match(/^#\s*(?:Task Brief:\s*)?(.+)$/im)?.[1] ?? "";
+  const fromHeading = heading.replace(/\s*\(10\/10\)\s*$/i, "").trim();
+  if (fromHeading) {
+    candidates.push(fromHeading);
+    candidates.push(fromHeading.replace(/^AW-\d+\s+/i, "").trim());
+  }
+
+  const fromFileName = fileName
+    .replace(/\.md$/i, "")
+    .replace(/^\d{4}-\d{2}-\d{2}-/, "")
+    .replace(/^aw-\d+-/i, "")
+    .replace(/-10-10$/i, "")
+    .replace(/-/g, " ")
+    .trim();
+  if (fromFileName) candidates.push(fromFileName);
+
+  return Array.from(new Set(candidates.map(normalizeReferenceText))).filter(
+    (candidate) => candidate.length >= 12
+  );
+}
+
+function isActiveLifecycleText(line) {
+  const normalized = normalizeReferenceText(line);
+  if (/\b(no|none|not)\s+(active|current|candidate)\b/i.test(normalized)) return false;
+  return /\b(active|current|candidate)\b/i.test(normalized);
+}
+
+function lineMentionsDoneBrief(line, titleCandidates) {
+  const normalized = normalizeReferenceText(line);
+  return titleCandidates.some((candidate) => normalized.includes(candidate));
+}
+
+function isActiveReferenceBlockText(text) {
+  return text.split(/\r?\n/).some((line) => {
+    if (!isActiveLifecycleText(line)) return false;
+    return /^\s*(?:[-*]\s*)?(?:active|current)\b.*\b(?:brief|candidate|slice|implementation)\b.*:/i.test(
+      line.trim()
+    );
+  });
+}
+
+function isActiveLifecycleTableRow(line) {
+  if (!line.trim().startsWith("|")) return false;
+  return toCells(line).some((cell) => {
+    const normalized = normalizeReferenceText(cell);
+    return normalized === "active" || normalized === "current" || normalized === "candidate";
+  });
+}
+
+function withoutCheckpointLogSections(text) {
+  const lines = text.split(/\r?\n/);
+  const kept = [];
+  let inCheckpointLog = false;
+
+  for (const line of lines) {
+    if (/^##\s+Checkpoint Log\s*$/i.test(line.trim())) {
+      inCheckpointLog = true;
+      continue;
+    }
+
+    if (inCheckpointLog && /^##\s+\S/.test(line.trim())) {
+      inCheckpointLog = false;
+    }
+
+    if (!inCheckpointLog) kept.push(line);
+  }
+
+  return kept;
+}
+
+function findStaleReferenceMatch(referenceText, staleActivePath, titleCandidates) {
+  const lines = withoutCheckpointLogSections(referenceText);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const mentionsPath = line.includes(staleActivePath);
+    const mentionsTitle = lineMentionsDoneBrief(line, titleCandidates);
+    if (!mentionsPath && !mentionsTitle) continue;
+
+    if (line.trim().startsWith("|")) {
+      if (isActiveLifecycleTableRow(line)) return line.trim();
+      continue;
+    }
+
+    if (isActiveLifecycleText(line)) return line.trim();
+
+    const nearbyText = lines
+      .slice(Math.max(0, index - 2), Math.min(lines.length, index + 3))
+      .join("\n");
+    if (!isActiveReferenceBlockText(nearbyText)) continue;
+
+    return line.trim() || nearbyText.trim();
+  }
+
+  return "";
 }
 
 export function findStaleCanonicalQueueActiveReferences(filePath, content, options = {}) {
   const doneMatch = normalizePath(filePath).match(DONE_BRIEF_PATTERN);
   if (!doneMatch) return [];
 
-  const queuePath = parseCanonicalQueuePath(content);
-  if (!queuePath) return [];
-
   const fileName = doneMatch[1];
   const staleActivePath = `docs/task-briefs/in-progress/${fileName}`;
-  const queueText = readCanonicalQueueText(queuePath, options);
-  if (!queueText) return [];
-
-  const activeBriefPattern = new RegExp(
-    `^\\s*-\\s*Active brief:\\s*\`?${escapeRegExp(staleActivePath)}\`?\\.?\\s*$`,
-    "m"
+  const titleCandidates = parseBriefTitleCandidates(fileName, content);
+  const referencePaths = Array.from(
+    new Set([parseCanonicalQueuePath(content), parseDesignInventoryPath(content)].filter(Boolean))
   );
-  const activeTableRowPattern = new RegExp(
-    `^\\s*\\|(?=.*${escapeRegExp(staleActivePath)})(?=.*\\b(?:current|active)\\b).*\\|\\s*$`,
-    "im"
-  );
+  const staleReferences = [];
 
-  if (!activeBriefPattern.test(queueText) && !activeTableRowPattern.test(queueText)) return [];
+  for (const referencePath of referencePaths) {
+    const referenceText = readReferenceText(referencePath, options);
+    if (!referenceText) continue;
 
-  return [
-    {
+    const matchedText = findStaleReferenceMatch(referenceText, staleActivePath, titleCandidates);
+    if (!matchedText) continue;
+
+    staleReferences.push({
       doneBriefPath: normalizePath(filePath),
-      canonicalQueuePath: queuePath,
+      canonicalQueuePath: referencePath,
+      referencePath,
       staleActivePath,
-    },
-  ];
+      matchedText,
+    });
+  }
+
+  return staleReferences;
 }
 
 function validateDoneBriefCloseout(content, targetCategories) {
@@ -533,7 +654,7 @@ export function lintBriefText(filePath, content, canonicalCategories, options = 
 
   for (const staleReference of findStaleCanonicalQueueActiveReferences(filePath, content, options)) {
     errors.push(
-      `Canonical queue "${staleReference.canonicalQueuePath}" still lists done brief "${staleReference.doneBriefPath}" as active via "${staleReference.staleActivePath}". Update the queue in the same closeout PR before starting the next slice.`
+      `Reference doc "${staleReference.referencePath ?? staleReference.canonicalQueuePath}" still lists done brief "${staleReference.doneBriefPath}" as active/current/candidate via "${staleReference.matchedText ?? staleReference.staleActivePath}". Update the queue/inventory in the same closeout PR before starting the next slice.`
     );
   }
 

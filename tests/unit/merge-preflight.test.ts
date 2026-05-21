@@ -134,6 +134,6 @@ describe("post-merge preflight", () => {
     });
 
     expect(report.staleCanonicalQueueReferences).toHaveLength(1);
-    expect(report.warnings.join("\n")).toContain("still appear as the active item");
+    expect(report.warnings.join("\n")).toContain("active/current/candidate item");
   });
 });
