@@ -337,7 +337,37 @@ Do not include:
 
 ## Current Candidate Status
 
-No state-primitive implementation is selected after PR `#792`. Run a fresh canonical queue/design/code re-audit before selecting the next AW-006 UI slice.
+Current AW-006 state-primitive implementation slice after PR `#792/#793`:
+
+`Admin Content Manager revision-history state parity`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-revision-history-state-parity-10-10.md`
+
+Scope direction:
+
+- Reuse the existing admin-local `AdminManagerState` helper on the revision-history states in:
+  - `AdminContentManager`
+- Use `AdminEmailTemplatesManager` revision history as the mature reference surface.
+- Preserve content revision APIs, restore payloads, disabled restore rules, copy, preview, status, edit, delete, Context Notes, Context QR, Help/Guide, and support procedures.
+- Add focused component/unit coverage around revision-history loading, error+retry, empty state, and restore-action preservation.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
+
+Do not include:
+
+- content API changes,
+- content copy or workflow label changes,
+- revision restore behavior changes,
+- create/update/delete/status/course-structure behavior changes,
+- Context Notes or Context QR behavior changes,
+- admin content editor redesign,
+- admin notes upload/recovery behavior,
+- broad app-wide Notice/EmptyState primitives,
+- guide offline/sync states,
+- dryland/micro session state flows,
+- public visual redesign,
+- Supabase, Stripe, auth, analytics, or API behavior.
 
 ## Reuse Rules For Later Implementation
 
