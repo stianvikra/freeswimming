@@ -337,22 +337,9 @@ Do not include:
 
 ## Current Candidate Status
 
-Current AW-006 state-primitive implementation slice after PR `#792/#793`:
+No AW-006 state-primitive implementation slice is selected after PR `#794`.
 
-`Admin Content Manager revision-history state parity`
-
-Active implementation brief:
-
-`docs/task-briefs/in-progress/2026-05-21-aw-006-admin-content-manager-revision-history-state-parity-10-10.md`
-
-Scope direction:
-
-- Reuse the existing admin-local `AdminManagerState` helper on the revision-history states in:
-  - `AdminContentManager`
-- Use `AdminEmailTemplatesManager` revision history as the mature reference surface.
-- Preserve content revision APIs, restore payloads, disabled restore rules, copy, preview, status, edit, delete, Context Notes, Context QR, Help/Guide, and support procedures.
-- Add focused component/unit coverage around revision-history loading, error+retry, empty state, and restore-action preservation.
-- Use `after/reference` screenshot handoff because rendered admin UI changes.
+Next selection must come from a fresh queue/design/code re-audit. This inventory intentionally has no active implementation brief or candidate path.
 
 Do not include:
 
