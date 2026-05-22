@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-22-aw-006-commerce-action-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-22`
 - `updated`: `2026-05-22`
@@ -37,7 +37,6 @@ Critical target categories for a `10/10` claim:
 
 - `UX flow clarity`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Commerce and revenue ops`
@@ -192,11 +191,38 @@ Required as a targeted commerce surface sweep because this slice changes visible
 - Broad gates after screenshot approval:
   - owner approved screenshot handoff on 2026-05-22.
   - `npm run verify:pre-pr`: passed on 2026-05-22; full lane, including lint, typecheck, unit, build, performance budgets, and E2E; log `artifacts/test-runs/20260522-214744/verify.log`.
-  - required PR CI checks
-  - `npm run verify:pre-merge`
+  - final `npm run verify:pre-pr`: passed on 2026-05-22 for commit `bbe7a6a`; full lane; log `artifacts/test-runs/20260522-220155/verify.log`.
+  - required PR CI checks: passed on PR `#810`.
+  - `npm run verify:pre-merge`: passed on 2026-05-22; marker `artifacts/verify-pre-merge/20260522-202120.json`.
 
 ## Checkpoint Log
 
 - `2026-05-22 | in-progress | created active AW-006 commerce action feedback semantics brief on branch aw-006-commerce-action-feedback-semantics from clean main@016b2e5; scope limited to existing checkout start, billing portal, and download access resend feedback semantics | next: implement bounded component/test changes and capture screenshot handoff before broad gates`
 - `2026-05-22 | in-progress | implemented commerce-local feedback semantics, updated focused tests, passed targeted validation, and captured after/reference screenshot artifacts in output/aw-006-commerce-feedback-2026-05-22-213908 | next: wait for owner screenshot approval before npm run verify:pre-pr and PR handoff`
 - `2026-05-22 | in-progress | owner approved screenshot handoff and npm run verify:pre-pr passed on the full lane with log artifacts/test-runs/20260522-214744/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-22 | done | PR #810 merged at squash commit 493c8fc after final local verify, required CI, and pre-merge gates passed | next: complete repo-managed docs-only closeout and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-05-22`
+- `merged_pr`: `#810`
+- `squash_commit`: `493c8fc`
+- `result`: Closed AW-006 Commerce Action Feedback Semantics by giving checkout start, billing portal, and access-link resend actions consistent pending/success/error feedback semantics while preserving Stripe, API payloads, entitlements, email delivery, analytics taxonomy, finance behavior, and route design.
+- `validation`: `npm run lint:briefs:all`, targeted component tests, `npm run typecheck`, `git diff --check`, screenshot handoff approved on 2026-05-22, final `npm run verify:pre-pr` at `artifacts/test-runs/20260522-220155/verify.log`, PR `#810` required CI, and `npm run verify:pre-merge` marker `artifacts/verify-pre-merge/20260522-202120.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                          | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#810`, component diff, screenshot handoff, queue closeout                                                     | None         |
+| UX flow clarity                               | `5/5`          | Pending/success/error feedback tests and screenshot handoff                                                       | None         |
+| Visual design quality                         | `5/5`          | Existing commerce/member styling, screenshot approval, no post-capture rendering changes beyond formatting        | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused tests preserve request bodies, redirect calls, analytics payload, resend normalization, and fallback copy | None         |
+| Accessibility (a11y)                          | `5/5`          | Unit assertions for `role="status"`, `aria-live`, `aria-describedby`, and validation feedback                     | None         |
+| Reliability and failure handling              | `5/5`          | Focused pending/error/success tests and broad verify lanes                                                        | None         |
+| Security and authz                            | `5/5`          | No auth/API/Stripe route changes; PR CI security checks passed                                                    | None         |
+| Privacy and compliance                        | `5/5`          | Resend success remains non-enumerating and no customer/session/provider details are exposed                       | None         |
+| Analytics and KPI observability               | `5/5`          | Checkout analytics event name and payload preserved in tests                                                      | None         |
+| Commerce and revenue ops                      | `5/5`          | Checkout, portal, resend payloads and Stripe handoff behavior unchanged                                           | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Bounded React/Tailwind helper, no dependency/package/config changes                                               | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, final `verify:pre-pr`, PR CI, and `verify:pre-merge` passed                                       | None         |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit, no migrations/config/workflow changes, normal revert path                                   | None         |
