@@ -106,7 +106,31 @@ describe("AdminNoteScreenshotCaptureButton", () => {
 
     await screen.findByTestId("admin-note-screenshot-capture-dialog");
     await screen.findByText(/Screenshot permission was denied/i);
+    const recoveryStatus = screen.getByRole("status");
+    expect(recoveryStatus).toHaveAttribute("aria-live", "polite");
+    expect(recoveryStatus).toHaveTextContent("Capture did not start");
+    expect(recoveryStatus).toHaveClass("border-amber-200", "bg-amber-50", "text-amber-800");
     expect(screen.getByRole("button", { name: "Retry capture" })).toBeInTheDocument();
+  });
+
+  it("shows unsupported capture feedback with the admin state primitive", async () => {
+    setCaptureOverride({
+      isSupported: () => false,
+      capture: vi.fn(),
+    });
+
+    render(<AdminNoteScreenshotCaptureButton onCaptureReady={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+
+    await screen.findByTestId("admin-note-screenshot-capture-dialog");
+
+    const recoveryStatus = screen.getByRole("status");
+    expect(recoveryStatus).toHaveAttribute("aria-live", "polite");
+    expect(recoveryStatus).toHaveTextContent("Capture is not available here");
+    expect(recoveryStatus).toHaveTextContent(/does not support in-app screenshot capture/i);
+    expect(screen.queryByRole("button", { name: "Retry capture" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use image upload instead" })).toBeInTheDocument();
   });
 
   it("keeps the preview open when save fails", async () => {
@@ -128,6 +152,10 @@ describe("AdminNoteScreenshotCaptureButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
 
     await screen.findByText("Could not upload screenshot.");
+    const saveErrorStatus = screen.getByRole("status");
+    expect(saveErrorStatus).toHaveAttribute("aria-live", "polite");
+    expect(saveErrorStatus).toHaveClass("border-rose-200", "bg-rose-50", "text-rose-700");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByTestId("admin-note-screenshot-capture-dialog")).toBeInTheDocument();
   });
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Modal from "@/components/Modal";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import { getAdminScreenshotCaptureDriver } from "@/lib/admin/screenshot-capture-client";
 import {
   buildAdminScreenshotSelectionFromDrag,
@@ -243,7 +244,7 @@ export default function AdminNoteScreenshotCaptureButton({
         >
           <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 Screenshot capture
               </p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">{dialogTitle}</h2>
@@ -277,40 +278,47 @@ export default function AdminNoteScreenshotCaptureButton({
             phase === "cancelled" ||
             phase === "unsupported" ||
             phase === "error" ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                <p className="font-semibold">
-                  {phase === "unsupported"
+              <AdminManagerState
+                tone="warning"
+                title={
+                  phase === "unsupported"
                     ? "Capture is not available here"
-                    : "Capture did not start"}
-                </p>
-                <p className="mt-2">{message}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {phase !== "unsupported" ? (
+                    : "Capture did not start"
+                }
+                density="spacious"
+                className="!mt-0"
+                actions={
+                  <>
+                    {phase !== "unsupported" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void beginCapture();
+                        }}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+                      >
+                        Retry capture
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      onClick={() => {
-                        void beginCapture();
-                      }}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+                      onClick={closeDialog}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     >
-                      Retry capture
+                      Use image upload instead
                     </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={closeDialog}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Use image upload instead
-                  </button>
-                </div>
-              </div>
+                  </>
+                }
+                actionsClassName="mt-4 flex flex-wrap gap-2"
+              >
+                {message}
+              </AdminManagerState>
             ) : null}
 
             {(phase === "preview" || phase === "saving") && frame && previewUrl && selection ? (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                     Preview
                   </p>
                   <p className="mt-1 text-sm text-slate-700">
@@ -319,9 +327,14 @@ export default function AdminNoteScreenshotCaptureButton({
                 </div>
 
                 {message ? (
-                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                  <AdminManagerState
+                    tone="error"
+                    announcement="polite"
+                    density="compact"
+                    className="!mt-0"
+                  >
                     {message}
-                  </p>
+                  </AdminManagerState>
                 ) : null}
 
                 <div
@@ -338,7 +351,7 @@ export default function AdminNoteScreenshotCaptureButton({
                   <img
                     src={previewUrl}
                     alt="Screenshot preview"
-                    className="absolute inset-0 h-full w-full select-none object-cover"
+                    className="absolute inset-0 h-full w-full object-cover select-none"
                     draggable={false}
                     data-testid="admin-note-screenshot-preview-image"
                   />
