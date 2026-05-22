@@ -182,13 +182,15 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Remaining PR-Sized UX/UI Slices
 
-No bounded AW-006 UI implementation slice is selected after the Admin Note Screenshot Capture feedback state parity merge.
+Guide PDF Download Feedback Clarity is the active AW-006 implementation slice after a fresh queue/design/code re-audit on clean `main@73ba45a`.
 
-Before starting the next AW-006 UI slice:
+Active brief:
 
-- rerun post-merge preflight after this closeout merge,
-- complete the mandatory chat-handoff assessment,
-- start the next chat or slice with a fresh queue/design/code re-audit.
+`docs/task-briefs/in-progress/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`
+
+| Slice                               | Status   | Objective                                                                                                                    | Likely files                                                                                                                                                                        | Screenshot gate |
+| ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Guide PDF Download Feedback Clarity | `active` | Make shared guide PDF download pending/error feedback clearer and accessible without changing PDF generation or entitlement. | `components/guides/GuidePdfDownloadButton.tsx`, `tests/unit/guide-pdf-download-button.test.tsx`, `docs/design/notice-empty-state-pattern-inventory.md`, this canonical AW-006 queue | required        |
 
 Protected areas:
 
@@ -202,6 +204,9 @@ Protected areas:
 - admin notes upload/recovery behavior,
 - broad app-wide Notice/EmptyState primitives,
 - guide offline/sync states,
+- guide PDF API routes,
+- guide PDF generation/assets,
+- guide entitlement behavior,
 - dryland/micro session state flows,
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, or API behavior.

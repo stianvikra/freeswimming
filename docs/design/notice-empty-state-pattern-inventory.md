@@ -32,7 +32,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 | Guide progress trackers             | `components/guides/Guide0To1000Tracker.tsx`, `components/guides/PoolsideGuideTracker.tsx`                                                                                                                                                | loading skeletons, offline/sync error, retry sync, saved status                                                                | The two guide trackers are sibling surfaces and share a domain-specific sync/offline model, and PR `#776/#777` moved them to one guide-local sync-status treatment.                                                                               | Completed cleanup; keep as a reference for domain-local sync/offline status, not as an app-wide notice primitive.                 |
 | Checkout success and claim recovery | `app/checkout/success/page.tsx`, `app/claim/page.tsx`, `components/commerce/DownloadResendForm.tsx`                                                                                                                                      | payment received, sign-in/claim next step, resend access link, privacy-safe recovery                                           | Post-purchase recovery is a conversion-critical route-owned flow with privacy-safe generic responses and entitlement checks outside the page UI.                                                                                                  | Completed cleanup; keep as a reference for route-owned recovery clarity, not as an app-wide notice primitive.                     |
 | Dryland and micro sessions          | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`                                                                                                                         | schema warning, load error, route refresh, action error/success, empty sessions                                                | Complex stateful training flows with many local/server boundaries.                                                                                                                                                                                | Defer until a route-owned dryland cleanup slice needs these states.                                                               |
-| Poolside PDF/download               | `components/guides/GuidePdfDownloadButton.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`                                                                                                                           | download pending, error, save/export status                                                                                    | Export states are artifact-specific and have image/PDF validation risk.                                                                                                                                                                           | Defer; do not pull into generic notice work.                                                                                      |
+| Poolside PDF/download               | `components/guides/GuidePdfDownloadButton.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`                                                                                                                           | download pending, error, save/export status                                                                                    | Export states are artifact-specific and have image/PDF validation risk. `GuidePdfDownloadButton` is now selected as a bounded shared-guide feedback slice because it changes UI feedback only, not generated PDF artifacts.                       | Active Guide PDF feedback slice; keep Poolside preview image/PDF export states deferred.                                          |
 
 ## Completed Primitive Pilot
 
@@ -418,6 +418,37 @@ Do not include:
 - content APIs,
 - quick-capture redesign,
 - public visual redesign,
+- Supabase, Stripe, auth, analytics, or API behavior.
+
+## Active Guide PDF Download Feedback Clarity Slice
+
+Active AW-006 implementation slice:
+
+`Guide PDF Download Feedback Clarity`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`
+
+Scope direction:
+
+- Improve the existing `GuidePdfDownloadButton` pending and error feedback only.
+- Preserve guide PDF API routes, entitlement behavior, fetch credentials, `cache: "no-store"`, analytics event payload, content-disposition filename handling, and fallback filename behavior.
+- Add focused component coverage around success, pending live-region semantics, API error feedback, and retry/error reset.
+- Use screenshot handoff because rendered guide/member UI changes.
+
+Do not include:
+
+- guide PDF API route changes,
+- PDF generation,
+- PDF asset loading,
+- print/export layout changes,
+- entitlement/auth changes,
+- analytics taxonomy changes,
+- Poolside preview image export states,
+- guide tracker sync/offline states,
+- admin state primitive work,
+- broad app-wide Notice/EmptyState primitives,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
 ## Reuse Rules For Later Implementation
