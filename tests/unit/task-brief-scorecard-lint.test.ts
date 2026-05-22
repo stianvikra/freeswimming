@@ -89,6 +89,21 @@ describe("task brief scorecard lint", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("still hard-fails all-brief lint for malformed scorecard rows when closeout enforcement is disabled", () => {
+    const result = lint(
+      buildBrief({
+        status: "done",
+        completionRecord: passingCompletionRecord,
+      }).replace(
+        "| Testing and QA automation | `supporting` | supporting coverage only | targeted test review | `4/5` |",
+        "| Testing and QA automation | `maybe` | supporting coverage only | targeted test review | `4/5` |"
+      ),
+      false
+    );
+
+    expect(result.errors.join("\n")).toContain("invalid mapping");
+  });
+
   it("fails a changed done brief missing closeout score evidence", () => {
     const result = lint(buildBrief({ status: "done" }));
 

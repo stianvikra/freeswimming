@@ -2,9 +2,13 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { findStaleCanonicalQueueActiveReferences } from "./lint-task-brief-scorecard.mjs";
+import {
+  findStaleCanonicalQueueActiveReferences,
+  parseScorecardTargetCategories,
+} from "./lint-task-brief-scorecard.mjs";
 
 const IN_PROGRESS_BRIEF_PATTERN = /^docs\/task-briefs\/in-progress\/.+\.md$/;
 const DONE_BRIEF_PATTERN = /^docs\/task-briefs\/done\/.+\.md$/;
@@ -44,13 +48,98 @@ function extractChangedDoneBriefs(changedFiles) {
   return changedFiles.filter((filePath) => DONE_BRIEF_PATTERN.test(filePath));
 }
 
-function detectStaleCanonicalQueueReferences(changedFiles) {
+function toDoneBriefPath(filePath) {
+  return `docs/task-briefs/done/${basename(filePath)}`;
+}
+
+function readBriefContent(filePath, options = {}) {
+  const contentByPath = options.contentByPath ?? options.briefContentByPath;
+
+  if (contentByPath instanceof Map && contentByPath.has(filePath)) {
+    return String(contentByPath.get(filePath) ?? "");
+  }
+
+  if (
+    contentByPath &&
+    typeof contentByPath === "object" &&
+    Object.prototype.hasOwnProperty.call(contentByPath, filePath)
+  ) {
+    return String(contentByPath[filePath] ?? "");
+  }
+
+  if (!existsSync(filePath)) return "";
+  return readFileSync(filePath, "utf8");
+}
+
+function extractBriefTitle(content, filePath) {
+  const fromHeading = content.match(/^#\s*(?:Task Brief:\s*)?(.+)$/im)?.[1]?.trim();
+  if (fromHeading) return fromHeading.replace(/\s*\(10\/10\)\s*$/i, "").trim();
+
+  return basename(filePath)
+    .replace(/\.md$/i, "")
+    .replace(/^\d{4}-\d{2}-\d{2}-/, "")
+    .replace(/-10-10$/i, "")
+    .replace(/-/g, " ")
+    .trim();
+}
+
+function buildCompletionRecordStarter(filePath, options = {}) {
+  const content = readBriefContent(filePath, options);
+  const targetCategories = parseScorecardTargetCategories(content);
+  const completedDate =
+    String(options.completedDate ?? "").trim() || new Date().toISOString().slice(0, 10);
+  const title = extractBriefTitle(content, filePath);
+  const rows =
+    targetCategories.length > 0
+      ? targetCategories.map(
+          (category) =>
+            `| ${category} | \`5/5\` | <local gate / CI / PR evidence> | <none or explicit gap> |`
+        )
+      : ["| <target category> | `<0-5>/5` | <evidence> | <none or explicit gap> |"];
+
+  return {
+    filePath,
+    doneBriefPath: toDoneBriefPath(filePath),
+    title,
+    content: [
+      "## Completion Record",
+      "",
+      `- \`completed\`: \`${completedDate}\``,
+      "- `merged_pr`: `<PR number>`",
+      "- `squash_commit`: `<merge commit>`",
+      `- \`result\`: Closed ${title || "the scoped workstream"}; replace this with a plain-language result.`,
+      "- `validation`: `<local gates, CI, and pre-merge evidence>`",
+      "- `10/10 claim`: yes/no - `<state whether all critical target categories reached 5/5>`",
+      "",
+      "| Category | Achieved Score | Evidence | Gaps / Notes |",
+      "| --- | --- | --- | --- |",
+      ...rows,
+    ].join("\n"),
+  };
+}
+
+function detectStaleCanonicalQueueReferences(changedFiles, options = {}) {
   const staleReferences = [];
 
   for (const filePath of extractChangedDoneBriefs(changedFiles)) {
-    if (!existsSync(filePath)) continue;
-    const content = readFileSync(filePath, "utf8");
-    staleReferences.push(...findStaleCanonicalQueueActiveReferences(filePath, content));
+    const content = readBriefContent(filePath, options);
+    if (!content) continue;
+    staleReferences.push(...findStaleCanonicalQueueActiveReferences(filePath, content, options));
+  }
+
+  return staleReferences;
+}
+
+function detectPendingCloseoutReferenceFallout(pendingCloseoutBriefs, options = {}) {
+  const staleReferences = [];
+
+  for (const filePath of pendingCloseoutBriefs) {
+    const content = readBriefContent(filePath, options);
+    if (!content) continue;
+
+    staleReferences.push(
+      ...findStaleCanonicalQueueActiveReferences(toDoneBriefPath(filePath), content, options)
+    );
   }
 
   return staleReferences;
@@ -65,9 +154,20 @@ export function buildPostMergePreflightReport(options = {}) {
   const changedInProgressBriefs = extractChangedInProgressBriefs(changedFiles);
   const pendingCloseoutBriefs = changedInProgressBriefs.filter((filePath) => existsSync(filePath));
   const staleCanonicalQueueReferences =
-    options.staleCanonicalQueueReferences ?? detectStaleCanonicalQueueReferences(changedFiles);
+    options.staleCanonicalQueueReferences ?? detectStaleCanonicalQueueReferences(changedFiles, options);
+  const pendingCloseoutReferenceFallout =
+    options.pendingCloseoutReferenceFallout ??
+    detectPendingCloseoutReferenceFallout(pendingCloseoutBriefs, options);
+  const queueInventoryFallout = [
+    ...staleCanonicalQueueReferences,
+    ...pendingCloseoutReferenceFallout,
+  ];
+  const completionRecordStarters =
+    options.completionRecordStarters ??
+    pendingCloseoutBriefs.map((filePath) => buildCompletionRecordStarter(filePath, options));
   const warnings = [];
   const actions = [];
+  const closeoutGateChecklist = [];
 
   if (branch !== baseBranch) {
     warnings.push(
@@ -82,6 +182,15 @@ export function buildPostMergePreflightReport(options = {}) {
     for (const filePath of pendingCloseoutBriefs) {
       actions.push(`npm run task-brief:move -- ${filePath.split("/").pop()} done`);
     }
+    closeoutGateChecklist.push("Move each pending in-progress brief to `done`.");
+    closeoutGateChecklist.push("Paste and complete the generated `## Completion Record` starter.");
+    if (queueInventoryFallout.length > 0) {
+      closeoutGateChecklist.push("Update every listed queue/inventory closeout fallout item.");
+    }
+    closeoutGateChecklist.push("Run `npm run lint:briefs:all` as the first hard closeout gate.");
+    closeoutGateChecklist.push("Only then continue to `npm run verify:pre-pr`.");
+    actions.push("npm run lint:briefs:all");
+    actions.push("npm run verify:pre-pr");
   }
 
   if (branch === baseBranch && mergedBranch) {
@@ -93,9 +202,9 @@ export function buildPostMergePreflightReport(options = {}) {
     warnings.push("No pending `in-progress` brief closeout was detected in the inspected commit.");
   }
 
-  if (branch === baseBranch && staleCanonicalQueueReferences.length > 0) {
+  if (branch === baseBranch && queueInventoryFallout.length > 0) {
     warnings.push(
-      "One or more changed `done` briefs still appear as the active/current/candidate item in a canonical queue or design inventory."
+      "One or more closeout briefs still appear as the active/current/candidate item in a canonical queue or design inventory."
     );
   }
 
@@ -107,6 +216,10 @@ export function buildPostMergePreflightReport(options = {}) {
     changedInProgressBriefs,
     pendingCloseoutBriefs,
     staleCanonicalQueueReferences,
+    pendingCloseoutReferenceFallout,
+    queueInventoryFallout,
+    completionRecordStarters,
+    closeoutGateChecklist,
     warnings,
     actions,
   };
@@ -176,12 +289,27 @@ function printSummary(report) {
     }
   }
 
-  if (report.staleCanonicalQueueReferences.length > 0) {
+  if (report.queueInventoryFallout.length > 0) {
     console.log("[post-merge-preflight] Required queue/inventory updates:");
-    for (const staleReference of report.staleCanonicalQueueReferences) {
+    for (const staleReference of report.queueInventoryFallout) {
       console.log(
         `- ${staleReference.referencePath ?? staleReference.canonicalQueuePath}: replace stale active/current/candidate reference "${staleReference.matchedText ?? staleReference.staleActivePath}" for done brief ${staleReference.doneBriefPath}.`
       );
+    }
+  }
+
+  if (report.completionRecordStarters.length > 0) {
+    console.log("[post-merge-preflight] Completion Record starter:");
+    for (const starter of report.completionRecordStarters) {
+      console.log(`\n${starter.doneBriefPath}`);
+      console.log(starter.content);
+    }
+  }
+
+  if (report.closeoutGateChecklist.length > 0) {
+    console.log("[post-merge-preflight] Closeout gate order:");
+    for (const item of report.closeoutGateChecklist) {
+      console.log(`- ${item}`);
     }
   }
 
@@ -190,7 +318,7 @@ function printSummary(report) {
     for (const action of report.actions) {
       console.log(`- ${action}`);
     }
-  } else if (report.staleCanonicalQueueReferences.length === 0) {
+  } else if (report.queueInventoryFallout.length === 0) {
     console.log("[post-merge-preflight] No further repo-managed closeout command is required from this commit snapshot.");
   }
 }

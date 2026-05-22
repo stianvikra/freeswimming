@@ -200,6 +200,23 @@ function findBriefScorecardTable(text) {
   });
 }
 
+export function parseScorecardTargetCategories(content) {
+  const table = findBriefScorecardTable(content);
+  if (!table) return [];
+
+  const header = table.header.map((value) => value.toLowerCase());
+  const categoryIndex = header.findIndex((value) => value.includes("category"));
+  const mappingIndex = header.findIndex(
+    (value) => value.includes("mapping") || value.includes("class")
+  );
+  if (categoryIndex < 0 || mappingIndex < 0) return [];
+
+  return table.rows
+    .filter((row) => normalizeMapping(row[mappingIndex] ?? "") === "target")
+    .map((row) => (row[categoryIndex] ?? "").replace(/[`*_]/g, "").trim())
+    .filter(Boolean);
+}
+
 function findCloseoutScoreTable(text) {
   const tables = extractMarkdownTables(text);
   return tables.find((table) => {
@@ -565,7 +582,7 @@ function validateDoneBriefCloseout(content, targetCategories) {
 export function lintBriefText(filePath, content, canonicalCategories, options = {}) {
   const errors = [];
   const warnings = [];
-  const targetCategories = [];
+  const targetCategories = parseScorecardTargetCategories(content);
 
   if (!content.includes("docs/quality/platform-10-10-scorecard.md")) {
     errors.push("Missing explicit scorecard reference to docs/quality/platform-10-10-scorecard.md.");
@@ -611,7 +628,6 @@ export function lintBriefText(filePath, content, canonicalCategories, options = 
     }
 
     if (mapping === "target") {
-      targetCategories.push(categoryRaw.replace(/[`*_]/g, "").trim());
       if (thresholdIndex >= 0 && !nonEmptyValue(row[thresholdIndex] ?? "")) {
         errors.push(`Category "${categoryRaw}" is target but has empty threshold.`);
       }

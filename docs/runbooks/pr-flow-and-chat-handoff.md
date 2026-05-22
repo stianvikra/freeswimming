@@ -31,12 +31,16 @@ Required sequence:
 1. Merge the approved workstream PR.
 2. Sync local `main` and run `npm run post-merge:preflight`.
 3. If preflight surfaces exactly one repo-managed docs-only closeout for the same workstream, create the closeout branch and apply the reported lifecycle/update steps.
-4. Confirm the diff contains only docs/brief lifecycle or closeout evidence updates.
-5. Run `npm run lint:briefs:all` when task briefs changed.
-6. Run `npm run verify:pre-pr`, commit, push, open/update the closeout PR, and wait for required CI.
-7. Run `npm run verify:pre-merge` on the closeout branch.
-8. Auto-merge the closeout PR with the repo's normal squash/delete-branch flow.
-9. Sync `main`, prune deleted refs, rerun `npm run post-merge:preflight`, then do the mandatory chat-handoff assessment.
+4. Use the preflight output as the closeout starter:
+   - move the listed in-progress brief to `done`,
+   - paste and complete the generated `## Completion Record` starter,
+   - update every listed queue/inventory fallout item before the first gate.
+5. Confirm the diff contains only docs/brief lifecycle or closeout evidence updates.
+6. Run `npm run lint:briefs:all` as the first hard closeout gate when task briefs changed.
+7. Run `npm run verify:pre-pr`, commit, push, open/update the closeout PR, and wait for required CI.
+8. Run `npm run verify:pre-merge` on the closeout branch.
+9. Auto-merge the closeout PR with the repo's normal squash/delete-branch flow.
+10. Sync `main`, prune deleted refs, rerun `npm run post-merge:preflight`, then do the mandatory chat-handoff assessment.
 
 Stop and ask for explicit owner approval when any of these are true:
 
