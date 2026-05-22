@@ -3,8 +3,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
 import type { QrRedirectLinkRow } from "@/lib/qr-links/admin";
 
+const generateQrAssetsMock = vi.hoisted(() => vi.fn());
+
 vi.mock("next/image", () => ({
   default: () => null,
+}));
+
+vi.mock("@/lib/qr-links/codegen", () => ({
+  generateQrAssets: generateQrAssetsMock,
 }));
 
 const qrLink: QrRedirectLinkRow = {
@@ -48,6 +54,7 @@ function contentResponse() {
 describe("AdminQrLinksManager state rendering", () => {
   afterEach(() => {
     cleanup();
+    generateQrAssetsMock.mockReset();
     vi.unstubAllGlobals();
   });
 
@@ -102,5 +109,53 @@ describe("AdminQrLinksManager state rendering", () => {
     expect((screen.getByLabelText(/Destination URL/) as HTMLInputElement).value).toContain(
       "/course?lesson=mod1-l1"
     );
+  });
+
+  it("announces QR asset generation while preview assets are loading", async () => {
+    generateQrAssetsMock.mockReturnValue(new Promise(() => {}));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(qrLinksResponse([qrLink]))
+      .mockResolvedValueOnce(contentResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminQrLinksManager />);
+
+    await screen.findByText("intro-video");
+    fireEvent.click(screen.getByRole("button", { name: "Show QR" }));
+
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent(/Generating QR assets/);
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(generateQrAssetsMock).toHaveBeenCalledWith("http://localhost:3000/go/v/intro-video");
+  });
+
+  it("keeps QR asset generation errors retryable without changing the generation path", async () => {
+    generateQrAssetsMock
+      .mockRejectedValueOnce(new Error("QR generation failed."))
+      .mockResolvedValueOnce({
+        svgDataUrl: "data:image/svg+xml;charset=utf-8,%3Csvg%3E%3C/svg%3E",
+        pngDataUrl: "data:image/png;base64,AAAA",
+      });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(qrLinksResponse([qrLink]))
+      .mockResolvedValueOnce(contentResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminQrLinksManager />);
+
+    await screen.findByText("intro-video");
+    fireEvent.click(screen.getByRole("button", { name: "Show QR" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not generate QR assets right now.");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    await screen.findByRole("button", { name: "Download SVG" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(generateQrAssetsMock).toHaveBeenCalledTimes(2);
   });
 });
