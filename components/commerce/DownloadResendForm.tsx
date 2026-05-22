@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
+import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
 import {
   normalizeResendEmail,
   RESEND_DOWNLOAD_FALLBACK_ERROR,
@@ -31,6 +32,9 @@ export default function DownloadResendForm({
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const inputId = useId();
+  const feedbackId = useId();
+  const feedbackMessage = pending ? "Sending access link..." : error || successMessage;
+  const feedbackTone = pending ? "pending" : error ? "error" : successMessage ? "success" : null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,7 +82,7 @@ export default function DownloadResendForm({
     <form onSubmit={onSubmit} className={`space-y-2 ${className}`}>
       <label
         htmlFor={inputId}
-        className="text-xs font-medium uppercase tracking-wide text-slate-600"
+        className="text-xs font-medium tracking-wide text-slate-600 uppercase"
       >
         Purchase email
       </label>
@@ -91,20 +95,28 @@ export default function DownloadResendForm({
           value={email}
           onChange={(event) => setEmail(event.currentTarget.value)}
           placeholder="you@example.com"
-          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-blue-500"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={feedbackMessage ? feedbackId : undefined}
+          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 ring-0 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
         />
         <button
           type="submit"
           disabled={pending}
+          aria-describedby={feedbackMessage ? feedbackId : undefined}
           className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Sending..." : "Email me access link"}
         </button>
       </div>
 
-      {error ? <p className="text-xs text-rose-700">{error}</p> : null}
-      {!error && successMessage ? (
-        <p className="text-xs text-emerald-700">{successMessage}</p>
+      {feedbackMessage && feedbackTone ? (
+        <CommerceActionFeedback
+          id={feedbackId}
+          tone={feedbackTone}
+          testId="download-resend-feedback"
+        >
+          {feedbackMessage}
+        </CommerceActionFeedback>
       ) : null}
     </form>
   );

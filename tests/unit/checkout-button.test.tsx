@@ -43,6 +43,12 @@ describe("CheckoutButton", () => {
       productId: "guide_poolside",
       cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
     });
+
+    const feedback = await screen.findByTestId("checkout-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("qa-test-checkout-error");
   });
 
   it("allows a clearer visible checkout label without changing the default contract", () => {
@@ -50,5 +56,23 @@ describe("CheckoutButton", () => {
 
     expect(screen.getByRole("button", { name: "Open secure checkout" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Buy now" })).not.toBeInTheDocument();
+  });
+
+  it("announces pending checkout handoff without changing the button label", async () => {
+    const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutButton productId="guide_poolside" label="Open secure checkout" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open secure checkout" }));
+
+    const feedback = await screen.findByTestId("checkout-feedback");
+    const button = screen.getByRole("button", { name: "Opening checkout..." });
+
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "pending");
+    expect(feedback).toHaveTextContent("Opening secure checkout...");
+    expect(button).toHaveAttribute("aria-describedby", feedback.id);
   });
 });

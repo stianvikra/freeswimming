@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
 import { cx } from "@/components/ui/cx";
 
 type Props = {
@@ -30,6 +31,9 @@ export default function PortalButton({
 }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>("");
+  const feedbackId = useId();
+  const feedbackMessage = pending ? "Opening billing portal..." : error;
+  const feedbackTone = pending ? "pending" : error ? "error" : null;
 
   async function onClick() {
     if (pending) return;
@@ -66,11 +70,16 @@ export default function PortalButton({
         onClick={onClick}
         disabled={pending}
         data-testid="my-library-portal-button"
+        aria-describedby={feedbackMessage ? feedbackId : undefined}
         className={cx(buttonClassName, className)}
       >
         {pending ? "Opening billing..." : "Manage billing"}
       </button>
-      {error ? <p className="text-xs text-rose-700">{error}</p> : null}
+      {feedbackMessage && feedbackTone ? (
+        <CommerceActionFeedback id={feedbackId} tone={feedbackTone} testId="portal-feedback">
+          {feedbackMessage}
+        </CommerceActionFeedback>
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PortalButton from "@/components/my-library/PortalButton";
 
 describe("PortalButton", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -52,6 +53,30 @@ describe("PortalButton", () => {
       ).toBeInTheDocument();
     });
 
+    const feedback = screen.getByTestId("portal-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("announces pending billing portal handoff without changing the button label", async () => {
+    const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onNavigate = vi.fn();
+
+    render(<PortalButton returnPath="/my-library" onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage billing" }));
+
+    const feedback = await screen.findByTestId("portal-feedback");
+    const button = screen.getByRole("button", { name: "Opening billing..." });
+
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "pending");
+    expect(feedback).toHaveTextContent("Opening billing portal...");
+    expect(button).toHaveAttribute("aria-describedby", feedback.id);
     expect(onNavigate).not.toHaveBeenCalled();
   });
 });
