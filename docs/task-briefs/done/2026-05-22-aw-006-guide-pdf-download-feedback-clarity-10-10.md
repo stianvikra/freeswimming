@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-22`
 - `updated`: `2026-05-22`
@@ -49,6 +49,7 @@ Critical target categories for a `10/10` claim in this slice:
 | Business logic correctness and data integrity | `target`     | Fetch path, credentials, cache mode, analytics event, content-disposition filename handling, object URL handling, and fallback error behavior remain unchanged.         | targeted unit tests + diff review                       | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice touches no admin editor, admin CRUD, publish, note, QR, or operator workflow.                                                                    | changed-files review                                    | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Pending and error feedback is announced with appropriate live-region semantics and the button keeps accessible labels while disabled.                                   | unit tests + screenshot/DOM review                      | `5/5`                   |
+| Accessibility                                 | `target`     | Lint-compatible alias for `Accessibility (a11y)`; same threshold and evidence, included so the closeout critical-category parser maps the a11y gate deterministically.  | unit tests + screenshot/DOM review                      | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new dependency, route data fetch, media asset, or measurable JS-heavy pattern is introduced on guide routes.                                                         | dependency diff + typecheck                             | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because the only state is short-lived client UI state for one button; no persisted local/server data, sync, conflict policy, or retention rule changes.             | data contract section                                   | `N/A`                   |
 | Caching and invalidation strategy             | `target`     | The existing PDF request remains `cache: "no-store"` and no route/cache invalidation contract changes.                                                                  | unit test + diff review                                 | `5/5`                   |
@@ -150,7 +151,7 @@ Required as a targeted route/action sweep because this slice changes a shared us
 2. Pending feedback is visible and politely announced without causing layout instability.
 3. Error feedback is visible near the button, safely worded, accessible, and clears when the next attempt starts.
 4. Focused unit tests cover success, pending semantics, API error rendering, and retry/error reset.
-5. Canonical AW-006 queue and notice/empty-state inventory record this active slice.
+5. Canonical AW-006 queue and notice/empty-state inventory record this completed slice.
 6. Screenshot handoff is captured and approved before `npm run verify:pre-pr`.
 
 ## Validation
@@ -179,6 +180,64 @@ After screenshot approval:
 
 ## Implementation Checkpoint Log
 
-- `2026-05-22 | in-progress | started from clean main@73ba45a after PR #806 and repo-managed closeout #807; post-merge preflight was reported green with no closeout remaining; selected Guide PDF download feedback clarity as the next bounded AW-006 UI slice after queue/design/code re-audit | next: implement shared button feedback, update tests/docs, run targeted QA, then capture screenshot handoff`
+- `2026-05-22 | in-progress | started from clean main@73ba45a after PR #806 and repo-managed closeout #807; post-merge preflight was reported green with no closeout remaining; queue/design/code re-audit chose Guide PDF download feedback clarity as the bounded AW-006 UI slice | next: implement shared button feedback, update tests/docs, run targeted QA, then capture screenshot handoff`
 - `2026-05-22 | targeted validation | implemented shared GuidePdfDownloadButton pending/error feedback with polite live-region semantics, updated focused unit coverage, refreshed the canonical AW-006 queue and notice/empty-state inventory, and passed npx vitest run tests/unit/guide-pdf-download-button.test.tsx, npm run lint, npm run typecheck, npm run lint:briefs:all, git diff --check, and the targeted route/label/support sweep | next: capture required screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-05-22 | screenshot-review | captured after/reference screenshot artifacts at output/aw-006-guide-pdf-feedback-20260522-180629 for idle reference, pending desktop, error desktop, and error mobile states; temporary local visual route/script were removed after capture, and GuidePdfDownloadButton has not changed after the final capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
+- `2026-05-22 | merged | PR #808 merged to main as adcb096 after owner-approved screenshot handoff, local verify:pre-pr PASS, green required CI, Vercel redeploy recovery, and verify:pre-merge PASS | next: repo-managed closeout moves this brief to done and clears active queue/inventory references`
+
+## Completion Record
+
+- `completed`: `2026-05-22`
+- `merged_pr`: `#808`
+- `squash_commit`: `adcb096`
+- `result`: Closed AW-006 Guide PDF Download Feedback Clarity; shared guide PDF download now gives clear pending/error feedback near the button with polite live-region semantics while preserving PDF APIs, entitlement, analytics, filenames, and generation behavior.
+- `10/10 claim`: yes for the bounded Guide PDF Download Feedback Clarity scope; all critical target categories are confirmed `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `UX flow clarity`
+- `Business logic correctness and data integrity`
+- `Accessibility (a11y)`
+- `Reliability and failure handling`
+- `Testing and QA automation`
+
+| Target Category                               | Achieved Score | Evidence                                                                                                                               | Remaining Gap / Recommendation |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#808` kept the shared guide PDF action in the same guide/My Library locations and updated AW-006 docs.                             | No remaining gap.              |
+| UX flow clarity                               | `5/5`          | Pending and error feedback is visible near the button and clears predictably on retry.                                                 | No remaining gap.              |
+| Visual design quality                         | `5/5`          | Approved `after/reference` screenshots show stable spacing and existing guide/member visual language.                                  | No remaining gap.              |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review confirm fetch path, credentials, no-store cache, analytics, filenames, and retry behavior stayed stable. | No remaining gap.              |
+| Accessibility (a11y)                          | `5/5`          | Component coverage verifies polite live-region semantics and accessible button labeling while disabled.                                | No remaining gap.              |
+| Accessibility                                 | `5/5`          | Same a11y evidence as `Accessibility (a11y)`; included for deterministic closeout lint category matching.                              | No remaining gap.              |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, media asset, API, or route data-fetch change was introduced.                                                            | No remaining gap.              |
+| Caching and invalidation strategy             | `5/5`          | Existing PDF request still uses `cache: "no-store"` and no invalidation contract changed.                                              | No remaining gap.              |
+| Reliability and failure handling              | `5/5`          | API failures and thrown client errors produce deterministic safe messages and allow another click attempt.                             | No remaining gap.              |
+| Security and authz                            | `5/5`          | Same-origin credentialed protected PDF boundaries stayed untouched, with no sensitive diagnostics exposed.                             | No remaining gap.              |
+| Privacy and compliance                        | `5/5`          | User-facing feedback contains no identifiers, entitlement details, raw provider errors, secrets, or env values.                        | No remaining gap.              |
+| Content governance                            | `5/5`          | Canonical AW-006 queue, design inventory, and this brief were aligned through implementation and closeout.                             | No remaining gap.              |
+| Analytics and KPI observability               | `5/5`          | Existing `item_download_started` event and payload stayed unchanged.                                                                   | No remaining gap.              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused the existing shared `GuidePdfDownloadButton`; no package, route, provider, or architecture dependency added.                    | No remaining gap.              |
+| Testing and QA automation                     | `5/5`          | Targeted component tests, screenshot approval, `verify:pre-pr`, required CI, and `verify:pre-merge` passed.                            | No remaining gap.              |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/workflows/packages changed; rollback is a normal git revert of PR `#808`.                                         | No remaining gap.              |
+
+Remaining gaps: none for this bounded slice.
+
+Defer/fix recommendation: none; no target category is below `4/5`.
+
+### Completed Evidence
+
+- `npx vitest run tests/unit/guide-pdf-download-button.test.tsx` -> PASS (`4` tests).
+- `npm run lint` -> PASS.
+- `npm run typecheck` -> PASS.
+- `npm run lint:briefs:all` -> PASS.
+- `git diff --check` -> PASS.
+- screenshot handoff captured against `http://127.0.0.1:3000` with comparison type `after/reference`:
+  - `/Users/stianvikra/freeswimming/output/aw-006-guide-pdf-feedback-20260522-180629`
+  - Captured: `2026-05-22 18:06`
+  - Files: `reference-guide-download-idle-desktop.png`, `after-guide-download-pending-desktop.png`, `after-guide-download-error-desktop.png`, `after-guide-download-error-mobile.png`.
+  - Temporary local visual route/script were removed after capture; `GuidePdfDownloadButton` did not change after owner approval.
+- owner screenshot approval -> PASS (`2026-05-22`, chat approval: `godkjent`).
+- `npm run verify:pre-pr` -> PASS (full public lane on commit `00b01e2`; `98` E2E passed / `478` skipped, `206` unit files / `1189` tests passed; log: `artifacts/test-runs/20260522-181736/verify.log`).
+- PR `#808` required CI -> PASS (`verify`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, CodeQL, Vercel, and Vercel Preview Comments). Initial Vercel auto-deploy failed transiently at `dpl_DbYJReN57q7cFCyBUa2KkM4kWdDP`; redeploy `dpl_Gj7AA9a5gqdBE1SDStdtgYfzCZsz` passed.
+- `npm run verify:pre-merge` -> PASS before merge (reused full-public verify artifact `artifacts/test-runs/20260522-181736`, marker: `artifacts/verify-pre-merge/20260522-171305.json`).
+- PR `#808` merged to `main` as squash commit `adcb096`.

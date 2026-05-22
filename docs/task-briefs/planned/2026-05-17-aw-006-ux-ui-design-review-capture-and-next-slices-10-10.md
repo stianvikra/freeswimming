@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-22`
-- `base`: `main@8782543`
+- `base`: `main@adcb096`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#804` are recorded below. The admin note screenshot capture feedback slice is shipped, and this closeout leaves no bounded AW-006 implementation slice selected until the next fresh queue/design/code re-audit.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#808` are recorded below. The guide PDF download feedback clarity slice is shipped, and this closeout leaves no bounded AW-006 implementation slice selected until the next fresh queue/design/code re-audit.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, task-brief closeout rules, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -179,18 +179,21 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Content Manager course-structure feedback state parity | `done`    | `#800`, `docs/task-briefs/done/2026-05-22-aw-006-admin-content-manager-course-structure-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for course-structure follow-up feedback without changing content APIs, labels, normalize/delete behavior, Context Notes, Context QR, or support procedures.                                                     |
 | Admin QR Registry asset feedback state parity                | `done`    | `#802/#803`, `docs/task-briefs/done/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`           | Reused the admin-local `AdminManagerState` helper for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.                                                                |
 | Admin Note Screenshot Capture feedback state parity          | `done`    | `#804`, `docs/task-briefs/done/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`          | Reused the admin-local `AdminManagerState` helper for screenshot-capture recovery/save-error feedback without changing screenshot capture, crop, upload, note attachment, recovery, authz, API, database, or support behavior.                                    |
+| Guide PDF Download Feedback Clarity                          | `done`    | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`                          | Made shared guide PDF download pending/error feedback clearer and accessible without changing PDF generation, APIs, entitlements, analytics, filenames, or guide content.                                                                                         |
 
 ## Remaining PR-Sized UX/UI Slices
 
-Guide PDF Download Feedback Clarity is the active AW-006 implementation slice after a fresh queue/design/code re-audit on clean `main@73ba45a`.
+No bounded AW-006 implementation slice remains queued after Guide PDF Download Feedback Clarity shipped through `#808`.
 
-Active brief:
+Next selection rule:
 
-`docs/task-briefs/in-progress/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`
+- Run a fresh queue/design/code re-audit before selecting the next PR-sized UX/UI slice.
+- Create or move the next task brief only after the required Norwegian non-programmer explanation.
 
-| Slice                               | Status   | Objective                                                                                                                    | Likely files                                                                                                                                                                        | Screenshot gate |
-| ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| Guide PDF Download Feedback Clarity | `active` | Make shared guide PDF download pending/error feedback clearer and accessible without changing PDF generation or entitlement. | `components/guides/GuidePdfDownloadButton.tsx`, `tests/unit/guide-pdf-download-button.test.tsx`, `docs/design/notice-empty-state-pattern-inventory.md`, this canonical AW-006 queue | required        |
+| Slice                               | Status | Evidence                                                                                       | Notes                                                                                                |
+| ----------------------------------- | ------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Guide PDF Download Feedback Clarity | `done` | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md` | Completed shared guide PDF download feedback clarity; no follow-up slice is queued in this closeout. |
+| Next AW-006 UX/UI slice             | `TBD`  | fresh queue/design/code re-audit required before a new implementation brief is selected        | Keep protected areas below unchanged until a new bounded brief explicitly narrows them.              |
 
 Protected areas:
 
@@ -434,3 +437,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | closeout | PR #802 shipped the selected Admin QR Registry asset feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after PR #802 and repo-managed closeout #803 on clean main@2f41bb6; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected the admin note screenshot capture feedback parity slice for execution | next: executed through PR #804`
 - `2026-05-22 | closeout | PR #804 shipped the selected Admin Note Screenshot Capture feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-05-22 | closeout | PR #808 shipped Guide PDF Download Feedback Clarity and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
