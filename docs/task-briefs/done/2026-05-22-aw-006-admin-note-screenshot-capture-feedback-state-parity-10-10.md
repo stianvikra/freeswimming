@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-22`
 - `updated`: `2026-05-22`
@@ -183,6 +183,74 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - required PR CI checks
   - `npm run verify:pre-merge`
 
+## Completion Record
+
+- `completed`: `2026-05-22`
+- `merged_pr`: `#804`
+- `squash_commit`: `8782543`
+- `closeout_pr`: repo-managed docs-only closeout for `#804`
+- `closeout_commit`: recorded by `main` after closeout merge
+- `result`: Shipped the bounded Admin Note Screenshot Capture feedback parity slice: screenshot-capture recovery and preview save-error feedback now reuse the admin-local `AdminManagerState` primitive while screenshot support detection, browser capture, crop-to-file, save callback, modal close behavior, note attachment handoff, authz, APIs, and support behavior stayed unchanged.
+- `screenshot_artifacts`: `output/aw-006-admin-screenshot-feedback-2026-05-22-104419`
+- `screenshot_comparison`: `after/reference`
+- `final_visual_note`: no product-rendering files changed after the approved screenshot capture; this repo-managed closeout is docs-only.
+- `10/10 claim`: yes for the bounded screenshot-capture feedback state parity scope; all critical target categories were validated at `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Admin editor ergonomics`
+- `Accessibility (a11y)`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Content governance`
+- `Admin workflow and editability`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                       | Remaining Gap / Recommendation |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| Product goals and IA                          | `5/5`          | PR `#804` stayed inside admin note screenshot feedback parity and updated the AW-006 queue/design inventory.                   | No remaining gap.              |
+| UX flow clarity                               | `5/5`          | Recovery/save-error feedback remains visible, specific, and close to the screenshot capture action.                            | No remaining gap.              |
+| Visual design quality                         | `5/5`          | Approved `after/reference` screenshots show screenshot feedback aligned to the admin manager state pattern.                    | No remaining gap.              |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review confirm browser capture, crop-to-file, save callback, close behavior, and handoff stayed stable. | No remaining gap.              |
+| Admin editor ergonomics                       | `5/5`          | Retry/fallback, preview, full-capture reset, cancel, and save screenshot actions kept existing labels and flow.                | No remaining gap.              |
+| Accessibility (a11y)                          | `5/5`          | Component coverage verifies polite live-region semantics for dynamic recovery/save-error feedback.                             | No remaining gap.              |
+| Reliability and failure handling              | `5/5`          | Feedback remains deterministic from existing `phase` and `message` state with retry/fallback behavior preserved.               | No remaining gap.              |
+| Security and authz                            | `5/5`          | No admin API, credential, authz, secret, cookie, or protected-route behavior changed.                                          | No remaining gap.              |
+| Content governance                            | `5/5`          | Queue, design inventory, and brief evidence were kept aligned with the bounded UI slice and closeout.                          | No remaining gap.              |
+| Admin workflow and editability                | `5/5`          | Screenshot capture, fallback upload handoff, preview, crop, cancel, and save actions stayed stable.                            | No remaining gap.              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminManagerState`, added no dependency, and kept the helper API unchanged.                                            | No remaining gap.              |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                                    | No remaining gap.              |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/workflows/packages changed; rollback is a normal git revert of PR `#804`.                                 | No remaining gap.              |
+
+Remaining gaps: none for this bounded slice.
+
+Defer/fix recommendation: none; no target category is below `4/5`.
+
+### Completed Local Evidence Before Screenshot Approval
+
+- `./node_modules/.bin/vitest run tests/unit/admin-note-screenshot-capture-button.test.tsx tests/unit/admin-manager-state.test.tsx` -> PASS (`2` files, `10` tests).
+- `npm run lint:briefs:all` -> PASS.
+- `npm run lint` -> PASS.
+- `npm run typecheck` -> PASS.
+- targeted route/label/support sweep -> PASS; hits were expected component/test/docs references only, with no Help/Guide, runbook, API, or e2e contract fallout.
+- `git diff --check` -> PASS.
+- screenshot handoff captured against `http://127.0.0.1:3000` with comparison type `after/reference`:
+  - `/Users/stianvikra/freeswimming/output/aw-006-admin-screenshot-feedback-2026-05-22-104419`
+  - Captured: `2026-05-22 10:44`
+  - Files: `after-screenshot-capture-recovery-desktop.png`, `after-screenshot-capture-save-error-desktop.png`, `after-screenshot-capture-recovery-mobile.png`, `reference-admin-manager-state-contract-desktop.png`.
+  - Temporary local visual route/script were removed after capture; product-rendering files did not change after owner approval.
+- owner screenshot approval -> PASS (`2026-05-22`, chat approval: `godkjent`).
+- `npm run verify:pre-pr` -> PASS (full public lane on commit `3aab180`; log: `artifacts/test-runs/20260522-114005/verify.log`).
+- PR `#804` required CI -> PASS (`verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, Vercel, `deploy-preview`, and `size-check`).
+- `npm run verify:pre-merge` -> PASS before merge (marker: `artifacts/verify-pre-merge/20260522-100431.json`).
+- PR `#804` merged to `main` as squash commit `8782543`.
+
 ## Local Tooling Prerequisite
 
 - Node.js/npm available through the repo's normal `nvm use --silent` path.
@@ -193,3 +261,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-22 | in-progress | started from clean main@2f41bb6 after PR #802 and repo-managed closeout #803; post-merge preflight was reported green with no pending closeout; short queue/design/code re-audit selected Admin Note Screenshot Capture Feedback State Parity as the next bounded AW-006 UI slice and found one stale completed-QR active phrase to repair in the queue | next: update queue/inventory, migrate scoped screenshot feedback rendering, add focused tests, then capture screenshot handoff before broad gates`
 - `2026-05-22 | targeted validation | updated the canonical queue and notice/empty-state inventory, migrated screenshot-capture recovery/save-error feedback to the existing admin-local AdminManagerState helper, and preserved screenshot capture/crop/upload behavior; targeted validation passed for Vitest screenshot/admin-state tests, lint:briefs:all, lint, typecheck, route/label/support sweep, and git diff --check | next: capture after/reference screenshot handoff and stop for owner visual approval before verify:pre-pr`
 - `2026-05-22 | screenshot approval | captured after/reference screenshot handoff in output/aw-006-admin-screenshot-feedback-2026-05-22-104419, inspected the actual consumed artifact folder for dev overlays/layout breakage, and owner approved the visual handoff; first verify:pre-pr attempt failed only because the brief lacked explicit ui-debug-hypothesis-and-handoff evidence, so this checkpoint records the missing quality-gate evidence without changing runtime scope | next: rerun verify:pre-pr`
+- `2026-05-22 | merged | PR #804 merged to main as 8782543; post-merge preflight opened this repo-managed docs-only lifecycle closeout | next: validate and merge closeout PR`
