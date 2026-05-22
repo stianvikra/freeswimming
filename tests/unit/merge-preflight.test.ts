@@ -100,6 +100,11 @@ describe("post-merge preflight", () => {
     expect(report.actions).toContain(
       `npm run task-brief:move -- ${existingInProgressBriefName} done`
     );
+    expect(report.actions).toContain("npm run lint:briefs:all");
+    expect(report.closeoutGateChecklist.join("\n")).toContain("first hard closeout gate");
+    expect(report.completionRecordStarters[0]?.doneBriefPath).toBe(
+      `docs/task-briefs/done/${existingInProgressBriefName}`
+    );
   });
 
   it("tells the operator to sync main first when run from a feature branch", () => {
@@ -135,5 +140,66 @@ describe("post-merge preflight", () => {
 
     expect(report.staleCanonicalQueueReferences).toHaveLength(1);
     expect(report.warnings.join("\n")).toContain("active/current/candidate item");
+  });
+
+  it("reports queue and inventory fallout for pending closeout briefs before the first gate", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const inventoryPath = "docs/design/example-inventory.md";
+    const pendingBriefContent = `# Task Brief: Example State Parity
+
+## Metadata
+
+- \`status\`: \`in-progress\`
+- \`canonical_queue\`: \`${queuePath}\`
+- \`design_inventory\`: \`${inventoryPath}\`
+
+## Platform 10/10 Scorecard Mapping
+
+Reference: \`docs/quality/platform-10-10-scorecard.md\`
+
+| Category | Mapping | Target Threshold / Scope Rationale | Evidence | Expected Closeout Score |
+| --- | --- | --- | --- | --- |
+| Product goals and IA | \`target\` | closeout queue fallout is surfaced | unit test | \`5/5\` |
+| Testing and QA automation | \`target\` | generated record includes target rows | unit test | \`5/5\` |
+`;
+    const report = buildPostMergePreflightReport({
+      branch: "main",
+      baseBranch: "main",
+      ref: "HEAD",
+      changedFiles: [existingInProgressBriefPath],
+      completedDate: "2026-05-22",
+      contentByPath: {
+        [existingInProgressBriefPath]: pendingBriefContent,
+      },
+      referenceTextByPath: {
+        [queuePath]: [
+          "## Remaining PR-Sized UX/UI Slices",
+          "",
+          "| Slice | Status | Brief |",
+          "| --- | --- | --- |",
+          `| Example State Parity | \`active\` | \`${existingInProgressBriefPath}\` |`,
+        ].join("\n"),
+        [inventoryPath]: [
+          "## Current Candidate Status",
+          "",
+          "Active state-primitive implementation candidate:",
+          "",
+          "`Example State Parity`",
+        ].join("\n"),
+      },
+    });
+
+    expect(report.pendingCloseoutReferenceFallout).toHaveLength(2);
+    expect(report.queueInventoryFallout.map((entry) => entry.referencePath)).toEqual([
+      queuePath,
+      inventoryPath,
+    ]);
+    expect(report.completionRecordStarters[0]?.content).toContain(
+      "| Product goals and IA | `5/5` | <local gate / CI / PR evidence> | <none or explicit gap> |"
+    );
+    expect(report.closeoutGateChecklist.join("\n")).toContain(
+      "Update every listed queue/inventory"
+    );
+    expect(report.closeoutGateChecklist.join("\n")).toContain("lint:briefs:all");
   });
 });
