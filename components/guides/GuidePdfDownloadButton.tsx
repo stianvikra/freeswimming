@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { cx } from "@/components/ui/cx";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
@@ -36,8 +37,11 @@ export default function GuidePdfDownloadButton({
   fallbackFileName = "guide.pdf",
   className = "",
 }: Props) {
+  const feedbackId = useId();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const feedbackMessage = pending ? "Preparing PDF download..." : error;
+  const feedbackTone = pending ? "pending" : error ? "error" : "idle";
 
   async function onClick() {
     if (pending) return;
@@ -84,16 +88,31 @@ export default function GuidePdfDownloadButton({
   }
 
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={cx("relative", feedbackMessage ? "pb-12" : "", className)}>
       <button
         type="button"
         onClick={onClick}
         disabled={pending}
+        aria-describedby={feedbackMessage ? feedbackId : undefined}
         className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Downloading PDF..." : "Download PDF"}
       </button>
-      {error ? <p className="text-xs text-rose-700">{error}</p> : null}
+      {feedbackMessage ? (
+        <p
+          id={feedbackId}
+          role="status"
+          aria-live="polite"
+          className={cx(
+            "absolute top-12 left-0 z-10 w-max max-w-[min(20rem,calc(100vw-2rem))] rounded-lg border px-3 py-2 text-xs leading-5 font-medium",
+            feedbackTone === "error"
+              ? "border-rose-200 bg-rose-50 text-rose-700"
+              : "border-sky-200 bg-sky-50 text-sky-800"
+          )}
+        >
+          {feedbackMessage}
+        </p>
+      ) : null}
     </div>
   );
 }
