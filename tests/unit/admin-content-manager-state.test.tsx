@@ -503,6 +503,76 @@ describe("AdminContentManager state rendering", () => {
     expect(editError).toHaveTextContent("Could not save content changes.");
   });
 
+  it("renders course-structure follow-up feedback through polite admin state feedback", async () => {
+    useAllContentView();
+    const moduleItem = buildContentItem({
+      content_type: "course_module",
+      category: "Course",
+      slug: "module-1",
+      title: "Module 1",
+      body: { moduleId: "module-1" },
+      sort_order: 0,
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/content-1" && init?.method === "PATCH") {
+        return okJson({
+          ok: true,
+          item: buildContentItem({
+            ...moduleItem,
+            sort_order: 2,
+          }),
+        });
+      }
+
+      if (url === "/api/admin/content/course-structure" && init?.method === "POST") {
+        return errorJson({
+          ok: false,
+          error: "Could not update course structure.",
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByTestId("admin-content-item");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editForm = await screen.findByTestId("admin-content-edit-form");
+    fireEvent.change(within(editForm).getByLabelText("Sort order"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    const feedback = await screen.findByTestId("admin-content-course-structure-message-state");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveTextContent(
+      "Content item was saved, but order normalization failed. Retry normalization from course structure actions."
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input) === "/api/admin/content/course-structure" &&
+          init?.method === "POST" &&
+          init.body === JSON.stringify({ action: "normalize" })
+      )
+    ).toBe(true);
+  });
+
   it("renders revision-history loading and empty states through the admin state primitive", async () => {
     useAllContentView();
     let resolveRevisions!: (value: Response) => void;
