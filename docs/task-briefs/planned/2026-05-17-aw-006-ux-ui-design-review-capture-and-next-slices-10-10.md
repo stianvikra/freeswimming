@@ -174,24 +174,25 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Content Manager course workspace empty-state parity    | `done`    | `#796`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md`    | Reused the admin-local `AdminManagerState` helper for scoped course-workspace empty states without changing content APIs, module/lesson behavior, labels, ordering, Context Notes, or QR.                                                                         |
 | Admin Content Manager inline form feedback state parity      | `done`    | `#798/#799`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for inline form feedback without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.                                                           |
 | Admin Content Manager course-structure feedback state parity | `done`    | `#800`, `docs/task-briefs/done/2026-05-22-aw-006-admin-content-manager-course-structure-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for course-structure follow-up feedback without changing content APIs, labels, normalize/delete behavior, Context Notes, Context QR, or support procedures.                                                     |
+| Admin QR Registry asset feedback state parity                | `active`  | `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`                 | Selected by the fresh queue/design/code re-audit after `#800/#801`, scoped to reusing `AdminManagerState` for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.        |
 
 ## Remaining PR-Sized UX/UI Slices
 
-No bounded AW-006 UI implementation slice is selected after `#800`.
+Current bounded AW-006 UI implementation slice:
 
-Before starting another implementation slice:
+- `Admin QR Registry asset feedback state parity`
+- active brief: `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`
+- objective: reuse the existing admin-local `AdminManagerState` helper for QR asset-generation loading and error+retry feedback inside `AdminQrLinksManager`.
+- likely files: `components/admin/AdminQrLinksManager.tsx`, `tests/unit/admin-qr-links-manager-state.test.tsx`, this queue, and `docs/design/notice-empty-state-pattern-inventory.md`.
+- screenshot requirement: `after/reference` screenshot handoff before `npm run verify:pre-pr`.
 
-- run a fresh queue/design/code re-audit from clean `main`,
-- give the required short non-programmer explanation,
-- create or refresh the bounded task brief for the selected slice,
-- then execute only that scoped brief.
+Protected areas:
 
-Do not include:
-
+- QR API changes,
+- QR slug/status behavior changes,
+- stable redirect or `/go/v/[slug]` behavior changes,
+- QR asset generation internals or SVG/PNG download behavior changes,
 - content API changes,
-- content copy or workflow label changes,
-- revision restore behavior changes,
-- create/update/delete/status/course-structure behavior changes,
 - Context Notes or Context QR behavior changes,
 - admin content editor redesign,
 - admin notes upload/recovery behavior,
@@ -220,7 +221,7 @@ Do not include:
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
 - Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
 - Start with one admin-local primitive pilot before any broad shared-component rollout.
-- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; no active admin-local primitive parity pass is selected after `#800`.
+- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; the active QR Registry pass is scoped to an existing mature manager surface after the fresh `#800/#801` re-audit.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.
@@ -420,3 +421,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | closeout | PR #798 shipped the selected Admin Content Manager inline feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after Admin Content Manager inline feedback closeout #799 on clean main@8bab696; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected the course-structure feedback slice that later shipped via #800 | next: completed by PR #800`
 - `2026-05-22 | closeout | PR #800 shipped the selected Admin Content Manager course-structure feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-05-22 | planned | refreshed after PR #800 and repo-managed closeout #801 on clean main@37736ae; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin QR Registry asset feedback state parity as the current bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`

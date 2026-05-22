@@ -868,22 +868,29 @@ export default function AdminQrLinksManager() {
                         </p>
 
                         {qrAssetState.status === "loading" ? (
-                          <p className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                          <AdminManagerState tone="loading" density="compact" className="mt-3">
                             Generating QR assets…
-                          </p>
+                          </AdminManagerState>
                         ) : null}
 
                         {qrAssetState.status === "error" ? (
-                          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2">
-                            <p className="text-sm text-rose-700">{qrAssetState.message}</p>
-                            <button
-                              type="button"
-                              onClick={() => void ensureQrAssets(item)}
-                              className="mt-2 inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
-                            >
-                              Retry
-                            </button>
-                          </div>
+                          <AdminManagerState
+                            tone="error"
+                            density="compact"
+                            className="mt-3"
+                            actionsClassName="mt-2 flex flex-wrap gap-2"
+                            actions={
+                              <button
+                                type="button"
+                                onClick={() => void ensureQrAssets(item)}
+                                className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                              >
+                                Retry
+                              </button>
+                            }
+                          >
+                            {qrAssetState.message}
+                          </AdminManagerState>
                         ) : null}
 
                         {qrAssetState.status === "ready" ? (
