@@ -174,17 +174,13 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Content Manager course workspace empty-state parity    | `done`    | `#796`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md`    | Reused the admin-local `AdminManagerState` helper for scoped course-workspace empty states without changing content APIs, module/lesson behavior, labels, ordering, Context Notes, or QR.                                                                         |
 | Admin Content Manager inline form feedback state parity      | `done`    | `#798/#799`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for inline form feedback without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.                                                           |
 | Admin Content Manager course-structure feedback state parity | `done`    | `#800`, `docs/task-briefs/done/2026-05-22-aw-006-admin-content-manager-course-structure-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for course-structure follow-up feedback without changing content APIs, labels, normalize/delete behavior, Context Notes, Context QR, or support procedures.                                                     |
-| Admin QR Registry asset feedback state parity                | `active`  | `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`                 | Selected by the fresh queue/design/code re-audit after `#800/#801`, scoped to reusing `AdminManagerState` for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.        |
+| Admin QR Registry asset feedback state parity                | `done`    | `#802`, `docs/task-briefs/done/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`                | Reused the admin-local `AdminManagerState` helper for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.                                                                |
 
 ## Remaining PR-Sized UX/UI Slices
 
-Current bounded AW-006 UI implementation slice:
+Current bounded AW-006 UI implementation slice: none selected after PR `#802`.
 
-- `Admin QR Registry asset feedback state parity`
-- active brief: `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`
-- objective: reuse the existing admin-local `AdminManagerState` helper for QR asset-generation loading and error+retry feedback inside `AdminQrLinksManager`.
-- likely files: `components/admin/AdminQrLinksManager.tsx`, `tests/unit/admin-qr-links-manager-state.test.tsx`, this queue, and `docs/design/notice-empty-state-pattern-inventory.md`.
-- screenshot requirement: `after/reference` screenshot handoff before `npm run verify:pre-pr`.
+The next slice must start with a fresh queue/design/code re-audit from clean `main` after this closeout and post-merge preflight.
 
 Protected areas:
 
@@ -422,3 +418,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | planned | refreshed after Admin Content Manager inline feedback closeout #799 on clean main@8bab696; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected the course-structure feedback slice that later shipped via #800 | next: completed by PR #800`
 - `2026-05-22 | closeout | PR #800 shipped the selected Admin Content Manager course-structure feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after PR #800 and repo-managed closeout #801 on clean main@37736ae; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin QR Registry asset feedback state parity as the current bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`
+- `2026-05-22 | closeout | PR #802 shipped the selected Admin QR Registry asset feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
