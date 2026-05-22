@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-22-closeout-gate-friction-reduction-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-22`
 - `updated`: `2026-05-22`
@@ -181,3 +181,23 @@ Full lane is required because scripts/tests change.
 - `2026-05-22 | in-progress | implemented target-category extraction reuse, post-merge Completion Record starter output, pending closeout queue/inventory fallout detection, closeout gate order output, and runbook guidance; targeted Vitest passed for task-brief lint, merge/preflight, and pre-merge script tests; lint:briefs:all, lint, typecheck, targeted sweep, and git diff --check passed | next: commit, run verify:pre-pr, push, open PR, monitor CI, then run verify:pre-merge`
 - `2026-05-22 | quality-gate-fix | first verify:pre-pr failed in lint:quality-gates because the active brief used "Terms to sweep" and "Surfaces to check" wording but not the exact required "identifiers searched" and "surfaces checked" evidence phrases; added explicit sweep evidence without changing runtime/tooling code | next: rerun targeted brief/quality gates, amend commit, then rerun verify:pre-pr`
 - `2026-05-22 | pre-pr | targeted brief/quality gates passed after the evidence wording fix; amended commit 31ec83c; full npm run verify:pre-pr passed with lint, typecheck, unit, build, perf budgets, and Playwright (98 passed, 478 skipped) | next: amend this checkpoint into the commit, rerun verify:pre-pr on the final diff, push, open PR, monitor CI, then run verify:pre-merge`
+- `2026-05-22 | merged | PR #806 merged to main as f38bf63; post-merge preflight surfaced this single repo-managed docs-only closeout; moved brief to done and completed the closeout record | next: run docs-only closeout gates and merge closeout PR if green`
+
+## Completion Record
+
+- `completed`: `2026-05-22`
+- `merged_pr`: `#806`
+- `squash_commit`: `f38bf63`
+- `result`: Closed Closeout Gate Friction Reduction; post-merge tooling now prints the closeout gate order, a deterministic Completion Record starter, and queue/inventory fallout before the first closeout gate.
+- `validation`: Targeted Vitest passed; `npm run lint:briefs`, `npm run lint:briefs:all`, `npm run lint`, `npm run typecheck`, targeted route/label/support sweep, `git diff --check`, `npm run verify:pre-pr`, PR CI for #806, and `npm run verify:pre-merge` passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining gaps.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                  | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Post-merge preflight output now surfaces closeout gate order, Completion Record starter, and closeout fallout before first gate.          | None         |
+| Business logic correctness and data integrity | `5/5`          | Unit coverage confirms all-brief lint fail-closed behavior and deterministic preflight closeout output.                                   | None         |
+| Reliability and failure handling              | `5/5`          | Preflight closeout paths list required lifecycle actions and fallout before verification commands.                                        | None         |
+| Content governance                            | `5/5`          | Runbook, active brief, and preflight output align on Completion Record and queue/inventory closeout handling.                             | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Node/Vitest tooling; no package, workflow, runtime, UI, API, database, or dependency changes.                             | None         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, lint gates, typecheck, full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                                       | None         |
+| DevOps and rollback readiness                 | `5/5`          | Scope is reversible with normal git revert and has no migrations, env changes, secrets, package changes, workflows, or production config. | None         |
