@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { cx } from "@/components/ui/cx";
 import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import {
   applyWorkoutPoolsidePreviewSettings,
@@ -101,6 +102,7 @@ export default function PoolsidePreviewPageClient() {
     getEmbeddedPreviewFallbackWidth(settings.printLayout)
   );
   const [embeddedNoteReady, setEmbeddedNoteReady] = useState(false);
+  const saveImageFeedbackId = useId();
   const [saveImagePending, setSaveImagePending] = useState(false);
   const [saveImageError, setSaveImageError] = useState("");
   const [saveImageNotice, setSaveImageNotice] = useState("");
@@ -456,6 +458,31 @@ export default function PoolsidePreviewPageClient() {
   const displayedEmbeddedStageHeight = embeddedPreviewReady
     ? embeddedStageHeight
     : EMBEDDED_PREVIEW_LOADING_HEIGHT;
+  const saveImageFeedbackTone = saveImagePending
+    ? "pending"
+    : saveImageError
+      ? "error"
+      : saveImageNotice
+        ? "success"
+        : "idle";
+  const saveImageFeedbackMessage =
+    saveImageFeedbackTone === "pending"
+      ? "Preparing image export..."
+      : saveImageError || saveImageNotice;
+  const saveImageFeedbackTitle =
+    saveImageFeedbackTone === "pending"
+      ? "Preparing image"
+      : saveImageFeedbackTone === "error"
+        ? "Image export failed"
+        : saveImageNotice.startsWith("Saved ")
+          ? "Image saved"
+          : "Image ready";
+  const saveImageFeedbackTestId =
+    saveImageFeedbackTone === "pending"
+      ? "poolside-preview-save-image-pending"
+      : saveImageFeedbackTone === "error"
+        ? "poolside-preview-save-image-error"
+        : "poolside-preview-save-image-notice";
 
   return (
     <main
@@ -492,6 +519,7 @@ export default function PoolsidePreviewPageClient() {
                   type="button"
                   onClick={handleSaveImage}
                   disabled={previewUnavailable || saveImagePending || !embeddedNoteReady}
+                  aria-describedby={saveImageFeedbackMessage ? saveImageFeedbackId : undefined}
                   data-testid="poolside-preview-save-image"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -507,23 +535,25 @@ export default function PoolsidePreviewPageClient() {
                 </button>
               </div>
             </div>
-            {saveImageNotice ? (
-              <p
-                role="status"
-                data-testid="poolside-preview-save-image-notice"
-                className="mt-3 text-sm text-blue-800"
+            {saveImageFeedbackMessage ? (
+              <div
+                id={saveImageFeedbackId}
+                role={saveImageFeedbackTone === "error" ? "alert" : "status"}
+                aria-live={saveImageFeedbackTone === "error" ? "assertive" : "polite"}
+                aria-atomic="true"
+                data-testid={saveImageFeedbackTestId}
+                className={cx(
+                  "mt-3 max-w-2xl rounded-xl border px-3 py-2 text-sm leading-6",
+                  saveImageFeedbackTone === "error"
+                    ? "border-rose-200 bg-rose-50 text-rose-800"
+                    : saveImageFeedbackTone === "success"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                      : "border-sky-200 bg-sky-50 text-sky-900"
+                )}
               >
-                {saveImageNotice}
-              </p>
-            ) : null}
-            {saveImageError ? (
-              <p
-                role="alert"
-                data-testid="poolside-preview-save-image-error"
-                className="mt-3 text-sm text-rose-700"
-              >
-                {saveImageError}
-              </p>
+                <p className="font-semibold">{saveImageFeedbackTitle}</p>
+                <p className="text-xs leading-5">{saveImageFeedbackMessage}</p>
+              </div>
             ) : null}
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
