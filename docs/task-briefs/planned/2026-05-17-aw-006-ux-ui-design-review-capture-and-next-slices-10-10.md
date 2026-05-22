@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-22`
-- `base`: `main@2c257c5`
+- `base`: `main@2f41bb6`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#800` are recorded below. After the course-structure feedback slice shipped, no next AW-006 implementation slice is selected, so the next slice must start with a fresh queue/design/code re-audit.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#802/#803` are recorded below. After the QR asset feedback closeout, a fresh queue/design/code re-audit selected Admin Note Screenshot Capture Feedback State Parity as the current bounded AW-006 implementation slice.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, task-brief closeout rules, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -87,6 +87,9 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
 - Completed Admin Context QR follow-up:
   - `docs/task-briefs/done/2026-05-20-aw-006-admin-context-qr-panel-state-primitive-parity-10-10.md`
   - shipped through `#780/#781`, scoped to applying the existing admin-local state primitive to the contextual QR panel inside admin content editing without changing QR APIs, slug/status behavior, authz, content editor workflows, or support procedures.
+- Current follow-up execution:
+  - `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`
+  - scoped to reusing the admin-local state primitive for admin note screenshot-capture recovery/save-error feedback without changing screenshot capture, crop, upload, note attachment, recovery, authz, API, database, or support behavior.
 - Completed lifecycle repair:
   - `docs/task-briefs/done/2026-05-20-aw-006-closeout-queue-gate-repair-10-10.md`
   - shipped through `#782`, scoped to repairing AW-006 queue/inventory closeout state and strict docs-only brief lint coverage before the next visible UI state-primitive slice.
@@ -174,13 +177,21 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Content Manager course workspace empty-state parity    | `done`    | `#796`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-course-workspace-empty-state-parity-10-10.md`    | Reused the admin-local `AdminManagerState` helper for scoped course-workspace empty states without changing content APIs, module/lesson behavior, labels, ordering, Context Notes, or QR.                                                                         |
 | Admin Content Manager inline form feedback state parity      | `done`    | `#798/#799`, `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-inline-form-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for inline form feedback without changing content APIs, labels, course-structure recovery behavior, Context Notes, Context QR, or support procedures.                                                           |
 | Admin Content Manager course-structure feedback state parity | `done`    | `#800`, `docs/task-briefs/done/2026-05-22-aw-006-admin-content-manager-course-structure-feedback-state-parity-10-10.md` | Reused the admin-local `AdminManagerState` helper for course-structure follow-up feedback without changing content APIs, labels, normalize/delete behavior, Context Notes, Context QR, or support procedures.                                                     |
-| Admin QR Registry asset feedback state parity                | `done`    | `#802`, `docs/task-briefs/done/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`                | Reused the admin-local `AdminManagerState` helper for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.                                                                |
+| Admin QR Registry asset feedback state parity                | `done`    | `#802/#803`, `docs/task-briefs/done/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`           | Reused the admin-local `AdminManagerState` helper for QR asset generation loading/error feedback without changing QR APIs, stable links, status behavior, downloads, authz, or support procedures.                                                                |
+| Admin Note Screenshot Capture feedback state parity          | `active`  | `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`           | Reuses the admin-local `AdminManagerState` helper for screenshot-capture recovery/save-error feedback without changing screenshot capture, crop, upload, note attachment, recovery, authz, API, database, or support behavior.                                    |
 
 ## Remaining PR-Sized UX/UI Slices
 
-Current bounded AW-006 UI implementation slice: none selected after PR `#802`.
+Current bounded AW-006 UI implementation slice: Admin Note Screenshot Capture Feedback State Parity.
 
-The next slice must start with a fresh queue/design/code re-audit from clean `main` after this closeout and post-merge preflight.
+Active implementation brief:
+
+- `docs/task-briefs/in-progress/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`
+
+Scope summary:
+
+- Reuse the existing admin-local `AdminManagerState` helper for screenshot-capture recovery and save-error feedback in `AdminNoteScreenshotCaptureButton`.
+- Preserve screenshot support detection, browser capture, crop-to-file, save callback, modal close behavior, note attachment handoff, labels, and support procedures.
 
 Protected areas:
 
@@ -217,7 +228,7 @@ Protected areas:
 - Apply the proven public token direction to one signed-in hub before broad component consolidation. Status: `done` for `/my-library`.
 - Inventory shared Notice/EmptyState/Loading/Error patterns. Status: `done`.
 - Start with one admin-local primitive pilot before any broad shared-component rollout.
-- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content parity passes are shipped; the active QR Registry pass is scoped to an existing mature manager surface after the fresh `#800/#801` re-audit.
+- Continue bounded admin-local primitive parity only where a mature reference surface already exists. Prior contextual/admin content and QR Registry parity passes are shipped; the current screenshot-capture pass is scoped to an existing admin notes utility surface after the fresh `#802/#803` re-audit.
 - Build or consolidate shared Button, Card, PageShell, Field, Notice, EmptyState, Tabs, and StatusBadge patterns only after one or more bounded pilots prove the contracts.
 - Standardize bottom-nav safe-area and screenshot regression coverage.
 - Break up large member/admin monoliths into smaller view/state modules when touched.
@@ -419,3 +430,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | closeout | PR #800 shipped the selected Admin Content Manager course-structure feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after PR #800 and repo-managed closeout #801 on clean main@37736ae; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin QR Registry asset feedback state parity as the current bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-22-aw-006-admin-qr-registry-asset-feedback-state-parity-10-10.md`
 - `2026-05-22 | closeout | PR #802 shipped the selected Admin QR Registry asset feedback parity slice and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-05-22 | planned | refreshed after PR #802 and repo-managed closeout #803 on clean main@2f41bb6; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Admin Note Screenshot Capture Feedback State Parity as the current bounded AW-006 UI slice | next: execute docs/task-briefs/in-progress/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`
