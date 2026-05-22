@@ -3303,9 +3303,13 @@ export default function AdminContentManager() {
         ) : null}
 
         {courseStructureMessage ? (
-          <p className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <AdminManagerState
+            tone="warning"
+            announcement="polite"
+            testId="admin-content-course-structure-message-state"
+          >
             {courseStructureMessage}
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {actionNotice ? (
