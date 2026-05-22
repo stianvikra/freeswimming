@@ -44,6 +44,11 @@ describe("DownloadResendForm", () => {
     await waitFor(() => {
       expect(screen.getByText(RESEND_DOWNLOAD_GENERIC_MESSAGE)).toBeInTheDocument();
     });
+
+    const feedback = screen.getByTestId("download-resend-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "success");
   });
 
   it("shows API error when resend endpoint fails", async () => {
@@ -63,6 +68,11 @@ describe("DownloadResendForm", () => {
     await waitFor(() => {
       expect(screen.getByText("Too many requests. Please try again shortly.")).toBeInTheDocument();
     });
+
+    const feedback = screen.getByTestId("download-resend-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
   });
 
   it("sends claim source from claim entry flow", async () => {
@@ -96,5 +106,45 @@ describe("DownloadResendForm", () => {
         }),
       });
     });
+  });
+
+  it("shows validation feedback without submitting an empty purchase email", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<DownloadResendForm initialEmail="   " source="checkout_success" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Email me access link" }));
+
+    const feedback = screen.getByTestId("download-resend-feedback");
+    const input = screen.getByLabelText("Purchase email");
+    const button = screen.getByRole("button", { name: "Email me access link" });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("Enter your purchase email.");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAttribute("aria-describedby", feedback.id);
+    expect(button).toHaveAttribute("aria-describedby", feedback.id);
+  });
+
+  it("announces pending resend state while keeping the existing submit label", async () => {
+    const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<DownloadResendForm initialEmail="buyer@example.com" source="checkout_success" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Email me access link" }));
+
+    const feedback = await screen.findByTestId("download-resend-feedback");
+    const button = screen.getByRole("button", { name: "Sending..." });
+
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "pending");
+    expect(feedback).toHaveTextContent("Sending access link...");
+    expect(button).toHaveAttribute("aria-describedby", feedback.id);
   });
 });

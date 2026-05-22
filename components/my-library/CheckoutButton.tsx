@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
@@ -26,6 +27,9 @@ export default function CheckoutButton({
 }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const feedbackId = useId();
+  const feedbackMessage = pending ? "Opening secure checkout..." : error;
+  const feedbackTone = pending ? "pending" : error ? "error" : null;
 
   function buildCancelPathWithTracking(basePath: string) {
     const url = new URL(basePath, "https://freeswimming.org");
@@ -76,11 +80,16 @@ export default function CheckoutButton({
         type="button"
         onClick={onClick}
         disabled={pending}
+        aria-describedby={feedbackMessage ? feedbackId : undefined}
         className={`inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         {pending ? "Opening checkout..." : label}
       </button>
-      {error ? <p className="text-xs text-rose-700">{error}</p> : null}
+      {feedbackMessage && feedbackTone ? (
+        <CommerceActionFeedback id={feedbackId} tone={feedbackTone} testId="checkout-feedback">
+          {feedbackMessage}
+        </CommerceActionFeedback>
+      ) : null}
     </div>
   );
 }
