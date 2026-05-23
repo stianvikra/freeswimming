@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
@@ -195,6 +195,11 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(requestBody.title).toBe("Plans follow-up");
 
     await screen.findByText("Quick note saved.");
+    const savedState = screen.getByTestId("admin-note-quick-capture-saved-state");
+    expect(savedState).toHaveAttribute("role", "status");
+    expect(savedState).toHaveAttribute("aria-live", "polite");
+    expect(savedState).toHaveClass("border-emerald-200", "bg-emerald-50", "text-emerald-700");
+    expect(within(savedState).getByRole("link", { name: "Open in Notes" })).toBeInTheDocument();
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("admin-note-quick-capture-dialog")).toBeInTheDocument();
     expect(screen.getByLabelText("Title")).toHaveValue("");
@@ -635,6 +640,10 @@ describe("AdminNoteQuickCaptureLauncher", () => {
         exact: false,
       })
     ).toBeInTheDocument();
+    const contextWarning = screen.getByTestId("admin-note-quick-capture-context-warning");
+    expect(contextWarning).not.toHaveAttribute("role");
+    expect(contextWarning).not.toHaveAttribute("aria-live");
+    expect(contextWarning).toHaveClass("border-amber-200", "bg-amber-50", "text-amber-800");
   });
 
   it("keeps image recovery visible when note save succeeds but attachment upload fails", async () => {
@@ -704,6 +713,10 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await screen.findByText(/Note saved, but could not upload attachments/i);
+    const errorState = screen.getByTestId("admin-note-quick-capture-error-state");
+    expect(errorState).toHaveAttribute("role", "status");
+    expect(errorState).toHaveAttribute("aria-live", "polite");
+    expect(errorState).toHaveClass("border-rose-200", "bg-rose-50", "text-rose-700");
     expect(screen.getByRole("button", { name: "Retry upload" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open in Notes" })).toBeInTheDocument();
   });
