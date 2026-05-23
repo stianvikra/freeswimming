@@ -8,6 +8,8 @@
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
+- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
+- `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 
 ## Brief Audit Record
