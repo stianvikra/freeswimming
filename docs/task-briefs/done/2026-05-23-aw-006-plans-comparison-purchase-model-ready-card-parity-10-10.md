@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-plans-comparison-purchase-model-ready-card-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
@@ -13,8 +13,8 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-23`
-- `base`: `main@402776c`
-- `audit_status`: `ready`
+- `base`: `main@e48afaa`
+- `audit_status`: `closed`
 - `decision`: Execute the next bounded AW-006 UI slice on `/plans` by adding a clearer comparison surface and aligning product cards with the established public token direction while preserving today's checkout behavior.
 - `reason`: PR `#822` and repo-managed closeout `#823` left no active AW-006 implementation slice. A fresh queue/design/code re-audit found `/plans` still has route-local rounded card styling and no compact comparison surface, while `/programs` already provides the mature public token/card reference. The owner also flagged likely future package/subscription changes, so this slice must avoid locking public copy to one-time purchases as a permanent product model.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `/plans`, `app/programs/page.tsx`, `app/globals.css` token utilities, `CheckoutButton`, commerce catalog contracts, Stripe checkout/session behavior, package/subscription product decisions, screenshot handoff rules, or verification lanes change before PR handoff.
@@ -36,10 +36,11 @@ Critical target categories for a `10/10` claim:
 - Product goals and IA
 - UX flow clarity
 - Visual design quality
-- Accessibility (a11y)
 - Commerce and revenue ops
 - Stack-fit and dependency discipline
 - Testing and QA automation
+
+Accessibility (a11y) is also a `target` category for this UI slice and closed at `5/5`; it is tracked in the scorecard and closeout tables below.
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                     | Evidence                                               | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------- |
@@ -204,3 +205,25 @@ Required before broad gates because `/plans`, commerce copy, and checkout entry 
 - `2026-05-23 | screenshot-review | implemented /plans comparison and purchase-model-ready token card parity by adding route-local presentation helpers, token-backed plan cards, per-offer purchase model copy, generic fallback copy for unmapped future products, and canonical AW-006 queue linkage; preserved checkout payloads, Stripe/API behavior, product IDs, availability handling, and analytics payloads; targeted validation passed with ./node_modules/.bin/vitest run tests/unit/plans-page.test.tsx tests/unit/checkout-button.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check, and env PW_PORT=3100 NEXT_DIST_DIR=.next-playwright-plans SITE_LOCK_ENABLED=0 STRIPE_PRICE_ID_0_1000M_GUIDE=price_1000 STRIPE_PRICE_ID_POOLSIDE_GUIDE=price_poolside STRIPE_PRICE_ID_ANALYSIS=price_analysis npm exec playwright -- test tests/e2e/mobile-bottom-nav-safe-area.spec.ts --project=mobile-chromium -g "plans primary action"; route/label/support sweep searched Plans, /plans, Open secure checkout, One-time, subscription, Stripe Checkout, purchase model, plans_viewed, and upsell_presented across app, components, tests, docs/task-briefs, docs/runbooks, and docs/api-contracts with expected fallout only in /plans code, targeted tests, and AW-006 docs; before/after screenshots captured in output/plans-purchase-model-parity-2026-05-23-191156 | next: owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI, and npm run verify:pre-merge`
 - `2026-05-23 | screenshot-approved | owner approved the before/after screenshot handoff in output/plans-purchase-model-parity-2026-05-23-191156 | next: run npm run verify:pre-pr, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-05-23 | pre-pr-green | npm run verify:pre-pr passed full lane after explicit route/label/support sweep evidence was added to the brief; full gate included lint, typecheck, unit, build, perf budgets, and Playwright E2E with 98 passed / 478 skipped | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-23 | merged | PR #824 merged as e48afaa after owner approved merge; CI and local npm run verify:pre-merge were green | next: repo-managed docs-only closeout moves this brief to done and clears the AW-006 queue pointer`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#824`
+- `squash_commit`: `e48afaa`
+- `result`: Closed AW-006 Plans Comparison Purchase-Model Ready Card Parity. `/plans` now presents the paid offers as clearer token-backed comparison cards with purchase-model-ready copy, while preserving today's Stripe Checkout behavior and keeping future package/subscription copy explicit instead of hardcoded.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/plans-page.test.tsx tests/unit/checkout-button.test.tsx`; mobile safe-area Playwright for `/plans`; `npm run typecheck`; `npm run lint:briefs:all`; `git diff --check`; `npm run verify:pre-pr` full lane; `npm run verify:pre-merge` full lane; PR #824 CI all green (`verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `CodeQL`, Vercel).
+- `screenshot_artifacts`: `output/plans-purchase-model-parity-2026-05-23-191156`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining release-blocking gaps inside this slice.
+
+| Category                            | Achieved Score | Evidence                                                                                                                         | Gaps / Notes |
+| ----------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                | `5/5`          | `/plans` comparison surface shipped in #824 with screenshot approval and full local/CI gates.                                    | None.        |
+| UX flow clarity                     | `5/5`          | Product cards show fit, model, received value, and checkout expectation; unit tests and screenshots covered the flow.            | None.        |
+| Visual design quality               | `5/5`          | Before/after desktop/mobile screenshot handoff approved; token-backed 8px card direction used.                                   | None.        |
+| Accessibility (a11y)                | `5/5`          | Semantic content/buttons preserved; targeted tests and full Playwright suite passed.                                             | None.        |
+| Content governance                  | `5/5`          | Active brief, queue link, route/label/support sweep, and this closeout record are complete.                                      | None.        |
+| Commerce and revenue ops            | `5/5`          | Existing checkout payloads, product IDs, analytics, prices, and Stripe behavior unchanged; future models use safe fallback copy. | None.        |
+| Stack-fit and dependency discipline | `5/5`          | Reused existing catalog, `CheckoutButton`, public token utilities, Tailwind, and route-local helpers; no dependency added.       | None.        |
+| Testing and QA automation           | `5/5`          | Targeted Vitest, safe-area Playwright, full `verify:pre-pr`, full `verify:pre-merge`, and CI all passed.                         | None.        |
