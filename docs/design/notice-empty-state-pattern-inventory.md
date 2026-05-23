@@ -32,7 +32,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 | Guide progress trackers             | `components/guides/Guide0To1000Tracker.tsx`, `components/guides/PoolsideGuideTracker.tsx`                                                                                                                                                | loading skeletons, offline/sync error, retry sync, saved status                                                                | The two guide trackers are sibling surfaces and share a domain-specific sync/offline model, and PR `#776/#777` moved them to one guide-local sync-status treatment.                                                                                                                                                                        | Completed cleanup; keep as a reference for domain-local sync/offline status, not as an app-wide notice primitive.                                                                         |
 | Checkout success and claim recovery | `app/checkout/success/page.tsx`, `app/claim/page.tsx`, `components/commerce/DownloadResendForm.tsx`                                                                                                                                      | payment received, sign-in/claim next step, resend access link, privacy-safe recovery                                           | Post-purchase recovery is a conversion-critical route-owned flow with privacy-safe generic responses and entitlement checks outside the page UI.                                                                                                                                                                                           | Completed cleanup; keep as a reference for route-owned recovery clarity, not as an app-wide notice primitive.                                                                             |
 | Commerce action feedback            | `components/my-library/CheckoutButton.tsx`, `components/my-library/PortalButton.tsx`, `components/commerce/DownloadResendForm.tsx`                                                                                                       | checkout pending/error, billing portal pending/error, resend validation/pending/success/error                                  | PR `#810` completed the bounded commerce action feedback semantics pass for checkout start, billing portal, and download access resend.                                                                                                                                                                                                    | Completed cleanup; keep as a commerce-local feedback reference without changing Stripe/API payloads, entitlements, email delivery, analytics taxonomy, finance behavior, or route design. |
-| Dryland and micro sessions          | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`, `components/my-library/dryland/CreateManualDrylandSessionButton.tsx`                                                   | schema warning, load error, route refresh, action error/success, create error, empty sessions                                  | Complex stateful training flows with many local/server boundaries. The active PR-sized slice is limited to route-owned feedback semantics and does not change training state flows, APIs, local drafts, release logic, or persistence.                                                                                                     | Active bounded route-owned feedback-semantics slice; keep training/recovery workflow changes out of scope unless explicitly briefed.                                                      |
+| Dryland and micro sessions          | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`, `components/my-library/dryland/CreateManualDrylandSessionButton.tsx`                                                   | schema warning, load error, route refresh, action error/success, create error, empty sessions                                  | Complex stateful training flows with many local/server boundaries. PR `#818/#819` completed the bounded route-owned feedback-semantics slice without changing training state flows, APIs, local drafts, release logic, or persistence.                                                                                                     | Completed cleanup; keep Dryland/Micro Sessions as a member route-owned feedback reference and require a fresh re-audit before selecting another training feedback slice.                  |
 | Poolside PDF/download               | `components/guides/GuidePdfDownloadButton.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`                                                                                                                           | download pending, error, save/export status                                                                                    | Export states are artifact-specific and have image/PDF validation risk. PR `#808` completed the bounded `GuidePdfDownloadButton` feedback slice without changing generated PDF artifacts, and PR `#812` completed Poolside preview save-image feedback without changing capture, filenames, share/download mechanics, or PDF/print layout. | Completed export-feedback cleanup; keep as an artifact-specific reference and require a fresh re-audit before selecting another Poolside/export slice.                                    |
 
 ## Completed Primitive Pilot
@@ -483,26 +483,26 @@ Do not include:
 - broad app-wide Notice/EmptyState primitives,
 - Supabase, Stripe, auth, analytics, or API behavior.
 
-## Active Dryland / Micro Sessions Feedback Semantics Slice
+## Completed Dryland / Micro Sessions Feedback Semantics Slice
 
-Active AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Dryland / Micro Sessions Feedback Semantics`
 
-Active implementation brief:
+Done implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-23-aw-006-dryland-micro-sessions-feedback-semantics-10-10.md`
+`docs/task-briefs/done/2026-05-23-aw-006-dryland-micro-sessions-feedback-semantics-10-10.md`
 
-Scope direction:
+Completed scope:
 
-- Keep the work route-owned to Dryland and Micro Sessions member feedback.
-- Use a small dryland-local feedback presentation for schema warning, load error + retry,
+- Kept the work route-owned to Dryland and Micro Sessions member feedback.
+- Used a small dryland-local feedback presentation for schema warning, load error + retry,
   action error/success, create error, and first-run empty states.
-- Preserve dryland session APIs, micro-plan APIs, local draft persistence, save/delete behavior,
+- Preserved dryland session APIs, micro-plan APIs, local draft persistence, save/delete behavior,
   release-now, pause/resume, completion, skip, undo, bubble/timer behavior, routes, labels, and
   support procedures.
-- Add focused unit coverage for status/alert semantics and unchanged request payloads.
-- Use screenshot handoff because rendered member UI changes.
+- Added focused unit coverage for status/alert semantics and unchanged request payloads.
+- Used screenshot handoff because rendered member UI changed.
 
 Do not include:
 
@@ -513,6 +513,12 @@ Do not include:
 - broad member notice primitive or app-wide design-system primitive,
 - public visual redesign,
 - Supabase, Stripe, auth, analytics, commerce, entitlement, or email behavior.
+
+## No Active Notice/Feedback Candidate Selected
+
+No active AW-006 notice, feedback, empty-state, loading-state, or state-primitive implementation
+candidate is selected after the Dryland closeout. Run a fresh queue/design/code re-audit before the
+next bounded implementation slice is promoted.
 
 ## Reuse Rules For Later Implementation
 

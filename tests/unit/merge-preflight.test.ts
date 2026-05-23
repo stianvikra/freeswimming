@@ -139,7 +139,56 @@ describe("post-merge preflight", () => {
     });
 
     expect(report.staleCanonicalQueueReferences).toHaveLength(1);
-    expect(report.warnings.join("\n")).toContain("active/current/candidate item");
+    expect(report.warnings.join("\n")).toContain("active/current/candidate/in-progress item");
+  });
+
+  it("detects stale references from related parent and body-referenced design docs", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const inventoryPath = "docs/design/example-inventory.md";
+    const doneBriefPath = "docs/task-briefs/done/2026-05-03-example.md";
+    const report = buildPostMergePreflightReport({
+      branch: "main",
+      baseBranch: "main",
+      ref: "HEAD",
+      changedFiles: [doneBriefPath],
+      contentByPath: {
+        [doneBriefPath]: [
+          "# Task Brief: AW-006 Example State Parity",
+          "",
+          "## Metadata",
+          "",
+          "- `status`: `done`",
+          `- \`related_parent_brief\`: \`${queuePath}\``,
+          "",
+          "## Route / Label / Support Surface Sweep",
+          "",
+          `- \`${inventoryPath}\``,
+        ].join("\n"),
+      },
+      referenceTextByPath: {
+        [queuePath]: [
+          "## Remaining PR-Sized UX/UI Slices",
+          "",
+          "| Slice | Status | Evidence |",
+          "| --- | --- | --- |",
+          "| Example State Parity | `in-progress` | `docs/task-briefs/in-progress/2026-05-03-example.md` |",
+        ].join("\n"),
+        [inventoryPath]: [
+          "## Current Candidate Status",
+          "",
+          "Active implementation candidate:",
+          "",
+          "`Example State Parity`",
+        ].join("\n"),
+      },
+    });
+
+    const referencePaths = report.staleCanonicalQueueReferences.map(
+      (entry: { referencePath?: string }) => entry.referencePath
+    );
+
+    expect(referencePaths).toEqual([queuePath, inventoryPath]);
+    expect(report.queueInventoryFallout).toHaveLength(2);
   });
 
   it("reports queue and inventory fallout for pending closeout briefs before the first gate", () => {

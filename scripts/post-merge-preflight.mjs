@@ -204,7 +204,7 @@ export function buildPostMergePreflightReport(options = {}) {
 
   if (branch === baseBranch && queueInventoryFallout.length > 0) {
     warnings.push(
-      "One or more closeout briefs still appear as the active/current/candidate item in a canonical queue or design inventory."
+      "One or more closeout briefs still appear as the active/current/candidate/in-progress item in a canonical queue or design inventory."
     );
   }
 
@@ -293,7 +293,7 @@ function printSummary(report) {
     console.log("[post-merge-preflight] Required queue/inventory updates:");
     for (const staleReference of report.queueInventoryFallout) {
       console.log(
-        `- ${staleReference.referencePath ?? staleReference.canonicalQueuePath}: replace stale active/current/candidate reference "${staleReference.matchedText ?? staleReference.staleActivePath}" for done brief ${staleReference.doneBriefPath}.`
+        `- ${staleReference.referencePath ?? staleReference.canonicalQueuePath}: replace stale active/current/candidate/in-progress reference "${staleReference.matchedText ?? staleReference.staleActivePath}" for done brief ${staleReference.doneBriefPath}.`
       );
     }
   }

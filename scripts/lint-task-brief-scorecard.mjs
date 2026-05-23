@@ -319,6 +319,15 @@ function parseDesignInventoryPath(content) {
   return parseMetadataPath(content, "design_inventory");
 }
 
+function parseRelatedParentBriefPath(content) {
+  return parseMetadataPath(content, "related_parent_brief");
+}
+
+function parseReferencedReferencePaths(content) {
+  const referencePathPattern = /docs\/(?:task-briefs\/planned|design)\/[A-Za-z0-9._/-]+\.md/g;
+  return Array.from(content.matchAll(referencePathPattern), (match) => normalizePath(match[0]));
+}
+
 function readReferenceText(referencePath, options = {}) {
   const textByPath =
     options.referenceTextByPath ??
@@ -374,10 +383,16 @@ function parseBriefTitleCandidates(fileName, content) {
   );
 }
 
+function isAw006Brief(fileName, content) {
+  return /\bAW-006\b/i.test(content) || /(?:^|-|\s)aw-006(?:-|\s|$)/i.test(fileName);
+}
+
 function isActiveLifecycleText(line) {
   const normalized = normalizeReferenceText(line);
-  if (/\b(no|none|not)\s+(active|current|candidate)\b/i.test(normalized)) return false;
-  return /\b(active|current|candidate)\b/i.test(normalized);
+  if (/\b(no|none|not)\s+(active|current|candidate|in progress)\b/i.test(normalized)) {
+    return false;
+  }
+  return /\b(active|current|candidate|in progress)\b/i.test(normalized);
 }
 
 function lineMentionsDoneBrief(line, titleCandidates) {
@@ -398,7 +413,12 @@ function isActiveLifecycleTableRow(line) {
   if (!line.trim().startsWith("|")) return false;
   return toCells(line).some((cell) => {
     const normalized = normalizeReferenceText(cell);
-    return normalized === "active" || normalized === "current" || normalized === "candidate";
+    return (
+      normalized === "active" ||
+      normalized === "current" ||
+      normalized === "candidate" ||
+      normalized === "in progress"
+    );
   });
 }
 
@@ -457,8 +477,17 @@ export function findStaleCanonicalQueueActiveReferences(filePath, content, optio
   const fileName = doneMatch[1];
   const staleActivePath = `docs/task-briefs/in-progress/${fileName}`;
   const titleCandidates = parseBriefTitleCandidates(fileName, content);
+  const includeAw006FallbackReferences = isAw006Brief(fileName, content);
   const referencePaths = Array.from(
-    new Set([parseCanonicalQueuePath(content), parseDesignInventoryPath(content)].filter(Boolean))
+    new Set(
+      [
+        parseCanonicalQueuePath(content),
+        parseDesignInventoryPath(content),
+        ...(includeAw006FallbackReferences
+          ? [parseRelatedParentBriefPath(content), ...parseReferencedReferencePaths(content)]
+          : []),
+      ].filter(Boolean)
+    )
   );
   const staleReferences = [];
 
@@ -670,7 +699,7 @@ export function lintBriefText(filePath, content, canonicalCategories, options = 
 
   for (const staleReference of findStaleCanonicalQueueActiveReferences(filePath, content, options)) {
     errors.push(
-      `Reference doc "${staleReference.referencePath ?? staleReference.canonicalQueuePath}" still lists done brief "${staleReference.doneBriefPath}" as active/current/candidate via "${staleReference.matchedText ?? staleReference.staleActivePath}". Update the queue/inventory in the same closeout PR before starting the next slice.`
+      `Reference doc "${staleReference.referencePath ?? staleReference.canonicalQueuePath}" still lists done brief "${staleReference.doneBriefPath}" as active/current/candidate/in-progress via "${staleReference.matchedText ?? staleReference.staleActivePath}". Update the queue/inventory in the same closeout PR before starting the next slice.`
     );
   }
 

@@ -228,6 +228,38 @@ describe("task brief scorecard lint", () => {
     expect(result.errors.join("\n")).toContain("active/current/candidate");
   });
 
+  it("fails a changed done brief when related parent brief still marks it active", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const content = buildBrief({
+      title: "AW-006 Example State Parity",
+      status: "done",
+      completionRecord: passingCompletionRecord,
+    }).replace(
+      "- `status`: `done`",
+      ["- `status`: `done`", `- \`related_parent_brief\`: \`${queuePath}\``].join("\n")
+    );
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      content,
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [queuePath]: [
+            "## Remaining PR-Sized UX/UI Slices",
+            "",
+            "| Slice | Status | Evidence |",
+            "| --- | --- | --- |",
+            "| Example State Parity | `in-progress` | `docs/task-briefs/in-progress/2026-05-03-example.md` |",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain(queuePath);
+    expect(result.errors.join("\n")).toContain("still lists done brief");
+  });
+
   it("fails a changed done brief when its design inventory still lists it as current candidate", () => {
     const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
     const inventoryPath = "docs/design/example-inventory.md";
@@ -262,6 +294,42 @@ describe("task brief scorecard lint", () => {
     );
 
     expect(result.errors.join("\n")).toContain(inventoryPath);
+  });
+
+  it("fails a changed done brief when a body-referenced design doc still lists it active", () => {
+    const inventoryPath = "docs/design/example-inventory.md";
+    const content = buildBrief({
+      title: "AW-006 Example State Parity",
+      status: "done",
+      completionRecord: passingCompletionRecord,
+    }).replace(
+      "## Platform 10/10 Scorecard Mapping",
+      [
+        `- Reference inventory: \`${inventoryPath}\``,
+        "",
+        "## Platform 10/10 Scorecard Mapping",
+      ].join("\n")
+    );
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      content,
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [inventoryPath]: [
+            "## Current Candidate Status",
+            "",
+            "Active state-primitive implementation candidate:",
+            "",
+            "`Example State Parity`",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain(inventoryPath);
+    expect(result.errors.join("\n")).toContain("active/current/candidate");
   });
 
   it("allows historical queue log references when the done brief is no longer the active item", () => {
