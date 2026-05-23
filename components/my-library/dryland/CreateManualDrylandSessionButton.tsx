@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
 import type { DrylandSaveApiResponse, DrylandSessionKind } from "@/lib/dryland/shared";
 
@@ -11,6 +12,9 @@ type Props = {
   pendingLabel?: string;
   className?: string;
   testId?: string;
+  describedById?: string;
+  hideInlineError?: boolean;
+  onErrorChange?: (message: string) => void;
 };
 
 export default function CreateManualDrylandSessionButton({
@@ -19,11 +23,15 @@ export default function CreateManualDrylandSessionButton({
   pendingLabel = "Creating session...",
   className = "",
   testId = "create-manual-dryland-session",
+  describedById,
+  hideInlineError = false,
+  onErrorChange,
 }: Props) {
   const router = useRouter();
   const [clientReady, setClientReady] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+  const errorId = `${testId}-error`;
 
   useEffect(() => {
     setClientReady(true);
@@ -32,6 +40,7 @@ export default function CreateManualDrylandSessionButton({
   async function handleCreateSession() {
     setIsCreating(true);
     setError("");
+    onErrorChange?.("");
 
     try {
       const response = await fetch("/api/my-library/dryland", {
@@ -50,18 +59,21 @@ export default function CreateManualDrylandSessionButton({
         .catch(() => null)) as DrylandSaveApiResponse | null;
 
       if (!response.ok || !responseBody?.ok) {
-        setError(
+        const nextError =
           responseBody && !responseBody.ok
             ? responseBody.error
-            : "Could not create dryland session."
-        );
+            : "Could not create dryland session.";
+        setError(nextError);
+        onErrorChange?.(nextError);
         return;
       }
 
       router.push(`/my-library/dryland/${responseBody.session.id}`);
       router.refresh();
     } catch {
-      setError("Could not create dryland session.");
+      const nextError = "Could not create dryland session.";
+      setError(nextError);
+      onErrorChange?.(nextError);
     } finally {
       setIsCreating(false);
     }
@@ -75,14 +87,15 @@ export default function CreateManualDrylandSessionButton({
         data-client-ready={clientReady ? "true" : "false"}
         onClick={() => void handleCreateSession()}
         disabled={!clientReady || isCreating}
+        aria-describedby={error ? (describedById ?? errorId) : undefined}
         className={className}
       >
         {isCreating ? pendingLabel : label}
       </button>
-      {error ? (
-        <p data-testid={`${testId}-error`} className="text-sm text-rose-700">
-          {error}
-        </p>
+      {error && !hideInlineError ? (
+        <DrylandFeedback id={errorId} tone="error" density="compact" testId={errorId}>
+          <p>{error}</p>
+        </DrylandFeedback>
       ) : null}
     </div>
   );

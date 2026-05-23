@@ -187,6 +187,37 @@ describe("DrylandBuilderHub", () => {
     vi.clearAllMocks();
   });
 
+  it("renders dryland route feedback with accessible status and alert semantics", () => {
+    render(
+      <DrylandBuilderHub
+        browseOnly
+        drylandLibrary={buildLibrary({
+          schemaReady: false,
+          loadError: "Could not load dryland sessions right now.",
+          selectedSession: null,
+          recentSessions: [],
+        })}
+      />
+    );
+
+    const schemaWarning = screen.getByTestId("dryland-builder-schema-warning");
+    expect(schemaWarning).toHaveAttribute("role", "status");
+    expect(schemaWarning).toHaveAttribute("aria-live", "polite");
+    expect(schemaWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(schemaWarning).toHaveTextContent("Dryland builder is still syncing");
+
+    const loadError = screen.getByTestId("dryland-builder-load-error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(within(loadError).getByRole("button", { name: "Retry" })).toBeVisible();
+
+    const emptyState = screen.getByTestId("dryland-builder-empty");
+    expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+  });
+
   it("loads a dryland session, lets the owner update it, and saves the canonical session", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
@@ -822,6 +853,84 @@ describe("DrylandBuilderHub", () => {
         })
       );
     });
+
+    const success = await screen.findByTestId("dryland-builder-action-success");
+    expect(success).toHaveAttribute("role", "status");
+    expect(success).toHaveAttribute("aria-live", "polite");
+    expect(success).toHaveAttribute("data-feedback-tone", "success");
+    expect(success).toHaveTextContent("Deleted Strength session 2026-03-29.");
+  });
+
+  it("announces dryland list action failures without changing the delete payload", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not delete dryland session right now.",
+      }),
+    } as Response);
+
+    render(
+      <DrylandBuilderHub drylandLibrary={buildLibrary({ selectedSession: null })} browseOnly />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(
+      screen.getByTestId("dryland-delete-session-11111111-1111-4111-8111-111111111111")
+    );
+    fireEvent.click(
+      screen.getByTestId("dryland-confirm-delete-session-11111111-1111-4111-8111-111111111111")
+    );
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/11111111-1111-4111-8111-111111111111",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "DELETE",
+        })
+      );
+    });
+
+    const alert = await screen.findByTestId("dryland-builder-action-error");
+    expect(alert).toHaveAttribute("role", "alert");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(alert).toHaveAttribute("data-feedback-tone", "error");
+    expect(alert).toHaveTextContent("Could not delete dryland session right now.");
+  });
+
+  it("keeps create session failures grouped under the create actions", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not create dryland session.",
+      }),
+    } as Response);
+
+    render(
+      <DrylandBuilderHub drylandLibrary={buildLibrary({ selectedSession: null })} browseOnly />
+    );
+
+    const createButton = screen.getByTestId("dryland-browse-create-strength");
+    await waitFor(() => {
+      expect(createButton).toHaveAttribute("data-client-ready", "true");
+    });
+
+    fireEvent.click(createButton);
+
+    const alert = await screen.findByTestId("dryland-builder-create-error");
+    expect(alert).toHaveAttribute("role", "alert");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(alert).toHaveAttribute("data-feedback-tone", "error");
+    expect(alert).toHaveTextContent("Could not create dryland session.");
+    expect(createButton).toHaveAttribute("aria-describedby", "dryland-builder-create-error");
+    expect(screen.queryByTestId("dryland-browse-create-strength-error")).not.toBeInTheDocument();
   });
 
   it("hides the normal saved-session list while choosing micro plan sources", async () => {
