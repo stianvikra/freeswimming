@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-22`
-- `updated`: `2026-05-22`
+- `updated`: `2026-05-23`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
@@ -151,7 +151,7 @@ Required as a targeted export/action sweep because this slice changes a user-fac
 3. Success/share and capture failure feedback are visually clear, safely worded, accessible, and clear when the next attempt starts.
 4. The not-ready disabled state remains deterministic and does not call the export driver before the embedded note is ready.
 5. Focused unit tests cover the changed feedback semantics and unchanged export behavior.
-6. Canonical AW-006 queue and notice/empty-state inventory record this active slice.
+6. Canonical AW-006 queue and notice/empty-state inventory record this completed slice.
 7. Screenshot/export handoff is captured and approved before `npm run verify:pre-pr`.
 
 ## Validation
@@ -196,3 +196,41 @@ After screenshot approval:
 - `2026-05-22 | in-progress | captured after/reference screenshot handoff in output/aw-006-poolside-save-image-feedback-2026-05-22-224945 at 2026-05-22 22:49 using a temporary local capture route; removed capture-only route/script before handoff; product component did not change after capture | next: wait for owner visual approval`
 - `2026-05-22 | in-progress | owner approved screenshot handoff; first npm run verify:pre-pr stopped at quality-gate because the brief lacked explicit session-step reference contract rationale; added N/A implementation rationale because this slice leaves session-step rendering and shared renderer contracts unchanged | next: rerun npm run verify:pre-pr`
 - `2026-05-22 | in-progress | npm run verify:pre-pr passed full lane after the brief rationale fix: lint/quality gates/admin/env/pr-body, lint, typecheck, unit, build, perf budgets, and Playwright E2E passed; perf budget trend recommended hold because worst margin was 14.4% against a 15.0% tighten threshold | next: commit, push, open PR, monitor CI`
+- `2026-05-23 | done | PR #812 merged to main as c50ca42 after owner-approved screenshot handoff, local verify:pre-pr, green required CI, and verify:pre-merge passed | next: repo-managed closeout moves this brief to done and clears active queue/inventory references`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#812`
+- `squash_commit`: `c50ca42`
+- `result`: Closed AW-006 Poolside Preview Save Image Feedback Clarity; Poolside Preview `Save image` now has clearer pending, success/share, cancelled-share, not-ready, and error feedback with accessible live-region semantics while preserving PNG capture, native share/download behavior, generated filenames, PDF/print layout, data, and APIs.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/poolside-preview-page-client.test.tsx` passed (`9` tests); targeted hygiene passed with `npm run lint`, `npm run typecheck`, `npm run lint:briefs:all`, and `git diff --check`; screenshot handoff approved at `output/aw-006-poolside-save-image-feedback-2026-05-22-224945` captured `2026-05-22 22:49`; final `npm run verify:pre-pr` passed full lane on commit `b3752d3` with artifact `artifacts/test-runs/20260522-230241`; PR `#812` required CI passed; `npm run verify:pre-merge` passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `UX flow clarity`
+- `Business logic correctness and data integrity`
+- `Accessibility (a11y)`
+- `Reliability and failure handling`
+- `Testing and QA automation`
+
+| Category                                      | Achieved Score | Evidence                                                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#812`, Poolside preview action stayed in place, queue and inventory closeout                                       | None         |
+| UX flow clarity                               | `5/5`          | Pending, saved/shared, cancelled-share, not-ready, and error feedback tested and screenshot-approved                   | None         |
+| Visual design quality                         | `5/5`          | Approved `after/reference` screenshots show stable spacing and existing Poolside/member visual language                | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved capture driver, readiness polling, native share, download, filenames, cleanup  | None         |
+| Accessibility (a11y)                          | `5/5`          | Tests covered live-region/status semantics and accessible disabled/not-ready feedback                                  | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, asset, route data, API, or heavy client behavior introduced                                             | None         |
+| Reliability and failure handling              | `5/5`          | Capture failure and not-ready paths produce deterministic feedback and allow retry                                     | None         |
+| Security and authz                            | `5/5`          | Member route access, export trust boundary, browser APIs, and diagnostics stayed unchanged                             | None         |
+| Privacy and compliance                        | `5/5`          | Feedback exposes no user identifiers, entitlement details, raw diagnostics, secrets, env values, or image contents     | None         |
+| Content governance                            | `5/5`          | Canonical AW-006 queue, notice inventory, and this brief aligned through implementation and closeout                   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `PoolsidePreviewPageClient`, image export client, Tailwind patterns, and focused tests; no package add | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed                             | None         |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit, no migrations/config/workflow/package changes, normal git revert path                            | None         |
+
+Remaining gaps: none for this bounded slice.
+
+Defer/fix recommendation: none; no target category is below `4/5`.
