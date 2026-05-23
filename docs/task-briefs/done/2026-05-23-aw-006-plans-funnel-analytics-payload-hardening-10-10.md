@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-plans-funnel-analytics-payload-hardening-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
@@ -195,3 +195,26 @@ Quality-gate evidence:
 - `2026-05-23 | in-progress | added safe scalar product availability context to /plans plans_viewed and upsell_presented payloads, updated focused unit coverage, API contract docs, and the canonical AW-006 queue; targeted checks passed: ./node_modules/.bin/vitest run tests/unit/plans-page.test.tsx tests/unit/checkout-button.test.tsx, npm run lint:briefs:all, npm run typecheck, targeted route/label/support sweep, and git diff --check; no screenshot handoff is required because rendered UI did not change | next: run npm run verify:pre-pr before commit/push/PR handoff`
 - `2026-05-23 | in-progress | first npm run verify:pre-pr stopped in quality-gate evidence because app/plans/page.tsx is conservatively classified as a UI surface; added explicit route/label/support sweep evidence plus N/A screenshot artifact handoff, owner screenshot approval stop, and screenshot comparison naming rationale because this slice has no rendered UI delta | next: rerun npm run verify:pre-pr`
 - `2026-05-23 | in-progress | npm run verify:pre-pr passed full lane, committed badc4aad3e7f3a4e7f1f022c43d71889cb1bd27f, pushed branch aw-006-plans-funnel-analytics-payload, opened PR #814, required CI checks passed, and npm run verify:pre-merge passed with marker artifacts/verify-pre-merge/20260523-043051.json; no screenshot artifacts were generated because this is an invisible analytics payload slice | next: owner review and explicit merge approval for PR #814`
+- `2026-05-23 | closeout | PR #814 merged as a55b524; moved brief to done and removed stale active queue pointer | next: run docs-only closeout gates and merge closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#814`
+- `squash_commit`: `a55b524`
+- `result`: Closed AW-006 Plans Funnel Analytics Payload Hardening by adding safe product-availability context to existing `/plans` funnel events, while leaving rendered UI, Stripe, checkout, prices, entitlements, auth, email, and user data unchanged.
+- `validation`: Targeted unit coverage passed; `npm run verify:pre-pr` passed full lane; PR #814 CI passed; `npm run verify:pre-merge` passed on HEAD `fd74628` with marker `artifacts/verify-pre-merge/20260523-050026.json`; screenshot handoff N/A because there was no rendered UI delta.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | `/plans` remained the paid-offers hub and emitted clearer product-availability context.  | None         |
+| Business logic correctness and data integrity | `5/5`          | Payload counts and ID lists derive from `CatalogProductAvailability`; unit tests passed. | None         |
+| Security and authz                            | `5/5`          | Payload review confirmed no auth, checkout authorization, cookies, or secrets changed.   | None         |
+| Privacy and compliance                        | `5/5`          | Payload excludes email, user ID, Stripe session ID, price IDs, secrets, and free text.   | None         |
+| Content governance                            | `5/5`          | API contract docs, AW-006 queue, and this completion record were updated.                | None         |
+| Analytics and KPI observability               | `5/5`          | Existing `plans_viewed` and `upsell_presented` events now include bounded safe context.  | None         |
+| Commerce and revenue ops                      | `5/5`          | Stripe, checkout, entitlements, refunds, invoices, payouts, and finance data unchanged.  | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `/plans`, `TrackEventOnMount`, existing sanitizer path, and catalog model.        | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full pre-PR, CI, and pre-merge gates passed.                             | None         |
+| DevOps and rollback readiness                 | `5/5`          | Normal git revert rollback; no migrations, env, package, workflow, or provider changes.  | None         |
