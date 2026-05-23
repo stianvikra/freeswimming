@@ -6,17 +6,17 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-05-22`
+- `updated`: `2026-05-23`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-22`
-- `base`: `main@6237ebe`
+- `last_audited`: `2026-05-23`
+- `base`: `main@c50ca42`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#810` are recorded below. After repo-managed closeout `#811`, the fresh queue/design/code re-audit selected Poolside Preview Save Image Feedback Clarity as the current bounded AW-006 implementation slice.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#812` are recorded below. After PR `#812`, Poolside Preview Save Image Feedback Clarity is closed and no AW-006 implementation slice is selected until the next fresh queue/design/code re-audit.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, task-brief closeout rules, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -102,6 +102,13 @@ Make the 2026-05-16 full UX/UI design review durable in the repo, record what ha
   - shipped through `#788/#789`, scoped to repairing stale queue/design-inventory references after Context Notes.
   - `docs/task-briefs/done/2026-05-21-aw-006-admin-content-manager-top-level-state-parity-10-10.md`
   - shipped through `#790/#791`, scoped to applying the primitive to Admin Content Manager top-level states.
+- Completed export/action feedback follow-ups:
+  - `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`
+  - shipped through `#808`, scoped to Guide PDF download pending/error feedback without changing PDF generation, APIs, entitlements, analytics, filenames, or guide content.
+  - `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`
+  - shipped through `#810`, scoped to checkout start, billing portal, and access-link resend feedback semantics without changing Stripe/API payloads, entitlements, email delivery, analytics taxonomy, finance behavior, or route design.
+  - `docs/task-briefs/done/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md`
+  - shipped through `#812`, scoped to Poolside preview save-image feedback clarity without changing image capture, filenames, share/download mechanics, PDF/print layout, data, or APIs.
 
 ## Executive Summary From The Review
 
@@ -181,16 +188,17 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 | Admin Note Screenshot Capture feedback state parity          | `done`    | `#804`, `docs/task-briefs/done/2026-05-22-aw-006-admin-note-screenshot-capture-feedback-state-parity-10-10.md`          | Reused the admin-local `AdminManagerState` helper for screenshot-capture recovery/save-error feedback without changing screenshot capture, crop, upload, note attachment, recovery, authz, API, database, or support behavior.                                    |
 | Guide PDF Download Feedback Clarity                          | `done`    | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`                          | Made shared guide PDF download pending/error feedback clearer and accessible without changing PDF generation, APIs, entitlements, analytics, filenames, or guide content.                                                                                         |
 | Commerce Action Feedback Semantics                           | `done`    | `#810`, `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`                           | Gave checkout start, billing portal, and download access resend actions consistent feedback semantics without changing Stripe, API payloads, entitlements, email delivery, analytics taxonomy, finance behavior, or route design.                                 |
+| Poolside Preview Save Image Feedback Clarity                 | `done`    | `#812`, `docs/task-briefs/done/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md`                 | Made Poolside preview save-image pending/success/error feedback clearer and accessible without changing image capture, filenames, share/download mechanics, PDF/print layout, data, or APIs.                                                                      |
 
 ## Remaining PR-Sized UX/UI Slices
 
-Current bounded AW-006 implementation slice selected after the `#810/#811` closeout cycle.
+No AW-006 implementation slice is selected after the `#812` closeout. The next slice must start with a fresh queue/design/code re-audit.
 
-| Slice                                        | Status   | Evidence                                                                                               | Notes                                                                                                                           |
-| -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Poolside Preview Save Image Feedback Clarity | `active` | `docs/task-briefs/in-progress/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md` | Improve Poolside preview save-image pending/success/error feedback only; screenshot/export handoff required before broad gates. |
-| Guide PDF Download Feedback Clarity          | `done`   | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`         | Completed shared guide PDF download feedback clarity.                                                                           |
-| Commerce Action Feedback Semantics           | `done`   | `#810`, `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`          | Completed feedback semantics for checkout start, billing portal, and access-link resend only.                                   |
+| Slice                                        | Status | Evidence                                                                                                | Notes                                                                                         |
+| -------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Poolside Preview Save Image Feedback Clarity | `done` | `#812`, `docs/task-briefs/done/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md` | Completed Poolside preview save-image feedback clarity.                                       |
+| Guide PDF Download Feedback Clarity          | `done` | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`          | Completed shared guide PDF download feedback clarity.                                         |
+| Commerce Action Feedback Semantics           | `done` | `#810`, `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`           | Completed feedback semantics for checkout start, billing portal, and access-link resend only. |
 
 Protected areas:
 
@@ -443,4 +451,5 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | closeout | PR #808 shipped Guide PDF Download Feedback Clarity and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after Guide PDF Download Feedback Clarity #808 and repo-managed closeout #809 on clean main@016b2e5; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Commerce Action Feedback Semantics for the now-shipped #810 slice | next: completed by PR #810`
 - `2026-05-22 | closeout | PR #810 shipped Commerce Action Feedback Semantics and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
-- `2026-05-22 | planned | refreshed after the #810/#811 closeout cycle on clean main@6237ebe; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected Poolside Preview Save Image Feedback Clarity as the current bounded AW-006 UI/export-adjacent slice | next: execute docs/task-briefs/in-progress/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md`
+- `2026-05-22 | planned | refreshed after the #810/#811 closeout cycle on clean main@6237ebe; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected the Poolside Preview Save Image Feedback Clarity slice that later shipped via #812 | next: completed by PR #812`
+- `2026-05-23 | closeout | PR #812 shipped Poolside Preview Save Image Feedback Clarity and this repo-managed closeout moves its brief to done; the queue now leaves no AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
