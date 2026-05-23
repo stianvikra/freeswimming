@@ -22,6 +22,7 @@ Use this quick check so the task execution is precise:
 - State automation mode (`automation-first` default, or explicit manual checkpoints)
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
 - State stack/architecture best-practice impact (React/Next, TypeScript, Supabase, external services, UI primitives, tests)
+- State forward compatibility contract: what future products/labels/workflows/data values follow automatically, what needs explicit mapping, and how unknown values fail safely
 - State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
 - State visual artifact rule for UI/print/layout/brand changes, including folder path and `before/after` or `after/reference` naming
 - State route/label/support-surface impact sweep rule when routes, labels, workflow actions, Help/Guide surfaces, runbooks, or support paths are removed/renamed/consolidated
@@ -210,6 +211,29 @@ For persisted entities that appear in URLs, progress, notes, analytics, imports/
 
 If not applicable, write `N/A` with rationale.
 
+## Forward Compatibility Contract (Required)
+
+Define how this slice behaves when the platform grows after this PR.
+
+Use `docs/runbooks/task-brief-forward-compatibility-contract.md` as the checklist.
+
+Include:
+
+- Extensibility surfaces:
+  - products/catalog items, entitlements, categories, workflow labels/actions/statuses, routes/params, locales, providers, analytics payloads, export formats, admin surfaces, or content types touched by this scope.
+- Source of truth:
+  - which future values are derived from canonical data rather than hardcoded lists.
+- Additive behavior:
+  - what should automatically keep working when a new value is added.
+- Explicit mapping requirements:
+  - which new values require code/copy/test/doc updates before release.
+- Unknown or deprecated values:
+  - safe fallback, fail-closed behavior, logging/support diagnostics, and user/admin copy.
+- Test/evidence:
+  - future-value fixture, unknown-value negative path, contract test, route/label/support sweep, or explicit `N/A` rationale for docs-only work.
+
+If this is a docs-only governance brief, write `N/A` only when the brief does not define durable rules. If it changes durable process rules, describe how future briefs inherit the rule.
+
 ## Scope
 
 Which files/features are in scope?
@@ -333,6 +357,8 @@ For each brief, explicitly state scope or `N/A` for these categories so quality 
   - canonical model, required fields, owner assignment, revision/rollback policy.
 - Identity and rename safety
   - canonical stable ID vs slug/title, mutability rules, rename-vs-repurpose policy, and legacy alias/redirect behavior.
+- Forward compatibility and extensibility
+  - future products, labels, workflow states, identifiers, routes, locales, providers, exports, and analytics values are data-driven where possible, explicitly mapped where necessary, and safe for unknown values.
 - Taxonomy and category management
   - category model, naming rules, sorting, archive/active lifecycle.
 - Workflow and publishing safety

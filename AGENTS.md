@@ -32,6 +32,7 @@ This file defines how coding agents should collaborate in this repository.
 7. Business logic invariants and data integrity constraints for changed scope are explicitly validated (tests and/or deterministic runtime guards).
 8. Changed task briefs pass `npm run lint:briefs` (scorecard categories + target threshold/evidence checks).
 9. Help-center assertions are updated when Help/Guide content contract changes.
+10. Forward compatibility is explicit for changed scope: new products, labels, workflow states, identifiers, routes, locales, providers, exports, or analytics values either follow from canonical data automatically or require a documented mapping/update path with tests or rationale.
 
 ## Platform 10/10 Governance
 
@@ -70,6 +71,12 @@ This file defines how coding agents should collaborate in this repository.
   - whether each identifier is immutable, write-once, or intentionally renameable,
   - `rename` vs `repurpose` policy (when to edit in place vs create a new row/entity),
   - compatibility/alias/redirect behavior if legacy identifiers may still be read anywhere.
+- Every new or refreshed implementation brief must include a forward compatibility contract:
+  - which future additions should be data-driven automatically, for example products, catalog rows, categories, workflow states, locales, export formats, or analytics payload values,
+  - which future additions require an explicit mapping or owner decision,
+  - the safe fallback for unknown, deprecated, or unmapped values,
+  - the test/evidence that proves the active slice is not hardcoded to today-only values, or an explicit `N/A` rationale for docs-only work.
+  - Use `docs/runbooks/task-brief-forward-compatibility-contract.md` as the checklist.
 - For performance-sensitive work, always set route-level speed targets (CWV/payload) for changed core routes.
 - For admin/user workflow changes, briefs must include explicit Help/Guide impact:
   - required Help/Guide update in same PR, or
@@ -90,6 +97,7 @@ This file defines how coding agents should collaborate in this repository.
 - For external services, prefer official SDK/docs and document webhook/retry/idempotency/secret-handling rules in the brief.
 - If the best-practice fix is larger than the active slice, keep the active patch safe and create a dated follow-up brief with the architectural target, scorecard mapping, and acceptance criteria.
 - Do not claim `10/10` architecture unless the active brief names the relevant stack surfaces, proves reuse or a justified exception, and validates the critical invariants with tests or direct evidence.
+- Do not claim forward compatibility when the code is hardcoded to today's known rows, labels, or product IDs unless the brief explicitly says that future values require a mapping update and includes the fallback behavior for unmapped values.
 
 ## Guardrails
 
@@ -107,6 +115,9 @@ This file defines how coding agents should collaborate in this repository.
   - what will be done,
   - why it matters,
   - what is intentionally out of scope.
+- Before recommending a next slice, Codex must include the same non-programmer explanation plus one sentence on the forward-compatibility intent:
+  - what should automatically keep working when new products/labels/workflows/data values are added,
+  - or what future addition will require an explicit mapping/update.
 - Do not begin implementation until that explanation has been given, unless the owner already provided an equally clear explanation in the current request.
 - Automation-first default:
   - assistant should execute implement/test/git/PR prep steps directly whenever tooling + permissions allow,

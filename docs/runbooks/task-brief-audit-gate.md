@@ -69,6 +69,9 @@ Before marking a brief `ready`, check:
 - affected paths still exist,
 - scorecard categories are correct for the current scope,
 - target thresholds are measurable,
+- forward compatibility is explicit for new products, labels, workflow states, identifiers, routes,
+  locales, providers, exports, analytics payloads, and unknown values, or explicitly `N/A`,
+  using `docs/runbooks/task-brief-forward-compatibility-contract.md`,
 - validation lane is correct:
   - docs-only for pure Markdown/governance diffs,
   - full lane for runtime, scripts, tests, config, workflow, schema, or package changes,
@@ -100,6 +103,8 @@ Refresh the audit record when:
 - implementation starts from a newer `main` after significant changes,
 - AGENTS.md or the task-brief template changes,
 - scorecard categories or lint rules change,
+- forward compatibility rules, task-brief template requirements, or AGENTS.md slice-recommendation
+  rules change,
 - validation commands or docs-only/full-lane rules change,
 - route names, labels, workflow actions, Help/Guide, runbooks, or support paths change,
 - provider/control-plane facts are confirmed or disproven,
