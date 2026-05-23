@@ -246,6 +246,49 @@ describe("PoolsidePreviewPageClient", () => {
     });
 
     await waitFor(() => {
+      const notice = screen.getByTestId("poolside-preview-save-image-notice");
+      expect(notice).toHaveAttribute("role", "status");
+      expect(notice).toHaveAttribute("aria-live", "polite");
+      expect(notice).toHaveTextContent("Image saved");
+      expect(notice).toHaveTextContent(
+        "Saved freeswimming-poolside-preview-draft-poolside-note-portrait.png."
+      );
+    });
+  });
+
+  it("shows polite pending feedback while preparing the image export", async () => {
+    const createObjectUrlSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:http://127.0.0.1/mock-poolside-image");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+    let resolveCapture!: (blob: Blob) => void;
+    const capturePromise = new Promise<Blob>((resolve) => {
+      resolveCapture = resolve;
+    });
+
+    setExportOverride({
+      captureNoteBlob: async () => capturePromise,
+    });
+
+    render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
+
+    const button = screen.getByTestId("poolside-preview-save-image");
+    fireEvent.click(button);
+
+    const pending = await screen.findByTestId("poolside-preview-save-image-pending");
+    expect(pending).toHaveTextContent("Preparing image");
+    expect(pending).toHaveTextContent("Preparing image export...");
+    expect(pending).toHaveAttribute("role", "status");
+    expect(pending).toHaveAttribute("aria-live", "polite");
+    expect(button).toHaveAttribute("aria-describedby", pending.id);
+
+    resolveCapture(new Blob(["png"], { type: "image/png" }));
+
+    await waitFor(() => {
+      expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId("poolside-preview-save-image-notice")).toHaveTextContent(
         "Saved freeswimming-poolside-preview-draft-poolside-note-portrait.png."
       );
@@ -294,7 +337,58 @@ describe("PoolsidePreviewPageClient", () => {
       expect(screen.getByTestId("poolside-preview-save-image-notice")).toHaveTextContent(
         "Image ready to share."
       );
+      expect(screen.getByTestId("poolside-preview-save-image-notice")).toHaveAttribute(
+        "aria-live",
+        "polite"
+      );
     });
+  });
+
+  it("does not show false success or fallback download when native share is cancelled", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn().mockImplementation(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        media: "(pointer: coarse)",
+        onchange: null,
+      })),
+    });
+
+    const shareSpy = vi.fn().mockRejectedValue(new Error("AbortError"));
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => undefined);
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: shareSpy,
+    });
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value: vi.fn(() => true),
+    });
+
+    setExportOverride({
+      captureNoteBlob: async () => new Blob(["png"], { type: "image/png" }),
+    });
+
+    render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
+
+    fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
+
+    await waitFor(() => {
+      expect(shareSpy).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("poolside-preview-save-image")).not.toBeDisabled();
+    });
+
+    expect(clickSpy).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("poolside-preview-save-image-notice")).toBeNull();
+    expect(screen.queryByTestId("poolside-preview-save-image-error")).toBeNull();
   });
 
   it("shows recoverable feedback when capture fails", async () => {
@@ -310,8 +404,51 @@ describe("PoolsidePreviewPageClient", () => {
     fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("poolside-preview-save-image-error")).toHaveTextContent(
-        "Could not capture the poolside note image."
+      const error = screen.getByTestId("poolside-preview-save-image-error");
+      expect(error).toHaveAttribute("role", "alert");
+      expect(error).toHaveAttribute("aria-live", "assertive");
+      expect(error).toHaveTextContent("Image export failed");
+      expect(error).toHaveTextContent("Could not capture the poolside note image.");
+    });
+  });
+
+  it("clears failed export feedback when the next image attempt starts", async () => {
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:http://127.0.0.1/mock-poolside-image");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+    let callCount = 0;
+    let resolveRetry!: (blob: Blob) => void;
+    const retryPromise = new Promise<Blob>((resolve) => {
+      resolveRetry = resolve;
+    });
+
+    setExportOverride({
+      captureNoteBlob: async () => {
+        callCount += 1;
+        if (callCount === 1) {
+          throw new Error("Could not capture the poolside note image.");
+        }
+        return retryPromise;
+      },
+    });
+
+    render(<PoolsidePreviewPageClient />);
+    await markEmbeddedPreviewReady();
+
+    fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
+    await screen.findByTestId("poolside-preview-save-image-error");
+
+    fireEvent.click(screen.getByTestId("poolside-preview-save-image"));
+    const pending = await screen.findByTestId("poolside-preview-save-image-pending");
+    expect(pending).toHaveTextContent("Preparing image export...");
+    expect(screen.queryByTestId("poolside-preview-save-image-error")).toBeNull();
+
+    resolveRetry(new Blob(["png"], { type: "image/png" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("poolside-preview-save-image-notice")).toHaveTextContent(
+        "Saved freeswimming-poolside-preview-draft-poolside-note-portrait.png."
       );
     });
   });
