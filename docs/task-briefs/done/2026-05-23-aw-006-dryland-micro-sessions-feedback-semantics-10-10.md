@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-dryland-micro-sessions-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
@@ -38,10 +38,11 @@ Critical target categories for a `10/10` claim in this slice:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Data placement and sync boundaries`
 - `Reliability and failure handling`
 - `Testing and QA automation`
+
+Accessibility (a11y) is still a `target` category for this UI slice and must close at `5/5`; it is tracked in the scorecard and closeout tables below.
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                             | Evidence                                                               | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ----------------------- |
@@ -220,3 +221,26 @@ Required as a targeted dryland/support-surface sweep before PR handoff.
 - `2026-05-23 | in-progress | captured after-state screenshot handoff in output/dryland-micro-feedback-2026-05-23-114437; capture used local dev with SITE_LOCK_ENABLED=0 and FS_ALLOW_PROD_SUPABASE=1 because .env.local points to Supabase cloud; no temporary dryland session was created; no product-rendering files changed after capture | next: owner screenshot approval stop before npm run verify:pre-pr`
 - `2026-05-23 | in-progress | owner rejected create-error visual quality; fixed create action grouping so shared error feedback sits under the full create control group instead of inside one flex child; targeted Vitest passed for 3 files / 38 tests; refreshed screenshots in output/dryland-micro-feedback-2026-05-23-121555 | next: owner screenshot approval stop before npm run verify:pre-pr`
 - `2026-05-23 | in-progress | owner approved refreshed screenshot handoff in output/dryland-micro-feedback-2026-05-23-121555 | next: run npm run verify:pre-pr`
+- `2026-05-23 | done | PR #818 merged as 0c5fc9b; CI and local pre-merge gates passed; closeout moved this brief to done | next: post-merge preflight must confirm no pending closeout remains`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#818`
+- `squash_commit`: `0c5fc9b`
+- `result`: Closed AW-006 Dryland / Micro Sessions Feedback Semantics. Dryland and Micro Sessions now share consistent route-owned feedback semantics for create, load, schema, empty, action error, and action success states without changing training data, persistence, routes, or APIs.
+- `validation`: Targeted Vitest passed for `tests/unit/create-manual-dryland-session-button.test.tsx`, `tests/unit/dryland-builder-hub.test.tsx`, and `tests/unit/dryland-micro-plan-panel.test.tsx` (3 files / 38 tests); approved screenshot handoff in `output/dryland-micro-feedback-2026-05-23-121555`; post-commit screenshot refresh in `output/dryland-micro-feedback-2026-05-23-124937`; `npm run verify:pre-pr` PASS from branch HEAD (`artifacts/test-runs/20260523-122553/verify.log`, full lane); PR #818 CI PASS, including `verify` 14m8s; `npm run verify:pre-merge` PASS (`artifacts/verify-pre-merge/20260523-104827.json`).
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #818 preserves Dryland/Micro route purpose and actions while making feedback clearer; screenshot handoff and component diff validate the user-visible result.                                           | None.        |
+| UX flow clarity                               | `5/5`          | Unit tests cover schema/load/action/create/empty feedback paths; screenshot artifacts show recoverable create/delete/micro error states on desktop/mobile.                                                 | None.        |
+| Visual design quality                         | `5/5`          | Owner rejected first create-error layout; revised shared create-error placement was approved in `output/dryland-micro-feedback-2026-05-23-121555`; post-commit refresh confirmed committed HEAD rendering. | None.        |
+| Business logic correctness and data integrity | `5/5`          | Tests and diff review confirm no API payload, save/delete, route refresh, local draft, completion, skip, undo, or release behavior changed.                                                                | None.        |
+| Accessibility (a11y)                          | `5/5`          | Feedback component and tests assert `role="alert"`/`aria-live="assertive"` for errors, polite status semantics for non-error feedback, and non-noisy empty states.                                         | None.        |
+| Data placement and sync boundaries            | `5/5`          | No Supabase migration, RLS, generated type, storage, auth, or server-canonical boundary changes; existing dryland and micro-plan endpoints remain the source of truth.                                     | None.        |
+| Reliability and failure handling              | `5/5`          | Recoverable failure states remain visible with safe retry/action guidance; load/schema/action/create failure tests passed and broad CI `verify` passed.                                                    | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Implementation uses React/TypeScript and existing Tailwind/member-library styling; no new dependency, API route, app-wide primitive, migration, or workflow config.                                        | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` all passed; quality gate found required screenshot, a11y, reference-surface, and owner-approval evidence present.      | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Small scoped UI/test/docs diff, no schema or config migration, PR #818 CI green, and rollback is a single squash commit revert if needed.                                                                  | None.        |
