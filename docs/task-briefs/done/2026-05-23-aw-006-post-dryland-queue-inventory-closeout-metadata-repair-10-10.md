@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-post-dryland-queue-inventory-closeout-metadata-repair-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
@@ -205,3 +205,23 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 - `2026-05-23 | in-progress | repaired Dryland queue/inventory state, added Dryland done-brief reference metadata, and hardened stale-reference detection for AW-006 related-parent/body-referenced planned/design docs plus in-progress table rows; targeted Vitest passed for task-brief lint and merge-preflight tests, npm run lint:briefs:all passed, npm run lint:quality-gates passed, targeted stale Dryland sweep returned no matches, and git diff --check passed | next: run npm run verify:pre-pr before commit/push/PR handoff`
 - `2026-05-23 | in-progress | first npm run verify:pre-pr full lane stopped at TypeScript implicit-any in the new merge-preflight test; added an explicit fixture entry type, then targeted Vitest and npm run typecheck passed | next: rerun npm run verify:pre-pr`
 - `2026-05-23 | in-progress | npm run verify:pre-pr full lane passed on the uncommitted repair diff after the TypeScript fix; full lane included lint/typecheck/unit/build/perf and Playwright with 98 passed, 478 skipped in the local matrix | next: commit the repair and rerun npm run verify:pre-pr on committed branch diff before push`
+- `2026-05-23 | done | merged PR #820 as squash commit 58eec75 after local verify:pre-pr, PR CI, and verify:pre-merge passed; post-merge preflight requested this repo-managed docs-only closeout | next: move brief to done, record completion, and remove repair from active queue state`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#820`
+- `squash_commit`: `58eec75`
+- `result`: Closed the AW-006 post-Dryland lifecycle repair so the queue, design inventory, done-brief metadata, lint gate, and post-merge preflight now agree that Dryland is complete and no next AW-006 product slice has been selected yet.
+- `validation`: Targeted Vitest for task-brief lint and merge-preflight tests; `npm run lint:briefs`; `npm run lint:briefs:all`; `npm run lint:quality-gates`; targeted stale-reference sweep; `git diff --check`; `npm run verify:pre-pr`; PR #820 CI; `npm run verify:pre-merge`; post-merge preflight surfaced only this repo-managed docs-only closeout.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | AW-006 queue and notice inventory now mark Dryland done and no next slice set | None         |
+| Business logic correctness and data integrity | `5/5`          | Targeted stale-reference unit tests and preflight behavior                    | None         |
+| Reliability and failure handling              | `5/5`          | `lint:briefs`, post-merge preflight, local gates, and CI                      | None         |
+| Content governance                            | `5/5`          | Queue, inventory, and done-brief metadata aligned                             | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing lint/preflight tooling with no dependencies                   | None         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full local pre-PR, PR CI, and pre-merge gate                 | None         |
+| DevOps and rollback readiness                 | `5/5`          | Docs/tooling-only diff, squash merge `58eec75`, normal git revert available   | None         |
