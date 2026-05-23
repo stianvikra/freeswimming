@@ -237,3 +237,22 @@ No screenshot handoff is required because this governance slice changes no rende
 - `2026-05-23 | in-progress | updated AGENTS, task-brief template, task-brief audit gate, added a forward compatibility runbook, created this active brief, and linked the governance slice in the AW-006 queue; npm run lint:briefs skipped before commit because no changed brief exists in HEAD yet, npm run lint:briefs:all passed after queue wording repair, targeted route/label/support sweep completed, and git diff --check passed for tracked changes | next: stage docs, run staged diff check and npm run verify:pre-pr`
 - `2026-05-23 | in-progress | staged docs diff passed git diff --cached --check and npm run verify:pre-pr passed the docs-only lane with log artifacts/test-runs/20260523-093544/verify.log | next: commit, rerun verify:pre-pr on the committed branch state, push, open PR, monitor CI, and run verify:pre-merge`
 - `2026-05-23 | in-progress | committed docs: add forward compatibility brief contract and reran npm run verify:pre-pr successfully on the committed docs-only branch state with log artifacts/test-runs/20260523-093711/verify.log | next: push branch, open PR, monitor CI, and run verify:pre-merge`
+- `2026-05-23 | done | merged via PR #816 as squash commit 8cfae33 after local npm run verify:pre-pr, green GitHub CI, and local npm run verify:pre-merge; post-merge preflight surfaced this repo-managed docs-only closeout | next: validate closeout branch, open/merge closeout PR if gates stay green, sync main, and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#816`
+- `squash_commit`: `8cfae33`
+- `result`: Closed the Forward Compatibility Contract For Task Briefs governance slice. Future task briefs and next-slice recommendations now have a durable process rule for explaining what should keep working when new products, labels, workflows, routes, identifiers, or data values are added, and what needs an explicit mapping/update decision.
+- `validation`: `npm run verify:pre-pr` passed docs-only lane on final branch state with log `artifacts/test-runs/20260523-093811/verify.log`; PR #816 required CI passed; `npm run verify:pre-merge` passed and recorded `artifacts/verify-pre-merge/20260523-074042.json`; post-merge `npm run post-merge:preflight` identified this closeout only.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                            | Achieved Score | Evidence                                                                                                                   | Gaps / Notes |
+| ----------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                | `5/5`          | AGENTS/template/runbook require non-programmer explanation plus forward compatibility intent before future implementation. | None.        |
+| Reliability and failure handling    | `5/5`          | Planned/in-progress audit recorded stale-brief handling; historical done-brief correction policy recorded.                 | None.        |
+| Content governance                  | `5/5`          | AGENTS, task brief template, audit gate, new runbook, active brief, and AW-006 queue were updated in one docs-only PR.     | None.        |
+| Stack-fit and dependency discipline | `5/5`          | Diff stayed Markdown governance/docs only; no runtime, script, package, config, workflow, migration, or provider change.   | None.        |
+| Testing and QA automation           | `5/5`          | `lint:briefs`, `lint:briefs:all`, `verify:pre-pr`, required CI, and `verify:pre-merge` passed.                             | None.        |
+| DevOps and rollback readiness       | `5/5`          | Docs-only squash commit `8cfae33`; no production behavior, env, migration, generated asset, or deploy setting changed.     | None.        |
