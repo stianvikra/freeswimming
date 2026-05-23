@@ -356,11 +356,20 @@ describe("ProgramBuilderHub", () => {
     fireEvent.click(screen.getByTestId("program-editor-garmin-export-download"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("program-editor-garmin-export-notice")).toHaveTextContent(
+      const notice = screen.getByTestId("program-editor-garmin-export-notice");
+      expect(notice).toHaveAttribute("role", "status");
+      expect(notice).toHaveAttribute("aria-live", "polite");
+      expect(notice).toHaveAttribute("data-feedback-tone", "success");
+      expect(notice).toHaveTextContent("Export downloaded");
+      expect(notice).toHaveTextContent(
         "Downloaded freeswimming-manual-race-prep-shell-garmin-ready.json."
       );
     });
 
+    expect(screen.getByTestId("program-editor-garmin-export-download")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("program-editor-garmin-export-notice").id
+    );
     expect(createObjectUrlMock).toHaveBeenCalled();
     expect(anchorClickMock).toHaveBeenCalled();
 
@@ -370,8 +379,71 @@ describe("ProgramBuilderHub", () => {
       "/api/my-library/programs/program-1/export/pdf",
       "_blank"
     );
-    expect(screen.getByTestId("program-editor-pdf-notice")).toHaveTextContent(
+    const pdfNotice = screen.getByTestId("program-editor-pdf-notice");
+    expect(pdfNotice).toHaveAttribute("role", "status");
+    expect(pdfNotice).toHaveAttribute("aria-live", "polite");
+    expect(pdfNotice).toHaveAttribute("data-feedback-tone", "success");
+    expect(pdfNotice).toHaveTextContent("Print view opened");
+    expect(pdfNotice).toHaveTextContent(
       "Opened print view for freeswimming-manual-race-prep-shell-print.pdf."
+    );
+    expect(screen.getByTestId("program-editor-pdf-open")).toHaveAttribute(
+      "aria-describedby",
+      pdfNotice.id
+    );
+  });
+
+  it("announces program export download and pdf popup failures accessibly", async () => {
+    const openMock = vi.fn(() => null);
+    vi.stubGlobal("open", openMock);
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => buildProgramExportPreview(),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({
+          ok: false,
+          error: "Could not download the program export right now.",
+        }),
+      } as Response);
+
+    render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
+        '"kind": "freeswimming_garmin_ready_program_v1"'
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("program-editor-garmin-export-download"));
+
+    await waitFor(() => {
+      const exportError = screen.getByTestId("program-editor-garmin-export-error");
+      expect(exportError).toHaveAttribute("role", "alert");
+      expect(exportError).toHaveAttribute("aria-live", "assertive");
+      expect(exportError).toHaveAttribute("data-feedback-tone", "error");
+      expect(exportError).toHaveTextContent("Export failed");
+      expect(exportError).toHaveTextContent("Could not download the program export right now.");
+    });
+    expect(screen.getByTestId("program-editor-garmin-export-download")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("program-editor-garmin-export-error").id
+    );
+
+    fireEvent.click(screen.getByTestId("program-editor-pdf-open"));
+
+    const pdfError = screen.getByTestId("program-editor-pdf-error");
+    expect(pdfError).toHaveAttribute("role", "alert");
+    expect(pdfError).toHaveAttribute("aria-live", "assertive");
+    expect(pdfError).toHaveAttribute("data-feedback-tone", "error");
+    expect(pdfError).toHaveTextContent("Print view blocked");
+    expect(pdfError).toHaveTextContent(
+      "Could not open the program PDF print view. Check whether pop-ups are blocked."
     );
   });
 

@@ -35,6 +35,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 | Commerce action feedback            | `components/my-library/CheckoutButton.tsx`, `components/my-library/PortalButton.tsx`, `components/commerce/DownloadResendForm.tsx`                                                                                                       | checkout pending/error, billing portal pending/error, resend validation/pending/success/error                                  | PR `#810` completed the bounded commerce action feedback semantics pass for checkout start, billing portal, and download access resend.                                                                                                                                                                                                    | Completed cleanup; keep as a commerce-local feedback reference without changing Stripe/API payloads, entitlements, email delivery, analytics taxonomy, finance behavior, or route design. |
 | Dryland and micro sessions          | `components/my-library/dryland/DrylandBuilderHub.tsx`, `components/my-library/dryland/DrylandMicroPlanPanel.tsx`, `components/my-library/dryland/CreateManualDrylandSessionButton.tsx`                                                   | schema warning, load error, route refresh, action error/success, create error, empty sessions                                  | Complex stateful training flows with many local/server boundaries. PR `#818/#819` completed the bounded route-owned feedback-semantics slice without changing training state flows, APIs, local drafts, release logic, or persistence.                                                                                                     | Completed cleanup; keep Dryland/Micro Sessions as a member route-owned feedback reference and require a fresh re-audit before selecting another training feedback slice.                  |
 | Poolside PDF/download               | `components/guides/GuidePdfDownloadButton.tsx`, `components/my-library/workouts/PoolsidePreviewPageClient.tsx`                                                                                                                           | download pending, error, save/export status                                                                                    | Export states are artifact-specific and have image/PDF validation risk. PR `#808` completed the bounded `GuidePdfDownloadButton` feedback slice without changing generated PDF artifacts, and PR `#812` completed Poolside preview save-image feedback without changing capture, filenames, share/download mechanics, or PDF/print layout. | Completed export-feedback cleanup; keep as an artifact-specific reference and require a fresh re-audit before selecting another Poolside/export slice.                                    |
+| Program Builder exports             | `components/my-library/programs/ProgramBuilderHub.tsx`                                                                                                                                                                                   | Garmin-ready JSON preview/download, Program PDF open status, download/open errors                                              | Fresh PR `#824/#825` re-audit found Program Builder still had plain text export notices while Guide PDF and Poolside image export had mature accessible feedback references.                                                                                                                                                               | Current bounded slice: improve Program Builder JSON/PDF export feedback only; preserve program data, export routes, artifact formats, filenames, auth, persistence, and planner behavior. |
 
 ## Completed Primitive Pilot
 
@@ -543,6 +544,37 @@ Do not include:
 - Context Notes, Context QR, content APIs, QR APIs, screenshot capture, or admin content editor work,
 - dryland/micro session state flows,
 - broad app-wide Notice/EmptyState primitives,
+- Supabase, Stripe, auth, analytics, commerce, entitlement, or email behavior.
+
+## In-Progress Program Builder Export Feedback Semantics Slice
+
+Current AW-006 implementation slice:
+
+`Program Builder Export Feedback Semantics`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-23-aw-006-program-builder-export-feedback-semantics-10-10.md`
+
+Scope direction:
+
+- Keep the work route-owned to `ProgramBuilderHub` export feedback.
+- Use Guide PDF download feedback and Poolside preview save-image feedback as mature references.
+- Improve Garmin-ready JSON download pending/success/error feedback and Program PDF open/blocked feedback only.
+- Preserve program save state, program data, export preview retry behavior, JSON download payload, object URL cleanup, PDF route, popup behavior, generated filenames, auth, and persistence.
+- Add focused unit coverage around feedback semantics and unchanged export behavior.
+- Use screenshot handoff because rendered member/export UI changes.
+
+Do not include:
+
+- program data model changes,
+- planner or week/day assignment behavior changes,
+- export route payload changes,
+- generated JSON/PDF schema changes,
+- generated filename changes,
+- PDF/print layout changes,
+- workout editor export UI changes,
+- broad member notice primitive or app-wide design-system primitive,
 - Supabase, Stripe, auth, analytics, commerce, entitlement, or email behavior.
 
 ## Reuse Rules For Later Implementation
