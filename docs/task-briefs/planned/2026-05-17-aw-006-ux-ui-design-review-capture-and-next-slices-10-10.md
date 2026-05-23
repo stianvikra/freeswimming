@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-23`
-- `base`: `main@c50ca42`
+- `base`: `main@ce74758`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#812` are recorded below. After PR `#812`, Poolside Preview Save Image Feedback Clarity is closed and no AW-006 implementation slice is selected until the next fresh queue/design/code re-audit.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped follow-ups through `#812/#813` are recorded below. After PR `#812` and repo-managed closeout PR `#813`, a fresh queue/design/code re-audit selected Plans Funnel Analytics Payload Hardening as the next bounded AW-006 slice.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, task-brief closeout rules, screenshot handoff rules, or verification lanes change before the next UX/UI slice starts.
 
 ## Goal
@@ -192,13 +192,14 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Remaining PR-Sized UX/UI Slices
 
-No AW-006 implementation slice is selected after the `#812` closeout. The next slice must start with a fresh queue/design/code re-audit.
+Plans Funnel Analytics Payload Hardening is the active AW-006 implementation slice after the `#812/#813` closeout and fresh queue/design/code re-audit.
 
-| Slice                                        | Status | Evidence                                                                                                | Notes                                                                                         |
-| -------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Poolside Preview Save Image Feedback Clarity | `done` | `#812`, `docs/task-briefs/done/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md` | Completed Poolside preview save-image feedback clarity.                                       |
-| Guide PDF Download Feedback Clarity          | `done` | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`          | Completed shared guide PDF download feedback clarity.                                         |
-| Commerce Action Feedback Semantics           | `done` | `#810`, `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`           | Completed feedback semantics for checkout start, billing portal, and access-link resend only. |
+| Slice                                        | Status   | Evidence                                                                                                | Notes                                                                                                                                                      |
+| -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plans Funnel Analytics Payload Hardening     | `active` | `docs/task-briefs/in-progress/2026-05-23-aw-006-plans-funnel-analytics-payload-hardening-10-10.md`      | Add safe product-availability context to existing `/plans` analytics payloads without changing event taxonomy, UI, Stripe, checkout, prices, or user data. |
+| Poolside Preview Save Image Feedback Clarity | `done`   | `#812`, `docs/task-briefs/done/2026-05-22-aw-006-poolside-preview-save-image-feedback-clarity-10-10.md` | Completed Poolside preview save-image feedback clarity.                                                                                                    |
+| Guide PDF Download Feedback Clarity          | `done`   | `#808`, `docs/task-briefs/done/2026-05-22-aw-006-guide-pdf-download-feedback-clarity-10-10.md`          | Completed shared guide PDF download feedback clarity.                                                                                                      |
+| Commerce Action Feedback Semantics           | `done`   | `#810`, `docs/task-briefs/done/2026-05-22-aw-006-commerce-action-feedback-semantics-10-10.md`           | Completed feedback semantics for checkout start, billing portal, and access-link resend only.                                                              |
 
 Protected areas:
 
@@ -254,7 +255,7 @@ Protected areas:
 - Redesign `/plans` as comparison plus proof plus secure checkout expectations.
 - Add sample deliverables for PDF/video analysis where accurate. Status: `done`.
 - Improve post-purchase expectation/recovery flow. Status: `done`.
-- Add safe funnel instrumentation for price seen, checkout clicked, and recovery clicked if not already present.
+- Add safe funnel instrumentation for price seen, checkout clicked, and recovery clicked if not already present. Status: `active` for `/plans` product-availability payload hardening only.
 - Strengthen contact/analysis trust copy, response expectation, and input guidance.
 
 ### Phase 4: Advanced Refinement
@@ -453,3 +454,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-05-22 | closeout | PR #810 shipped Commerce Action Feedback Semantics and this repo-managed closeout moves its brief to done; the queue now leaves no active AW-006 UI slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-05-22 | planned | refreshed after the #810/#811 closeout cycle on clean main@6237ebe; post-merge preflight was reported green with no pending closeout and a short queue/design/code re-audit selected the Poolside Preview Save Image Feedback Clarity slice that later shipped via #812 | next: completed by PR #812`
 - `2026-05-23 | closeout | PR #812 shipped Poolside Preview Save Image Feedback Clarity and this repo-managed closeout moves its brief to done; the queue now leaves no AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-05-23 | in-progress | refreshed after Poolside Save Image Feedback closeout #813 on clean main@ce74758; post-merge preflight was reported green with no pending closeout and a fresh queue/design/code re-audit selected Plans Funnel Analytics Payload Hardening as the current bounded AW-006 analytics slice | next: complete implementation, tests, PR gates, and closeout`

@@ -257,7 +257,11 @@
   "eventName": "plans_viewed",
   "payload": {
     "productCount": 3,
-    "availableCount": 3
+    "availableCount": 3,
+    "activeCount": 3,
+    "productIds": "guide_0_1000m,guide_poolside,analysis_video",
+    "availableProductIds": "guide_0_1000m,guide_poolside,analysis_video",
+    "unavailableProductIds": null
   }
 }
 ```

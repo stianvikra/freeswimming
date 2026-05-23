@@ -3,8 +3,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PlansPage from "@/app/plans/page";
 
-const { loadPublicCatalogOverridesCachedMock } = vi.hoisted(() => ({
+const { loadPublicCatalogOverridesCachedMock, trackEventOnMountMock } = vi.hoisted(() => ({
   loadPublicCatalogOverridesCachedMock: vi.fn(),
+  trackEventOnMountMock: vi.fn(),
 }));
 
 vi.mock("@/lib/commerce/catalog-server", () => ({
@@ -38,7 +39,10 @@ vi.mock("@/components/PageIntro", () => ({
 }));
 
 vi.mock("@/components/analytics/TrackEventOnMount", () => ({
-  default: () => null,
+  default: (props: { eventName: string; payload?: Record<string, unknown> }) => {
+    trackEventOnMountMock(props);
+    return null;
+  },
 }));
 
 vi.mock("@/components/analytics/TrackCheckoutCancel", () => ({
@@ -125,6 +129,30 @@ describe("PlansPage", () => {
         "Opens secure Stripe Checkout. Final price, promo code field, and payment details are confirmed before you pay."
       )
     ).toHaveLength(3);
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "plans_viewed",
+      payload: {
+        productCount: 3,
+        availableCount: 3,
+        activeCount: 3,
+        productIds: "guide_0_1000m,guide_poolside,analysis_video",
+        availableProductIds: "guide_0_1000m,guide_poolside,analysis_video",
+        unavailableProductIds: null,
+      },
+    });
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "upsell_presented",
+      payload: {
+        surface: "plans",
+        offerCount: 3,
+        productCount: 3,
+        availableCount: 3,
+        activeCount: 3,
+        productIds: "guide_0_1000m,guide_poolside,analysis_video",
+        availableProductIds: "guide_0_1000m,guide_poolside,analysis_video",
+        unavailableProductIds: null,
+      },
+    });
   });
 
   it("keeps unavailable products recoverable without checkout buttons", async () => {
@@ -143,5 +171,21 @@ describe("PlansPage", () => {
     );
     expect(screen.getAllByRole("button", { name: "Temporarily unavailable" })).toHaveLength(3);
     expect(screen.queryByRole("button", { name: "Open secure checkout" })).not.toBeInTheDocument();
+    expect(trackEventOnMountMock).toHaveBeenCalledWith({
+      eventName: "plans_viewed",
+      payload: {
+        productCount: 3,
+        availableCount: 0,
+        activeCount: 3,
+        productIds: "guide_0_1000m,guide_poolside,analysis_video",
+        availableProductIds: null,
+        unavailableProductIds: "guide_0_1000m,guide_poolside,analysis_video",
+      },
+    });
+    expect(trackEventOnMountMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "upsell_presented",
+      })
+    );
   });
 });

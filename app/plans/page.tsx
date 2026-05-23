@@ -165,6 +165,10 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
   );
 }
 
+function toAnalyticsProductIdList(products: CatalogProductAvailability[]) {
+  return products.length > 0 ? products.map((product) => product.id).join(",") : null;
+}
+
 export default async function PlansPage() {
   let catalogOverrides: CatalogProductOverridesById = {};
   try {
@@ -174,26 +178,32 @@ export default async function PlansPage() {
   }
 
   const products = getCatalogProductsWithAvailability(process.env, catalogOverrides);
-  const hasAvailableProducts = products.some((product) => product.available);
-  const hasUnavailableProducts = products.some((product) => !product.available);
-  const availableCount = products.filter((product) => product.available).length;
+  const availableProducts = products.filter((product) => product.available);
+  const unavailableProducts = products.filter((product) => !product.available);
+  const hasAvailableProducts = availableProducts.length > 0;
+  const hasUnavailableProducts = unavailableProducts.length > 0;
+  const availableCount = availableProducts.length;
+  const activeCount = products.filter((product) => product.active).length;
+  const plansAnalyticsPayload = {
+    productCount: products.length,
+    availableCount,
+    activeCount,
+    productIds: toAnalyticsProductIdList(products),
+    availableProductIds: toAnalyticsProductIdList(availableProducts),
+    unavailableProductIds: toAnalyticsProductIdList(unavailableProducts),
+  };
 
   return (
     <SiteChrome>
       <PageTemplate size="wide" topInset="flush">
-        <TrackEventOnMount
-          eventName="plans_viewed"
-          payload={{
-            productCount: products.length,
-            availableCount,
-          }}
-        />
+        <TrackEventOnMount eventName="plans_viewed" payload={plansAnalyticsPayload} />
         {hasAvailableProducts ? (
           <TrackEventOnMount
             eventName="upsell_presented"
             payload={{
               surface: "plans",
               offerCount: availableCount,
+              ...plansAnalyticsPayload,
             }}
           />
         ) : null}
