@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-admin-quick-capture-feedback-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
 - `updated`: `2026-05-23`
@@ -244,3 +244,30 @@ Automation-first, with the required visual-work exception: implement and run tar
 
 - `2026-05-23 | in-progress | started from clean main@96c55b6 after PR #820 and repo-managed closeout #821; post-merge preflight was reported green with no pending closeout; owner approved AW-006 Admin Quick Capture Feedback State Parity after the required non-programmer explanation and fresh queue/design/code re-audit | next: update queue/inventory, migrate scoped quick-capture feedback rendering, add focused tests, then capture screenshot handoff before broad gates`
 - `2026-05-23 | screenshot-review | updated the canonical AW-006 queue and design inventory, migrated quick-capture saved/context-warning/error feedback to the existing admin-local AdminManagerState helper, and preserved note-save/image-upload/draft behavior; validation passed: targeted Vitest for quick-capture/AdminManagerState (2 files / 18 tests), npm run lint:briefs:all, npm run lint with one pre-existing output-script warning, npm run typecheck, targeted route/label/support sweep, and git diff --check; captured after/reference screenshot artifacts in output/aw-006-admin-quick-capture-feedback-20260523-135817 using a temporary local screenshot route that was removed after capture, with no committed product-rendering file changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
+- `2026-05-23 | closeout | PR #822 merged as be5087f; all required local and CI gates passed, and this repo-managed docs-only closeout moves the brief to done while clearing stale active/current references from the AW-006 queue and design inventory | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before any next AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-05-23`
+- `merged_pr`: `#822`
+- `squash_commit`: `be5087f`
+- `result`: Closed AW-006 Admin Quick Capture Feedback State Parity. Admin Quick Capture now uses the same admin-local feedback state pattern for saved, context-warning, and error messages as the surrounding admin surfaces, without changing note save behavior, image upload/retry, drafts, APIs, authz, Help/Guide, or support procedures.
+- `validation`: Targeted Vitest for quick-capture/AdminManagerState passed (2 files / 18 tests); route/label/support sweep found no Help/Guide or runbook fallout; `git diff --check` passed; screenshot handoff was approved with `after/reference` artifacts in `output/aw-006-admin-quick-capture-feedback-20260523-135817`; `npm run verify:pre-pr` passed; required PR CI passed for #822, including `verify` in 13m58s; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260523-153519.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                       | Gaps / Notes                                                                                  |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Scoped PR #822 diff, AW-006 queue update, design inventory update                                              | None.                                                                                         |
+| UX flow clarity                               | `5/5`          | Component diff, focused tests, approved screenshot handoff                                                     | None.                                                                                         |
+| Visual design quality                         | `5/5`          | Reused `AdminManagerState`; approved `after/reference` screenshot handoff                                      | None.                                                                                         |
+| Business logic correctness and data integrity | `5/5`          | Focused request/retry tests and unchanged API/save/upload/draft diff review                                    | None.                                                                                         |
+| Admin editor ergonomics                       | `5/5`          | Saved, locked-context, and error feedback remain adjacent to admin actions                                     | None.                                                                                         |
+| Accessibility (a11y)                          | `5/5`          | Unit assertions for `role`, `aria-live`, static warning semantics, plus broad gates                            | None.                                                                                         |
+| Data placement and sync boundaries            | `5/5`          | Data boundary contract; no server/local ownership, sync, retention, or cache changes                           | None.                                                                                         |
+| Reliability and failure handling              | `5/5`          | Existing `savedNotice`, `createdCaptureRecovery`, context, error, retry, and removal behavior preserved        | None.                                                                                         |
+| Security and authz                            | `5/5`          | No API, authz, secret, cookie, role, or route protection changes; broad gates passed                           | None.                                                                                         |
+| Content governance                            | `5/5`          | Copy preserved; active brief, queue, and design inventory updated                                              | None.                                                                                         |
+| Admin workflow and editability                | `5/5`          | Existing labels/actions for open, close, save, discard, retry, remove image, and open-in-notes preserved       | None.                                                                                         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper; no dependency, package, or helper API changes                              | None.                                                                                         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, lint/typecheck/build/perf/E2E via `verify:pre-pr`, required CI, and `verify:pre-merge` passed | None.                                                                                         |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/workflow/package changes; normal git revert is sufficient                                 | Private-gate full regression skipped locally because `SITE_LOCK_ENABLED!=1`; CI smoke passed. |
