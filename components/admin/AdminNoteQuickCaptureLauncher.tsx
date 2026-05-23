@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
@@ -607,7 +608,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
           <div className="pointer-events-none fixed inset-y-0 right-0 z-[70] flex items-start justify-end">
             {minimized ? (
               <div
-                className="pointer-events-auto mr-0 mt-24"
+                className="pointer-events-auto mt-24 mr-0"
                 data-testid="admin-note-quick-capture-minimized"
               >
                 <button
@@ -615,12 +616,12 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                   onClick={openLauncher}
                   data-testid="admin-note-quick-capture-resume"
                   aria-label="Resume quick note"
-                  className="bg-white/96 flex h-36 w-14 translate-x-[calc(100%-1.75rem)] flex-col items-center justify-start rounded-l-[22px] border border-r-0 border-blue-200 px-2 py-3 text-blue-800 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out hover:translate-x-[calc(100%-2.1rem)] hover:bg-blue-50"
+                  className="flex h-36 w-14 translate-x-[calc(100%-1.75rem)] flex-col items-center justify-start rounded-l-[22px] border border-r-0 border-blue-200 bg-white/96 px-2 py-3 text-blue-800 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out hover:translate-x-[calc(100%-2.1rem)] hover:bg-blue-50"
                 >
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700">
                     <ChevronIcon direction="left" className="h-4 w-4" />
                   </span>
-                  <span className="mt-3 text-center text-[11px] font-semibold leading-tight">
+                  <span className="mt-3 text-center text-[11px] leading-tight font-semibold">
                     Quick
                     <br />
                     note
@@ -633,11 +634,11 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
               <aside
                 aria-label="Quick note capture panel"
                 data-testid="admin-note-quick-capture-dialog"
-                className="pointer-events-auto mb-3 mr-3 mt-16 flex h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
+                className="pointer-events-auto mt-16 mr-3 mb-3 flex h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
               >
                 <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                    <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                       Quick capture
                     </p>
                     <h2 className="mt-1 text-lg font-semibold text-slate-900">Admin note</h2>
@@ -666,9 +667,15 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                   {savedNotice ? (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-                      <p className="font-semibold">Quick note saved.</p>
-                      <p className="mt-1">
+                    <AdminManagerState
+                      tone="success"
+                      title="Quick note saved."
+                      announcement="polite"
+                      density="compact"
+                      className="!mt-0"
+                      testId="admin-note-quick-capture-saved-state"
+                    >
+                      <>
                         {savedNotice.title}
                         {notesHref ? (
                           <>
@@ -683,12 +690,12 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           </>
                         ) : null}{" "}
                         Ready for another note in the same locked context.
-                      </p>
-                    </div>
+                      </>
+                    </AdminManagerState>
                   ) : null}
 
                   <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                    <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                       Locked context
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-900">
@@ -697,16 +704,24 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                   </div>
 
                   {!currentSurfaceMatchesDraftContext ? (
-                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                      You are viewing another page right now. This draft will still save to{" "}
-                      <span className="font-semibold">{draftContext.contextLabel}</span>.
-                    </p>
+                    <AdminManagerState
+                      tone="warning"
+                      announcement="off"
+                      density="compact"
+                      className="!mt-3"
+                      testId="admin-note-quick-capture-context-warning"
+                    >
+                      <>
+                        You are viewing another page right now. This draft will still save to{" "}
+                        <span className="font-semibold">{draftContext.contextLabel}</span>.
+                      </>
+                    </AdminManagerState>
                   ) : null}
 
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                        <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                           Images
                         </p>
                       </div>
@@ -833,9 +848,15 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                   </div>
 
                   {error ? (
-                    <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                    <AdminManagerState
+                      tone="error"
+                      announcement="polite"
+                      density="compact"
+                      className="!mt-4"
+                      testId="admin-note-quick-capture-error-state"
+                    >
                       {error}
-                    </p>
+                    </AdminManagerState>
                   ) : null}
 
                   <form
@@ -989,9 +1010,15 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
       </button>
 
       {!open && savedNotice ? (
-        <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          <p className="font-semibold">Quick note saved.</p>
-          <p className="mt-1">
+        <AdminManagerState
+          tone="success"
+          title="Quick note saved."
+          announcement="polite"
+          density="compact"
+          className="!mt-2"
+          testId="admin-note-quick-capture-trigger-saved-state"
+        >
+          <>
             {savedNotice.title}
             {notesHref ? (
               <>
@@ -1005,8 +1032,8 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                 </Link>
               </>
             ) : null}
-          </p>
-        </div>
+          </>
+        </AdminManagerState>
       ) : null}
 
       {quickCaptureSurface}
