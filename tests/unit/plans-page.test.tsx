@@ -2,6 +2,11 @@ import type React from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PlansPage from "@/app/plans/page";
+import {
+  getPlanCopy,
+  getPurchaseModelCopy,
+  type PlansProductPresentationInput,
+} from "@/app/plans/plansPresentation";
 
 const { loadPublicCatalogOverridesCachedMock, trackEventOnMountMock } = vi.hoisted(() => ({
   loadPublicCatalogOverridesCachedMock: vi.fn(),
@@ -104,12 +109,20 @@ describe("PlansPage", () => {
         "Choose what fits this week. Stripe shows the final price and payment details before you pay."
       )
     ).toBeVisible();
-    expect(screen.getByText("One-time checkout")).toBeVisible();
+    expect(screen.getByText("Model shown per offer")).toBeVisible();
+    expect(screen.getByText("Check each card before checkout.")).toBeVisible();
     expect(screen.getByText("Hosted by Stripe")).toBeVisible();
     expect(screen.getByText("Receipt and invoice")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Compare the options" })).toBeVisible();
+    expect(
+      screen.getByText("Pick by current need first; checkout details stay inside Stripe.")
+    ).toBeVisible();
 
     expect(screen.getByRole("heading", { name: "0-1000m guide" })).toBeVisible();
     expect(screen.getByText("Interactive plan + PDF guide")).toBeVisible();
+    expect(
+      screen.getByText("Choose this when you want the clearest progression path.")
+    ).toBeVisible();
     expect(screen.getByText("20-session structure you can follow in order")).toBeVisible();
     expect(
       screen.getByText(
@@ -123,6 +136,9 @@ describe("PlansPage", () => {
     expect(screen.getByText("Technique review")).toBeVisible();
 
     expect(screen.getAllByText("One-time purchase")).toHaveLength(3);
+    expect(screen.getAllByText("Purchase model")).toHaveLength(3);
+    expect(screen.getAllByText("One-time")).toHaveLength(3);
+    expect(screen.getAllByText("Pay once for this offer. No subscription.")).toHaveLength(3);
     expect(screen.getAllByRole("button", { name: "Open secure checkout" })).toHaveLength(3);
     expect(
       screen.getAllByText(
@@ -187,5 +203,31 @@ describe("PlansPage", () => {
         eventName: "upsell_presented",
       })
     );
+  });
+
+  it("uses safe generic presentation copy for unmapped future products", () => {
+    const futureProduct: PlansProductPresentationInput = {
+      id: "membership_subscription",
+      slug: "membership",
+      title: "Membership",
+      kind: "course_addon",
+      active: true,
+      available: true,
+      stripePriceId: "price_membership",
+      missingEnvVar: null,
+    };
+
+    expect(getPlanCopy(futureProduct)).toMatchObject({
+      eyebrow: "Paid plan",
+      format: "Freeswimming product",
+      comparisonCue: "Choose this when the offer matches the next step you need.",
+    });
+    expect(getPurchaseModelCopy(futureProduct)).toMatchObject({
+      badge: "Checkout details",
+      label: "Confirmed in Stripe",
+      detail: "The payment model is confirmed before purchase.",
+      checkoutExpectation:
+        "Opens secure Stripe Checkout. Final price, payment model, and payment details are confirmed before you pay.",
+    });
   });
 });
