@@ -12,6 +12,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { Bubbles, CheckCircle2, ListChecks, RefreshCcw, Trash2, Undo2 } from "lucide-react";
+import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -1628,76 +1629,91 @@ export default function DrylandMicroPlanPanel({
       </div>
 
       {!schemaReady ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-4">
-          <p className="max-w-[58ch] text-sm text-amber-900">
+        <DrylandFeedback
+          tone="warning"
+          className="mt-4"
+          testId="dryland-micro-schema-warning"
+          action={
+            <button
+              type="button"
+              onClick={retryRouteRefresh}
+              disabled={isRouteRefreshing}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {isRouteRefreshing ? "Retrying..." : "Retry"}
+            </button>
+          }
+        >
+          <p>
             Micro Sessions are still syncing in this environment. Saved dryland sessions remain
             available.
           </p>
-          <button
-            type="button"
-            onClick={retryRouteRefresh}
-            disabled={isRouteRefreshing}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            {isRouteRefreshing ? "Retrying..." : "Retry"}
-          </button>
-        </div>
+        </DrylandFeedback>
       ) : null}
 
       {loadError ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-white p-4">
-          <p className="max-w-[58ch] text-sm text-rose-900">{loadError}</p>
-          <button
-            type="button"
-            onClick={retryRouteRefresh}
-            disabled={isRouteRefreshing}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            {isRouteRefreshing ? "Retrying..." : "Retry"}
-          </button>
-        </div>
+        <DrylandFeedback
+          tone="error"
+          className="mt-4"
+          testId="dryland-micro-load-error"
+          action={
+            <button
+              type="button"
+              onClick={retryRouteRefresh}
+              disabled={isRouteRefreshing}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {isRouteRefreshing ? "Retrying..." : "Retry"}
+            </button>
+          }
+        >
+          <p>{loadError}</p>
+        </DrylandFeedback>
       ) : null}
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-white p-4">
-          <p className="text-sm text-rose-900">{error}</p>
-        </div>
+        <DrylandFeedback tone="error" className="mt-4" testId="dryland-micro-action-error">
+          <p>{error}</p>
+        </DrylandFeedback>
       ) : null}
 
       {success ? (
-        <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
-          <p className="text-sm text-emerald-900">{success}</p>
-        </div>
+        <DrylandFeedback tone="success" className="mt-4" testId="dryland-micro-action-success">
+          <p>{success}</p>
+        </DrylandFeedback>
       ) : null}
 
       {schemaReady && !plan ? (
         <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
           {!isCreating ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
-                <p className="mt-1 max-w-[58ch] text-sm text-slate-600">
-                  Create one weekly Micro Session from saved Dryland Sessions when you want small
-                  set-by-set work.
-                </p>
-              </div>
-              {sessions.length > 0 ? (
-                <button
-                  type="button"
-                  data-testid="dryland-micro-start-create"
-                  onClick={() => {
-                    setIsCreating(true);
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-                >
-                  Create micro session
-                </button>
-              ) : null}
-            </div>
+            <DrylandFeedback
+              tone="empty"
+              testId="dryland-micro-empty"
+              action={
+                sessions.length > 0 ? (
+                  <button
+                    type="button"
+                    data-testid="dryland-micro-start-create"
+                    onClick={() => {
+                      setIsCreating(true);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                  >
+                    Create micro session
+                  </button>
+                ) : null
+              }
+            >
+              <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
+              <p className="mt-1 text-sm text-slate-600">
+                Create one weekly Micro Session from saved Dryland Sessions when you want small
+                set-by-set work.
+              </p>
+            </DrylandFeedback>
           ) : (
             <div className="space-y-4">
               {renderSessionSelector()}

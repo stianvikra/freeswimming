@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
+import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import DrylandSessionEditor from "@/components/my-library/dryland/DrylandSessionEditor";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
@@ -122,6 +123,7 @@ export default function DrylandBuilderHub({
   const [activeMicroPlan, setActiveMicroPlan] = useState<DrylandMicroPlanRecord | null>(
     drylandLibrary.microPlan
   );
+  const [createError, setCreateError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [postSaveCta, setPostSaveCta] = useState<PostSaveCta | null>(null);
@@ -134,6 +136,7 @@ export default function DrylandBuilderHub({
   const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const hasUnsavedChanges = haveDrylandDraftChanges(draft, savedSession?.draft ?? null);
   const shouldPrioritizeMicroPlan = browseOnly && isMicroFocused && Boolean(activeMicroPlan);
+  const createErrorId = "dryland-builder-create-error";
 
   useAutoDismissNotice(success, setSuccess);
 
@@ -161,6 +164,7 @@ export default function DrylandBuilderHub({
     );
     setRecentSessions(drylandLibrary.recentSessions);
     setActiveMicroPlan(drylandLibrary.microPlan);
+    setCreateError("");
     setError("");
     setSuccess("");
     setPostSaveCta(null);
@@ -359,7 +363,7 @@ export default function DrylandBuilderHub({
       className="space-y-6"
     >
       {(browseOnly || !savedSession) && !shouldPrioritizeMicroPlan ? (
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
               {browseOnly && isMicroFocused
@@ -378,13 +382,16 @@ export default function DrylandBuilderHub({
               </p>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {drylandLibrary.schemaReady ? (
-              <>
+          {drylandLibrary.schemaReady ? (
+            <div className="space-y-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <CreateManualDrylandSessionButton
                   sessionKind="strength"
                   label="Create strength session"
                   testId={browseOnly ? "dryland-browse-create-strength" : "dryland-create-strength"}
+                  describedById={createErrorId}
+                  hideInlineError
+                  onErrorChange={setCreateError}
                   className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                 />
                 <CreateManualDrylandSessionButton
@@ -393,66 +400,98 @@ export default function DrylandBuilderHub({
                   testId={
                     browseOnly ? "dryland-browse-create-stretching" : "dryland-create-stretching"
                   }
+                  describedById={createErrorId}
+                  hideInlineError
+                  onErrorChange={setCreateError}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                 />
-              </>
-            ) : null}
-          </div>
+              </div>
+              {createError ? (
+                <DrylandFeedback
+                  id={createErrorId}
+                  tone="error"
+                  density="compact"
+                  className="w-fit max-w-full sm:w-[25.25rem]"
+                  testId={createErrorId}
+                >
+                  <p>{createError}</p>
+                </DrylandFeedback>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
       {!drylandLibrary.schemaReady ? (
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-          <p className="max-w-[58ch] text-sm text-amber-900">
+        <DrylandFeedback
+          tone="warning"
+          className="mt-5"
+          testId="dryland-builder-schema-warning"
+          action={
+            <button
+              type="button"
+              onClick={retryRouteRefresh}
+              disabled={isRouteRefreshing}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {isRouteRefreshing ? "Retrying..." : "Retry"}
+            </button>
+          }
+        >
+          <p>
             Dryland builder is still syncing in this environment. Come back once the foundation
             table is live to create or edit saved dryland sessions here.
           </p>
-          <button
-            type="button"
-            onClick={retryRouteRefresh}
-            disabled={isRouteRefreshing}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            {isRouteRefreshing ? "Retrying..." : "Retry"}
-          </button>
-        </div>
+        </DrylandFeedback>
       ) : null}
 
       {drylandLibrary.loadError ? (
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-          <p className="max-w-[58ch] text-sm text-rose-900">{drylandLibrary.loadError}</p>
-          <button
-            type="button"
-            onClick={retryRouteRefresh}
-            disabled={isRouteRefreshing}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-            {isRouteRefreshing ? "Retrying..." : "Retry"}
-          </button>
-        </div>
+        <DrylandFeedback
+          tone="error"
+          className="mt-5"
+          testId="dryland-builder-load-error"
+          action={
+            <button
+              type="button"
+              onClick={retryRouteRefresh}
+              disabled={isRouteRefreshing}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              {isRouteRefreshing ? "Retrying..." : "Retry"}
+            </button>
+          }
+        >
+          <p>{drylandLibrary.loadError}</p>
+        </DrylandFeedback>
       ) : null}
 
       {error ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-          <p className="text-sm text-rose-900">{error}</p>
-        </div>
+        <DrylandFeedback tone="error" className="mt-5" testId="dryland-builder-action-error">
+          <p>{error}</p>
+        </DrylandFeedback>
       ) : null}
 
       {success ? (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-          <p className="text-sm text-emerald-900">{success}</p>
-          {postSaveCta ? (
-            <Link
-              href={postSaveCta.href}
-              data-testid="dryland-post-save-micro-cta"
-              className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-600 active:bg-emerald-800"
-            >
-              {postSaveCta.label}
-            </Link>
-          ) : null}
-        </div>
+        <DrylandFeedback
+          tone="success"
+          className="mt-5"
+          testId="dryland-builder-action-success"
+          action={
+            postSaveCta ? (
+              <Link
+                href={postSaveCta.href}
+                data-testid="dryland-post-save-micro-cta"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-600 active:bg-emerald-800"
+              >
+                {postSaveCta.label}
+              </Link>
+            ) : null
+          }
+        >
+          <p>{success}</p>
+        </DrylandFeedback>
       ) : null}
 
       <div className="mt-6 space-y-5">
@@ -564,36 +603,36 @@ export default function DrylandBuilderHub({
               </div>
             </>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-sm font-medium text-slate-900">No dryland sessions yet.</p>
-              <p className="mt-2 text-sm text-slate-600">
+            <DrylandFeedback tone="empty" testId="dryland-builder-empty">
+              <p className="font-medium">No dryland sessions yet.</p>
+              <p className="mt-2 text-slate-600">
                 Create a first strength or stretching session here, then come back to browse and
                 reopen saved work in one list.
               </p>
-            </div>
+            </DrylandFeedback>
           )
         ) : !savedSession || !draft ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-            <p className="text-sm font-medium text-amber-900">
+          <DrylandFeedback tone="warning" testId="dryland-builder-missing-session">
+            <p className="font-medium">
               {drylandLibrary.selectedSessionMissing
                 ? "That dryland session could not be found."
                 : "No saved dryland session is loaded in this route yet."}
             </p>
-            <p className="mt-2 text-sm text-amber-900/90">
+            <p className="mt-2">
               Open a saved session when you want to continue older work, or create a fresh strength
               or stretching session from scratch.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {recentSessions.length > 0 ? (
+            {recentSessions.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Link
                   href="/my-library/dryland"
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                 >
                   Dryland Sessions
                 </Link>
-              ) : null}
-            </div>
-          </div>
+              </div>
+            ) : null}
+          </DrylandFeedback>
         ) : (
           <DrylandSessionEditor
             draft={draft}

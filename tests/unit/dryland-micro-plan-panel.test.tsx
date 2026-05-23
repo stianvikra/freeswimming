@@ -181,6 +181,10 @@ describe("DrylandMicroPlanPanel", () => {
     });
 
     expect(await screen.findByText("Micro session created.")).toBeVisible();
+    const success = screen.getByTestId("dryland-micro-action-success");
+    expect(success).toHaveAttribute("role", "status");
+    expect(success).toHaveAttribute("aria-live", "polite");
+    expect(success).toHaveAttribute("data-feedback-tone", "success");
     expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
       "aria-valuenow",
       "0"
@@ -199,6 +203,10 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     expect(screen.queryByText(/Micro Sessions are still syncing/)).not.toBeInTheDocument();
+    const emptyState = screen.getByTestId("dryland-micro-empty");
+    expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
     expect(screen.getByTestId("dryland-micro-start-create")).toBeVisible();
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
@@ -1165,6 +1173,10 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
 
     expect(await screen.findByText("Could not update micro session right now.")).toBeVisible();
+    const alert = screen.getByTestId("dryland-micro-action-error");
+    expect(alert).toHaveAttribute("role", "alert");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(alert).toHaveAttribute("data-feedback-tone", "error");
     expect(screen.getByTestId("dryland-micro-bubble-0")).toBeVisible();
     expect(screen.getByRole("progressbar", { name: "Progress" })).toHaveAttribute(
       "aria-valuenow",
@@ -1200,9 +1212,32 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     expect(screen.getByText(/Micro Sessions are still syncing/)).toBeVisible();
+    const schemaWarning = screen.getByTestId("dryland-micro-schema-warning");
+    expect(schemaWarning).toHaveAttribute("role", "status");
+    expect(schemaWarning).toHaveAttribute("aria-live", "polite");
+    expect(schemaWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(within(schemaWarning).getByRole("button", { name: "Retry" })).toBeVisible();
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).not.toBeInTheDocument();
+  });
+
+  it("announces micro session load errors with retry semantics", () => {
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={null}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError="Could not load Micro Sessions right now."
+      />
+    );
+
+    const alert = screen.getByTestId("dryland-micro-load-error");
+    expect(alert).toHaveAttribute("role", "alert");
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(alert).toHaveAttribute("data-feedback-tone", "error");
+    expect(alert).toHaveTextContent("Could not load Micro Sessions right now.");
+    expect(within(alert).getByRole("button", { name: "Retry" })).toBeVisible();
   });
 
   it("keeps manual release as legacy state without offering it for new edits", () => {
