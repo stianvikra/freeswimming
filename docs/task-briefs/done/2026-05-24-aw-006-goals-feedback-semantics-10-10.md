@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-24-aw-006-goals-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-24`
 - `updated`: `2026-05-24`
@@ -53,6 +53,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Goal create/log/reset/archive/restore/refresh payloads, filter selection, active-limit behavior, result drafts, and My Training links remain unchanged.                       | focused unit tests + diff review                   | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice touches no admin editor, admin CRUD, publishing, notes, QR, or operator editing workflow.                                                              | changed-files review                               | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | User-action success feedback uses polite status semantics; actionable errors use alert/assertive semantics; static empty states are not noisy live regions.                   | Testing Library role/aria assertions + screenshots | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                            | Testing Library role/aria assertions + screenshots | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no dependency, asset, route fetch, polling loop, or heavy client library is added; `/my-library/goals` keeps existing route budgets.                         | dependency diff + broad gates                      | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical goals and local-only result drafts remain in existing boundaries; this slice adds only transient presentation markup/state helpers.                          | data contract review + tests                       | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache mode, fetch cache, mutation response, revalidation, or invalidation behavior changes.                                                              | cache scope rationale                              | `N/A`                   |
@@ -228,3 +229,30 @@ After screenshot approval:
 - `2026-05-24 | implemented + targeted validation | added a goals-local feedback renderer for offline, action error, action success, first-run empty, and filtered no-results states; updated focused unit assertions for polite status, assertive alert, and static empty semantics; updated AW-006 queue/inventory; targeted checks passed: ./node_modules/.bin/vitest run tests/unit/goals-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check; targeted route/label/support sweep found only expected fallout in GoalsHub, focused tests, AW-006 docs, the active brief, existing e2e helper references, and historical/support docs | next: capture required screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-05-24 | screenshot handoff ready | captured after/reference screenshot artifacts in output/aw-006-goals-feedback-2026-05-24-171809 for success, action error, mobile empty, mobile no-results, and My Library reference feedback; capture used a temporary local fixture route with seeded props and mocked fetch responses to avoid writing real Goals data; fixture route was removed after capture and npm run typecheck passed again; no shipped product-rendering files changed after capture | next: owner screenshot approval before verify:pre-pr`
 - `2026-05-24 | pre-pr green | owner approved the screenshot handoff; npm run verify:pre-pr passed on the full lane with branch-current, quality gates, lint, typecheck, unit tests, build, performance budgets, and Playwright e2e (98 passed, 478 skipped) | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge-readiness handoff`
+- `2026-05-24 | done | PR #832 merged as 231ee5d after green CI and npm run verify:pre-merge; repo-managed closeout moves this brief to done and records final evidence | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-24`
+- `merged_pr`: `#832`
+- `squash_commit`: `231ee5d22f5780ff3a1b39803239d7949ab83d66`
+- `result`: Closed AW-006 Goals Feedback Semantics. Goals feedback now uses clearer, accessible status/error/empty-state semantics while preserving existing goal data, API payloads, filters, active-limit behavior, My Training links, analytics, and support scope.
+- `validation`: Targeted Goals unit tests, `npm run typecheck`, `npm run lint:briefs:all`, `git diff --check`, route/label/support sweep, owner-approved screenshot handoff, `npm run verify:pre-pr`, GitHub CI for PR `#832`, and `npm run verify:pre-merge`.
+- `screenshot_artifacts`: `output/aw-006-goals-feedback-2026-05-24-171809`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no target category remains below release threshold.
+
+| Category                                      | Achieved Score | Evidence                                                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | `/my-library/goals` stayed the canonical Goals surface; PR `#832`; diff review.                               | None.        |
+| UX flow clarity                               | `5/5`          | Focused tests and screenshot handoff covered success, error, offline, first-run empty, and no-results states. | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved `after/reference` screenshot handoff in `output/aw-006-goals-feedback-2026-05-24-171809`.      | None.        |
+| Business logic correctness and data integrity | `5/5`          | Unit tests preserved create/log/reset/archive/restore payload behavior; no API/data model changes.            | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role/aria assertions cover polite status, assertive alert, and static empty semantics.        | None.        |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.       | None.        |
+| Data placement and sync boundaries            | `5/5`          | Diff review confirmed server-canonical goals and local-only drafts stayed in existing boundaries.             | None.        |
+| Reliability and failure handling              | `5/5`          | Failure-path unit coverage keeps retry/recovery visible without hiding current context.                       | None.        |
+| Privacy and compliance                        | `5/5`          | Copy/error review confirmed no secrets, raw diagnostics, identifiers, or new private data exposure.           | None.        |
+| Content governance                            | `5/5`          | AW-006 queue and notice/empty-state inventory updated with shipped slice state.                               | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `GoalsHub`, local helper, Tailwind tokens, and existing tests; no new dependency.                      | None.        |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` all passed.                                | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert rollback; no migrations, package changes, env changes, provider changes, or workflow changes.   | None.        |
