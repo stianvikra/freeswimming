@@ -1381,10 +1381,21 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
-        "Workout handoff copied."
-      );
+      const handoffNotice = screen.getByTestId("workout-editor-handoff-notice");
+      expect(handoffNotice).toHaveAttribute("role", "status");
+      expect(handoffNotice).toHaveAttribute("aria-live", "polite");
+      expect(handoffNotice).toHaveAttribute("data-feedback-tone", "success");
+      expect(handoffNotice).toHaveTextContent("Handoff ready");
+      expect(handoffNotice).toHaveTextContent("Workout handoff copied.");
     });
+    expect(screen.getByTestId("workout-editor-handoff-copy")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("workout-editor-handoff-notice").id
+    );
+    expect(screen.getByTestId("workout-editor-handoff-download")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("workout-editor-handoff-notice").id
+    );
 
     fireEvent.click(screen.getByTestId("workout-editor-handoff-download"));
 
@@ -1394,7 +1405,12 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("workout-editor-handoff-notice")).toHaveTextContent(
+      const handoffNotice = screen.getByTestId("workout-editor-handoff-notice");
+      expect(handoffNotice).toHaveAttribute("role", "status");
+      expect(handoffNotice).toHaveAttribute("aria-live", "polite");
+      expect(handoffNotice).toHaveAttribute("data-feedback-tone", "success");
+      expect(handoffNotice).toHaveTextContent("Handoff ready");
+      expect(handoffNotice).toHaveTextContent(
         `Downloaded ${buildWorkoutHandoffFileName(
           {
             ...buildDraft(),
@@ -1413,7 +1429,12 @@ describe("WorkoutBuilderHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("workout-editor-garmin-export-notice")).toHaveTextContent(
+      const garminNotice = screen.getByTestId("workout-editor-garmin-export-notice");
+      expect(garminNotice).toHaveAttribute("role", "status");
+      expect(garminNotice).toHaveAttribute("aria-live", "polite");
+      expect(garminNotice).toHaveAttribute("data-feedback-tone", "success");
+      expect(garminNotice).toHaveTextContent("Export downloaded");
+      expect(garminNotice).toHaveTextContent(
         `Downloaded ${buildWorkoutGarminReadyExportFileName(
           {
             ...buildDraft(),
@@ -1423,7 +1444,112 @@ describe("WorkoutBuilderHub", () => {
         )}.`
       );
     });
+    expect(screen.getByTestId("workout-editor-garmin-export-download")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("workout-editor-garmin-export-notice").id
+    );
     expect(revokeUrlSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it("announces workout export and handoff failures accessibly", async () => {
+    const clipboardWriteText = vi.fn().mockRejectedValue(new Error("Clipboard denied."));
+    Object.defineProperty(window.navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteText,
+      },
+    });
+
+    vi.spyOn(URL, "createObjectURL").mockImplementation(() => {
+      throw new Error("Blob unavailable.");
+    });
+    vi.spyOn(window, "open").mockReturnValue(null);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    openSupportToolsPanel();
+
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-copy"));
+
+    await waitFor(() => {
+      const handoffError = screen.getByTestId("workout-editor-handoff-error");
+      expect(handoffError).toHaveAttribute("role", "alert");
+      expect(handoffError).toHaveAttribute("aria-live", "assertive");
+      expect(handoffError).toHaveAttribute("data-feedback-tone", "error");
+      expect(handoffError).toHaveTextContent("Handoff failed");
+      expect(handoffError).toHaveTextContent(
+        "Could not copy the workout handoff automatically. Use the preview below."
+      );
+    });
+    expect(screen.getByTestId("workout-editor-handoff-copy")).toHaveAttribute(
+      "aria-describedby",
+      screen.getByTestId("workout-editor-handoff-error").id
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-handoff-download"));
+
+    const handoffDownloadError = screen.getByTestId("workout-editor-handoff-error");
+    expect(handoffDownloadError).toHaveAttribute("role", "alert");
+    expect(handoffDownloadError).toHaveAttribute("aria-live", "assertive");
+    expect(handoffDownloadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(handoffDownloadError).toHaveTextContent("Handoff failed");
+    expect(handoffDownloadError).toHaveTextContent(
+      "Could not download the workout handoff right now."
+    );
+    expect(screen.getByTestId("workout-editor-handoff-download")).toHaveAttribute(
+      "aria-describedby",
+      handoffDownloadError.id
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-download"));
+
+    const garminError = screen.getByTestId("workout-editor-garmin-export-error");
+    expect(garminError).toHaveAttribute("role", "alert");
+    expect(garminError).toHaveAttribute("aria-live", "assertive");
+    expect(garminError).toHaveAttribute("data-feedback-tone", "error");
+    expect(garminError).toHaveTextContent("Export failed");
+    expect(garminError).toHaveTextContent("Could not download the Garmin-ready JSON right now.");
+    expect(screen.getByTestId("workout-editor-garmin-export-download")).toHaveAttribute(
+      "aria-describedby",
+      garminError.id
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-pdf-open"));
+
+    const pdfError = screen.getByTestId("workout-editor-pdf-error");
+    expect(pdfError).toHaveAttribute("role", "alert");
+    expect(pdfError).toHaveAttribute("aria-live", "assertive");
+    expect(pdfError).toHaveAttribute("data-feedback-tone", "error");
+    expect(pdfError).toHaveTextContent("PDF could not open");
+    expect(pdfError).toHaveTextContent(
+      "Could not open the full-session PDF. Check whether pop-ups are blocked."
+    );
+    expect(screen.getByTestId("workout-editor-pdf-open")).toHaveAttribute(
+      "aria-describedby",
+      pdfError.id
+    );
+
+    fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
+
+    const poolsidePdfError = screen.getByTestId("workout-editor-pdf-error");
+    expect(poolsidePdfError).toHaveAttribute("role", "alert");
+    expect(poolsidePdfError).toHaveAttribute("aria-live", "assertive");
+    expect(poolsidePdfError).toHaveAttribute("data-feedback-tone", "error");
+    expect(poolsidePdfError).toHaveTextContent("PDF could not open");
+    expect(poolsidePdfError).toHaveTextContent(
+      "Could not open the poolside note PDF. Check whether pop-ups are blocked."
+    );
+    expect(screen.getByTestId("workout-editor-poolside-pdf-open")).toHaveAttribute(
+      "aria-describedby",
+      poolsidePdfError.id
+    );
   });
 
   it("opens truthful PDF and poolside note views for the current draft state", async () => {
@@ -1486,7 +1612,12 @@ describe("WorkoutBuilderHub", () => {
     expect(pdfWindow.document.close).toHaveBeenCalledTimes(1);
     expect(pdfWindow.focus).toHaveBeenCalledTimes(1);
     expect(createObjectUrlSpy).not.toHaveBeenCalled();
-    expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
+    const pdfNotice = screen.getByTestId("workout-editor-pdf-notice");
+    expect(pdfNotice).toHaveAttribute("role", "status");
+    expect(pdfNotice).toHaveAttribute("aria-live", "polite");
+    expect(pdfNotice).toHaveAttribute("data-feedback-tone", "success");
+    expect(pdfNotice).toHaveTextContent("PDF tab opened");
+    expect(pdfNotice).toHaveTextContent(
       `Opened PDF for ${buildWorkoutPdfFileName(
         {
           ...buildDraft(),
@@ -1494,6 +1625,10 @@ describe("WorkoutBuilderHub", () => {
         },
         { draftState: "local_draft", variant: "standard" }
       )}. Use Print / Save PDF in that tab.`
+    );
+    expect(screen.getByTestId("workout-editor-pdf-open")).toHaveAttribute(
+      "aria-describedby",
+      pdfNotice.id
     );
 
     expect(screen.queryByText("Print options")).not.toBeInTheDocument();
@@ -1527,7 +1662,12 @@ describe("WorkoutBuilderHub", () => {
       "High elbow catch: Keep the forearm vertical before pressing back.",
     ]);
     expect(poolsideWindow.focus).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId("workout-editor-pdf-notice")).toHaveTextContent(
+    const poolsidePdfNotice = screen.getByTestId("workout-editor-pdf-notice");
+    expect(poolsidePdfNotice).toHaveAttribute("role", "status");
+    expect(poolsidePdfNotice).toHaveAttribute("aria-live", "polite");
+    expect(poolsidePdfNotice).toHaveAttribute("data-feedback-tone", "success");
+    expect(poolsidePdfNotice).toHaveTextContent("PDF tab opened");
+    expect(poolsidePdfNotice).toHaveTextContent(
       `Opened Print Preview for ${buildWorkoutPdfFileName(
         {
           ...buildDraft(),
@@ -1535,6 +1675,10 @@ describe("WorkoutBuilderHub", () => {
         },
         { draftState: "local_draft", variant: "poolside" }
       )}. Finish layout and print settings in that tab.`
+    );
+    expect(screen.getByTestId("workout-editor-poolside-pdf-open")).toHaveAttribute(
+      "aria-describedby",
+      poolsidePdfNotice.id
     );
   }, 30000);
 

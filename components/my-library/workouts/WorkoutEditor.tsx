@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -220,10 +221,44 @@ type AutoGrowingTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 type SupportSectionKey = "readiness" | "garminExport" | "handoff";
+type WorkoutEditorFeedbackTone = "success" | "error";
+type WorkoutEditorFeedback = {
+  tone: WorkoutEditorFeedbackTone;
+  title: string;
+  message: string;
+  testId: string;
+};
 
 const CUSTOM_DISTANCE_VALUE = "custom";
 const EMPTY_WORKOUT_POOLSIDE_FOCUS_OPTIONS: WorkoutPoolsideFocusOption[] = [];
 const DESKTOP_CARD_EDIT_MEDIA_QUERY = "(hover: hover) and (pointer: fine)";
+const workoutEditorFeedbackToneClasses: Record<WorkoutEditorFeedbackTone, string> = {
+  success: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  error: "border-rose-200 bg-rose-50 text-rose-800",
+};
+
+function WorkoutEditorActionFeedback({
+  id,
+  tone,
+  title,
+  message,
+  testId,
+}: WorkoutEditorFeedback & { id: string }) {
+  return (
+    <div
+      id={id}
+      role={tone === "error" ? "alert" : "status"}
+      aria-live={tone === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
+      data-feedback-tone={tone}
+      data-testid={testId}
+      className={`mt-3 max-w-2xl rounded-xl border px-3 py-2 text-sm leading-6 ${workoutEditorFeedbackToneClasses[tone]}`}
+    >
+      <p className="font-semibold">{title}</p>
+      <p className="text-xs leading-5">{message}</p>
+    </div>
+  );
+}
 
 function getPoolBuilderAutoTitle(environment: SessionGeneratorEnvironment | null | undefined) {
   return environment === "pool" ? "Untitled pool session" : null;
@@ -746,6 +781,9 @@ export default function WorkoutEditor({
       : null;
   const isManualPoolMode = resolvedManualBuilderMode === "pool";
   const autoPoolBuilderTitle = getPoolBuilderAutoTitle(draft.environment);
+  const workoutPdfFeedbackId = useId();
+  const garminExportFeedbackId = useId();
+  const handoffFeedbackId = useId();
   const timeDurationInputFocusRef = useRef<Record<string, boolean>>({});
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [openRepeatGroupId, setOpenRepeatGroupId] = useState<string | null>(null);
@@ -1030,6 +1068,69 @@ export default function WorkoutEditor({
     : copyVariant === "generator"
       ? generatedSessionViewSections
       : [];
+  const workoutPdfFeedback: WorkoutEditorFeedback | null = workoutPdfError
+    ? {
+        tone: "error",
+        title: "PDF could not open",
+        message: workoutPdfError,
+        testId: "workout-editor-pdf-error",
+      }
+    : workoutPdfNotice
+      ? {
+          tone: "success",
+          title: "PDF tab opened",
+          message: workoutPdfNotice,
+          testId: "workout-editor-pdf-notice",
+        }
+      : null;
+  const garminExportFeedback: WorkoutEditorFeedback | null = garminExportError
+    ? {
+        tone: "error",
+        title: "Export failed",
+        message: garminExportError,
+        testId: "workout-editor-garmin-export-error",
+      }
+    : garminExportNotice
+      ? {
+          tone: "success",
+          title: "Export downloaded",
+          message: garminExportNotice,
+          testId: "workout-editor-garmin-export-notice",
+        }
+      : null;
+  const handoffFeedback: WorkoutEditorFeedback | null = handoffError
+    ? {
+        tone: "error",
+        title: "Handoff failed",
+        message: handoffError,
+        testId: "workout-editor-handoff-error",
+      }
+    : handoffNotice
+      ? {
+          tone: "success",
+          title: "Handoff ready",
+          message: handoffNotice,
+          testId: "workout-editor-handoff-notice",
+        }
+      : null;
+
+  function renderWorkoutPdfFeedback() {
+    return workoutPdfFeedback ? (
+      <WorkoutEditorActionFeedback id={workoutPdfFeedbackId} {...workoutPdfFeedback} />
+    ) : null;
+  }
+
+  function renderGarminExportFeedback() {
+    return garminExportFeedback ? (
+      <WorkoutEditorActionFeedback id={garminExportFeedbackId} {...garminExportFeedback} />
+    ) : null;
+  }
+
+  function renderHandoffFeedback() {
+    return handoffFeedback ? (
+      <WorkoutEditorActionFeedback id={handoffFeedbackId} {...handoffFeedback} />
+    ) : null;
+  }
 
   useAutoDismissNotice(workoutPdfNotice, setWorkoutPdfNotice);
   useAutoDismissNotice(garminExportNotice, setGarminExportNotice);
@@ -4071,6 +4172,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={() => openWorkoutPdfPrintView("standard")}
                 data-testid="workout-editor-pdf-open"
+                aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
               >
                 {workoutPdfButtonLabel}
@@ -4079,6 +4181,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={() => openWorkoutPdfPrintView("poolside")}
                 data-testid="workout-editor-poolside-pdf-open"
+                aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
               >
                 {workoutPoolsidePdfButtonLabel}
@@ -4086,20 +4189,7 @@ export default function WorkoutEditor({
             </div>
           </div>
 
-          {workoutPdfNotice ? (
-            <p
-              data-testid="workout-editor-pdf-notice"
-              className="mt-3 text-sm font-medium text-emerald-700"
-            >
-              {workoutPdfNotice}
-            </p>
-          ) : null}
-
-          {workoutPdfError ? (
-            <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
-              {workoutPdfError}
-            </p>
-          ) : null}
+          {renderWorkoutPdfFeedback()}
         </section>
       ) : null}
 
@@ -4128,6 +4218,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={downloadWorkoutGarminReadyExport}
               data-testid="workout-editor-garmin-export-download"
+              aria-describedby={garminExportFeedback ? garminExportFeedbackId : undefined}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
               Download .json
@@ -4149,23 +4240,7 @@ export default function WorkoutEditor({
           </div>
         </div>
 
-        {garminExportNotice ? (
-          <p
-            data-testid="workout-editor-garmin-export-notice"
-            className="mt-3 text-sm font-medium text-emerald-700"
-          >
-            {garminExportNotice}
-          </p>
-        ) : null}
-
-        {garminExportError ? (
-          <p
-            data-testid="workout-editor-garmin-export-error"
-            className="mt-3 text-sm text-rose-700"
-          >
-            {garminExportError}
-          </p>
-        ) : null}
+        {renderGarminExportFeedback()}
 
         {supportSectionOpen.garminExport ? (
           <div className={supportPreviewShellClass}>
@@ -4203,6 +4278,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={copyWorkoutHandoff}
               data-testid="workout-editor-handoff-copy"
+              aria-describedby={handoffFeedback ? handoffFeedbackId : undefined}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
               Copy handoff
@@ -4211,6 +4287,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={downloadWorkoutHandoff}
               data-testid="workout-editor-handoff-download"
+              aria-describedby={handoffFeedback ? handoffFeedbackId : undefined}
               className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
             >
               Download .txt
@@ -4232,20 +4309,7 @@ export default function WorkoutEditor({
           </div>
         </div>
 
-        {handoffNotice ? (
-          <p
-            data-testid="workout-editor-handoff-notice"
-            className="mt-3 text-sm font-medium text-emerald-700"
-          >
-            {handoffNotice}
-          </p>
-        ) : null}
-
-        {handoffError ? (
-          <p data-testid="workout-editor-handoff-error" className="mt-3 text-sm text-rose-700">
-            {handoffError}
-          </p>
-        ) : null}
+        {renderHandoffFeedback()}
 
         {supportSectionOpen.handoff ? (
           <div className={supportPreviewShellClass}>
@@ -4325,6 +4389,7 @@ export default function WorkoutEditor({
           type="button"
           onClick={() => openWorkoutPdfPrintView("poolside")}
           data-testid="workout-editor-poolside-pdf-open"
+          aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
           className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
         >
           Print Preview
@@ -4526,6 +4591,7 @@ export default function WorkoutEditor({
                     type="button"
                     onClick={() => openWorkoutPdfPrintView("standard")}
                     data-testid="workout-editor-pdf-open"
+                    aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
                     {workoutPdfButtonLabel}
@@ -4591,20 +4657,7 @@ export default function WorkoutEditor({
             </div>
           </div>
 
-          {showInlinePdfAction && workoutPdfNotice ? (
-            <p
-              data-testid="workout-editor-pdf-notice"
-              className="mt-3 text-sm font-medium text-emerald-700"
-            >
-              {workoutPdfNotice}
-            </p>
-          ) : null}
-
-          {showInlinePdfAction && workoutPdfError ? (
-            <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
-              {workoutPdfError}
-            </p>
-          ) : null}
+          {showInlinePdfAction ? renderWorkoutPdfFeedback() : null}
 
           {isEditMode && metadataOpen ? <div className="mt-4">{metadataFields}</div> : null}
         </section>
@@ -4700,6 +4753,7 @@ export default function WorkoutEditor({
                     type="button"
                     onClick={() => openWorkoutPdfPrintView("standard")}
                     data-testid="workout-editor-pdf-open"
+                    aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
                     className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
                     {workoutPdfButtonLabel}
@@ -4710,6 +4764,7 @@ export default function WorkoutEditor({
                     type="button"
                     onClick={() => openWorkoutPdfPrintView("poolside")}
                     data-testid="workout-editor-poolside-pdf-open"
+                    aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
                     className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
                   >
                     {workoutPoolsidePdfButtonLabel}
@@ -4764,24 +4819,11 @@ export default function WorkoutEditor({
             </div>
           </div>
 
-          {showInlinePdfAction && workoutPdfNotice ? (
-            <p
-              data-testid="workout-editor-pdf-notice"
-              className="mt-3 text-sm font-medium text-emerald-700"
-            >
-              {workoutPdfNotice}
-            </p>
-          ) : null}
+          {showInlinePdfAction ? renderWorkoutPdfFeedback() : null}
         </>
       ) : null}
 
       {showCalmBuilderLayout ? supportToolsPanel : null}
-
-      {!showCalmBuilderLayout && showInlinePdfAction && workoutPdfError ? (
-        <p data-testid="workout-editor-pdf-error" className="mt-3 text-sm text-rose-700">
-          {workoutPdfError}
-        </p>
-      ) : null}
 
       {showDiscardUndoNotice && onUndoDiscardChanges ? (
         <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
