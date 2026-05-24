@@ -11,6 +11,7 @@ import PageTemplate from "@/components/PageTemplate";
 import MenuDrawer from "@/components/MenuDrawer";
 import PageIntro from "@/components/PageIntro";
 import BrandImage from "@/components/brand/BrandImage";
+import CourseProgressSyncStatus from "@/components/course/CourseProgressSyncStatus";
 import CourseOpenOnPhoneCard from "@/components/course/CourseOpenOnPhoneCard";
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
@@ -2751,6 +2752,15 @@ function CoursePageClient() {
                 </div>
               </div>
 
+              {isSignedIn && courseProgressStatusCopy ? (
+                <CourseProgressSyncStatus
+                  state={courseSyncStatus}
+                  label={courseProgressStatusCopy}
+                  onRetry={() => void syncCourseProgressNow({ force: true })}
+                  className="mt-2"
+                />
+              ) : null}
+
               <div className="mt-2 sm:hidden">
                 <PressButton
                   tier="nav"
@@ -2853,17 +2863,8 @@ function CoursePageClient() {
                     {isLastLesson
                       ? "Last lesson in this course."
                       : "Use Lessons to jump to any module or lesson."}
-                    {courseProgressStatusCopy ? (
+                    {previewEnabled && courseProgressStatusCopy ? (
                       <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
-                    ) : null}
-                    {isSignedIn && courseSyncStatus === "error" ? (
-                      <PressButton
-                        tier="nav"
-                        onClick={() => void syncCourseProgressNow({ force: true })}
-                        className="ml-2 inline-flex min-h-[24px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70"
-                      >
-                        Retry now
-                      </PressButton>
                     ) : null}
                   </div>
                 </div>
