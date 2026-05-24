@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import { getManualPoolCategoryLabelClass } from "@/components/my-library/workouts/sessionStepSurfaceContract";
 import {
@@ -33,8 +33,24 @@ type RetryablePreviewError = Error & {
   status?: number;
 };
 
+type ProgramExportFeedbackTone = "pending" | "success" | "error";
+
+type ProgramExportFeedbackProps = {
+  id?: string;
+  title: string;
+  message: string;
+  tone: ProgramExportFeedbackTone;
+  testId: string;
+};
+
 const PROGRAM_EXPORT_PREVIEW_TIMEOUT_MS = 15_000;
 const PROGRAM_SCHEDULED_WORKOUT_PREVIEW_ROW_LIMIT = 6;
+
+const programExportFeedbackToneClasses: Record<ProgramExportFeedbackTone, string> = {
+  pending: "border-sky-200 bg-sky-50 text-sky-900",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  error: "border-rose-200 bg-rose-50 text-rose-800",
+};
 
 function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
   const error = new Error(message) as RetryablePreviewError;
@@ -180,7 +196,26 @@ function ScheduledWorkoutStepPreview({
   );
 }
 
+function ProgramExportFeedback({ id, title, message, tone, testId }: ProgramExportFeedbackProps) {
+  return (
+    <div
+      id={id}
+      role={tone === "error" ? "alert" : "status"}
+      aria-live={tone === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
+      data-feedback-tone={tone}
+      data-testid={testId}
+      className={`mt-3 max-w-2xl rounded-xl border px-3 py-2 text-sm leading-6 ${programExportFeedbackToneClasses[tone]}`}
+    >
+      <p className="font-semibold">{title}</p>
+      <p className="text-xs leading-5">{message}</p>
+    </div>
+  );
+}
+
 export default function ProgramBuilderHub({ programLibrary }: Props) {
+  const programExportFeedbackId = useId();
+  const programPdfFeedbackId = useId();
   const [savedProgram, setSavedProgram] = useState<ProgramEditorRecord | null>(
     programLibrary.selectedProgram
   );
@@ -197,6 +232,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const [programExportPreview, setProgramExportPreview] = useState("");
   const [programExportPreviewError, setProgramExportPreviewError] = useState("");
   const [isProgramExportLoading, setIsProgramExportLoading] = useState(false);
+  const [isProgramExportDownloading, setIsProgramExportDownloading] = useState(false);
   const [programExportNotice, setProgramExportNotice] = useState("");
   const [programExportError, setProgramExportError] = useState("");
   const [programPdfNotice, setProgramPdfNotice] = useState("");
@@ -222,6 +258,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     setSuccess("");
     setProgramExportPreview("");
     setProgramExportPreviewError("");
+    setIsProgramExportDownloading(false);
     setProgramExportNotice("");
     setProgramExportError("");
     setProgramPdfNotice("");
@@ -248,6 +285,27 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const programPdfStateDescription = hasUnsavedChanges
     ? "Print view opens the last saved canonical program. Save first if you want PDF output to include current unsaved edits."
     : "Print view matches the saved canonical program.";
+  const programExportFeedbackTone = isProgramExportDownloading
+    ? "pending"
+    : programExportError
+      ? "error"
+      : programExportNotice
+        ? "success"
+        : null;
+  const programExportFeedbackTitle =
+    programExportFeedbackTone === "pending"
+      ? "Preparing export"
+      : programExportFeedbackTone === "error"
+        ? "Export failed"
+        : "Export downloaded";
+  const programExportFeedbackMessage =
+    programExportFeedbackTone === "pending"
+      ? "Preparing the saved canonical program JSON..."
+      : programExportError || programExportNotice;
+  const programPdfFeedbackTone = programPdfError ? "error" : programPdfNotice ? "success" : null;
+  const programPdfFeedbackTitle =
+    programPdfFeedbackTone === "error" ? "Print view blocked" : "Print view opened";
+  const programPdfFeedbackMessage = programPdfError || programPdfNotice;
 
   useEffect(() => {
     let cancelled = false;
@@ -483,8 +541,9 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   }
 
   async function downloadProgramGarminReadyExport() {
-    if (!programGarminExportRoute) return;
+    if (!programGarminExportRoute || isProgramExportDownloading) return;
 
+    setIsProgramExportDownloading(true);
     setProgramExportNotice("");
     setProgramExportError("");
 
@@ -525,6 +584,8 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
       setProgramExportError(
         error instanceof Error ? error.message : "Could not download the program export right now."
       );
+    } finally {
+      setIsProgramExportDownloading(false);
     }
   }
 
@@ -929,39 +990,36 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   type="button"
                   data-testid="program-editor-garmin-export-download"
                   onClick={downloadProgramGarminReadyExport}
-                  disabled={!savedProgram}
+                  disabled={!savedProgram || isProgramExportDownloading}
+                  aria-describedby={programExportFeedbackTone ? programExportFeedbackId : undefined}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Download .json
+                  {isProgramExportDownloading ? "Downloading..." : "Download .json"}
                 </button>
               </div>
             </div>
 
-            {programExportNotice ? (
-              <p
-                data-testid="program-editor-garmin-export-notice"
-                className="mt-3 text-sm font-medium text-emerald-700"
-              >
-                {programExportNotice}
-              </p>
-            ) : null}
-
-            {programExportError ? (
-              <p
-                data-testid="program-editor-garmin-export-error"
-                className="mt-3 text-sm text-rose-700"
-              >
-                {programExportError}
-              </p>
+            {programExportFeedbackTone ? (
+              <ProgramExportFeedback
+                id={programExportFeedbackId}
+                tone={programExportFeedbackTone}
+                title={programExportFeedbackTitle}
+                message={programExportFeedbackMessage}
+                testId={
+                  programExportFeedbackTone === "error"
+                    ? "program-editor-garmin-export-error"
+                    : "program-editor-garmin-export-notice"
+                }
+              />
             ) : null}
 
             {programExportPreviewError ? (
-              <p
-                data-testid="program-editor-garmin-export-preview-error"
-                className="mt-3 text-sm text-rose-700"
-              >
-                {programExportPreviewError}
-              </p>
+              <ProgramExportFeedback
+                tone="error"
+                title="Preview unavailable"
+                message={programExportPreviewError}
+                testId="program-editor-garmin-export-preview-error"
+              />
             ) : null}
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
@@ -1002,6 +1060,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   data-testid="program-editor-pdf-open"
                   onClick={openProgramPdfPrintView}
                   disabled={!savedProgram}
+                  aria-describedby={programPdfFeedbackTone ? programPdfFeedbackId : undefined}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Open print view
@@ -1010,18 +1069,21 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             </div>
 
             {programPdfNotice ? (
-              <p
-                data-testid="program-editor-pdf-notice"
-                className="mt-3 text-sm font-medium text-emerald-700"
-              >
-                {programPdfNotice}
-              </p>
-            ) : null}
-
-            {programPdfError ? (
-              <p data-testid="program-editor-pdf-error" className="mt-3 text-sm text-rose-700">
-                {programPdfError}
-              </p>
+              <ProgramExportFeedback
+                id={programPdfFeedbackId}
+                tone="success"
+                title={programPdfFeedbackTitle}
+                message={programPdfFeedbackMessage}
+                testId="program-editor-pdf-notice"
+              />
+            ) : programPdfError ? (
+              <ProgramExportFeedback
+                id={programPdfFeedbackId}
+                tone="error"
+                title={programPdfFeedbackTitle}
+                message={programPdfFeedbackMessage}
+                testId="program-editor-pdf-error"
+              />
             ) : null}
           </div>
         </div>
