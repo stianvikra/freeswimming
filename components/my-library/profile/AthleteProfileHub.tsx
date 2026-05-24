@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { cx } from "@/components/ui/cx";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   SWIM_CAPABILITY_STROKES,
@@ -107,6 +108,11 @@ type SectionSummaryCopy = {
   hasData: boolean;
 };
 
+type ProfileSectionNotice = {
+  kind: "error" | "success";
+  message: string;
+};
+
 type ReadinessCard = {
   key: ProfileSectionKey;
   label: string;
@@ -147,6 +153,39 @@ const PROFILE_SECTION_TOGGLE_CLASS =
 const PROFILE_PRIMARY_BUTTON_CLASS =
   "inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300";
 const PROFILE_SECTION_CLASS = "rounded-2xl border border-slate-200 bg-white p-4 sm:p-5";
+const PROFILE_SECTION_FEEDBACK_CLASSES: Record<ProfileSectionNotice["kind"], string> = {
+  error: "border-rose-200 bg-rose-50/80 text-rose-900",
+  success: "border-emerald-200 bg-emerald-50/80 text-emerald-900",
+};
+
+function ProfileSectionFeedback({
+  notice,
+  className,
+  testId,
+}: {
+  notice: ProfileSectionNotice;
+  className?: string;
+  testId?: string;
+}) {
+  const isError = notice.kind === "error";
+
+  return (
+    <div
+      className={cx(
+        "rounded-2xl border px-4 py-3 text-sm",
+        PROFILE_SECTION_FEEDBACK_CLASSES[notice.kind],
+        className
+      )}
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
+      aria-atomic="true"
+      data-feedback-tone={notice.kind}
+      data-testid={testId}
+    >
+      {notice.message}
+    </div>
+  );
+}
 
 function CapabilityInputField({
   label,
@@ -671,12 +710,6 @@ function buildCapabilitiesSectionSummary(snapshot: AthleteProfileSnapshot): Sect
       .join(" · "),
     hasData: true,
   };
-}
-
-function getNoticeClasses(kind: "error" | "success") {
-  return kind === "error"
-    ? "rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-900"
-    : "rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900";
 }
 
 export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
@@ -1625,21 +1658,17 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       ) : null}
 
       {globalActionError ? (
-        <div
-          className="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-900"
-          role="alert"
-        >
-          {globalActionError}
-        </div>
+        <ProfileSectionFeedback
+          notice={{ kind: "error", message: globalActionError }}
+          testId="athlete-profile-feedback-global-error"
+        />
       ) : null}
 
       {globalActionSuccess ? (
-        <div
-          className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900"
-          aria-live="polite"
-        >
-          {globalActionSuccess}
-        </div>
+        <ProfileSectionFeedback
+          notice={{ kind: "success", message: globalActionSuccess }}
+          testId="athlete-profile-feedback-global-success"
+        />
       ) : null}
 
       <section
@@ -1768,13 +1797,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
 
         {profileNotice && !sectionOpenState.profile ? (
-          <div
-            className={`mt-4 ${getNoticeClasses(profileNotice.kind)}`}
-            role={profileNotice.kind === "error" ? "alert" : undefined}
-            aria-live={profileNotice.kind === "success" ? "polite" : undefined}
-          >
-            {profileNotice.message}
-          </div>
+          <ProfileSectionFeedback
+            notice={profileNotice}
+            className="mt-4"
+            testId="athlete-profile-feedback-profile"
+          />
         ) : null}
 
         {sectionOpenState.profile ? (
@@ -1784,13 +1811,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             className="mt-5 border-t border-slate-200 pt-5"
           >
             {profileNotice ? (
-              <div
-                className={`${getNoticeClasses(profileNotice.kind)} mb-4`}
-                role={profileNotice.kind === "error" ? "alert" : undefined}
-                aria-live={profileNotice.kind === "success" ? "polite" : undefined}
-              >
-                {profileNotice.message}
-              </div>
+              <ProfileSectionFeedback
+                notice={profileNotice}
+                className="mb-4"
+                testId="athlete-profile-feedback-profile"
+              />
             ) : null}
 
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1920,13 +1945,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
 
         {cssNotice && !sectionOpenState.css ? (
-          <div
-            className={`mt-4 ${getNoticeClasses(cssNotice.kind)}`}
-            role={cssNotice.kind === "error" ? "alert" : undefined}
-            aria-live={cssNotice.kind === "success" ? "polite" : undefined}
-          >
-            {cssNotice.message}
-          </div>
+          <ProfileSectionFeedback
+            notice={cssNotice}
+            className="mt-4"
+            testId="athlete-profile-feedback-css"
+          />
         ) : null}
 
         {sectionOpenState.css ? (
@@ -1936,13 +1959,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             className="mt-5 border-t border-slate-200 pt-5"
           >
             {cssNotice ? (
-              <div
-                className={`${getNoticeClasses(cssNotice.kind)} mb-4`}
-                role={cssNotice.kind === "error" ? "alert" : undefined}
-                aria-live={cssNotice.kind === "success" ? "polite" : undefined}
-              >
-                {cssNotice.message}
-              </div>
+              <ProfileSectionFeedback
+                notice={cssNotice}
+                className="mb-4"
+                testId="athlete-profile-feedback-css"
+              />
             ) : null}
 
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2054,13 +2075,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
 
         {preferencesNotice && !sectionOpenState.preferences ? (
-          <div
-            className={`mt-4 ${getNoticeClasses(preferencesNotice.kind)}`}
-            role={preferencesNotice.kind === "error" ? "alert" : undefined}
-            aria-live={preferencesNotice.kind === "success" ? "polite" : undefined}
-          >
-            {preferencesNotice.message}
-          </div>
+          <ProfileSectionFeedback
+            notice={preferencesNotice}
+            className="mt-4"
+            testId="athlete-profile-feedback-preferences"
+          />
         ) : null}
 
         {sectionOpenState.preferences ? (
@@ -2070,13 +2089,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             className="mt-5 border-t border-slate-200 pt-5"
           >
             {preferencesNotice ? (
-              <div
-                className={`${getNoticeClasses(preferencesNotice.kind)} mb-4`}
-                role={preferencesNotice.kind === "error" ? "alert" : undefined}
-                aria-live={preferencesNotice.kind === "success" ? "polite" : undefined}
-              >
-                {preferencesNotice.message}
-              </div>
+              <ProfileSectionFeedback
+                notice={preferencesNotice}
+                className="mb-4"
+                testId="athlete-profile-feedback-preferences"
+              />
             ) : null}
 
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2236,13 +2253,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
 
         {capabilitiesNotice && !sectionOpenState.capabilities ? (
-          <div
-            className={`mt-4 ${getNoticeClasses(capabilitiesNotice.kind)}`}
-            role={capabilitiesNotice.kind === "error" ? "alert" : undefined}
-            aria-live={capabilitiesNotice.kind === "success" ? "polite" : undefined}
-          >
-            {capabilitiesNotice.message}
-          </div>
+          <ProfileSectionFeedback
+            notice={capabilitiesNotice}
+            className="mt-4"
+            testId="athlete-profile-feedback-capabilities"
+          />
         ) : null}
 
         {sectionOpenState.capabilities ? (
@@ -2252,13 +2267,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             className="mt-5 border-t border-slate-200 pt-5"
           >
             {capabilitiesNotice ? (
-              <div
-                className={`${getNoticeClasses(capabilitiesNotice.kind)} mb-4`}
-                role={capabilitiesNotice.kind === "error" ? "alert" : undefined}
-                aria-live={capabilitiesNotice.kind === "success" ? "polite" : undefined}
-              >
-                {capabilitiesNotice.message}
-              </div>
+              <ProfileSectionFeedback
+                notice={capabilitiesNotice}
+                className="mb-4"
+                testId="athlete-profile-feedback-capabilities"
+              />
             ) : null}
 
             {!snapshot.swimCapabilityLimitsSchemaReady ? (
@@ -2423,13 +2436,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
         </div>
 
         {recordsNotice && !sectionOpenState.records ? (
-          <div
-            className={`mt-4 ${getNoticeClasses(recordsNotice.kind)}`}
-            role={recordsNotice.kind === "error" ? "alert" : undefined}
-            aria-live={recordsNotice.kind === "success" ? "polite" : undefined}
-          >
-            {recordsNotice.message}
-          </div>
+          <ProfileSectionFeedback
+            notice={recordsNotice}
+            className="mt-4"
+            testId="athlete-profile-feedback-records"
+          />
         ) : null}
 
         {sectionOpenState.records ? (
@@ -2438,13 +2449,11 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             className="mt-5 border-t border-slate-200 pt-5"
           >
             {recordsNotice ? (
-              <div
-                className={`${getNoticeClasses(recordsNotice.kind)} mb-4`}
-                role={recordsNotice.kind === "error" ? "alert" : undefined}
-                aria-live={recordsNotice.kind === "success" ? "polite" : undefined}
-              >
-                {recordsNotice.message}
-              </div>
+              <ProfileSectionFeedback
+                notice={recordsNotice}
+                className="mb-4"
+                testId="athlete-profile-feedback-records"
+              />
             ) : null}
 
             {!snapshot.personalRecordsSchemaReady ? (
