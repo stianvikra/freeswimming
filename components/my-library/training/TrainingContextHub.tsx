@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 import {
   getTrainingNoteStatusLabel,
@@ -151,6 +151,64 @@ function getPreviewText(value: string | null | undefined, fallback: string, maxL
   if (normalized.length === 0) return fallback;
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 1)}...`;
+}
+
+type TrainingContextFeedbackTone = "warning" | "error" | "success" | "info" | "empty";
+type TrainingContextFeedbackAnnouncement = "polite" | "assertive" | "none";
+
+const trainingContextFeedbackToneClass: Record<TrainingContextFeedbackTone, string> = {
+  warning: "rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800",
+  error: "rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-800",
+  success: "rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-800",
+  info: "rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-800",
+  empty:
+    "rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5 text-sm text-slate-700",
+};
+
+function getDefaultTrainingContextFeedbackAnnouncement(
+  tone: TrainingContextFeedbackTone
+): TrainingContextFeedbackAnnouncement {
+  if (tone === "error") return "assertive";
+  if (tone === "empty") return "none";
+  return "polite";
+}
+
+function TrainingContextFeedback({
+  tone,
+  children,
+  action,
+  testId,
+  announcement,
+  className = "",
+}: {
+  tone: TrainingContextFeedbackTone;
+  children: ReactNode;
+  action?: ReactNode;
+  testId?: string;
+  announcement?: TrainingContextFeedbackAnnouncement;
+  className?: string;
+}) {
+  const resolvedAnnouncement = announcement ?? getDefaultTrainingContextFeedbackAnnouncement(tone);
+
+  return (
+    <div
+      className={`${trainingContextFeedbackToneClass[tone]} ${className}`.trim()}
+      data-feedback-tone={tone}
+      data-testid={testId}
+      role={
+        resolvedAnnouncement === "none"
+          ? undefined
+          : resolvedAnnouncement === "assertive"
+            ? "alert"
+            : "status"
+      }
+      aria-live={resolvedAnnouncement === "none" ? undefined : resolvedAnnouncement}
+      aria-atomic={resolvedAnnouncement === "none" ? undefined : "true"}
+    >
+      {children}
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  );
 }
 
 function getPrefillMessage(
@@ -869,7 +927,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 onChange={(e) =>
                   setFocusEditState((prev) => (prev ? { ...prev, title: e.target.value } : prev))
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
               />
             </label>
 
@@ -881,7 +939,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                   setFocusEditState((prev) => (prev ? { ...prev, details: e.target.value } : prev))
                 }
                 rows={3}
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
               />
             </label>
 
@@ -893,7 +951,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 onChange={(e) =>
                   setFocusEditState((prev) => (prev ? { ...prev, goalId: e.target.value } : prev))
                 }
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
               >
                 <option value="">No linked goal</option>
                 {snapshot.goalOptions.map((goal) => (
@@ -1040,58 +1098,68 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
       data-client-ready={clientReady ? "true" : "false"}
     >
       {!snapshot.schemaReady ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+        <TrainingContextFeedback
+          tone="warning"
+          testId="training-schema-warning"
+          action={
+            <button
+              type="button"
+              onClick={() => void refreshSnapshot()}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-amber-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Retry"}
+            </button>
+          }
+        >
           <h2 className="text-lg font-semibold text-slate-900">My Training is syncing</h2>
           <p className="mt-2 text-sm text-slate-700">
             The new training-context tables are not ready in this environment yet. Refresh after the
             migration has finished.
           </p>
-          <button
-            type="button"
-            onClick={() => void refreshSnapshot()}
-            className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-amber-50"
-          >
-            {isRefreshing ? "Refreshing..." : "Retry"}
-          </button>
-        </section>
+        </TrainingContextFeedback>
       ) : null}
 
       {isOnline ? null : (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-800">
+        <TrainingContextFeedback tone="warning" testId="training-offline-feedback">
           You are offline. Existing Focus and Notes stay visible, but save/update actions are paused
           until you reconnect.
-        </section>
+        </TrainingContextFeedback>
       )}
 
       {snapshot.loadError ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50/80 p-4">
-          <p className="text-sm font-medium text-red-700">{snapshot.loadError}</p>
-          <button
-            type="button"
-            onClick={() => void refreshSnapshot()}
-            className="mt-3 inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-red-50"
-          >
-            {isRefreshing ? "Refreshing..." : "Retry"}
-          </button>
-        </section>
+        <TrainingContextFeedback
+          tone="error"
+          testId="training-load-error"
+          action={
+            <button
+              type="button"
+              onClick={() => void refreshSnapshot()}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-rose-50"
+            >
+              {isRefreshing ? "Refreshing..." : "Retry"}
+            </button>
+          }
+        >
+          <p className="text-sm font-medium">{snapshot.loadError}</p>
+        </TrainingContextFeedback>
       ) : null}
 
       {contextMessage ? (
-        <section className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4">
-          <p className="text-sm font-medium text-blue-800">{contextMessage}</p>
-        </section>
+        <TrainingContextFeedback tone="info" testId="training-context-message">
+          <p className="text-sm font-medium">{contextMessage}</p>
+        </TrainingContextFeedback>
       ) : null}
 
       {actionError ? (
-        <section className="rounded-2xl border border-red-200 bg-red-50/80 p-4">
-          <p className="text-sm font-medium text-red-700">{actionError}</p>
-        </section>
+        <TrainingContextFeedback tone="error" testId="training-action-error">
+          <p className="text-sm font-medium">{actionError}</p>
+        </TrainingContextFeedback>
       ) : null}
 
       {actionSuccess ? (
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-          <p className="text-sm font-medium text-emerald-700">{actionSuccess}</p>
-        </section>
+        <TrainingContextFeedback tone="success" testId="training-action-success">
+          <p className="text-sm font-medium">{actionSuccess}</p>
+        </TrainingContextFeedback>
       ) : null}
 
       <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
@@ -1102,7 +1170,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             data-testid="training-overview-card-goals"
             className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-blue-200 hover:bg-white"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Goals</p>
+            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Goals</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
               {overviewGoal ? overviewGoal.title : "No goal selected yet"}
             </p>
@@ -1117,7 +1185,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             data-testid="training-overview-card-focus"
             className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-emerald-200 hover:bg-white"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Focus</p>
+            <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">Focus</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
               {snapshot.focusNeedsPrimarySelection
                 ? "Choose a primary focus"
@@ -1138,7 +1206,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             data-testid="training-overview-card-notes"
             className="rounded-2xl border border-white/80 bg-white/85 p-4 transition hover:border-amber-200 hover:bg-white"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Notes</p>
+            <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">Notes</p>
             <p className="mt-2 text-sm font-semibold text-slate-900">
               {snapshot.recentNotes.length > 0 ? "Latest note" : "No notes yet"}
             </p>
@@ -1182,7 +1250,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             className="mt-4 rounded-2xl border border-blue-200 bg-white/90 p-4"
             data-testid="training-context-selected-goal"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
               Selected goal
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1237,18 +1305,24 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             })}
           </div>
         ) : (
-          <div className="mt-4 rounded-2xl border border-dashed border-blue-200 bg-white/90 p-5">
+          <TrainingContextFeedback
+            tone="empty"
+            testId="training-goals-empty-state"
+            className="mt-4 border-blue-200 bg-white/90"
+          >
             <p className="text-sm text-slate-700">
               No active goals are available here yet. Create one in Goals first, then come back to
               connect it to a focus or note.
             </p>
-            <Link
-              href="/my-library/goals"
-              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Open Goals
-            </Link>
-          </div>
+            <div className="mt-4">
+              <Link
+                href="/my-library/goals"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Open Goals
+              </Link>
+            </div>
+          </TrainingContextFeedback>
         )}
       </section>
 
@@ -1276,7 +1350,11 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
         <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.95fr]">
           <div className="space-y-4">
             {snapshot.focusNeedsPrimarySelection ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+              <TrainingContextFeedback
+                tone="warning"
+                testId="training-primary-focus-warning"
+                className="p-5"
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-semibold text-slate-900">Choose a primary focus</h3>
                   <span className="inline-flex rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">
@@ -1288,7 +1366,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                   yet. Pick one below before other My Library surfaces try to use a single current
                   cue.
                 </p>
-              </div>
+              </TrainingContextFeedback>
             ) : primaryOpenFocus ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1323,12 +1401,12 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
+              <TrainingContextFeedback tone="empty" testId="training-focus-empty-state">
                 <h3 className="text-base font-semibold text-slate-900">No open focus yet</h3>
                 <p className="mt-2 text-sm text-slate-600">
                   Add the next technical or tactical cue you want to carry into the pool.
                 </p>
-              </div>
+              </TrainingContextFeedback>
             )}
 
             {snapshot.focusHistory.length > 0 ? (
@@ -1409,7 +1487,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     value={focusDraft.title}
                     onChange={(e) => setFocusDraft((prev) => ({ ...prev, title: e.target.value }))}
                     placeholder="Exhale calmly before turning to breathe"
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                   />
                 </label>
 
@@ -1422,7 +1500,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     }
                     rows={3}
                     placeholder="What do you want to watch for in the next session?"
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                   />
                 </label>
 
@@ -1432,7 +1510,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     data-testid="training-focus-goal-select"
                     value={focusDraft.goalId}
                     onChange={(e) => setFocusDraft((prev) => ({ ...prev, goalId: e.target.value }))}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="">No linked goal</option>
                     {snapshot.goalOptions.map((goal) => (
@@ -1458,7 +1536,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
         {primaryOpenFocus ? (
           <div className="mt-5 space-y-5">
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+              <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
                 Primary focus
               </h3>
               <div className="mt-3">{renderFocusCard(primaryOpenFocus, { featured: true })}</div>
@@ -1466,7 +1544,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
             {nonPrimaryOpenFocuses.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+                <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
                   Other open focuses
                 </h3>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1477,7 +1555,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
           </div>
         ) : snapshot.openFocuses.length > 0 ? (
           <div className="mt-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+            <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
               Open focus list
             </h3>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1488,7 +1566,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
 
         {showFocusHistory && snapshot.focusHistory.length > 0 ? (
           <div className="mt-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+            <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
               Completed & archived
             </h3>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1617,7 +1695,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                         noteType: e.target.value as NoteDraft["noteType"],
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="observation">{getTrainingNoteTypeLabel("observation")}</option>
                     <option value="question">{getTrainingNoteTypeLabel("question")}</option>
@@ -1630,7 +1708,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     data-testid="training-note-goal-select"
                     value={noteDraft.goalId}
                     onChange={(e) => setNoteDraft((prev) => ({ ...prev, goalId: e.target.value }))}
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="">No linked goal</option>
                     {snapshot.goalOptions.map((goal) => (
@@ -1655,7 +1733,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                       ? "What do you want to check later?"
                       : "What did you notice in the pool?"
                   }
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                 />
               </label>
 
@@ -1664,7 +1742,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                 <select
                   value={noteDraft.focusId}
                   onChange={(e) => setNoteDraft((prev) => ({ ...prev, focusId: e.target.value }))}
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                 >
                   <option value="">No linked focus</option>
                   {focusOptions.map((focus) => (
@@ -1689,11 +1767,15 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
         </div>
 
         {snapshot.recentNotes.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6">
+          <TrainingContextFeedback
+            tone="empty"
+            testId="training-notes-empty-state"
+            className="mt-5 p-6"
+          >
             <p className="text-sm text-slate-600">
               No notes yet. Start with the first observation or question that comes up in the pool.
             </p>
-          </div>
+          </TrainingContextFeedback>
         ) : (
           <div className="mt-5 space-y-4">
             <div
@@ -1729,7 +1811,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                       setNoteListFilters((prev) => ({ ...prev, search: e.target.value }))
                     }
                     placeholder="Search text, answers, goals, or focus"
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                   />
                 </label>
 
@@ -1744,7 +1826,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                         noteType: e.target.value as NoteListFilters["noteType"],
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="all">All types</option>
                     <option value="observation">Observations</option>
@@ -1763,7 +1845,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                         status: e.target.value as NoteListFilters["status"],
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="all">All statuses</option>
                     {availableNoteStatuses.map((status) => (
@@ -1783,7 +1865,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     onChange={(e) =>
                       setNoteListFilters((prev) => ({ ...prev, fromDate: e.target.value }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   />
                 </label>
 
@@ -1796,7 +1878,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     onChange={(e) =>
                       setNoteListFilters((prev) => ({ ...prev, toDate: e.target.value }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   />
                 </label>
 
@@ -1811,7 +1893,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                         sort: e.target.value as NoteListSort,
                       }))
                     }
-                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                    className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                   >
                     <option value="newest">Newest first</option>
                     <option value="oldest">Oldest first</option>
@@ -1826,12 +1908,16 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
             </div>
 
             {filteredRecentNotes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6">
+              <TrainingContextFeedback
+                tone="empty"
+                testId="training-notes-no-results-state"
+                className="p-6"
+              >
                 <p className="text-sm text-slate-600">
                   No notes match the current filters. Clear or widen them to bring notes back into
                   view.
                 </p>
-              </div>
+              </TrainingContextFeedback>
             ) : null}
 
             {filteredRecentNotes.map((note) => {
@@ -1871,7 +1957,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                             )
                           }
                           rows={4}
-                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                         />
                       </label>
 
@@ -1896,7 +1982,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                                 : prev
                             )
                           }
-                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500"
                         >
                           {getNoteStatusOptions(note.noteType).map((status) => (
                             <option key={status} value={status}>
@@ -1918,7 +2004,7 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                             }
                             rows={3}
                             placeholder="Write the answer when you have tested or reviewed it."
-                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500"
+                            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
                           />
                         </label>
                       ) : null}
@@ -1946,15 +2032,15 @@ export default function TrainingContextHub({ initialSnapshot, initialGoalPrefill
                     </div>
                   ) : (
                     <>
-                      <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                      <p className="mt-4 text-sm leading-relaxed whitespace-pre-wrap text-slate-800">
                         {note.body}
                       </p>
                       {note.answer ? (
                         <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                          <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                             Answer
                           </p>
-                          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
+                          <p className="mt-2 text-sm whitespace-pre-wrap text-slate-800">
                             {note.answer}
                           </p>
                         </div>

@@ -104,6 +104,87 @@ describe("TrainingContextHub", () => {
     expect(screen.getAllByText("Primary focus").length).toBeGreaterThan(0);
   });
 
+  it("renders schema, load, and context feedback with accessible semantics", async () => {
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot({
+          schemaReady: false,
+          loadError: "Could not load Focus and Notes right now.",
+          activeFocus: null,
+          primaryFocus: null,
+          openFocuses: [],
+          recentNotes: [],
+        })}
+        initialGoalPrefill={{ goalId: "goal-missing", intent: "focus" }}
+      />
+    );
+
+    const schemaWarning = screen.getByTestId("training-schema-warning");
+    expect(schemaWarning).toHaveAttribute("role", "status");
+    expect(schemaWarning).toHaveAttribute("aria-live", "polite");
+    expect(schemaWarning).toHaveAttribute("data-feedback-tone", "warning");
+
+    const loadError = screen.getByTestId("training-load-error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(loadError).toHaveTextContent("Could not load Focus and Notes right now.");
+
+    const contextMessage = await screen.findByTestId("training-context-message");
+    expect(contextMessage).toHaveAttribute("role", "status");
+    expect(contextMessage).toHaveAttribute("aria-live", "polite");
+    expect(contextMessage).toHaveAttribute("data-feedback-tone", "info");
+    expect(contextMessage).toHaveTextContent(
+      "The goal selected from Goals is no longer available. Pick another goal below."
+    );
+  });
+
+  it("renders offline feedback as a polite status", async () => {
+    vi.stubGlobal("navigator", { onLine: false });
+
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    const feedback = await screen.findByTestId("training-offline-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "warning");
+    expect(feedback).toHaveTextContent(
+      "You are offline. Existing Focus and Notes stay visible, but save/update actions are paused"
+    );
+  });
+
+  it("keeps first-run empty states static for screen readers", () => {
+    render(
+      <TrainingContextHub
+        initialSnapshot={buildSnapshot({
+          activeFocus: null,
+          primaryFocus: null,
+          openFocuses: [],
+          focusHistory: [],
+          recentNotes: [],
+          goalOptions: [],
+        })}
+      />
+    );
+
+    for (const testId of [
+      "training-goals-empty-state",
+      "training-focus-empty-state",
+      "training-notes-empty-state",
+    ]) {
+      const emptyState = screen.getByTestId(testId);
+      expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
+      expect(emptyState).not.toHaveAttribute("role");
+      expect(emptyState).not.toHaveAttribute("aria-live");
+    }
+
+    expect(screen.getByTestId("training-goals-empty-state")).toHaveTextContent(
+      "No active goals are available here yet."
+    );
+    expect(screen.getByTestId("training-focus-empty-state")).toHaveTextContent("No open focus yet");
+    expect(screen.getByTestId("training-notes-empty-state")).toHaveTextContent("No notes yet.");
+  });
+
   it("opens question editing with answer field", () => {
     render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
 
@@ -164,7 +245,11 @@ describe("TrainingContextHub", () => {
 
     expect(screen.queryByTestId("training-note-card-note-1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("training-note-card-note-2")).not.toBeInTheDocument();
-    expect(screen.getByText(/No notes match the current filters/i)).toBeInTheDocument();
+    const noResults = screen.getByTestId("training-notes-no-results-state");
+    expect(noResults).toHaveAttribute("data-feedback-tone", "empty");
+    expect(noResults).not.toHaveAttribute("role");
+    expect(noResults).not.toHaveAttribute("aria-live");
+    expect(noResults).toHaveTextContent(/No notes match the current filters/i);
 
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
 
@@ -299,6 +384,10 @@ describe("TrainingContextHub", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Choose a primary focus" })).toBeInTheDocument();
+    const warning = screen.getByTestId("training-primary-focus-warning");
+    expect(warning).toHaveAttribute("role", "status");
+    expect(warning).toHaveAttribute("aria-live", "polite");
+    expect(warning).toHaveAttribute("data-feedback-tone", "warning");
     expect(
       screen.getByText(/You have 2 open focuses and no primary focus selected yet\./i)
     ).toBeInTheDocument();
@@ -484,11 +573,41 @@ describe("TrainingContextHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Focus updated.")).toBeInTheDocument();
+      const feedback = screen.getByTestId("training-action-success");
+      expect(feedback).toHaveAttribute("role", "status");
+      expect(feedback).toHaveAttribute("aria-live", "polite");
+      expect(feedback).toHaveAttribute("data-feedback-tone", "success");
+      expect(feedback).toHaveTextContent("Focus updated.");
     });
     expect(screen.getByTestId("training-focus-card-focus-1")).toHaveTextContent(
       "Patient catch timing"
     );
+  });
+
+  it("renders recoverable action errors as assertive alerts", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ ok: false, error: "Could not save focus changes right now." }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit focus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save focus" }));
+
+    const feedback = await screen.findByTestId("training-action-error");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("Could not save focus changes right now.");
   });
 
   it("removes primary focus explicitly without forcing another action", async () => {
