@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-24-aw-006-habits-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-24`
 - `updated`: `2026-05-24`
@@ -58,6 +58,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Habit create/update/archive/check-in/reset/lapse payloads, cadence logic, local timer behavior, and snapshot replacement stay unchanged.                                         | targeted unit tests + code review           | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, CRUD surface, publishing workflow, admin notes, QR, content manager, or operator workflow.                                             | explicit admin scope rationale              | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Dynamic success/error/warning feedback uses appropriate `role`/`aria-live`; static empty state avoids unnecessary announcements; buttons keep existing names and focus behavior. | unit assertions + screenshot review         | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                               | unit assertions + screenshot review         | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: route target remains `LCP <= 2.5s`, `CLS <= 0.10`, `INP <= 200ms`, `TBT <= 200ms`; no dependency, media, fetch, or heavy client runtime is added.               | no-dependency diff + broad gates later      | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical habit definitions/check-ins and local-only UI/timer state boundaries remain unchanged; feedback derives from existing mutation outcomes only.                   | data contract + code review                 | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this changes no route cache mode, fetch cache, revalidation trigger, mutation invalidation, CDN behavior, or stale-data policy.                                      | explicit cache scope rationale              | `N/A`                   |
@@ -217,3 +218,29 @@ Required because this is a user-facing UI state rendering change. Stop after tar
 - `2026-05-24 | in-progress | owner approved AW-006 Habits Feedback Semantics after clean main@c43c432 and fresh queue/design/code re-audit; created branch aw-006-habits-feedback-semantics and this active brief | next: update queue/inventory, implement habits feedback helper, run targeted tests, then capture screenshot handoff before broad gates`
 - `2026-05-24 | screenshot-review | implemented a habits-local feedback helper for schema, empty, action success, and action error states; preserved create/edit/archive/check-in/reset/lapse/timer/cadence payload logic; updated AW-006 queue and notice inventory; targeted validation passed with ./node_modules/.bin/vitest run tests/unit/habit-perfect-day-hub.test.tsx (22 tests), npm run lint:briefs:all, npm run lint:quality-gates, npm run typecheck, route/label/support sweep, and git diff --check; captured before/after screenshots in output/habits-feedback-semantics-2026-05-24-205130 using main@c43c432 for before and this branch for after | next: owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI, and npm run verify:pre-merge`
 - `2026-05-24 | screenshot-approved | owner approved the screenshot handoff in output/habits-feedback-semantics-2026-05-24-205130; no product-rendering files changed after capture before broad-gate start | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-24 | merged | PR #836 merged as f0a146a after npm run verify:pre-pr, green GitHub CI, refreshed screenshot artifacts in output/habits-feedback-semantics-refresh-2026-05-24-212145, and npm run verify:pre-merge passed on 1cc55a6 | next: repo-managed docs-only closeout moves this brief to done and updates canonical queue/inventory stale active references`
+
+## Completion Record
+
+- `completed`: `2026-05-24`
+- `merged_pr`: `#836`
+- `squash_commit`: `f0a146a`
+- `result`: Closed AW-006 Habits Feedback Semantics. `/my-library/habits` now uses a habits-local feedback helper for schema warning, static empty state, action success, action error, and created-row feedback semantics while preserving habit data, APIs, cadence, timers, check-ins, analytics, navigation, Help/Guide, and support behavior.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/habit-perfect-day-hub.test.tsx` PASS (22 tests); `npm run lint:briefs:all` PASS; `npm run lint:quality-gates` PASS; `npm run typecheck` PASS; targeted route/label/support sweep completed with no Help/Guide fallout; `git diff --check` PASS; `npm run verify:pre-pr` PASS on `1cc55a6`; GitHub CI for PR `#836` PASS including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, and Vercel; `npm run verify:pre-merge` PASS on `1cc55a6`.
+- `screenshot_artifacts`: `output/habits-feedback-semantics-refresh-2026-05-24-212145` captured `2026-05-24 21:22` after commit formatting; before/after desktop and mobile PNGs are present.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained intentionally bounded and non-blocking.
+
+| Category                                      | Achieved Score | Evidence                                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#836`, code review, queue closeout, screenshot handoff                                               | None         |
+| UX flow clarity                               | `5/5`          | Unit tests, screenshot handoff, PR `#836`                                                                | None         |
+| Visual design quality                         | `5/5`          | Refreshed desktop/mobile screenshot artifacts and owner-approved handoff                                 | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests and unchanged habit API/data/cadence/timer/check-in logic                             | None         |
+| Accessibility (a11y)                          | `5/5`          | Unit assertions for `role`/`aria-live`; static empty state avoids unnecessary live announcement          | None         |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.  | None         |
+| Data placement and sync boundaries            | `5/5`          | No server/local boundary changes; feedback derives from existing snapshot and mutation outcomes          | None         |
+| Reliability and failure handling              | `5/5`          | Warning, success, error, and fallback paths covered by focused tests                                     | None         |
+| Security and authz                            | `5/5`          | Protected routes/APIs unchanged; error copy stays generic and privacy-safe                               | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Route-local helper in `HabitPerfectDayHub`; no dependency or broad primitive added                       | None         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, local `verify:pre-pr`, GitHub CI, and local `verify:pre-merge` all passed               | None         |
+| DevOps and rollback readiness                 | `5/5`          | No migration/config/package/workflow changes; reversible by normal git revert; PR body has gate evidence | None         |
