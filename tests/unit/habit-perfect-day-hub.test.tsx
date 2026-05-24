@@ -78,6 +78,13 @@ function buildSnapshot(options?: { withHabit?: boolean; completed?: boolean }): 
   };
 }
 
+function buildSchemaPendingSnapshot(): HabitSnapshot {
+  return {
+    ...buildSnapshot(),
+    schemaReady: false,
+  };
+}
+
 function buildTimedSnapshot(): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
@@ -206,6 +213,27 @@ describe("HabitPerfectDayHub", () => {
     vi.restoreAllMocks();
   });
 
+  it("renders schema sync feedback as a polite Habits status", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSchemaPendingSnapshot()} />);
+
+    expect(screen.getByRole("heading", { name: "My Perfect Day" })).toBeVisible();
+    const warning = screen.getByTestId("habits-schema-warning");
+    expect(warning).toHaveAttribute("role", "status");
+    expect(warning).toHaveAttribute("aria-live", "polite");
+    expect(warning).toHaveTextContent("Habits are still syncing in this environment.");
+  });
+
+  it("keeps the first-run empty state static with the existing Add habit path", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    const emptyState = screen.getByTestId("habits-empty-state");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+    expect(emptyState).toHaveTextContent("No active habits");
+    expect(emptyState).toHaveTextContent("Use Add habit to start tracking today.");
+    expect(screen.getByRole("button", { name: "Add habit" })).toBeVisible();
+  });
+
   it("creates a first habit for My Perfect Day", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -238,7 +266,9 @@ describe("HabitPerfectDayHub", () => {
       habitMode: string;
     };
     expect(body.habitMode).toBe("build");
-    expect(await screen.findByText("Habit added")).toBeVisible();
+    const createdStatus = await screen.findByRole("status");
+    expect(createdStatus).toHaveAttribute("aria-live", "polite");
+    expect(createdStatus).toHaveTextContent("Habit added");
     expect(screen.getByText("Read")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveAttribute(
       "aria-expanded",
@@ -491,11 +521,37 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    expect(await screen.findByText("Check-in saved.")).toBeVisible();
+    const success = await screen.findByTestId("habits-action-success");
+    expect(success).toHaveAttribute("role", "status");
+    expect(success).toHaveAttribute("aria-live", "polite");
+    expect(success).toHaveTextContent("Check-in saved.");
     expect(screen.getByRole("progressbar", { name: "My Perfect Day completion" })).toHaveAttribute(
       "aria-valuenow",
       "100"
     );
+  });
+
+  it("announces failed habit creation as an assertive action error", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not create that habit right now.",
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    openAddHabitForm();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Read 10 pages" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    const error = await screen.findByTestId("habits-action-error");
+    expect(error).toHaveAttribute("role", "alert");
+    expect(error).toHaveAttribute("aria-live", "assertive");
+    expect(error).toHaveTextContent("Could not create that habit right now.");
   });
 
   it("undoes a completed binary habit from the quick row", async () => {

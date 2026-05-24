@@ -16,7 +16,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   HABIT_CATEGORY_VALUES,
   HABIT_MODE_VALUES,
@@ -31,6 +31,7 @@ import {
   type HabitUnit,
   type HabitWeekday,
 } from "@/lib/habits/shared";
+import { cx } from "@/components/ui/cx";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 type Props = {
@@ -64,6 +65,18 @@ type HabitDraft = {
 type TimerState = {
   elapsedSeconds: number;
   startedAtMs: number | null;
+};
+
+type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
+type HabitFeedbackAnnouncement = "polite" | "assertive" | "none";
+
+type HabitFeedbackProps = {
+  tone: HabitFeedbackTone;
+  children: ReactNode;
+  title?: ReactNode;
+  announcement?: HabitFeedbackAnnouncement;
+  className?: string;
+  testId?: string;
 };
 
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
@@ -370,6 +383,60 @@ function getDisplayUnit(unit: HabitUnit | null, value: number) {
 
 function formatCountValue(value: number, unit: HabitUnit | null) {
   return `${value} ${getDisplayUnit(unit, value)}`;
+}
+
+const habitFeedbackToneClasses: Record<HabitFeedbackTone, string> = {
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  error: "border-rose-200 bg-rose-50 text-rose-800",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  empty: "border-dashed border-slate-300 bg-slate-50 text-slate-600",
+};
+
+function getDefaultHabitFeedbackAnnouncement(tone: HabitFeedbackTone): HabitFeedbackAnnouncement {
+  if (tone === "empty") return "none";
+  if (tone === "error") return "assertive";
+  return "polite";
+}
+
+function HabitFeedback({
+  tone,
+  title,
+  children,
+  announcement,
+  className,
+  testId,
+}: HabitFeedbackProps) {
+  const resolvedAnnouncement = announcement ?? getDefaultHabitFeedbackAnnouncement(tone);
+  const role =
+    resolvedAnnouncement === "assertive"
+      ? "alert"
+      : resolvedAnnouncement === "polite"
+        ? "status"
+        : undefined;
+  const ariaLive =
+    resolvedAnnouncement === "assertive"
+      ? "assertive"
+      : resolvedAnnouncement === "polite"
+        ? "polite"
+        : undefined;
+
+  return (
+    <div
+      className={cx("rounded-xl border px-4 py-3", habitFeedbackToneClasses[tone], className)}
+      role={role}
+      aria-live={ariaLive}
+      data-testid={testId}
+    >
+      {title ? (
+        <p className={cx("text-sm font-semibold", tone === "empty" ? "text-slate-900" : "")}>
+          {title}
+        </p>
+      ) : null}
+      <p className={cx("text-sm", title ? "mt-1" : "", tone === "error" ? "font-medium" : "")}>
+        {children}
+      </p>
+    </div>
+  );
 }
 
 function readSeenHabitRowIds() {
@@ -1249,9 +1316,11 @@ export default function HabitPerfectDayHub({
 
   if (!snapshot.schemaReady) {
     return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-slate-900">My Perfect Day</h2>
-        <p className="mt-2 text-sm text-amber-800">Habits are still syncing in this environment.</p>
+        <HabitFeedback tone="warning" className="mt-3" testId="habits-schema-warning">
+          Habits are still syncing in this environment.
+        </HabitFeedback>
       </section>
     );
   }
@@ -1594,14 +1663,14 @@ export default function HabitPerfectDayHub({
         </section>
 
         {snapshot.daySummary.items.length === 0 ? (
-          <div
-            className={`mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 ${
-              isAddHabitOpen ? "max-sm:hidden" : ""
-            }`}
+          <HabitFeedback
+            tone="empty"
+            title="No active habits"
+            className={cx("mt-4", isAddHabitOpen ? "max-sm:hidden" : "")}
+            testId="habits-empty-state"
           >
-            <p className="text-sm font-medium text-slate-900">No active habits</p>
-            <p className="mt-1 text-sm text-slate-600">Use Add habit to start tracking today.</p>
-          </div>
+            Use Add habit to start tracking today.
+          </HabitFeedback>
         ) : (
           <div className={`mt-4 space-y-3 ${isAddHabitOpen ? "max-sm:hidden" : ""}`}>
             {snapshot.daySummary.items.map((item, index) => {
@@ -1687,6 +1756,7 @@ export default function HabitPerfectDayHub({
                         {isNewlyCreated ? (
                           <p
                             role="status"
+                            aria-live="polite"
                             className="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"
                           >
                             Habit added
@@ -2265,9 +2335,17 @@ export default function HabitPerfectDayHub({
         )}
       </section>
 
-      <div aria-live="polite" className="min-h-6">
-        {notice ? <p className="text-sm font-medium text-emerald-700">{notice}</p> : null}
-        {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
+      <div className="min-h-6 space-y-2">
+        {notice ? (
+          <HabitFeedback tone="success" className="py-2" testId="habits-action-success">
+            {notice}
+          </HabitFeedback>
+        ) : null}
+        {error ? (
+          <HabitFeedback tone="error" className="py-2" testId="habits-action-error">
+            {error}
+          </HabitFeedback>
+        ) : null}
       </div>
     </div>
   );
