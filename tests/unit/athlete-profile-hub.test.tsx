@@ -145,6 +145,12 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("Swimmer profile saved.")).toBeInTheDocument();
     });
 
+    const feedback = screen.getByTestId("athlete-profile-feedback-profile");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("aria-atomic", "true");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "success");
+
     await waitFor(() => {
       expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
         "data-section-open",
@@ -249,6 +255,11 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("CSS saved.")).toBeInTheDocument();
     });
 
+    const cssFeedback = screen.getByTestId("athlete-profile-feedback-css");
+    expect(cssFeedback).toHaveAttribute("role", "status");
+    expect(cssFeedback).toHaveAttribute("aria-live", "polite");
+    expect(cssFeedback).toHaveAttribute("data-feedback-tone", "success");
+
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-preferences"));
     fireEvent.change(screen.getByTestId("athlete-preferences-pool-length"), {
       target: { value: "25" },
@@ -266,6 +277,11 @@ describe("AthleteProfileHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Training preferences saved.")).toBeInTheDocument();
     });
+
+    const preferencesFeedback = screen.getByTestId("athlete-profile-feedback-preferences");
+    expect(preferencesFeedback).toHaveAttribute("role", "status");
+    expect(preferencesFeedback).toHaveAttribute("aria-live", "polite");
+    expect(preferencesFeedback).toHaveAttribute("data-feedback-tone", "success");
 
     expect(screen.getAllByText("1:58/100m").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/25m pool/).length).toBeGreaterThan(0);
@@ -341,6 +357,11 @@ describe("AthleteProfileHub", () => {
       expect(screen.getByText("Best time saved.")).toBeInTheDocument();
     });
 
+    const recordSaveFeedback = screen.getByTestId("athlete-profile-feedback-records");
+    expect(recordSaveFeedback).toHaveAttribute("role", "status");
+    expect(recordSaveFeedback).toHaveAttribute("aria-live", "polite");
+    expect(recordSaveFeedback).toHaveAttribute("data-feedback-tone", "success");
+
     await waitFor(() => {
       expect(screen.getByTestId("athlete-profile-section-records")).toHaveAttribute(
         "data-section-open",
@@ -356,6 +377,11 @@ describe("AthleteProfileHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Best time deleted.")).toBeInTheDocument();
     });
+
+    const recordDeleteFeedback = screen.getByTestId("athlete-profile-feedback-records");
+    expect(recordDeleteFeedback).toHaveAttribute("role", "status");
+    expect(recordDeleteFeedback).toHaveAttribute("aria-live", "polite");
+    expect(recordDeleteFeedback).toHaveAttribute("data-feedback-tone", "success");
 
     expect(screen.queryByText("100m Freestyle · 25m pool")).not.toBeInTheDocument();
   });
@@ -389,6 +415,12 @@ describe("AthleteProfileHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Could not save swimmer profile right now.")).toBeInTheDocument();
     });
+
+    const feedback = screen.getByTestId("athlete-profile-feedback-profile");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("aria-atomic", "true");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
 
     expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
       "data-section-open",
@@ -429,6 +461,11 @@ describe("AthleteProfileHub", () => {
         screen.getByText("Could not save stroke and skill limits right now.")
       ).toBeInTheDocument();
     });
+
+    const feedback = screen.getByTestId("athlete-profile-feedback-capabilities");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
 
     expect(screen.getByTestId("athlete-profile-section-capabilities")).toHaveAttribute(
       "data-section-open",
