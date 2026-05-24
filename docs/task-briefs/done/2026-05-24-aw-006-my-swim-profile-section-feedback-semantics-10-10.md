@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-24-aw-006-my-swim-profile-section-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-24`
 - `updated`: `2026-05-24`
@@ -52,6 +52,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Profile snapshot updates, pending flags, section collapse/open rules, local draft recovery, reset behavior, personal record CRUD, analytics, and API payloads remain unchanged. | focused unit tests + diff review                 | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice touches no admin editor, admin CRUD, publishing, notes, QR, or operator editing workflow.                                                                | changed-files review                             | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Error feedback uses assertive alert semantics, success feedback uses polite status semantics, and duplicate section feedback remains screen-reader safe.                        | unit tests + screenshot/DOM review               | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                              | unit tests + screenshot/DOM review               | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no dependency, asset, route fetch, polling loop, or heavy client library is added; `/my-library/profile` keeps existing route budgets.                         | dependency diff + broad gates                    | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical profile records and local-only unsaved drafts remain in their existing boundaries; this slice adds only transient presentation state/markup.                   | data contract review + tests                     | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache mode, fetch cache, mutation response, revalidation, or invalidation behavior changes.                                                                | cache scope rationale                            | `N/A`                   |
@@ -221,7 +222,28 @@ After screenshot approval:
 
 ## Completion Record
 
-To be completed after merge and repo-managed closeout.
+- `completed`: `2026-05-24`
+- `merged_pr`: `#830`
+- `squash_commit`: `6c01fa8`
+- `result`: Closed AW-006 My Swim Profile Section Feedback Semantics by giving existing profile section success/error messages one local feedback contract with polite success status and assertive error alerts, without changing profile data, APIs, drafts, analytics, or section workflow.
+- `validation`: Targeted Vitest, typecheck, diff check, brief lint, route/label/support sweep, screenshot handoff/approval, `npm run verify:pre-pr`, green PR CI, and `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#830`, screenshot handoff, focused tests, and queue closeout keep My Swim Profile as the canonical profile surface. | None.        |
+| UX flow clarity                               | `5/5`          | Unit tests and screenshot handoff cover visible success/error feedback without dead-end states.                         | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/aw-006-my-swim-profile-feedback-2026-05-24-154445`.               | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserve payloads, pending flags, local drafts, section behavior, and analytics.          | None.        |
+| Accessibility (a11y)                          | `5/5`          | Unit tests assert polite `status` semantics for success and assertive `alert` semantics for errors.                     | None.        |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.                 | None.        |
+| Data placement and sync boundaries            | `5/5`          | Data contract review confirms server-canonical profile data and local-only drafts stay in existing boundaries.          | None.        |
+| Reliability and failure handling              | `5/5`          | Failure-path tests confirm errors remain recoverable and sections stay available for retry.                             | None.        |
+| Privacy and compliance                        | `5/5`          | Copy/error review confirms no private profile values, raw diagnostics, user identifiers, secrets, or env values.        | None.        |
+| Content governance                            | `5/5`          | AW-006 queue and notice/empty-state inventory updated; repo-managed closeout moves this brief to `done`.                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AthleteProfileHub`, existing member styling, and focused tests; no package/API/config changes.                  | None.        |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed for PR `#830`.                                | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert rollback; no migrations, env changes, workflow changes, generated shipped assets, or provider changes.    | None.        |
 
 ## Checkpoint Log
 
@@ -229,3 +251,4 @@ To be completed after merge and repo-managed closeout.
 - `2026-05-24 | implemented + targeted validation | added a profile-local feedback renderer for My Swim Profile section success/error messages, updated focused unit assertions for polite status and assertive alert semantics, updated AW-006 queue/inventory, and passed targeted Vitest, typecheck, diff check, brief lint, and route/label/support sweep; next: capture required screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-05-24 | screenshot stop | captured after/reference screenshot artifacts in output/aw-006-my-swim-profile-feedback-2026-05-24-154445, removed the temporary fixture route/script, reran typecheck after clearing stale generated Next dev types, and stopped before verify:pre-pr as required for UI work | next: owner reviews screenshot handoff and either approves or requests visual corrections`
 - `2026-05-24 | pre-pr ready | owner approved screenshot handoff; npm run verify:pre-pr passed full lane with branch-current, lint, typecheck, unit, build, perf budgets, and Playwright e2e | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-05-24 | merged | PR #830 merged as 6c01fa8 after green local pre-pr, PR CI, and pre-merge gates; repo-managed closeout moved this brief to done and recorded completion evidence | next: rerun post-merge preflight after closeout merge, then complete mandatory chat-handoff assessment before any next implementation slice`
