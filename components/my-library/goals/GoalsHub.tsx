@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown, Plus } from "lucide-react";
 import { formatGoalDate, type GoalPrimaryAction, type GoalView } from "@/lib/goals/mvp";
@@ -109,6 +109,44 @@ function getTemplateTargetCopy(template: TemplateOption) {
   }
 
   return "Goal template";
+}
+
+type GoalsFeedbackTone = "warning" | "error" | "success" | "empty";
+
+const goalsFeedbackToneClass: Record<GoalsFeedbackTone, string> = {
+  warning: "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800",
+  error: "rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700",
+  success: "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700",
+  empty:
+    "rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5 text-sm text-slate-700",
+};
+
+function GoalsFeedback({
+  tone,
+  children,
+  action,
+  testId,
+}: {
+  tone: GoalsFeedbackTone;
+  children: ReactNode;
+  action?: ReactNode;
+  testId?: string;
+}) {
+  const isError = tone === "error";
+  const isStaticEmpty = tone === "empty";
+
+  return (
+    <div
+      className={goalsFeedbackToneClass[tone]}
+      data-feedback-tone={tone}
+      data-testid={testId}
+      role={isStaticEmpty ? undefined : isError ? "alert" : "status"}
+      aria-live={isStaticEmpty ? undefined : isError ? "assertive" : "polite"}
+    >
+      {children}
+      {action ? <div className="mt-2">{action}</div> : null}
+    </div>
+  );
 }
 
 export default function GoalsHub({ initialGoals, templates, activeLimit }: Props) {
@@ -580,29 +618,34 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       </section>
 
       {!isOnline ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          You are offline. You can still browse goals, but create/update actions are paused.
-        </div>
+        <GoalsFeedback tone="warning" testId="goals-offline-feedback">
+          <p>You are offline. You can still browse goals, but create/update actions are paused.</p>
+        </GoalsFeedback>
       ) : null}
 
       {actionError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <GoalsFeedback
+          tone="error"
+          testId="goals-action-error"
+          action={
+            <button
+              type="button"
+              onClick={refreshGoals}
+              disabled={isRefreshing}
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRefreshing ? "Retrying…" : "Retry"}
+            </button>
+          }
+        >
           <p>{actionError}</p>
-          <button
-            type="button"
-            onClick={refreshGoals}
-            disabled={isRefreshing}
-            className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isRefreshing ? "Retrying…" : "Retry"}
-          </button>
-        </div>
+        </GoalsFeedback>
       ) : null}
 
       {actionNotice ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {actionNotice}
-        </div>
+        <GoalsFeedback tone="success" testId="goals-action-success">
+          <p>{actionNotice}</p>
+        </GoalsFeedback>
       ) : null}
 
       {isAddGoalOpen ? (
@@ -827,14 +870,12 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
         </div>
 
         {goals.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
-            <p className="text-sm text-slate-700">
-              No goals yet. Add a template goal or create a custom one above.
-            </p>
-          </div>
+          <GoalsFeedback tone="empty" testId="goals-empty-state">
+            <p>No goals yet. Add a template goal or create a custom one above.</p>
+          </GoalsFeedback>
         ) : filteredGoals.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5">
-            <p className="text-sm text-slate-700">
+          <GoalsFeedback tone="empty" testId="goals-no-results-state">
+            <p>
               {activeFilter === "active"
                 ? "No active goals right now. View achieved goals, restore an archived goal, or add a new one."
                 : activeFilter === "achieved"
@@ -843,7 +884,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                     ? "No archived goals yet. Archive older goals only when you want them out of the current list."
                     : "No goals match this view right now."}
             </p>
-          </div>
+          </GoalsFeedback>
         ) : (
           <div className="space-y-3">
             {filteredGoals.map((goal) => {

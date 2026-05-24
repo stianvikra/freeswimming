@@ -158,6 +158,76 @@ describe("GoalsHub", () => {
     expect(screen.getByRole("heading", { name: "Achieved goals" })).toBeInTheDocument();
   });
 
+  it("renders offline feedback as a polite status", async () => {
+    vi.stubGlobal("navigator", { onLine: false });
+
+    render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
+
+    const feedback = await screen.findByTestId("goals-offline-feedback");
+    expect(feedback).toHaveAttribute("role", "status");
+    expect(feedback).toHaveAttribute("aria-live", "polite");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "warning");
+    expect(feedback).toHaveTextContent(
+      "You are offline. You can still browse goals, but create/update actions are paused."
+    );
+  });
+
+  it("keeps first-run and filtered empty states static for screen readers", () => {
+    const archivedGoal = buildGoal({
+      id: "goal-archived",
+      title: "Archived goal",
+      status: "archived",
+      statusLabel: "Archived",
+      statusTone: "slate",
+    });
+
+    const { unmount } = render(<GoalsHub initialGoals={[]} templates={[]} activeLimit={3} />);
+
+    const emptyState = screen.getByTestId("goals-empty-state");
+    expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+    expect(emptyState).toHaveTextContent(
+      "No goals yet. Add a template goal or create a custom one above."
+    );
+
+    unmount();
+    render(<GoalsHub initialGoals={[archivedGoal]} templates={[]} activeLimit={3} />);
+    fireEvent.click(screen.getByTestId("goals-filter-active"));
+
+    const noResults = screen.getByTestId("goals-no-results-state");
+    expect(noResults).toHaveAttribute("data-feedback-tone", "empty");
+    expect(noResults).not.toHaveAttribute("role");
+    expect(noResults).not.toHaveAttribute("aria-live");
+    expect(noResults).toHaveTextContent(
+      "No active goals right now. View achieved goals, restore an archived goal, or add a new one."
+    );
+  });
+
+  it("renders recoverable action errors as assertive alerts", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: false, error: "Could not clear this best result." }), {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
+
+    fireEvent.click(screen.getByTestId("goal-details-toggle-goal-1"));
+    fireEvent.click(screen.getByRole("button", { name: "Clear best result" }));
+
+    const feedback = await screen.findByTestId("goals-action-error");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("Could not clear this best result.");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
+  });
+
   it("clears a mistaken best result and updates the card from the server response", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -215,7 +285,11 @@ describe("GoalsHub", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Best result cleared.")).toBeInTheDocument();
+      const feedback = screen.getByTestId("goals-action-success");
+      expect(feedback).toHaveAttribute("role", "status");
+      expect(feedback).toHaveAttribute("aria-live", "polite");
+      expect(feedback).toHaveAttribute("data-feedback-tone", "success");
+      expect(feedback).toHaveTextContent("Best result cleared.");
       expect(
         screen.getByText("No result logged yet. Target: 400m under 10:00.")
       ).toBeInTheDocument();
