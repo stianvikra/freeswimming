@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-24-aw-006-my-training-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-24`
 - `updated`: `2026-05-24`
@@ -236,3 +236,30 @@ After screenshot approval:
 - `2026-05-24 | implemented + targeted validation | added a training-local feedback renderer for schema warning, offline warning, load error+retry, context message, action error, action success, first-run empty, primary-focus warning, and filtered no-results states; updated focused unit assertions for polite status, assertive alert, and static empty semantics; updated AW-006 queue/inventory; targeted checks passed: ./node_modules/.bin/vitest run tests/unit/training-context-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check; targeted route/label/support sweep found expected fallout in TrainingContextHub, focused tests, AW-006 docs, this active brief, existing admin-notes strings with matching generic copy, Training Context API error strings, and support/runbook references | next: capture required screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-05-24 | screenshot handoff ready | captured after/reference screenshot artifacts in output/aw-006-my-training-feedback-2026-05-24-192826 for success, action error, mobile empty, and Goals reference feedback; capture used a temporary local fixture route with seeded props and mocked fetch responses to avoid writing real Training Context data; fixture route/script were removed after capture and targeted validation passed again with ./node_modules/.bin/vitest run tests/unit/training-context-hub.test.tsx, npm run typecheck, and git diff --check; no shipped product-rendering files changed after capture | next: owner screenshot approval before verify:pre-pr`
 - `2026-05-24 | screenshot approved + pre-pr green | owner approved screenshot handoff; npm run verify:pre-pr passed the full lane on aw-006-my-training-feedback-semantics with lint, typecheck, unit tests, build, perf budgets, and Playwright; perf trend recommendation stayed hold because worst margin was 14.6% against the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge recommendation`
+- `2026-05-24 | done | PR #834 merged as 5a7430d after green CI and npm run verify:pre-merge; repo-managed closeout moves this brief to done and records final evidence | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-24`
+- `merged_pr`: `#834`
+- `squash_commit`: `5a7430da63a45fbf6a5316a3edf6c9d55084e5dc`
+- `result`: Closed AW-006 My Training Feedback Semantics. My Training feedback now uses clearer, accessible status/error/empty-state semantics while preserving existing Training Context data, API payloads, local drafts, Goals bridge links, analytics, focus/note workflow rules, and support scope.
+- `validation`: Targeted My Training unit tests, `npm run typecheck`, `npm run lint:briefs:all`, `git diff --check`, route/label/support sweep, owner-approved screenshot handoff, `npm run verify:pre-pr`, GitHub CI for PR `#834`, and `npm run verify:pre-merge`.
+- `screenshot_artifacts`: `output/aw-006-my-training-feedback-2026-05-24-192826`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no target category remains below release threshold.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | `/my-library/training` stayed the canonical My Training surface; PR `#834`; diff review.                                                       | None.        |
+| UX flow clarity                               | `5/5`          | Focused tests and screenshot handoff covered schema, offline, load, context, action success/error, first-run empty, and no-results states.     | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved `after/reference` screenshot handoff in `output/aw-006-my-training-feedback-2026-05-24-192826`.                                 | None.        |
+| Business logic correctness and data integrity | `5/5`          | Unit tests preserved focus/note create, update, status, refresh, local draft, filter, selected-goal, and Goals bridge behavior.                | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role/aria assertions cover polite status, assertive alert, and static empty semantics.                                         | None.        |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.                                        | None.        |
+| Data placement and sync boundaries            | `5/5`          | Diff review confirmed server-canonical Training Context data and local-only drafts/state stayed in existing boundaries.                        | None.        |
+| Reliability and failure handling              | `5/5`          | Failure-path unit coverage keeps retry/recovery visible without hiding current focus, notes, drafts, selected goal, or active filters.         | None.        |
+| Privacy and compliance                        | `5/5`          | Copy/error review confirmed no secrets, raw diagnostics, identifiers, entitlement details, provider diagnostics, or new private data exposure. | None.        |
+| Content governance                            | `5/5`          | AW-006 queue and notice/empty-state inventory updated with shipped slice state.                                                                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `TrainingContextHub`, route-local helper, Tailwind tokens, and existing tests; no new dependency.                                       | None.        |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` all passed.                                                                 | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert rollback; no migrations, package changes, env changes, provider changes, or workflow changes.                                    | None.        |
