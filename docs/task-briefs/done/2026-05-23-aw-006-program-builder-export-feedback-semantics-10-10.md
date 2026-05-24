@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-23-aw-006-program-builder-export-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-23`
-- `updated`: `2026-05-23`
+- `updated`: `2026-05-24`
 - `parent_review_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-program-builder-export-feedback`
@@ -38,7 +38,6 @@ Critical target categories for a `10/10` claim:
 - Product goals and IA
 - UX flow clarity
 - Business logic correctness and data integrity
-- Accessibility (a11y)
 - Reliability and failure handling
 - Stack-fit and dependency discipline
 - Testing and QA automation
@@ -211,15 +210,15 @@ After screenshot approval:
 
 ## Screenshot Evidence
 
-- `captured`: `2026-05-23 20:21`
-- `artifacts`: `/Users/stianvikra/freeswimming/output/program-builder-export-feedback-2026-05-23-202105`
+- `captured`: `2026-05-23 21:08`
+- `artifacts`: `/Users/stianvikra/freeswimming/output/program-builder-export-feedback-2026-05-23-210816`
 - `comparison_type`: `after/reference`
 - `files`:
   - `reference-program-builder-export-preview-desktop-1440.png`
   - `after-program-builder-json-success-desktop-1440.png`
   - `after-program-builder-json-error-mobile-390.png`
   - `after-program-builder-pdf-blocked-mobile-390.png`
-- `capture_note`: Captured through a temporary local fixture route with route-intercepted export responses; the temporary route and script were removed before handoff.
+- `capture_note`: Captured through a temporary local fixture route with route-intercepted export responses; the temporary route and script were removed before handoff. Screenshot artifacts were regenerated on commit `af659bd` after pre-commit formatting touched the product component.
 
 ## Local Tooling Prerequisite
 
@@ -241,3 +240,27 @@ After screenshot approval:
 - `2026-05-23 | in-progress | captured screenshot handoff at output/program-builder-export-feedback-2026-05-23-202105 after dev-server QA against a temporary fixture route; removed temporary route and capture script; final targeted validation passed with ./node_modules/.bin/vitest run tests/unit/program-builder-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check, and npm run lint; lint has one pre-existing warning in output/capture-aw006-dryland-feedback.mjs and no errors | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-23 | in-progress | owner approved screenshot handoff; first npm run verify:pre-pr attempt stopped in quality-gate evidence because program/workout-domain changes require explicit session-step reference contract evidence; brief now records that scheduled workout step rendering, shared renderer behavior, and docs/design/session-step-surface-contract.md are unchanged by this export-feedback slice | next: rerun npm run verify:pre-pr`
 - `2026-05-23 | in-progress | npm run verify:pre-pr passed on second attempt after evidence fix; full lane covered quality gates, admin/env/pr-body lints, lint with one pre-existing output/capture-aw006-dryland-feedback.mjs warning and no errors, typecheck, 1205 unit tests, production build, perf budgets, and Playwright with 98 passed / 478 skipped; perf-budget recommendation was hold because worst margin was 14.5% against the 15.0% tighten threshold | next: rerun npm run verify:pre-pr after this checkpoint-only brief update, then commit and push`
+- `2026-05-24 | done | PR #826 merged as squash commit 22bffa5 after fresh npm run verify:pre-merge passed; repo-managed closeout moved this brief to done and cleared stale current/in-progress queue and inventory references | next: rerun post-merge preflight after closeout merge and complete the mandatory chat-handoff assessment before selecting any new AW-006 implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-24`
+- `merged_pr`: `#826`
+- `squash_commit`: `22bffa5`
+- `result`: Closed AW-006 Program Builder Export Feedback Semantics. Program Builder JSON/PDF export actions now show clearer pending/success/error feedback with accessible live-region semantics while preserving program data, export routes, generated artifact contracts, filenames, auth, persistence, and planner behavior.
+- `validation`: Targeted unit coverage passed for `tests/unit/program-builder-hub.test.tsx`; screenshot handoff was approved; final `npm run verify:pre-pr` passed on commit `af659bd`; PR CI passed; fresh `npm run verify:pre-merge` passed on 2026-05-24 and recorded `artifacts/verify-pre-merge/20260524-040131.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                                                                                               | Gaps / Notes                                                   |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Export feedback remains inside `ProgramBuilderHub` near the existing canonical JSON/PDF actions; PR `#826` and commit `22bffa5`.                                                                                                                                                       | None.                                                          |
+| UX flow clarity                               | `5/5`          | Pending, success, JSON failure, and PDF blocked states are visible and recoverable; screenshot artifacts captured at `/Users/stianvikra/freeswimming/output/program-builder-export-feedback-2026-05-23-210816`.                                                                        | None.                                                          |
+| Visual design quality                         | `5/5`          | Feedback cards use the existing member/export visual language and refreshed `after/reference` screenshot evidence.                                                                                                                                                                     | None.                                                          |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved export routes, payload handling, filenames, object URL cleanup, PDF popup behavior, saved program identity, and planner/workout assignment behavior.                                                                                           | None.                                                          |
+| Accessibility (a11y)                          | `5/5`          | Unit tests assert `status`/`alert`, live-region semantics, feedback tone, and active `aria-describedby` wiring for export actions.                                                                                                                                                     | None.                                                          |
+| Reliability and failure handling              | `5/5`          | JSON download errors and blocked PDF popups fail safely with deterministic route-local feedback and retry-ready action state.                                                                                                                                                          | None.                                                          |
+| Privacy and compliance                        | `5/5`          | Feedback copy exposes no secrets, env values, entitlement details, raw diagnostics, or new user identifiers.                                                                                                                                                                           | None.                                                          |
+| Content governance                            | `5/5`          | This repo-managed closeout moves the brief to `done` and updates the canonical AW-006 queue plus notice/empty-state inventory.                                                                                                                                                         | None.                                                          |
+| Stack-fit and dependency discipline           | `5/5`          | Implementation stayed inside the existing component/test surfaces and added no dependency, migration, API layer, env value, or workflow change.                                                                                                                                        | None.                                                          |
+| Testing and QA automation                     | `5/5`          | `./node_modules/.bin/vitest run tests/unit/program-builder-hub.test.tsx`, `npm run verify:pre-pr`, PR CI, and fresh `npm run verify:pre-merge` passed; `verify:pre-merge` reused the current full-lane public verify artifact and skipped private gate because `SITE_LOCK_ENABLED!=1`. | Existing unrelated lint warning in ignored `output/` artifact. |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert path; no migrations, env/package/workflow changes, provider changes, or generated committed assets.                                                                                                                                                                      | None.                                                          |
