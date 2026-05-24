@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-24-aw-006-workout-editor-export-handoff-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-24`
 - `updated`: `2026-05-24`
@@ -39,7 +39,6 @@ Critical target categories for a `10/10` claim:
 - UX flow clarity
 - Visual design quality
 - Business logic correctness and data integrity
-- Accessibility (a11y)
 - Reliability and failure handling
 - Stack-fit and dependency discipline
 - Testing and QA automation
@@ -201,12 +200,10 @@ Visual/export-adjacent gate:
 
 After screenshot approval:
 
-- `npm run verify:pre-pr`
-- commit and push
-- open/update PR
-- required PR CI checks green
-- before merge recommendation:
-  - `npm run verify:pre-merge`
+- `npm run verify:pre-pr` passed on commit `b1e2480`.
+- PR `#828` opened and required CI checks passed.
+- `npm run verify:pre-merge` passed on 2026-05-24 and recorded `artifacts/verify-pre-merge/20260524-100709.json`.
+- PR `#828` merged as squash commit `a73c658`.
 
 ## Manual QA / Screenshot Plan
 
@@ -218,6 +215,19 @@ After screenshot approval:
   - after PDF/export error where practical.
 - Use `after/reference` naming because the handoff compares changed Workout Editor export feedback to mature Program Builder/Poolside/Guide export feedback references rather than a true before-state.
 - For export-adjacent validation, inspect full-resolution artifacts and keep focused unit coverage around actual PDF/Poolside PDF/JSON/handoff behavior. No generated artifact contract change is intended.
+
+## Screenshot Evidence
+
+- `captured`: `2026-05-24 12:27`
+- `artifacts`: `/Users/stianvikra/freeswimming/output/aw-006-workout-editor-export-feedback-2026-05-24-122710`
+- `comparison_type`: `after/reference`
+- `files`:
+  - `after-workout-editor-support-tools-idle-desktop-1440.png`
+  - `after-workout-editor-handoff-copy-success-desktop-1440.png`
+  - `after-workout-editor-garmin-json-success-desktop-1440.png`
+  - `after-workout-editor-pdf-blocked-mobile-390.png`
+  - `reference-program-builder-json-success-desktop-1440.png`
+- `capture_note`: Captured through a temporary local fixture route; the temporary route and capture script were removed before handoff. Screenshot artifacts were regenerated on commit `b1e2480` after pre-commit formatting touched the product component.
 
 ## Local Tooling Prerequisite
 
@@ -236,3 +246,27 @@ After screenshot approval:
 
 - `2026-05-24 | in-progress | started from clean main@671efda after PR #826 and repo-managed closeout #827; post-merge preflight was reported green with no closeout remaining; owner approved Workout Editor Export And Handoff Feedback Semantics as the next bounded AW-006 UI/export-adjacent slice; branch aw-006-workout-editor-export-feedback created | next: implement Workout Editor export/handoff feedback, update tests/docs, run targeted QA, then capture screenshot handoff before broad gates`
 - `2026-05-24 | in-progress | implemented Workout Editor structured export/handoff feedback, focused unit coverage, queue/design doc updates, targeted QA, and after/reference screenshot handoff; owner screenshot approval stop completed | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-05-24 | done | PR #828 merged as squash commit a73c658 after npm run verify:pre-pr, required PR CI, and npm run verify:pre-merge passed; repo-managed closeout moved this brief to done and cleared stale active/in-progress queue and inventory references | next: rerun post-merge preflight after closeout merge and complete the mandatory chat-handoff assessment before selecting any new AW-006 implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-24`
+- `merged_pr`: `#828`
+- `squash_commit`: `a73c658`
+- `result`: Closed AW-006 Workout Editor Export And Handoff Feedback Semantics. Workout Editor PDF, Poolside PDF, Garmin-ready JSON, and handoff actions now show clearer success/error feedback with accessible live-region semantics while preserving workout data, export artifacts, filenames, adapter behavior, popup behavior, Poolside preview storage, auth, and persistence.
+- `validation`: Targeted unit coverage passed for `tests/unit/workout-builder-hub.test.tsx`; screenshot handoff was approved; final `npm run verify:pre-pr` passed on commit `b1e2480`; PR CI passed; fresh `npm run verify:pre-merge` passed on 2026-05-24 and recorded `artifacts/verify-pre-merge/20260524-100709.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                                                                                               | Gaps / Notes                                                   |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Export and handoff feedback remains inside `WorkoutEditor` near the existing PDF, Poolside PDF, JSON, and handoff actions; PR `#828` and commit `a73c658`.                                                                                                                             | None.                                                          |
+| UX flow clarity                               | `5/5`          | PDF, Poolside PDF, Garmin-ready JSON, and handoff success/error states are visible and recoverable; screenshot artifacts captured at `/Users/stianvikra/freeswimming/output/aw-006-workout-editor-export-feedback-2026-05-24-122710`.                                                  | None.                                                          |
+| Visual design quality                         | `5/5`          | Feedback cards use the existing member/export visual language and refreshed `after/reference` screenshot evidence.                                                                                                                                                                     | None.                                                          |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved workout save/edit/delete/discard behavior, JSON/text payloads, filenames, object URL cleanup, PDF popup behavior, Poolside preview draft storage, and generated artifact contracts.                                                            | None.                                                          |
+| Accessibility (a11y)                          | `5/5`          | Unit tests assert `status`/`alert`, live-region semantics, feedback tone, and active `aria-describedby` wiring for export/handoff actions.                                                                                                                                             | None.                                                          |
+| Reliability and failure handling              | `5/5`          | Clipboard failures, download failures, and blocked PDF/Poolside popups fail safely with deterministic route-local feedback and retry-ready action state.                                                                                                                               | None.                                                          |
+| Privacy and compliance                        | `5/5`          | Feedback copy exposes no secrets, env values, entitlement details, raw diagnostics, or new user identifiers.                                                                                                                                                                           | None.                                                          |
+| Content governance                            | `5/5`          | This repo-managed closeout moves the brief to `done` and updates the canonical AW-006 queue plus notice/empty-state inventory.                                                                                                                                                         | None.                                                          |
+| Stack-fit and dependency discipline           | `5/5`          | Implementation stayed inside the existing component/test surfaces and added no dependency, migration, API layer, env value, or workflow change.                                                                                                                                        | None.                                                          |
+| Testing and QA automation                     | `5/5`          | `./node_modules/.bin/vitest run tests/unit/workout-builder-hub.test.tsx`, `npm run verify:pre-pr`, PR CI, and fresh `npm run verify:pre-merge` passed; `verify:pre-merge` reused the current full-lane public verify artifact and skipped private gate because `SITE_LOCK_ENABLED!=1`. | Existing unrelated lint warning in ignored `output/` artifact. |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert path; no migrations, env/package/workflow changes, provider changes, or generated committed assets.                                                                                                                                                                      | None.                                                          |
