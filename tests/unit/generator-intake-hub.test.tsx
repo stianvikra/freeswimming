@@ -261,4 +261,53 @@ describe("GeneratorIntakeHub", () => {
     expect(screen.queryByTestId("generator-intake-target-program")).not.toBeInTheDocument();
     expect(screen.queryByTestId("generator-intake-target-session")).not.toBeInTheDocument();
   });
+
+  it("marks recovered, stale-source, and load feedback with accessible semantics", async () => {
+    localStorage.setItem(
+      "my-library-generator-intake-draft:user-1",
+      JSON.stringify({
+        sourceFingerprint: "older-fingerprint",
+        selection: {
+          preferences: true,
+          css: true,
+          personal_records: false,
+          goals: false,
+          capability_limits: true,
+        },
+        overrides: {
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "Keep the head still.",
+          constraintText: "",
+        },
+      })
+    );
+
+    render(
+      <GeneratorIntakeHub
+        initialSnapshot={{
+          ...buildSnapshot(),
+          loadError: "Could not load all generator source data.",
+        }}
+        userId="user-1"
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    const recoveredFeedback = await screen.findByTestId("generator-intake-draft-recovered");
+    expect(recoveredFeedback).toHaveAttribute("data-feedback-tone", "success");
+    expect(recoveredFeedback).toHaveAttribute("role", "status");
+    expect(recoveredFeedback).toHaveAttribute("aria-live", "polite");
+
+    const staleWarning = screen.getByTestId("generator-intake-stale-source-warning");
+    expect(staleWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(staleWarning).toHaveAttribute("role", "status");
+    expect(staleWarning).toHaveAttribute("aria-live", "polite");
+
+    const loadError = screen.getByTestId("generator-intake-load-error");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+  });
 });

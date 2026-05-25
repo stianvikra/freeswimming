@@ -417,6 +417,92 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByTestId("session-generator-rest-seconds")).toHaveValue("35");
   });
 
+  it("marks generator load, missing-workout, and save-unavailable feedback with accessible semantics", () => {
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          preferences: true,
+          css: true,
+          personal_records: false,
+          goals: true,
+          capability_limits: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary({
+          schemaReady: false,
+          loadError: "Could not load saved sessions right now.",
+          selectedWorkoutMissing: true,
+        })}
+      />
+    );
+
+    const loadError = screen.getByTestId("session-generator-workout-load-error");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+
+    const missingWorkout = screen.getByTestId("session-generator-selected-workout-missing");
+    expect(missingWorkout).toHaveAttribute("data-feedback-tone", "warning");
+    expect(missingWorkout).toHaveAttribute("role", "status");
+    expect(missingWorkout).toHaveAttribute("aria-live", "polite");
+
+    const saveUnavailable = screen.getByTestId("session-generator-save-unavailable");
+    expect(saveUnavailable).toHaveAttribute("data-feedback-tone", "warning");
+    expect(saveUnavailable).not.toHaveAttribute("role");
+    expect(saveUnavailable).not.toHaveAttribute("aria-live");
+  });
+
+  it("announces generator action failures as recoverable errors", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () =>
+        ({
+          ok: false,
+          error: "Could not generate a session draft right now.",
+        }) satisfies { ok: false; error: string },
+    } as Response);
+
+    render(
+      <SessionGeneratorPanel
+        payload={buildPayload()}
+        selection={{
+          preferences: true,
+          css: true,
+          personal_records: false,
+          goals: true,
+          capability_limits: true,
+        }}
+        overrides={{
+          targetType: "session",
+          desiredSessionCount: "",
+          desiredSessionMinutes: "45",
+          focusText: "",
+          constraintText: "Keep the first half controlled.",
+        }}
+        onOverrideChange={vi.fn()}
+        onResetOverrides={vi.fn()}
+        workoutLibrary={buildWorkoutLibrary()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("session-generator-generate"));
+
+    const actionError = await screen.findByTestId("session-generator-action-error");
+    expect(actionError).toHaveAttribute("data-feedback-tone", "error");
+    expect(actionError).toHaveAttribute("role", "alert");
+    expect(actionError).toHaveAttribute("aria-live", "assertive");
+    expect(actionError).toHaveTextContent("Could not generate a session draft right now.");
+  });
+
   it("generates and allows local editing of a draft session", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -707,6 +793,11 @@ describe("SessionGeneratorPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("Session saved to My Swim Sessions.")).toBeVisible();
     });
+
+    const successFeedback = screen.getByTestId("session-generator-action-success");
+    expect(successFeedback).toHaveAttribute("data-feedback-tone", "success");
+    expect(successFeedback).toHaveAttribute("role", "status");
+    expect(successFeedback).toHaveAttribute("aria-live", "polite");
 
     expect(fetch).toHaveBeenNthCalledWith(
       2,
