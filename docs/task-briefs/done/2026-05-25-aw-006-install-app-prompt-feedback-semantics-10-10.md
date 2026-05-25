@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-install-app-prompt-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
 - `updated`: `2026-05-25`
@@ -58,6 +58,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Existing install result handling, `beforeinstallprompt` use, installed-state suppression, local prompt cadence, and course completion trigger remain intact.   | focused tests + diff review                 | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice touches no admin editor, admin CRUD, publishing workflow, operator workflow, or admin note surface.                                     | explicit admin scope rationale              | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Dynamic install outcomes use status semantics, platform instruction panels have stable descriptions, and unsupported/error-like feedback remains announced.    | Testing Library/Playwright role assertions  | `5/5`                   |
+| Accessibility                                 | `target`     | Same target as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                   | Testing Library/Playwright role assertions  | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: this adds no dependency, route fetch, asset, polling loop, storage write, or heavy client library.                                            | no-dependency diff + broad gates later      | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Install feedback remains transient UI state; existing local prompt cadence/install detection stays local-only and is not treated as server-canonical truth.    | data-boundary review + tests                | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this changes no route cache mode, fetch cache, revalidation, invalidation behavior, CDN behavior, or stale-data policy.                            | explicit cache scope rationale              | `N/A`                   |
@@ -223,7 +224,7 @@ Visual gate:
 
 - UX clarity: every install outcome gives one direct status or recovery message near the action.
 - Required UI states: native accepted, native dismissed, unsupported, iOS instructions, Mac Safari instructions, and already installed.
-- Accessibility: status semantics, stable descriptions, keyboard-reachable actions, and no hidden action-only recovery.
+- Accessibility (a11y): status semantics, stable descriptions, keyboard-reachable actions, and no hidden action-only recovery.
 - Performance: no new dependency, fetch, asset, polling loop, or persistent client state.
 - Visual consistency: course prompt and drawer card styling remain compact and consistent.
 - Business logic correctness: existing install provider, native prompt, local prompt cadence, and installed-state behavior stay deterministic.
@@ -234,3 +235,30 @@ Visual gate:
 - `2026-05-25 | in-progress | implemented shared install feedback status component, wired course/main-menu install feedback and platform guides, added focused install prompt tests, and captured before/after screenshots in output/aw-006-install-app-feedback-20260525-182641 after targeted gates passed | next: owner screenshot approval or visual corrections before verify:pre-pr/PR`
 - `2026-05-25 | in-progress | owner approved screenshot handoff in chat after reviewing output/aw-006-install-app-feedback-20260525-182641 | next: run verify:pre-pr, commit, push, and open PR`
 - `2026-05-25 | in-progress | npm run verify:pre-pr passed full lane after screenshot approval; unit, build, perf budgets, and e2e passed with expected skips | next: commit, push, open PR, monitor CI, and run verify:pre-merge`
+- `2026-05-25 | pre-merge-green | PR #851 CI passed and npm run verify:pre-merge passed on the full lane with marker artifacts/verify-pre-merge/20260525-170557.json after owner-approved screenshots | next: merge PR #851`
+- `2026-05-25 | merged | PR #851 merged as squash commit 36b18e4 after local npm run verify:pre-merge and required GitHub CI passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: move this brief to done, refresh queue/inventory references, run docs-only closeout gates, and merge the closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#851`
+- `squash_commit`: `36b18e4`
+- `result`: Closed AW-006 Install App Prompt Feedback Semantics by standardizing course and main-menu install-app feedback on accessible status semantics while preserving PWA install detection, native prompt behavior, platform instructions, local prompt cadence, course progress, navigation, analytics, Help/Guide, and support procedures.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/install-context.test.ts tests/unit/install-rules.test.ts` PASS; `npx playwright test tests/e2e/install-prompt.spec.ts --project=desktop-chromium --project=mobile-chromium` PASS; `npm run lint` PASS with one pre-existing warning in `output/capture-aw006-dryland-feedback.mjs`; `npm run typecheck` PASS; `npm run lint:briefs:all` PASS; `npm run lint:quality-gates` PASS; `git diff --check` PASS; targeted route/label/support sweep PASS; owner-approved before/after screenshot handoff in `output/aw-006-install-app-feedback-20260525-182641`; `npm run verify:pre-pr` PASS on the full lane; PR #851 CI PASS; `npm run verify:pre-merge` PASS on the full lane with marker `artifacts/verify-pre-merge/20260525-170557.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining gaps in the scoped slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                             | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #851 shipped only the selected course/main-menu install-app feedback semantics slice and preserved install jobs, routing, and queue/inventory scope.              | None.        |
+| UX flow clarity                               | `5/5`          | Accepted, dismissed, unsupported, iOS instructions, Mac Safari instructions, and already-installed outcomes now show one clear nearby status or recovery step.       | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved before/after screenshots in `output/aw-006-install-app-feedback-20260525-182641`; no rendering/style/assets changed after approved capture.           | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved install result handling, `beforeinstallprompt`, installed-state suppression, local prompt cadence, and course trigger logic. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Playwright assertions cover `role="status"`, polite live-region behavior, stable descriptions, and outcome tone semantics on course and main-menu surfaces.          | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                       | None.        |
+| Data placement and sync boundaries            | `5/5`          | Feedback remains transient client UI state; no server-canonical install state, persistence, sync, or invalidation behavior changed.                                  | None.        |
+| Reliability and failure handling              | `5/5`          | Unsupported install, native prompt dismissal, success, already-installed, and manual platform guidance remain deterministic and non-blocking.                        | None.        |
+| Privacy and compliance                        | `5/5`          | Feedback exposes only local browser capability/outcome and no user identifiers, entitlement details, raw diagnostics, secrets, or analytics payload changes.         | None.        |
+| Content governance                            | `5/5`          | Done brief, canonical AW-006 queue, and notice/empty-state inventory were updated as the repo-managed closeout scope.                                                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `MenuDrawer`, `/course` install prompt state, `InstallProvider`, Tailwind/PressButton patterns, and focused tests with no new dependency.            | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, targeted Playwright, lint/typecheck/diff/brief gates, screenshot handoff, full `verify:pre-pr`, PR #851 CI, and full `verify:pre-merge` passed.     | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `36b18e4`; no migrations, packages, env, workflow, provider setting, or data-repair rollback path needed.                                       | None.        |
