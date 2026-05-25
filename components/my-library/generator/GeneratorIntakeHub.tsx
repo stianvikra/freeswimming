@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import GeneratorFeedback from "@/components/my-library/generator/GeneratorFeedback";
 import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import {
   buildGeneratorHandoffPayload,
@@ -221,33 +222,38 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
       className="space-y-6"
     >
       {draftRecovered ? (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3">
+        <GeneratorFeedback
+          tone="success"
+          testId="generator-intake-draft-recovered"
+          action={
+            <button
+              type="button"
+              onClick={resetRecoveredDraft}
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
+            >
+              Reset
+            </button>
+          }
+        >
           <div>
             <p className="text-sm font-medium text-emerald-950">
               Generator draft settings restored.
             </p>
             <p className="text-xs text-emerald-900">Saved locally in this browser.</p>
           </div>
-          <button
-            type="button"
-            onClick={resetRecoveredDraft}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
-          >
-            Reset
-          </button>
-        </section>
+        </GeneratorFeedback>
       ) : null}
 
       {staleSourceWarning ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <GeneratorFeedback tone="warning" testId="generator-intake-stale-source-warning">
           <p className="text-sm text-amber-900">{staleSourceWarning}</p>
-        </section>
+        </GeneratorFeedback>
       ) : null}
 
       {snapshot.loadError ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-          <p className="text-sm text-amber-900">{snapshot.loadError}</p>
-        </section>
+        <GeneratorFeedback tone="error" testId="generator-intake-load-error">
+          <p className="text-sm text-rose-900">{snapshot.loadError}</p>
+        </GeneratorFeedback>
       ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">

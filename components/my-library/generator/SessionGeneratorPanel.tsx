@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import GeneratorFeedback from "@/components/my-library/generator/GeneratorFeedback";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
 import {
@@ -585,40 +586,44 @@ export default function SessionGeneratorPanel({
   return (
     <section data-testid="session-generator-panel" className="space-y-5">
       {workoutLibrary.loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <GeneratorFeedback tone="error" testId="session-generator-workout-load-error">
           <p className="text-sm text-rose-900">{workoutLibrary.loadError}</p>
-        </div>
+        </GeneratorFeedback>
       ) : null}
 
       {workoutLibrary.selectedWorkoutMissing ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <GeneratorFeedback tone="warning" testId="session-generator-selected-workout-missing">
           <p className="text-sm text-amber-900">
             That saved session could not be found. Start a fresh AI session here or open My Swim
             Sessions instead.
           </p>
-        </div>
+        </GeneratorFeedback>
       ) : null}
 
       {!canonicalSaveReady ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+        <GeneratorFeedback
+          tone="warning"
+          announcement="none"
+          testId="session-generator-save-unavailable"
+        >
           <p className="text-sm text-amber-900">
             Saving to My Swim Sessions is still syncing in this environment. You can generate and
             review a session here, but Save to My Swim Sessions stays unavailable until sync
             finishes.
           </p>
-        </div>
+        </GeneratorFeedback>
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+        <GeneratorFeedback tone="error" testId="session-generator-action-error">
           <p className="text-sm text-rose-900">{error}</p>
-        </div>
+        </GeneratorFeedback>
       ) : null}
 
       {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+        <GeneratorFeedback tone="success" testId="session-generator-action-success">
           <p className="text-sm text-emerald-900">{success}</p>
-        </div>
+        </GeneratorFeedback>
       ) : null}
 
       {!hasLoadedCanonicalWorkout && sessionReady ? (
