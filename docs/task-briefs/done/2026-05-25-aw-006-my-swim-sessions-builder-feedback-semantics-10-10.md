@@ -237,3 +237,28 @@ After screenshot approval:
 - `2026-05-25 | screenshot-review | implemented workout-builder-local feedback semantics for schema, load, action, local-draft, empty, missing-session, and no-loaded-session states; updated focused unit tests plus AW-006 queue/inventory docs; targeted validation passed: vitest workout-builder-hub, typecheck, lint:quality-gates, lint:briefs:all, and git diff --check; captured after/reference screenshot artifacts in output/aw-006-my-swim-sessions-feedback-2026-05-25-055813 at 2026-05-25 05:58 using a temporary local fixture route/script that were removed after capture; no shipped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
 - `2026-05-25 | screenshot-approved | owner approved screenshot handoff at 2026-05-25 06:05; no shipped product-rendering files changed after capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness handoff`
 - `2026-05-25 | pre-pr-green | npm run verify:pre-pr passed full lane at 2026-05-25 06:12: branch-current, quality gates, lint, typecheck, unit, build, perf budgets, and Playwright e2e all green; e2e summary 99 passed, 483 skipped | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#840`
+- `squash_commit`: `b4ddec3`
+- `result`: Closed AW-006 My Swim Sessions Builder Feedback Semantics; `/my-library/workouts` builder now uses a local feedback contract with consistent visual treatment and screen-reader semantics for warning, error, success, recovered-draft, empty, missing-session, and no-loaded-session states while preserving workout data/actions/export/editor behavior.
+- `validation`: Targeted vitest/typecheck/diff/lint gates passed; screenshot after/reference handoff approved; `npm run verify:pre-pr` full lane passed on commit `ef71b55`; CI for `#840` passed; `npm run verify:pre-merge` passed and reused full-public artifact `artifacts/test-runs/20260525-061851`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#840`, screenshots, and queue/inventory closeout prove feedback stays attached to the existing My Swim Sessions builder/list workflow. | None.        |
+| UX flow clarity                               | `5/5`          | Schema, load, action, local-draft, empty, missing-session, and no-loaded-session states covered by focused tests and screenshot handoff.   | None.        |
+| Visual design quality                         | `5/5`          | After/reference desktop and mobile screenshots approved; no shipped rendering files changed after capture.                                 | None.        |
+| Business logic correctness and data integrity | `5/5`          | Workout save/delete/bulk-delete payloads, local drafts, selected workout handling, recent ordering, and editor/export behavior preserved.  | None.        |
+| Accessibility (a11y)                          | `5/5`          | Alert/assertive errors, polite status feedback, and non-live static empty states covered by Testing Library role/aria assertions.          | None.        |
+| Accessibility                                 | `5/5`          | Same accessibility evidence as the canonical `Accessibility (a11y)` row, retained for closeout normalization.                              | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical saved workouts and local-only manual drafts keep their existing boundaries; this slice adds only presentation semantics.  | None.        |
+| Reliability and failure handling              | `5/5`          | Error states keep retry or current-action recovery visible without hiding draft, list, selected-workout, or delete-confirmation context.   | None.        |
+| Privacy and compliance                        | `5/5`          | Feedback exposes no user identifiers, entitlement details, raw provider diagnostics, secrets, or env values.                               | None.        |
+| Content governance                            | `5/5`          | Done brief, canonical AW-006 queue, and notice/empty-state inventory record the shipped state.                                             | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Existing `WorkoutBuilderHub`, route-local React/Tailwind patterns, and focused tests reused; no dependency, API, or broad primitive added. | None.        |
+| Testing and QA automation                     | `5/5`          | Focused tests, brief lint, route/label/support sweep, screenshot handoff, pre-PR gate, CI, and pre-merge gate passed.                      | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations, config, package, workflow, env, or generated asset changes; normal git revert is sufficient rollback.                       | None.        |
