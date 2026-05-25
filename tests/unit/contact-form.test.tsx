@@ -80,8 +80,68 @@ describe("ContactForm", () => {
     await waitFor(() => {
       expect(nameInput).toHaveFocus();
     });
+    const feedback = screen.getByRole("alert");
+    expect(feedback).toHaveAttribute("id", "contact-form-error");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("Check this field");
+    expect(feedback).toHaveTextContent("Please enter your name.");
     expect(nameInput).toHaveAttribute("aria-invalid", "true");
     expect(nameInput).toHaveAttribute("aria-describedby", "contact-form-error");
+  });
+
+  it("announces sending and API errors without changing the request payload", async () => {
+    const user = userEvent.setup();
+    type ContactFetchResponse = { ok: boolean; json: () => Promise<{ ok: boolean }> };
+    const fetchState: { resolve?: (value: ContactFetchResponse) => void } = {};
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<ContactFetchResponse>((resolve) => {
+          fetchState.resolve = resolve;
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ContactForm variant="analysis" />);
+
+    await user.type(screen.getByLabelText("NAME"), "Video Swimmer");
+    await user.type(screen.getByLabelText("EMAIL"), "video@example.com");
+    await user.type(
+      screen.getByLabelText("MESSAGE"),
+      "Please review my breathing timing from this short clip."
+    );
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    const pendingFeedback = screen.getByRole("status");
+    expect(pendingFeedback).toHaveAttribute("data-feedback-tone", "pending");
+    expect(pendingFeedback).toHaveTextContent("Sending request");
+    expect(pendingFeedback).toHaveTextContent("Keep this page open while we send your request.");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, requestInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(requestInit.method).toBe("POST");
+    expect(requestInit.body).toContain('"variant":"analysis"');
+    expect(requestInit.body).toContain('"name":"Video Swimmer"');
+    expect(requestInit.body).toContain('"email":"video@example.com"');
+    expect(requestInit.body).toContain(
+      '"message":"Please review my breathing timing from this short clip."'
+    );
+
+    const finishFetch = fetchState.resolve;
+    if (!finishFetch) {
+      throw new Error("Expected ContactForm to start the request.");
+    }
+    finishFetch({
+      ok: false,
+      json: async () => ({ ok: false }),
+    });
+
+    await waitFor(() => {
+      const feedback = screen.getByRole("alert");
+      expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+      expect(feedback).toHaveTextContent("Could not send request");
+      expect(feedback).toHaveTextContent("Could not send right now. Please try again.");
+    });
   });
 
   it("allows preview notify submissions without a message", async () => {
@@ -126,5 +186,8 @@ describe("ContactForm", () => {
     await waitFor(() => {
       expect(screen.getByText("Application received")).toBeInTheDocument();
     });
+    const feedback = screen.getByRole("status");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "success");
+    expect(feedback).toHaveTextContent("Application received");
   });
 });

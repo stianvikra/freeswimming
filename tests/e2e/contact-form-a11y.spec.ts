@@ -73,6 +73,10 @@ test("contact form labels are associated and mobile load does not force focus", 
 
   expect(submitted).toBe(true);
   await expect(formError).toContainText("Please enter your name.");
+  await expect(formError).toHaveAttribute("role", "alert");
+  await expect(formError).toHaveAttribute("aria-live", "assertive");
+  await expect(formError).toHaveAttribute("data-feedback-tone", "error");
+  await expect(formError).toContainText("Check this field");
   await expect(name).toBeFocused();
   await expect(name).toHaveAttribute("aria-invalid", "true");
   await expect(name).toHaveAttribute("aria-describedby", "contact-form-error");
