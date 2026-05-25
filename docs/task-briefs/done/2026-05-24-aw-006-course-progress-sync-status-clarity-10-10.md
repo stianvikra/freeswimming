@@ -237,3 +237,29 @@ Required because this slice changes user-facing status/retry treatment on `/cour
 - `2026-05-24 | screenshot-review | added route-local CourseProgressSyncStatus, surfaced signed-in sync status below the course progress bar, preserved existing syncCourseProgressNow({ force: true }) retry path, updated focused unit/e2e coverage, refreshed AW-006 queue/inventory docs, and captured before/after screenshots in output/aw-006-course-sync-status-2026-05-24-215707 at 2026-05-24 22:04; validation passed: npm run lint:briefs:all, ./node_modules/.bin/vitest run tests/unit/course-progress-sync-status.test.tsx, npm run lint, npm run typecheck, targeted route/label/support sweep, git diff --check, and npx playwright test tests/e2e/course-progress-sync.spec.ts --project=desktop-chromium with the deterministic signed-in status test passing and the legacy real-dev-auth API sync test skipped because local example Supabase cannot sign in through /dev/login | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
 - `2026-05-24 | pre-pr | owner approved the screenshot handoff; npm run verify:pre-pr passed full public lane after adding explicit route/label/support sweep evidence wording; perf budget passed with hold recommendation because worst margin was 14.3% against the 15.0% tighten threshold, so no budget tightening is taken in this slice | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-05-24 | commit | committed scoped implementation with subject Improve course progress sync status clarity | next: push branch, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-25 | merged | PR #838 merged as squash commit 4fdb185; post-merge preflight found this repo-managed docs-only closeout, moved the brief to done, and updated stale queue/inventory active references | next: validate closeout docs-only PR`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#838`
+- `squash_commit`: `4fdb185`
+- `result`: Closed AW-006 Course Progress Sync Status Clarity by adding visible signed-in `/course` sync status and retry clarity while preserving existing progress sync behavior.
+- `validation`: `npm run lint:briefs:all`; `./node_modules/.bin/vitest run tests/unit/course-progress-sync-status.test.tsx`; `npx playwright test tests/e2e/course-progress-sync.spec.ts --project=desktop-chromium`; `npm run lint`; `npm run typecheck`; targeted route/label/support sweep; `git diff --check`; screenshot handoff approved; `npm run verify:pre-pr`; required CI; `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#838`, screenshots, and queue/inventory closeout prove the status is near `/course` progress without changing route IA. | None.        |
+| UX flow clarity                               | `5/5`          | Status states and retry visibility covered by unit/e2e tests and screenshot handoff.                                        | None.        |
+| Visual design quality                         | `5/5`          | Before/after desktop and mobile screenshots approved.                                                                       | None.        |
+| Business logic correctness and data integrity | `5/5`          | Existing progress sync path and payload shape preserved; targeted tests and full gates passed.                              | None.        |
+| Accessibility (a11y)                          | `5/5`          | Polite status semantics and keyboard-reachable retry covered by focused tests.                                              | None.        |
+| Data placement and sync boundaries            | `5/5`          | No storage key, API, schema, or conflict-policy changes; code review and gates passed.                                      | None.        |
+| Caching and invalidation strategy             | `5/5`          | Existing no-store course progress request behavior retained.                                                                | None.        |
+| Reliability and failure handling              | `5/5`          | Error state exposes deterministic retry through the existing forced sync path.                                              | None.        |
+| Security and authz                            | `5/5`          | Auth/API boundaries unchanged; existing negative-path coverage stayed green.                                                | None.        |
+| Content governance                            | `5/5`          | Brief, queue, and inventory updated with closeout state.                                                                    | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Route-local React/Tailwind component added with no new dependency.                                                          | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit/e2e tests, broad local gates, and CI passed.                                                                  | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/package/workflow changes; normal git revert is sufficient rollback.                                    | None.        |
