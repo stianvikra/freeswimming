@@ -27,6 +27,7 @@ export default function CreateManualWorkoutButton({
   const [clientReady, setClientReady] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [error, setError] = useState("");
+  const errorId = `${testId}-error`;
   const navigationFallbackTimeoutRef = useRef<number | null>(null);
   const resolvedLabel =
     label ?? (builderMode === "pool" ? "Build pool session" : "Build open water session");
@@ -100,14 +101,22 @@ export default function CreateManualWorkoutButton({
         data-client-ready={clientReady ? "true" : "false"}
         onClick={handleCreateManualSession}
         disabled={!clientReady || isOpening}
+        aria-describedby={error ? errorId : undefined}
         className={className}
       >
         {isOpening ? resolvedPendingLabel : resolvedLabel}
       </button>
       {error ? (
-        <p data-testid={`${testId}-error`} className="text-sm text-rose-700">
-          {error}
-        </p>
+        <div
+          id={errorId}
+          role="alert"
+          aria-live="assertive"
+          data-feedback-tone="error"
+          data-testid={errorId}
+          className="rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-sm leading-6 text-rose-900"
+        >
+          <p>{error}</p>
+        </div>
       ) : null}
     </div>
   );

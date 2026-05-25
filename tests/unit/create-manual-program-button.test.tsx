@@ -70,6 +70,14 @@ describe("CreateManualProgramButton", () => {
     await waitFor(() => {
       expect(screen.getByText("Could not create program right now.")).toBeVisible();
     });
+    const feedback = screen.getByTestId("create-manual-program-error");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(screen.getByRole("button", { name: "Create program shell" })).toHaveAttribute(
+      "aria-describedby",
+      "create-manual-program-error"
+    );
     expect(navigationState.push).not.toHaveBeenCalled();
   });
 });
