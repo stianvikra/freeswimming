@@ -1,8 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { cx } from "@/components/ui/cx";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
@@ -38,6 +40,54 @@ type Props = {
   userId?: string | null;
   manualLocalDraftMode?: ManualWorkoutBuilderMode | null;
 };
+
+type WorkoutBuilderFeedbackTone = "warning" | "error" | "success" | "empty";
+type WorkoutBuilderFeedbackDensity = "regular" | "compact";
+
+const workoutBuilderFeedbackToneClasses: Record<WorkoutBuilderFeedbackTone, string> = {
+  warning: "border-amber-200 bg-amber-50/80 text-amber-900",
+  error: "border-rose-200 bg-rose-50/80 text-rose-900",
+  success: "border-emerald-200 bg-emerald-50/80 text-emerald-900",
+  empty: "border-slate-200 bg-slate-50/80 text-slate-700",
+};
+
+function WorkoutBuilderFeedback({
+  tone,
+  children,
+  action,
+  density = "regular",
+  className,
+  testId,
+}: {
+  tone: WorkoutBuilderFeedbackTone;
+  children: ReactNode;
+  action?: ReactNode;
+  density?: WorkoutBuilderFeedbackDensity;
+  className?: string;
+  testId?: string;
+}) {
+  const isError = tone === "error";
+  const isStaticEmpty = tone === "empty";
+
+  return (
+    <div
+      role={isStaticEmpty ? undefined : isError ? "alert" : "status"}
+      aria-live={isStaticEmpty ? undefined : isError ? "assertive" : "polite"}
+      aria-atomic={isStaticEmpty ? undefined : "true"}
+      data-feedback-tone={tone}
+      data-testid={testId}
+      className={cx(
+        "border",
+        density === "compact" ? "rounded-xl p-3" : "rounded-2xl p-3 sm:p-4",
+        workoutBuilderFeedbackToneClasses[tone],
+        className
+      )}
+    >
+      <div className="min-w-0 text-sm leading-6">{children}</div>
+      {action ? <div className="mt-3 flex flex-wrap gap-2">{action}</div> : null}
+    </div>
+  );
+}
 
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
@@ -443,7 +493,7 @@ export default function WorkoutBuilderHub({
             </Link>
           </div>
           {recentWorkouts.length > 0 ? (
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               {recentWorkouts.length} saved session{recentWorkouts.length === 1 ? "" : "s"}
             </p>
           ) : null}
@@ -471,40 +521,40 @@ export default function WorkoutBuilderHub({
       )}
 
       {!workoutLibrary.schemaReady ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
-          <p className="text-sm text-amber-900">
+        <WorkoutBuilderFeedback tone="warning" testId="workout-builder-schema-warning">
+          <p>
             Canonical workout save is still syncing in this environment. Come back once the workouts
             table is live to edit accepted workouts here.
           </p>
-        </div>
+        </WorkoutBuilderFeedback>
       ) : null}
 
       {workoutLibrary.loadError ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
-          <p className="text-sm text-rose-900">{workoutLibrary.loadError}</p>
-        </div>
+        <WorkoutBuilderFeedback tone="error" testId="workout-builder-load-error">
+          <p>{workoutLibrary.loadError}</p>
+        </WorkoutBuilderFeedback>
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4">
-          <p className="text-sm text-rose-900">{error}</p>
-        </div>
+        <WorkoutBuilderFeedback tone="error" testId="workout-builder-action-error">
+          <p>{error}</p>
+        </WorkoutBuilderFeedback>
       ) : null}
 
       {success ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">
-          <p className="text-sm text-emerald-900">{success}</p>
-        </div>
+        <WorkoutBuilderFeedback tone="success" testId="workout-builder-action-success">
+          <p>{success}</p>
+        </WorkoutBuilderFeedback>
       ) : null}
 
       {activeLocalDraftMode && !savedWorkout && localDraftRecovered ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 sm:p-4">
-          <p className="text-sm text-emerald-900">
+        <WorkoutBuilderFeedback tone="success" testId="workout-builder-local-draft-recovered">
+          <p>
             {activeLocalDraftMode === "pool"
               ? "Recovered your unsaved local pool draft on this device."
               : "Recovered your unsaved local open-water draft on this device."}
           </p>
-        </div>
+        </WorkoutBuilderFeedback>
       ) : null}
 
       <div className="space-y-4 sm:space-y-5">
@@ -619,67 +669,76 @@ export default function WorkoutBuilderHub({
               swimmerName={swimmerName}
             />
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
-              <p className="text-sm font-medium text-slate-900">No saved sessions yet.</p>
-              <p className="mt-2 text-sm text-slate-600">
+            <WorkoutBuilderFeedback tone="empty" testId="workout-builder-empty">
+              <p className="font-medium text-slate-900">No saved sessions yet.</p>
+              <p className="mt-2 text-slate-600">
                 Create your first pool or open water session here, then return to My Swim Sessions
                 to browse, preview, or print saved work in one list.
               </p>
-            </div>
+            </WorkoutBuilderFeedback>
           )
         ) : !savedWorkout && !activeLocalDraftMode ? (
           <div className="space-y-4 sm:space-y-5">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4">
-              <p className="text-sm font-medium text-amber-900">
-                {workoutLibrary.selectedWorkoutMissing
-                  ? "That saved swim session could not be found."
-                  : "No saved swim session is loaded in this route yet."}
-              </p>
-              <p className="mt-2 text-sm text-amber-900/90">
-                Open My Swim Sessions when you want older work, or create a fresh session when you
-                want a clean shell.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {recentWorkouts.length > 0 ? (
+            <WorkoutBuilderFeedback
+              tone="warning"
+              testId={
+                workoutLibrary.selectedWorkoutMissing
+                  ? "workout-builder-missing-session"
+                  : "workout-builder-no-loaded-session"
+              }
+              action={
+                <>
+                  {recentWorkouts.length > 0 ? (
+                    <Link
+                      href="/my-library/workouts"
+                      data-testid="workout-builder-empty-view-sessions-link"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    >
+                      My Swim Sessions
+                    </Link>
+                  ) : null}
+                  {workoutLibrary.schemaReady ? (
+                    <CreateManualWorkoutButton
+                      label="Build pool session"
+                      testId="workout-builder-empty-create-pool"
+                      manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
+                      manualPoolCssPaceLabel={manualPoolCssPaceLabel}
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    />
+                  ) : null}
+                  {workoutLibrary.schemaReady ? (
+                    <CreateManualWorkoutButton
+                      label="Build open water session"
+                      builderMode="open_water"
+                      testId="workout-builder-empty-create-open-water"
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                  ) : null}
+                  <Link
+                    href="/my-library/generator"
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
+                  >
+                    AI session generator
+                  </Link>
                   <Link
                     href="/my-library/workouts"
-                    data-testid="workout-builder-empty-view-sessions-link"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
                   >
                     My Swim Sessions
                   </Link>
-                ) : null}
-                {workoutLibrary.schemaReady ? (
-                  <CreateManualWorkoutButton
-                    label="Build pool session"
-                    testId="workout-builder-empty-create-pool"
-                    manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
-                    manualPoolCssPaceLabel={manualPoolCssPaceLabel}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                  />
-                ) : null}
-                {workoutLibrary.schemaReady ? (
-                  <CreateManualWorkoutButton
-                    label="Build open water session"
-                    builderMode="open_water"
-                    testId="workout-builder-empty-create-open-water"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                ) : null}
-                <Link
-                  href="/my-library/generator"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
-                >
-                  AI session generator
-                </Link>
-                <Link
-                  href="/my-library/workouts"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                >
-                  My Swim Sessions
-                </Link>
-              </div>
-            </div>
+                </>
+              }
+            >
+              <p className="font-medium">
+                {workoutLibrary.selectedWorkoutMissing
+                  ? "That saved swim session could not be found."
+                  : "No saved swim session is loaded in this route yet."}
+              </p>
+              <p className="mt-2">
+                Open My Swim Sessions when you want older work, or create a fresh session when you
+                want a clean shell.
+              </p>
+            </WorkoutBuilderFeedback>
           </div>
         ) : null}
 

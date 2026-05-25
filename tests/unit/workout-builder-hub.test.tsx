@@ -523,6 +523,10 @@ describe("WorkoutBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByText("Changes saved to this session.")).toBeVisible();
     });
+    const successFeedback = screen.getByTestId("workout-builder-action-success");
+    expect(successFeedback).toHaveAttribute("data-feedback-tone", "success");
+    expect(successFeedback).toHaveAttribute("role", "status");
+    expect(successFeedback).toHaveAttribute("aria-live", "polite");
     openSupportToolsPanel();
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All changes are saved to this session."
@@ -588,6 +592,42 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-4"));
     expect(screen.getByTestId("session-draft-step-stroke-4")).toHaveValue("im_by_round");
   }, 30_000);
+
+  it("announces workout save failures as recoverable action errors", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not save custom workout.",
+      }),
+    } as Response);
+
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    openWorkoutMetadataPanel();
+    fireEvent.change(screen.getByTestId("session-draft-title"), {
+      target: { value: "Save failure keeps draft" },
+    });
+    fireEvent.click(screen.getByTestId("workout-builder-save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Could not save custom workout.")).toBeVisible();
+    });
+
+    const actionError = screen.getByTestId("workout-builder-action-error");
+    expect(actionError).toHaveAttribute("data-feedback-tone", "error");
+    expect(actionError).toHaveAttribute("role", "alert");
+    expect(actionError).toHaveAttribute("aria-live", "assertive");
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Save failure keeps draft");
+    expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
+  });
 
   it("can discard unsaved edits and undo the discard locally", async () => {
     render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
@@ -2981,6 +3021,10 @@ describe("WorkoutBuilderHub", () => {
     );
 
     expect(screen.getByText("That saved swim session could not be found.")).toBeVisible();
+    const missingFeedback = screen.getByTestId("workout-builder-missing-session");
+    expect(missingFeedback).toHaveAttribute("data-feedback-tone", "warning");
+    expect(missingFeedback).toHaveAttribute("role", "status");
+    expect(missingFeedback).toHaveAttribute("aria-live", "polite");
     expect(screen.getByTestId("workout-builder-empty-create-pool")).toBeVisible();
     expect(screen.getByTestId("workout-builder-empty-create-open-water")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-card-workout-1")).not.toBeInTheDocument();
@@ -2992,6 +3036,44 @@ describe("WorkoutBuilderHub", () => {
       "href",
       "/my-library/workouts"
     );
+  });
+
+  it("marks builder schema, load, and empty feedback with accessible semantics", () => {
+    const { rerender } = render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          schemaReady: false,
+          loadError: "Could not load saved swim sessions.",
+          selectedWorkout: null,
+          recentWorkouts: [],
+        })}
+      />
+    );
+
+    const schemaWarning = screen.getByTestId("workout-builder-schema-warning");
+    expect(schemaWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(schemaWarning).toHaveAttribute("role", "status");
+    expect(schemaWarning).toHaveAttribute("aria-live", "polite");
+
+    const loadError = screen.getByTestId("workout-builder-load-error");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+
+    rerender(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+          recentWorkouts: [],
+        })}
+        browseOnly
+      />
+    );
+
+    const emptyFeedback = screen.getByTestId("workout-builder-empty");
+    expect(emptyFeedback).toHaveAttribute("data-feedback-tone", "empty");
+    expect(emptyFeedback).not.toHaveAttribute("role");
+    expect(emptyFeedback).not.toHaveAttribute("aria-live");
   });
 
   it("auto-dismisses workout pdf notices after a short delay", async () => {
@@ -3483,6 +3565,10 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.getByText("Recovered your unsaved local pool draft on this device.")
     ).toBeVisible();
+    const recoveryFeedback = screen.getByTestId("workout-builder-local-draft-recovered");
+    expect(recoveryFeedback).toHaveAttribute("data-feedback-tone", "success");
+    expect(recoveryFeedback).toHaveAttribute("role", "status");
+    expect(recoveryFeedback).toHaveAttribute("aria-live", "polite");
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Recovered local draft");
     fireEvent.click(screen.getByTestId("session-draft-step-toggle-0"));
     expect(screen.getByLabelText("Drill Type")).toBeVisible();
