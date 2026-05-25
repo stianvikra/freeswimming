@@ -26,6 +26,7 @@ import {
 import { cx } from "@/components/ui/cx";
 import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import { useInstallContext } from "@/components/install/install-context";
+import InstallFeedback, { type InstallFeedbackMessage } from "@/components/install/InstallFeedback";
 import { BRAND_USAGE } from "@/lib/brand";
 import {
   A2HS_AUTO_PROMPT_DELAY_MS,
@@ -376,7 +377,9 @@ function CoursePageClient() {
   const [showInstallMacSafariGuide, setShowInstallMacSafariGuide] = useState(false);
   const [showInstallSuccessNotice, setShowInstallSuccessNotice] = useState(false);
   const [installPromptBusy, setInstallPromptBusy] = useState(false);
-  const [installPromptFeedback, setInstallPromptFeedback] = useState<string | null>(null);
+  const [installPromptFeedback, setInstallPromptFeedback] = useState<InstallFeedbackMessage | null>(
+    null
+  );
   const [autoInstallPromptArmed, setAutoInstallPromptArmed] = useState(false);
   const overviewJumpDraggingRef = useRef(false);
   const installPromptTimerRef = useRef<number | null>(null);
@@ -1286,9 +1289,11 @@ function CoursePageClient() {
       setShowInstallIosGuide(false);
       setShowInstallMacSafariGuide(false);
       setShowInstallSuccessNotice(true);
-      setInstallPromptFeedback(
-        "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen."
-      );
+      setInstallPromptFeedback({
+        tone: "success",
+        message:
+          "App installed. You can open FreeSwimming from your Dock, Start menu, or home screen.",
+      });
       return;
     }
     if (result === "dismissed") {
@@ -1321,9 +1326,11 @@ function CoursePageClient() {
     setShowInstallIosGuide(false);
     setShowInstallMacSafariGuide(false);
     setShowInstallSuccessNotice(false);
-    setInstallPromptFeedback(
-      "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge."
-    );
+    setInstallPromptFeedback({
+      tone: "warning",
+      message:
+        "Install is not available in this browser yet. For best support, use Safari, Chrome, or Edge.",
+    });
   }
 
   function dismissInstallPrompt() {
@@ -2244,13 +2251,24 @@ function CoursePageClient() {
       </div>
     ) : null;
 
+  const courseInstallFeedbackId = "course-install-prompt-feedback";
+  const courseInstallIosGuideId = "course-install-ios-guide";
+  const courseInstallMacSafariGuideId = "course-install-mac-safari-guide";
+  const courseInstallDescriptionId = installPromptFeedback
+    ? courseInstallFeedbackId
+    : showInstallIosGuide
+      ? courseInstallIosGuideId
+      : showInstallMacSafariGuide
+        ? courseInstallMacSafariGuideId
+        : undefined;
+
   const autoInstallPrompt =
     showInstallPrompt && !showBackupPrompt && !drawerOpen ? (
       <div
         data-testid="a2hs-auto-prompt"
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] px-4 sm:bottom-6"
       >
-        <div className="mx-auto max-w-[520px] rounded-[22px] border border-blue-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.95)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
+        <div className="mx-auto max-w-[520px] rounded-[22px] border border-blue-200/70 bg-white/95 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_62%)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
           <div className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
             Quick access
           </div>
@@ -2262,26 +2280,34 @@ function CoursePageClient() {
             </p>
           ) : null}
           {showInstallIosGuide ? (
-            <div className="mt-2 rounded-2xl border border-blue-100/70 bg-white/88 p-3">
-              <p className="text-[13px] font-semibold text-slate-900">
-                Install on iPhone/iPad (Safari)
-              </p>
+            <InstallFeedback
+              id={courseInstallIosGuideId}
+              tone="info"
+              title="Install on iPhone/iPad (Safari)"
+              className="mt-2 bg-white/88"
+              testId="course-install-ios-guide"
+            >
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
                 <li>Tap Share.</li>
                 <li>Choose “Add to Home Screen”.</li>
                 <li>Tap “Add”.</li>
               </ol>
-            </div>
+            </InstallFeedback>
           ) : null}
           {showInstallMacSafariGuide ? (
-            <div className="mt-2 rounded-2xl border border-blue-100/70 bg-white/88 p-3">
-              <p className="text-[13px] font-semibold text-slate-900">Install on Mac (Safari)</p>
+            <InstallFeedback
+              id={courseInstallMacSafariGuideId}
+              tone="info"
+              title="Install on Mac (Safari)"
+              className="mt-2 bg-white/88"
+              testId="course-install-mac-safari-guide"
+            >
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
                 <li>Open File in Safari.</li>
                 <li>Choose Add to Dock.</li>
                 <li>Click Add.</li>
               </ol>
-            </div>
+            </InstallFeedback>
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -2291,6 +2317,7 @@ function CoursePageClient() {
                   tier="cta"
                   onClick={handleInstallFromPrompt}
                   disabled={installPromptBusy || install.isInstalled}
+                  aria-describedby={courseInstallDescriptionId}
                   className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
                   aria-label="Install app"
                 >
@@ -2339,7 +2366,14 @@ function CoursePageClient() {
           </div>
 
           {installPromptFeedback ? (
-            <p className="mt-2 text-[12px] font-medium text-slate-600">{installPromptFeedback}</p>
+            <InstallFeedback
+              id={courseInstallFeedbackId}
+              tone={installPromptFeedback.tone}
+              className="mt-3"
+              testId="course-install-prompt-feedback"
+            >
+              {installPromptFeedback.message}
+            </InstallFeedback>
           ) : null}
         </div>
       </div>
