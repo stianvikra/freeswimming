@@ -347,7 +347,36 @@ test("main menu shows unsupported-browser guidance when install path is unavaila
   await blockBeforeInstallPrompt(page);
   await openMainMenuFromCourse(page);
   await page.getByTestId("install-app-menu-action").click();
-  await expect(page.getByText(UNSUPPORTED_BROWSER_MESSAGE)).toBeVisible();
+  const feedback = page.getByTestId("main-menu-install-feedback");
+  await expect(feedback).toBeVisible();
+  await expect(feedback).toHaveAttribute("role", "status");
+  await expect(feedback).toHaveAttribute("aria-live", "polite");
+  await expect(feedback).toHaveAttribute("data-feedback-tone", "warning");
+  await expect(feedback).toContainText(UNSUPPORTED_BROWSER_MESSAGE);
+  await expect(page.getByTestId("install-app-menu-action")).toHaveAttribute(
+    "aria-describedby",
+    "main-menu-install-feedback"
+  );
+});
+
+test("main menu announces native install dismissal as local feedback", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !isMobileProject(testInfo),
+    "Install prompt mobile drawer flow is validated on mobile projects."
+  );
+  test.slow();
+
+  await openMainMenuFromCourse(page);
+  await dispatchInstallPromptEvent(page, "dismissed");
+  await page.getByTestId("install-app-menu-action").click();
+
+  const feedback = page.getByTestId("main-menu-install-feedback");
+  await expect(feedback).toBeVisible();
+  await expect(feedback).toHaveAttribute("role", "status");
+  await expect(feedback).toHaveAttribute("data-feedback-tone", "info");
+  await expect(feedback).toContainText("No problem. You can install any time from this menu.");
 });
 
 test("main menu shows iOS install instructions on iPhone profile", async ({ page }, testInfo) => {
@@ -362,8 +391,17 @@ test("main menu shows iOS install instructions on iPhone profile", async ({ page
   await openMainMenuFromCourse(page);
   await page.getByTestId("install-app-menu-action").click();
 
-  await expect(page.getByText("Install on iPhone/iPad")).toBeVisible();
-  await expect(page.getByText("Add to Home Screen")).toBeVisible();
+  const guide = page.getByTestId("main-menu-install-ios-guide");
+  await expect(guide).toBeVisible();
+  await expect(guide).toHaveAttribute("role", "status");
+  await expect(guide).toHaveAttribute("aria-live", "polite");
+  await expect(guide).toHaveAttribute("data-feedback-tone", "info");
+  await expect(guide).toContainText("Install on iPhone/iPad");
+  await expect(guide).toContainText("Add to Home Screen");
+  await expect(page.getByTestId("install-app-menu-action")).toHaveAttribute(
+    "aria-describedby",
+    "main-menu-install-ios-guide"
+  );
 });
 
 test("main menu shows Mac Safari instructions for Safari-on-mac fallback", async ({
@@ -423,10 +461,19 @@ test("main menu shows Mac Safari instructions for Safari-on-mac fallback", async
 
   await openMainMenuFromCourse(page);
   await page.getByTestId("install-app-menu-action").click();
-  await expect(page.getByText("Install on Mac (Safari)")).toBeVisible();
-  await expect(page.getByText("Open File in Safari.")).toBeVisible();
-  await expect(page.getByText("Choose Add to Dock.")).toBeVisible();
-  await expect(page.getByText("Click Add.")).toBeVisible();
+  const guide = page.getByTestId("main-menu-install-mac-safari-guide");
+  await expect(guide).toBeVisible();
+  await expect(guide).toHaveAttribute("role", "status");
+  await expect(guide).toHaveAttribute("aria-live", "polite");
+  await expect(guide).toHaveAttribute("data-feedback-tone", "info");
+  await expect(guide).toContainText("Install on Mac (Safari)");
+  await expect(guide).toContainText("Open File in Safari.");
+  await expect(guide).toContainText("Choose Add to Dock.");
+  await expect(guide).toContainText("Click Add.");
+  await expect(page.getByTestId("install-app-menu-action")).toHaveAttribute(
+    "aria-describedby",
+    "main-menu-install-mac-safari-guide"
+  );
 });
 
 test("first successful mark-as-done can trigger contextual install prompt once", async ({
@@ -497,7 +544,12 @@ test("contextual install prompt shows success confirmation after accepted instal
   await dispatchInstallPromptEvent(page, "accepted");
   await page.waitForTimeout(80);
   await page.getByRole("button", { name: "Install app" }).click();
-  await expect(page.getByText(INSTALL_SUCCESS_MESSAGE)).toBeVisible({ timeout: 8_000 });
+  const feedback = page.getByTestId("course-install-prompt-feedback");
+  await expect(feedback).toBeVisible({ timeout: 8_000 });
+  await expect(feedback).toHaveAttribute("role", "status");
+  await expect(feedback).toHaveAttribute("aria-live", "polite");
+  await expect(feedback).toHaveAttribute("data-feedback-tone", "success");
+  await expect(feedback).toContainText(INSTALL_SUCCESS_MESSAGE);
 
   await prompt.getByRole("button", { name: "Done" }).click();
   await expect(prompt).toBeHidden();
