@@ -1,10 +1,61 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 type CourseProgressPollResult = {
   status: number | "transient";
   done: boolean | null;
 };
+
+function base64UrlEncode(value: string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function getSupabaseAuthCookieName() {
+  const supabaseEnv = process.env.FS_SUPABASE_ENV ?? "test";
+  const useConfiguredSupabase =
+    process.env.FS_ALLOW_PROD_SUPABASE === "1" || supabaseEnv === "ci" || supabaseEnv === "preview";
+  const supabaseUrl = useConfiguredSupabase
+    ? (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://example.com")
+    : "https://example.com";
+  const hostname = new URL(supabaseUrl).hostname;
+  return `sb-${hostname.split(".")[0]}-auth-token`;
+}
+
+async function seedSignedInCourseSession(context: BrowserContext, baseUrl: string) {
+  const nowIso = new Date().toISOString();
+  const session = {
+    access_token: "course-progress-sync-e2e-token",
+    token_type: "bearer",
+    expires_in: 60 * 60,
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
+    refresh_token: "course-progress-sync-e2e-refresh",
+    user: {
+      id: "00000000-0000-4000-8000-000000000001",
+      aud: "authenticated",
+      role: "authenticated",
+      email: "course-progress-sync-e2e@example.com",
+      email_confirmed_at: nowIso,
+      created_at: nowIso,
+      updated_at: nowIso,
+    },
+  };
+
+  await context.addCookies([
+    {
+      name: getSupabaseAuthCookieName(),
+      value: `base64-${base64UrlEncode(JSON.stringify(session))}`,
+      url: baseUrl,
+      httpOnly: false,
+      secure: false,
+      sameSite: "Lax",
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
+    },
+  ]);
+}
 
 async function waitForStableChecklistCount(page: Page, minimumStableSamples = 3) {
   const checklist = page.getByTestId("course-done-gate-checklist");
@@ -144,6 +195,34 @@ async function clickEnabledMarkDoneButton(page: Page) {
   await markDoneButton.click();
 }
 
+test("signed-in course progress status is visible near the progress bar", async ({
+  page,
+  context,
+  baseURL,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+
+  await seedSignedInCourseSession(context, baseURL ?? "http://127.0.0.1:3100");
+  await page.route("**/api/progress/course", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, rows: [] }),
+    });
+  });
+
+  await gotoWithTransientRetry(page, "/course?lesson=intro-course--welcome-course-structure");
+  await waitForRouteToSettle(page);
+
+  const syncStatus = page.getByTestId("course-progress-sync-status");
+  await expect(syncStatus).toBeVisible();
+  await expect(syncStatus.getByRole("status")).toContainText(/Account sync|Syncing|Saved/);
+  await expect(syncStatus).not.toContainText("Preview progress is local only");
+  await expect(syncStatus.getByRole("button", { name: "Retry course progress sync" })).toHaveCount(
+    0
+  );
+});
+
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {
   test.slow();
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
@@ -161,6 +240,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   await waitForRouteToSettle(page);
   const markDoneButton = page.getByTestId("course-mark-done-button");
   await expect(markDoneButton).toBeVisible();
+  const syncStatus = page.getByTestId("course-progress-sync-status");
 
   await expect
     .poll(
@@ -171,6 +251,12 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
       { timeout: 60_000 }
     )
     .toBe(200);
+  await expect(syncStatus).toBeVisible();
+  await expect(syncStatus.getByRole("status")).toContainText(/Account sync|Syncing|Saved/);
+  await expect(syncStatus).not.toContainText("Preview progress is local only");
+  await expect(syncStatus.getByRole("button", { name: "Retry course progress sync" })).toHaveCount(
+    0
+  );
   await page.waitForTimeout(1_200);
 
   const initialPressed = (await markDoneButton.getAttribute("aria-pressed")) === "true";
