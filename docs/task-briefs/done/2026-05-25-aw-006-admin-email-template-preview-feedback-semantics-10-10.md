@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-admin-email-template-preview-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
 - `updated`: `2026-05-25`
@@ -16,8 +16,8 @@
 
 - `last_audited`: `2026-05-25`
 - `base`: `main@a70d0ce`
-- `audit_status`: `ready`
-- `decision`: Execute this as the next bounded AW-006 admin feedback semantics slice.
+- `audit_status`: `closed`
+- `decision`: Completed as the bounded AW-006 admin feedback semantics slice shipped in PR `#849`.
 - `reason`: PR `#847` and repo-managed closeout PR `#848` left no active AW-006 implementation slice. A fresh queue/design/code re-audit found `AdminEmailTemplatesManager` still renders create/edit preview JSON errors and missing preview values as local red/amber text while the same manager already uses `AdminManagerState` for top-level and revision-history states.
 - `must_refresh_before_execution_if`: Refresh if `AdminEmailTemplatesManager`, `AdminManagerState`, admin email-template APIs, placeholder rendering helpers, scorecard categories, screenshot handoff rules, forward compatibility rules, or verification lanes change before merge.
 
@@ -51,6 +51,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Placeholder extraction, preview sample parsing, rendered subject/body, fallback defaults, missing-key calculation, fetches, mutations, and persisted templates remain unchanged. | focused tests + code review                                            | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | Admins can still create/edit templates and read preview diagnostics quickly, with invalid JSON and missing values more scannable in both create and edit contexts.               | focused tests + screenshot handoff                                     | `5/5`                   |
 | Accessibility (a11y)                          | `target`     | Preview errors announce with error semantics and missing preview warnings use polite status semantics without adding noisy announcements for static preview content.             | role/aria assertions in focused tests                                  | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for closeout-lint compatibility; same scope and evidence as `Accessibility (a11y)`.                                                                                    | role/aria assertions in focused tests                                  | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: this swaps local markup for an existing component, adds no dependency, no route fetch, no asset, and no meaningful JS payload growth.                           | package diff + implementation review                                   | `4/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this slice changes no local storage, server-canonical email-template data, sync trigger, conflict policy, retention rule, cache mutation, or persisted state.        | explicit state-boundary scope review                                   | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no fetch cache mode, API response, revalidation trigger, route cache, or stale-data behavior changes.                                                                | explicit cache scope review                                            | `N/A`                   |
@@ -166,7 +167,7 @@ Required before broad gates because admin feedback semantics are touched.
 3. Edit preview invalid JSON and missing values receive the same treatment as create preview.
 4. Placeholder detection, rendered subject/body, fallback defaults, missing-key calculation, form values, fetches, mutations, and email-template API behavior remain unchanged.
 5. Focused component tests cover create/edit preview error/warning semantics and invalid-to-valid recovery.
-6. Canonical AW-006 queue and notice/empty-state inventory record this active slice.
+6. Canonical AW-006 queue and notice/empty-state inventory record this slice.
 7. Screenshot handoff includes representative after/reference artifacts before broad gates.
 
 ## Validation
@@ -181,10 +182,10 @@ Targeted before screenshot handoff:
 
 After owner screenshot approval:
 
-- `npm run verify:pre-pr`
-- push/open PR
-- required CI checks green
-- `npm run verify:pre-merge`
+- `npm run verify:pre-pr` - PASS
+- push/open PR `#849`
+- required CI checks green - PASS
+- `npm run verify:pre-merge` - PASS
 
 ## Manual QA / Screenshot Handoff
 
@@ -193,13 +194,42 @@ Required because rendered admin UI changes.
 - Start local Next dev with `SITE_LOCK_ENABLED=0`.
 - Capture against `http://127.0.0.1:3000`.
 - Comparison type: `after/reference`.
-- Artifact folder: `output/aw-006-admin-email-template-preview-feedback-YYYY-MM-DD-HHMMSS/`.
+- Artifact folder: `output/aw-006-admin-email-template-preview-feedback-2026-05-25-161500/`.
 - Representative screenshots:
   - `after-email-template-create-preview-error-desktop.png`
   - `after-email-template-edit-preview-warning-desktop.png`
   - `reference-email-template-existing-admin-state-desktop.png`
+- Owner approved screenshot handoff before `npm run verify:pre-pr`, PR creation, and `npm run verify:pre-merge`.
 
 ## Implementation Checkpoint Log
 
 - `2026-05-25 | in-progress | started from clean main@a70d0ce after PR #847 and closeout PR #848; created branch aw-006-admin-email-template-preview-feedback and active brief for Admin Email Templates preview feedback semantics | next: migrate create/edit preview diagnostics to AdminManagerState, add focused tests, update queue/inventory, run targeted validation, and capture screenshot handoff before broad gates`
 - `2026-05-25 | screenshot-review | migrated create/edit preview JSON errors and missing preview values to AdminManagerState, added focused component coverage, refreshed the canonical queue/design inventory, and captured after/reference screenshots in output/aw-006-admin-email-template-preview-feedback-2026-05-25-152911 at 2026-05-25 15:29; validation passed: npm run lint:briefs:all, ./node_modules/.bin/vitest run tests/unit/admin-email-templates-manager-state.test.tsx, npm run lint (one existing warning in output/capture-aw006-dryland-feedback.mjs), npm run typecheck, git diff --check, and targeted route/label/support sweep | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
+- `2026-05-25 | screenshot-refresh | regenerated the after/reference screenshot handoff in output/aw-006-admin-email-template-preview-feedback-2026-05-25-161500 after the component file changed during pre-commit formatting; no product-rendering files changed after the refreshed capture | next: run npm run verify:pre-pr, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-25 | pre-merge-green | owner approved screenshots and pre-approved merge when tests were OK; npm run verify:pre-pr passed on the full lane, PR #849 CI passed, and npm run verify:pre-merge passed on the full lane with marker artifacts/verify-pre-merge/20260525-140834.json | next: merge PR #849`
+- `2026-05-25 | merged | PR #849 merged as squash commit 97d0fcd after local npm run verify:pre-merge and required GitHub CI passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: move this brief to done, refresh queue/inventory references, run docs-only closeout gates, and merge the closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#849`
+- `squash_commit`: `97d0fcd`
+- `result`: Closed AW-006 Admin Email Template Preview Feedback Semantics by standardizing create/edit preview JSON errors and missing preview-value warnings on `AdminManagerState` while preserving template data, preview rendering helpers, APIs, provider behavior, status workflows, locale fields, Help/Guide, and support procedures.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/admin-email-templates-manager-state.test.tsx` PASS; `npm run lint` PASS with one pre-existing warning in `output/capture-aw006-dryland-feedback.mjs`; `npm run typecheck` PASS; `git diff --check` PASS; `npm run lint:briefs:all` PASS; owner-approved after/reference screenshot handoff in `output/aw-006-admin-email-template-preview-feedback-2026-05-25-161500`; `npm run verify:pre-pr` PASS on the full lane; PR #849 CI PASS; `npm run verify:pre-merge` PASS on the full lane with marker `artifacts/verify-pre-merge/20260525-140834.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining gaps in the scoped slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #849 shipped only the selected Admin Email Templates preview feedback slice and updated the canonical AW-006 queue/inventory.                              | None.        |
+| UX flow clarity                               | `5/5`          | Create/edit preview JSON errors and missing preview values now render as clear nearby admin states without adding a dead-end action.                          | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/aw-006-admin-email-template-preview-feedback-2026-05-25-161500`.                                        | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and diff review preserved placeholder extraction, sample parsing, fallback defaults, preview rendering, fetches, mutations, and persisted data. | None.        |
+| Admin editor ergonomics                       | `5/5`          | Admins keep the same create/edit flow while preview diagnostics are more scannable and consistent with adjacent manager states.                               | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions cover alert/status semantics, live-region behavior, and invalid-to-valid recovery for create/edit preview states.                  | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                | None.        |
+| Reliability and failure handling              | `5/5`          | Invalid JSON and missing preview values recover automatically as sample JSON/placeholders become valid.                                                       | None.        |
+| Security and authz                            | `5/5`          | No admin authz, API, provider, secret, database, or raw diagnostic behavior changed.                                                                          | None.        |
+| Admin workflow and editability                | `5/5`          | Create/edit/save/publish/archive workflow labels and controls stayed unchanged; only feedback rendering changed.                                              | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `AdminManagerState` and admin component patterns with no dependency, migration, route, API, or shared primitive churn.                        | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, lint/typecheck/diff/brief gates, screenshot handoff, full `verify:pre-pr`, PR #849 CI, and full `verify:pre-merge` passed.                   | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `97d0fcd`; no migrations, packages, env, workflow, provider, or data-repair rollback path needed.                                        | None.        |
