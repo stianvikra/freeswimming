@@ -62,4 +62,27 @@ describe("CreateManualWorkoutButton", () => {
     });
     expect(navigationState.refresh).toHaveBeenCalled();
   });
+
+  it("announces manual builder open failures as recoverable alerts", async () => {
+    render(
+      <CreateManualWorkoutButton
+        draftHrefBuilder={() => {
+          throw new Error("draft route unavailable");
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
+
+    const feedback = await screen.findByTestId("create-manual-workout-error");
+    expect(feedback).toHaveAttribute("role", "alert");
+    expect(feedback).toHaveAttribute("aria-live", "assertive");
+    expect(feedback).toHaveAttribute("data-feedback-tone", "error");
+    expect(feedback).toHaveTextContent("Could not open pool session builder.");
+    expect(screen.getByRole("button", { name: "Build pool session" })).toHaveAttribute(
+      "aria-describedby",
+      "create-manual-workout-error"
+    );
+    expect(navigationState.push).not.toHaveBeenCalled();
+  });
 });
