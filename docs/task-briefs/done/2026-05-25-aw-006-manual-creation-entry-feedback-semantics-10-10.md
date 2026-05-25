@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-manual-creation-entry-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
 - `updated`: `2026-05-25`
@@ -250,3 +250,29 @@ Required because this is a user-facing UI state rendering change. Stop after tar
 - `2026-05-25 | screenshot-handoff | captured after/reference screenshots for manual swim/program create-entry feedback and dryland create-entry reference in output/aw-006-manual-creation-feedback-2026-05-25-105759; owner flagged fixture-only black button styling, so screenshots were refreshed with production-primary blue button classes in output/aw-006-manual-creation-feedback-2026-05-25-122303; temporary local screenshot route was removed after capture with no shipped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-25 | screenshot-approved | owner approved refreshed screenshot handoff in output/aw-006-manual-creation-feedback-2026-05-25-122303; no product-rendering files changed after capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge readiness`
 - `2026-05-25 | pre-pr | npm run verify:pre-pr passed on full lane with branch current to origin/main@19cc583; build, unit, perf budget, Playwright E2E, and gate scripts passed; log: artifacts/test-runs/20260525-122602/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`
+- `2026-05-25 | merged | PR #845 merged as squash commit 4202286 after required CI passed and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: close lifecycle docs and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#845`
+- `squash_commit`: `4202286`
+- `result`: Manual swim and program creation entry errors now use accessible alert feedback that stays attached to the triggering button, while existing create/open behavior, routes, payloads, APIs, auth, analytics, exports, Help/Guide, and support procedures remain unchanged.
+- `validation`: Targeted Vitest for manual workout/program/dryland create buttons passed; `npm run lint:briefs:all`, `npm run lint:quality-gates`, `npm run typecheck`, `git diff --check`, targeted route/label/support sweep, approved screenshot handoff, `npm run verify:pre-pr`, GitHub CI for PR #845, and `npm run verify:pre-merge` passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained within their scoped `4/5` or better evidence targets.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                     | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #845 kept the existing manual creation entrypoints and attached feedback to the existing start/create actions.            | None.        |
+| UX flow clarity                               | `5/5`          | Focused failure tests and approved screenshots confirm one clear recoverable error near each triggering action.              | None.        |
+| Visual design quality                         | `5/5`          | Approved after/reference screenshots in `output/aw-006-manual-creation-feedback-2026-05-25-122303` match the dryland style.  | None.        |
+| Business logic correctness and data integrity | `5/5`          | Unit tests and diff review preserved draft href generation, router push/refresh fallback, program POST payload, and routing. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions cover `role="alert"`, `aria-live="assertive"`, stable IDs, and button `aria-describedby`.         | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for scorecard alias compatibility.                                                   | None.        |
+| Data placement and sync boundaries            | `5/5`          | No persistence boundary changed; errors remain transient component state and server/local ownership rules stayed unchanged.  | None.        |
+| Reliability and failure handling              | `5/5`          | Failure tests verify the error remains visible and the action remains retryable without false navigation.                    | None.        |
+| Privacy and compliance                        | `5/5`          | Error copy exposes no raw diagnostics, identifiers, secrets, entitlement details, or cross-user data.                        | None.        |
+| Content governance                            | `5/5`          | Active brief, AW-006 queue, and notice inventory were updated in PR #845 and closed out in this docs-only follow-up.         | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing button components, dryland feedback reference semantics, Tailwind classes, and focused tests; no dependency. | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, broad `verify:pre-pr`, GitHub CI, and `verify:pre-merge` passed.                                             | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit with no migrations, env changes, package changes, workflow changes, or generated runtime assets.        | None.        |
