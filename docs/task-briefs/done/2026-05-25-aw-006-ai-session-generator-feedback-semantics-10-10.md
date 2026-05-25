@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-ai-session-generator-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
 - `updated`: `2026-05-25`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-ai-session-generator-feedback-semantics`
-- `execution_mode`: `owner approved the recommended PR-sized AW-006 slice; automate implementation through targeted QA and stop for screenshot approval before verify:pre-pr`
+- `execution_mode`: `merged via PR #843; repo-managed docs-only closeout records completion evidence`
 
 ## Brief Audit Record
 
@@ -240,7 +240,7 @@ Node.js/npm should be loaded through the repo's normal `nvm use --silent` path b
 
 Required because this is a user-facing UI state rendering change. Stop after targeted implementation QA and screenshot artifacts; do not run `npm run verify:pre-pr`, open/update PR, or run pre-merge until owner approves or waives the screenshot handoff.
 
-- `status`: captured, pending owner approval
+- `status`: captured and owner-approved before broad gates
 - `captured`: `2026-05-25 09:13 CEST`
 - `comparison_type`: `after/reference`
 - `artifacts`: `output/aw-006-ai-generator-feedback-2026-05-25-091342`
@@ -252,3 +252,29 @@ Required because this is a user-facing UI state rendering change. Stop after tar
 - `2026-05-25 | targeted-qa | implemented generator-local feedback semantics for draft recovery, stale-source, load, selected-workout missing, save-unavailable, action error, and action success states; preserved generator validation, session-draft payloads, workout save/update payloads, local generator draft behavior, selected workout handling, and editor behavior; targeted validation passed: ./node_modules/.bin/vitest run tests/unit/generator-intake-hub.test.tsx tests/unit/session-generator-panel.test.tsx (14 tests), npm run lint:briefs:all, npm run lint:quality-gates, npm run typecheck, git diff --check, and targeted route/label/support sweep | next: capture after/reference screenshot handoff before broad gates`
 - `2026-05-25 | screenshot-handoff | captured after/reference screenshots for separate realistic AI generator feedback states and My Swim Sessions reference state in output/aw-006-ai-generator-feedback-2026-05-25-091342; owner approved screenshot handoff; removed temporary screenshot route/script after capture with no shipped rendering changes after capture | next: npm run verify:pre-pr and PR flow`
 - `2026-05-25 | pre-pr-green | npm run verify:pre-pr passed full lane after stale Next dev type-cache from the temporary screenshot route was regenerated/removed: branch-current, quality gates, lint, typecheck, 207 unit files / 1224 tests, build, performance budgets, and Playwright E2E 99 passed / 483 skipped | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge before approved merge`
+- `2026-05-25 | merged | PR #843 merged as 4c0f01e after local verify:pre-pr PASS, required CI PASS, and npm run verify:pre-merge PASS | next: repo-managed docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#843`
+- `squash_commit`: `4c0f01e`
+- `result`: Closed AW-006 AI Session Generator Feedback Semantics by standardizing `/my-library/generator` feedback treatment for recovered drafts, stale source data, load failures, missing saved workouts, save-unavailable states, action errors, and action success without changing generator data, workout save APIs, editor behavior, analytics, routes, Help/Guide, auth, or support procedures.
+- `validation`: Focused unit tests passed for `tests/unit/generator-intake-hub.test.tsx` and `tests/unit/session-generator-panel.test.tsx`; approved after/reference screenshot handoff in `output/aw-006-ai-generator-feedback-2026-05-25-091342`; `npm run verify:pre-pr` passed full lane on committed HEAD `9455a96` with branch-current, quality gates, lint, typecheck, 207 unit files / 1224 tests, build, performance budgets, and Playwright E2E 99 passed / 483 skipped; PR #843 required CI checks all passed, including `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, and Vercel; `npm run verify:pre-merge` passed and reused the current full-public local verify artifact.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                             | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Feedback stayed attached to existing `/my-library/generator` and My Swim Sessions handoff states; PR #843 shipped no route or IA change.             | None         |
+| UX flow clarity                               | `5/5`          | Separate semantics for recovery, stale-source, load, missing-workout, save-unavailable, action error, and action success; screenshot approved.       | None         |
+| Visual design quality                         | `5/5`          | Approved after/reference screenshots in `output/aw-006-ai-generator-feedback-2026-05-25-091342`; no shipped visual files changed afterward.          | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused tests and full verify preserved generator validation, draft payloads, workout create/update payloads, local draft behavior, and editor flow. | None         |
+| Accessibility (a11y)                          | `5/5`          | Tests assert `role`, `aria-live`, `aria-atomic`, and non-noisy warning behavior for the changed feedback states.                                     | None         |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` alias row required by brief-lint normalization.                                                              | None         |
+| Data placement and sync boundaries            | `5/5`          | No new persisted data, localStorage keys, API routes, cache behavior, Supabase schema, or sync boundaries changed.                                   | None         |
+| Reliability and failure handling              | `5/5`          | Failure states remain visible near the generator surface and preserve current form/draft/editor context for retry.                                   | None         |
+| Privacy and compliance                        | `5/5`          | Feedback exposes no raw diagnostics, secrets, user identifiers, entitlement details, or cross-user data.                                             | None         |
+| Content governance                            | `5/5`          | Active brief, canonical AW-006 queue, notice inventory, and this closeout record document the shipped slice.                                         | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Added a generator-local helper using existing React/Tailwind patterns; no dependency, package, route-boundary, or broad primitive change.            | None         |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, `npm run verify:pre-pr`, required CI, and `npm run verify:pre-merge` passed.                                                     | None         |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `4c0f01e`; no migrations, env changes, package changes, workflow changes, or production setting changes.                        | None         |
