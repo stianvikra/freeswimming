@@ -121,6 +121,100 @@ describe("AdminEmailTemplatesManager state rendering", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("renders create-preview diagnostics through the admin state primitive", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(templatesResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminEmailTemplatesManager />);
+
+    await screen.findByText("auth_login_code · nb-NO");
+
+    const createForm = screen.getByTestId("admin-email-templates-create-form");
+    fireEvent.change(within(createForm).getByLabelText("Subject"), {
+      target: { value: "Your token is {{custom_token}}" },
+    });
+    const sampleValuesField = within(createForm).getByLabelText(
+      "Preview sample values (JSON object)"
+    );
+
+    fireEvent.change(sampleValuesField, { target: { value: '{"code":' } });
+
+    const previewError = within(createForm).getByTestId(
+      "admin-email-template-create-preview-error"
+    );
+    expect(previewError).toHaveTextContent("Preview sample values must be valid JSON.");
+    expect(previewError).toHaveAttribute("role", "alert");
+    expect(previewError).toHaveAttribute("aria-live", "assertive");
+
+    fireEvent.change(sampleValuesField, { target: { value: "{}" } });
+
+    await waitFor(() => {
+      expect(
+        within(createForm).queryByTestId("admin-email-template-create-preview-error")
+      ).not.toBeInTheDocument();
+    });
+    const missingValues = within(createForm).getByTestId(
+      "admin-email-template-create-preview-missing"
+    );
+    expect(missingValues).toHaveTextContent("Missing preview values: custom_token");
+    expect(missingValues).toHaveAttribute("role", "status");
+    expect(missingValues).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.change(sampleValuesField, { target: { value: '{"custom_token":"ready"}' } });
+
+    await waitFor(() => {
+      expect(
+        within(createForm).queryByTestId("admin-email-template-create-preview-missing")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("renders edit-preview diagnostics through the admin state primitive", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(templatesResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminEmailTemplatesManager />);
+
+    const templateItem = await screen.findByTestId("admin-email-template-item");
+    fireEvent.click(within(templateItem).getByRole("button", { name: "Edit" }));
+
+    fireEvent.change(within(templateItem).getByLabelText("Body"), {
+      target: { value: "Use {{code}} with {{custom_token}}." },
+    });
+    const sampleValuesField = within(templateItem).getByLabelText(
+      "Preview sample values (JSON object)"
+    );
+    const missingValues = within(templateItem).getByTestId(
+      "admin-email-template-edit-preview-missing"
+    );
+    expect(missingValues).toHaveTextContent("Missing preview values:");
+    expect(missingValues).toHaveTextContent("custom_token");
+    expect(missingValues).toHaveAttribute("role", "status");
+    expect(missingValues).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.change(sampleValuesField, { target: { value: '{"code":' } });
+
+    const previewError = within(templateItem).getByTestId(
+      "admin-email-template-edit-preview-error"
+    );
+    expect(previewError).toHaveTextContent("Preview sample values must be valid JSON.");
+    expect(previewError).toHaveAttribute("role", "alert");
+    expect(previewError).toHaveAttribute("aria-live", "assertive");
+
+    fireEvent.change(sampleValuesField, {
+      target: { value: '{"custom_token":"ready"}' },
+    });
+
+    await waitFor(() => {
+      expect(
+        within(templateItem).queryByTestId("admin-email-template-edit-preview-error")
+      ).not.toBeInTheDocument();
+      expect(
+        within(templateItem).queryByTestId("admin-email-template-edit-preview-missing")
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it("announces unchanged inline action feedback politely", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(templatesResponse());
     vi.stubGlobal("fetch", fetchMock);

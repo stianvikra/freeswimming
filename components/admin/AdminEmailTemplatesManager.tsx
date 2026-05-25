@@ -227,6 +227,39 @@ function parsePreviewSampleValues(raw: string): PreviewSampleParseResult {
   }
 }
 
+function AdminEmailTemplatePreviewError({
+  message,
+  testId,
+}: {
+  message: string | null;
+  testId: string;
+}) {
+  if (!message) return null;
+
+  return (
+    <AdminManagerState tone="error" density="compact" className="!mt-0" testId={testId}>
+      {message}
+    </AdminManagerState>
+  );
+}
+
+function AdminEmailTemplateMissingPreviewValues({
+  missingKeys,
+  testId,
+}: {
+  missingKeys: string[];
+  testId: string;
+}) {
+  if (missingKeys.length === 0) return null;
+
+  return (
+    <AdminManagerState tone="warning" density="compact" className="!mt-0" testId={testId}>
+      <span className="font-semibold text-amber-800">Missing preview values:</span>{" "}
+      {missingKeys.join(", ")}
+    </AdminManagerState>
+  );
+}
+
 function nextQuickStatusOptions(current: AdminEmailTemplateStatus): AdminEmailTemplateStatus[] {
   if (current === "draft") return ["review", "archived"];
   if (current === "review") return ["published", "draft", "archived"];
@@ -756,11 +789,10 @@ export default function AdminEmailTemplatesManager() {
               <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
               {createPlaceholderPreview.length > 0 ? createPlaceholderPreview.join(", ") : "none"}
             </p>
-            {createPreviewSample.error ? (
-              <p className="text-rose-700" data-testid="admin-email-template-create-preview-error">
-                {createPreviewSample.error}
-              </p>
-            ) : null}
+            <AdminEmailTemplatePreviewError
+              message={createPreviewSample.error}
+              testId="admin-email-template-create-preview-error"
+            />
             <p data-testid="admin-email-template-create-preview-subject">
               <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
               {createRenderedPreview.subject || "—"}
@@ -778,15 +810,10 @@ export default function AdminEmailTemplatesManager() {
                 {createRenderedPreview.usedFallbackKeys.join(", ")}
               </p>
             ) : null}
-            {createRenderedPreview.missingKeys.length > 0 ? (
-              <p
-                className="text-amber-700"
-                data-testid="admin-email-template-create-preview-missing"
-              >
-                <span className="font-semibold text-amber-800">Missing preview values:</span>{" "}
-                {createRenderedPreview.missingKeys.join(", ")}
-              </p>
-            ) : null}
+            <AdminEmailTemplateMissingPreviewValues
+              missingKeys={createRenderedPreview.missingKeys}
+              testId="admin-email-template-create-preview-missing"
+            />
           </div>
         </div>
 
@@ -1023,9 +1050,10 @@ export default function AdminEmailTemplatesManager() {
 
                     {editRenderedPreview ? (
                       <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                        {editPreviewSample.error ? (
-                          <p className="text-rose-700">{editPreviewSample.error}</p>
-                        ) : null}
+                        <AdminEmailTemplatePreviewError
+                          message={editPreviewSample.error}
+                          testId="admin-email-template-edit-preview-error"
+                        />
                         <p>
                           <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
                           {editRenderedPreview.subject || "—"}
@@ -1042,14 +1070,10 @@ export default function AdminEmailTemplatesManager() {
                             {editRenderedPreview.usedFallbackKeys.join(", ")}
                           </p>
                         ) : null}
-                        {editRenderedPreview.missingKeys.length > 0 ? (
-                          <p className="text-amber-700">
-                            <span className="font-semibold text-amber-800">
-                              Missing preview values:
-                            </span>{" "}
-                            {editRenderedPreview.missingKeys.join(", ")}
-                          </p>
-                        ) : null}
+                        <AdminEmailTemplateMissingPreviewValues
+                          missingKeys={editRenderedPreview.missingKeys}
+                          testId="admin-email-template-edit-preview-missing"
+                        />
                       </div>
                     ) : null}
 
