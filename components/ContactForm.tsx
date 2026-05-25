@@ -1,7 +1,7 @@
 // components/ContactForm.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   CheckCircle2,
   Clock3,
@@ -35,12 +35,20 @@ type DeliverableProofRow = {
 };
 
 type ApiResponse = { ok: boolean; error?: string };
+type ContactRequestFeedbackTone = "pending" | "success" | "error";
+
 const GOALS_COACHING_LEVEL_OPTIONS = [
   { value: "learning_freestyle", label: "Learning freestyle (2:00+ /100m)" },
   { value: "beginner", label: "Beginner (1:50 /100m)" },
   { value: "intermediate", label: "Intermediate (1:40 /100m)" },
   { value: "fast", label: "Fast (1:30 or faster /100m)" },
 ] as const;
+
+const requestFeedbackToneClasses: Record<ContactRequestFeedbackTone, string> = {
+  pending: "border-sky-200 bg-sky-50 text-sky-800",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  error: "border-rose-200 bg-rose-50 text-rose-700",
+};
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -52,6 +60,41 @@ function focusFieldOnNextFrame<T extends HTMLElement>(ref: RefObject<T | null>) 
       ref.current?.focus();
     });
   });
+}
+
+function ContactRequestFeedback({
+  id,
+  tone,
+  title,
+  children,
+  className = "",
+}: {
+  id?: string;
+  tone: ContactRequestFeedbackTone;
+  title?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const isError = tone === "error";
+
+  return (
+    <div
+      id={id}
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
+      aria-atomic="true"
+      data-feedback-tone={tone}
+      data-testid="contact-request-feedback"
+      className={`rounded-xl border px-4 py-3 text-[14px] leading-6 ${requestFeedbackToneClasses[tone]} ${className}`}
+    >
+      {title ? (
+        <p className={`text-[13px] font-semibold ${isError ? "text-rose-900" : "text-slate-900"}`}>
+          {title}
+        </p>
+      ) : null}
+      <p className={title ? "mt-1" : ""}>{children}</p>
+    </div>
+  );
 }
 
 export default function ContactForm({ variant = "contact" }: Props) {
@@ -493,6 +536,7 @@ export default function ContactForm({ variant = "contact" }: Props) {
   const formCardTopMargin = isPreviewNotify ? "mt-4" : "mt-5";
   const showTrustStrip = copy.trustSignals.length > 0 && !isPreviewNotify;
   const fieldClassName = "ui-field mt-2 rounded-[var(--fs-radius-control)]";
+  const errorTitle = fieldError ? "Check this field" : "Could not send request";
   const messageLabel = isPreviewNotify
     ? "OPTIONAL NOTE"
     : copy.messageRequired
@@ -541,13 +585,20 @@ export default function ContactForm({ variant = "contact" }: Props) {
     />
   );
 
-  // ✅ Success view
+  // Success view
   if (status === "success") {
     return (
       <div>
         {intro}
 
-        <div className="fs-surface-card relative mt-6 overflow-hidden border-emerald-200/75 bg-[linear-gradient(180deg,rgba(236,253,245,0.96),rgba(236,253,245,0.88))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]">
+        <div
+          className="fs-surface-card relative mt-6 overflow-hidden border-emerald-200/75 bg-[linear-gradient(180deg,rgba(236,253,245,0.96),rgba(236,253,245,0.88))] p-7 shadow-[0_14px_34px_rgba(16,185,129,0.12)]"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-feedback-tone="success"
+          data-testid="contact-request-feedback"
+        >
           <PressButton
             tier="icon"
             onClick={reset}
@@ -671,17 +722,22 @@ export default function ContactForm({ variant = "contact" }: Props) {
           </div>
         ) : null}
 
-        {status === "error" && error && (
-          <div
+        {status === "error" && error ? (
+          <ContactRequestFeedback
             id={errorId}
-            className={`${showFormIntro ? "mt-5" : "mt-0"} rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-[14px] leading-6 text-rose-700`}
-            aria-live="polite"
+            tone="error"
+            title={errorTitle}
+            className={showFormIntro ? "mt-5" : "mt-0"}
           >
             {error}
-          </div>
-        )}
+          </ContactRequestFeedback>
+        ) : null}
 
-        <form onSubmit={onSubmit} className={`${showFormIntro ? "mt-6" : "mt-0"} space-y-5`}>
+        <form
+          onSubmit={onSubmit}
+          className={`${showFormIntro ? "mt-6" : "mt-0"} space-y-5`}
+          aria-busy={isSending}
+        >
           {/* honeypot */}
           <input
             value={company}
@@ -895,6 +951,12 @@ export default function ContactForm({ variant = "contact" }: Props) {
           <PressButton tier="cta" type="submit" disabled={isSending} className={btnPrimary}>
             {isSending ? "Sending…" : submitLabel}
           </PressButton>
+
+          {isSending ? (
+            <ContactRequestFeedback tone="pending" title="Sending request" className="mt-3">
+              Keep this page open while we send your request.
+            </ContactRequestFeedback>
+          ) : null}
 
           {copy.micro ? (
             <p className="text-center text-[13px] text-slate-500">{copy.micro}</p>
