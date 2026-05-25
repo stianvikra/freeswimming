@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-contact-form-request-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
 - `updated`: `2026-05-25`
@@ -11,15 +11,15 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-contact-form-request-feedback-semantics`
-- `execution_mode`: `owner-approved implementation slice; screenshot handoff required before broad gates`
+- `execution_mode`: `shipped implementation slice; repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-25`
-- `base`: `main@0f153c2`
-- `audit_status`: `ready`
-- `decision`: Execute this approved bounded AW-006 slice now.
-- `reason`: PR `#851` and repo-managed closeout PR `#852` left no active AW-006 implementation slice. A fresh queue/design/code re-audit found `components/ContactForm.tsx` still owns route-local request feedback for contact, analysis, goals coaching, and preview-access notify flows while adjacent AW-006 feedback slices now use clearer accessible status/error contracts.
+- `base`: `main@3f888a4`
+- `audit_status`: `done`
+- `decision`: Close the shipped AW-006 Contact Form Request Feedback Semantics slice.
+- `reason`: PR `#853` shipped the owner-approved contact-form feedback semantics slice after screenshot approval, local full-lane verification, CI, and pre-merge gates passed.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `ContactForm`, `/contact`, `/analysis`, `POST /api/contact`, contact API security tests, contact form a11y tests, screenshot handoff rules, forward compatibility rules, or verification lanes change before screenshot handoff.
 
 ## Goal
@@ -59,6 +59,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Existing validation order, focus recovery, payload shape, honeypot, `startedAt`, and success/error state transitions remain deterministic and unchanged except presentation.  | focused tests + diff review                 | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice touches no admin editor, admin CRUD, publishing workflow, operator workflow, or admin note/message management UI.                                      | explicit admin-editor scope rationale       | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Dynamic request states use appropriate status/alert semantics, invalid fields keep `aria-invalid`/`aria-describedby`, and focus recovery remains intentional.                 | Testing Library + Playwright role checks    | `5/5`                   |
+| Accessibility                                 | `target`     | Same target as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                                  | Testing Library + Playwright role checks    | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: this must add no dependency, route fetch, media, polling, large client helper, or measurable public-route payload risk.                                      | dependency diff + broad gates later         | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Request feedback remains transient client UI state; server-canonical intake stays in existing `/api/contact` storage and is not re-modeled locally.                           | data-boundary review + unchanged API tests  | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this changes no route cache mode, fetch cache, revalidation, invalidation behavior, CDN behavior, or stale-data policy.                                           | explicit cache scope rationale              | `N/A`                   |
@@ -346,6 +347,32 @@ For future manual QA, assistant opens the exact local or preview URL in Safari b
   - Owner approved screenshot handoff and conditional merge on `2026-05-25` with: "godkjent merge når trester ok".
   - Continue to `npm run verify:pre-pr`, PR creation, CI, `npm run verify:pre-merge`, and merge only if tests/checks are green.
 
+## Completion Record
+
+- `completed`: `2026-05-25`
+- `merged_pr`: `#853`
+- `squash_commit`: `3f888a4`
+- `result`: Closed AW-006 Contact Form Request Feedback Semantics. Public contact, analysis, goals coaching, and preview-access notify request feedback now has clearer validation, sending, API-error, and success semantics without changing `/api/contact`, storage, delivery, admin messages, abuse controls, analytics, Help/Guide, or support procedures.
+- `validation`: targeted unit/e2e/type/brief/quality/diff gates passed; screenshot handoff captured and owner-approved; `npm run verify:pre-pr` passed full lane on commit `8bcd9ed`; GitHub CI for PR `#853` passed after one failed-job rerun; `npm run verify:pre-merge` passed against `origin/main@0f153c2`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                        | Gaps / Notes                                                          |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#853`, focused ContactForm tests, screenshot handoff                                        | No gaps.                                                              |
+| UX flow clarity                               | `5/5`          | validation/sending/API-error/success tests and before/after screenshots                         | No gaps.                                                              |
+| Visual design quality                         | `5/5`          | `output/aw-006-contact-form-feedback-2026-05-25-195950`                                         | Success visual intentionally unchanged; semantics verified by tests.  |
+| Business logic correctness and data integrity | `5/5`          | payload-shape tests, unchanged `/api/contact`, pre-PR/pre-merge gates                           | No gaps.                                                              |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role/live-region assertions and Playwright contact-form a11y spec               | No gaps.                                                              |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                  | No gaps.                                                              |
+| Data placement and sync boundaries            | `5/5`          | diff review: transient client feedback only; server-canonical intake unchanged                  | No gaps.                                                              |
+| Reliability and failure handling              | `5/5`          | failure-path unit tests and CI full lane                                                        | No gaps.                                                              |
+| Security and authz                            | `5/5`          | API/security boundaries unchanged; no new auth, origin, rate-limit, or spam-control path        | No gaps.                                                              |
+| Privacy and compliance                        | `5/5`          | copy/error review; no raw diagnostics, secrets, provider details, or new analytics/log payloads | No gaps.                                                              |
+| Content governance                            | `5/5`          | brief, queue, and notice inventory updated; brief lint passed before merge                      | Closeout PR moves brief to `done` and clears stale active references. |
+| Stack-fit and dependency discipline           | `5/5`          | reused `ContactForm`, existing Tailwind tokens and tests; no dependency/package changes         | No gaps.                                                              |
+| Testing and QA automation                     | `5/5`          | targeted tests, `npm run verify:pre-pr`, PR CI, `npm run verify:pre-merge`                      | No gaps.                                                              |
+| DevOps and rollback readiness                 | `5/5`          | normal git revert rollback; no migrations, env, workflow, package, or provider changes          | No gaps.                                                              |
+
 ## Implementation Checkpoint Log
 
 - `2026-05-25 | working tree | owner approved AW-006 Contact Form Request Feedback Semantics as the next slice after clean main@0f153c2 and fresh queue/design/code re-audit; created the planned brief only, with implementation still waiting for an explicit execute/build/implement instruction | next: when owner explicitly says execute, move brief to in-progress, create branch, implement form-local feedback semantics, run targeted tests, and capture screenshot handoff before broad gates`
@@ -353,3 +380,4 @@ For future manual QA, assistant opens the exact local or preview URL in Safari b
 - `2026-05-25 | working tree | implemented form-local contact request feedback semantics, updated focused unit/e2e coverage and queue/inventory docs, passed targeted validation, and captured before/after screenshot artifacts in output/aw-006-contact-form-feedback-2026-05-25-195950 | next: wait for owner screenshot approval or correction request before npm run verify:pre-pr`
 - `2026-05-25 | working tree | owner approved screenshot handoff and conditional merge when tests are OK | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, and merge only if green`
 - `2026-05-25 | working tree | npm run verify:pre-pr passed full lane; lint output showed only warnings, with two new unit-test mock-argument warnings cleaned up before commit | next: rerun the required local gate after the cleanup, then commit and push`
+- `2026-05-25 | done | Contact Form Request Feedback Semantics shipped in PR #853 as squash commit 3f888a4 after screenshot approval, local pre-PR, CI, and local pre-merge gates passed; repo-managed docs-only closeout moved the brief to done and clears active queue/inventory references | next: run docs-only closeout gates, merge the closeout PR, rerun post-merge preflight, then make the mandatory chat-handoff assessment`
