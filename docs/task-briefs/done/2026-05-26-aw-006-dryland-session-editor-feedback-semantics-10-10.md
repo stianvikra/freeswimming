@@ -270,6 +270,7 @@ Required because this is visible member-route UI work.
 - `squash_commit`: `d74679d`
 - `result`: Closed AW-006 Dryland Session Editor Feedback Semantics by moving the active dryland editor micro-session guidance and quick-session validation warning onto the existing dryland feedback contract, preserving dryland save/update behavior while making warning/status semantics and mobile wrapping consistent.
 - `validation`: targeted dryland Vitest PASS (3 files, 39 tests); screenshot handoff PASS at `output/dryland-session-editor-feedback-2026-05-26-104953`; `npm run verify:pre-pr` PASS after removing stale untracked `.next/dev` fixture cache; GitHub PR #859 checks PASS including `verify` 15m18s; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260526-104543.json`.
+- `closeout_validation`: repo-managed docs-only closeout validation PASS with `npm run lint:briefs:all` and `npm run verify:pre-pr` before closeout PR handoff.
 - `10/10 claim`: yes - all critical target categories reached `5/5`; UX flow clarity, visual design quality, accessibility, business logic correctness/data integrity, testing, and release readiness are all validated with scoped code reuse, screenshot evidence, targeted tests, full local gates, and green CI.
 
 | Category                                      | Achieved Score | Evidence                                                                                                                                       | Gaps / Notes |
