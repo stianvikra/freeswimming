@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-26-aw-006-owned-library-item-detail-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-26`
 - `updated`: `2026-05-26`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-owned-library-item-detail-token-parity`
-- `execution_mode`: `owner-approved implementation through targeted validation and screenshot handoff only`
+- `execution_mode`: `implemented through targeted validation, screenshot handoff, pre-PR verification, CI, pre-merge verification, and PR #864 merge`
 
 ## Brief Audit Record
 
@@ -234,3 +234,32 @@ Visual evidence:
 - `2026-05-26 | in-progress | started from clean main@11b40a8 after Program Builder Route Feedback Semantics #862 and closeout #863; owner approved Owned Library Item Detail Token And Action Parity and requested execution through screenshot approval | next: update queue/inventory, implement owned item token/action parity, run targeted validation, capture before/after screenshot handoff, and stop before npm run verify:pre-pr`
 - `2026-05-26 | screenshot-ready | implemented owned item detail token/action parity, updated queue/inventory/brief evidence, passed targeted tests/typecheck/quality-gate/brief-lint/diff-check, captured before/after screenshot artifacts, and removed temporary capture route/script | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-26 | screenshot-approved | owner approved screenshot handoff and authorized merge when tests are ok | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if green`
+
+## Completion Record
+
+- `completed`: `2026-05-26`
+- `merged_pr`: `#864`
+- `squash_commit`: `a4b7e12`
+- `result`: Closed AW-006 Owned Library Item Detail Token And Action Parity by aligning the owned My Library product detail card with the current My Library token/action hierarchy while preserving auth, entitlement, catalog, PDF, analytics, admin context notes, Help/Guide, and support behavior.
+- `validation`: targeted route tests PASS; screenshot handoff approved; `npm run verify:pre-pr` PASS on commit `cc617ef`; PR #864 CI PASS; `npm run verify:pre-merge` PASS before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                             | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #864 diff, focused page tests, screenshot approval, CI PASS                                       | None         |
+| UX flow clarity                               | `5/5`          | before/after screenshot artifacts, focused page tests, owner approval                                | None         |
+| Visual design quality                         | `5/5`          | screenshot artifacts `output/owned-library-item-detail-2026-05-26-160459`, owner approval            | None         |
+| Business logic correctness and data integrity | `5/5`          | `tests/unit/library-item-page.test.tsx`, unchanged entitlement/catalog/PDF/action-copy contracts     | None         |
+| Accessibility (a11y)                          | `5/5`          | role-based page tests, heading/link/button semantics, screenshot text-fit review                     | None         |
+| Accessibility                                 | `5/5`          | Alias row for `Accessibility (a11y)` evidence                                                        | None         |
+| Performance (CWV + payloads)                  | `5/5`          | no dependency/media/API change; local perf budget PASS in `npm run verify:pre-pr`                    | None         |
+| Reliability and failure handling              | `5/5`          | anonymous redirect, missing entitlement redirect, unknown slug notFound, fallback action tests       | None         |
+| Security and authz                            | `5/5`          | protected server route and entitlement guards preserved; focused negative-path tests                 | None         |
+| Privacy and compliance                        | `5/5`          | no new user data, telemetry fields, secrets, logs, or compliance copy                                | None         |
+| Content governance                            | `5/5`          | AW-006 queue, design inventory, active brief, closeout preflight, and brief lint                     | None         |
+| Analytics and KPI observability               | `5/5`          | `item_preview_opened` and `support_clicked` payload tests remained unchanged                         | None         |
+| Commerce and revenue ops                      | `5/5`          | no Stripe/checkout/finance/entitlement write changes; owned-product access behavior preserved        | None         |
+| i18n operational readiness                    | `5/5`          | existing concise English labels remained layout-safe on mobile and desktop screenshots               | None         |
+| Stack-fit and dependency discipline           | `5/5`          | reused existing route, `TrackedLink`, `GuidePdfDownloadButton`, `AdminContextNotesPanel`, and tokens | None         |
+| Testing and QA automation                     | `5/5`          | targeted tests PASS; `npm run verify:pre-pr` PASS; PR #864 CI PASS; `npm run verify:pre-merge` PASS  | None         |
+| DevOps and rollback readiness                 | `5/5`          | single squash merge `a4b7e12`; no migration, env, dependency, workflow, or config change             | None         |
