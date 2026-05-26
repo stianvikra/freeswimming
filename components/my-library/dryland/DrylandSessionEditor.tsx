@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
+import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import { buildCustomDrylandExercise } from "@/lib/dryland/exercise-bank";
 import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import {
@@ -993,21 +994,11 @@ export default function DrylandSessionEditor({
         </div>
 
         {isUsedByActiveMicroPlan ? (
-          <div
-            data-testid="dryland-source-impact-warning"
-            className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-amber-950">Future micro sessions</p>
-                <p className="mt-1 max-w-[68ch] text-sm text-amber-900">
-                  Saved changes apply to future micro sessions. Update the current micro session
-                  only if you want remaining queued units rebuilt now.
-                </p>
-                <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
-                  Default: future micro sessions
-                </span>
-              </div>
+          <DrylandFeedback
+            tone="warning"
+            className="mt-5"
+            testId="dryland-source-impact-warning"
+            action={
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/my-library/dryland?micro=edit"
@@ -1026,13 +1017,25 @@ export default function DrylandSessionEditor({
                   {isUpdatingCurrentMicroPlan ? "Updating..." : "Update current micro session"}
                 </button>
               </div>
-            </div>
+            }
+          >
+            <p className="font-semibold text-amber-950">Future micro sessions</p>
+            <p className="mt-1 max-w-[68ch]">
+              Saved changes apply to future micro sessions. Update the current micro session only if
+              you want remaining queued units rebuilt now.
+            </p>
+            <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
+              Default: future micro sessions
+            </span>
             {hasUnsavedChanges ? (
-              <p className="mt-2 text-sm text-amber-900">
+              <p
+                data-testid="dryland-update-current-micro-session-blocked"
+                className="mt-2 font-medium"
+              >
                 Save the Dryland Session first, then update the current Micro Session.
               </p>
             ) : null}
-          </div>
+          </DrylandFeedback>
         ) : null}
 
         <div
@@ -1372,10 +1375,15 @@ export default function DrylandSessionEditor({
             </div>
 
             {simpleInputIssues.length > 0 ? (
-              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-sm font-medium text-amber-950">Fix targets before training.</p>
-                <p className="mt-1 text-sm text-amber-900">{simpleInputIssues[0]}</p>
-              </div>
+              <DrylandFeedback
+                tone="warning"
+                density="compact"
+                className="mt-4"
+                testId="dryland-simple-input-warning"
+              >
+                <p className="font-medium text-amber-950">Fix targets before training.</p>
+                <p className="mt-1">{simpleInputIssues[0]}</p>
+              </DrylandFeedback>
             ) : null}
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">

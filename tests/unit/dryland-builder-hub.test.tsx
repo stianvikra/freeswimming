@@ -381,10 +381,15 @@ describe("DrylandBuilderHub", () => {
       );
     });
 
-    expect(screen.getByTestId("dryland-source-impact-warning")).toHaveTextContent(
-      "Saved changes apply to future micro sessions"
-    );
+    const sourceImpactWarning = screen.getByTestId("dryland-source-impact-warning");
+    expect(sourceImpactWarning).toHaveAttribute("role", "status");
+    expect(sourceImpactWarning).toHaveAttribute("aria-live", "polite");
+    expect(sourceImpactWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(sourceImpactWarning).toHaveTextContent("Saved changes apply to future micro sessions");
     expect(screen.getByText("Default: future micro sessions")).toBeVisible();
+    expect(
+      screen.queryByTestId("dryland-update-current-micro-session-blocked")
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("dryland-go-current-micro-session")).toHaveAttribute(
       "href",
       "/my-library/dryland?micro=edit"
@@ -408,6 +413,42 @@ describe("DrylandBuilderHub", () => {
         "Current micro session updated. Completed and skipped units were preserved."
       )
     ).toBeVisible();
+  });
+
+  it("announces current micro-session update guidance when unsaved editor changes block rebuilds", async () => {
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({
+          microPlan: buildMicroPlan(),
+        })}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("dryland-mode-build"));
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-build-mode")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("dryland-session-details-toggle"));
+    fireEvent.change(screen.getByTestId("dryland-draft-title"), {
+      target: { value: "Unsaved dryland edits" },
+    });
+
+    const sourceImpactWarning = screen.getByTestId("dryland-source-impact-warning");
+    expect(sourceImpactWarning).toHaveAttribute("role", "status");
+    expect(sourceImpactWarning).toHaveAttribute("aria-live", "polite");
+    expect(sourceImpactWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(screen.getByTestId("dryland-update-current-micro-session-blocked")).toHaveTextContent(
+      "Save the Dryland Session first, then update the current Micro Session."
+    );
+    expect(screen.getByTestId("dryland-update-current-micro-session")).toBeDisabled();
   });
 
   it("opens custom-only drafts in the simple build flow and saves row targets", async () => {
@@ -789,10 +830,16 @@ describe("DrylandBuilderHub", () => {
     fireEvent.change(setCountInput, { target: { value: "" } });
     expect(setCountInput).toHaveValue("");
     expect(screen.getByText("Exercise 1 needs 1-20 sets.")).toBeVisible();
+    const simpleInputWarning = screen.getByTestId("dryland-simple-input-warning");
+    expect(simpleInputWarning).toHaveAttribute("role", "status");
+    expect(simpleInputWarning).toHaveAttribute("aria-live", "polite");
+    expect(simpleInputWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(simpleInputWarning).toHaveTextContent("Exercise 1 needs 1-20 sets.");
 
     fireEvent.change(setCountInput, { target: { value: "6" } });
     expect(setCountInput).toHaveValue("6");
     expect(screen.queryByText("Exercise 1 needs 1-20 sets.")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dryland-simple-input-warning")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-target-0"), {
       target: { value: "" },
