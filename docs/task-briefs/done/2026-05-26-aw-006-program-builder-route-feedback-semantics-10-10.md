@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-26-aw-006-program-builder-route-feedback-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-26`
 - `updated`: `2026-05-26`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-program-builder-route-feedback-semantics`
-- `execution_mode`: `implement through targeted validation and screenshot handoff; stop before pre-PR gate until owner approves screenshots`
+- `execution_mode`: `implemented through targeted validation, screenshot handoff, pre-PR verification, CI, pre-merge verification, and PR #862 merge`
 
 ## Brief Audit Record
 
@@ -60,6 +60,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Save, reset, week/day assignment, recent-program updates, missing-workout detection, and export preview/download/open behavior remain unchanged.                               | focused tests + payload assertions           | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice changes no admin editor, admin CRUD, publishing workflow, operator queue, or admin action surface.                                                      | explicit admin-editor scope rationale        | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Dynamic feedback uses appropriate role/live semantics, static empty guidance is not noisy, and actions keep named controls/described state.                                    | Testing Library role/aria assertions         | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                             | Testing Library role/aria assertions         | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No dependency, media asset, fetch, polling, heavy client state, or route payload growth beyond existing component markup/classes.                                              | dependency diff + broad gate evidence later  | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical programs/workouts and client-local draft/editor state stay unchanged; no new storage or sync boundary is introduced.                                          | data-boundary review + unchanged payloads    | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this slice changes no route cache mode, fetch cache, revalidation, invalidation trigger, CDN behavior, or stale-data policy.                                       | explicit cache scope rationale               | `N/A`                   |
@@ -232,3 +233,31 @@ Visual gate:
 - `2026-05-26 | in-progress | started from clean main@289ea86 after Dryland Session Editor Feedback Semantics #859 and closeout #861; owner approved Program Builder Route Feedback Semantics end-to-end and explicitly said stop for screenshots | next: implement feedback semantics, run targeted validation, capture screenshot handoff, and stop before npm run verify:pre-pr`
 - `2026-05-26 | screenshot-stop | implemented Program Builder route feedback semantics, targeted tests/typecheck/quality/brief/diff/sweep checks passed, and after/reference screenshots were captured in output/program-builder-route-feedback-20260526-143111 | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-26 | copy-correction | replaced user-facing route feedback copy that said canonical program with saved-program language; owner explicitly waived new screenshots after this copy-only correction | next: rerun targeted validation and continue to npm run verify:pre-pr`
+- `2026-05-26 | merged | PR #862 merged as 4ea9a49 after local full verify, required CI checks, and pre-merge verification passed | next: complete repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-05-26`
+- `merged_pr`: `#862`
+- `squash_commit`: `4ea9a49`
+- `result`: Closed AW-006 Program Builder Route Feedback Semantics by making Program Builder route-level warning/error/success/empty feedback use a consistent program-local semantic shell while preserving program data, save payloads, assignment behavior, exports, auth, analytics, Help/Guide, and support behavior.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/program-builder-hub.test.tsx` pass; `npm run typecheck` pass; `npm run lint:briefs:all` pass; `npm run lint:quality-gates` pass; `git diff --check` pass; targeted route/label/support sweep pass; screenshot artifacts captured under `output/program-builder-route-feedback-20260526-143111` with owner waiver for copy-only recapture; `npm run verify:pre-pr` pass at `artifacts/test-runs/20260526-152248/verify.log`; required CI checks `verify`, `Analyze (javascript-typescript)`, and `size-check` pass on PR #862; `npm run verify:pre-merge` pass with marker `artifacts/verify-pre-merge/20260526-134638.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Accessibility, Reliability and failure handling, Testing and QA automation, and DevOps and rollback readiness.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #862 kept the slice scoped to Program Builder route feedback and left routes, APIs, exports, Help/Guide, and support behavior unchanged.                                                    | None.        |
+| UX flow clarity                               | `5/5`          | Save/load/missing/empty route feedback now uses clear warning/error/success/empty language, including the owner-requested saved-program copy correction.                                       | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts in `output/program-builder-route-feedback-20260526-143111` captured after/reference desktop and mobile states; owner waived recapture after copy-only wording correction. | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests preserved save payload behavior and E2E coverage preserved saved-program export behavior and internal canonical state attributes.                                           | None.        |
+| Accessibility (a11y)                          | `5/5`          | Unit tests assert `role`, `aria-live`, `aria-atomic`, and tone semantics for error, warning, success, and static empty states.                                                                 | None.        |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.                                                                                        | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency, network request, route, export artifact, or large asset was added; full verify/perf lane passed.                                                                            | None.        |
+| Data placement and sync boundaries            | `5/5`          | Brief and implementation keep existing `ProgramLibrarySnapshot`, component state, save `PATCH`, and refresh boundaries as the source of truth.                                                 | None.        |
+| Reliability and failure handling              | `5/5`          | Schema unavailable, load error, missing workouts, save error, save success, selected-missing, and empty states have deterministic feedback tests.                                              | None.        |
+| Security and authz                            | `5/5`          | No auth, API route, Supabase, RLS, storage, token, or permission behavior changed; CI and pre-merge passed.                                                                                    | None.        |
+| Privacy and compliance                        | `5/5`          | No new user data, logs, exports, analytics values, provider diagnostics, or persisted fields were introduced.                                                                                  | None.        |
+| Content governance                            | `5/5`          | User-facing copy was corrected from internal canonical language to saved-program language, and Help/Guide impact stayed N/A with rationale.                                                    | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Used a program-local helper and existing React/TypeScript/Tailwind patterns with no new dependencies or shared primitive churn.                                                                | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit/E2E updates, `npm run verify:pre-pr`, required CI, and `npm run verify:pre-merge` all passed.                                                                                    | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single scoped PR #862 merged cleanly on current `main`; rollback is the squash commit `4ea9a49`.                                                                                               | None.        |
