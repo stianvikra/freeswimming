@@ -208,7 +208,7 @@ async function waitForProgramExportPreviewReady(page: Page) {
           }
 
           const previewText = (await exportPreview.textContent()) ?? "";
-          if (previewText.includes("Loading canonical export preview...")) {
+          if (previewText.includes("Loading saved program export preview...")) {
             return "loading";
           }
 
@@ -234,7 +234,7 @@ async function waitForProgramExportPreviewReady(page: Page) {
           }
 
           const previewText = (await exportPreview.textContent()) ?? "";
-          if (previewText.includes("Loading canonical export preview...")) {
+          if (previewText.includes("Loading saved program export preview...")) {
             return "loading";
           }
 
@@ -251,7 +251,7 @@ async function waitForProgramExportPreviewReady(page: Page) {
 
 async function ensureProgramSchemaReady(page: Page) {
   const schemaWarning = page.getByText(
-    /This canonical program layer is still syncing in this environment\.|Program builder preview is still syncing in this environment\./
+    /Program save is still syncing in this environment\.|Program builder preview is still syncing in this environment\./
   );
 
   if ((await schemaWarning.count()) > 0 && (await schemaWarning.first().isVisible())) {
@@ -380,7 +380,7 @@ test.describe("my library program export", () => {
     await expect(page.getByTestId("program-draft-title")).toHaveValue(uniqueProgramTitle);
     await expect(page.getByTestId("program-week-0")).toContainText(uniqueWorkoutTitle);
     await expect(page.getByTestId("program-editor-save-state")).toHaveText(
-      "All program changes are saved to the canonical program."
+      "All changes are saved."
     );
     await expect(page.getByTestId("program-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",

@@ -1,9 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import { getManualPoolCategoryLabelClass } from "@/components/my-library/workouts/sessionStepSurfaceContract";
+import { cx } from "@/components/ui/cx";
 import {
   buildProgramGarminReadyExportFileName,
   buildProgramPdfFileName,
@@ -33,7 +35,16 @@ type RetryablePreviewError = Error & {
   status?: number;
 };
 
+type ProgramBuilderFeedbackTone = "warning" | "error" | "success" | "empty";
 type ProgramExportFeedbackTone = "pending" | "success" | "error";
+
+type ProgramBuilderFeedbackProps = {
+  tone: ProgramBuilderFeedbackTone;
+  children: ReactNode;
+  action?: ReactNode;
+  className?: string;
+  testId?: string;
+};
 
 type ProgramExportFeedbackProps = {
   id?: string;
@@ -45,6 +56,13 @@ type ProgramExportFeedbackProps = {
 
 const PROGRAM_EXPORT_PREVIEW_TIMEOUT_MS = 15_000;
 const PROGRAM_SCHEDULED_WORKOUT_PREVIEW_ROW_LIMIT = 6;
+
+const programBuilderFeedbackToneClasses: Record<ProgramBuilderFeedbackTone, string> = {
+  warning: "border-amber-200 bg-amber-50/80 text-amber-900",
+  error: "border-rose-200 bg-rose-50/80 text-rose-900",
+  success: "border-emerald-200 bg-emerald-50/80 text-emerald-900",
+  empty: "border-slate-200 bg-slate-50/80 text-slate-700",
+};
 
 const programExportFeedbackToneClasses: Record<ProgramExportFeedbackTone, string> = {
   pending: "border-sky-200 bg-sky-50 text-sky-900",
@@ -196,6 +214,31 @@ function ScheduledWorkoutStepPreview({
   );
 }
 
+function ProgramBuilderFeedback({
+  tone,
+  children,
+  action,
+  className,
+  testId,
+}: ProgramBuilderFeedbackProps) {
+  const isError = tone === "error";
+  const isStaticEmpty = tone === "empty";
+
+  return (
+    <div
+      role={isStaticEmpty ? undefined : isError ? "alert" : "status"}
+      aria-live={isStaticEmpty ? undefined : isError ? "assertive" : "polite"}
+      aria-atomic={isStaticEmpty ? undefined : "true"}
+      data-feedback-tone={tone}
+      data-testid={testId}
+      className={cx("rounded-2xl border p-4", programBuilderFeedbackToneClasses[tone], className)}
+    >
+      <div className="min-w-0 text-sm leading-6">{children}</div>
+      {action ? <div className="mt-4 flex flex-wrap gap-2">{action}</div> : null}
+    </div>
+  );
+}
+
 function ProgramExportFeedback({ id, title, message, tone, testId }: ProgramExportFeedbackProps) {
   return (
     <div
@@ -277,14 +320,14 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     : null;
   const programGarminExportFileName = buildProgramGarminReadyExportFileName(savedProgram);
   const programPdfFileName = buildProgramPdfFileName(savedProgram);
-  const programExportStateLabel = "Canonical program export";
+  const programExportStateLabel = "Saved program export";
   const programExportStateDescription = hasUnsavedChanges
-    ? "Export preview reflects the last saved canonical program. Save first if you want export output to include current unsaved edits."
-    : "Export preview matches the saved canonical program.";
-  const programPdfStateLabel = "Canonical program PDF";
+    ? "Export preview uses the last saved version. Save first if you want export output to include current edits."
+    : "Export preview matches the saved program.";
+  const programPdfStateLabel = "Saved program PDF";
   const programPdfStateDescription = hasUnsavedChanges
-    ? "Print view opens the last saved canonical program. Save first if you want PDF output to include current unsaved edits."
-    : "Print view matches the saved canonical program.";
+    ? "Print view opens the last saved version. Save first if you want the PDF to include current edits."
+    : "Print view matches the saved program.";
   const programExportFeedbackTone = isProgramExportDownloading
     ? "pending"
     : programExportError
@@ -300,7 +343,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
         : "Export downloaded";
   const programExportFeedbackMessage =
     programExportFeedbackTone === "pending"
-      ? "Preparing the saved canonical program JSON..."
+      ? "Preparing the saved program JSON..."
       : programExportError || programExportNotice;
   const programPdfFeedbackTone = programPdfError ? "error" : programPdfNotice ? "success" : null;
   const programPdfFeedbackTitle =
@@ -345,7 +388,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             const responseError =
               responseBody && typeof responseBody.error === "string"
                 ? responseBody.error
-                : "Could not load the canonical program export preview right now.";
+                : "Could not load the saved program export preview right now.";
 
             if (!response.ok || !responseBody) {
               throw buildProgramExportPreviewError(responseError, response.status);
@@ -357,7 +400,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             const normalizedError =
               error instanceof DOMException && error.name === "AbortError"
                 ? buildProgramExportPreviewError(
-                    "Could not load the canonical program export preview right now.",
+                    "Could not load the saved program export preview right now.",
                     408
                   )
                 : error;
@@ -380,7 +423,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
           setProgramExportPreviewError(
             error instanceof Error
               ? error.message
-              : "Could not load the canonical program export preview right now."
+              : "Could not load the saved program export preview right now."
           );
         }
       } finally {
@@ -437,7 +480,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
       setDraftTitle(responseBody.program.title);
       setDraftWeeks(responseBody.program.weeks);
       setRecentPrograms((current) => upsertRecentProgramSummary(current, responseBody.summary));
-      setSuccess("Program changes saved to the canonical program.");
+      setSuccess("Program saved.");
     } catch {
       setError("Could not save program right now.");
     } finally {
@@ -626,8 +669,8 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Program builder preview</h2>
           <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Save a canonical program, place accepted workouts into week/day slots, and keep one
-            shared planning surface ready for later planner and export work.
+            Save a program, place accepted workouts into week/day slots, and keep one shared
+            planning surface ready for later planner and export work.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -638,81 +681,98 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             />
           ) : null}
           <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wide text-blue-700 uppercase">
-            Canonical program
+            Saved program
           </p>
         </div>
       </div>
 
       {!programLibrary.schemaReady ? (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-          <p className="text-sm text-amber-900">
-            Canonical program save is still syncing in this environment. Come back once the programs
-            table is live to build saved program shells here.
+        <ProgramBuilderFeedback
+          tone="warning"
+          className="mt-5"
+          testId="program-builder-schema-warning"
+        >
+          <p>
+            Program save is still syncing in this environment. Come back once the programs table is
+            live to build saved program shells here.
           </p>
-        </div>
+        </ProgramBuilderFeedback>
       ) : null}
 
       {programLibrary.loadError ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-          <p className="text-sm text-rose-900">{programLibrary.loadError}</p>
-        </div>
+        <ProgramBuilderFeedback tone="error" className="mt-5" testId="program-builder-load-error">
+          <p>{programLibrary.loadError}</p>
+        </ProgramBuilderFeedback>
       ) : null}
 
       {missingWorkoutIds.length > 0 ? (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-          <p className="text-sm text-amber-900">
+        <ProgramBuilderFeedback
+          tone="warning"
+          className="mt-5"
+          testId="program-builder-missing-workouts-warning"
+        >
+          <p>
             {missingWorkoutIds.length === 1
               ? "One scheduled workout could not be loaded for this account."
               : `${missingWorkoutIds.length} scheduled workouts could not be loaded for this account.`}
           </p>
-        </div>
+        </ProgramBuilderFeedback>
       ) : null}
 
       {error ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
-          <p className="text-sm text-rose-900">{error}</p>
-        </div>
+        <ProgramBuilderFeedback tone="error" className="mt-5" testId="program-builder-action-error">
+          <p>{error}</p>
+        </ProgramBuilderFeedback>
       ) : null}
 
       {success ? (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-          <p className="text-sm text-emerald-900">{success}</p>
-        </div>
+        <ProgramBuilderFeedback
+          tone="success"
+          className="mt-5"
+          testId="program-builder-action-success"
+        >
+          <p>{success}</p>
+        </ProgramBuilderFeedback>
       ) : null}
 
       {!savedProgram ? (
         <div className="mt-6 space-y-5">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-            <p className="text-sm font-medium text-amber-900">
+          <ProgramBuilderFeedback
+            tone={programLibrary.selectedProgramMissing ? "warning" : "empty"}
+            testId="program-builder-empty-state"
+            action={
+              <>
+                {programLibrary.schemaReady ? (
+                  <CreateManualProgramButton
+                    testId="program-builder-empty-create-manual"
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  />
+                ) : null}
+                <Link
+                  href="/my-library"
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  Back to My Library
+                </Link>
+              </>
+            }
+          >
+            <p className="font-medium text-slate-900">
               {programLibrary.selectedProgramMissing
                 ? "That saved program could not be found."
-                : "No canonical program is loaded in this route."}
+                : "No saved program is open here."}
             </p>
-            <p className="mt-2 text-sm text-amber-900/90">
+            <p className="mt-2">
               Create a starter program here, return to My Library, or reopen another saved program
               below.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {programLibrary.schemaReady ? (
-                <CreateManualProgramButton
-                  testId="program-builder-empty-create-manual"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                />
-              ) : null}
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Back to My Library
-              </Link>
-            </div>
-          </div>
+          </ProgramBuilderFeedback>
 
           {recentPrograms.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <h3 className="text-sm font-semibold text-slate-900">Recent saved programs</h3>
               <p className="mt-1 text-sm text-slate-600">
-                Reopen another canonical program shell directly in this route.
+                Reopen another saved program directly in this route.
               </p>
               <div className="mt-4 grid gap-3">
                 {recentPrograms.map((program) => (
@@ -768,10 +828,10 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 <p data-testid="program-editor-save-state" className="mt-3 text-sm text-slate-600">
                   {hasUnsavedChanges
                     ? "Unsaved changes stay local until you save this program."
-                    : "All program changes are saved to the canonical program."}
+                    : "All changes are saved."}
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Program export stays read-only against the saved canonical program.
+                  Program export uses the saved version.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -810,7 +870,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     <h3 className="text-base font-semibold text-slate-900">{week.label}</h3>
                     <p className="mt-1 text-sm text-slate-600">
                       Place accepted workouts into day slots. This first program slice keeps the
-                      shell simple and canonical.
+                      shell simple and ready to save.
                     </p>
                   </div>
                   <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
@@ -972,9 +1032,9 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   Garmin-ready JSON
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-900">
-                  Download the saved canonical program as the truthful FreeSwimming `garmin-ready`
-                  bundle. It keeps missing references and workout review warnings explicit so later
-                  provider delivery can stay deterministic.
+                  Download the saved program as the truthful FreeSwimming `garmin-ready` bundle. It
+                  keeps missing references and workout review warnings explicit so later provider
+                  delivery can stay deterministic.
                 </p>
                 <p
                   data-testid="program-editor-garmin-export-source"
@@ -1029,8 +1089,8 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               >
                 {programExportPreview ||
                   (isProgramExportLoading
-                    ? "Loading canonical export preview..."
-                    : "Canonical export preview will appear here once the saved program loads.")}
+                    ? "Loading saved program export preview..."
+                    : "Saved program export preview will appear here once the saved program loads.")}
               </pre>
             </div>
           </div>
