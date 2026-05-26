@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-26-aw-006-guide-tracker-action-shell-token-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-26`
 - `updated`: `2026-05-26`
@@ -282,3 +282,33 @@ Required because this changes visible UI/layout.
 - `2026-05-26 | in-progress | started from clean main@21beb33 after PR #866 and repo-managed closeout #867; owner approved Guide Tracker Action Shell Token Parity after fresh queue/design/code re-audit | next: update queue/inventory, implement guide tracker action shell parity, run targeted validation, capture after/reference screenshot handoff, and stop before npm run verify:pre-pr`
 - `2026-05-26 | screenshot-handoff | implemented guide route action strip and tracker shell token/action parity for /guides/0-1000m and /guides/poolside while preserving guide content, progress sync, notes, PDFs, fullscreen behavior, Help/Guide, and support scope; targeted validation passed: ./node_modules/.bin/vitest run tests/unit/guide-0-1000m-tracker-sync.test.tsx tests/unit/guide-poolside-tracker-sync.test.tsx tests/unit/guide-access-required-state.test.tsx (3 files / 16 tests), npm run typecheck, npm run lint:briefs:all, npm run lint:quality-gates, git diff --cached --check, and targeted route/label/support sweep; refreshed after/reference screenshot artifacts captured in output/aw-006-guide-tracker-action-shell-token-parity-2026-05-26-203635 with a temporary local harness, deterministic progress/admin API mocks, and capture-only hiding of global dev/mobile chrome; desktop 0-1000m was reframed to first viewport so it shows the same color hierarchy as mobile instead of a scaled long-page capture; the harness/script were removed and no product rendering files changed after final capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-26 | screenshot-approved | owner approved the refreshed after/reference screenshot handoff for output/aw-006-guide-tracker-action-shell-token-parity-2026-05-26-203635, including desktop 0-1000m matching the mobile color hierarchy; no product rendering files changed after final capture | next: run npm run verify:pre-pr, commit, push, open/update PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-26 | closeout | PR #868 shipped as squash commit ce8292f after owner-approved screenshot handoff, full local pre-PR, CI, and local pre-merge gates passed; this repo-managed docs-only closeout moves the brief to done and clears the active AW-006 queue/design inventory references | next: validate and merge closeout, rerun post-merge preflight, then complete mandatory chat-handoff assessment before starting another implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-26`
+- `merged_pr`: `#868`
+- `squash_commit`: `ce8292f`
+- `result`: Closed AW-006 Guide Tracker Action Shell Token Parity. The entitled `/guides/0-1000m` and `/guides/poolside` route action strips and tracker shells now use the current AW-006 guide/member token hierarchy while preserving entitlements, PDFs, guide content, progress sync, notes, fullscreen behavior, Help/Guide, and support scope.
+- `validation`: Owner-approved screenshot handoff at `output/aw-006-guide-tracker-action-shell-token-parity-2026-05-26-203635`; targeted guide tracker/access tests PASS (3 files / 16 tests); `npm run typecheck` PASS; `npm run lint:briefs:all` PASS; `npm run lint:quality-gates` PASS; `git diff --cached --check` PASS; targeted route/label/support sweep completed; `npm run verify:pre-pr` PASS on commit `ae004bb`; CI for PR #868 PASS; `npm run verify:pre-merge` PASS before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`, with no remaining release-blocking gaps.
+
+| Category                                      | Achieved Score | Evidence                                                                                             | Gaps / Notes              |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------- | ------------------------- |
+| Product goals and IA                          | `5/5`          | PR #868 diff, route action assertions, owner-approved screenshot handoff, CI PASS                    | No remaining gap.         |
+| UX flow clarity                               | `5/5`          | After/reference screenshots and focused tracker action assertions                                    | No remaining gap.         |
+| Visual design quality                         | `5/5`          | Screenshot artifacts captured after implementation; no product-rendering files changed afterward     | No remaining gap.         |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review, targeted sync/access tests, full local gates, CI PASS                          | No data/API change.       |
+| Accessibility (a11y)                          | `5/5`          | Testing Library accessible-action assertions and full verification lane                              | No remaining gap.         |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint parity with same evidence as `Accessibility (a11y)`                         | No remaining gap.         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/API changes; perf budget PASS in pre-PR and pre-merge gates                      | No remaining gap.         |
+| Data placement and sync boundaries            | `5/5`          | Existing progress API/localStorage and sync behavior preserved; focused sync tests passed            | No state-boundary change. |
+| Reliability and failure handling              | `5/5`          | Existing loading, missing content, offline/sync retry, notes, and completion behavior preserved      | No remaining gap.         |
+| Security and authz                            | `5/5`          | Protected route entitlement checks and PDF access boundaries untouched; CI/local gates passed        | No authz change.          |
+| Privacy and compliance                        | `5/5`          | No private IDs, raw sync payloads, email, provider diagnostics, or private notes exposed             | No remaining gap.         |
+| Content governance                            | `5/5`          | Active brief, queue, and inventory updated; repo-managed closeout clears stale active references     | No remaining gap.         |
+| Commerce and revenue ops                      | `5/5`          | Entitlements, checkout, portal, PDF access, pricing, Stripe, and finance behavior unchanged          | No commerce change.       |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and unchanged concise route-owned labels                                  | No new locale mapping.    |
+| Stack-fit and dependency discipline           | `5/5`          | Reused guide-local trackers, `GuideSyncStatus`, guide access/My Library token classes; no dependency | No dependency change.     |
+| Testing and QA automation                     | `5/5`          | Focused vitest, full local `verify:pre-pr`, PR CI, and `verify:pre-merge` PASS                       | No remaining gap.         |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit ce8292f is scoped and reversible; no migration/env/config/workflow change              | No remaining gap.         |
