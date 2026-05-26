@@ -3161,9 +3161,14 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("workout-builder-saved-sessions")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
     expect(screen.getByTestId("saved-workout-card-workout-1")).toBeVisible();
     expect(screen.queryByTestId("saved-workout-current-workout-1")).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workout-card-workout-2")).toBeVisible();
+    expect(screen.getByTestId("saved-workout-card-workout-2")).toHaveClass("fs-library-card");
     expect(
       within(screen.getByTestId("saved-workout-card-workout-2")).queryByText("1600m")
     ).not.toBeInTheDocument();
@@ -3171,6 +3176,9 @@ describe("WorkoutBuilderHub", () => {
       within(screen.getByTestId("saved-workout-card-workout-2")).queryByText(/updated/i)
     ).not.toBeInTheDocument();
     expect(screen.getByTestId("saved-workouts-view-workout-2")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-edit-workout-workout-2")).toHaveClass(
+      "fs-cta-secondary"
+    );
     expect(
       within(screen.getByTestId("saved-workout-card-workout-2")).getByRole("button", {
         name: "Quick View",
@@ -3239,6 +3247,9 @@ describe("WorkoutBuilderHub", () => {
     expect(
       within(mobileActionsPanel).getByTestId("saved-workout-mobile-open-workout-2")
     ).toHaveTextContent("Open");
+    expect(
+      within(mobileActionsPanel).getByTestId("saved-workout-mobile-open-workout-2")
+    ).toHaveClass("fs-cta-secondary");
     expect(
       within(mobileActionsPanel).getByTestId("workout-builder-delete-workout-workout-2")
     ).toBeVisible();
@@ -3488,6 +3499,9 @@ describe("WorkoutBuilderHub", () => {
     expect(
       within(screen.getByTestId("saved-workout-card-workout-1")).getByRole("link", { name: "Open" })
     ).toBeVisible();
+    expect(screen.getByTestId("workout-builder-saved-sessions-bulk-select-toggle")).toHaveClass(
+      "fs-cta-secondary"
+    );
 
     fireEvent.click(screen.getByTestId("workout-builder-saved-sessions-bulk-select-toggle"));
     expect(screen.queryByText("Select session")).not.toBeInTheDocument();

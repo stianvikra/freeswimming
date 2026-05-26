@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronUp, Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cx } from "@/components/ui/cx";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
 import { SessionStepViewSections } from "@/components/my-library/workouts/SessionStepSurfaceRenderer";
 import type {
@@ -52,6 +53,36 @@ type Props = {
   trainingFocusOptions?: WorkoutPoolsideFocusOption[];
   swimmerName?: string | null;
 };
+
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const quietActionClass = cx(
+  actionBaseClass,
+  "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-ink)] hover:bg-white"
+);
+const mutedActionClass = cx(
+  actionBaseClass,
+  "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)] hover:bg-white"
+);
+const poolsideActionClass = cx(
+  actionBaseClass,
+  "border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)] hover:bg-white"
+);
+const dangerActionClass = cx(
+  actionBaseClass,
+  "border border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-400"
+);
+const dangerPrimaryActionClass = cx(
+  actionBaseClass,
+  "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus-visible:ring-rose-400"
+);
+const iconActionClass =
+  "inline-flex min-h-10 w-10 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:hidden";
+const inlinePanelClass =
+  "mt-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/80 p-4";
+const warningPanelClass =
+  "mt-3 rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-3";
 
 function inferQuickPreviewCategory(title: string | null | undefined): SessionDraftStep["category"] {
   const normalizedTitle = title?.trim().toLowerCase() ?? "";
@@ -277,7 +308,7 @@ export default function SavedWorkoutsPanel({
   }
 
   return (
-    <div data-testid={testId} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+    <div data-testid={testId} className="fs-library-card fs-library-card-muted p-4">
       {showHeader ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -293,7 +324,7 @@ export default function SavedWorkoutsPanel({
               onClick={() => setExpanded((current) => !current)}
               aria-expanded={expanded}
               data-testid={`${testId}-toggle`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={secondaryActionClass}
             >
               {expanded ? "Hide swim sessions" : "Show swim sessions"}
             </button>
@@ -304,7 +335,7 @@ export default function SavedWorkoutsPanel({
       {!showToggle || expanded ? (
         <div className={`${showHeader ? "mt-4" : ""} grid gap-3`}>
           {showBulkToolbar ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/80 bg-white px-3 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 py-3">
               <div>
                 <p className="text-sm font-semibold text-slate-900">Library cleanup</p>
                 {bulkSelectionMode ? (
@@ -322,7 +353,7 @@ export default function SavedWorkoutsPanel({
                       setPendingBulkDelete(false);
                     }}
                     data-testid={`${testId}-bulk-select-toggle`}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    className={secondaryActionClass}
                   >
                     Select sessions
                   </button>
@@ -331,7 +362,7 @@ export default function SavedWorkoutsPanel({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkoutIds(workouts.map((workout) => workout.id))}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={quietActionClass}
                     >
                       Select all
                     </button>
@@ -344,7 +375,7 @@ export default function SavedWorkoutsPanel({
                       }}
                       disabled={bulkDeleting}
                       data-testid={`${testId}-bulk-cancel`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={quietActionClass}
                     >
                       Done
                     </button>
@@ -353,7 +384,7 @@ export default function SavedWorkoutsPanel({
                       onClick={() => setPendingBulkDelete(true)}
                       disabled={selectedWorkoutIds.length === 0 || bulkDeleting}
                       data-testid={`${testId}-bulk-delete`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={dangerActionClass}
                     >
                       {bulkDeleting ? "Deleting..." : "Delete selected sessions"}
                     </button>
@@ -364,7 +395,7 @@ export default function SavedWorkoutsPanel({
           ) : null}
 
           {showBulkToolbar && bulkSelectionMode && pendingBulkDelete ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
+            <div className="rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-3">
               <p className="text-sm font-medium text-rose-900">
                 Delete {selectedWorkoutIds.length} saved session
                 {selectedWorkoutIds.length === 1 ? "" : "s"} from My Library?
@@ -378,7 +409,7 @@ export default function SavedWorkoutsPanel({
                   onClick={() => onConfirmDeleteWorkouts?.(selectedWorkouts)}
                   disabled={selectedWorkoutIds.length === 0 || bulkDeleting}
                   data-testid={`${testId}-bulk-confirm-delete`}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={dangerPrimaryActionClass}
                 >
                   {bulkDeleting ? "Deleting..." : "Delete selected sessions"}
                 </button>
@@ -386,7 +417,7 @@ export default function SavedWorkoutsPanel({
                   type="button"
                   onClick={() => setPendingBulkDelete(false)}
                   disabled={bulkDeleting}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={dangerActionClass}
                 >
                   Cancel
                 </button>
@@ -428,23 +459,23 @@ export default function SavedWorkoutsPanel({
             const mobileActionsOpen = mobileActionsWorkoutId === workout.id;
             const cardClasses = bulkSelectionMode
               ? isSelected
-                ? "border-blue-200 bg-blue-50/80 ring-1 ring-blue-200"
-                : "border-slate-200 bg-white"
-              : "border-white/80 bg-white";
+                ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] ring-1 ring-[color:var(--fs-border-brand)]"
+                : "bg-white/90"
+              : "bg-white/90";
 
             return (
               <div
                 key={workout.id}
                 data-testid={`saved-workout-card-${workout.id}`}
                 data-selected={bulkSelectionMode ? String(isSelected) : undefined}
-                className={`rounded-2xl border p-3 transition ${cardClasses}`}
+                className={cx("fs-library-card p-3 transition", cardClasses)}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     {bulkSelectionMode ? (
                       <label
                         data-testid={`saved-workout-selection-hit-area-${workout.id}`}
-                        className={`flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-xl px-2 py-2 transition ${
+                        className={`flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-[var(--fs-radius-control)] px-2 py-2 transition ${
                           isSelected ? "bg-white/80" : "hover:bg-slate-50"
                         }`}
                       >
@@ -470,7 +501,7 @@ export default function SavedWorkoutsPanel({
                         <Link
                           href={workoutHrefBuilder(workout.id)}
                           data-testid={editButtonTestIdBuilder(workout.id)}
-                          className="hidden h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:inline-flex"
+                          className={cx(secondaryActionClass, "hidden sm:inline-flex")}
                         >
                           {editLabel}
                         </Link>
@@ -487,7 +518,7 @@ export default function SavedWorkoutsPanel({
                           aria-controls={`saved-workout-mobile-actions-panel-${workout.id}`}
                           aria-label={mobileActionsOpen ? "Hide actions" : "More actions"}
                           data-testid={`saved-workout-mobile-actions-toggle-${workout.id}`}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:hidden"
+                          className={iconActionClass}
                         >
                           {mobileActionsOpen ? (
                             <ChevronUp aria-hidden="true" className="size-4" />
@@ -507,7 +538,7 @@ export default function SavedWorkoutsPanel({
                               );
                             }}
                             data-testid={viewButtonTestIdBuilder(workout.id)}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                            className={quietActionClass}
                           >
                             {previewOpen ? "Hide" : "Quick View"}
                           </button>
@@ -518,7 +549,7 @@ export default function SavedWorkoutsPanel({
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={printButtonTestIdBuilder(workout.id)}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
+                            className={mutedActionClass}
                           >
                             View PDF
                           </Link>
@@ -533,7 +564,7 @@ export default function SavedWorkoutsPanel({
                               );
                             }}
                             data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                            className={poolsideActionClass}
                           >
                             {poolsideOpen ? "Hide Poolside" : "Poolside Note"}
                           </button>
@@ -544,7 +575,7 @@ export default function SavedWorkoutsPanel({
                             onClick={() => onRequestDeleteWorkout?.(workout)}
                             disabled={deleting}
                             data-testid={deleteButtonTestIdBuilder(workout.id)}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={dangerActionClass}
                           >
                             {deleting ? "Deleting..." : "Delete"}
                           </button>
@@ -564,7 +595,7 @@ export default function SavedWorkoutsPanel({
                       <Link
                         href={workoutHrefBuilder(workout.id)}
                         data-testid={`saved-workout-mobile-open-${workout.id}`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                        className={secondaryActionClass}
                       >
                         {editLabel}
                       </Link>
@@ -579,7 +610,7 @@ export default function SavedWorkoutsPanel({
                           );
                         }}
                         data-testid={viewButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                        className={quietActionClass}
                       >
                         {previewOpen ? "Hide quick view" : "Quick View"}
                       </button>
@@ -590,7 +621,7 @@ export default function SavedWorkoutsPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         data-testid={printButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
+                        className={mutedActionClass}
                       >
                         View PDF
                       </Link>
@@ -605,7 +636,7 @@ export default function SavedWorkoutsPanel({
                           );
                         }}
                         data-testid={poolsidePdfButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                        className={poolsideActionClass}
                       >
                         {poolsideOpen ? "Hide Poolside" : "Poolside Note"}
                       </button>
@@ -616,7 +647,7 @@ export default function SavedWorkoutsPanel({
                         onClick={() => onRequestDeleteWorkout?.(workout)}
                         disabled={deleting}
                         data-testid={deleteButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={dangerActionClass}
                       >
                         {deleting ? "Deleting..." : "Delete"}
                       </button>
@@ -625,10 +656,7 @@ export default function SavedWorkoutsPanel({
                 ) : null}
 
                 {previewOpen && (quickPreviewSections.length > 0 || totalDistanceQuickLabel) ? (
-                  <div
-                    data-testid={previewTestIdBuilder(workout.id)}
-                    className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
-                  >
+                  <div data-testid={previewTestIdBuilder(workout.id)} className={inlinePanelClass}>
                     <div className="space-y-3">
                       <SessionStepViewSections
                         sections={quickPreviewSections}
@@ -636,7 +664,7 @@ export default function SavedWorkoutsPanel({
                       />
                     </div>
                     {totalDistanceQuickLabel ? (
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/90 px-3 py-3">
                         <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                           Total
                         </p>
@@ -650,7 +678,7 @@ export default function SavedWorkoutsPanel({
 
                 {poolsideOpen && workoutPoolsidePreviewHref ? (
                   <PoolsideNotePanel
-                    className="mt-3 rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
+                    className="mt-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] p-4 sm:p-5"
                     testIdPrefix={`saved-workout-poolside-${workout.id}`}
                     swimmerName={swimmerName}
                     focusOptions={trainingFocusOptions}
@@ -668,7 +696,7 @@ export default function SavedWorkoutsPanel({
                         target="_blank"
                         rel="noopener noreferrer"
                         data-testid={`saved-workout-poolside-${workout.id}-print-preview`}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+                        className={poolsideActionClass}
                       >
                         Print Preview
                       </Link>
@@ -677,7 +705,7 @@ export default function SavedWorkoutsPanel({
                 ) : null}
 
                 {pendingDelete ? (
-                  <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-3">
+                  <div className={warningPanelClass}>
                     <p className="text-sm font-medium text-rose-900">
                       Delete this saved session from My Library?
                     </p>
@@ -690,7 +718,7 @@ export default function SavedWorkoutsPanel({
                         onClick={() => onConfirmDeleteWorkout?.(workout)}
                         disabled={deleting}
                         data-testid={confirmDeleteButtonTestIdBuilder(workout.id)}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={dangerPrimaryActionClass}
                       >
                         {deleting ? "Deleting..." : "Delete saved session"}
                       </button>
@@ -698,7 +726,7 @@ export default function SavedWorkoutsPanel({
                         type="button"
                         onClick={() => onCancelDeleteWorkout?.()}
                         disabled={deleting}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={dangerActionClass}
                       >
                         Cancel
                       </button>
@@ -713,7 +741,7 @@ export default function SavedWorkoutsPanel({
               type="button"
               onClick={() => setShowAllWorkouts(true)}
               data-testid={`${testId}-load-more`}
-              className="inline-flex h-10 items-center justify-center self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={cx(quietActionClass, "self-start")}
             >
               {hiddenWorkoutCount === 1
                 ? "Load 1 more session"
