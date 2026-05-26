@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
+import GuideAccessRequiredState from "@/components/guides/GuideAccessRequiredState";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
 import { loadPublishedGuide0To1000Sessions } from "@/lib/admin/content-published";
@@ -46,28 +47,10 @@ export default async function Guide0To1000Page() {
   if (!entitlement) {
     return (
       <SiteChrome>
-        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-          <div className="rounded-3xl border border-amber-200 bg-amber-50/60 p-8 shadow-[0_14px_45px_rgba(15,23,42,0.10)]">
-            <h1 className="text-3xl font-bold text-slate-900">Guide access required</h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-700">
-              This interactive plan appears when `0-1000m guide` is in your library.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/plans"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
-              >
-                View plans
-              </Link>
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Back to My Library
-              </Link>
-            </div>
-          </div>
-        </section>
+        <GuideAccessRequiredState
+          guideLabel="0-1000m guide"
+          description="Add 0-1000m guide to your library to open the interactive plan and download the offline PDF."
+        />
       </SiteChrome>
     );
   }
