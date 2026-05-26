@@ -4,6 +4,7 @@ import TrackedLink from "@/components/analytics/TrackedLink";
 import SiteChrome from "@/components/SiteChrome";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
+import { cx } from "@/components/ui/cx";
 import { getLibraryItemActionCopy } from "@/lib/commerce/library-item-actions";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { getCatalogProductBySlug } from "@/lib/commerce/catalog";
@@ -19,6 +20,13 @@ export const dynamic = "force-dynamic";
 function getTrackedItemEventName(targetHref: string) {
   return targetHref === "/contact" ? "support_clicked" : "item_preview_opened";
 }
+
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const quietActionClass =
+  "inline-flex min-h-11 shrink-0 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-4 text-sm font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 
 export default async function LibraryItemPage({ params }: Props) {
   const { slug } = await params;
@@ -65,12 +73,32 @@ export default async function LibraryItemPage({ params }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-          <h1 className="text-3xl font-bold text-slate-900">{displayTitle}</h1>
-          <p className="mt-3 text-sm text-slate-600">{actionCopy.description}</p>
+      <section className="mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28">
+        <article
+          data-testid="owned-library-item-detail"
+          className="fs-library-card fs-library-card-accent p-5 sm:p-6 md:p-8"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-[color:var(--fs-color-brand-700)]">
+                Owned item
+              </p>
+              <h1 className="mt-2 text-[30px] leading-tight font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
+                {displayTitle}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--fs-color-muted)]">
+                {actionCopy.description}
+              </p>
+            </div>
+            <span className="inline-flex w-fit shrink-0 rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)] ring-1 ring-[color:var(--fs-border-brand)]">
+              In your library
+            </span>
+          </div>
 
-          <div className="mt-6 flex flex-wrap items-start gap-3">
+          <div
+            className="mt-6 flex flex-wrap items-center gap-3 border-t border-[color:var(--fs-border-soft)] pt-5"
+            data-testid="owned-library-item-actions"
+          >
             {actionCopy.primaryHref ? (
               <TrackedLink
                 eventName={getTrackedItemEventName(actionCopy.primaryHref)}
@@ -83,7 +111,7 @@ export default async function LibraryItemPage({ params }: Props) {
                   target: actionCopy.primaryHref,
                 }}
                 href={actionCopy.primaryHref}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                className={primaryActionClass}
               >
                 {actionCopy.primaryLabel}
               </TrackedLink>
@@ -100,7 +128,7 @@ export default async function LibraryItemPage({ params }: Props) {
                   target: actionCopy.secondaryHref,
                 }}
                 href={actionCopy.secondaryHref}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className={secondaryActionClass}
               >
                 {actionCopy.secondaryLabel}
               </TrackedLink>
@@ -109,16 +137,14 @@ export default async function LibraryItemPage({ params }: Props) {
               <GuidePdfDownloadButton
                 apiPath={actionCopy.pdfApiHref}
                 fallbackFileName={actionCopy.pdfFallbackFileName}
+                className="shrink-0"
               />
             ) : null}
-            <Link
-              href="/my-library"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link href="/my-library" className={cx(quietActionClass, "ml-0 sm:ml-auto")}>
               Back to My Library
             </Link>
           </div>
-        </div>
+        </article>
 
         <AdminContextNotesPanel
           contextType="product"
