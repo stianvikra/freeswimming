@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-26-aw-006-my-swim-sessions-saved-list-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-26`
 - `updated`: `2026-05-26`
@@ -233,3 +233,30 @@ Required because this changes visible UI/layout.
 - `2026-05-26 | screenshot handoff | implemented saved-list token/action parity in SavedWorkoutsPanel, updated focused unit assertions and AW-006 queue/design inventory, validated with workout-builder-hub vitest, typecheck, lint:briefs:all, git diff --check, and route/label/support sweep; captured after/reference artifacts in output/aw-006-my-swim-sessions-saved-list-token-parity-2026-05-26-190059 | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-26 | screenshot approved | owner approved screenshot handoff and authorized merge after tests complete | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge when green`
 - `2026-05-26 | pre-pr gate passed | npm run verify:pre-pr passed full lane with branch current on origin/main@d28a198; Playwright completed with 101 passed and 487 skipped under existing local auth/environment gates | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge when green`
+- `2026-05-26 | closeout | PR #866 shipped as squash commit d87c7cd after owner-approved screenshot handoff, local pre-PR, CI, and local pre-merge gates passed; this repo-managed docs-only closeout moves the brief to done and clears the active AW-006 queue reference | next: validate and merge closeout, rerun post-merge preflight, then complete mandatory chat-handoff assessment before starting another implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-26`
+- `merged_pr`: `#866`
+- `squash_commit`: `d87c7cd`
+- `result`: Closed AW-006 My Swim Sessions Saved List Token And Action Parity. The saved-session list now uses the My Library token/action hierarchy for cards, row actions, mobile actions, quick preview, Poolside, and delete confirmations while preserving workout data, delete behavior, PDF, Poolside, local draft, auth, analytics, Help/Guide, and support behavior.
+- `validation`: Owner-approved screenshot handoff at `output/aw-006-my-swim-sessions-saved-list-token-parity-2026-05-26-190059`; `./node_modules/.bin/vitest run tests/unit/workout-builder-hub.test.tsx` PASS (64/64); `npm run typecheck` PASS; `npm run lint:briefs:all` PASS; `git diff --check` PASS; targeted route/label/support sweep completed; `npm run verify:pre-pr` PASS on commit `301fdd9`; CI for PR #866 PASS; `npm run verify:pre-merge` PASS before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`, with no remaining release-blocking gaps.
+
+| Category                                      | Achieved Score | Evidence                                                                                         | Gaps / Notes           |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------ | ---------------------- |
+| Product goals and IA                          | `5/5`          | PR #866 diff, focused tests, screenshot handoff, CI PASS                                         | No remaining gap.      |
+| UX flow clarity                               | `5/5`          | Owner-approved after/reference screenshots and focused saved-list action assertions              | No remaining gap.      |
+| Visual design quality                         | `5/5`          | Screenshot artifacts captured after implementation; no product-rendering files changed afterward | No remaining gap.      |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review, targeted tests, full pre-PR lane, CI PASS                                  | No data/API change.    |
+| Accessibility (a11y)                          | `5/5`          | Testing Library action assertions and full verification lane                                     | No remaining gap.      |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint parity with same evidence as `Accessibility (a11y)`                     | No remaining gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/API changes; perf budget PASS                                                | No remaining gap.      |
+| Reliability and failure handling              | `5/5`          | Existing delete, bulk delete, quick preview, and Poolside behavior preserved in tests/review     | No remaining gap.      |
+| Security and authz                            | `5/5`          | Auth/server route behavior untouched; full local and CI gates passed                             | No authz change.       |
+| Content governance                            | `5/5`          | Active brief, queue, and inventory updated; repo-managed closeout clears stale active reference  | No remaining gap.      |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and unchanged concise route-owned labels                              | No new locale mapping. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `SavedWorkoutsPanel`, My Library token classes, and existing view-model contracts         | No dependency change.  |
+| Testing and QA automation                     | `5/5`          | Focused vitest, full local `verify:pre-pr`, PR CI, and `verify:pre-merge` PASS                   | No remaining gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit d87c7cd is docs/code scoped and reversible; no migration/env/config change         | No remaining gap.      |
