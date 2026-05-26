@@ -3,22 +3,22 @@
 ## Metadata
 
 - `id`: `2026-05-25-aw-006-my-routines-workspace-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-25`
-- `updated`: `2026-05-25`
+- `updated`: `2026-05-26`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `branch`: `aw-006-my-routines-workspace-token-parity`
-- `execution mode`: `end-to-end implementation after owner approved the selected AW-006 slice`
+- `execution mode`: `shipped implementation slice; repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-25`
-- `base`: `main@5e7969f`
-- `audit_status`: `ready`
-- `decision`: Execute the owner-approved AW-006 My Routines workspace token and action hierarchy parity slice.
-- `reason`: PR `#853` and repo-managed closeout PR `#854` are merged, `main` is clean at `5e7969f`, `npm run post-merge:preflight` was reported green with no closeout remaining, and the owner approved this slice after a fresh queue/design/code re-audit found no active AW-006 implementation slice.
+- `last_audited`: `2026-05-26`
+- `base`: `main@5a70205`
+- `audit_status`: `done`
+- `decision`: Close the shipped AW-006 My Routines workspace token and action hierarchy parity slice.
+- `reason`: PR `#855` shipped the owner-approved My Routines workspace parity slice after screenshot approval, local full-lane verification, CI, and pre-merge gates passed.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `/my-library/routines`, `TodayTabsPanel`, `MyLibraryHub`, `lib/my-library/today`, habits/dryland route contracts, screenshot handoff rules, forward compatibility rules, or verification lanes change before screenshot handoff.
 
 ## Goal
@@ -41,6 +41,7 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Accessibility (a11y)`
+- `Accessibility`
 - `Business logic correctness and data integrity`
 - `Reliability and failure handling`
 - `Security and authz`
@@ -56,6 +57,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No changes to habits/dryland state builders, API routes, localStorage keys, plan status logic, cadence, timers, or persisted data.                                                       | changed-files review + targeted tests        | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this private member workspace slice changes no admin editor, admin CRUD, publish workflow, or operator action.                                                               | scope review                                 | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Existing heading, tablist, tabpanel, selected-tab, and link semantics remain valid; visual changes do not introduce hidden or unlabeled controls.                                        | Testing Library assertions + screenshot QA   | `5/5`                   |
+| Accessibility                                 | `target`     | Same target as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                                             | Testing Library assertions + screenshot QA   | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new dependency, media asset, API call, client state model, or route payload growth beyond markup/class changes.                                                                       | dependency diff + pre-PR gate                | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this slice changes no local-only data, server-canonical data, sync trigger, conflict policy, retention, or cache invalidation.                                               | explicit state-boundary review               | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because existing `dynamic = "force-dynamic"` and server snapshot loading remain unchanged; no fetch/cache path or invalidation behavior changes.                                     | changed-files review                         | `N/A`                   |
@@ -213,8 +215,8 @@ After owner screenshot approval:
 
 - `npm run verify:pre-pr` PASS on `2026-05-26`: full lane, branch current with `origin/main@5e7969f`, lint/typecheck/unit/build/perf/e2e passed. Playwright E2E summary: 101 passed, 487 expected local skips from the supported environment/auth matrix.
 - Performance budget decision: hold stretch tightening for this slice. The gate reported `runs 7/2` but recommendation `hold` because observed margin was `14.0%` and below the `15.0%` tighten threshold.
-- GitHub required checks after PR
-- `npm run verify:pre-merge`
+- GitHub required checks after PR `#855` PASS: Analyze, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify.
+- `npm run verify:pre-merge` PASS on `2026-05-26` against branch head `9b4454d`; marker `artifacts/verify-pre-merge/20260526-034250.json`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -244,3 +246,32 @@ Captured evidence:
 - `2026-05-25 | implementation + screenshot stop | extracted My Routines route presentation, aligned workspace shell and TodayTabsPanel with My Library token/action hierarchy, kept Today state/data contracts and route auth/server loaders unchanged, updated focused unit/e2e assertions, completed route/label/support sweep, passed targeted validation, and captured before/after screenshots at output/aw-006-my-routines-token-parity-2026-05-25-224120 | next: owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI, and verify:pre-merge`
 - `2026-05-26 | screenshot approved | owner approved the before/after screenshot handoff; no product-rendering files changed after capture | next: run npm run verify:pre-pr before commit, push, and PR automation`
 - `2026-05-26 | pre-pr gate passed | npm run verify:pre-pr passed the full lane after screenshot approval; no product-rendering files changed after screenshot capture; performance budget recommendation recorded as hold because margin is below the tighten threshold | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-26 | done | My Routines Workspace Token And Action Hierarchy Parity shipped in PR #855 as squash commit 5a70205 after screenshot approval, local pre-PR, CI, and local pre-merge gates passed; repo-managed docs-only closeout moves the brief to done and clears active queue references | next: run docs-only closeout gates, merge the closeout PR, rerun post-merge preflight, then make the mandatory chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-05-26`
+- `merged_pr`: `#855`
+- `squash_commit`: `5a70205e0531b49678cf948977c6423104f0d156`
+- `result`: Closed AW-006 My Routines Workspace Token And Action Hierarchy Parity by aligning `/my-library/routines` and `TodayTabsPanel` with the My Library token/action hierarchy while preserving routine data, auth, routes, links, and workflow behavior.
+- `validation`: `npx vitest run tests/unit/today-tabs-panel.test.tsx` PASS: 1 file / 3 tests; `npm run typecheck` PASS; `npm run lint:briefs -- --all` PASS: all 365 brief files; `git diff --check` PASS; `npx playwright test tests/e2e/my-library-landing-entrypoints.spec.ts --project=desktop-chromium` PASS with 1 passed and 2 expected local auth skips; screenshot handoff captured and owner-approved; `npm run verify:pre-pr` PASS full lane; PR `#855` GitHub CI PASS; `npm run verify:pre-merge` PASS on `9b4454d`.
+- `screenshot_artifacts`: `output/aw-006-my-routines-token-parity-2026-05-25-224120/`, captured `2026-05-25 22:41`, owner approved `2026-05-26`; no product-rendering files changed after screenshot capture.
+- `performance_budget_decision`: hold stretch tightening for this slice; gate reported `runs 7/2` and margin `14.0%`, below the `15.0%` tighten threshold.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                           | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#855`, route/link review, focused My Routines route assertions                                                 | No gaps.     |
+| UX flow clarity                               | `5/5`          | `TodayTabsPanel` tests, before/after screenshot handoff, unchanged `Edit`/`Open` destinations                      | No gaps.     |
+| Visual design quality                         | `5/5`          | `output/aw-006-my-routines-token-parity-2026-05-25-224120/`                                                        | No gaps.     |
+| Business logic correctness and data integrity | `5/5`          | changed-files review, unchanged dryland/habits state builders, targeted unit/e2e coverage                          | No gaps.     |
+| Accessibility (a11y)                          | `5/5`          | Testing Library tab semantics and screenshot QA preserved selected-tab/panel behavior                              | No gaps.     |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                                     | No gaps.     |
+| Performance (CWV + payloads)                  | `5/5`          | no dependency/media/API/client-state growth; full `verify:pre-pr` and `verify:pre-merge` passed                    | No gaps.     |
+| Reliability and failure handling              | `5/5`          | existing ready/setup/syncing/error states still render through `TodaySurfaceState` and targeted tests              | No gaps.     |
+| Security and authz                            | `5/5`          | private route/auth redirect unchanged; no protected data moved client-side                                         | No gaps.     |
+| Content governance                            | `5/5`          | active brief moved to done; canonical queue closeout updates; brief lint passed                                    | No gaps.     |
+| i18n operational readiness                    | `5/5`          | screenshot text-fit review and concise existing English labels                                                     | No gaps.     |
+| Stack-fit and dependency discipline           | `5/5`          | reused `TodayTabsPanel`, `MyLibraryRoutinesWorkspace`, My Library token classes, and existing tests; no dependency | No gaps.     |
+| Testing and QA automation                     | `5/5`          | targeted Vitest/Playwright, typecheck, brief lint, diff check, screenshot handoff, full gates, and CI passed       | No gaps.     |
+| DevOps and rollback readiness                 | `5/5`          | normal git revert rollback; no migrations, config, workflow, package, env, or provider changes                     | No gaps.     |
