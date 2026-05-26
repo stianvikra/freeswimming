@@ -5,6 +5,18 @@ import Image from "next/image";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
+  guideTrackerCompletedActionClass,
+  guideTrackerEmptyClass,
+  guideTrackerHeroShellClass,
+  guideTrackerMetricClass,
+  guideTrackerMutedPanelClass,
+  guideTrackerPanelClass,
+  guideTrackerPrimaryActionClass,
+  guideTrackerSecondaryActionClass,
+  guideTrackerSmallSecondaryActionClass,
+  guideTrackerTextareaClass,
+} from "@/components/guides/guideTrackerShellStyles";
+import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
   type GuideProgressRow,
@@ -731,7 +743,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
   if (drills.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-6">
+      <div className={guideTrackerEmptyClass}>
         <h2 className="text-base font-semibold text-slate-900">Guide content unavailable</h2>
         <p className="mt-2 text-sm text-slate-600">
           Poolside drills are not configured yet. Please try again shortly.
@@ -742,7 +754,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-3xl border border-sky-100 bg-white/95 p-6 shadow-[0_12px_40px_rgba(24,58,107,0.12)]">
+      <section className={guideTrackerHeroShellClass} data-testid="guide-poolside-action-shell">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Poolside interactive guide</h1>
@@ -754,14 +766,14 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
           <button
             type="button"
             onClick={() => setOverviewOpen((open) => !open)}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className={guideTrackerSecondaryActionClass}
           >
             {overviewOpen ? "Close drills overview" : "Drills overview"}
           </button>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <div className={`${guideTrackerMetricClass} border-emerald-200 bg-emerald-50/50`}>
             <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
               Completed
             </p>
@@ -769,13 +781,13 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               {completedCount}/{drills.length}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className={guideTrackerMutedPanelClass}>
             <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
               Current drill
             </p>
             <p className="mt-1 text-lg font-bold text-slate-900">{activeIndex + 1}</p>
           </div>
-          <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+          <div className={`${guideTrackerMetricClass} border-blue-100 bg-blue-50/60`}>
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Progress</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{completionPercent}%</p>
           </div>
@@ -796,7 +808,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                 if (resumeIndex < 0) return;
                 setActiveIndex(resumeIndex);
               }}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className={guideTrackerSmallSecondaryActionClass}
             >
               Continue where you left off ({lastDrill.id})
             </button>
@@ -810,7 +822,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               if (nextIndex < 0) return;
               setActiveIndex(nextIndex);
             }}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className={guideTrackerSmallSecondaryActionClass}
           >
             Open next drill
           </button>
@@ -818,7 +830,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
       </section>
 
       {overviewOpen ? (
-        <section className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_8px_26px_rgba(15,23,42,0.08)]">
+        <section className={guideTrackerPanelClass}>
           <h2 className="text-base font-semibold text-slate-900">Drills overview</h2>
           <p className="mt-1 text-sm text-slate-600">
             Jump directly to any drill. Completed drills stay marked.
@@ -866,7 +878,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                 </div>
 
                 {split.completed.length > 0 ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                  <div className={`${guideTrackerMutedPanelClass} mt-4`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-slate-800">
                         Completed drills ({split.completed.length})
@@ -874,7 +886,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                       <button
                         type="button"
                         onClick={() => setShowCompletedInOverview((value) => !value)}
-                        className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        className={guideTrackerSmallSecondaryActionClass}
                       >
                         {showCompletedInOverview ? "Hide completed" : "Show completed"}
                       </button>
@@ -889,11 +901,11 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
       {hydrationState === "loading" ? (
         <div className="space-y-3" aria-label="Loading drill progress">
-          <div className="h-72 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
+          <div className="fs-library-card fs-library-card-muted h-72 animate-pulse" />
         </div>
       ) : currentDrill ? (
         <article
-          className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_10px_32px_rgba(15,23,42,0.10)]"
+          className={guideTrackerPanelClass}
           onTouchStart={(event) => {
             if (event.touches.length !== 1) return;
             if (isInteractiveTarget(event.target)) return;
@@ -946,11 +958,11 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
             <button
               type="button"
               onClick={() => toggleDrillCompleted(currentDrill.id)}
-              className={`inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+              className={
                 currentDrillProgress?.completed
-                  ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                  : "bg-blue-600 text-white hover:bg-blue-500"
-              }`}
+                  ? guideTrackerCompletedActionClass
+                  : guideTrackerPrimaryActionClass
+              }
             >
               {currentDrillProgress?.completed ? "Completed" : "Mark complete"}
             </button>
@@ -958,14 +970,14 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className={guideTrackerMutedPanelClass}>
                 <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Setup
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">{currentDrill.setup}</p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="fs-library-card p-4">
                 <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   What to think about
                 </p>
@@ -979,7 +991,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="fs-library-card p-4">
                 <label
                   htmlFor={`poolside-note-${currentDrill.id}`}
                   className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
@@ -994,7 +1006,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                   }}
                   rows={4}
                   placeholder="Write what worked and what you will focus on next time."
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
+                  className={guideTrackerTextareaClass}
                 />
                 <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-500">
                   <span>
@@ -1026,7 +1038,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               <button
                 type="button"
                 onClick={() => openVisualViewForDrill(currentDrill.id)}
-                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                className={`${guideTrackerSecondaryActionClass} w-full`}
               >
                 Visual view
               </button>
@@ -1042,7 +1054,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               type="button"
               onClick={goPrev}
               disabled={!canGoPrev}
-              className="inline-flex min-h-[44px] min-w-[120px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 transition enabled:hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45"
+              className={`${guideTrackerSecondaryActionClass} min-w-[120px]`}
             >
               Previous
             </button>
@@ -1053,7 +1065,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               type="button"
               onClick={goNext}
               disabled={!canGoNext}
-              className="inline-flex min-h-[44px] min-w-[120px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition enabled:hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-45"
+              className={`${guideTrackerPrimaryActionClass} min-w-[120px]`}
             >
               Next
             </button>
