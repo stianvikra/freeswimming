@@ -94,6 +94,7 @@ describe("TodayTabsPanel", () => {
     );
 
     const panel = screen.getByTestId("my-library-today-tabs");
+    expect(panel).toHaveClass("fs-library-card");
     expect(within(panel).getByText("Routines")).toBeVisible();
     expect(within(panel).getByRole("heading", { name: "My Routines" })).toBeVisible();
     expect(within(panel).queryByText(/Perfect Day/i)).toBeNull();
@@ -109,11 +110,13 @@ describe("TodayTabsPanel", () => {
       "href",
       "/my-library/dryland?micro=edit#micro-sessions"
     );
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveClass("fs-cta-primary");
+    expect(within(panel).getByRole("link", { name: "Edit" })).toHaveClass("fs-cta-secondary");
     expect(
       within(panel)
         .getAllByRole("link")
         .map((link) => link.textContent)
-    ).toEqual(["Edit", "Open"]);
+    ).toEqual(["Open", "Edit"]);
     expect(within(panel).getByRole("heading", { name: "Micro Sessions" })).toBeVisible();
     expect(within(panel).getByText("1/3 units · 33%")).toBeVisible();
     expect(within(panel).queryByText(/Bubbles/i)).toBeNull();
@@ -134,7 +137,7 @@ describe("TodayTabsPanel", () => {
       within(panel)
         .getAllByRole("link")
         .map((link) => link.textContent)
-    ).toEqual(["Edit", "Open"]);
+    ).toEqual(["Open", "Edit"]);
 
     fireEvent.click(microSessionsTab);
     expect(microSessionsTab).toHaveAttribute("aria-selected", "true");
@@ -154,6 +157,8 @@ describe("TodayTabsPanel", () => {
     const panel = screen.getByTestId("my-library-today-tabs");
 
     expect(within(panel).getByRole("link", { name: "Open" })).toBeVisible();
+    expect(within(panel).getByRole("link", { name: "Open" })).toHaveClass("fs-cta-primary");
+    expect(within(panel).getByRole("link", { name: "Edit" })).toHaveClass("fs-cta-secondary");
     expect(within(panel).queryByRole("button", { name: "Show details" })).toBeNull();
     expect(within(panel).queryByRole("button", { name: "Hide details" })).toBeNull();
     expect(

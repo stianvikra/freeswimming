@@ -147,15 +147,18 @@ test.describe("my library landing entrypoints", () => {
 
     const routinesPanel = page.getByTestId("my-library-today-tabs");
     await expect(routinesPanel).toBeVisible();
+    await expect(routinesPanel).toHaveClass(/fs-library-card/);
     await expect(routinesPanel.getByText("Routines")).toHaveCount(0);
     await expect(routinesPanel.getByRole("tab", { name: "Micro Sessions" })).toHaveAttribute(
       "aria-selected",
       "true"
     );
     await expect(routinesPanel.getByRole("link", { name: "Open" })).toBeVisible();
+    await expect(routinesPanel.getByRole("link", { name: "Open" })).toHaveClass(/fs-cta-primary/);
+    await expect(routinesPanel.getByRole("link", { name: "Edit" })).toHaveClass(/fs-cta-secondary/);
     await expect(routinesPanel.getByRole("link", { name: "Edit" })).toHaveAttribute(
       "href",
-      "/my-library/dryland?micro=edit"
+      "/my-library/dryland?micro=edit#micro-sessions"
     );
     await routinesPanel.getByRole("tab", { name: "Habits" }).click();
     await expect(routinesPanel.getByRole("tab", { name: "Habits" })).toHaveAttribute(
