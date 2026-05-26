@@ -47,7 +47,7 @@ export default function DrylandFeedback({
       )}
     >
       <div className="max-w-[58ch] min-w-0 text-sm leading-6">{children}</div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="max-w-full min-w-0 sm:shrink-0">{action}</div> : null}
     </div>
   );
 }
