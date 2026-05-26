@@ -41,6 +41,7 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Accessibility (a11y)`
+- `Accessibility`
 - `Business logic correctness and data integrity`
 - `Reliability and failure handling`
 - `Security and authz`
@@ -56,6 +57,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No changes to habits/dryland state builders, API routes, localStorage keys, plan status logic, cadence, timers, or persisted data.                                                       | changed-files review + targeted tests        | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this private member workspace slice changes no admin editor, admin CRUD, publish workflow, or operator action.                                                               | scope review                                 | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Existing heading, tablist, tabpanel, selected-tab, and link semantics remain valid; visual changes do not introduce hidden or unlabeled controls.                                        | Testing Library assertions + screenshot QA   | `5/5`                   |
+| Accessibility                                 | `target`     | Same target as `Accessibility (a11y)` for closeout-lint alias compatibility.                                                                                                             | Testing Library assertions + screenshot QA   | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new dependency, media asset, API call, client state model, or route payload growth beyond markup/class changes.                                                                       | dependency diff + pre-PR gate                | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this slice changes no local-only data, server-canonical data, sync trigger, conflict policy, retention, or cache invalidation.                                               | explicit state-boundary review               | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because existing `dynamic = "force-dynamic"` and server snapshot loading remain unchanged; no fetch/cache path or invalidation behavior changes.                                     | changed-files review                         | `N/A`                   |
@@ -264,6 +266,7 @@ Captured evidence:
 | Visual design quality                         | `5/5`          | `output/aw-006-my-routines-token-parity-2026-05-25-224120/`                                                        | No gaps.     |
 | Business logic correctness and data integrity | `5/5`          | changed-files review, unchanged dryland/habits state builders, targeted unit/e2e coverage                          | No gaps.     |
 | Accessibility (a11y)                          | `5/5`          | Testing Library tab semantics and screenshot QA preserved selected-tab/panel behavior                              | No gaps.     |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                                     | No gaps.     |
 | Performance (CWV + payloads)                  | `5/5`          | no dependency/media/API/client-state growth; full `verify:pre-pr` and `verify:pre-merge` passed                    | No gaps.     |
 | Reliability and failure handling              | `5/5`          | existing ready/setup/syncing/error states still render through `TodaySurfaceState` and targeted tests              | No gaps.     |
 | Security and authz                            | `5/5`          | private route/auth redirect unchanged; no protected data moved client-side                                         | No gaps.     |
