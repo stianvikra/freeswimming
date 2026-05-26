@@ -134,7 +134,71 @@ describe("ProgramBuilderHub", () => {
     vi.clearAllMocks();
   });
 
-  it("adds a scheduled workout and saves canonical program edits", async () => {
+  it("renders route-level setup, load, missing-workout, and empty feedback with program semantics", () => {
+    render(
+      <ProgramBuilderHub
+        programLibrary={buildProgramLibrary({
+          schemaReady: false,
+          loadError: "Could not load saved programs right now.",
+          selectedProgram: null,
+          missingWorkoutIds: ["missing-workout-1"],
+          recentPrograms: [],
+        })}
+      />
+    );
+
+    const schemaWarning = screen.getByTestId("program-builder-schema-warning");
+    expect(schemaWarning).toHaveAttribute("role", "status");
+    expect(schemaWarning).toHaveAttribute("aria-live", "polite");
+    expect(schemaWarning).toHaveAttribute("data-feedback-tone", "warning");
+    expect(schemaWarning).toHaveTextContent("Program save is still syncing");
+
+    const loadError = screen.getByTestId("program-builder-load-error");
+    expect(loadError).toHaveAttribute("role", "alert");
+    expect(loadError).toHaveAttribute("aria-live", "assertive");
+    expect(loadError).toHaveAttribute("data-feedback-tone", "error");
+    expect(loadError).toHaveTextContent("Could not load saved programs right now.");
+
+    const missingWorkouts = screen.getByTestId("program-builder-missing-workouts-warning");
+    expect(missingWorkouts).toHaveAttribute("role", "status");
+    expect(missingWorkouts).toHaveAttribute("aria-live", "polite");
+    expect(missingWorkouts).toHaveAttribute("data-feedback-tone", "warning");
+    expect(missingWorkouts).toHaveTextContent(
+      "One scheduled workout could not be loaded for this account."
+    );
+
+    const emptyState = screen.getByTestId("program-builder-empty-state");
+    expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
+    expect(emptyState).not.toHaveAttribute("role");
+    expect(emptyState).not.toHaveAttribute("aria-live");
+    expect(emptyState).toHaveTextContent("No saved program is open here.");
+    expect(within(emptyState).getByRole("link", { name: "Back to My Library" })).toHaveAttribute(
+      "href",
+      "/my-library"
+    );
+    expect(screen.queryByTestId("program-builder-empty-create-manual")).not.toBeInTheDocument();
+  });
+
+  it("keeps selected-missing program guidance as non-error warning feedback", () => {
+    render(
+      <ProgramBuilderHub
+        programLibrary={buildProgramLibrary({
+          selectedProgram: null,
+          selectedProgramMissing: true,
+          recentPrograms: [],
+        })}
+      />
+    );
+
+    const emptyState = screen.getByTestId("program-builder-empty-state");
+    expect(emptyState).toHaveAttribute("role", "status");
+    expect(emptyState).toHaveAttribute("aria-live", "polite");
+    expect(emptyState).toHaveAttribute("data-feedback-tone", "warning");
+    expect(emptyState).toHaveTextContent("That saved program could not be found.");
+    expect(screen.getByTestId("program-builder-empty-create-manual")).toBeInTheDocument();
+  });
+
+  it("adds a scheduled workout and saves program edits", async () => {
     vi.mocked(fetch).mockImplementation(async (input, init) => {
       const method = init?.method ?? "GET";
       const url = String(input);
@@ -177,7 +241,7 @@ describe("ProgramBuilderHub", () => {
     });
 
     expect(screen.getByTestId("program-editor-save-state")).toHaveTextContent(
-      "All program changes are saved to the canonical program."
+      "All changes are saved."
     );
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
 
@@ -214,9 +278,11 @@ describe("ProgramBuilderHub", () => {
       );
     });
 
-    await waitFor(() => {
-      expect(screen.getByText("Program changes saved to the canonical program.")).toBeVisible();
-    });
+    const successState = await screen.findByTestId("program-builder-action-success");
+    expect(successState).toHaveAttribute("role", "status");
+    expect(successState).toHaveAttribute("aria-live", "polite");
+    expect(successState).toHaveAttribute("data-feedback-tone", "success");
+    expect(successState).toHaveTextContent("Program saved.");
 
     const patchCall = vi
       .mocked(fetch)
@@ -237,6 +303,62 @@ describe("ProgramBuilderHub", () => {
       position: 0,
     });
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
+  });
+
+  it("announces program save failures without changing the save payload", async () => {
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const method = init?.method ?? "GET";
+      const url = String(input);
+
+      if (url === "/api/my-library/programs/program-1/export/garmin-ready" && method === "GET") {
+        return {
+          ok: true,
+          json: async () => buildProgramExportPreview(),
+        } as Response;
+      }
+
+      return {
+        ok: false,
+        json: async () => ({
+          ok: false,
+          error: "Could not save program right now.",
+        }),
+      } as Response;
+    });
+
+    render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("program-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    fireEvent.change(screen.getByTestId("program-draft-title"), {
+      target: { value: "Unsaved race prep shell" },
+    });
+    fireEvent.click(screen.getByTestId("program-builder-save"));
+
+    const actionError = await screen.findByTestId("program-builder-action-error");
+    expect(actionError).toHaveAttribute("role", "alert");
+    expect(actionError).toHaveAttribute("aria-live", "assertive");
+    expect(actionError).toHaveAttribute("data-feedback-tone", "error");
+    expect(actionError).toHaveTextContent("Could not save program right now.");
+
+    const patchCall = vi
+      .mocked(fetch)
+      .mock.calls.find(
+        ([input, init]) =>
+          String(input) === "/api/my-library/programs/program-1" && init?.method === "PATCH"
+      );
+    const fetchBody = JSON.parse(String(patchCall?.[1]?.body ?? "{}")) as {
+      title: string;
+      weeks: ProgramEditorRecord["weeks"];
+    };
+
+    expect(fetchBody.title).toBe("Unsaved race prep shell");
+    expect(fetchBody.weeks).toEqual(buildProgramRecord().weeks);
   });
 
   it("keeps scheduled cards useful when workout preview sections are missing", async () => {
