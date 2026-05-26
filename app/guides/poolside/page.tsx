@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
+import GuideAccessRequiredState from "@/components/guides/GuideAccessRequiredState";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import PoolsideGuideTracker from "@/components/guides/PoolsideGuideTracker";
 import { loadPublishedPoolsideDrills } from "@/lib/admin/content-published";
@@ -46,28 +47,10 @@ export default async function GuidePoolsidePage() {
   if (!entitlement) {
     return (
       <SiteChrome>
-        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-          <div className="rounded-3xl border border-amber-200 bg-amber-50/60 p-8 shadow-[0_14px_45px_rgba(15,23,42,0.10)]">
-            <h1 className="text-3xl font-bold text-slate-900">Guide access required</h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-700">
-              This interactive poolside guide appears when `Poolside guide` is in your library.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/plans"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
-              >
-                View plans
-              </Link>
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Back to My Library
-              </Link>
-            </div>
-          </div>
-        </section>
+        <GuideAccessRequiredState
+          guideLabel="Poolside guide"
+          description="Add Poolside guide to your library to open the interactive poolside drills and download the offline PDF."
+        />
       </SiteChrome>
     );
   }
