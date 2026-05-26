@@ -4,6 +4,10 @@ import SiteChrome from "@/components/SiteChrome";
 import GuideAccessRequiredState from "@/components/guides/GuideAccessRequiredState";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import PoolsideGuideTracker from "@/components/guides/PoolsideGuideTracker";
+import {
+  guideTrackerMutedPanelClass,
+  guideTrackerSecondaryActionClass,
+} from "@/components/guides/guideTrackerShellStyles";
 import { loadPublishedPoolsideDrills } from "@/lib/admin/content-published";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import {
@@ -60,7 +64,10 @@ export default async function GuidePoolsidePage() {
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4">
+        <div
+          className={`${guideTrackerMutedPanelClass} mb-4 flex flex-wrap items-start justify-between gap-3`}
+          data-testid="guide-poolside-route-actions"
+        >
           <p className="max-w-[660px] text-sm text-slate-600">
             Open drills one by one in the interactive guide and keep the PDF for offline access at
             the pool.
@@ -70,10 +77,7 @@ export default async function GuidePoolsidePage() {
               apiPath="/api/guides/poolside/pdf"
               fallbackFileName={GUIDE_POOLSIDE_PDF_DOWNLOAD_FILENAME}
             />
-            <Link
-              href="/my-library"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link href="/my-library" className={guideTrackerSecondaryActionClass}>
               Back to My Library
             </Link>
           </div>

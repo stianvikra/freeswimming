@@ -70,6 +70,11 @@ describe("PoolsideGuideTracker sync", () => {
 
     render(<PoolsideGuideTracker guideSlug="poolside" drills={TEST_DRILLS} />);
 
+    const shell = screen.getByTestId("guide-poolside-action-shell");
+    expect(shell).toHaveClass("fs-library-card", "fs-library-card-accent");
+    expect(screen.getByRole("button", { name: "Drills overview" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Open next drill" })).toHaveClass("fs-cta-secondary");
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/progress/guide", {
         method: "GET",

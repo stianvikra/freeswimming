@@ -58,6 +58,12 @@ describe("Guide0To1000Tracker sync", () => {
 
     render(<Guide0To1000Tracker guideSlug="0-1000m" sessions={TEST_SESSIONS} />);
 
+    const shell = screen.getByTestId("guide-0-1000m-action-shell");
+    expect(shell).toHaveClass("fs-library-card", "fs-library-card-accent");
+    expect(screen.getByRole("button", { name: "Open next session full screen" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/progress/guide", {
         method: "GET",

@@ -4,6 +4,10 @@ import SiteChrome from "@/components/SiteChrome";
 import GuideAccessRequiredState from "@/components/guides/GuideAccessRequiredState";
 import GuidePdfDownloadButton from "@/components/guides/GuidePdfDownloadButton";
 import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
+import {
+  guideTrackerMutedPanelClass,
+  guideTrackerSecondaryActionClass,
+} from "@/components/guides/guideTrackerShellStyles";
 import { loadPublishedGuide0To1000Sessions } from "@/lib/admin/content-published";
 import { attachGuestEntitlementsByEmail } from "@/lib/commerce/entitlements";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -60,7 +64,10 @@ export default async function Guide0To1000Page() {
   return (
     <SiteChrome>
       <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 p-4">
+        <div
+          className={`${guideTrackerMutedPanelClass} mb-4 flex flex-wrap items-start justify-between gap-3`}
+          data-testid="guide-0-1000m-route-actions"
+        >
           <p className="max-w-[600px] text-sm text-slate-600">
             Keep training in the interactive tracker and download the PDF whenever you need an
             offline version.
@@ -70,10 +77,7 @@ export default async function Guide0To1000Page() {
               apiPath="/api/guides/0-1000m/pdf"
               fallbackFileName={GUIDE_0_TO_1000M_PDF_DOWNLOAD_FILENAME}
             />
-            <Link
-              href="/my-library"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link href="/my-library" className={guideTrackerSecondaryActionClass}>
               Back to My Library
             </Link>
           </div>

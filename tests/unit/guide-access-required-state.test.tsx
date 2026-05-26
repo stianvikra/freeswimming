@@ -197,6 +197,48 @@ describe("GuideAccessRequiredState", () => {
     expect(query.eq).toHaveBeenCalledWith("user_id", signedInUser.id);
   });
 
+  it("keeps the 0-1000m entitled route action strip on the guide token surface", async () => {
+    const { supabase } = buildEntitlementSupabase({
+      data: { id: "entitlement-0-1000m" },
+      error: null,
+    });
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user: signedInUser,
+    });
+
+    render(await Guide0To1000Page());
+
+    const routeActions = screen.getByTestId("guide-0-1000m-route-actions");
+    expect(routeActions).toHaveClass("fs-library-card", "fs-library-card-muted");
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to My Library" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(screen.getByTestId("guide-0-1000m-tracker")).toBeInTheDocument();
+  });
+
+  it("keeps the Poolside entitled route action strip on the guide token surface", async () => {
+    const { supabase } = buildEntitlementSupabase({
+      data: { id: "entitlement-poolside" },
+      error: null,
+    });
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user: signedInUser,
+    });
+
+    render(await GuidePoolsidePage());
+
+    const routeActions = screen.getByTestId("guide-poolside-route-actions");
+    expect(routeActions).toHaveClass("fs-library-card", "fs-library-card-muted");
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to My Library" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(screen.getByTestId("guide-poolside-tracker")).toBeInTheDocument();
+  });
+
   it("preserves anonymous redirects on guide routes", async () => {
     getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
       supabase: null,

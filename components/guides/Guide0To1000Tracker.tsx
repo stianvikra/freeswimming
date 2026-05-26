@@ -4,6 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
+  getGuideTrackerSessionCardClass,
+  guideTrackerCompletedActionClass,
+  guideTrackerEmptyClass,
+  guideTrackerHeroShellClass,
+  guideTrackerMetricClass,
+  guideTrackerMutedPanelClass,
+  guideTrackerPanelClass,
+  guideTrackerPrimaryActionClass,
+  guideTrackerSecondaryActionClass,
+  guideTrackerSmallSecondaryActionClass,
+  guideTrackerTextareaClass,
+} from "@/components/guides/guideTrackerShellStyles";
+import {
   MAX_GUIDE_PROGRESS_ROWS,
   normalizeGuideProgressRows,
   type GuideProgressRow,
@@ -693,13 +706,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
     return (
       <article
         key={session.id}
-        className={`rounded-2xl border p-4 transition ${
-          completed
-            ? options?.muted
-              ? "border-emerald-200/70 bg-emerald-50/30"
-              : "border-emerald-200 bg-emerald-50/50"
-            : "border-slate-200 bg-white"
-        }`}
+        className={getGuideTrackerSessionCardClass(completed, options?.muted)}
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -713,7 +720,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             <button
               type="button"
               onClick={() => openSessionFullscreen(session.id)}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className={guideTrackerSmallSecondaryActionClass}
             >
               Open full screen
             </button>
@@ -748,7 +755,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             }}
             rows={3}
             placeholder="Write what felt good, what to adjust next time, and pacing notes."
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
+            className={guideTrackerTextareaClass}
           />
           <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
             <span>
@@ -763,7 +770,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
 
   if (sortedSessions.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-6">
+      <div className={guideTrackerEmptyClass}>
         <h2 className="text-base font-semibold text-slate-900">Guide content unavailable</h2>
         <p className="mt-2 text-sm text-slate-600">
           Sessions are not configured yet. Please try again shortly.
@@ -774,7 +781,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-3xl border border-blue-100 bg-white/95 p-6 shadow-[0_12px_40px_rgba(24,58,107,0.12)]">
+      <section className={guideTrackerHeroShellClass} data-testid="guide-0-1000m-action-shell">
         <h1 className="text-3xl font-bold text-slate-900">0-1000m interactive plan</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Track each session with completion and notes. Progress is stored locally immediately and
@@ -782,7 +789,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
         </p>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <div className={`${guideTrackerMetricClass} border-emerald-200 bg-emerald-50/50`}>
             <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
               Completed
             </p>
@@ -790,13 +797,13 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               {completedCount}/{sortedSessions.length}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <div className={guideTrackerMutedPanelClass}>
             <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
               Remaining
             </p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{remainingCount}</p>
           </div>
-          <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+          <div className={`${guideTrackerMetricClass} border-blue-100 bg-blue-50/60`}>
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Progress</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{completionPercent}%</p>
           </div>
@@ -813,7 +820,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             <button
               type="button"
               onClick={() => openSessionFullscreen(lastSession.id)}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className={guideTrackerSmallSecondaryActionClass}
             >
               Continue where you left off ({lastSession.id})
             </button>
@@ -825,7 +832,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               if (!nextId) return;
               openSessionFullscreen(nextId);
             }}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className={guideTrackerSmallSecondaryActionClass}
           >
             Open next session full screen
           </button>
@@ -834,9 +841,9 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
 
       {hydrationState === "loading" ? (
         <div className="space-y-3" aria-label="Loading guide progress">
-          <div className="h-28 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
-          <div className="h-28 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
-          <div className="h-28 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
+          <div className="fs-library-card fs-library-card-muted h-28 animate-pulse" />
+          <div className="fs-library-card fs-library-card-muted h-28 animate-pulse" />
+          <div className="fs-library-card fs-library-card-muted h-28 animate-pulse" />
         </div>
       ) : (
         <div className="space-y-5">
@@ -845,10 +852,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
             const showCompleted = expandedCompletedWeeks[week.weekNumber] ?? false;
 
             return (
-              <section
-                key={week.weekNumber}
-                className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
-              >
+              <section key={week.weekNumber} className={guideTrackerPanelClass}>
                 <h2 className="text-lg font-semibold text-slate-900">Week {week.weekNumber}</h2>
 
                 {split.incomplete.length > 0 ? (
@@ -856,13 +860,13 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                     {split.incomplete.map((session) => renderSessionCard(session))}
                   </div>
                 ) : (
-                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm text-emerald-900">
+                  <div className="fs-library-card mt-4 border-emerald-200 bg-emerald-50/50 p-4 text-sm text-emerald-900">
                     All sessions in this week are currently marked complete.
                   </div>
                 )}
 
                 {split.completed.length > 0 ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div className={`${guideTrackerMutedPanelClass} mt-4`}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-slate-800">
                         Completed sessions ({split.completed.length})
@@ -875,7 +879,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                             [week.weekNumber]: !showCompleted,
                           }));
                         }}
-                        className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        className={guideTrackerSmallSecondaryActionClass}
                       >
                         {showCompleted ? "Hide completed" : "Show completed"}
                       </button>
@@ -953,7 +957,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                   }}
                   rows={8}
                   placeholder="Write what felt good, what to adjust next time, and pacing notes."
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
+                  className={guideTrackerTextareaClass}
                 />
                 <p className="text-xs text-slate-500">
                   {(focusedSessionProgress?.notes ?? "").length}/{MAX_NOTES_LENGTH}
@@ -974,7 +978,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                 type="button"
                 onClick={openPreviousSessionFullscreen}
                 disabled={focusedSessionIndex <= 0}
-                className="inline-flex min-h-[44px] min-w-[108px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                className={`${guideTrackerSecondaryActionClass} min-w-[108px] border-white/35 bg-white/10 text-white hover:bg-white/15`}
               >
                 Previous
               </button>
@@ -984,17 +988,17 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                 disabled={
                   focusedSessionIndex < 0 || focusedSessionIndex >= sortedSessions.length - 1
                 }
-                className="inline-flex min-h-[44px] min-w-[108px] items-center justify-center rounded-xl border border-white/35 bg-white px-4 text-sm font-semibold text-slate-900 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+                className={`${guideTrackerPrimaryActionClass} min-w-[108px]`}
               >
                 Next
               </button>
               <button
                 type="button"
                 onClick={() => toggleSessionCompleted(focusedSession)}
-                className={`inline-flex min-h-[44px] min-w-[128px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+                className={`min-w-[128px] ${
                   focusedSessionProgress?.completed
-                    ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                    : "bg-blue-600 text-white hover:bg-blue-500"
+                    ? guideTrackerCompletedActionClass
+                    : guideTrackerPrimaryActionClass
                 }`}
               >
                 {focusedSessionProgress?.completed ? "Completed" : "Mark complete"}
@@ -1002,7 +1006,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               <button
                 type="button"
                 onClick={closeSessionFullscreen}
-                className="inline-flex min-h-[44px] min-w-[96px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                className={`${guideTrackerSecondaryActionClass} min-w-[96px] border-white/35 bg-white/10 text-white hover:bg-white/15`}
               >
                 Close
               </button>
