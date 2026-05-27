@@ -217,6 +217,9 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSchemaPendingSnapshot()} />);
 
     expect(screen.getByRole("heading", { name: "My Perfect Day" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "My Perfect Day" }).closest("section")).toHaveClass(
+      "fs-library-card"
+    );
     const warning = screen.getByTestId("habits-schema-warning");
     expect(warning).toHaveAttribute("role", "status");
     expect(warning).toHaveAttribute("aria-live", "polite");
@@ -226,12 +229,25 @@ describe("HabitPerfectDayHub", () => {
   it("keeps the first-run empty state static with the existing Add habit path", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
+    expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("habit-active-list")).toHaveClass("fs-library-card");
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("fs-cta-primary");
     const emptyState = screen.getByTestId("habits-empty-state");
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
     expect(emptyState).toHaveTextContent("No active habits");
     expect(emptyState).toHaveTextContent("Use Add habit to start tracking today.");
     expect(screen.getByRole("button", { name: "Add habit" })).toBeVisible();
+  });
+
+  it("uses My Library token actions on the active habit row", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    expect(screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111")).toHaveClass(
+      "fs-library-card"
+    );
+    expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Details" })).toHaveClass("fs-cta-secondary");
   });
 
   it("creates a first habit for My Perfect Day", async () => {

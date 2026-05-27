@@ -12,6 +12,9 @@ type MyLibraryHabitsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+const routeActionClass =
+  "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHabitsPageProps) {
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
@@ -28,7 +31,8 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
   return (
     <SiteChrome>
       <section
-        className={`mx-auto min-h-screen w-full max-w-[980px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28 ${
+        data-testid="habits-workspace"
+        className={`mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28 ${
           preferMobileActiveFocus ? "max-sm:max-w-[720px]" : ""
         }`}
       >
@@ -39,43 +43,38 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
             perfectDayPercent: initialSnapshot.daySummary.completionPercent,
           }}
         />
-        <div
-          className={`${
-            preferMobileActiveFocus
-              ? "bg-transparent p-0 shadow-none sm:rounded-3xl sm:border sm:border-blue-100 sm:bg-white/95 sm:p-8 sm:shadow-[0_16px_60px_rgba(24,58,107,0.14)]"
-              : "rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]"
+        {preferMobileActiveFocus ? <h1 className="sr-only">Habits</h1> : null}
+        <header
+          className={`border-b border-[color:var(--fs-border-brand)] pb-5 ${
+            preferMobileActiveFocus ? "hidden sm:block" : ""
           }`}
         >
-          {preferMobileActiveFocus ? <h1 className="sr-only">Habits</h1> : null}
-          <div
-            className={`flex flex-wrap items-start justify-between gap-3 ${
-              preferMobileActiveFocus ? "hidden sm:flex" : ""
-            }`}
-          >
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">Habits</h1>
-              <p className="mt-2 max-w-[62ch] text-sm text-slate-600">
+              <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
+                Habits
+              </h1>
+              <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 Private habit check-ins for today.
               </p>
             </div>
-            <Link
-              href="/my-library"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              Back to My Library
-            </Link>
+            <div data-testid="habits-route-actions" className="flex flex-wrap gap-2">
+              <Link href="/my-library" className={routeActionClass}>
+                Back to My Library
+              </Link>
+            </div>
           </div>
+        </header>
 
-          <div className={preferMobileActiveFocus ? "mt-0 sm:mt-8" : "mt-8"}>
-            <HabitPerfectDayHub
-              initialSnapshot={initialSnapshot}
-              preferMobileActiveFocus={preferMobileActiveFocus}
-              userId={user.id}
-            />
-          </div>
+        <div className={preferMobileActiveFocus ? "mt-0 sm:mt-8" : "mt-6 sm:mt-8"}>
+          <HabitPerfectDayHub
+            initialSnapshot={initialSnapshot}
+            preferMobileActiveFocus={preferMobileActiveFocus}
+            userId={user.id}
+          />
         </div>
       </section>
     </SiteChrome>
