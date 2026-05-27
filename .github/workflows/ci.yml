@@ -10,8 +10,9 @@ on:
 jobs:
   e2e-smoke:
     runs-on: ubuntu-latest
-    # Hosted Ubuntu can spend most of 15 minutes in Playwright's Chromium
-    # install/extract step before the smoke tests start.
+    # Keep enough room for dependency install, browser install, app startup, and
+    # the smoke tests. Browser-only install avoids parallel apt/dpkg contention
+    # with the sibling smoke job; the full verify job still installs system deps.
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -41,10 +42,10 @@ jobs:
         if: steps.verification-plan.outputs.lane != 'docs-only'
         run: |
           set -euo pipefail
-          timeout 8m npx playwright install --with-deps chromium || {
+          timeout 8m npx playwright install chromium || {
             status=$?
             echo "[playwright-install] First install attempt exited ${status}; retrying once."
-            timeout 8m npx playwright install --with-deps chromium
+            timeout 8m npx playwright install chromium
           }
 
       - name: Run E2E smoke suite
@@ -100,10 +101,10 @@ jobs:
         if: steps.verification-plan.outputs.lane != 'docs-only'
         run: |
           set -euo pipefail
-          timeout 8m npx playwright install --with-deps chromium || {
+          timeout 8m npx playwright install chromium || {
             status=$?
             echo "[playwright-install] First install attempt exited ${status}; retrying once."
-            timeout 8m npx playwright install --with-deps chromium
+            timeout 8m npx playwright install chromium
           }
 
       - name: Run site-lock smoke suite
