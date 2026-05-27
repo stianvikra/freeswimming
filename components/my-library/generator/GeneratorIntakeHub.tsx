@@ -43,6 +43,12 @@ type SwimProfileDataRow = {
   actionLabel: "Add" | "Edit";
 };
 
+const generatorAccentPanelClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const generatorSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const generatorSourceSummaryClass =
+  "rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)] ring-1 ring-[color:var(--fs-border-brand)]";
+
 function getStorageKey(userId: string) {
   return `${STORAGE_KEY_PREFIX}${userId}`;
 }
@@ -256,24 +262,26 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
         </GeneratorFeedback>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className={generatorAccentPanelClass} data-testid="generator-intake-source-panel">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Use Swim Profile data</h2>
+            <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
+              Use Swim Profile data
+            </h2>
             {sourceOpen ? (
-              <p className="mt-1 text-sm text-slate-600">Choose what this session can use.</p>
+              <p className="mt-1 text-sm text-[color:var(--fs-color-ink-muted)]">
+                Choose what this session can use.
+              </p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-              {sourceSummary}
-            </p>
+            <p className={generatorSourceSummaryClass}>{sourceSummary}</p>
             <button
               type="button"
               onClick={toggleSourceSection}
               aria-expanded={sourceOpen}
               data-testid="generator-intake-source-toggle"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={generatorSecondaryActionClass}
             >
               {sourceOpen ? "Done" : "Change"}
             </button>
@@ -282,7 +290,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
 
         <div className="mt-5" data-testid="session-generator-swim-profile-context">
           {sourceOpen ? (
-            <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-slate-50/70">
+            <ul className="divide-y divide-[color:var(--fs-border-subtle)] rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-subtle)] bg-white/75">
               {swimProfileDataRows.map((row) => {
                 const tone = buildStatusTone(row.status);
                 const checkboxId = `generator-intake-${row.key}`;
@@ -319,7 +327,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                       <Link
                         href={row.manageHref}
                         aria-label={`${row.actionLabel} ${row.label}`}
-                        className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                        className="text-sm font-semibold text-[color:var(--fs-color-brand-700)] underline-offset-4 hover:underline"
                       >
                         {row.actionLabel}
                       </Link>
@@ -361,7 +369,7 @@ function SwimProfileDataCollapsedSummary({
 }) {
   return (
     <div
-      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+      className="rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-subtle)] bg-white/75 p-4"
       data-testid="generator-intake-profile-summary"
     >
       <SwimProfileSummaryRow
