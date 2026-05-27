@@ -153,6 +153,12 @@ const PROFILE_SECTION_TOGGLE_CLASS =
 const PROFILE_PRIMARY_BUTTON_CLASS =
   "inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300";
 const PROFILE_SECTION_CLASS = "rounded-2xl border border-slate-200 bg-white p-4 sm:p-5";
+const PROFILE_READINESS_ACTION_CLASS =
+  "fs-cta-primary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const PROFILE_READINESS_CHIP_CLASS =
+  "rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold ring-1";
+const PROFILE_READINESS_TILE_BASE_CLASS =
+  "min-w-40 flex-1 rounded-[var(--fs-radius-control)] border bg-white/85 p-3 text-left transition-colors hover:border-[color:var(--fs-border-brand)] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 xl:min-w-0";
 const PROFILE_SECTION_FEEDBACK_CLASSES: Record<ProfileSectionNotice["kind"], string> = {
   error: "border-rose-200 bg-rose-50/80 text-rose-900",
   success: "border-emerald-200 bg-emerald-50/80 text-emerald-900",
@@ -1673,27 +1679,31 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
 
       <section
         data-testid="athlete-profile-readiness"
-        className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 sm:p-5"
+        className="fs-library-card fs-library-card-accent p-4 sm:p-5"
       >
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl space-y-2">
-            <p className="text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+            <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
               Profile readiness
             </p>
-            <h2 className="text-lg font-semibold text-slate-950">
+            <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
               {recommendedCard ? "Next setup action" : "Profile setup is ready"}
             </h2>
-            <p className="text-sm text-slate-700">
+            <p className="text-sm leading-6 text-[color:var(--fs-color-muted)]">
               {recommendedCard
                 ? `${recommendedCard.label}: ${recommendedCard.summary}`
                 : "Core profile setup is complete. Advanced generator limits stay available when you need tighter session guardrails."}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-800">
+            <span
+              className={`${PROFILE_READINESS_CHIP_CLASS} text-[color:var(--fs-color-brand-700)] ring-[color:var(--fs-border-brand)]`}
+            >
               {readyCoreCount}/4 core ready
             </span>
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+            <span
+              className={`${PROFILE_READINESS_CHIP_CLASS} text-[color:var(--fs-color-muted)] ring-[color:var(--fs-border-soft)]`}
+            >
               {savedSetupCount}/5 saved
             </span>
             {recommendedCard ? (
@@ -1701,7 +1711,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 type="button"
                 data-testid="athlete-profile-next-action"
                 onClick={() => openSectionFromReadiness(recommendedCard.key)}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+                className={PROFILE_READINESS_ACTION_CLASS}
               >
                 {recommendedCard.hasUnsavedChanges
                   ? `Resume ${SECTION_LABELS[recommendedCard.key]}`
@@ -1728,16 +1738,18 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 type="button"
                 data-testid={`athlete-profile-readiness-${card.key}`}
                 onClick={() => openSectionFromReadiness(card.key)}
-                className={`min-w-40 flex-1 rounded-2xl border bg-white p-3 text-left transition hover:border-blue-200 hover:bg-white xl:min-w-0 ${
-                  isRecommended ? "border-blue-300 shadow-sm" : "border-slate-200"
+                className={`${PROFILE_READINESS_TILE_BASE_CLASS} ${
+                  isRecommended
+                    ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] ring-1 ring-[color:var(--fs-border-brand)]"
+                    : "border-[color:var(--fs-border-soft)]"
                 }`}
               >
                 <span className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">
+                  <span className="text-xs font-semibold text-[color:var(--fs-color-muted)] uppercase">
                     {card.scope}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    className={`inline-flex items-center gap-1 rounded-[var(--fs-radius-control)] px-2 py-0.5 text-xs font-semibold ${
                       card.hasUnsavedChanges
                         ? "bg-amber-50 text-amber-800"
                         : card.hasData
@@ -1753,10 +1765,10 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     {statusLabel}
                   </span>
                 </span>
-                <span className="mt-2 block text-sm font-semibold text-slate-950">
+                <span className="mt-2 block text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                   {card.label}
                 </span>
-                <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-600">
+                <span className="mt-1 line-clamp-2 block text-xs leading-5 text-[color:var(--fs-color-muted)]">
                   {card.summary}
                 </span>
               </button>

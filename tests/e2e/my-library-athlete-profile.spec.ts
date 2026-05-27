@@ -122,6 +122,13 @@ test.describe("my library athlete profile", () => {
         level: 1,
       })
     ).toBeVisible();
+    await expect(page.getByTestId("my-swim-profile-workspace")).toHaveClass(/max-w-\[1040px\]/);
+    await expect(
+      page.getByTestId("my-swim-profile-route-actions").getByRole("link", {
+        name: "Back to My Library",
+      })
+    ).toHaveClass(/fs-cta-secondary/);
+    await expect(page.getByTestId("athlete-profile-readiness")).toHaveClass(/fs-library-card/);
     await waitForAthleteProfileClientReady(page);
 
     const displayNameInput = page.getByTestId("athlete-profile-display-name");
