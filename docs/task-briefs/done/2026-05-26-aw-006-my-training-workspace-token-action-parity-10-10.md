@@ -213,6 +213,31 @@ After owner screenshot approval:
 - required CI checks green
 - `npm run verify:pre-merge`
 
+## Completion Record
+
+- `completed`: `2026-05-27`
+- `merged_pr`: `#870`
+- `squash_commit`: `1eecf7d`
+- `result`: Closed AW-006 My Training Workspace Token And Action Hierarchy Parity by aligning `/my-library/training` route shell, header, and secondary route actions with current My Library token/action hierarchy while preserving Training Context data, APIs, local drafts, Goals bridge links, auth redirect, analytics, Help/Guide, and support behavior.
+- `validation`: targeted Vitest/typecheck/brief lint/diff check/route-label-support sweep passed; screenshot handoff was approved; `npm run verify:pre-pr` passed full lane with 101 passed and 487 expected environment skips; PR #870 CI passed after one infrastructure rerun of `e2e-smoke`; `npm run verify:pre-merge` and `npm run merge:preflight -- --assert-ready` passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                          | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #870 diff, route-shell tests, CI                                                                               | None         |
+| UX flow clarity                               | `5/5`          | approved before/after screenshot handoff, e2e route-action assertions                                             | None         |
+| Visual design quality                         | `5/5`          | screenshot artifacts in `test-results/aw006-my-training-token-parity-2026-05-26-214718`, token/action diff review | None         |
+| Business logic correctness and data integrity | `5/5`          | no Training Context data/API/storage changes, targeted unit coverage                                              | None         |
+| Accessibility (a11y)                          | `5/5`          | accessible route links preserved, route-shell assertions, broad CI verify                                         | None         |
+| Performance (CWV + payloads)                  | `5/5`          | no dependency/media/API/polling changes, full pre-PR gate                                                         | None         |
+| Reliability and failure handling              | `5/5`          | existing Training Context states preserved, unit/e2e coverage and full CI                                         | None         |
+| Security and authz                            | `5/5`          | anonymous redirect contract covered, no protected data boundary change                                            | None         |
+| Content governance                            | `5/5`          | active brief moved to done, queue closeout updated, brief lint gate                                               | None         |
+| i18n operational readiness                    | `5/5`          | route labels stayed concise, screenshot text-fit review                                                           | None         |
+| Stack-fit and dependency discipline           | `5/5`          | reused route, `SiteChrome`, `TrainingContextHub`, Tailwind tokens; no dependency changes                          | None         |
+| Testing and QA automation                     | `5/5`          | targeted Vitest, full `verify:pre-pr`, CI, `verify:pre-merge`                                                     | None         |
+| DevOps and rollback readiness                 | `5/5`          | one-squash PR, no migration/config/workflow changes, merge-preflight PASS                                         | None         |
+
 ## Manual QA / Screenshot Handoff
 
 Required because this changes visible UI/layout.
@@ -233,3 +258,4 @@ Required because this changes visible UI/layout.
 - `2026-05-26 | screenshot handoff ready | captured before/after desktop and mobile screenshots in test-results/aw006-my-training-token-parity-2026-05-26-214718 using the real /my-library/training route, a temporary main@9b61a56 worktree for before, and local Supabase mock responses to avoid real user data; temporary capture script, worktree, and build output were removed after capture; no product-rendering files changed after capture | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-26 | screenshot approved | owner approved the before/after screenshot handoff for /my-library/training token/action hierarchy parity | next: run npm run verify:pre-pr before PR creation`
 - `2026-05-26 | pre-pr verified | npm run verify:pre-pr passed on full lane after route/label/support evidence wording was tightened; full unit suite, build, perf budgets, and Playwright completed with 101 passed and 487 environment skips caused by unavailable local dev auth/Supabase-backed flows | next: commit, push, open PR, and monitor CI`
+- `2026-05-27 | merged | PR #870 merged as squash commit 1eecf7d after CI, npm run verify:pre-merge, and npm run merge:preflight -- --assert-ready were green; post-merge preflight surfaced this repo-managed docs-only closeout | next: closeout PR moves this brief to done and clears active queue references`
