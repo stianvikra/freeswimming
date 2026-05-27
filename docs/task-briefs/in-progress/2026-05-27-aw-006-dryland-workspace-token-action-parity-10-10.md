@@ -80,7 +80,7 @@ Critical target categories for a `10/10` claim:
 | Stack-fit and dependency discipline           | `target`     | Reuse `SiteChrome`, existing Dryland server routes, `DrylandBuilderHub`, `DrylandFeedback`, My Library token/action references, Tailwind, and current tests; add no dependency.         | changed-files/dependency diff                  | `5/5`                   |
 | Testing and QA automation                     | `target`     | Add focused assertions for Dryland route shell/action classes and top create/list token classes; preserve existing dryland behavior coverage.                                           | test output + screenshot handoff               | `5/5`                   |
 | Scalability and cost efficiency               | `supporting` | Supporting only: token/action parity adds no service call, storage, job, polling, or traffic-dependent cost.                                                                            | implementation review                          | `4/5`                   |
-| DevOps and rollback readiness                 | `target`     | Normal git revert restores prior markup/tests/docs; no migration, dependency, config, workflow, provider setting, or feature flag rollback is needed.                                   | git diff + validation evidence                 | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | Normal git revert restores prior markup/tests/docs and the CI smoke timeout budget; no migration, dependency, provider setting, or feature flag rollback is needed.                     | git diff + validation evidence                 | `5/5`                   |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -192,12 +192,14 @@ Required because `/my-library/dryland`, `/my-library/dryland/[sessionId]`, visib
 - Focused route/component/e2e/unit assertions where route shell or top panel/list class contracts change.
 - Canonical AW-006 queue and design inventory updates, including stale Habits active-reference repair.
 - Before/after screenshot handoff artifacts during implementation.
+- Required-check CI smoke timeout budget only if GitHub smoke jobs confirm the existing 15-minute budget is exhausted before tests start.
 
 ## Out Of Scope
 
 - Dryland data model, API routes, Supabase queries, generated database types, migrations, auth, analytics taxonomy, route labels, session-kind business logic, localStorage keys, Micro Sessions behavior, timer behavior, local draft sync behavior, create/save/delete/update-current-micro-session behavior, Help/Guide updates, support workflow, broad member notice primitive, app-wide design-system primitive, new dependencies, commerce, packages, and merge without explicit owner approval.
 - `DrylandSessionEditor` internals beyond route-shell/action container impact.
 - `DrylandMicroPlanPanel` internals beyond ensuring existing focused mode remains visually coherent.
+- CI workflow behavior beyond the smoke-job timeout budget needed to keep existing required checks runnable.
 - `npm run verify:pre-pr`, PR creation/update, CI monitoring, and `npm run verify:pre-merge` until owner approves screenshots.
 
 ## Acceptance Criteria
@@ -242,6 +244,7 @@ After owner screenshot approval:
 - commit, push, open/update PR
 - required CI checks green
 - `npm run verify:pre-merge`
+- If CI smoke jobs fail before tests start because Playwright Chromium install exhausts the 15-minute job budget, increase only the affected smoke timeout budget and rerun required checks.
 
 ## Manual QA / Screenshot Handoff
 
@@ -266,3 +269,4 @@ Required because this changes visible UI/layout.
 
 - `2026-05-27 | in-progress | created active Dryland workspace token/action parity brief from clean main@e16c594 after owner approved execution; screenshot approval remains the required visual stop before broad PR gates | next: update queue/inventory, implement route/top-panel token parity, run focused tests, and capture screenshot handoff`
 - `2026-05-27 | screenshot stop | implemented route/top-panel/list/delete token parity, repaired queue/inventory references, captured before/after desktop/mobile screenshot artifacts, removed temporary harness, and reran focused validation green | next: owner reviews screenshot handoff before npm run verify:pre-pr, commit, push, and PR creation`
+- `2026-05-27 | PR gate | npm run verify:pre-pr and npm run verify:pre-merge passed locally on 5aaf06d; GitHub e2e/site-lock smoke rerun repeated a pre-test Playwright Chromium install timeout against the 15-minute job budget, so this brief now includes a narrow CI timeout-budget fix | next: validate updated branch and rerun required checks`
