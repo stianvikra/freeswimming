@@ -61,6 +61,14 @@ describe("GoalsHub", () => {
     render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
 
     expect(screen.getByRole("heading", { name: "Your goals" })).toBeInTheDocument();
+    expect(screen.getByTestId("goals-overview-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("goals-add-toggle")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("goals-filter-active")).toHaveClass(
+      "bg-[color:var(--fs-color-brand-700)]"
+    );
     expect(screen.queryByTestId("goal-use-focus-goal-1")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("goal-details-toggle-goal-1"));
     expect(screen.getByTestId("goal-use-focus-goal-1")).toHaveAttribute(

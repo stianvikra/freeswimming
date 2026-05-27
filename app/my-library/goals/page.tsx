@@ -8,6 +8,9 @@ import { loadGoalViews } from "@/lib/goals/server";
 
 export const dynamic = "force-dynamic";
 
+const routeActionClass =
+  "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 export default async function MyLibraryGoalsPage() {
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
@@ -19,26 +22,32 @@ export default async function MyLibraryGoalsPage() {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
-              My Library
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Goals</h1>
-            <p className="mt-2 max-w-[54ch] text-sm text-slate-600">
-              Track current swim targets and take the next action.
-            </p>
+      <section
+        data-testid="goals-workspace"
+        className="mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28"
+      >
+        <header className="border-b border-[color:var(--fs-border-brand)] pb-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                My Library
+              </p>
+              <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
+                Goals
+              </h1>
+              <p className="mt-3 max-w-[54ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
+                Track current swim targets and take the next action.
+              </p>
+            </div>
+            <div data-testid="goals-route-actions" className="flex flex-wrap gap-2">
+              <Link href="/my-library" className={routeActionClass}>
+                Back to My Library
+              </Link>
+            </div>
           </div>
-          <Link
-            href="/my-library"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-          >
-            Back to My Library
-          </Link>
-        </div>
+        </header>
 
-        <div className="mt-6">
+        <div className="mt-6 sm:mt-8">
           <GoalsHub
             initialGoals={initialGoals}
             templates={GOAL_TEMPLATES}
