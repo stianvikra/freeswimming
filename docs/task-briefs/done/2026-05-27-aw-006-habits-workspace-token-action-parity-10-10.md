@@ -258,3 +258,30 @@ Required because this changes visible UI/layout.
 - `2026-05-27 | in-progress | created active Habits workspace token/action parity brief from clean main@de85422 after owner approved execution; screenshot approval remains the required visual stop before broad PR gates | next: update queue/inventory, implement route/top-panel token parity, and run focused tests`
 - `2026-05-27 | screenshot-handoff | aligned /my-library/habits route shell/header/back action and top HabitPerfectDayHub panels/actions with the current My Library token/action hierarchy while preserving habit data, APIs, cadence, timers, check-ins, localStorage, analytics, Help/Guide, and support behavior; targeted Vitest/typecheck/brief lint/quality-gate/diff-check passed; focused Playwright Habits flow completed with 2 expected local dev-auth skips; route/label/support sweep found no fallout; before/after screenshot artifacts captured at output/aw006-habits-workspace-token-parity-2026-05-27-144536 using the real route plus local Supabase mock; temporary capture script/worktree/build output were removed and no product-rendering files changed after final capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-05-27 | pre-pr-green | owner approved screenshot handoff; npm run verify:pre-pr passed full lane with 101 passed and 487 expected Playwright environment skips, artifact artifacts/test-runs/20260527-145435/verify.log; perf budget recommendation was hold because worst margin was 14.0% against the 15.0% tighten criterion | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`
+- `2026-05-27 | merged | PR #876 merged as squash commit 5d0c524 after CI and npm run verify:pre-merge passed; repo-managed post-merge preflight surfaced this docs-only closeout | next: move brief to done, complete closeout metadata, update AW-006 queue, and run docs-only closeout gates`
+
+## Completion Record
+
+- `completed`: `2026-05-27`
+- `merged_pr`: `#876`
+- `squash_commit`: `5d0c5240db67a61ee79b4f92e2ce9c73ca21af41`
+- `result`: Closed AW-006 Habits Workspace Token And Action Hierarchy Parity. Habits now visually matches the current My Library workspace hierarchy while keeping habit storage, cadence, timers, check-ins, APIs, auth redirects, Help/Guide, and support behavior unchanged.
+- `validation`: Targeted Vitest passed, typecheck passed, brief/quality gates passed, screenshot handoff approved, `npm run verify:pre-pr` passed full lane, PR #876 CI passed, and `npm run verify:pre-merge` passed full lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                           | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #876, route/auth review, focused tests                                                          | None         |
+| UX flow clarity                               | `5/5`          | Approved screenshot handoff, focused tests                                                         | None         |
+| Visual design quality                         | `5/5`          | `output/aw006-habits-workspace-token-parity-2026-05-27-144536`, no rendering changes after capture | None         |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review, focused tests, full verify gates                                             | None         |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, screenshot QA, full E2E lane                                           | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/API additions; perf budgets passed with hold recommendation                    | None         |
+| Data placement and sync boundaries            | `5/5`          | Server/local boundary review; no habit persistence changes                                         | None         |
+| Reliability and failure handling              | `5/5`          | Existing habit feedback/action tests plus full verify gates                                        | None         |
+| Security and authz                            | `5/5`          | Anonymous redirect preserved and tested; no protected data boundary moved                          | None         |
+| Content governance                            | `5/5`          | Brief lint, queue/inventory closeout updates                                                       | None         |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and concise unchanged labels                                            | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing route/component/token patterns; no new dependency                                  | None         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, CI, `npm run verify:pre-merge`                           | None         |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit 5d0c524; normal revert path, no migration/config/provider change                     | None         |
