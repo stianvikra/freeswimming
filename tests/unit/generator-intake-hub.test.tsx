@@ -218,6 +218,11 @@ describe("GeneratorIntakeHub", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Use Swim Profile data" })).toBeInTheDocument();
+    expect(screen.getByTestId("generator-intake-source-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("generator-intake-source-toggle")).toHaveClass("fs-cta-secondary");
     expect(screen.getByTestId("session-generator-swim-profile-context")).toBeInTheDocument();
     expect(screen.getByTestId("generator-intake-profile-summary")).toHaveTextContent(
       "Training preferences"

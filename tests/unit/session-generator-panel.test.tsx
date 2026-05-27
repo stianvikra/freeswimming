@@ -321,6 +321,10 @@ describe("SessionGeneratorPanel", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Session setup" })).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-setup-card")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
     expect(screen.queryByTestId("session-generator-focus-text")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-generator-session-type")).toBeInTheDocument();
     expect(screen.getByText("Additional instructions (optional)")).toBeInTheDocument();
@@ -338,6 +342,7 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByTestId("session-generator-session-type")).toHaveValue(
       "technical_fault_correction"
     );
+    expect(screen.getByTestId("session-generator-reset-overrides")).toHaveClass("fs-cta-secondary");
     fireEvent.click(screen.getByTestId("session-generator-reset-overrides"));
 
     expect(onOverrideChange).toHaveBeenCalledWith("constraintText", "Keep kick work short.");
@@ -371,6 +376,9 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByRole("heading", { name: "Session Rules" })).toBeInTheDocument();
     expect(screen.queryByTestId("session-generator-swim-profile-context")).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Fault correction" })).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveClass(
+      "fs-library-card"
+    );
     expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
       "From Swim Profile"
     );
@@ -385,6 +393,17 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByRole("button", { name: "Yards" })).toBeVisible();
     expect(screen.getByRole("button", { name: "25m" })).toBeVisible();
     expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
+    expect(screen.getByTestId("session-generator-rules-card")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByTestId("session-generator-primary-action-panel")).toHaveClass(
+      "fs-library-card"
+    );
+    expect(screen.getByTestId("session-generator-generate")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("session-generator-skill-limits-override")).toHaveClass(
+      "fs-cta-secondary"
+    );
 
     fireEvent.click(screen.getByTestId("session-generator-skill-limits-override"));
     expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(

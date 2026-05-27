@@ -17,6 +17,8 @@ type Props = {
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const routeActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 
 function getOptionalWorkoutId(value: string | string[] | undefined) {
   if (typeof value !== "string") return null;
@@ -45,7 +47,10 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
+      <section
+        data-testid="ai-session-generator-workspace"
+        className="mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28"
+      >
         <TrackEventOnMount
           eventName="generator_intake_viewed"
           payload={{
@@ -55,37 +60,36 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
             notesIncluded: initialSnapshot.notesIncluded,
           }}
         />
-        <div className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
+        <header className="border-b border-[color:var(--fs-border-brand)] pb-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+              <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase">
                 My Library
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900">AI swim session generator</h1>
+              <h1 className="mt-2 text-3xl font-bold text-[color:var(--fs-color-ink-strong)]">
+                AI swim session generator
+              </h1>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/my-library/workouts"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
+            <div
+              data-testid="generator-route-actions"
+              className="flex flex-wrap items-center gap-2"
+            >
+              <Link href="/my-library/workouts" className={routeActionClass}>
                 My Swim Sessions
               </Link>
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
+              <Link href="/my-library" className={routeActionClass}>
                 Back to My Library
               </Link>
             </div>
           </div>
+        </header>
 
-          <div className="mt-8">
-            <GeneratorIntakeHub
-              initialSnapshot={initialSnapshot}
-              userId={user.id}
-              workoutLibrary={workoutLibrary}
-            />
-          </div>
+        <div className="mt-6 sm:mt-8">
+          <GeneratorIntakeHub
+            initialSnapshot={initialSnapshot}
+            userId={user.id}
+            workoutLibrary={workoutLibrary}
+          />
         </div>
       </section>
     </SiteChrome>

@@ -40,6 +40,14 @@ import type {
 import { haveWorkoutDraftChanges } from "@/lib/workouts/shared";
 
 const POOL_LENGTH_QUICK_CHOICES = [25, 50] as const;
+const generatorPanelClass = "fs-library-card p-4 sm:p-5";
+const generatorMutedPanelClass = "fs-library-card fs-library-card-muted p-4";
+const generatorPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const generatorSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const generatorCompactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 type Props = {
   payload: GeneratorIntakeHandoffPayload;
@@ -629,7 +637,10 @@ export default function SessionGeneratorPanel({
       {!hasLoadedCanonicalWorkout && sessionReady ? (
         <>
           {draft ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+            <div
+              className={`${generatorMutedPanelClass} flex flex-wrap items-center justify-between gap-3`}
+              data-testid="session-generator-draft-ready-panel"
+            >
               <p className="text-sm text-slate-600">
                 Draft generated. Review the session below before saving.
               </p>
@@ -639,7 +650,7 @@ export default function SessionGeneratorPanel({
                   onClick={() => setRegenerateSettingsOpen((current) => !current)}
                   aria-expanded={regenerateSettingsOpen}
                   data-testid="session-generator-regenerate-settings-toggle"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  className={generatorSecondaryActionClass}
                 >
                   {regenerateSettingsOpen ? "Hide settings" : "Regenerate settings"}
                 </button>
@@ -648,7 +659,7 @@ export default function SessionGeneratorPanel({
                   onClick={generateDraft}
                   disabled={isGenerating}
                   data-testid="session-generator-generate"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={generatorPrimaryActionClass}
                 >
                   {isGenerating ? "Generating..." : "Regenerate"}
                 </button>
@@ -659,7 +670,7 @@ export default function SessionGeneratorPanel({
           {showGeneratorSettings ? (
             <>
               <section
-                className="rounded-2xl border border-slate-200 bg-white p-4"
+                className={generatorPanelClass}
                 data-testid="session-generator-profile-limits-card"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -705,7 +716,7 @@ export default function SessionGeneratorPanel({
                       type="button"
                       onClick={() => updateSkillLimitMode("override")}
                       data-testid="session-generator-skill-limits-override"
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={generatorSecondaryActionClass}
                     >
                       Change for this session
                     </button>
@@ -723,14 +734,14 @@ export default function SessionGeneratorPanel({
                           <button
                             type="button"
                             onClick={() => updateSkillLimitMode("profile")}
-                            className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                            className={generatorCompactSecondaryActionClass}
                           >
                             Reset to Swim Profile
                           </button>
                           <button
                             type="button"
                             onClick={() => setSkillLimitsExpanded(false)}
-                            className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-900 px-3 text-sm font-medium text-white transition hover:bg-slate-800 active:bg-slate-950"
+                            className={generatorCompactSecondaryActionClass}
                           >
                             Done
                           </button>
@@ -849,7 +860,7 @@ export default function SessionGeneratorPanel({
                 )}
               </section>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className={generatorMutedPanelClass} data-testid="session-generator-setup-card">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">Session setup</h3>
@@ -860,7 +871,7 @@ export default function SessionGeneratorPanel({
                       onClick={handleResetOverrides}
                       data-testid="session-generator-reset-overrides"
                       aria-label="Clear additional instructions"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={generatorSecondaryActionClass}
                     >
                       Clear
                     </button>
@@ -905,10 +916,7 @@ export default function SessionGeneratorPanel({
                 </div>
               </div>
 
-              <div
-                data-testid="session-generator-rules-card"
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-              >
+              <div data-testid="session-generator-rules-card" className={generatorMutedPanelClass}>
                 <h3 className="text-base font-semibold text-slate-900">Session Rules</h3>
                 <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                   <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1301,7 +1309,10 @@ export default function SessionGeneratorPanel({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+              <div
+                className={`${generatorPanelClass} flex flex-wrap items-center justify-between gap-3`}
+                data-testid="session-generator-primary-action-panel"
+              >
                 <p className="text-sm text-slate-600">
                   {draft
                     ? "Change settings here only when you want to regenerate the draft."
@@ -1313,7 +1324,7 @@ export default function SessionGeneratorPanel({
                     onClick={generateDraft}
                     disabled={isGenerating}
                     data-testid="session-generator-generate"
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={generatorPrimaryActionClass}
                   >
                     {isGenerating ? "Generating..." : draft ? "Regenerate" : "Generate session"}
                   </button>
