@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-27-aw-006-goals-workspace-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-27`
 - `updated`: `2026-05-27`
@@ -44,7 +44,6 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Content governance`
@@ -239,3 +238,31 @@ Required because this changes visible UI/layout.
 - `2026-05-27 | screenshot handoff ready | route/top-panel token parity implementation and targeted validation are complete; before/after desktop and mobile screenshots are captured with 0 px horizontal overflow | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-27 | screenshot approved | owner approved the screenshot handoff in chat; no committed product-rendering files changed after capture | next: run npm run verify:pre-pr`
 - `2026-05-27 | pre-pr verified | npm run verify:pre-pr passed the full lane on branch current with origin/main@40e2e20 | next: commit, push, and open PR`
+- `2026-05-27 | done | shipped in PR #874 as squash commit fc04ee6; repo-managed docs-only closeout moved this brief to done and cleared active queue/design-inventory references | next: run closeout gates and post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-05-27`
+- `merged_pr`: `#874`
+- `squash_commit`: `fc04ee6`
+- `result`: Closed AW-006 Goals Workspace Token And Action Hierarchy Parity by aligning the private Goals workspace shell, header/back action, `Your goals` panel, add-goal action, and filters with the current My Library token/action hierarchy while preserving goal data, APIs, filters, active-limit logic, templates, My Training bridge links, analytics, Help/Guide, and support behavior.
+- `validation`: Targeted unit tests passed; screenshot handoff captured and owner-approved; `npm run verify:pre-pr` passed full lane on commit `d9ab0df`; GitHub CI for PR `#874` passed including `verify`; `npm run verify:pre-merge` passed and recorded `artifacts/verify-pre-merge/20260527-092143.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no release-blocking gaps remain.
+
+Critical target categories confirmed `5/5`: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Reliability and failure handling, Security and authz, Content governance, Stack-fit and dependency discipline, Testing and QA automation, and DevOps and rollback readiness. Accessibility (a11y) remains a target category scored `5/5` below.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#874` diff kept `/my-library/goals` purpose/title/back destination stable; focused route tests passed.              | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshot handoff; route/top-panel actions now use My Library token/action hierarchy.      | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts recorded 0 px horizontal overflow on desktop/mobile; no rendering files changed after capture.     | None.        |
+| Business logic correctness and data integrity | `5/5`          | No goal data/API/storage logic changed; focused GoalsHub and route tests passed.                                        | None.        |
+| Accessibility (a11y)                          | `5/5`          | Route tests preserve visible H1/auth redirect; GoalsHub tests preserve action/filter semantics and accessible labels.   | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/API changes; `npm run verify:pre-pr` full lane and perf budgets passed.                             | None.        |
+| Reliability and failure handling              | `5/5`          | Existing goals feedback, filtered states, and auth redirect behavior preserved by focused tests and unchanged handlers. | None.        |
+| Security and authz                            | `5/5`          | Anonymous `/my-library/goals` redirect remains covered; no protected data moved to a new client boundary.               | None.        |
+| Content governance                            | `5/5`          | Active brief, canonical queue, design inventory, screenshot evidence, and PR body were updated.                         | None.        |
+| i18n operational readiness                    | `5/5`          | Tokenized layout uses responsive wrapping and avoids fixed-width copy assumptions; screenshots verified text fit.       | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing route, `SiteChrome`, `GoalsHub`, Tailwind tokens/classes, and local tests; no dependency added.         | None.        |
+| Testing and QA automation                     | `5/5`          | Focused tests, full `verify:pre-pr`, GitHub CI `verify`, and `verify:pre-merge` passed.                                 | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `fc04ee6` is revertable; no migrations, config, dependency, or feature flag rollback required.     | None.        |
