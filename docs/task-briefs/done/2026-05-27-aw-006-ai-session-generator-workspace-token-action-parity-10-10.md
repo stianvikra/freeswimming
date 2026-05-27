@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-27-aw-006-ai-session-generator-workspace-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-27`
 - `updated`: `2026-05-27`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-generator-workspace-token-parity`
-- `execution_mode`: `owner-approved implementation through PR automation after screenshot approval; merge requires explicit owner approval`
+- `execution_mode`: `merged in PR #878; repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
@@ -46,7 +46,6 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Content governance`
@@ -257,6 +256,32 @@ Required because this changes visible UI/layout.
   - `before-generator-workspace-mobile.png`
   - `after-generator-workspace-mobile.png`
 
+## Completion Record
+
+- `completed`: `2026-05-27`
+- `merged_pr`: `#878`
+- `squash_commit`: `03a8724`
+- `result`: Closed AW-006 AI Session Generator Workspace Token And Action Hierarchy Parity. The AI generator workspace now follows the same My Library token/card/action hierarchy as the surrounding member workspaces while preserving generator logic, data boundaries, APIs, local draft behavior, workout save behavior, analytics, Help/Guide, and support behavior.
+- `validation`: Focused unit/component coverage passed; screenshot handoff was approved; `npm run verify:pre-pr` passed full lane with log `artifacts/test-runs/20260527-165907/verify.log`; PR #878 CI passed; `npm run verify:pre-merge` passed full lane with marker `artifacts/verify-pre-merge/20260527-153921.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                         | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #878, route/action tests, screenshot handoff                                                                                  | None         |
+| UX flow clarity                               | `5/5`          | PR #878, owner-approved before/after screenshot handoff                                                                          | None         |
+| Visual design quality                         | `5/5`          | PR #878, `output/aw-006-generator-workspace-token-parity-2026-05-27-160721`, no rendering changes after final capture            | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused generator route/component tests, changed-files review, `npm run verify:pre-pr`, `npm run verify:pre-merge`               | None         |
+| Accessibility (a11y)                          | `5/5`          | Route/component assertions, full local gates, PR #878 CI                                                                         | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency/media/API path; perf budget passed in `npm run verify:pre-pr` and `npm run verify:pre-merge`                   | None         |
+| Data placement and sync boundaries            | `5/5`          | Presentation-only diff; existing generator/workout server-canonical and local-only boundaries preserved                          | None         |
+| Reliability and failure handling              | `5/5`          | Existing generator feedback/action tests preserved; full local gates and PR #878 CI passed                                       | None         |
+| Security and authz                            | `5/5`          | Auth redirect and private server route boundaries preserved; route tests and full gates passed                                   | None         |
+| Content governance                            | `5/5`          | Active brief, queue, and design inventory updated; closeout moves brief to done and clears active references                     | None         |
+| i18n operational readiness                    | `5/5`          | Screenshot handoff and action/layout class assertions confirm no tight fixed-width label assumptions were introduced             | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `SiteChrome`, route components, My Library token/action classes, Tailwind, and existing test stack; no dependency changes | None         |
+| Testing and QA automation                     | `5/5`          | `tests/unit/generator-page.test.tsx`, updated component tests, full local gates, PR #878 CI                                      | None         |
+| DevOps and rollback readiness                 | `5/5`          | Docs/code diff is revertable; no migration, config, workflow, or dependency rollback required; `npm run verify:pre-merge` passed | None         |
+
 ## Checkpoint Log
 
 - `2026-05-27 | in-progress | created active AI Session Generator workspace token/action parity brief from clean main@6b6ccde after owner approved continuing in the same chat; screenshot approval remains the required visual stop before broad PR gates | next: update queue/inventory, implement route/top-panel token parity, and run focused tests`
@@ -264,3 +289,4 @@ Required because this changes visible UI/layout.
 - `2026-05-27 | validation | focused unit tests, typecheck, brief lint, quality-gate lint, route/label/support sweep, and git diff whitespace check passed; targeted Playwright generator-intake run skipped both tests because local dev-login bypass could not authenticate against the safe local test Supabase placeholder | next: wait for owner screenshot approval, then run npm run verify:pre-pr`
 - `2026-05-27 | owner screenshot approval | owner approved screenshot handoff in chat after reviewing `output/aw-006-generator-workspace-token-parity-2026-05-27-160721`; no product-rendering files changed after final capture | next: run npm run verify:pre-pr before PR`
 - `2026-05-27 | validation | npm run verify:pre-pr passed full lane after screenshot approval; full Playwright ended 101 passed and 487 skipped due safe local auth/test matrix skips; verification log: artifacts/test-runs/20260527-165907/verify.log | next: commit, push, open PR, and monitor CI`
+- `2026-05-27 | done | shipped in PR #878 as squash commit 03a8724 after owner-approved screenshot handoff, local pre-PR, green CI, and local pre-merge gates; repo-managed closeout moved this brief to done and clears active queue/design-inventory references | next: merge closeout PR, rerun post-merge preflight, and complete mandatory chat-handoff assessment before any new AW-006 implementation slice`
