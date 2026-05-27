@@ -78,9 +78,13 @@ describe("AthleteProfileHub", () => {
   it("opens only the recommended missing setup section by default", () => {
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
-    expect(screen.getByTestId("athlete-profile-readiness")).toBeInTheDocument();
-    expect(screen.getByTestId("athlete-profile-next-action")).toHaveTextContent(
-      "Set up swimmer identity"
+    const readiness = screen.getByTestId("athlete-profile-readiness");
+    expect(readiness).toHaveClass("fs-library-card", "fs-library-card-accent");
+    const nextAction = screen.getByTestId("athlete-profile-next-action");
+    expect(nextAction).toHaveTextContent("Set up swimmer identity");
+    expect(nextAction).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("athlete-profile-readiness-profile")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
     );
     expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
       "data-section-open",
