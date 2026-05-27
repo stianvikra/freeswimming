@@ -158,6 +158,14 @@ test.describe("my library training context", () => {
     await loginToMyLibraryViaDevBypass(page);
     await gotoWithTransientRetry(page, "/my-library/training", 60_000);
     await expect(page.getByRole("heading", { name: "My Training", level: 1 })).toBeVisible();
+    await expect(page.getByTestId("my-training-workspace")).toHaveClass(/max-w-\[1040px\]/);
+    const routeActions = page.getByTestId("my-training-route-actions");
+    await expect(routeActions.getByRole("link", { name: "Open goals" })).toHaveClass(
+      /fs-cta-secondary/
+    );
+    await expect(routeActions.getByRole("link", { name: "Back to My Library" })).toHaveClass(
+      /fs-cta-secondary/
+    );
     await waitForTrainingContextClientReady(page);
 
     await page.getByTestId("training-overview-card-goals").click();
