@@ -9,6 +9,7 @@ import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import DrylandSessionEditor from "@/components/my-library/dryland/DrylandSessionEditor";
 import { useAutoDismissNotice } from "@/components/my-library/workouts/useAutoDismissNotice";
+import { cx } from "@/components/ui/cx";
 import type {
   DrylandMicroPlanApiResponse,
   DrylandMicroPlanRecord,
@@ -37,6 +38,23 @@ type PostSaveCta = {
   href: string;
   label: string;
 };
+
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
+const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const dangerActionClass = cx(
+  actionBaseClass,
+  "border border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-400"
+);
+const dangerPrimaryActionClass = cx(
+  actionBaseClass,
+  "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus-visible:ring-rose-400"
+);
+const drylandCreatePanelClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const drylandSessionCardClass = "fs-library-card p-4 sm:p-5";
+const warningPanelClass =
+  "mt-4 rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-4";
 
 function upsertRecentSessionSummary(current: DrylandSessionSummary[], next: DrylandSessionSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
@@ -363,9 +381,9 @@ export default function DrylandBuilderHub({
       className="space-y-6"
     >
       {(browseOnly || !savedSession) && !shouldPrioritizeMicroPlan ? (
-        <div className="space-y-3">
+        <div className={drylandCreatePanelClass} data-testid="dryland-create-panel">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
               {browseOnly && isMicroFocused
                 ? "Build a micro session"
                 : browseOnly
@@ -373,17 +391,17 @@ export default function DrylandBuilderHub({
                   : "Dryland builder"}
             </h2>
             {!browseOnly ? (
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+              <p className="mt-2 max-w-[68ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 Create a strength or stretching session.
               </p>
             ) : isMicroFocused ? (
-              <p className="mt-2 max-w-[68ch] text-sm text-slate-600">
+              <p className="mt-2 max-w-[68ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 Start from a saved Dryland Session, then split it into small units.
               </p>
             ) : null}
           </div>
           {drylandLibrary.schemaReady ? (
-            <div className="space-y-2">
+            <div className="mt-4 space-y-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <CreateManualDrylandSessionButton
                   sessionKind="strength"
@@ -392,7 +410,7 @@ export default function DrylandBuilderHub({
                   describedById={createErrorId}
                   hideInlineError
                   onErrorChange={setCreateError}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className={primaryActionClass}
                 />
                 <CreateManualDrylandSessionButton
                   sessionKind="stretching"
@@ -403,7 +421,7 @@ export default function DrylandBuilderHub({
                   describedById={createErrorId}
                   hideInlineError
                   onErrorChange={setCreateError}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={secondaryActionClass}
                 />
               </div>
               {createError ? (
@@ -432,7 +450,10 @@ export default function DrylandBuilderHub({
               type="button"
               onClick={retryRouteRefresh}
               disabled={isRouteRefreshing}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={cx(
+                actionBaseClass,
+                "gap-2 border border-amber-200 bg-white text-amber-800 hover:bg-amber-50 focus-visible:ring-amber-400"
+              )}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               {isRouteRefreshing ? "Retrying..." : "Retry"}
@@ -456,7 +477,7 @@ export default function DrylandBuilderHub({
               type="button"
               onClick={retryRouteRefresh}
               disabled={isRouteRefreshing}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={cx(dangerActionClass, "gap-2")}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               {isRouteRefreshing ? "Retrying..." : "Retry"}
@@ -483,7 +504,10 @@ export default function DrylandBuilderHub({
               <Link
                 href={postSaveCta.href}
                 data-testid="dryland-post-save-micro-cta"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-600 active:bg-emerald-800"
+                className={cx(
+                  actionBaseClass,
+                  "bg-emerald-700 text-white hover:bg-emerald-600 focus-visible:ring-emerald-500"
+                )}
               >
                 {postSaveCta.label}
               </Link>
@@ -512,44 +536,45 @@ export default function DrylandBuilderHub({
           isMicroSourceSelectionActive ? null : recentSessions.length > 0 ? (
             <>
               <div className={isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""}>
-                <h2 className="text-lg font-semibold text-slate-950">Your sessions</h2>
+                <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  Your sessions
+                </h2>
               </div>
               <div
-                className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${
-                  isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""
-                }`}
+                className={`space-y-3 ${isMicroFocused && activeMicroPlan ? "max-md:hidden" : ""}`}
               >
                 {recentSessions.map((session) => {
                   const isPendingDelete = pendingDeleteSessionId === session.id;
                   return (
                     <article
                       key={session.id}
-                      className="border-b border-slate-200 p-4 last:border-b-0 sm:p-5"
+                      className={drylandSessionCardClass}
+                      data-testid={`dryland-session-card-${session.id}`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold text-slate-900">
+                            <h3 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
                               {session.title}
                             </h3>
-                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                            <span className="rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)] ring-1 ring-[color:var(--fs-border-brand)]">
                               {getDrylandSessionKindLabel(session.sessionKind)}
                             </span>
                           </div>
-                          <p className="mt-2 text-sm text-slate-600">
+                          <p className="mt-2 text-sm leading-6 text-[color:var(--fs-color-muted)]">
                             {buildDrylandSessionSummarySubtitle(session)}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Link
                             href={`/my-library/dryland/${session.id}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                            className={secondaryActionClass}
                           >
                             Edit
                           </Link>
                           <Link
                             href={`/my-library/dryland/${session.id}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                            className={secondaryActionClass}
                           >
                             Open
                           </Link>
@@ -564,7 +589,7 @@ export default function DrylandBuilderHub({
                               setSuccess("");
                             }}
                             disabled={deletingSessionId === session.id}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={dangerActionClass}
                           >
                             {deletingSessionId === session.id ? "Deleting..." : "Delete"}
                           </button>
@@ -572,7 +597,7 @@ export default function DrylandBuilderHub({
                       </div>
 
                       {isPendingDelete ? (
-                        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-4">
+                        <div className={warningPanelClass}>
                           <p className="text-sm font-medium text-rose-900">
                             Delete {session.title}?
                           </p>
@@ -582,7 +607,7 @@ export default function DrylandBuilderHub({
                               data-testid={`dryland-confirm-delete-session-${session.id}`}
                               onClick={() => void confirmDeleteSession(session)}
                               disabled={deletingSessionId === session.id}
-                              className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={dangerPrimaryActionClass}
                             >
                               {deletingSessionId === session.id ? "Deleting..." : "Delete session"}
                             </button>
@@ -590,7 +615,7 @@ export default function DrylandBuilderHub({
                               type="button"
                               onClick={() => setPendingDeleteSessionId(null)}
                               disabled={deletingSessionId === session.id}
-                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={dangerActionClass}
                             >
                               Cancel
                             </button>
@@ -624,10 +649,7 @@ export default function DrylandBuilderHub({
             </p>
             {recentSessions.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  href="/my-library/dryland"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                >
+                <Link href="/my-library/dryland" className={secondaryActionClass}>
                   Dryland Sessions
                 </Link>
               </div>
