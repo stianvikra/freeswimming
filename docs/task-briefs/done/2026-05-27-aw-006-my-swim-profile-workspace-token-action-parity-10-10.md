@@ -215,9 +215,9 @@ Visual gate:
 After owner screenshot approval:
 
 - `npm run verify:pre-pr` - PASS full lane; lint/quality gates/typecheck/unit/build/perf/E2E passed with 101 browser tests passed and 487 expected environment skips.
-- open/update PR
-- required CI checks green
-- `npm run verify:pre-merge`
+- PR `#872` opened and shipped as squash commit `1e0c41d`.
+- Required CI checks passed; one initial `e2e-smoke` run timed out during Playwright install after 100% browser download, and the rerun passed.
+- `npm run verify:pre-merge` - PASS full lane with 101 browser tests passed and 487 expected environment skips; marker `artifacts/verify-pre-merge/20260527-065145.json`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -247,3 +247,29 @@ Required because this changes visible UI/layout.
 - `2026-05-27 | screenshot handoff ready | captured before/after desktop and mobile screenshots in output/aw006-my-swim-profile-token-parity-2026-05-27-070555 using a temporary local harness with deterministic profile data because local auth-backed capture was blocked; temporary capture route/script were removed after capture; no committed product-rendering file changed after final capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-27 | screenshot approved | owner approved the before/after screenshot handoff for /my-library/profile token/action hierarchy parity; no committed product-rendering file changed after final capture | next: run npm run verify:pre-pr before PR creation`
 - `2026-05-27 | pre-pr verified | npm run verify:pre-pr passed the full lane with 101 browser tests passed and 487 expected environment skips; perf budget trend recommendation was hold because worst margin was 14.0% against the 15.0% tighten threshold | next: commit, push, and open/update PR`
+- `2026-05-27 | shipped | PR #872 merged as squash commit 1e0c41d after screenshot approval, local pre-PR, CI, and local pre-merge gates passed; post-merge preflight surfaced the expected repo-managed docs-only closeout | next: complete closeout PR, rerun post-merge preflight, then complete mandatory chat-handoff assessment before any new AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-05-27`
+- `merged_pr`: `#872`
+- `squash_commit`: `1e0c41d`
+- `result`: Closed AW-006 My Swim Profile Workspace Token And Action Hierarchy Parity. My Swim Profile now matches the newer My Library workspace shell/action/readiness-panel hierarchy while preserving profile data, APIs, local drafts, analytics, section order, readiness scoring, Help/Guide, and support behavior.
+- `validation`: Targeted Vitest PASS, typecheck PASS, quality/brief/diff/sweep gates PASS, screenshot handoff approved, `npm run verify:pre-pr` PASS, required CI PASS after one Playwright-install rerun, `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Route/action review, focused tests, PR #872                                                                                   | No gap.      |
+| UX flow clarity                               | `5/5`          | Approved screenshot handoff and focused route/readiness assertions                                                            | No gap.      |
+| Visual design quality                         | `5/5`          | Before/after screenshots in `output/aw006-my-swim-profile-token-parity-2026-05-27-070555`; no horizontal overflow in metadata | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review and targeted unit/E2E assertions; no profile API/data contract changes                                   | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Testing Library route assertions, E2E auth/navigation assertions, keyboard-reachable action semantics preserved               | No gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency/media/API calls; perf budgets PASS with hold recommendation                                                 | No gap.      |
+| Reliability and failure handling              | `5/5`          | Existing offline/draft/error/success states preserved; focused hub tests PASS                                                 | No gap.      |
+| Security and authz                            | `5/5`          | Auth redirect contract covered; no protected data boundary change                                                             | No gap.      |
+| Content governance                            | `5/5`          | Queue, design inventory, and this closeout updated; brief lint PASS                                                           | No gap.      |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and route/action tests avoid tight fixed-width assumptions                                         | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing route, `AthleteProfileHub`, Tailwind tokens, and tests; no dependency added                                   | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, CI, and full `verify:pre-merge` PASS                                                   | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit `1e0c41d`; rollback via `git revert 1e0c41d`; no migration/config rollback needed                               | No gap.      |
