@@ -39,7 +39,13 @@ jobs:
 
       - name: Install Playwright browsers (chromium only)
         if: steps.verification-plan.outputs.lane != 'docs-only'
-        run: npx playwright install --with-deps chromium
+        run: |
+          set -euo pipefail
+          timeout 8m npx playwright install --with-deps chromium || {
+            status=$?
+            echo "[playwright-install] First install attempt exited ${status}; retrying once."
+            timeout 8m npx playwright install --with-deps chromium
+          }
 
       - name: Run E2E smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
@@ -92,7 +98,13 @@ jobs:
 
       - name: Install Playwright browsers (chromium only)
         if: steps.verification-plan.outputs.lane != 'docs-only'
-        run: npx playwright install --with-deps chromium
+        run: |
+          set -euo pipefail
+          timeout 8m npx playwright install --with-deps chromium || {
+            status=$?
+            echo "[playwright-install] First install attempt exited ${status}; retrying once."
+            timeout 8m npx playwright install --with-deps chromium
+          }
 
       - name: Run site-lock smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
