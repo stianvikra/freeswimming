@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ChevronDown, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import Modal from "@/components/Modal";
@@ -14,6 +15,7 @@ import PressLink from "@/components/ui/PressLink";
 import MobileSegmentedNav, {
   type MobileSegmentedNavItem,
 } from "@/components/ui/MobileSegmentedNav";
+import { cx } from "@/components/ui/cx";
 import { BRAND_USAGE } from "@/lib/brand";
 import {
   buildCourseLessonProgressStatusMap,
@@ -52,6 +54,20 @@ type Props = {
 };
 
 const MENU_TIP_SEEN_KEY = "fs_menu_tip_seen";
+const DRAWER_CARD_CLASS =
+  "fs-library-card relative overflow-hidden p-4 backdrop-blur transition-colors";
+const DRAWER_ACCENT_CARD_CLASS =
+  "fs-library-card fs-library-card-accent relative overflow-hidden p-4 backdrop-blur transition-colors";
+const DRAWER_MUTED_CARD_CLASS =
+  "fs-library-card fs-library-card-muted relative overflow-hidden p-4 backdrop-blur transition-colors";
+const DRAWER_PRIMARY_ACTION_CLASS =
+  "fs-cta-primary inline-flex min-h-11 items-center justify-center px-4 py-2 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60";
+const DRAWER_SECONDARY_ACTION_CLASS =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-3 py-1.5 text-[12px] font-semibold transition-colors";
+const DRAWER_PILL_CLASS =
+  "inline-flex shrink-0 rounded-[var(--fs-radius-control)] px-2.5 py-1 text-[12px] font-semibold ring-1";
+const DRAWER_SMALL_PILL_CLASS =
+  "rounded-[var(--fs-radius-control)] px-2 py-1 text-[11px] font-semibold ring-1";
 
 export default function MenuDrawer({
   open,
@@ -122,26 +138,6 @@ export default function MenuDrawer({
     setOpenModuleId(defaultOpenModuleId);
   }, [defaultOpenModuleId]);
 
-  const activePageLabel = useMemo(() => {
-    const map: Record<string, string> = {
-      "/": "Home",
-      "/course": "Free Course",
-      "/programs": "Swim Programs",
-      "/analysis": "Video Analysis",
-      "/our-method": "Our Method",
-      "/contact": "Contact",
-    };
-
-    if (pathname && map[pathname]) return map[pathname];
-
-    const found = Object.keys(map)
-      .filter((k) => k !== "/")
-      .find((k) => pathname?.startsWith(`${k}/`));
-    if (found) return map[found];
-
-    return "Home";
-  }, [pathname]);
-
   const isActiveRoute = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
@@ -203,13 +199,9 @@ export default function MenuDrawer({
   }
 
   const headerTitle = view === "course" ? titleCourse : titleMain;
-  const headerSub =
-    view === "course"
-      ? "Pick a module, then choose a lesson."
-      : `Navigate the site. Active: ${activePageLabel}`;
 
-  // Small “X” button style
-  const iconBtn = "rounded-2xl bg-slate-100/70 px-3 py-2 text-slate-700";
+  const iconBtn =
+    "fs-cta-secondary inline-flex h-10 w-10 items-center justify-center p-0 text-slate-700";
 
   const bottomNavItems: MobileSegmentedNavItem[] = [
     {
@@ -241,7 +233,7 @@ export default function MenuDrawer({
 
   return (
     <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
-      <div className="flex h-full flex-col overflow-hidden rounded-bl-3xl bg-white/90">
+      <div className="flex h-full flex-col overflow-hidden rounded-bl-[var(--fs-radius-panel)] bg-white/94">
         {/* Header */}
         <div className="px-5 pt-5">
           <div className="flex items-start justify-between gap-3">
@@ -253,14 +245,13 @@ export default function MenuDrawer({
                 sizes="156px"
               />
 
-              <div>
+              <div className="pt-1">
                 <div className="text-[16px] font-semibold text-slate-900">{headerTitle}</div>
-                <div className="mt-1 text-[13px] font-medium text-slate-600">{headerSub}</div>
               </div>
             </div>
 
             <PressButton tier="icon" onClick={onClose} className={iconBtn} aria-label="Close menu">
-              ✕
+              <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
             </PressButton>
           </div>
 
@@ -301,7 +292,7 @@ export default function MenuDrawer({
 
           {/* Tip only in Main view */}
           {view === "main" && showMenuTip ? (
-            <div className="mt-6 rounded-[22px] border border-slate-200/60 bg-[radial-gradient(520px_180px_at_20%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_60%)] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div className={cx(DRAWER_MUTED_CARD_CLASS, "mt-6")}>
               <div className="text-[12px] font-semibold tracking-wide text-slate-600 uppercase">
                 Tip
               </div>
@@ -367,17 +358,19 @@ function MainView({
             href={item.href}
             onClick={onClose}
             aria-current={active ? "page" : undefined}
-            className={[
-              "relative overflow-hidden rounded-[22px] border px-5 py-4 backdrop-blur",
-              active
-                ? "border-blue-200/70 bg-[linear-gradient(90deg,rgba(59,130,246,0.72)_0_4px,rgba(255,255,255,0.84)_4px_100%),radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_60%)] shadow-[0_16px_48px_rgba(37,99,235,0.11)] ring-1 ring-blue-100/65"
-                : "border-slate-200/60 bg-[linear-gradient(90deg,rgba(203,213,225,0.62)_0_4px,rgba(255,255,255,0.82)_4px_100%)] shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
-            ].join(" ")}
+            data-testid={`main-menu-link-${item.href === "/" ? "home" : item.href.replace(/^\//, "").replaceAll("/", "-")}`}
+            className={cx(
+              active ? DRAWER_ACCENT_CARD_CLASS : DRAWER_CARD_CLASS,
+              "block border-l-4 px-5 py-4",
+              active ? "border-l-blue-600" : "border-l-slate-300"
+            )}
           >
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 text-[16px] font-semibold text-slate-900">{item.title}</div>
               {active ? (
-                <span className="inline-flex shrink-0 rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                <span
+                  className={cx(DRAWER_PILL_CLASS, "bg-blue-50 text-blue-700 ring-blue-100/70")}
+                >
                   Current page
                 </span>
               ) : null}
@@ -389,7 +382,10 @@ function MainView({
         );
       })}
 
-      <div className="relative overflow-hidden rounded-[22px] border border-slate-200/62 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.10),rgba(255,255,255,0)_62%),rgba(255,255,255,0.86)] px-5 py-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)]">
+      <div
+        className={cx(DRAWER_MUTED_CARD_CLASS, "px-5 py-4")}
+        data-testid="main-menu-install-card"
+      >
         <div className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
           App
         </div>
@@ -407,13 +403,18 @@ function MainView({
             onClick={install.onInstall}
             disabled={install.busy || install.isInstalled}
             aria-describedby={installDescriptionId}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+            className={DRAWER_PRIMARY_ACTION_CLASS}
             aria-label="Install app"
           >
             {install.isInstalled ? "Installed" : install.busy ? "Checking..." : "Install app"}
           </PressButton>
           {!install.canInstall && !install.isInstalled ? (
-            <span className="rounded-full bg-slate-100/90 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/75">
+            <span
+              className={cx(
+                DRAWER_SMALL_PILL_CLASS,
+                "bg-slate-100/90 text-slate-600 ring-slate-200/75"
+              )}
+            >
               Browser support varies
             </span>
           ) : null}
@@ -424,7 +425,7 @@ function MainView({
             id={iosGuideId}
             tone="info"
             title="Install on iPhone/iPad"
-            className="mt-3 bg-white/86"
+            className="mt-3 !rounded-[var(--fs-radius-card)] bg-white/86"
             testId="main-menu-install-ios-guide"
           >
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
@@ -436,7 +437,7 @@ function MainView({
               <PressButton
                 tier="nav"
                 onClick={install.onCloseIosGuide}
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                className={DRAWER_SECONDARY_ACTION_CLASS}
               >
                 Got it
               </PressButton>
@@ -449,7 +450,7 @@ function MainView({
             id={macSafariGuideId}
             tone="info"
             title="Install on Mac (Safari)"
-            className="mt-3 bg-white/86"
+            className="mt-3 !rounded-[var(--fs-radius-card)] bg-white/86"
             testId="main-menu-install-mac-safari-guide"
           >
             <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
@@ -461,7 +462,7 @@ function MainView({
               <PressButton
                 tier="nav"
                 onClick={install.onCloseMacSafariGuide}
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                className={DRAWER_SECONDARY_ACTION_CLASS}
               >
                 Got it
               </PressButton>
@@ -473,7 +474,7 @@ function MainView({
           <InstallFeedback
             id={feedbackId}
             tone={install.feedback.tone}
-            className="mt-3"
+            className="mt-3 !rounded-[var(--fs-radius-card)]"
             testId="main-menu-install-feedback"
           >
             {install.feedback.message}
@@ -559,31 +560,40 @@ function CourseView({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-[20px] border border-blue-200/62 bg-[radial-gradient(520px_170px_at_18%_0%,rgba(99,168,255,0.12),rgba(255,255,255,0)_62%),rgba(255,255,255,0.9)] p-3.5 shadow-[0_12px_28px_rgba(15,23,42,0.07)]">
+      <div
+        className={cx(DRAWER_ACCENT_CARD_CLASS, "p-3.5")}
+        data-testid="course-menu-progress-card"
+      >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div>
             <div className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
               Progress
             </div>
-            <p className="mt-1 text-[13px] leading-5 font-semibold text-slate-700">
-              Modules {completedModules} of {totalModules}
-              <span className="px-1 text-slate-300">•</span>
-              Lessons {completedLessons} done
-              {inProgressLessons > 0 ? (
-                <>
-                  <span className="px-1 text-slate-300">•</span>
-                  {inProgressLessons} in progress
-                </>
-              ) : null}
-              <span className="px-1 text-slate-300">•</span>
-              {totalLessons} total
-            </p>
           </div>
 
-          <span className="shrink-0 rounded-full bg-blue-50/82 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/65">
+          <span
+            className={cx(
+              DRAWER_SMALL_PILL_CLASS,
+              "shrink-0 bg-blue-50/82 text-blue-700 ring-blue-200/65"
+            )}
+          >
             {completedPct}%
           </span>
         </div>
+
+        <p className="mt-1 text-[13px] leading-5 font-semibold text-slate-700">
+          Modules {completedModules} of {totalModules}
+          <span className="px-1 text-slate-300">•</span>
+          Lessons {completedLessons} done
+          {inProgressLessons > 0 ? (
+            <>
+              <span className="px-1 text-slate-300">•</span>
+              {inProgressLessons} in progress
+            </>
+          ) : null}
+          <span className="px-1 text-slate-300">•</span>
+          {totalLessons} total
+        </p>
 
         <div
           className="mt-2.5"
@@ -596,7 +606,7 @@ function CourseView({
         >
           <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/86 ring-1 ring-slate-200/75">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-[width] duration-300"
+              className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
               style={{ width: `${completedPct}%` }}
             />
           </div>
@@ -624,36 +634,31 @@ function CourseView({
             : `${moduleLessonCount} lessons ready to start`;
         const panelId = `course-module-panel-${mod.id}`;
 
-        const wrapperClass = [
-          "relative overflow-hidden rounded-[22px] border bg-white/80 backdrop-blur",
-          "shadow-[0_12px_34px_rgba(15,23,42,0.08)]",
-          isActiveModule ? "border-blue-200/70" : "border-slate-200/60",
-          isOpen && !isActiveModule ? "shadow-[0_18px_52px_rgba(15,23,42,0.10)]" : "",
-          isOpen && isActiveModule ? "shadow-[0_16px_46px_rgba(37,99,235,0.11)]" : "",
-        ].join(" ");
+        const wrapperClass = cx(
+          isActiveModule ? DRAWER_ACCENT_CARD_CLASS : DRAWER_CARD_CLASS,
+          "p-0"
+        );
 
-        const accentClass = [
+        const accentClass = cx(
           "absolute left-0 top-0 h-full w-[4px] transition",
           isActiveModule
-            ? "bg-gradient-to-b from-blue-400 to-blue-600"
+            ? "bg-blue-600"
             : isDoneModule
-              ? "bg-gradient-to-b from-emerald-300 to-emerald-500"
+              ? "bg-emerald-500"
               : isInProgressModule
-                ? "bg-gradient-to-b from-amber-300 to-amber-500"
+                ? "bg-amber-500"
                 : isOpen
-                  ? "bg-slate-300/80"
-                  : "bg-slate-200/70",
-        ].join(" ");
+                  ? "bg-slate-400"
+                  : "bg-slate-300"
+        );
 
-        const moduleHeaderBtn = [
+        const moduleHeaderBtn = cx(
           "flex w-full items-start justify-between gap-3 px-5 py-4 text-left",
-          isOpen
-            ? "bg-[radial-gradient(600px_180px_at_20%_0%,rgba(99,168,255,0.11),rgba(255,255,255,0)_60%)]"
-            : "",
-        ].join(" ");
+          isOpen && !isActiveModule ? "bg-slate-50/72" : ""
+        );
 
         return (
-          <div key={mod.id} className={wrapperClass}>
+          <div key={mod.id} className={wrapperClass} data-testid={`course-menu-module-${mod.id}`}>
             <div className={accentClass} />
 
             <PressButton
@@ -666,26 +671,38 @@ function CourseView({
               <div className="pl-2">
                 <div className="flex items-center gap-2">
                   <span
-                    className={[
-                      "inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ring-1",
+                    className={cx(
+                      DRAWER_PILL_CLASS,
                       isActiveModule
                         ? "bg-blue-50 text-blue-700 ring-blue-100/70"
-                        : "bg-slate-50 text-slate-700 ring-slate-200/70",
-                    ].join(" ")}
+                        : "bg-slate-50 text-slate-700 ring-slate-200/70"
+                    )}
                   >
                     Module {idx + 1} of {modules.length}
                   </span>
 
                   {isActiveModule ? (
-                    <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[12px] font-semibold text-blue-700 ring-1 ring-blue-100/70">
+                    <span
+                      className={cx(DRAWER_PILL_CLASS, "bg-blue-50 text-blue-700 ring-blue-100/70")}
+                    >
                       Current module
                     </span>
                   ) : isDoneModule ? (
-                    <span className="inline-flex rounded-full bg-emerald-50/80 px-3 py-1 text-[12px] font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
+                    <span
+                      className={cx(
+                        DRAWER_PILL_CLASS,
+                        "bg-emerald-50/80 text-emerald-700 ring-emerald-200/70"
+                      )}
+                    >
                       Module completed
                     </span>
                   ) : isInProgressModule ? (
-                    <span className="inline-flex rounded-full bg-amber-50/82 px-3 py-1 text-[12px] font-semibold text-amber-700 ring-1 ring-amber-200/70">
+                    <span
+                      className={cx(
+                        DRAWER_PILL_CLASS,
+                        "bg-amber-50/82 text-amber-700 ring-amber-200/70"
+                      )}
+                    >
                       In progress
                     </span>
                   ) : null}
@@ -711,14 +728,18 @@ function CourseView({
               </div>
 
               <span
-                className={[
-                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full text-[18px] leading-none font-semibold ring-1 transition",
+                className={cx(
+                  "mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-[var(--fs-radius-control)] ring-1 transition",
                   isOpen
                     ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100/70"
-                    : "bg-white/88 text-slate-600 ring-slate-200/78",
-                ].join(" ")}
+                    : "bg-white/88 text-slate-600 ring-slate-200/78"
+                )}
               >
-                {isOpen ? "–" : "+"}
+                <ChevronDown
+                  aria-hidden="true"
+                  className={cx("h-5 w-5 transition-transform", isOpen ? "rotate-180" : "")}
+                  strokeWidth={2.3}
+                />
               </span>
             </PressButton>
 
@@ -799,11 +820,7 @@ function SmartLessonList({
     <div className="relative">
       <div
         ref={scrollerRef}
-        className={[
-          "rounded-[18px] bg-slate-50/70 p-2 ring-1 ring-slate-200/60",
-          "max-h-[280px] overflow-y-auto overscroll-contain",
-          "pr-1",
-        ].join(" ")}
+        className="max-h-[280px] overflow-y-auto overscroll-contain rounded-[var(--fs-radius-card)] bg-slate-50/70 p-2 pr-1 ring-1 ring-slate-200/60"
       >
         <div className="space-y-1.5">
           {lessons.map((l, i) => {
@@ -820,8 +837,8 @@ function SmartLessonList({
                 onClick={() => onSelectLesson(l.id)}
                 data-testid={`course-menu-lesson-${l.id}`}
                 data-progress-state={progressStatus}
-                className={[
-                  "relative w-full rounded-[16px] px-4 py-3 text-left transition-colors",
+                className={cx(
+                  "relative w-full rounded-[var(--fs-radius-card)] px-4 py-3 text-left transition-colors",
                   activeAndDone
                     ? "bg-emerald-50/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_0_0_1px_rgba(59,130,246,0.35)] ring-2 ring-blue-400/82"
                     : active
@@ -830,12 +847,12 @@ function SmartLessonList({
                         ? "bg-amber-50/88 ring-1 ring-amber-200/80"
                         : done
                           ? "bg-emerald-50/85 ring-1 ring-emerald-200/78"
-                          : "bg-white/78 ring-1 ring-slate-200/65",
-                ].join(" ")}
+                          : "bg-white/78 ring-1 ring-slate-200/65"
+                )}
                 aria-current={active ? "page" : undefined}
               >
                 {active ? (
-                  <span className="absolute top-3.5 left-2 h-5 w-1 rounded-full bg-gradient-to-b from-blue-500 to-blue-600" />
+                  <span className="absolute top-3.5 left-2 h-5 w-1 rounded-[var(--fs-radius-control)] bg-blue-600" />
                 ) : null}
 
                 <div className="flex items-center justify-between gap-3">
@@ -843,19 +860,34 @@ function SmartLessonList({
 
                   <div className="flex items-center gap-2">
                     {active && !activeAndDone ? (
-                      <span className="rounded-full bg-blue-100/68 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-200/70">
+                      <span
+                        className={cx(
+                          DRAWER_SMALL_PILL_CLASS,
+                          "bg-blue-100/68 text-blue-700 ring-blue-200/70"
+                        )}
+                      >
                         Current
                       </span>
                     ) : null}
 
                     {inProgress ? (
-                      <span className="rounded-full bg-amber-50/85 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200/75">
+                      <span
+                        className={cx(
+                          DRAWER_SMALL_PILL_CLASS,
+                          "bg-amber-50/85 text-amber-700 ring-amber-200/75"
+                        )}
+                      >
                         In progress
                       </span>
                     ) : null}
 
                     {done ? (
-                      <span className="rounded-full bg-emerald-50/75 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200/70">
+                      <span
+                        className={cx(
+                          DRAWER_SMALL_PILL_CLASS,
+                          "bg-emerald-50/75 text-emerald-700 ring-emerald-200/70"
+                        )}
+                      >
                         Done
                       </span>
                     ) : null}
@@ -892,8 +924,8 @@ function SmartLessonList({
         <>
           {/* hint chip */}
           <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/58 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/50 backdrop-blur">
-              <span aria-hidden>⬇︎</span>
+            <div className="inline-flex items-center gap-2 rounded-[var(--fs-radius-control)] bg-white/58 px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/50 backdrop-blur">
+              <ArrowDown aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.2} />
               <span>Scroll for more</span>
             </div>
           </div>

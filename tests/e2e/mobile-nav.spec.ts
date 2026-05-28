@@ -93,6 +93,10 @@ test("mobile fixed nav uses contextual links and header menu toggles with Escape
   await openNavigationDrawer(page, menu, drawer);
   await expect(drawer).toBeVisible();
   await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(drawer.getByTestId("main-menu-link-contact")).toHaveClass(/fs-library-card/);
+  await expect(drawer.getByTestId("main-menu-link-contact")).toHaveClass(/fs-library-card-accent/);
+  await expect(drawer.getByTestId("main-menu-install-card")).toHaveClass(/fs-library-card-muted/);
+  await expect(drawer.getByTestId("install-app-menu-action")).toHaveClass(/fs-cta-primary/);
 
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
