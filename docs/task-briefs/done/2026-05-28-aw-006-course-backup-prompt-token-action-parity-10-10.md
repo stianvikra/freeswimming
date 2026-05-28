@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-28-aw-006-course-backup-prompt-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-28`
 - `updated`: `2026-05-28`
@@ -15,8 +15,8 @@
 - `last_audited`: `2026-05-28`
 - `base`: `main@8e4ea6f`
 - `audit_status`: `ready`
-- `decision`: Execute this as the current owner-approved PR-sized AW-006 UI slice through screenshot handoff.
-- `reason`: PR `#886` and repo-managed closeout PR `#887` are merged, `main` is clean at `8e4ea6f`, `npm run post-merge:preflight` was reported green with no pending closeout, and a fresh queue/design/code re-audit found the `/course` guest progress backup prompt still using older radial-gradient/card/action styling while adjacent auth, checkout, My Library, guide, and course install feedback surfaces now use the newer AW-006 token/action hierarchy.
+- `decision`: Done in PR `#888`; repo-managed closeout records completion evidence and clears active AW-006 queue references.
+- `reason`: PR `#888` aligned the `/course` guest progress backup prompt with the current AW-006 token/action hierarchy while preserving course progress, storage, dismissal, sign-in next-path, install prompt, analytics, Help/Guide, and support behavior.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `/course`, course progress backup prompt behavior, sign-in next-path handling, course progress storage/sync contracts, install prompt behavior, screenshot handoff rules, forward compatibility rules, or verification lanes change before screenshot handoff.
 
 ## Goal
@@ -49,6 +49,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Course completion count, local progress storage, backup threshold, dismissal cooldown, and sign-in `next=/course` behavior remain unchanged.                                                  | targeted Playwright + code diff review                     | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, content publishing, moderation, note capture, or operator CRUD workflow.                                                                            | explicit admin scope rationale                             | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Prompt remains keyboard-operable; `Create free account` stays a named link, `Maybe later` stays a named button, focus/contrast remain reviewable, and no hidden duplicate controls are added. | focused Playwright role assertions + screenshot review     | `5/5`                   |
+| Accessibility                                 | `target`     | Closeout validation alias for the same accessibility gate above; the prompt remains keyboard-operable with named link/button controls and no hidden duplicates.                               | focused Playwright role assertions + screenshot review     | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: `/course` route budgets remain `LCP <= 2.5s`, `CLS <= 0.10`, `INP <= 200ms`, `TBT <= 200ms`; no dependency or extra network work is added.                                   | no-dependency diff + pre-PR perf gate later                | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Existing guest course progress stays local-only until the user signs in; this slice adds no server-canonical state, sync mutation, storage key, or conflict behavior.                         | data-boundary review + unchanged storage keys              | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this changes no course content fetch path, route cache mode, revalidation, API response, or invalidation behavior.                                                                | explicit cache scope rationale                             | `N/A`                   |
@@ -199,3 +200,26 @@ Required before broad gates because `/course` user-visible UI and account-backup
 - `2026-05-28 | in-progress | owner approved and explicitly requested execution of Course Progress Backup Prompt Token And Action Hierarchy Parity from clean main@8e4ea6f; created branch aw-006-course-backup-prompt-token-parity and this active brief | next: capture before screenshots, implement scoped prompt parity, run targeted validation, and prepare screenshot handoff before broad gates`
 - `2026-05-28 | screenshot-handoff | aligned the /course guest progress backup prompt with the current AW-006 card/action hierarchy, preserving course completion count, local progress storage, backup threshold, dismissal behavior, active-lesson sign-in next path, progress sync, install prompt behavior, analytics, Help/Guide, and support behavior; validation passed: npm run lint:quality-gates, npm run typecheck, targeted Playwright backup prompt flow, route/label/support sweep, and git diff --check; npm run lint:briefs reported no changed task briefs found in changed-file mode; before/after screenshots captured in output/aw006-course-backup-prompt-token-parity-2026-05-28-202924; no product-rendering files changed after final capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, and npm run verify:pre-merge`
 - `2026-05-28 | pre-pr | owner approved the screenshot handoff; fixed queue wording so shipped AW-006 sign-in work is not listed as active; validation passed: npm run lint:briefs:all, git diff --check, and npm run verify:pre-pr full lane (quality gates, lint, typecheck, 1280 unit tests, build, perf budgets, 101 e2e passed / 487 skipped); no product-rendering files changed after final screenshot capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-28 | closeout | PR #888 shipped as squash commit 1b801b7; CI and npm run verify:pre-merge passed, and this repo-managed docs-only closeout moves the brief to done and clears active AW-006 queue/inventory references | next: run docs-only closeout gates, merge the closeout PR, rerun post-merge preflight, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-28`
+- `merged_pr`: `#888`
+- `squash_commit`: `1b801b7`
+- `result`: Closed AW-006 Course Progress Backup Prompt Token And Action Hierarchy Parity; the `/course` guest account-backup prompt now uses the same token-backed card and primary/secondary action hierarchy as adjacent AW-006 surfaces without changing progress, storage, dismissal, sign-in routing, install prompt, analytics, Help/Guide, or support behavior.
+- `validation`: screenshot handoff approved; targeted Playwright backup prompt flow passed; `npm run lint:briefs:all` passed; `npm run verify:pre-pr` full lane passed on commit `5c3b9b7`; PR #888 CI passed; `npm run verify:pre-merge` passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #888 kept the learner job intact: complete lessons first, then optionally create a free account to back up progress after the existing threshold.                        | None.        |
+| UX flow clarity                               | `5/5`          | Screenshot-approved prompt hierarchy keeps `Create free account` primary and `Maybe later` secondary; focused Playwright flow passed.                                       | None.        |
+| Visual design quality                         | `5/5`          | Before/after screenshots show token-backed card/action classes on mobile and desktop with no prompt/nav overlap.                                                            | None.        |
+| Business logic correctness and data integrity | `5/5`          | Completion count, local progress storage, backup threshold, dismissal behavior, and sign-in `next=/course?lesson=...` assertion stayed covered.                             | None.        |
+| Accessibility (a11y)                          | `5/5`          | Named link/button controls remain keyboard-operable and role-visible in the focused Playwright prompt flow; no hidden duplicate controls were added.                        | None.        |
+| Accessibility                                 | `5/5`          | Same accessibility closeout gate as the canonical `Accessibility (a11y)` row; the explicit alias satisfies current done-brief 10/10 validation.                             | None.        |
+| Data placement and sync boundaries            | `5/5`          | No server-canonical state, sync mutation, storage key, or conflict behavior changed; guest progress remains local-only until sign-in.                                       | None.        |
+| Security and authz                            | `5/5`          | Sign-in destination remains the existing encoded active course lesson path; no protected route, cookie, provider, callback, or authorization boundary changed.              | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `/course` route boundaries, `PressLink`, `PressButton`, and AW-006 token classes; no dependency, config, workflow, migration, or broad primitive was added. | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Playwright prompt test, screenshot handoff, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed for the implementation PR.                          | None.        |
