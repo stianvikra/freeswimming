@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-27-aw-006-dryland-workspace-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-27`
-- `updated`: `2026-05-27`
+- `updated`: `2026-05-28`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
@@ -46,7 +46,6 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Content governance`
@@ -273,3 +272,30 @@ Required because this changes visible UI/layout.
 - `2026-05-27 | CI retry | npm run verify:pre-pr passed on 9b67883 after one local E2E flake rerun; GitHub site-lock-smoke passed with the 30-minute budget but e2e-smoke still hung after Chromium download reached 100%, so the smoke install step now has an 8-minute shell timeout and one retry before consuming the whole job | next: validate updated branch and rerun required checks`
 - `2026-05-27 | CI install refinement | GitHub e2e/site-lock smoke still hung in the parallel Playwright install step after the shell timeout change, indicating the smoke jobs should avoid the parallel system-dependency install path; smoke jobs now install Chromium only while full verify keeps --with-deps coverage | next: validate updated branch and rerun required checks`
 - `2026-05-27 | CI sentinel refinement | GitHub e2e-smoke passed with browser-only Chromium install, but site-lock-smoke still hung in its separate browser install step; e2e-smoke now runs both runtime smoke suites after one browser install, and site-lock-smoke remains as a required-check sentinel that fails unless the bundled smoke job passes | next: validate updated branch and rerun required checks`
+- `2026-05-28 | done | PR #880 merged as de0edf5 after GitHub CI and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: close out the done brief and canonical AW-006 queue reference`
+
+## Completion Record
+
+- `completed`: `2026-05-28`
+- `merged_pr`: `#880`
+- `squash_commit`: `de0edf5c8317b0c68ea7a2e97709c609bb5ce800`
+- `result`: Closed AW-006 Dryland Workspace Token And Action Hierarchy Parity. Dryland now uses the same My Library token/action hierarchy for route shell, top create panel, saved-session cards/actions, and delete confirmation while preserving dryland data, APIs, Micro Sessions, drafts, timers, analytics, Help/Guide, and support behavior.
+- `validation`: Targeted Vitest PASS; `npm run verify:pre-pr` PASS on `be109e1`; GitHub CI PASS on `be109e1`; fresh `npm run verify:pre-merge` PASS on `be109e1`; post-merge preflight identified only this docs-only closeout.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                         | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #880 diff and route tests preserved Dryland browse/editor routes and Micro Sessions focus behavior.           | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshot handoff plus focused builder-hub tests for create/list/delete actions.    | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts captured `2026-05-27 18:37`; no product-rendering source edits after final capture.         | None.        |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review and targeted Vitest confirmed presentation-only behavior for dryland data workflows.        | None.        |
+| Accessibility (a11y)                          | `5/5`          | Route/page tests and screenshot review preserved headings, accessible action names, and layout-safe controls.    | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, media, API, polling, or data-loading change; `npm run verify:pre-pr` passed full-public lane.     | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical dryland sessions and local draft/timer/UI boundaries remained unchanged by the diff.            | None.        |
+| Reliability and failure handling              | `5/5`          | Focused tests preserved schema/load/action/create/delete/missing-session feedback behavior.                      | None.        |
+| Security and authz                            | `5/5`          | Route/auth review and tests preserved anonymous redirect behavior and protected data boundaries.                 | None.        |
+| Content governance                            | `5/5`          | AW-006 queue, design inventory, and this brief were updated; closeout moves the brief to `done`.                 | None.        |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and tests kept route/action labels concise without fixed-width assumptions.           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing routes, `SiteChrome`, `DrylandBuilderHub`, Tailwind tokens, and current tests; no dependency.    | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed on current HEAD.      | None.        |
+| DevOps and rollback readiness                 | `5/5`          | PR #880 is a normal squash merge with no migration/provider changes; revert restores prior markup/tests/docs/CI. | None.        |
