@@ -47,7 +47,7 @@ export default function AuthResendButton({ cooldownUntilMs, initialNowMs }: Prop
       disabled={disabled}
       aria-disabled={disabled}
       data-testid="auth-resend-button"
-      className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
+      className="fs-cta-secondary inline-flex min-h-11 items-center justify-center px-5 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
     >
       {label}
     </button>

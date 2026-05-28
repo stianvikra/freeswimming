@@ -76,7 +76,7 @@ export default function AuthRequestStatus({ sent, error, cooldownUntilMs, initia
   return (
     <p
       data-testid="auth-request-status"
-      className={`mt-5 rounded-xl border px-4 py-3 text-sm ${style}`}
+      className={`mt-5 rounded-[var(--fs-radius-control)] border px-4 py-3 text-sm ${style}`}
       role="status"
       aria-live="polite"
     >
