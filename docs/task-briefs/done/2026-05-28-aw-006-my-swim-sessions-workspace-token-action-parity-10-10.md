@@ -251,3 +251,30 @@ After owner screenshot approval:
 - `2026-05-28 | screenshot handoff refreshed | owner reported some original fullpage screenshots could not be opened; regenerated handoff with viewport-only before/after PNGs in output/aw-006-my-swim-sessions-workspace-2026-05-28-090314 and verified dimensions/readability | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-28 | screenshot approved | owner approved the refreshed screenshot handoff in output/aw-006-my-swim-sessions-workspace-2026-05-28-090314 | next: run npm run verify:pre-pr before commit/push/PR`
 - `2026-05-28 | pre-pr gate passed | npm run verify:pre-pr passed full lane after screenshot approval | next: commit, push, and open PR`
+- `2026-05-28 | done | PR #882 merged as 3c5a340 after GitHub CI and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: close out the done brief and canonical AW-006 queue reference`
+
+## Completion Record
+
+- `completed`: `2026-05-28`
+- `merged_pr`: `#882`
+- `squash_commit`: `3c5a340`
+- `result`: Closed AW-006 My Swim Sessions Workspace Token And Action Hierarchy Parity. My Swim Sessions now uses the same My Library token/action hierarchy for route shell, header, and back actions on browse and focused builder routes while preserving workout data, APIs, auth, local drafts, exports, analytics, Help/Guide, and support behavior.
+- `validation`: Targeted Vitest PASS; owner-approved refreshed screenshot handoff captured at `2026-05-28 09:03`; `npm run verify:pre-pr` PASS on `ab90caba`; GitHub CI PASS on `ab90caba`; `npm run verify:pre-merge` PASS; post-merge preflight identified only this docs-only closeout.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #882 diff and route tests preserved My Swim Sessions browse/create and focused builder route roles.                          | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshot handoff and focused route tests covered browse, manual draft, and focused builder modes. | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts captured `2026-05-28 09:03`; no product-rendering source edits after final capture.                        | None.        |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review and targeted Vitest confirmed presentation-only behavior for workout data workflows.                       | None.        |
+| Accessibility (a11y)                          | `5/5`          | Route/page tests and screenshot review preserved H1s, accessible action names, keyboard focus, and layout-safe controls.        | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, media, API, polling, or data-loading change; `npm run verify:pre-pr` passed full-public lane.                    | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical saved workouts and local draft/UI/export boundaries remained unchanged by the diff.                            | None.        |
+| Reliability and failure handling              | `5/5`          | Focused tests preserved auth redirect, missing-session, manual draft, and focused builder feedback behavior.                    | None.        |
+| Security and authz                            | `5/5`          | Route/auth review and tests preserved anonymous redirect behavior and protected data boundaries.                                | None.        |
+| Content governance                            | `5/5`          | AW-006 queue, design inventory, and this brief were updated; closeout moves the brief to `done`.                                | None.        |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and tests kept route/action labels concise without fixed-width assumptions.                          | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing routes, `SiteChrome`, `WorkoutBuilderHub`, Tailwind tokens, and current tests; no dependency.                   | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed on current HEAD.                     | None.        |
+| DevOps and rollback readiness                 | `5/5`          | PR #882 is a normal squash merge with no migration/provider changes; revert restores prior markup/tests/docs/CI.                | None.        |
