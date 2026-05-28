@@ -96,7 +96,7 @@ Critical target categories for a `10/10` claim:
 - Supabase/data layer:
   - N/A; no migration, RLS/authz rule, generated DB type, storage, index, or data access change.
 - External services/tools:
-  - GitHub Actions: keep the existing CI lane and test selection, install Chromium headless shell for headless CI projects, and keep bounded retry around Playwright browser installs after GitHub-hosted runners repeatedly stalled before tests could start.
+  - GitHub Actions: keep the existing CI lane and test selection, install Chromium headless shell for headless CI projects, keep bounded retry around Playwright browser installs after GitHub-hosted runners repeatedly stalled before tests could start, and add the least extra GitHub token permission needed for the existing Vercel preview comment step.
   - No Stripe, Supabase provider setting, analytics vendor, email provider, SDK, secret, webhook, product retry, or idempotency behavior changes.
 - UI system:
   - Mature reference surfaces: `/my-library/training`, `/my-library/profile`, `/my-library/goals`, `/my-library/habits`, `/my-library/generator`, `/my-library/dryland`, `/my-library/workouts`, `MyLibraryHub`, `TodayTabsPanel`, and `SavedWorkoutsPanel`.
@@ -196,14 +196,14 @@ Required because `/my-library/programs/[programId]`, visible route actions, and 
 - `components/my-library/programs/ProgramBuilderHub.tsx` top builder panel, create action, empty/recent-program action styling, and immediate visual containment only.
 - Focused route/unit assertions where route shell or action class contracts change.
 - Canonical AW-006 queue and design inventory updates, including stale My Swim Sessions inventory state.
-- Minimal CI hardening for the existing GitHub Actions Playwright browser installs: use Chromium headless shell for headless CI projects and keep bounded retry after the runner stalled during PR validation.
+- Minimal CI hardening for the existing GitHub Actions Playwright browser installs and Vercel preview comment job: use Chromium headless shell for headless CI projects, keep bounded retry after the runner stalled during PR validation, and add `issues: write` so the existing PR comment step can call GitHub's issues comment API.
 - Before/after screenshot handoff artifacts during implementation.
 
 ## Out Of Scope
 
 - Program data model, API routes, Supabase queries, generated database types, migrations, auth, analytics taxonomy, route URLs, week/day assignment business logic, create/save/reset behavior, export artifact payloads, generated filenames, PDF/Garmin-ready/handoff behavior, Help/Guide updates, support workflow, broad member notice primitive, app-wide design-system primitive, new dependencies, commerce, packages, and merge without explicit owner approval.
 - Deep planner/editor internals in `ProgramBuilderHub` beyond ensuring existing top-level route-shell fit remains visually coherent.
-- Broad CI redesign, new CI dependencies, browser cache migration, or changes to test coverage selection beyond aligning the existing Playwright install command with headless Chromium CI and bounding retries.
+- Broad CI redesign, new CI dependencies, browser cache migration, or changes to test coverage selection beyond aligning the existing Playwright install command with headless Chromium CI, bounding retries, and fixing the existing Vercel preview comment permission.
 - `npm run verify:pre-pr`, PR creation/update, CI monitoring, and `npm run verify:pre-merge` until owner approves screenshots.
 
 ## Acceptance Criteria
@@ -230,6 +230,7 @@ Targeted during implementation:
 - PASS: CI triage after PR creation showed Playwright install flakes before app tests: the first `e2e-smoke` attempt timed out during `npx playwright install chromium` after the browser download reached `100%`, a rerun passed, then a later pushed run hit the same two-attempt timeout before tests. The full `verify` job also repeatedly stalled in Playwright browser install before tests started, so this branch keeps bounded retry and switches Chromium CI installs to `--only-shell`, matching Playwright's documented headless CI path without changing product code or test selection.
 - PASS: `npx playwright install --dry-run --with-deps --only-shell chromium` lists Chromium Headless Shell plus FFmpeg only.
 - PASS: `npx playwright install --dry-run --with-deps --only-shell chromium webkit firefox` lists Chromium Headless Shell, WebKit, Firefox, and FFmpeg.
+- PASS: CI triage after commit `63663df` showed Vercel preview build/deploy succeeded and produced a preview URL, but the workflow failed only when `actions/github-script` called `github.rest.issues.listComments` with a token missing `issues: write`; this branch adds that least-privilege permission to the existing preview-comment workflow.
 
 Visual gate:
 
@@ -255,3 +256,4 @@ After owner screenshot approval:
 - `2026-05-28 | export details correction | owner flagged the raw JSON preview as unclear for normal users and approved hiding it by default; kept Download .json primary, moved the raw export preview behind Show export details / Hide export details, and preserved export preview fetch/retry test coverage | next: rerun targeted validation and refresh screenshot handoff`
 - `2026-05-28 | CI hardening | local verify:pre-pr and verify:pre-merge passed, but GitHub-hosted Playwright browser installs stalled before CI tests started; added bounded retry to the existing full verify Playwright install after e2e-smoke proved the rerun path green | next: rerun pre-PR gate, refresh PR, and monitor CI`
 - `2026-05-28 | CI install follow-up | rerun on HEAD 7e64f9f hit the same e2e-smoke Playwright install timeout twice before any app test ran; switched Chromium CI installs to Playwright's headless-shell path with bounded retry because this repo's CI Chromium projects run headless and do not set a browser channel | next: run local gates, commit, push, refresh PR, and re-check CI`
+- `2026-05-28 | Vercel preview permission follow-up | commit 63663df made local pre-PR green, but GitHub Vercel preview failed after successful build/deploy when the existing preview-comment step called the issues comments API without issues: write; added that least-privilege workflow permission | next: rerun local pre-PR, commit, push, refresh PR, and re-check CI`
