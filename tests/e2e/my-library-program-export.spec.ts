@@ -194,8 +194,17 @@ async function waitForProgramBuilderClientReady(page: Page) {
 }
 
 async function waitForProgramExportPreviewReady(page: Page) {
+  const detailsToggle = page.getByTestId("program-editor-garmin-export-details-toggle");
   const exportPreview = page.getByTestId("program-editor-garmin-export-preview").first();
   const previewError = page.getByTestId("program-editor-garmin-export-preview-error");
+
+  if (
+    (await exportPreview.count()) === 0 ||
+    !(await exportPreview.isVisible().catch(() => false))
+  ) {
+    await expect(detailsToggle).toBeVisible({ timeout: 15_000 });
+    await detailsToggle.click();
+  }
 
   await expect(exportPreview).toBeVisible({ timeout: 15_000 });
 
@@ -208,7 +217,10 @@ async function waitForProgramExportPreviewReady(page: Page) {
           }
 
           const previewText = (await exportPreview.textContent()) ?? "";
-          if (previewText.includes("Loading saved program export preview...")) {
+          if (
+            previewText.includes("Loading saved program export preview...") ||
+            previewText.includes("Loading saved program export details...")
+          ) {
             return "loading";
           }
 
@@ -234,7 +246,10 @@ async function waitForProgramExportPreviewReady(page: Page) {
           }
 
           const previewText = (await exportPreview.textContent()) ?? "";
-          if (previewText.includes("Loading saved program export preview...")) {
+          if (
+            previewText.includes("Loading saved program export preview...") ||
+            previewText.includes("Loading saved program export details...")
+          ) {
             return "loading";
           }
 
