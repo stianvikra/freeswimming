@@ -17,6 +17,9 @@ type Props = {
   searchParams: SearchParams;
 };
 
+const routeActionClass =
+  "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 function readSearchParamValue(
   searchParams: Record<string, string | string[] | undefined>,
   key: string
@@ -70,36 +73,32 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
       <section
         data-testid="workout-builder-route-shell"
         data-mobile-density="tight"
-        className="mx-auto min-h-screen w-full max-w-[980px] px-3 pt-24 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-5 sm:pt-28 sm:pb-20 lg:px-6"
+        className="mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-28 sm:pb-20"
       >
         <div
           data-testid="workout-builder-page-card"
           data-mobile-density="tight"
-          className="rounded-[1.75rem] border border-blue-100 bg-white/95 p-3 shadow-[0_16px_60px_rgba(24,58,107,0.14)] sm:rounded-3xl sm:p-6 lg:p-8"
+          className="space-y-6 sm:space-y-8"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
-                My Library
-              </p>
-              <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-                {builderHeading}
-              </h1>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={backHref}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                <span className="sm:hidden">Back</span>
-                <span className="hidden sm:inline">
+          <header className="border-b border-[color:var(--fs-border-brand)] pb-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                  My Library
+                </p>
+                <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
+                  {builderHeading}
+                </h1>
+              </div>
+              <div data-testid="workout-route-actions" className="flex flex-wrap gap-2">
+                <Link href={backHref} className={routeActionClass}>
                   {localDraftMode === null ? "Back to My Library" : "Back to My Swim Sessions"}
-                </span>
-              </Link>
+                </Link>
+              </div>
             </div>
-          </div>
+          </header>
 
-          <div className="mt-6 sm:mt-8">
+          <div>
             <WorkoutBuilderHub
               workoutLibrary={workoutLibrary}
               trainingFocusOptions={trainingFocusOptions}
