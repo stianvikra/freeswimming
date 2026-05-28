@@ -79,30 +79,48 @@ jobs:
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
 
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              { owner, repo, issue_number, per_page: 100 }
-            );
+            if (!issue_number) {
+              core.warning(
+                `Skipping Vercel preview PR comment because no issue number was available. Preview URL: ${process.env.PREVIEW_URL}`
+              );
+              return;
+            }
 
-            const existing = comments.find(
-              (comment) =>
-                comment.user?.type === "Bot" &&
-                typeof comment.body === "string" &&
-                comment.body.includes(marker)
-            );
+            try {
+              const comments = await github.paginate(
+                github.rest.issues.listComments,
+                { owner, repo, issue_number, per_page: 100 }
+              );
 
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body,
-              });
+              const existing = comments.find(
+                (comment) =>
+                  comment.user?.type === "Bot" &&
+                  typeof comment.body === "string" &&
+                  comment.body.includes(marker)
+              );
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body,
+                });
+              }
+            } catch (error) {
+              if (error?.status === 404) {
+                core.warning(
+                  `Could not update Vercel preview PR comment because GitHub returned 404 for issue ${issue_number}. Preview URL: ${process.env.PREVIEW_URL}`
+                );
+                return;
+              }
+
+              throw error;
             }

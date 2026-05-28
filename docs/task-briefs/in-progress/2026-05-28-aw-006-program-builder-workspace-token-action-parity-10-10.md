@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-program-builder-workspace-token-parity`
-- `execution_mode`: `owner-approved implementation through screenshot handoff; stop before broad PR gates until screenshot approval`
+- `execution_mode`: `owner-approved implementation; screenshot handoff approved; continue through broad PR gates and merge-readiness without merging`
 
 ## Brief Audit Record
 
@@ -96,7 +96,7 @@ Critical target categories for a `10/10` claim:
 - Supabase/data layer:
   - N/A; no migration, RLS/authz rule, generated DB type, storage, index, or data access change.
 - External services/tools:
-  - GitHub Actions: keep the existing CI lane and test selection, install Chromium headless shell for headless CI projects, keep bounded retry around Playwright browser installs after GitHub-hosted runners repeatedly stalled before tests could start, and add the least extra GitHub token permission needed for the existing Vercel preview comment step.
+  - GitHub Actions: keep the existing CI lane and test selection, install Chromium headless shell for headless CI projects, keep bounded retry around Playwright browser installs after GitHub-hosted runners repeatedly stalled before tests could start, and keep the existing Vercel preview comment step non-critical when GitHub's issue-comment endpoint returns `404` after the preview deploy succeeded.
   - No Stripe, Supabase provider setting, analytics vendor, email provider, SDK, secret, webhook, product retry, or idempotency behavior changes.
 - UI system:
   - Mature reference surfaces: `/my-library/training`, `/my-library/profile`, `/my-library/goals`, `/my-library/habits`, `/my-library/generator`, `/my-library/dryland`, `/my-library/workouts`, `MyLibraryHub`, `TodayTabsPanel`, and `SavedWorkoutsPanel`.
@@ -196,14 +196,14 @@ Required because `/my-library/programs/[programId]`, visible route actions, and 
 - `components/my-library/programs/ProgramBuilderHub.tsx` top builder panel, create action, empty/recent-program action styling, and immediate visual containment only.
 - Focused route/unit assertions where route shell or action class contracts change.
 - Canonical AW-006 queue and design inventory updates, including stale My Swim Sessions inventory state.
-- Minimal CI hardening for the existing GitHub Actions Playwright browser installs and Vercel preview comment job: use Chromium headless shell for headless CI projects, keep bounded retry after the runner stalled during PR validation, and add `issues: write` so the existing PR comment step can call GitHub's issues comment API.
+- Minimal CI hardening for the existing GitHub Actions Playwright browser installs and Vercel preview comment job: use Chromium headless shell for headless CI projects, keep bounded retry after the runner stalled during PR validation, add `issues: write`, and warn instead of failing the deploy job when GitHub still returns `404` from the non-critical PR-comment lookup.
 - Before/after screenshot handoff artifacts during implementation.
 
 ## Out Of Scope
 
 - Program data model, API routes, Supabase queries, generated database types, migrations, auth, analytics taxonomy, route URLs, week/day assignment business logic, create/save/reset behavior, export artifact payloads, generated filenames, PDF/Garmin-ready/handoff behavior, Help/Guide updates, support workflow, broad member notice primitive, app-wide design-system primitive, new dependencies, commerce, packages, and merge without explicit owner approval.
 - Deep planner/editor internals in `ProgramBuilderHub` beyond ensuring existing top-level route-shell fit remains visually coherent.
-- Broad CI redesign, new CI dependencies, browser cache migration, or changes to test coverage selection beyond aligning the existing Playwright install command with headless Chromium CI, bounding retries, and fixing the existing Vercel preview comment permission.
+- Broad CI redesign, new CI dependencies, browser cache migration, or changes to test coverage selection beyond aligning the existing Playwright install command with headless Chromium CI, bounding retries, and making the existing Vercel preview comment update resilient after a successful deploy.
 - `npm run verify:pre-pr`, PR creation/update, CI monitoring, and `npm run verify:pre-merge` until owner approves screenshots.
 
 ## Acceptance Criteria
@@ -231,6 +231,7 @@ Targeted during implementation:
 - PASS: `npx playwright install --dry-run --with-deps --only-shell chromium` lists Chromium Headless Shell plus FFmpeg only.
 - PASS: `npx playwright install --dry-run --with-deps --only-shell chromium webkit firefox` lists Chromium Headless Shell, WebKit, Firefox, and FFmpeg.
 - PASS: CI triage after commit `63663df` showed Vercel preview build/deploy succeeded and produced a preview URL, but the workflow failed only when `actions/github-script` called `github.rest.issues.listComments` with a token missing `issues: write`; this branch adds that least-privilege permission to the existing preview-comment workflow.
+- PASS: CI triage after commit `fac0772` showed Vercel preview build/deploy still succeeded and the token now had `issues: write`, but GitHub still returned `404` for the non-critical issue-comment lookup; this branch now logs a warning with the preview URL instead of failing the deploy job when that lookup returns `404`.
 
 Visual gate:
 
@@ -257,3 +258,4 @@ After owner screenshot approval:
 - `2026-05-28 | CI hardening | local verify:pre-pr and verify:pre-merge passed, but GitHub-hosted Playwright browser installs stalled before CI tests started; added bounded retry to the existing full verify Playwright install after e2e-smoke proved the rerun path green | next: rerun pre-PR gate, refresh PR, and monitor CI`
 - `2026-05-28 | CI install follow-up | rerun on HEAD 7e64f9f hit the same e2e-smoke Playwright install timeout twice before any app test ran; switched Chromium CI installs to Playwright's headless-shell path with bounded retry because this repo's CI Chromium projects run headless and do not set a browser channel | next: run local gates, commit, push, refresh PR, and re-check CI`
 - `2026-05-28 | Vercel preview permission follow-up | commit 63663df made local pre-PR green, but GitHub Vercel preview failed after successful build/deploy when the existing preview-comment step called the issues comments API without issues: write; added that least-privilege workflow permission | next: rerun local pre-PR, commit, push, refresh PR, and re-check CI`
+- `2026-05-28 | Vercel preview comment follow-up | commit fac0772 gave the workflow token issues: write, but GitHub still returned 404 for the non-critical PR-comment lookup after a successful Vercel build/deploy; changed the comment script to warn with the preview URL instead of failing the deploy job on that 404 | next: run local gates, commit, push, refresh PR, and re-check CI`
