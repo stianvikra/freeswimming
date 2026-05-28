@@ -10,7 +10,10 @@ on:
 jobs:
   e2e-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Keep enough room for dependency install, browser install, app startup, and
+    # both smoke suites. Browser install happens once here; the site-lock-smoke
+    # job below remains as a required-check gate that depends on this job.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -37,7 +40,13 @@ jobs:
 
       - name: Install Playwright browsers (chromium only)
         if: steps.verification-plan.outputs.lane != 'docs-only'
-        run: npx playwright install --with-deps chromium
+        run: |
+          set -euo pipefail
+          timeout 8m npx playwright install chromium || {
+            status=$?
+            echo "[playwright-install] First install attempt exited ${status}; retrying once."
+            timeout 8m npx playwright install chromium
+          }
 
       - name: Run E2E smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
@@ -47,48 +56,6 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
         run: npm run test:e2e:smoke
-
-      - name: Upload smoke artifacts
-        if: always() && steps.verification-plan.outputs.lane != 'docs-only'
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-e2e-smoke-artifacts
-          path: |
-            playwright-report
-            test-results
-          if-no-files-found: ignore
-          retention-days: 14
-
-  site-lock-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Resolve verification lane
-        id: verification-plan
-        run: |
-          node ./scripts/ci-verification-plan.mjs --summary --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}"
-          echo "lane=$(node ./scripts/ci-verification-plan.mjs --lane --event "${{ github.event_name }}" --base "${{ github.base_ref || 'main' }}")" >> "$GITHUB_OUTPUT"
-
-      - name: Skip docs-only site-lock suite
-        if: steps.verification-plan.outputs.lane == 'docs-only'
-        run: echo "[site-lock-smoke] Docs-only PR detected; skipping site-lock smoke suite."
-
-      - name: Install dependencies
-        if: steps.verification-plan.outputs.lane != 'docs-only'
-        run: npm ci
-
-      - name: Install Playwright browsers (chromium only)
-        if: steps.verification-plan.outputs.lane != 'docs-only'
-        run: npx playwright install --with-deps chromium
 
       - name: Run site-lock smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
@@ -103,16 +70,34 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
         run: npm run test:e2e:site-lock
 
-      - name: Upload site-lock artifacts
+      - name: Upload smoke artifacts
         if: always() && steps.verification-plan.outputs.lane != 'docs-only'
         uses: actions/upload-artifact@v7
         with:
-          name: ci-site-lock-artifacts
+          name: ci-runtime-smoke-artifacts
           path: |
             playwright-report
             test-results
           if-no-files-found: ignore
           retention-days: 14
+
+  site-lock-smoke:
+    needs: e2e-smoke
+    if: always()
+    runs-on: ubuntu-latest
+    # Required-check sentinel: the actual site-lock smoke suite runs in
+    # e2e-smoke after the shared Chromium install, avoiding a second install
+    # job that has repeatedly hung before tests start.
+    timeout-minutes: 5
+    steps:
+      - name: Confirm bundled site-lock smoke suite passed
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.e2e-smoke.result }}" != "success" ]; then
+            echo "[site-lock-smoke] e2e-smoke did not pass; bundled site-lock smoke suite is not green."
+            exit 1
+          fi
+          echo "[site-lock-smoke] Bundled site-lock smoke suite passed in e2e-smoke."
 
   verify:
     needs:

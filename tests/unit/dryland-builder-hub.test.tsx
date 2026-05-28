@@ -218,6 +218,47 @@ describe("DrylandBuilderHub", () => {
     expect(emptyState).not.toHaveAttribute("aria-live");
   });
 
+  it("uses My Library token actions on the create panel and saved-session list", async () => {
+    render(
+      <DrylandBuilderHub drylandLibrary={buildLibrary({ selectedSession: null })} browseOnly />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("dryland-create-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByRole("button", { name: "Create strength session" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(screen.getByRole("button", { name: "Create stretching session" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+
+    const sessionCard = screen.getByTestId(
+      "dryland-session-card-11111111-1111-4111-8111-111111111111"
+    );
+    expect(sessionCard).toHaveClass("fs-library-card");
+    expect(within(sessionCard).getByRole("link", { name: "Edit" })).toHaveClass("fs-cta-secondary");
+    expect(within(sessionCard).getByRole("link", { name: "Open" })).toHaveClass("fs-cta-secondary");
+
+    const deleteButton = screen.getByTestId(
+      "dryland-delete-session-11111111-1111-4111-8111-111111111111"
+    );
+    expect(deleteButton).toHaveClass("text-rose-700");
+    fireEvent.click(deleteButton);
+
+    expect(
+      screen.getByTestId("dryland-confirm-delete-session-11111111-1111-4111-8111-111111111111")
+    ).toHaveClass("bg-rose-600");
+  });
+
   it("loads a dryland session, lets the owner update it, and saves the canonical session", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
