@@ -586,7 +586,21 @@ test("guest sees free-account backup prompt after completing three lessons", asy
 
   const backupPrompt = page.getByTestId("course-backup-prompt");
   await expect(backupPrompt).toBeVisible({ timeout: 10_000 });
-  await expect(backupPrompt.getByRole("link", { name: "Create free account" })).toBeVisible();
+  await expect(backupPrompt.locator(".fs-library-card.fs-library-card-accent")).toBeVisible();
+  const createAccountLink = backupPrompt.getByRole("link", { name: "Create free account" });
+  await expect(createAccountLink).toBeVisible();
+  await expect(createAccountLink).toHaveClass(/fs-cta-primary/);
+  const activeLessonId = await page
+    .getByTestId("course-page")
+    .getAttribute("data-active-lesson-id");
+  expect(activeLessonId).toBeTruthy();
+  await expect(createAccountLink).toHaveAttribute(
+    "href",
+    `/auth/sign-in?next=%2Fcourse%3Flesson%3D${encodeURIComponent(activeLessonId ?? "")}`
+  );
+  await expect(backupPrompt.getByRole("button", { name: "Maybe later" })).toHaveClass(
+    /fs-cta-secondary/
+  );
   await backupPrompt.getByRole("button", { name: "Maybe later" }).click();
   await expect(backupPrompt).toBeHidden();
 });

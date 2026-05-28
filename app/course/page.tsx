@@ -2218,14 +2218,14 @@ function CoursePageClient() {
         data-testid="course-backup-prompt"
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[75] px-4 sm:bottom-6"
       >
-        <div className="mx-auto max-w-[520px] rounded-[22px] border border-emerald-200/70 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(16,185,129,0.14),rgba(255,255,255,0)_62%),rgba(255,255,255,0.97)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
-          <div className="text-[11px] font-semibold tracking-[0.08em] text-emerald-700 uppercase">
+        <div className="fs-library-card fs-library-card-accent mx-auto max-w-[520px] p-4 sm:p-5">
+          <div className="text-[12px] font-semibold text-[color:var(--fs-color-brand-700)]">
             Progress backup
           </div>
-          <h3 className="mt-1 text-[17px] font-semibold text-slate-900">
+          <h3 className="mt-1 text-[17px] font-semibold text-[color:var(--fs-color-ink-strong)]">
             Don&apos;t lose your progress
           </h3>
-          <p className="mt-1 text-[13px] leading-6 text-slate-700">
+          <p className="mt-2 text-[13px] leading-6 text-[color:var(--fs-color-muted)]">
             You&apos;ve completed {doneLessonsCount} lessons. Create a free account to back up and
             sync your progress across devices.
           </p>
@@ -2234,14 +2234,14 @@ function CoursePageClient() {
               tier="cta"
               href={backupSignInHref}
               onClick={dismissBackupPrompt}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(5,150,105,0.22)]"
+              className="fs-cta-primary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
             >
               Create free account
             </PressLink>
             <PressButton
               tier="nav"
               onClick={dismissBackupPrompt}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+              className="fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
               aria-label="Maybe later"
             >
               Maybe later
