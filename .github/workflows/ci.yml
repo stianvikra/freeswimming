@@ -143,21 +143,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        if: steps.verification-plan.outputs.lane != 'docs-only'
-        timeout-minutes: 18
-        # Verify uses the hosted runner Chrome channel for Chromium projects to
-        # avoid the stalled Chromium download path. WebKit and Firefox still need
-        # Playwright-managed browsers and system libraries, so keep `--with-deps`
-        # and retry once inside a bounded step.
-        run: |
-          set -euo pipefail
-          timeout 12m npx playwright install --with-deps webkit firefox || {
-            status=$?
-            echo "[playwright-install] Full verify install attempt exited ${status}; retrying once."
-            timeout 12m npx playwright install --with-deps webkit firefox
-          }
-
       - name: Run docs-only verification suite
         if: steps.verification-plan.outputs.lane == 'docs-only'
         run: npm run verify:docs-only
@@ -171,7 +156,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
-        run: npm run verify:public
+        # Browser coverage is provided by the required e2e-smoke and
+        # site-lock-smoke checks above. Keep verify on the no-download lane so
+        # GitHub-hosted browser archive stalls cannot block lint/type/unit/build.
+        run: npm run verify:ci-public
 
       - name: Skip webpack production build check for docs-only PRs
         if: steps.verification-plan.outputs.lane == 'docs-only'
