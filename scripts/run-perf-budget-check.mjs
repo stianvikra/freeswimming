@@ -44,6 +44,7 @@ const PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS = Math.max(
   1,
   Number(process.env.PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS ?? 2)
 );
+const PLAYWRIGHT_CHROMIUM_CHANNEL = (process.env.PW_CHROMIUM_CHANNEL ?? "").trim();
 
 const BUDGETS = {
   lcpMs: Number(process.env.PERF_BUDGET_LCP_MS ?? 2500),
@@ -453,7 +454,11 @@ async function run() {
   try {
     await waitForServerReady(PERF_BUDGET_BASE_URL, SERVER_READY_TIMEOUT_MS);
 
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch(
+      PLAYWRIGHT_CHROMIUM_CHANNEL
+        ? { channel: PLAYWRIGHT_CHROMIUM_CHANNEL, headless: true }
+        : { headless: true }
+    );
     const contextOptions = {
       baseURL: PERF_BUDGET_BASE_URL,
       extraHTTPHeaders: PERF_BUDGET_SITE_LOCK_BYPASS_TOKEN

@@ -69,6 +69,13 @@ const programExportFeedbackToneClasses: Record<ProgramExportFeedbackTone, string
   success: "border-emerald-200 bg-emerald-50 text-emerald-900",
   error: "border-rose-200 bg-rose-50 text-rose-800",
 };
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
+const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const mutedPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const recentProgramRowClass =
+  "flex flex-wrap items-center justify-between gap-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-subtle)] bg-white/80 p-3";
 
 function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
   const error = new Error(message) as RetryablePreviewError;
@@ -274,6 +281,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const [clientReady, setClientReady] = useState(false);
   const [programExportPreview, setProgramExportPreview] = useState("");
   const [programExportPreviewError, setProgramExportPreviewError] = useState("");
+  const [showProgramExportDetails, setShowProgramExportDetails] = useState(false);
   const [isProgramExportLoading, setIsProgramExportLoading] = useState(false);
   const [isProgramExportDownloading, setIsProgramExportDownloading] = useState(false);
   const [programExportNotice, setProgramExportNotice] = useState("");
@@ -301,6 +309,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     setSuccess("");
     setProgramExportPreview("");
     setProgramExportPreviewError("");
+    setShowProgramExportDetails(false);
     setIsProgramExportDownloading(false);
     setProgramExportNotice("");
     setProgramExportError("");
@@ -322,8 +331,8 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const programPdfFileName = buildProgramPdfFileName(savedProgram);
   const programExportStateLabel = "Saved program export";
   const programExportStateDescription = hasUnsavedChanges
-    ? "Export preview uses the last saved version. Save first if you want export output to include current edits."
-    : "Export preview matches the saved program.";
+    ? "The export uses the last saved version. Save first if you want export output to include current edits."
+    : "The export matches the saved program.";
   const programPdfStateLabel = "Saved program PDF";
   const programPdfStateDescription = hasUnsavedChanges
     ? "Print view opens the last saved version. Save first if you want the PDF to include current edits."
@@ -663,38 +672,13 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     <section
       data-testid="program-builder-hub"
       data-client-ready={clientReady ? "true" : "false"}
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="min-w-0"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Program builder preview</h2>
-          <p className="mt-2 max-w-[66ch] text-sm text-slate-600">
-            Save a program, place accepted workouts into week/day slots, and keep one shared
-            planning surface ready for later planner and export work.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {programLibrary.schemaReady ? (
-            <CreateManualProgramButton
-              testId="program-builder-create-manual"
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            />
-          ) : null}
-          <p className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wide text-blue-700 uppercase">
-            Saved program
-          </p>
-        </div>
-      </div>
-
       {!programLibrary.schemaReady ? (
-        <ProgramBuilderFeedback
-          tone="warning"
-          className="mt-5"
-          testId="program-builder-schema-warning"
-        >
+        <ProgramBuilderFeedback tone="warning" testId="program-builder-schema-warning">
           <p>
             Program save is still syncing in this environment. Come back once the programs table is
-            live to build saved program shells here.
+            live to build saved programs here.
           </p>
         </ProgramBuilderFeedback>
       ) : null}
@@ -745,13 +729,10 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 {programLibrary.schemaReady ? (
                   <CreateManualProgramButton
                     testId="program-builder-empty-create-manual"
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    className={primaryActionClass}
                   />
                 ) : null}
-                <Link
-                  href="/my-library"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                >
+                <Link href="/my-library" className={secondaryActionClass}>
                   Back to My Library
                 </Link>
               </>
@@ -769,20 +750,21 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
           </ProgramBuilderFeedback>
 
           {recentPrograms.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">Recent saved programs</h3>
-              <p className="mt-1 text-sm text-slate-600">
+            <div className={mutedPanelClass}>
+              <h3 className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                Recent saved programs
+              </h3>
+              <p className="mt-1 text-sm text-[color:var(--fs-color-muted)]">
                 Reopen another saved program directly in this route.
               </p>
               <div className="mt-4 grid gap-3">
                 {recentPrograms.map((program) => (
-                  <div
-                    key={program.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white p-3"
-                  >
+                  <div key={program.id} className={recentProgramRowClass}>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{program.title}</p>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                        {program.title}
+                      </p>
+                      <p className="mt-1 text-sm text-[color:var(--fs-color-muted)]">
                         {program.weekCount} week{program.weekCount === 1 ? "" : "s"} ·{" "}
                         {program.assignmentCount} scheduled workout
                         {program.assignmentCount === 1 ? "" : "s"}
@@ -791,7 +773,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     <Link
                       href={`/my-library/programs/${program.id}`}
                       data-testid={`program-builder-open-program-${program.id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={secondaryActionClass}
                     >
                       Open
                     </Link>
@@ -805,7 +787,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
 
       {savedProgram ? (
         <div className="mt-6 space-y-6">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <div className={mutedPanelClass}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="max-w-[48rem]">
                 <label
@@ -840,7 +822,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   data-testid="program-editor-reset"
                   onClick={resetDraftToSavedProgram}
                   disabled={!hasUnsavedChanges || isSaving}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={secondaryActionClass}
                 >
                   Reset
                 </button>
@@ -849,7 +831,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   data-testid="program-builder-save"
                   onClick={saveProgram}
                   disabled={!hasUnsavedChanges || isSaving}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className={primaryActionClass}
                 >
                   {isSaving ? "Saving..." : "Save program"}
                 </button>
@@ -869,8 +851,8 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">{week.label}</h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Place accepted workouts into day slots. This first program slice keeps the
-                      shell simple and ready to save.
+                      Place accepted workouts into day slots. This first version keeps the program
+                      simple and ready to save.
                     </p>
                   </div>
                   <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
@@ -1056,6 +1038,15 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 >
                   {isProgramExportDownloading ? "Downloading..." : "Download .json"}
                 </button>
+                <button
+                  type="button"
+                  data-testid="program-editor-garmin-export-details-toggle"
+                  aria-expanded={showProgramExportDetails}
+                  onClick={() => setShowProgramExportDetails((current) => !current)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  {showProgramExportDetails ? "Hide export details" : "Show export details"}
+                </button>
               </div>
             </div>
 
@@ -1073,26 +1064,28 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               />
             ) : null}
 
-            {programExportPreviewError ? (
+            {showProgramExportDetails && programExportPreviewError ? (
               <ProgramExportFeedback
                 tone="error"
-                title="Preview unavailable"
+                title="Export details unavailable"
                 message={programExportPreviewError}
                 testId="program-editor-garmin-export-preview-error"
               />
             ) : null}
 
-            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-              <pre
-                data-testid="program-editor-garmin-export-preview"
-                className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
-              >
-                {programExportPreview ||
-                  (isProgramExportLoading
-                    ? "Loading saved program export preview..."
-                    : "Saved program export preview will appear here once the saved program loads.")}
-              </pre>
-            </div>
+            {showProgramExportDetails ? (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+                <pre
+                  data-testid="program-editor-garmin-export-preview"
+                  className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
+                >
+                  {programExportPreview ||
+                    (isProgramExportLoading
+                      ? "Loading saved program export details..."
+                      : "Saved program export details will appear here once the saved program loads.")}
+                </pre>
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">

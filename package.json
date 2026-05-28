@@ -42,6 +42,7 @@
     "finance:reconcile": "node ./scripts/reconcile-finance-entitlements.mjs",
     "verify:open": "bash ./scripts/run-verify-open.sh",
     "verify:public": "bash ./scripts/run-verify-open.sh",
+    "verify:ci-public": "npm run lint:briefs && npm run lint:quality-gates && npm run lint:admin-audit && npm run lint:env-parity && npm run lint:pr-body:generated && npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:perf:budgets",
     "verify:docs-only": "bash ./scripts/run-verify-docs-only.sh",
     "verify:pre-pr": "bash ./scripts/run-verify-pre-pr.sh",
     "verify:pre-merge": "bash ./scripts/run-verify-pre-merge.sh",

@@ -24,7 +24,7 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
 - `Habits` (`/my-library/habits`) holds the private `My Perfect Day` habit setup, daily check-ins, reset behavior, and small weekly consistency summary. It is reached from signed-in Home or `/my-library/routines`, not a duplicate top-level My Library card.
 - `My Swim Sessions` (`/my-library/workouts`) is the saved swim-session list and swim builder entrypoint.
 - `Dryland Sessions` (`/my-library/dryland`) is the saved strength/stretching list, dryland builder entrypoint, and compact weekly `Micro Sessions` execution surface. The default route shows create actions and saved sessions before the weekly Micro Session panel; micro-focused query links prioritize the Micro Session surface. Saved sessions show normal `Edit`/`Open`/`Delete` actions by default; Micro Session source checkboxes appear only inside explicit create/edit mode.
-- `Program builder preview` is optional and only for placing saved swim sessions into week/day slots.
+- `Program builder` is optional and only for placing saved swim sessions into week/day slots.
 
 ## Support Answers
 

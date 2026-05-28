@@ -12,8 +12,8 @@ type Props = {
 };
 
 export default function CreateManualProgramButton({
-  label = "Create program shell",
-  pendingLabel = "Creating program shell...",
+  label = "Create program",
+  pendingLabel = "Creating program...",
   className = "",
   testId = "create-manual-program",
 }: Props) {

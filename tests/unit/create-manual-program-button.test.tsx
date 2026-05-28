@@ -35,7 +35,7 @@ describe("CreateManualProgramButton", () => {
 
     render(<CreateManualProgramButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create program shell" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create program" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -65,7 +65,7 @@ describe("CreateManualProgramButton", () => {
 
     render(<CreateManualProgramButton />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Create program shell" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create program" }));
 
     await waitFor(() => {
       expect(screen.getByText("Could not create program right now.")).toBeVisible();
@@ -74,7 +74,7 @@ describe("CreateManualProgramButton", () => {
     expect(feedback).toHaveAttribute("role", "alert");
     expect(feedback).toHaveAttribute("aria-live", "assertive");
     expect(feedback).toHaveAttribute("data-feedback-tone", "error");
-    expect(screen.getByRole("button", { name: "Create program shell" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Create program" })).toHaveAttribute(
       "aria-describedby",
       "create-manual-program-error"
     );

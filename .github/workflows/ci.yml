@@ -38,19 +38,31 @@ jobs:
         if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npm ci
 
-      - name: Install Playwright browsers (chromium only)
+      - name: Verify Playwright Chrome channel
         if: steps.verification-plan.outputs.lane != 'docs-only'
+        timeout-minutes: 3
+        # Smoke tests only need Chromium. Hosted runners already include Chrome,
+        # so launch that channel directly instead of downloading Playwright's
+        # Chromium archive, which has repeatedly stalled before tests start.
         run: |
           set -euo pipefail
-          timeout 8m npx playwright install chromium || {
-            status=$?
-            echo "[playwright-install] First install attempt exited ${status}; retrying once."
-            timeout 8m npx playwright install chromium
-          }
+          node - <<'NODE'
+          const { chromium } = require("@playwright/test");
+
+          (async () => {
+            const browser = await chromium.launch({ channel: "chrome", headless: true });
+            await browser.close();
+            console.log("[playwright-channel] Chrome channel launch passed.");
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: Run E2E smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "0"
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
@@ -60,6 +72,7 @@ jobs:
       - name: Run site-lock smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "1"
           SITE_LOCK_MODE: password
           SITE_LOCK_PASSWORD_HASH: sha256:dbb0e329da7714d323329ff55bf91dcd8206fdc0142e814d8a35724d5a6b7058
@@ -130,15 +143,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        if: steps.verification-plan.outputs.lane != 'docs-only'
-        # Verify runs Chromium, WebKit, and Firefox across the full public
-        # matrix. GitHub's hosted Ubuntu image does not reliably include the
-        # shared system libraries those browsers need, so keep `--with-deps`
-        # here and give the job enough time budget to complete both install and
-        # the actual verify/build gates.
-        run: npx playwright install --with-deps chromium webkit firefox
-
       - name: Run docs-only verification suite
         if: steps.verification-plan.outputs.lane == 'docs-only'
         run: npm run verify:docs-only
@@ -146,12 +150,16 @@ jobs:
       - name: Run verification suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "0"
           PERF_BUDGET_OUTPUT: artifacts/perf-budget-report.json
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
           SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
-        run: npm run verify:public
+        # Browser coverage is provided by the required e2e-smoke and
+        # site-lock-smoke checks above. Keep verify on the no-download lane so
+        # GitHub-hosted browser archive stalls cannot block lint/type/unit/build.
+        run: npm run verify:ci-public
 
       - name: Skip webpack production build check for docs-only PRs
         if: steps.verification-plan.outputs.lane == 'docs-only'

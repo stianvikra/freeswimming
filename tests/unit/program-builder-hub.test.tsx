@@ -147,6 +147,9 @@ describe("ProgramBuilderHub", () => {
       />
     );
 
+    expect(screen.getByTestId("program-builder-hub")).toHaveClass("min-w-0");
+    expect(screen.queryByTestId("program-builder-overview-card")).not.toBeInTheDocument();
+
     const schemaWarning = screen.getByTestId("program-builder-schema-warning");
     expect(schemaWarning).toHaveAttribute("role", "status");
     expect(schemaWarning).toHaveAttribute("aria-live", "polite");
@@ -172,10 +175,9 @@ describe("ProgramBuilderHub", () => {
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
     expect(emptyState).toHaveTextContent("No saved program is open here.");
-    expect(within(emptyState).getByRole("link", { name: "Back to My Library" })).toHaveAttribute(
-      "href",
-      "/my-library"
-    );
+    const backLink = within(emptyState).getByRole("link", { name: "Back to My Library" });
+    expect(backLink).toHaveAttribute("href", "/my-library");
+    expect(backLink).toHaveClass("fs-cta-secondary", "rounded-[var(--fs-radius-control)]");
     expect(screen.queryByTestId("program-builder-empty-create-manual")).not.toBeInTheDocument();
   });
 
@@ -195,7 +197,10 @@ describe("ProgramBuilderHub", () => {
     expect(emptyState).toHaveAttribute("aria-live", "polite");
     expect(emptyState).toHaveAttribute("data-feedback-tone", "warning");
     expect(emptyState).toHaveTextContent("That saved program could not be found.");
-    expect(screen.getByTestId("program-builder-empty-create-manual")).toBeInTheDocument();
+    expect(screen.getByTestId("program-builder-empty-create-manual")).toHaveClass(
+      "fs-cta-primary",
+      "rounded-[var(--fs-radius-control)]"
+    );
   });
 
   it("adds a scheduled workout and saves program edits", async () => {
@@ -243,6 +248,8 @@ describe("ProgramBuilderHub", () => {
     expect(screen.getByTestId("program-editor-save-state")).toHaveTextContent(
       "All changes are saved."
     );
+    expect(screen.getByTestId("program-editor-reset")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("program-builder-save")).toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
 
     fireEvent.change(screen.getByTestId("program-draft-title"), {
@@ -460,6 +467,14 @@ describe("ProgramBuilderHub", () => {
 
     render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
 
+    expect(screen.queryByTestId("program-editor-garmin-export-preview")).not.toBeInTheDocument();
+    const detailsToggle = screen.getByTestId("program-editor-garmin-export-details-toggle");
+    expect(detailsToggle).toHaveTextContent("Show export details");
+    expect(detailsToggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(detailsToggle);
+    expect(detailsToggle).toHaveTextContent("Hide export details");
+    expect(detailsToggle).toHaveAttribute("aria-expanded", "true");
+
     await waitFor(() => {
       expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
         '"kind": "freeswimming_garmin_ready_program_v1"'
@@ -537,10 +552,9 @@ describe("ProgramBuilderHub", () => {
     render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
-        '"kind": "freeswimming_garmin_ready_program_v1"'
-      );
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
+    expect(screen.queryByTestId("program-editor-garmin-export-preview")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("program-editor-garmin-export-download"));
 
@@ -587,6 +601,11 @@ describe("ProgramBuilderHub", () => {
 
     render(<ProgramBuilderHub programLibrary={buildProgramLibrary()} />);
 
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    fireEvent.click(screen.getByTestId("program-editor-garmin-export-details-toggle"));
     await waitFor(() => {
       expect(screen.getByTestId("program-editor-garmin-export-preview")).toHaveTextContent(
         '"kind": "freeswimming_garmin_ready_program_v1"'
