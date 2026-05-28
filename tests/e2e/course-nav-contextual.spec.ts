@@ -136,6 +136,12 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
 
   await middleFirst.click();
   await expect(drawer).toBeVisible();
+  await expect(drawer.getByTestId("course-menu-progress-card")).toHaveClass(
+    /fs-library-card-accent/
+  );
+  await expect(drawer.locator('[data-testid^="course-menu-module-"]').first()).toHaveClass(
+    /fs-library-card/
+  );
   const targetModuleButton = drawer
     .getByRole("button", { name: new RegExp(lastLesson.moduleTitle, "i") })
     .first();
