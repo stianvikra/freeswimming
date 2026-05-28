@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-28-aw-006-auth-sign-in-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-28`
 - `updated`: `2026-05-28`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-auth-sign-in-token-parity`
-- `execution_mode`: `in-progress; owner explicitly said execute`
+- `execution_mode`: `completed; PR #886 merged as f08d2b4; repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
@@ -62,6 +62,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No changes to request/resend/verify server actions, callback behavior, cooldown math, `next` handling, safe source filtering, cookies, sessions, or provider payloads.           | changed-files review + existing auth tests             | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, CRUD, publish workflow, operator queue, admin content, or admin mutation surface.                                                      | explicit admin-editor scope rationale                  | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | One visible H1 remains; labels, inputs, status region, submit/resend controls, focus rings, keyboard order, and touch targets remain accessible.                                 | Testing Library/e2e role assertions + screenshot QA    | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                               | Testing Library/e2e role assertions + screenshot QA    | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new dependency, media asset, extra fetch, polling loop, provider call, route cache change, or meaningful JS payload growth.                                                   | dependency diff + build/pre-PR gate                    | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | UI state remains derived from existing URL/search params and server-action outcomes; Supabase Auth remains server/provider canonical.                                            | data contract + auth code review                       | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because route dynamic behavior, auth redirects, callback freshness, cookies, and mutation invalidation remain unchanged.                                                     | cache scope rationale                                  | `N/A`                   |
@@ -238,8 +239,8 @@ Targeted during implementation:
 Visual gate:
 
 - Capture `before/after` screenshot artifacts for `/auth/sign-in` desktop and mobile contexts - PASS.
-- Artifact folder: `output/aw-006-auth-sign-in-token-action-2026-05-28-193652`
-- Captured: `2026-05-28 19:38`
+- Artifact folder: `output/aw-006-auth-sign-in-token-action-2026-05-28-201023`
+- Captured: `2026-05-28 20:11`
 - Captured representative filenames:
   - `before-auth-sign-in-default-desktop.png`
   - `after-auth-sign-in-default-desktop.png`
@@ -252,9 +253,11 @@ Visual gate:
 
 Broad gates after screenshot approval:
 
-- `npm run verify:pre-pr`
-- PR required CI checks green
-- `npm run verify:pre-merge`
+- PASS: `npm run verify:pre-pr` on `277df44` (full lane: branch-current, quality gates, admin/env/pr-body lints, ESLint with one pre-existing warning in ignored `output/`, typecheck, unit tests, build, perf budgets, and Playwright E2E).
+- PASS: opened/updated PR #886.
+- PASS: required CI checks green on `277df44`.
+- PASS: `npm run verify:pre-merge` on `277df44` (reused current full-public lane evidence and recorded pre-merge marker).
+- PASS: no product-rendering file changes after final screenshot capture.
 
 ## Local Tooling Prerequisite
 
@@ -269,3 +272,32 @@ Broad gates after screenshot approval:
 - `2026-05-28 | screenshot gate | captured before/after screenshot artifacts in output/aw-006-auth-sign-in-token-action-2026-05-28-193652 | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-28 | screenshot approved | owner approved screenshot handoff in chat | next: run npm run verify:pre-pr before commit/push/PR`
 - `2026-05-28 | pre-pr gate | npm run verify:pre-pr passed full lane after screenshot approval; perf budget trend recommendation is hold because worst margin is 14.0% against 15.0% tighten threshold | next: rerun npm run verify:pre-pr after this evidence-only brief update, then commit/push/open PR`
+- `2026-05-28 | done | PR #886 merged as f08d2b4 after GitHub CI and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: close out the done brief and canonical AW-006 queue/design-inventory references`
+
+## Completion Record
+
+- `completed`: `2026-05-28`
+- `merged_pr`: `#886`
+- `squash_commit`: `f08d2b4`
+- `result`: Closed AW-006 Auth Sign-In Token And Action Hierarchy Parity. `/auth/sign-in` now uses the same calmer AW-006 route shell, card, feedback, and action hierarchy as adjacent My Library and recovery surfaces while preserving sign-in actions, redirects, callback behavior, cooldown, Supabase/Auth, Stripe, entitlements, analytics, Help/Guide, and support behavior.
+- `validation`: Targeted Vitest PASS; desktop/mobile auth Playwright PASS; owner-approved screenshot handoff captured at `2026-05-28 20:11`; `npm run verify:pre-pr` PASS on `277df44`; GitHub CI PASS on `277df44`; `npm run verify:pre-merge` PASS before merge; post-merge preflight identified only this docs-only closeout.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #886 diff and tests preserved `/auth/sign-in` as the single sign-in route for My Library, admin confirmation, checkout recovery, and claims. | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshot handoff covered default, sent, and checkout contexts with clearer route, feedback, and action hierarchy. | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts captured `2026-05-28 20:11`; no product-rendering source edits after final capture.                                        | None.        |
+| Business logic correctness and data integrity | `5/5`          | Changed-files review confirmed no auth action, callback, cooldown, redirect, provider, entitlement, or payment behavior changed.                | None.        |
+| Accessibility (a11y)                          | `5/5`          | Focused route/component tests and screenshot QA preserved labels, one visible H1, status rendering, keyboard order, and accessible actions.     | None.        |
+| Accessibility                                 | `5/5`          | Same accessibility evidence as the canonical `Accessibility (a11y)` row, retained for closeout normalization.                                   | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, media, fetch, polling, route-cache, or payload-growth change; perf budgets passed in the full pre-PR/pre-merge lanes.            | None.        |
+| Data placement and sync boundaries            | `5/5`          | UI state stayed derived from existing URL/search params and server-action outcomes; Supabase Auth remains provider-canonical.                   | None.        |
+| Reliability and failure handling              | `5/5`          | Targeted tests preserved sent, cooldown, expired cooldown, error, disabled resend, and non-cooldown feedback states.                            | None.        |
+| Security and authz                            | `5/5`          | Tests and review preserved safe `next`/`source` handling and did not expose tokens, provider diagnostics, or protected access.                  | None.        |
+| Privacy and compliance                        | `5/5`          | Copy/diff review confirmed no raw sign-in links, one-time codes, session cookies, payment data, or provider diagnostics are newly exposed.      | None.        |
+| Content governance                            | `5/5`          | AW-006 queue, design inventory, and this brief are updated by the repo-managed closeout.                                                        | None.        |
+| i18n operational readiness                    | `5/5`          | Mobile/desktop screenshots kept labels layout-safe without tight fixed-width assumptions that would block later localization.                   | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next route, auth components, Tailwind/AW-006 tokens, and tests; no dependency or broad auth primitive added.                    | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, desktop/mobile auth Playwright, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed.                     | None.        |
+| DevOps and rollback readiness                 | `5/5`          | PR #886 is a normal squash merge with no migration, config, package, provider, or feature-flag change; revert restores prior markup/tests/docs. | None.        |
