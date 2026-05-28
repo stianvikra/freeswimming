@@ -80,7 +80,7 @@ Critical target categories for a `10/10` claim:
 | Stack-fit and dependency discipline           | `target`     | Reuse `SiteChrome`, existing program server route, `ProgramBuilderHub`, `CreateManualProgramButton`, My Library token/action references, Tailwind, and current tests.      | changed-files/dependency diff                  | `5/5`                   |
 | Testing and QA automation                     | `target`     | Add or update focused assertions for route shell/action classes while preserving existing program route/export/hub behavior coverage; run screenshot handoff before gates. | test output + screenshot handoff               | `5/5`                   |
 | Scalability and cost efficiency               | `supporting` | Supporting only: token/action parity adds no service call, storage, job, polling, or traffic-dependent cost.                                                               | implementation review                          | `4/5`                   |
-| DevOps and rollback readiness                 | `target`     | Normal git revert restores prior markup/tests/docs; no migration, dependency, provider setting, feature flag, or config rollback is needed.                                | git diff + validation evidence                 | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | Normal git revert restores prior markup/tests/docs/CI retry config; no migration, dependency, provider setting, runtime feature flag, or production rollback is needed.    | git diff + validation evidence                 | `5/5`                   |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -96,7 +96,8 @@ Critical target categories for a `10/10` claim:
 - Supabase/data layer:
   - N/A; no migration, RLS/authz rule, generated DB type, storage, index, or data access change.
 - External services/tools:
-  - N/A; no Stripe, Supabase provider setting, analytics vendor, email provider, SDK, secret, webhook, retry, or idempotency behavior changes.
+  - GitHub Actions: keep the existing CI lane and add only bounded retry around the full `verify` Playwright browser install after GitHub-hosted runners repeatedly stalled before tests could start.
+  - No Stripe, Supabase provider setting, analytics vendor, email provider, SDK, secret, webhook, product retry, or idempotency behavior changes.
 - UI system:
   - Mature reference surfaces: `/my-library/training`, `/my-library/profile`, `/my-library/goals`, `/my-library/habits`, `/my-library/generator`, `/my-library/dryland`, `/my-library/workouts`, `MyLibraryHub`, `TodayTabsPanel`, and `SavedWorkoutsPanel`.
   - Keep the change route/top-shell scoped; do not create a broad app-wide page shell/button/card primitive in this slice.
@@ -195,12 +196,14 @@ Required because `/my-library/programs/[programId]`, visible route actions, and 
 - `components/my-library/programs/ProgramBuilderHub.tsx` top builder panel, create action, empty/recent-program action styling, and immediate visual containment only.
 - Focused route/unit assertions where route shell or action class contracts change.
 - Canonical AW-006 queue and design inventory updates, including stale My Swim Sessions inventory state.
+- Minimal CI hardening for the existing GitHub Actions full `verify` Playwright browser install, limited to a bounded retry after the runner stalled during PR validation.
 - Before/after screenshot handoff artifacts during implementation.
 
 ## Out Of Scope
 
 - Program data model, API routes, Supabase queries, generated database types, migrations, auth, analytics taxonomy, route URLs, week/day assignment business logic, create/save/reset behavior, export artifact payloads, generated filenames, PDF/Garmin-ready/handoff behavior, Help/Guide updates, support workflow, broad member notice primitive, app-wide design-system primitive, new dependencies, commerce, packages, and merge without explicit owner approval.
 - Deep planner/editor internals in `ProgramBuilderHub` beyond ensuring existing top-level route-shell fit remains visually coherent.
+- Broad CI redesign, new CI dependencies, browser cache migration, or changes to test coverage selection beyond bounding and retrying the existing Playwright install command.
 - `npm run verify:pre-pr`, PR creation/update, CI monitoring, and `npm run verify:pre-merge` until owner approves screenshots.
 
 ## Acceptance Criteria
@@ -224,6 +227,7 @@ Targeted during implementation:
 - PASS: `npm run lint:briefs:all` (`379` brief files).
 - PASS: `git diff --check`.
 - PASS: Route/label/support sweep with the identifiers listed above; findings were expected route, component, test, queue, design-inventory, app-knowledge, runbook, and planned-roadmap references only. No Help/Guide or support-procedure fallout was required because labels, routes, workflow meaning, and recovery behavior were preserved.
+- PASS: CI triage after PR creation showed the first `e2e-smoke` attempt timed out during `npx playwright install chromium` after the browser download reached `100%`, then passed on rerun. The full `verify` job then repeatedly stalled in its Playwright browser install before tests started, so this branch added a bounded retry around the existing full verify install command without changing product code or test selection.
 
 Visual gate:
 
@@ -247,3 +251,4 @@ After owner screenshot approval:
 - `2026-05-28 | screenshot handoff ready | implemented route-shell/header/action token parity for /my-library/programs/[programId] and top ProgramBuilderHub actions, added focused page and component assertions, ran targeted validation, and captured before/after screenshot artifacts in output/aw-006-program-builder-workspace-2026-05-28-130014 | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-28 | visual correction | owner flagged duplicate Program builder heading, unclear Create program shell copy, and too-heavy mobile heading; removed the redundant top overview container, moved create action into the route header, changed the default create label to Create program, kept desktop heading scale while reducing mobile H1 size, and updated support docs/tests | next: rerun targeted validation and refresh screenshot handoff`
 - `2026-05-28 | export details correction | owner flagged the raw JSON preview as unclear for normal users and approved hiding it by default; kept Download .json primary, moved the raw export preview behind Show export details / Hide export details, and preserved export preview fetch/retry test coverage | next: rerun targeted validation and refresh screenshot handoff`
+- `2026-05-28 | CI hardening | local verify:pre-pr and verify:pre-merge passed, but GitHub-hosted Playwright browser installs stalled before CI tests started; added bounded retry to the existing full verify Playwright install after e2e-smoke proved the rerun path green | next: rerun pre-PR gate, refresh PR, and monitor CI`

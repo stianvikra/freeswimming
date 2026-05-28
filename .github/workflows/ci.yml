@@ -135,9 +135,15 @@ jobs:
         # Verify runs Chromium, WebKit, and Firefox across the full public
         # matrix. GitHub's hosted Ubuntu image does not reliably include the
         # shared system libraries those browsers need, so keep `--with-deps`
-        # here and give the job enough time budget to complete both install and
-        # the actual verify/build gates.
-        run: npx playwright install --with-deps chromium webkit firefox
+        # here. Bound the installer because hosted runners occasionally stall
+        # after browser downloads complete; retry once before failing the job.
+        run: |
+          set -euo pipefail
+          timeout 12m npx playwright install --with-deps chromium webkit firefox || {
+            status=$?
+            echo "[playwright-install] Full verify install attempt exited ${status}; retrying once."
+            timeout 12m npx playwright install --with-deps chromium webkit firefox
+          }
 
       - name: Run docs-only verification suite
         if: steps.verification-plan.outputs.lane == 'docs-only'
