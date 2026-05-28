@@ -38,23 +38,31 @@ jobs:
         if: steps.verification-plan.outputs.lane != 'docs-only'
         run: npm ci
 
-      - name: Install Playwright browsers (chromium only)
+      - name: Verify Playwright Chrome channel
         if: steps.verification-plan.outputs.lane != 'docs-only'
-        # Smoke tests run headless Chromium without a browser channel, so install
-        # the smaller Chromium headless shell instead of the full Chrome archive.
-        # Hosted runners have repeatedly stalled after the full archive reaches
-        # 100%; keep the command bounded and retry once.
+        timeout-minutes: 3
+        # Smoke tests only need Chromium. Hosted runners already include Chrome,
+        # so launch that channel directly instead of downloading Playwright's
+        # Chromium archive, which has repeatedly stalled before tests start.
         run: |
           set -euo pipefail
-          timeout 10m npx playwright install --with-deps --only-shell chromium || {
-            status=$?
-            echo "[playwright-install] First install attempt exited ${status}; retrying once."
-            timeout 10m npx playwright install --with-deps --only-shell chromium
-          }
+          node - <<'NODE'
+          const { chromium } = require("@playwright/test");
+
+          (async () => {
+            const browser = await chromium.launch({ channel: "chrome", headless: true });
+            await browser.close();
+            console.log("[playwright-channel] Chrome channel launch passed.");
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: Run E2E smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "0"
           NEXT_PUBLIC_SUPABASE_URL: https://example.com
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
@@ -64,6 +72,7 @@ jobs:
       - name: Run site-lock smoke suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "1"
           SITE_LOCK_MODE: password
           SITE_LOCK_PASSWORD_HASH: sha256:dbb0e329da7714d323329ff55bf91dcd8206fdc0142e814d8a35724d5a6b7058
@@ -136,19 +145,17 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.verification-plan.outputs.lane != 'docs-only'
-        # Verify runs Chromium, WebKit, and Firefox across the full public
-        # matrix. Chromium projects run headless without a channel, so the
-        # headless shell is enough there; WebKit and Firefox still install their
-        # normal browsers. GitHub's hosted Ubuntu image does not reliably include
-        # shared system libraries, so keep `--with-deps`. Bound the installer
-        # because hosted runners occasionally stall after browser downloads
-        # complete; retry once before failing the job.
+        timeout-minutes: 18
+        # Verify uses the hosted runner Chrome channel for Chromium projects to
+        # avoid the stalled Chromium download path. WebKit and Firefox still need
+        # Playwright-managed browsers and system libraries, so keep `--with-deps`
+        # and retry once inside a bounded step.
         run: |
           set -euo pipefail
-          timeout 12m npx playwright install --with-deps --only-shell chromium webkit firefox || {
+          timeout 12m npx playwright install --with-deps webkit firefox || {
             status=$?
             echo "[playwright-install] Full verify install attempt exited ${status}; retrying once."
-            timeout 12m npx playwright install --with-deps --only-shell chromium webkit firefox
+            timeout 12m npx playwright install --with-deps webkit firefox
           }
 
       - name: Run docs-only verification suite
@@ -158,6 +165,7 @@ jobs:
       - name: Run verification suite
         if: steps.verification-plan.outputs.lane != 'docs-only'
         env:
+          PW_CHROMIUM_CHANNEL: chrome
           SITE_LOCK_ENABLED: "0"
           PERF_BUDGET_OUTPUT: artifacts/perf-budget-report.json
           NEXT_PUBLIC_SUPABASE_URL: https://example.com

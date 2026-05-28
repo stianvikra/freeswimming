@@ -10,6 +10,8 @@ const nextDevBundlerArg = nextDevBundler === "webpack" ? "--webpack " : "";
 const nextDevMaxOldSpaceSizeMb = process.env.PW_NEXT_DEV_MAX_OLD_SPACE_SIZE_MB ?? "8192";
 const workers = process.env.CI ? 1 : Number(process.env.PW_WORKERS ?? 1);
 const outputDir = process.env.PW_OUTPUT_DIR ?? "/tmp/freeswimming-playwright-results";
+const chromiumChannel = process.env.PW_CHROMIUM_CHANNEL;
+const chromiumChannelUse = chromiumChannel ? { channel: chromiumChannel } : {};
 const supabaseEnv = process.env.FS_SUPABASE_ENV ?? "test";
 const useConfiguredSupabase =
   process.env.FS_ALLOW_PROD_SUPABASE === "1" || supabaseEnv === "ci" || supabaseEnv === "preview";
@@ -73,6 +75,7 @@ export default defineConfig({
       name: "mobile-chromium",
       use: {
         ...devices["Pixel 7"],
+        ...chromiumChannelUse,
       },
     },
     {
@@ -91,6 +94,7 @@ export default defineConfig({
       name: "desktop-chromium",
       use: {
         ...devices["Desktop Chrome"],
+        ...chromiumChannelUse,
       },
     },
     {
