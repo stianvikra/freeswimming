@@ -13,6 +13,17 @@ vi.mock("@/lib/analytics/client", () => ({
   sendClientAnalyticsEvent: vi.fn(),
 }));
 
+async function openWorkoutEditorMetadata() {
+  const metadataToggle = screen.getByTestId("workout-editor-metadata-toggle");
+  if (metadataToggle.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(metadataToggle);
+  }
+
+  await waitFor(() => {
+    expect(screen.getByTestId("session-draft-title")).toBeInTheDocument();
+  });
+}
+
 function buildPayload(
   overrides?: Partial<GeneratorIntakeHandoffPayload["overrides"]>
 ): GeneratorIntakeHandoffPayload {
@@ -575,13 +586,8 @@ describe("SessionGeneratorPanel", () => {
       "aria-expanded",
       "false"
     );
-    await waitFor(() => {
-      if (!screen.queryByTestId("session-draft-title"))
-        fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
-      expect(screen.getByTestId("session-draft-title")).toHaveValue(
-        "Threshold / CSS 25m Pool draft"
-      );
-    });
+    await openWorkoutEditorMetadata();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Threshold / CSS 25m Pool draft");
 
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "My edited threshold draft" },
@@ -801,7 +807,7 @@ describe("SessionGeneratorPanel", () => {
       );
     });
 
-    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+    await openWorkoutEditorMetadata();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Threshold / CSS 25m Pool draft");
 
     fireEvent.change(screen.getByTestId("session-draft-title"), {
@@ -827,10 +833,8 @@ describe("SessionGeneratorPanel", () => {
     );
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
-    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
-    await waitFor(() => {
-      expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
-    });
+    await openWorkoutEditorMetadata();
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   }, 15_000);
 
   it("loads a previously accepted workout into the same editor", async () => {
@@ -866,14 +870,14 @@ describe("SessionGeneratorPanel", () => {
     );
 
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
-    fireEvent.click(screen.getByTestId("workout-editor-metadata-toggle"));
+    await openWorkoutEditorMetadata();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Previously accepted workout");
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Discard changes" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("session-generator-prepare-needed")).not.toBeInTheDocument();
   });
 
-  it("supports discard and undo in the shared saved-session editor", () => {
+  it("supports discard and undo in the shared saved-session editor", async () => {
     render(
       <SessionGeneratorPanel
         payload={buildPayload()}
@@ -905,10 +909,7 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    const metadataToggle = screen.queryByTestId("workout-editor-metadata-toggle");
-    if (metadataToggle?.getAttribute("aria-expanded") === "false") {
-      fireEvent.click(metadataToggle);
-    }
+    await openWorkoutEditorMetadata();
 
     fireEvent.change(screen.getByTestId("session-draft-title"), {
       target: { value: "Temporary generator title" },
@@ -931,7 +932,7 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByRole("button", { name: "Discard changes" })).toBeVisible();
   });
 
-  it("applies the same pool-unit default reset behavior in the shared saved-session editor", () => {
+  it("applies the same pool-unit default reset behavior in the shared saved-session editor", async () => {
     render(
       <SessionGeneratorPanel
         payload={buildPayload()}
@@ -958,10 +959,7 @@ describe("SessionGeneratorPanel", () => {
       />
     );
 
-    const metadataToggle = screen.queryByTestId("workout-editor-metadata-toggle");
-    if (metadataToggle?.getAttribute("aria-expanded") === "false") {
-      fireEvent.click(metadataToggle);
-    }
+    await openWorkoutEditorMetadata();
 
     fireEvent.change(screen.getByLabelText("Exact pool length (m)"), {
       target: { value: "33.33" },

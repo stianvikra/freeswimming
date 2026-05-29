@@ -90,6 +90,7 @@ Critical target categories for a `10/10` claim:
   - Screenshot handoff comparison type: `after/reference`, comparing changed Admin Content Manager utility states to mature admin manager state references where practical.
 - Testing:
   - Add focused unit/component tests for utility feedback/status semantics.
+  - Session-step reference contract: if CI exposes a test-only assertion gap in session generator/editor coverage, keep the fix limited to the existing shared renderer expectations from `docs/design/session-step-surface-contract.md`; no session-step/workout runtime behavior is in scope.
   - Run screenshot handoff before `npm run verify:pre-pr` because rendered admin UI changes.
 
 ## Data Placement And Sync Contract
@@ -165,6 +166,7 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - Preserve existing copy, create/edit/delete/reorder/status actions, course structure messages, Context Notes, Context QR, content APIs, and support procedures.
 - Add focused unit/component tests under `tests/unit/admin-content-manager-state.test.tsx`.
 - Harden existing admin state consumer tests if the shared helper markup consolidation exposes tag-coupled assertions; keep those updates semantic-only and outside runtime behavior.
+- Harden existing session generator/editor tests only if broad CI exposes a timing- or state-toggle-coupled assertion while preserving the shared session-step renderer contract in `docs/design/session-step-surface-contract.md`; no session/workout product behavior changes are in scope.
 - Update this active brief, the canonical AW-006 queue, and the design inventory.
 - Capture screenshot handoff artifacts for the changed admin UI before PR gates.
 
@@ -211,6 +213,7 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - owner approved the regenerated screenshot handoff in chat on `2026-05-29`; continue to `npm run verify:pre-pr`.
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr` -> first run failed in `test:unit` because existing admin categories/messages/notes state tests selected the nearest `div` after shared state helper markup consolidation; tests were hardened to select the semantic `role="status"` wrapper and targeted rerun passed.
+  - PR CI `verify` first failed one existing `tests/unit/session-generator-panel.test.tsx` assertion because metadata details were assumed available immediately after an unconditional toggle click; the test was hardened to open the panel only when collapsed and wait for `session-draft-title`, preserving the shared session-step renderer contract from `docs/design/session-step-surface-contract.md`.
   - required CI checks on PR
   - `npm run verify:pre-merge`
 
@@ -225,3 +228,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-29 | in-progress | implemented scoped Admin Content Manager utility-state parity, added focused unit coverage, updated AW-006 queue/design inventory, ran targeted validation, captured screenshot handoff artifacts at output/aw-006-admin-content-utility-state-2026-05-29-153706, then revised the mirror color treatment after owner review and regenerated artifacts at output/aw-006-admin-content-utility-state-2026-05-29-154451 | next: owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI, and pre-merge gate`
 - `2026-05-29 | in-progress | owner approved regenerated screenshot handoff and authorized merge when tests are good | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if gates are green`
 - `2026-05-29 | in-progress | first npm run verify:pre-pr reached full unit suite and failed three existing admin state tests due tag-coupled closest("div") selectors after shared helper markup consolidation; updated those tests to assert the semantic status wrapper and targeted 5-file rerun passed | next: rerun npm run verify:pre-pr`
+- `2026-05-29 | in-progress | PR #898 CI verify failed one existing session generator metadata-toggle test; hardened the test to use the existing shared editor open/wait contract without changing product runtime behavior and documented the session-step reference contract evidence | next: rerun npm run verify:pre-pr, push the fix, and rerun CI`
