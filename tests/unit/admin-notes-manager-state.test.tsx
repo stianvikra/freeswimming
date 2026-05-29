@@ -144,7 +144,7 @@ describe("AdminNotesManager state rendering", () => {
     render(<AdminNotesManager />);
 
     const warningText = await screen.findByText("Admin notes schema is not ready.");
-    const warning = warningText.closest("div");
+    const warning = warningText.closest('[role="status"]');
     if (!warning) {
       throw new Error("Expected warning state wrapper to render.");
     }

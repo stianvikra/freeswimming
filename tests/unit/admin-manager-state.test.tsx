@@ -40,6 +40,41 @@ describe("AdminManagerState", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it("announces utility info states politely", () => {
+    render(
+      <AdminManagerState
+        tone="info"
+        title="Focus mode: Course modules"
+        testId="admin-info-state"
+        actions={<button type="button">Clear focus</button>}
+      >
+        <span>Mismatch detected. Use this filtered view to resolve missing records.</span>
+      </AdminManagerState>
+    );
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveTextContent("Focus mode: Course modules");
+    expect(status).toHaveTextContent("Mismatch detected.");
+    expect(status).toHaveClass("border-blue-200", "bg-blue-50/60", "text-blue-800");
+    expect(screen.getByRole("button", { name: "Clear focus" })).toBeInTheDocument();
+  });
+
+  it("keeps neutral utility states quiet in color but still announced", () => {
+    render(
+      <AdminManagerState tone="neutral" title="Platform mirror snapshot">
+        Mirror counts need review.
+      </AdminManagerState>
+    );
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveTextContent("Platform mirror snapshot");
+    expect(status).toHaveTextContent("Mirror counts need review.");
+    expect(status).toHaveClass("border-slate-200", "bg-white", "text-slate-700");
+    expect(screen.getByText("Platform mirror snapshot")).toHaveClass("text-slate-900");
+  });
+
   it("does not announce static empty states", () => {
     render(
       <AdminManagerState
