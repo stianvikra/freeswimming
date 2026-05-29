@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-29-aw-006-admin-content-manager-utility-state-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-29`
 - `updated`: `2026-05-29`
@@ -232,3 +232,30 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-29 | in-progress | first npm run verify:pre-pr reached full unit suite and failed three existing admin state tests due tag-coupled closest("div") selectors after shared helper markup consolidation; updated those tests to assert the semantic status wrapper and targeted 5-file rerun passed | next: rerun npm run verify:pre-pr`
 - `2026-05-29 | in-progress | PR #898 CI verify failed one existing session generator metadata-toggle test; hardened the test to use the existing shared editor open/wait contract without changing product runtime behavior and documented the session-step reference contract evidence | next: rerun npm run verify:pre-pr, push the fix, and rerun CI`
 - `2026-05-29 | in-progress | second PR #898 CI verify run exposed the same saved editor test's final collapsed metadata transition; added a final saved-state wait before reopening metadata and logged the CI-only test pattern in the high-cost debug log | next: rerun targeted unit and npm run verify:pre-pr before pushing the CI hardening`
+- `2026-05-29 | closeout | Admin Content Manager Utility State Parity shipped in PR #898 as squash commit f187bc9; this repo-managed closeout moves the brief to done and leaves no active AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting another AW-006 implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-29`
+- `merged_pr`: `#898`
+- `squash_commit`: `f187bc9`
+- `result`: Closed AW-006 Admin Content Manager Utility State Parity by aligning the scoped Admin Content Manager audit, focus, mirror snapshot, and QA cleanup feedback states with the existing admin-local state primitive while preserving content APIs, auth, course structure behavior, Context Notes/QR, Help/Guide, support procedures, and data contracts.
+- `validation`: targeted unit tests passed; `npm run verify:pre-pr` passed on `89cf28f` with full public lane; PR #898 CI passed; `npm run verify:pre-merge` passed on `89cf28f`; merge-preflight passed before squash merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- Critical target confirmation: `UX flow clarity`, `Business logic correctness and data integrity`, `Reliability and failure handling`, `Security and authz`, `Stack-fit and dependency discipline`, `Testing and QA automation`, and `DevOps and rollback readiness` are each `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #898 scope stayed within AW-006 Admin Content Manager utility-state parity; canonical queue closeout updated after merge.                                          | None.        |
+| UX flow clarity                               | `5/5`          | Audit, focus, mirror, and cleanup feedback use the shared admin state treatment with preserved labels/copy; screenshot handoff approved by owner.                     | None.        |
+| Visual design quality                         | `5/5`          | Regenerated screenshot handoff after owner color feedback; final artifacts at `output/aw-006-admin-content-utility-state-2026-05-29-154451`.                          | None.        |
+| Business logic correctness and data integrity | `5/5`          | Component diff preserved fetches, mirror payloads, cleanup callbacks, content actions, Context Notes/QR, and data contracts; focused unit coverage passed.            | None.        |
+| Admin editor ergonomics                       | `5/5`          | Utility states remain near owning admin context with unchanged action labels and disabled-state behavior; screenshot and component tests cover operator-facing flows. | None.        |
+| Accessibility (a11y)                          | `5/5`          | `AdminManagerState` roles/aria semantics covered by unit tests; status selectors hardened to semantic wrappers.                                                       | None.        |
+| Reliability and failure handling              | `5/5`          | Cleanup success/warning/error and mirror mismatch states remain deterministic; CI-only timing issue logged and hardened without runtime changes.                      | None.        |
+| Security and authz                            | `5/5`          | No API route, auth, credential, RLS, or secret-handling changes; admin permission behavior preserved in tests/diff.                                                   | None.        |
+| Content governance                            | `5/5`          | Existing admin content copy, status model, mirror meaning, and queue/design inventory were preserved or updated for this slice only.                                  | None.        |
+| Admin workflow and editability                | `5/5`          | Audit/focus/cleanup/create/edit/delete/status/Context Notes/Context QR workflows kept existing labels and behavior.                                                   | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminManagerState`; no dependency, package, migration, route, or architecture boundary changes.                                                               | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, `npm run verify:pre-pr`, PR #898 CI, and `npm run verify:pre-merge` passed; high-cost CI test pattern logged.                                    | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit `f187bc9` is normally revertible; no migrations/config/workflow/package changes.                                                                        | None.        |
