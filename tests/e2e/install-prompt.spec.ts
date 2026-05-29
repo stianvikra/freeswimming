@@ -502,6 +502,9 @@ test("first successful mark-as-done can trigger contextual install prompt once",
     await dispatchInstallPromptEvent(page, "dismissed");
     await expect(prompt).toBeVisible({ timeout: 8_000 });
   }
+  await expect(prompt.locator(".fs-library-card")).toBeVisible();
+  await expect(prompt.getByRole("button", { name: "Install app" })).toHaveClass(/fs-cta-primary/);
+  await expect(prompt.getByRole("button", { name: "Not now" })).toHaveClass(/fs-cta-secondary/);
 
   await page.getByRole("button", { name: "Not now" }).click();
   await expect(prompt).toBeHidden();
@@ -540,18 +543,24 @@ test("contextual install prompt shows success confirmation after accepted instal
     await dispatchInstallPromptEvent(page, "accepted");
     await expect(prompt).toBeVisible({ timeout: 8_000 });
   }
+  await expect(prompt.locator(".fs-library-card")).toBeVisible();
+  const installButton = prompt.getByRole("button", { name: "Install app" });
+  await expect(installButton).toHaveClass(/fs-cta-primary/);
   // Re-prime right before click to avoid losing deferredPrompt in slower iOS CI runs.
   await dispatchInstallPromptEvent(page, "accepted");
   await page.waitForTimeout(80);
-  await page.getByRole("button", { name: "Install app" }).click();
+  await installButton.click();
   const feedback = page.getByTestId("course-install-prompt-feedback");
   await expect(feedback).toBeVisible({ timeout: 8_000 });
   await expect(feedback).toHaveAttribute("role", "status");
   await expect(feedback).toHaveAttribute("aria-live", "polite");
   await expect(feedback).toHaveAttribute("data-feedback-tone", "success");
   await expect(feedback).toContainText(INSTALL_SUCCESS_MESSAGE);
+  await expect(feedback).toHaveClass(/rounded-\[var\(--fs-radius-card\)\]/);
 
-  await prompt.getByRole("button", { name: "Done" }).click();
+  const doneButton = prompt.getByRole("button", { name: "Done" });
+  await expect(doneButton).toHaveClass(/fs-cta-primary/);
+  await doneButton.click();
   await expect(prompt).toBeHidden();
 });
 
