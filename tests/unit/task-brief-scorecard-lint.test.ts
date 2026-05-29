@@ -296,6 +296,41 @@ describe("task brief scorecard lint", () => {
     expect(result.errors.join("\n")).toContain(inventoryPath);
   });
 
+  it("fails a changed done brief when a design inventory table cell labels its old path active", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const inventoryPath = "docs/design/example-inventory.md";
+    const content = buildBrief({
+      status: "done",
+      canonicalQueuePath: queuePath,
+      completionRecord: passingCompletionRecord,
+    }).replace(
+      "- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-example-queue.md`",
+      [
+        "- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-example-queue.md`",
+        "- `design_inventory`: `docs/design/example-inventory.md`",
+      ].join("\n")
+    );
+    const result = lintBriefText(
+      "docs/task-briefs/done/2026-05-03-example.md",
+      content,
+      canonicalCategories,
+      {
+        enforceDoneCloseout: true,
+        referenceTextByPath: {
+          [queuePath]: "## Remaining PR-Sized UX/UI Slices\n\nNo active slice selected.",
+          [inventoryPath]: [
+            "| Surface | Decision |",
+            "| --- | --- |",
+            "| Example surface | Active: `docs/task-briefs/in-progress/2026-05-03-example.md`; preserve existing behavior. |",
+          ].join("\n"),
+        },
+      }
+    );
+
+    expect(result.errors.join("\n")).toContain(inventoryPath);
+    expect(result.errors.join("\n")).toContain("Active:");
+  });
+
   it("fails a changed done brief when a body-referenced design doc still lists it active", () => {
     const inventoryPath = "docs/design/example-inventory.md";
     const content = buildBrief({

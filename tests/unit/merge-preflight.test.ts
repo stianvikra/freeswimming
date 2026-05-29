@@ -191,6 +191,41 @@ describe("post-merge preflight", () => {
     expect(report.queueInventoryFallout).toHaveLength(2);
   });
 
+  it("detects stale active table-cell references from design inventories", () => {
+    const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
+    const inventoryPath = "docs/design/example-inventory.md";
+    const doneBriefPath = "docs/task-briefs/done/2026-05-03-example.md";
+    const report = buildPostMergePreflightReport({
+      branch: "main",
+      baseBranch: "main",
+      ref: "HEAD",
+      changedFiles: [doneBriefPath],
+      contentByPath: {
+        [doneBriefPath]: [
+          "# Task Brief: AW-006 Example State Parity",
+          "",
+          "## Metadata",
+          "",
+          "- `status`: `done`",
+          `- \`canonical_queue\`: \`${queuePath}\``,
+          `- \`design_inventory\`: \`${inventoryPath}\``,
+        ].join("\n"),
+      },
+      referenceTextByPath: {
+        [queuePath]: "## Remaining PR-Sized UX/UI Slices\n\nNo active slice selected.",
+        [inventoryPath]: [
+          "| Surface | Decision |",
+          "| --- | --- |",
+          "| Example surface | Active: `docs/task-briefs/in-progress/2026-05-03-example.md`; preserve existing behavior. |",
+        ].join("\n"),
+      },
+    });
+
+    expect(report.staleCanonicalQueueReferences).toHaveLength(1);
+    expect(report.staleCanonicalQueueReferences[0].referencePath).toBe(inventoryPath);
+    expect(report.staleCanonicalQueueReferences[0].matchedText).toContain("Active:");
+  });
+
   it("reports queue and inventory fallout for pending closeout briefs before the first gate", () => {
     const queuePath = "docs/task-briefs/planned/2026-05-17-example-queue.md";
     const inventoryPath = "docs/design/example-inventory.md";
