@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-29-aw-006-admin-workspace-shell-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-29`
 - `updated`: `2026-05-29`
@@ -41,7 +41,6 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
 - `DevOps and rollback readiness`
@@ -217,8 +216,33 @@ Required as a targeted admin-surface sweep because this slice changes operator-v
   - Owner correction before broad gates: Notes filters were squeezed in the desktop side-navigation layout; compact filter sizing/wrapping was approved as a narrow Notes-manager visual correction.
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr` -> PASS on rerun, full lane (`lint:briefs`, `lint:quality-gates`, `lint:admin-audit`, `lint:env-parity`, `lint:pr-body:generated`, `lint`, `typecheck`, `test:unit`, `build`, `test:perf:budgets`, `test:e2e`); first attempt stopped at `lint:quality-gates` until the route/label/support sweep evidence wording was repaired.
-  - required PR CI checks
-  - `npm run verify:pre-merge`
+  - Required PR CI checks for PR `#900` -> PASS: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `Analyze (javascript-typescript)`, `CodeQL`, `Vercel`, and `Vercel Preview Comments`.
+  - `npm run verify:pre-merge` -> PASS, full lane; public e2e summary `102 passed`, `492 skipped`, and private-gate regression was skipped because `SITE_LOCK_ENABLED!=1`.
+
+## Completion Record
+
+- `completed`: `2026-05-29`
+- `merged_pr`: `#900`
+- `squash_commit`: `b208b0c`
+- `result`: Closed AW-006 Admin Workspace Shell Token And Action Hierarchy Parity by aligning the `/admin` desktop shell to a left side navigation, keeping mobile/tablet navigation stacked, and making Notes filters compact without changing admin data or workflows.
+- `validation`: Focused unit coverage, route/label/support sweep, final screenshot handoff, `npm run verify:pre-pr`, required PR CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scope stayed inside `/admin` shell/navigation/action hierarchy; canonical AW-006 queue and design inventory updated in PR `#900` and closeout. | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved side navigation and compact Notes filters; screenshot handoff plus focused tests verified active tab and URL state.             | None.        |
+| Visual design quality                         | `5/5`          | Final after/reference screenshots captured and approved; no product-rendering files changed after capture.                                     | None.        |
+| Business logic correctness and data integrity | `5/5`          | Notes filter values, URL state, admin manager mounting, quick-note context, auth, and APIs were preserved; focused unit tests passed.          | None.        |
+| Admin editor ergonomics                       | `5/5`          | Desktop side rail, active section panel, Quick note, public/member actions, and compact filter controls stayed reachable with no extra clicks. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Tab/link/button labels, current/pressed semantics, and keyboard-reachable shell actions preserved; broad e2e gate passed.                      | None.        |
+| Reliability and failure handling              | `5/5`          | Existing unknown-tab fallback and deterministic manager selection stayed intact; URL-state tests passed.                                       | None.        |
+| Security and authz                            | `5/5`          | Protected admin layout, auth checks, redirects, cookies, secrets, and API authz were untouched; CI and pre-merge passed.                       | None.        |
+| Content governance                            | `5/5`          | Admin labels, Help/Guide behavior, support procedures, queue, design inventory, and brief evidence were kept aligned.                          | None.        |
+| Admin workflow and editability                | `5/5`          | Content, QR, commerce, operations, email, messages, notes, categories, and help managers still mount under the same contracts.                 | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `fs-*` token classes and admin/client boundaries; no package or dependency change.                                             | None.        |
+| Testing and QA automation                     | `5/5`          | Focused vitest, `lint:briefs:all`, `git diff --check`, screenshot assertions, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.           | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit `b208b0c` is revertable; no migrations, config, workflow, package, or deployment setting changes.                                | None.        |
 
 ## Local Tooling Prerequisite
 
@@ -235,3 +259,4 @@ Required as a targeted admin-surface sweep because this slice changes operator-v
 - `2026-05-29 | screenshot approved | owner approved final screenshot handoff for side navigation and compact Notes filters | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
 - `2026-05-29 | gate evidence repair | first npm run verify:pre-pr stopped at lint:quality-gates because the route/label/support sweep section did not use the exact evidence wording for identifiers searched and surfaces checked; brief wording repaired without changing product code | next: rerun npm run verify:pre-pr`
 - `2026-05-29 | pre-pr gate passed | npm run verify:pre-pr passed on rerun using the full lane after screenshot approval and evidence wording repair | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-29 | merged | PR #900 merged to main as squash commit b208b0c after required CI and npm run verify:pre-merge passed; repo-managed closeout moves this brief to done and clears the active AW-006 queue/design references | next: merge closeout PR, sync main, rerun post-merge:preflight, then complete mandatory chat-handoff assessment`
