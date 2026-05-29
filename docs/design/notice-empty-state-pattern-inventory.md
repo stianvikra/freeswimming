@@ -78,28 +78,27 @@ Completed scope:
 - Add focused component/unit coverage around the helper and one migrated manager.
 - Use `after/reference` screenshot handoff if rendered admin UI changes.
 
-## Active Admin Workspace Shell Token And Action Hierarchy Parity Slice
+## Completed Admin Workspace Shell Token And Action Hierarchy Parity Slice
 
-Active AW-006 implementation slice:
+Completed AW-006 implementation slice:
 
 `Admin Workspace Shell Token And Action Hierarchy Parity`
 
-Active implementation brief:
+Done implementation brief:
 
-`docs/task-briefs/in-progress/2026-05-29-aw-006-admin-workspace-shell-token-action-parity-10-10.md`
+`docs/task-briefs/done/2026-05-29-aw-006-admin-workspace-shell-token-action-parity-10-10.md`
 
-Scope direction:
+Shipped result:
 
-- Reuse current AW-006 token/card/action direction on the `/admin` route shell and top-level workspace shell:
+- PR `#900` reused current AW-006 token/card/action direction on the `/admin` route shell and top-level workspace shell:
   - `app/admin/layout.tsx`
   - `components/admin/AdminWorkspace.tsx`
-- Use desktop side navigation for admin section choices, while keeping a stacked/card menu on smaller screens.
-- Keep the owner-approved Notes filter correction layout-only: compact wrapping controls in `components/admin/AdminNotesManager.tsx` without changing filter values, URL params, or note data.
-- Preserve admin tab labels, subtitles, route query behavior, role gating, quick-note context, and manager mounting.
-- Add focused coverage around shell classes/semantics and existing tab URL state.
-- Use `after/reference` screenshot handoff because rendered admin UI changes.
+- Desktop admin section choices now use side navigation, while smaller screens keep a stacked/card menu.
+- Owner-approved Notes filter correction stayed layout-only: compact wrapping controls in `components/admin/AdminNotesManager.tsx` without changing filter values, URL params, or note data.
+- Admin tab labels, subtitles, route query behavior, role gating, quick-note context, and manager mounting were preserved.
+- Focused coverage around shell classes/semantics and existing tab URL state was added, with owner-approved `after/reference` screenshot handoff.
 
-Do not include:
+Preserve after closeout:
 
 - admin manager internals,
 - admin content, QR, commerce, operations, email-template, message, note, category, or help workflow behavior,
