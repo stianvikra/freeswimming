@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import type { AdminContentItemRow } from "@/lib/admin/content";
+import type { AdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
 import {
   ALL_CONTENT_SCOPE_STORAGE_KEY,
   CONTENT_PRIMARY_VIEW_STORAGE_KEY,
@@ -50,13 +51,16 @@ function buildContentPayload(overrides?: {
   items?: AdminContentItemRow[];
   schemaReady?: boolean;
   warning?: string | null;
+  role?: "admin" | "editor" | "viewer";
+  mirror?: AdminContentMirrorSnapshot;
 }) {
   return {
     ok: true,
-    role: "editor",
+    role: overrides?.role ?? "editor",
     items: overrides?.items ?? [],
     schemaReady: overrides?.schemaReady ?? true,
     warning: overrides?.warning ?? null,
+    mirror: overrides?.mirror,
   };
 }
 
@@ -90,6 +94,56 @@ function buildRevisionsPayload(
     ok: true,
     items: overrides?.items ?? [],
     canRestore: overrides?.canRestore ?? true,
+  };
+}
+
+function buildMirrorSnapshot(
+  overrides?: Partial<AdminContentMirrorSnapshot>
+): AdminContentMirrorSnapshot {
+  return {
+    checkedAt: "2026-05-29T10:00:00.000Z",
+    metrics: [
+      {
+        key: "course_module",
+        label: "Course modules",
+        platformCount: 2,
+        adminCount: 1,
+        delta: -1,
+        status: "missing",
+        coverage: {
+          missingCount: 1,
+          extraCount: 0,
+          ignoredCount: 1,
+          missingSamples: ["intro-course"],
+          extraSamples: [],
+          ignoredSamples: ["e2e-admin-content-module"],
+        },
+      },
+      {
+        key: "programs",
+        label: "Programs/products",
+        platformCount: 1,
+        adminCount: 1,
+        delta: 0,
+        status: "matched",
+        coverage: {
+          missingCount: 0,
+          extraCount: 0,
+          ignoredCount: 0,
+          missingSamples: [],
+          extraSamples: [],
+          ignoredSamples: [],
+        },
+      },
+    ],
+    summary: {
+      matchedCount: 1,
+      mismatchCount: 1,
+      coverageMismatchCount: 1,
+      ignoredRecordCount: 1,
+      ignoredMetricCount: 1,
+    },
+    ...overrides,
   };
 }
 
@@ -401,6 +455,134 @@ describe("AdminContentManager state rendering", () => {
     expect(noResults).toHaveTextContent("No content items match current search/filter.");
     expect(noResults).not.toHaveAttribute("role");
     expect(noResults).not.toHaveAttribute("aria-live");
+  });
+
+  it("renders audit, mirror, and focus utility states through admin state feedback", async () => {
+    useAllContentView();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(
+          buildContentPayload({
+            items: [buildContentItem()],
+            mirror: buildMirrorSnapshot(),
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const auditMode = await screen.findByTestId("admin-content-audit-mode-state");
+    expect(auditMode).toHaveAttribute("role", "status");
+    expect(auditMode).toHaveAttribute("aria-live", "polite");
+    expect(auditMode).toHaveTextContent(
+      "All content audit mode is enabled. This can be a long mixed list."
+    );
+
+    const mirrorState = await screen.findByTestId("admin-content-mirror-state");
+    expect(mirrorState.tagName).toBe("ARTICLE");
+    expect(mirrorState).toHaveAttribute("role", "status");
+    expect(mirrorState).toHaveClass("bg-white", "text-slate-700");
+    expect(
+      within(mirrorState).getByRole("heading", { name: "Platform mirror snapshot" })
+    ).toBeInTheDocument();
+    expect(mirrorState).toHaveTextContent("Platform mirror snapshot");
+    expect(mirrorState).toHaveTextContent("1 mismatch");
+    expect(mirrorState).toHaveTextContent("1 identity drift");
+    expect(within(mirrorState).getByTestId("admin-mirror-metric-course_module")).toHaveTextContent(
+      "Course modules"
+    );
+    expect(within(mirrorState).getByTestId("admin-mirror-metric-course_module")).toHaveClass(
+      "border-amber-300",
+      "bg-amber-50/40"
+    );
+    expect(within(mirrorState).getByTestId("admin-mirror-metric-programs")).toHaveClass(
+      "border-slate-200",
+      "bg-white"
+    );
+    expect(mirrorState).toHaveTextContent("Sign in as admin to delete ignored QA/test records.");
+
+    fireEvent.click(within(mirrorState).getByTestId("admin-mirror-metric-course_module"));
+
+    const focusMode = await screen.findByTestId("admin-content-focus-mode");
+    expect(focusMode).toHaveAttribute("role", "status");
+    expect(focusMode).toHaveAttribute("aria-live", "polite");
+    expect(focusMode).toHaveTextContent("Focus mode: Course modules");
+    expect(focusMode).toHaveTextContent(
+      "Mismatch detected. Use this filtered view to resolve missing/extra records."
+    );
+
+    fireEvent.click(within(focusMode).getByRole("button", { name: "Clear focus" }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-content-focus-mode")).not.toBeInTheDocument();
+    });
+  });
+
+  it("keeps mirror QA cleanup action behavior while surfacing cleanup feedback", async () => {
+    useAllContentView();
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/test-records" && init?.method === "POST") {
+        return okJson({
+          ok: true,
+          deletedCount: 1,
+          deletedIds: ["content-ignored"],
+          deletedSlugs: ["e2e-admin-content-module"],
+          normalizedCourseStructure: false,
+          warning: "Course order normalization needs retry.",
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(
+          buildContentPayload({
+            role: "admin",
+            items: [buildContentItem()],
+            mirror: buildMirrorSnapshot(),
+          })
+        );
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    fireEvent.click(await screen.findByTestId("admin-mirror-cleanup-test-records"));
+
+    const actionNotice = await screen.findByTestId("admin-content-action-notice-state");
+    expect(actionNotice).toHaveAttribute("role", "status");
+    expect(actionNotice).toHaveTextContent(
+      "Deleted 1 QA/test content record. Course order normalization needs retry."
+    );
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Delete 1 ignored QA/test content record(s)? This only removes explicit e2e-admin-content-* rows."
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input) === "/api/admin/content/test-records" && init?.method === "POST"
+      )
+    ).toBe(true);
   });
 
   it("renders create action errors through polite admin state feedback", async () => {

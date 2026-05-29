@@ -1,15 +1,27 @@
 import type { ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
 
-type AdminManagerStateTone = "loading" | "warning" | "error" | "success" | "empty" | "no-results";
+type AdminManagerStateTone =
+  | "loading"
+  | "info"
+  | "neutral"
+  | "warning"
+  | "error"
+  | "success"
+  | "empty"
+  | "no-results";
 type AdminManagerStateAnnouncement = "polite" | "assertive" | "off";
 type AdminManagerStateDensity = "normal" | "compact" | "spacious";
+type AdminManagerStateElement = "div" | "article";
+type AdminManagerStateTitleElement = "p" | "h3";
 
 type AdminManagerStateProps = {
   tone: AdminManagerStateTone;
   children?: ReactNode;
   title?: ReactNode;
   actions?: ReactNode;
+  as?: AdminManagerStateElement;
+  titleElement?: AdminManagerStateTitleElement;
   announcement?: AdminManagerStateAnnouncement;
   density?: AdminManagerStateDensity;
   className?: string;
@@ -19,6 +31,8 @@ type AdminManagerStateProps = {
 
 const toneClasses: Record<AdminManagerStateTone, string> = {
   loading: "border border-slate-200 bg-slate-50 text-slate-600",
+  info: "border border-blue-200 bg-blue-50/60 text-blue-800",
+  neutral: "border border-slate-200 bg-white text-slate-700",
   warning: "border border-amber-200 bg-amber-50 text-amber-800",
   error: "border border-rose-200 bg-rose-50 text-rose-700",
   success: "border border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -40,7 +54,9 @@ function defaultAnnouncementForTone(tone: AdminManagerStateTone): AdminManagerSt
 
 function titleClassForTone(tone: AdminManagerStateTone): string {
   if (tone === "empty" || tone === "no-results") return "text-sm font-semibold text-slate-900";
+  if (tone === "neutral") return "text-sm font-semibold text-slate-900";
   if (tone === "error") return "text-sm font-medium text-rose-700";
+  if (tone === "info") return "text-sm font-semibold text-blue-900";
   return "text-sm font-medium";
 }
 
@@ -56,6 +72,8 @@ export default function AdminManagerState({
   title,
   children,
   actions,
+  as: Component = "div",
+  titleElement: TitleElement = "p",
   announcement,
   density = "normal",
   className,
@@ -77,17 +95,19 @@ export default function AdminManagerState({
         : undefined;
 
   return (
-    <div
+    <Component
       className={cx("mt-5", densityClasses[density], toneClasses[tone], className)}
       role={role}
       aria-live={ariaLive}
       data-testid={testId}
     >
-      {title ? <p className={titleClassForTone(tone)}>{title}</p> : null}
-      {children ? <p className={messageClassForTone(tone, Boolean(title))}>{children}</p> : null}
+      {title ? <TitleElement className={titleClassForTone(tone)}>{title}</TitleElement> : null}
+      {children ? (
+        <div className={messageClassForTone(tone, Boolean(title))}>{children}</div>
+      ) : null}
       {actions ? (
         <div className={actionsClassName ?? "mt-3 flex flex-wrap gap-2"}>{actions}</div>
       ) : null}
-    </div>
+    </Component>
   );
 }

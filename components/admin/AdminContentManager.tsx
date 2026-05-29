@@ -2481,9 +2481,14 @@ export default function AdminContentManager() {
         ) : null}
 
         {isAllContentView && listTypeFilter === "all" ? (
-          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <AdminManagerState
+            tone="warning"
+            density="compact"
+            testId="admin-content-audit-mode-state"
+            className="!mt-3"
+          >
             All content audit mode is enabled. This can be a long mixed list.
-          </p>
+          </AdminManagerState>
         ) : null}
 
         {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
@@ -2500,22 +2505,24 @@ export default function AdminContentManager() {
         ) : null}
 
         {isAllContentView && listFocusState ? (
-          <div
-            data-testid="admin-content-focus-mode"
-            className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3"
+          <AdminManagerState
+            tone="info"
+            title={listFocusState.label}
+            testId="admin-content-focus-mode"
+            className="!mt-3"
+            actionsClassName="mt-3 flex flex-wrap gap-2"
+            actions={
+              <button
+                type="button"
+                onClick={clearFocusMode}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+              >
+                Clear focus
+              </button>
+            }
           >
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-blue-900">{listFocusState.label}</p>
-              <p className="text-xs text-blue-800">{listFocusState.detail}</p>
-            </div>
-            <button
-              type="button"
-              onClick={clearFocusMode}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
-            >
-              Clear focus
-            </button>
-          </div>
+            {listFocusState.detail}
+          </AdminManagerState>
         ) : null}
 
         {!schemaReady && warning ? (
@@ -2525,29 +2532,14 @@ export default function AdminContentManager() {
         ) : null}
 
         {isAllContentView && schemaReady && mirror ? (
-          <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">Platform mirror snapshot</h3>
-                <p className="text-xs text-slate-500">
-                  {mirror.summary.mismatchCount === 0
-                    ? "All aligned"
-                    : `${mirror.summary.mismatchCount} mismatch${
-                        mirror.summary.mismatchCount === 1 ? "" : "es"
-                      }`}
-                  {mirror.summary.coverageMismatchCount > 0
-                    ? ` · ${mirror.summary.coverageMismatchCount} identity drift${
-                        mirror.summary.coverageMismatchCount === 1 ? "" : "s"
-                      }`
-                    : ""}
-                  {mirror.summary.ignoredRecordCount > 0
-                    ? ` · ${mirror.summary.ignoredRecordCount} ignored QA/test record${
-                        mirror.summary.ignoredRecordCount === 1 ? "" : "s"
-                      }`
-                    : ""}
-                </p>
-              </div>
-              {mirror.summary.ignoredRecordCount > 0 ? (
+          <AdminManagerState
+            as="article"
+            tone="neutral"
+            title="Platform mirror snapshot"
+            titleElement="h3"
+            testId="admin-content-mirror-state"
+            actions={
+              mirror.summary.ignoredRecordCount > 0 ? (
                 adminRole === "admin" ? (
                   <button
                     type="button"
@@ -2561,10 +2553,39 @@ export default function AdminContentManager() {
                       : "Delete ignored QA/test records"}
                   </button>
                 ) : (
-                  <p className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-500">
                     Sign in as admin to delete ignored QA/test records.
-                  </p>
+                  </span>
                 )
+              ) : null
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span
+                className={[
+                  "inline-flex h-6 items-center rounded-full border px-2 font-semibold",
+                  mirror.summary.mismatchCount === 0
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-amber-200 bg-amber-50 text-amber-800",
+                ].join(" ")}
+              >
+                {mirror.summary.mismatchCount === 0
+                  ? "All aligned"
+                  : `${mirror.summary.mismatchCount} mismatch${
+                      mirror.summary.mismatchCount === 1 ? "" : "es"
+                    }`}
+              </span>
+              {mirror.summary.coverageMismatchCount > 0 ? (
+                <span className="text-slate-600">
+                  {mirror.summary.coverageMismatchCount} identity drift
+                  {mirror.summary.coverageMismatchCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
+              {mirror.summary.ignoredRecordCount > 0 ? (
+                <span className="text-slate-600">
+                  {mirror.summary.ignoredRecordCount} ignored QA/test record
+                  {mirror.summary.ignoredRecordCount === 1 ? "" : "s"}
+                </span>
               ) : null}
             </div>
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -2576,14 +2597,33 @@ export default function AdminContentManager() {
                     onClick={() => handleMirrorMetricFocus(metric)}
                     aria-pressed={activeMirrorMetricKey === metric.key}
                     className={[
-                      "w-full rounded-lg border px-3 py-2 text-left text-xs transition hover:brightness-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
+                      "w-full rounded-lg border px-3 py-2 text-left text-xs text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
                       metric.status === "matched"
-                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
-                        : "border-amber-200 bg-amber-50 text-amber-900",
+                        ? "border-slate-200 bg-white hover:bg-slate-50"
+                        : "border-amber-300 bg-amber-50/40 hover:bg-amber-50/70",
                       activeMirrorMetricKey === metric.key ? "ring-2 ring-blue-300" : "",
                     ].join(" ")}
                   >
-                    <p className="font-semibold">{metric.label}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p
+                        className={[
+                          "font-semibold",
+                          metric.status === "matched" ? "text-slate-900" : "text-amber-900",
+                        ].join(" ")}
+                      >
+                        {metric.label}
+                      </p>
+                      <span
+                        className={[
+                          "inline-flex h-5 items-center rounded-full border px-2 text-[11px] font-semibold",
+                          metric.status === "matched"
+                            ? "border-slate-200 bg-slate-50 text-slate-600"
+                            : "border-amber-200 bg-white text-amber-800",
+                        ].join(" ")}
+                      >
+                        {metric.status === "matched" ? "Aligned" : "Review"}
+                      </span>
+                    </div>
                     <p className="mt-1">
                       Platform: {metric.platformCount} · Admin: {metric.adminCount}
                       {metric.delta !== 0
@@ -2627,7 +2667,7 @@ export default function AdminContentManager() {
               Snapshot checks current platform modules/lessons/guides/products against admin records
               and excludes explicit QA/test slugs such as `e2e-admin-content-*` from parity counts.
             </p>
-          </article>
+          </AdminManagerState>
         ) : null}
 
         {isCourseWorkspaceView ? (

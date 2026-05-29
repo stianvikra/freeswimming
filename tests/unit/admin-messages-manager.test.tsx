@@ -156,7 +156,7 @@ describe("AdminMessagesManager", () => {
     render(<AdminMessagesManager adminRole="admin" />);
 
     const warningText = await screen.findByText("Message schema is not ready.");
-    const warning = warningText.closest("div");
+    const warning = warningText.closest('[role="status"]');
     if (!warning) {
       throw new Error("Expected warning state wrapper to render.");
     }

@@ -18,6 +18,16 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Evidence:
 ```
 
+## 2026-05-29 - Session Generator Unit CI: metadata panel collapsed after save transition
+
+- Surface: `tests/unit/session-generator-panel.test.tsx`, shared saved-session editor metadata panel.
+- Symptom: targeted local test and full local `verify:pre-pr` passed, but GitHub CI `verify` failed twice on `session-draft-title` in the session generator save flow. The first failure happened after an unconditional metadata-toggle click; the second happened after the save success banner appeared but before the saved-workout editor reached its final collapsed state.
+- Root cause: the test assumed metadata details stayed open across the generated-draft to saved-workout transition. In CI full-suite timing, the saved editor can complete a final render after the success feedback appears and collapse metadata again, making `session-draft-title` absent.
+- Fix pattern: open metadata only when `workout-editor-metadata-toggle` reports `aria-expanded="false"`, wait for the title field before editing, and after a save transition wait for the final saved-state text (`All changes are saved to this session.`) before reopening metadata.
+- Detection/probe: inspect the CI DOM dump for `workout-editor-metadata-toggle` with `aria-expanded="false"`, visible saved summary text, and missing `session-draft-title`; rerun the targeted unit test locally, then full `verify:pre-pr`.
+- Prevention: for collapsible editor tests, never assume an expansion survives a parent record transition. Wait for the post-transition stable state, then open the details panel through the toggle contract.
+- Evidence: PR #898 CI runs `26641593075` and `26642263753`; local passing run `artifacts/test-runs/20260529-160556/verify.log`.
+
 ## 2026-04-22 - Poolside Save Image: exported PNG crop looked shifted/clipped
 
 - Surface: poolside note print preview, Save image export.
