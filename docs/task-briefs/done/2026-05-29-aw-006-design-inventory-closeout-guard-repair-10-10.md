@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-29-aw-006-design-inventory-closeout-guard-repair-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-29`
 - `updated`: `2026-05-29`
@@ -200,3 +200,23 @@ Required as a targeted docs/tooling sweep because this slice changes lifecycle-r
 - `2026-05-29 | in-progress | started from clean main@adbca6d after PR #900 and closeout PR #901; post-merge preflight passed with no pending closeout; owner approved the AW-006 Design Inventory Closeout Guard Repair slice after fresh queue/design/code re-audit found a stale design-inventory Active reference and a guard hole for table cells containing Active: <path> | next: implement scoped guard/test/docs repair and run targeted validation before broad gates`
 - `2026-05-29 | targeted validation | implemented scoped parser/test/docs repair, fixed one over-broad table-cell detection attempt, corrected the stale design-inventory Active reference, and passed targeted Vitest, lint:briefs:all, route/label/support sweep, git diff --check, and feature-branch post-merge preflight smoke | next: stage changes, run npm run lint:briefs and npm run verify:pre-pr before commit/push/PR`
 - `2026-05-29 | pre-PR validation | npm run verify:pre-pr passed full-public lane with artifact log artifacts/test-runs/20260529-210910/verify.log; no screenshot handoff required because the slice changes docs/tooling/tests only | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-29 | merged | PR #902 merged to main as bc77599; post-merge preflight surfaced this repo-managed docs-only closeout | next: validate, merge closeout PR, sync main, rerun post-merge preflight, and reassess chat handoff`
+
+## Completion Record
+
+- `completed`: `2026-05-29`
+- `merged_pr`: `#902`
+- `squash_commit`: `bc77599`
+- `result`: Closed AW-006 Design Inventory Closeout Guard Repair. The stale AW-006 design-inventory active reference now points to the completed brief, and the closeout guard catches future `Active: <in-progress path>` table-cell references before they can survive closeout.
+- `validation`: Targeted Vitest passed for task-brief lint and merge preflight tests; `npm run lint:briefs:all` passed; `npm run verify:pre-pr` passed full-public lane; PR #902 CI passed including `verify`, `e2e-smoke`, `deploy-preview`, `size-check`, CodeQL, and Vercel; `npm run verify:pre-merge` passed full lane with marker `artifacts/verify-pre-merge/20260529-193024.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Design inventory now records Admin Content Manager Utility State Parity as done, while the canonical AW-006 queue remains without an active selected slice. | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Added fixture coverage proving stale `Active: docs/task-briefs/in-progress/...` table-cell references fail for done briefs.                                 | No gap.      |
+| Reliability and failure handling              | `5/5`          | Shared closeout-reference helper behavior is covered through post-merge preflight regression tests.                                                         | No gap.      |
+| Content governance                            | `5/5`          | Corrected stale lifecycle wording and completed repo-managed closeout evidence after merge.                                                                 | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing lint/preflight surfaces; no dependencies, config, runtime, API, DB, or workflow changes.                                                    | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `lint:briefs:all`, `verify:pre-pr`, PR #902 CI, and `verify:pre-merge` all passed.                                                         | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | PR #902 merged cleanly as a single squash commit; rollback is normal git revert, with no migrations or deploy-setting changes.                              | No gap.      |
