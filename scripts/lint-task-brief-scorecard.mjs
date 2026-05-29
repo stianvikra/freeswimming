@@ -413,11 +413,13 @@ function isActiveLifecycleTableRow(line) {
   if (!line.trim().startsWith("|")) return false;
   return toCells(line).some((cell) => {
     const normalized = normalizeReferenceText(cell);
+    const raw = cell.replace(/[`*_]/g, "").trim();
     return (
       normalized === "active" ||
       normalized === "current" ||
       normalized === "candidate" ||
-      normalized === "in progress"
+      normalized === "in progress" ||
+      /^(?:active|current|candidate|in[-\s]+progress)\s*[:=-]/i.test(raw)
     );
   });
 }
