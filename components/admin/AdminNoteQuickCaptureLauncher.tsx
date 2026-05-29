@@ -71,6 +71,7 @@ type Props = {
   className?: string;
   triggerLabel?: string;
   triggerTestId?: string;
+  triggerClassName?: string;
   description?: string;
   onSaved?: (item: AdminNoteItem) => void;
 };
@@ -142,6 +143,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     className = "",
     triggerLabel = "Quick note",
     triggerTestId = "admin-note-quick-capture-trigger",
+    triggerClassName = "inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100",
     description = "",
     onSaved,
   } = props;
@@ -1004,7 +1006,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
         type="button"
         onClick={openLauncher}
         data-testid={triggerTestId}
-        className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+        className={triggerClassName}
       >
         {triggerLabel}
       </button>

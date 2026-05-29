@@ -78,6 +78,34 @@ Completed scope:
 - Add focused component/unit coverage around the helper and one migrated manager.
 - Use `after/reference` screenshot handoff if rendered admin UI changes.
 
+## Active Admin Workspace Shell Token And Action Hierarchy Parity Slice
+
+Active AW-006 implementation slice:
+
+`Admin Workspace Shell Token And Action Hierarchy Parity`
+
+Active implementation brief:
+
+`docs/task-briefs/in-progress/2026-05-29-aw-006-admin-workspace-shell-token-action-parity-10-10.md`
+
+Scope direction:
+
+- Reuse current AW-006 token/card/action direction on the `/admin` route shell and top-level workspace shell:
+  - `app/admin/layout.tsx`
+  - `components/admin/AdminWorkspace.tsx`
+- Use desktop side navigation for admin section choices, while keeping a stacked/card menu on smaller screens.
+- Keep the owner-approved Notes filter correction layout-only: compact wrapping controls in `components/admin/AdminNotesManager.tsx` without changing filter values, URL params, or note data.
+- Preserve admin tab labels, subtitles, route query behavior, role gating, quick-note context, and manager mounting.
+- Add focused coverage around shell classes/semantics and existing tab URL state.
+- Use `after/reference` screenshot handoff because rendered admin UI changes.
+
+Do not include:
+
+- admin manager internals,
+- admin content, QR, commerce, operations, email-template, message, note, category, or help workflow behavior,
+- admin API changes,
+- auth, Supabase, Stripe, analytics, commerce, entitlement, or email behavior.
+
 ## Completed Primitive Expansion Slice
 
 Completed AW-006 implementation slice:

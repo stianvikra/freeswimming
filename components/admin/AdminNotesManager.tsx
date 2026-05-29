@@ -69,6 +69,15 @@ import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 
 type PendingScreenshot = AdminNoteStagedImage;
 
+const adminNotesFilterBaseClass = "space-y-1 text-sm font-medium text-slate-700";
+const adminNotesFilterSelectClass =
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900";
+const adminNotesFilterSearchClass = `${adminNotesFilterBaseClass} min-w-[min(100%,16rem)] flex-1 basis-full sm:basis-[18rem] xl:flex-none xl:basis-[16rem]`;
+const adminNotesFilterStatusClass = `${adminNotesFilterBaseClass} min-w-[min(100%,20rem)] flex-1 basis-full sm:basis-[20rem] xl:flex-none xl:basis-[20rem]`;
+const adminNotesFilterCompactClass = `${adminNotesFilterBaseClass} min-w-[min(100%,10rem)] flex-1 basis-[10rem] xl:flex-none xl:basis-[10rem]`;
+const adminNotesFilterContextClass = `${adminNotesFilterBaseClass} min-w-[min(100%,11rem)] flex-1 basis-[11rem] xl:flex-none xl:basis-[11rem]`;
+const adminNotesFilterRouteClass = `${adminNotesFilterBaseClass} min-w-[min(100%,12rem)] flex-1 basis-[12rem] xl:flex-none xl:basis-[12rem]`;
+
 export default function AdminNotesManager() {
   const pathname = usePathname() ?? "/admin";
   const rawSearchParams = useSearchParams();
@@ -1050,8 +1059,11 @@ export default function AdminNotesManager() {
               ) : null}
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+            <div
+              className="flex flex-wrap items-end gap-3"
+              data-testid="admin-notes-filter-controls"
+            >
+              <label className={adminNotesFilterSearchClass}>
                 <span>Search</span>
                 <input
                   type="search"
@@ -1063,14 +1075,14 @@ export default function AdminNotesManager() {
                   }}
                   data-testid="admin-notes-search"
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  placeholder="Search note ID, title, text, attachment, or context"
+                  placeholder="Search notes"
                 />
               </label>
 
-              <div className="space-y-1 text-sm font-medium text-slate-700">
+              <div className={adminNotesFilterStatusClass} data-testid="admin-notes-status-filter">
                 <span>Status</span>
                 <div
-                  className="grid grid-cols-3 gap-2"
+                  className="grid grid-cols-[1fr_1.45fr_1fr] gap-2"
                   role="group"
                   aria-label="Notes status filter"
                 >
@@ -1108,13 +1120,13 @@ export default function AdminNotesManager() {
                 </div>
               </div>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={adminNotesFilterCompactClass}>
                 <span>Category</span>
                 <select
                   value={notesFilters.category}
                   onChange={(e) => updateNotesFilters({ category: e.target.value })}
                   data-testid="admin-notes-category-filter"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={adminNotesFilterSelectClass}
                 >
                   <option value="">All categories</option>
                   {suggestedCategoryOptions.map((option) => (
@@ -1125,7 +1137,7 @@ export default function AdminNotesManager() {
                 </select>
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={adminNotesFilterCompactClass}>
                 <span>Priority</span>
                 <select
                   value={notesFilters.priority}
@@ -1135,7 +1147,7 @@ export default function AdminNotesManager() {
                     })
                   }
                   data-testid="admin-notes-priority-filter"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={adminNotesFilterSelectClass}
                 >
                   <option value="">All priorities</option>
                   {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
@@ -1146,7 +1158,7 @@ export default function AdminNotesManager() {
                 </select>
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={adminNotesFilterContextClass}>
                 <span>Context type</span>
                 <select
                   value={notesFilters.contextType}
@@ -1156,7 +1168,7 @@ export default function AdminNotesManager() {
                     })
                   }
                   data-testid="admin-notes-context-type-filter"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={adminNotesFilterSelectClass}
                 >
                   <option value="">All context types</option>
                   {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
@@ -1167,13 +1179,13 @@ export default function AdminNotesManager() {
                 </select>
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={adminNotesFilterRouteClass}>
                 <span>Exact route/context</span>
                 <select
                   value={notesFilters.contextRef}
                   onChange={(e) => updateNotesFilters({ contextRef: e.target.value })}
                   data-testid="admin-notes-context-ref-filter"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={adminNotesFilterSelectClass}
                   disabled={contextRefOptions.length === 0}
                 >
                   <option value="">

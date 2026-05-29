@@ -1,0 +1,107 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import AdminWorkspace from "@/components/admin/AdminWorkspace";
+
+const { pathnameValue, replaceMock, searchParamsValue } = vi.hoisted(() => ({
+  pathnameValue: { current: "/admin" },
+  replaceMock: vi.fn(),
+  searchParamsValue: { current: "" },
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathnameValue.current,
+  useRouter: () => ({ replace: replaceMock }),
+  useSearchParams: () => new URLSearchParams(searchParamsValue.current),
+}));
+
+vi.mock("@/components/admin/AdminNoteQuickCaptureLauncher", () => ({
+  default: ({
+    triggerClassName,
+    triggerLabel,
+    triggerTestId,
+  }: {
+    triggerClassName?: string;
+    triggerLabel?: string;
+    triggerTestId?: string;
+  }) => (
+    <button type="button" data-testid={triggerTestId} className={triggerClassName}>
+      {triggerLabel}
+    </button>
+  ),
+}));
+
+function mockManager(testId: string) {
+  return {
+    default: () => <section data-testid={testId} />,
+  };
+}
+
+vi.mock("@/components/admin/AdminCommerceManager", () => mockManager("admin-manager-commerce"));
+vi.mock("@/components/admin/AdminContentManager", () => mockManager("admin-manager-content"));
+vi.mock("@/components/admin/AdminCategoriesManager", () => mockManager("admin-manager-categories"));
+vi.mock("@/components/admin/AdminEmailTemplatesManager", () =>
+  mockManager("admin-manager-email-templates")
+);
+vi.mock("@/components/admin/AdminHelpCenter", () => mockManager("admin-manager-help"));
+vi.mock("@/components/admin/AdminMessagesManager", () => mockManager("admin-manager-messages"));
+vi.mock("@/components/admin/AdminNotesManager", () => mockManager("admin-manager-notes"));
+vi.mock("@/components/admin/AdminOperationsManager", () => mockManager("admin-manager-operations"));
+vi.mock("@/components/admin/AdminQrLinksManager", () => mockManager("admin-manager-qr-links"));
+
+describe("AdminWorkspace shell", () => {
+  beforeEach(() => {
+    pathnameValue.current = "/admin";
+    searchParamsValue.current = "";
+    replaceMock.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("uses the AW-006 token shell for tabs, active context, and quick note", () => {
+    render(<AdminWorkspace role="admin" />);
+
+    expect(screen.getByTestId("admin-workspace-shell")).toHaveClass("contents");
+    expect(screen.getByTestId("admin-tab-grid")).toHaveClass(
+      "lg:sticky",
+      "lg:col-start-1",
+      "lg:grid-cols-1"
+    );
+    expect(screen.getByTestId("admin-workspace-main")).toHaveClass("lg:col-start-2", "min-w-0");
+
+    const contentTab = screen.getByTestId("admin-tab-content");
+    expect(contentTab).toHaveClass("fs-library-card", "fs-library-card-accent");
+    expect(contentTab).toHaveAttribute("aria-pressed", "true");
+
+    const notesTab = screen.getByTestId("admin-tab-notes");
+    expect(notesTab).toHaveClass("fs-library-card");
+    expect(notesTab).not.toHaveClass("fs-library-card-accent");
+
+    expect(screen.getByTestId("admin-active-section-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Content");
+    expect(screen.getByTestId("admin-workspace-quick-note-trigger")).toHaveClass(
+      "fs-cta-secondary",
+      "min-h-11"
+    );
+    expect(screen.getByTestId("admin-manager-content")).toBeVisible();
+  });
+
+  it("keeps tab URL state and manager selection intact", () => {
+    searchParamsValue.current = "tab=notes";
+
+    render(<AdminWorkspace role="editor" />);
+
+    expect(screen.getByTestId("admin-tab-notes")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Notes");
+    expect(screen.getByTestId("admin-manager-notes")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("admin-tab-qr-links"));
+
+    expect(replaceMock).toHaveBeenCalledWith("/admin?tab=qr-links", { scroll: false });
+  });
+});

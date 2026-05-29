@@ -11,6 +11,20 @@ type AdminLayoutProps = {
 
 export const dynamic = "force-dynamic";
 
+const adminWorkspaceClass =
+  "mx-auto min-h-screen w-full max-w-[1280px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28";
+const adminWorkspaceGridClass =
+  "lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-6";
+const adminShellCardClass = "fs-library-card fs-library-card-accent p-5 sm:p-6 md:p-8";
+const adminEyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const adminHeadingClass =
+  "text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]";
+const adminMutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const adminPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const adminSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 export default async function AdminLayout({ children }: AdminLayoutProps) {
   const supabase = await createServerSupabaseClientIfAuthCookiePresent();
   if (!supabase) {
@@ -29,21 +43,16 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   if (!gate.ok) {
     return (
       <SiteChrome>
-        <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-          <div className="rounded-3xl border border-amber-200 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-            <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">
-              Admin access required
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">You don&apos;t have access</h1>
-            <p className="mt-3 max-w-[56ch] text-sm text-slate-700">
+        <section className={adminWorkspaceClass}>
+          <div className={adminShellCardClass}>
+            <p className={adminEyebrowClass}>Admin access required</p>
+            <h1 className={`mt-2 ${adminHeadingClass}`}>You don&apos;t have access</h1>
+            <p className={`mt-3 max-w-[56ch] ${adminMutedTextClass}`}>
               This area is only available to configured admin roles. If you should have access,
               contact the site owner to assign your admin role.
             </p>
             <div className="mt-5">
-              <Link
-                href="/my-library"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
-              >
+              <Link href="/my-library" className={adminPrimaryActionClass}>
                 Back to My Library
               </Link>
             </div>
@@ -57,35 +66,32 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <SiteChrome>
-      <section className="mx-auto min-h-screen w-full max-w-[980px] px-6 pt-28 pb-20">
-        <header className="rounded-3xl border border-blue-100 bg-white/95 p-8 shadow-[0_16px_60px_rgba(24,58,107,0.14)]">
-          <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">Admin</p>
+      <section className={`${adminWorkspaceClass} ${adminWorkspaceGridClass}`}>
+        <header
+          className={`${adminShellCardClass} lg:col-start-2`}
+          data-testid="admin-shell-header"
+        >
+          <p className={adminEyebrowClass}>Admin</p>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-3xl font-bold text-slate-900">Admin console</h1>
-            <span className="inline-flex h-8 items-center rounded-full border border-blue-200 bg-blue-50 px-3 text-xs font-semibold tracking-wide text-blue-700 uppercase">
+            <h1 className={adminHeadingClass}>Admin console</h1>
+            <span className="inline-flex min-h-8 items-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-white/80 px-3 text-xs font-semibold text-[color:var(--fs-color-brand-700)]">
               Role: {role}
             </span>
           </div>
-          <p className="mt-3 max-w-[60ch] text-sm text-slate-700">
+          <p className={`mt-3 max-w-[60ch] ${adminMutedTextClass}`}>
             Manage content, commerce settings, and operational states from one internal workspace.
             All mutations are role-gated server-side and aligned with audit logging.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
+            <Link href="/" className={adminSecondaryActionClass}>
               Open site
             </Link>
-            <Link
-              href="/my-library"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 active:bg-blue-200"
-            >
+            <Link href="/my-library" className={adminSecondaryActionClass}>
               Open My Library
             </Link>
           </div>
         </header>
-        <div className="mt-6">{children}</div>
+        <div className="contents">{children}</div>
       </section>
     </SiteChrome>
   );
