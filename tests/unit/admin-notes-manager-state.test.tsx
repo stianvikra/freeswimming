@@ -230,6 +230,26 @@ describe("AdminNotesManager state rendering", () => {
     expect(noResults).not.toHaveAttribute("aria-live");
   });
 
+  it("keeps notes filters compact and wrapping on the admin desktop surface", async () => {
+    installFetchMock();
+
+    render(<AdminNotesManager />);
+
+    await screen.findByText("Primary note");
+
+    expect(screen.getByTestId("admin-notes-filter-controls")).toHaveClass("flex", "flex-wrap");
+    expect(screen.getByTestId("admin-notes-search").closest("label")).toHaveClass(
+      "xl:basis-[16rem]"
+    );
+    expect(screen.getByTestId("admin-notes-status-filter")).toHaveClass("xl:basis-[20rem]");
+    expect(screen.getByTestId("admin-notes-category-filter").closest("label")).toHaveClass(
+      "xl:basis-[10rem]"
+    );
+    expect(screen.getByTestId("admin-notes-context-ref-filter").closest("label")).toHaveClass(
+      "xl:basis-[12rem]"
+    );
+  });
+
   it("announces create action errors politely without changing the payload", async () => {
     const fetchMock = installFetchMock({
       notesResponses: [

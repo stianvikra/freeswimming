@@ -12,6 +12,7 @@ import AdminMessagesManager from "@/components/admin/AdminMessagesManager";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
+import { cx } from "@/components/ui/cx";
 import type { AdminRole } from "@/lib/admin/access";
 import {
   applyAdminTabToSearchParams,
@@ -67,6 +68,15 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
   },
 ];
 
+const adminTabButtonBaseClass =
+  "fs-library-card p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const adminTabActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+const adminTabInactiveClass = "hover:border-[color:var(--fs-border-brand)] hover:bg-white";
+const adminShellActionClass =
+  "fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const adminCardHeadingClass = "text-base font-semibold text-[color:var(--fs-color-ink-strong)]";
+const adminMutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+
 type Props = {
   role: AdminRole | null;
 };
@@ -97,8 +107,12 @@ export default function AdminWorkspace({ role }: Props) {
   }
 
   return (
-    <div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-9">
+    <div className="contents" data-testid="admin-workspace-shell">
+      <nav
+        aria-label="Admin sections"
+        className="mt-6 grid gap-3 sm:grid-cols-2 lg:sticky lg:top-28 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
+        data-testid="admin-tab-grid"
+      >
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -107,64 +121,70 @@ export default function AdminWorkspace({ role }: Props) {
               type="button"
               onClick={() => selectTab(tab.id)}
               data-testid={`admin-tab-${tab.id}`}
-              className={[
-                "rounded-2xl border px-4 py-3 text-left transition",
-                isActive
-                  ? "border-blue-300 bg-blue-50/70 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.12)]"
-                  : "border-slate-200 bg-white hover:bg-slate-50",
-              ].join(" ")}
+              className={cx(
+                adminTabButtonBaseClass,
+                isActive ? adminTabActiveClass : adminTabInactiveClass
+              )}
               aria-pressed={isActive}
             >
               <p
-                className={[
+                className={cx(
                   "text-sm font-semibold",
-                  isActive ? "text-blue-800" : "text-slate-900",
-                ].join(" ")}
+                  isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-900"
+                )}
               >
                 {tab.label}
               </p>
-              <p className="mt-1 text-xs text-slate-600">{tab.subtitle}</p>
+              <p className="mt-1 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+                {tab.subtitle}
+              </p>
             </button>
           );
         })}
-      </div>
+      </nav>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Active section
-            </p>
-            <p
-              className="mt-1 text-sm font-semibold text-slate-900"
-              data-testid="admin-active-section-label"
-            >
-              {activeMeta.label}
-            </p>
-            <p className="mt-1 text-sm text-slate-600">{activeMeta.subtitle}</p>
+      <div className="mt-6 min-w-0 lg:col-start-2" data-testid="admin-workspace-main">
+        <div
+          className="fs-library-card fs-library-card-muted p-4 sm:p-5"
+          data-testid="admin-active-section-panel"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                Active section
+              </p>
+              <p
+                className={`mt-1 ${adminCardHeadingClass}`}
+                data-testid="admin-active-section-label"
+              >
+                {activeMeta.label}
+              </p>
+              <p className={`mt-1 ${adminMutedTextClass}`}>{activeMeta.subtitle}</p>
+            </div>
+            <AdminNoteQuickCaptureLauncher
+              adminRole={role}
+              contextType="page"
+              contextRef="/admin"
+              contextLabel="Admin dashboard"
+              triggerLabel="Quick note"
+              triggerTestId="admin-workspace-quick-note-trigger"
+              triggerClassName={adminShellActionClass}
+              description="Capture a page-level admin note from the dashboard without switching to the Notes tab first."
+            />
           </div>
-          <AdminNoteQuickCaptureLauncher
-            adminRole={role}
-            contextType="page"
-            contextRef="/admin"
-            contextLabel="Admin dashboard"
-            triggerLabel="Quick note"
-            triggerTestId="admin-workspace-quick-note-trigger"
-            description="Capture a page-level admin note from the dashboard without switching to the Notes tab first."
-          />
         </div>
-      </div>
 
-      <div className="mt-6 space-y-6">
-        {activeTab === "content" ? <AdminContentManager /> : null}
-        {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
-        {activeTab === "commerce" ? <AdminCommerceManager /> : null}
-        {activeTab === "operations" ? <AdminOperationsManager /> : null}
-        {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
-        {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
-        {activeTab === "notes" ? <AdminNotesManager /> : null}
-        {activeTab === "categories" ? <AdminCategoriesManager /> : null}
-        {activeTab === "help" ? <AdminHelpCenter /> : null}
+        <div className="mt-6 space-y-6">
+          {activeTab === "content" ? <AdminContentManager /> : null}
+          {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
+          {activeTab === "commerce" ? <AdminCommerceManager /> : null}
+          {activeTab === "operations" ? <AdminOperationsManager /> : null}
+          {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
+          {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
+          {activeTab === "notes" ? <AdminNotesManager /> : null}
+          {activeTab === "categories" ? <AdminCategoriesManager /> : null}
+          {activeTab === "help" ? <AdminHelpCenter /> : null}
+        </div>
       </div>
     </div>
   );
