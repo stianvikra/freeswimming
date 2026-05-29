@@ -132,6 +132,19 @@ const COURSE_SUPPORT_SECONDARY_ACTION_CLASS = cx(
   "fs-cta-secondary hover:bg-white",
   COURSE_SUPPORT_ACTION_BASE_CLASS
 );
+const COURSE_INSTALL_PROMPT_CARD_CLASS =
+  "fs-library-card mx-auto max-w-[520px] !bg-white/95 p-4 !shadow-[0_16px_46px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-5";
+const COURSE_INSTALL_PROMPT_ACTION_BASE_CLASS =
+  "inline-flex min-h-11 items-center justify-center px-4 py-2 text-[14px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const COURSE_INSTALL_PROMPT_PRIMARY_ACTION_CLASS = cx(
+  "fs-cta-primary",
+  COURSE_INSTALL_PROMPT_ACTION_BASE_CLASS
+);
+const COURSE_INSTALL_PROMPT_SECONDARY_ACTION_CLASS = cx(
+  "fs-cta-secondary hover:bg-white",
+  COURSE_INSTALL_PROMPT_ACTION_BASE_CLASS
+);
+const COURSE_INSTALL_PROMPT_FEEDBACK_PANEL_CLASS = "!rounded-[var(--fs-radius-card)] bg-white/86";
 const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
   id: DEFAULT_LESSON_ID,
   title: "Freestyle lesson",
@@ -2276,7 +2289,7 @@ function CoursePageClient() {
         data-testid="a2hs-auto-prompt"
         className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] px-4 sm:bottom-6"
       >
-        <div className="mx-auto max-w-[520px] rounded-[22px] border border-blue-200/70 bg-white/95 bg-[radial-gradient(520px_170px_at_15%_0%,rgba(99,168,255,0.14),rgba(255,255,255,0)_62%)] p-4 shadow-[0_16px_46px_rgba(15,23,42,0.16)] backdrop-blur-sm">
+        <div className={COURSE_INSTALL_PROMPT_CARD_CLASS}>
           <div className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
             Quick access
           </div>
@@ -2292,7 +2305,7 @@ function CoursePageClient() {
               id={courseInstallIosGuideId}
               tone="info"
               title="Install on iPhone/iPad (Safari)"
-              className="mt-2 bg-white/88"
+              className={cx("mt-2", COURSE_INSTALL_PROMPT_FEEDBACK_PANEL_CLASS)}
               testId="course-install-ios-guide"
             >
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
@@ -2307,7 +2320,7 @@ function CoursePageClient() {
               id={courseInstallMacSafariGuideId}
               tone="info"
               title="Install on Mac (Safari)"
-              className="mt-2 bg-white/88"
+              className={cx("mt-2", COURSE_INSTALL_PROMPT_FEEDBACK_PANEL_CLASS)}
               testId="course-install-mac-safari-guide"
             >
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-[12px] leading-6 text-slate-700">
@@ -2326,7 +2339,7 @@ function CoursePageClient() {
                   onClick={handleInstallFromPrompt}
                   disabled={installPromptBusy || install.isInstalled}
                   aria-describedby={courseInstallDescriptionId}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+                  className={COURSE_INSTALL_PROMPT_PRIMARY_ACTION_CLASS}
                   aria-label="Install app"
                 >
                   {install.isInstalled
@@ -2338,7 +2351,7 @@ function CoursePageClient() {
                 <PressButton
                   tier="nav"
                   onClick={dismissInstallPrompt}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                  className={COURSE_INSTALL_PROMPT_SECONDARY_ACTION_CLASS}
                   aria-label="Not now"
                 >
                   Not now
@@ -2355,7 +2368,7 @@ function CoursePageClient() {
                         ? closeMacSafariInstallGuide
                         : closeIosInstallGuide
                   }
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)]"
+                  className={COURSE_INSTALL_PROMPT_PRIMARY_ACTION_CLASS}
                 >
                   Done
                 </PressButton>
@@ -2363,7 +2376,7 @@ function CoursePageClient() {
                   <PressButton
                     tier="nav"
                     onClick={dismissInstallPrompt}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-white/90 px-4 py-2 text-[14px] font-semibold text-slate-700 ring-1 ring-slate-200/75"
+                    className={COURSE_INSTALL_PROMPT_SECONDARY_ACTION_CLASS}
                     aria-label="Not now"
                   >
                     Not now
@@ -2377,7 +2390,7 @@ function CoursePageClient() {
             <InstallFeedback
               id={courseInstallFeedbackId}
               tone={installPromptFeedback.tone}
-              className="mt-3"
+              className={cx("mt-3", COURSE_INSTALL_PROMPT_FEEDBACK_PANEL_CLASS)}
               testId="course-install-prompt-feedback"
             >
               {installPromptFeedback.message}
