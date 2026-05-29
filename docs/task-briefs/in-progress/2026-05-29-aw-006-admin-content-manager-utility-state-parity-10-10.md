@@ -155,6 +155,7 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
   - active brief checkpoint updates,
   - canonical AW-006 queue update,
   - no Help/Guide or runbook runtime update unless a workflow label or recovery behavior changes.
+- Evidence: identifiers searched and surfaces checked are listed above; fallout handled with no runtime Help/Guide, support procedure, or route-label changes required.
 
 ## Scope
 
@@ -214,6 +215,7 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - Broad gates after screenshot approval:
   - `npm run verify:pre-pr` -> first run failed in `test:unit` because existing admin categories/messages/notes state tests selected the nearest `div` after shared state helper markup consolidation; tests were hardened to select the semantic `role="status"` wrapper and targeted rerun passed.
   - PR CI `verify` first failed one existing `tests/unit/session-generator-panel.test.tsx` assertion because metadata details were assumed available immediately after an unconditional toggle click; the test was hardened to open the panel only when collapsed and wait for `session-draft-title`, preserving the shared session-step renderer contract from `docs/design/session-step-surface-contract.md`.
+  - PR CI `verify` second run exposed the same test's later saved-workout transition: the saved editor can finish in a collapsed metadata state after the success banner appears, so the test now waits for the final `All changes are saved to this session.` state before opening metadata.
   - required CI checks on PR
   - `npm run verify:pre-merge`
 
@@ -229,3 +231,4 @@ Required as a targeted admin-surface sweep because this slice consolidates repea
 - `2026-05-29 | in-progress | owner approved regenerated screenshot handoff and authorized merge when tests are good | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if gates are green`
 - `2026-05-29 | in-progress | first npm run verify:pre-pr reached full unit suite and failed three existing admin state tests due tag-coupled closest("div") selectors after shared helper markup consolidation; updated those tests to assert the semantic status wrapper and targeted 5-file rerun passed | next: rerun npm run verify:pre-pr`
 - `2026-05-29 | in-progress | PR #898 CI verify failed one existing session generator metadata-toggle test; hardened the test to use the existing shared editor open/wait contract without changing product runtime behavior and documented the session-step reference contract evidence | next: rerun npm run verify:pre-pr, push the fix, and rerun CI`
+- `2026-05-29 | in-progress | second PR #898 CI verify run exposed the same saved editor test's final collapsed metadata transition; added a final saved-state wait before reopening metadata and logged the CI-only test pattern in the high-cost debug log | next: rerun targeted unit and npm run verify:pre-pr before pushing the CI hardening`

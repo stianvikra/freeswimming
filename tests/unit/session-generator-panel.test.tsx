@@ -833,6 +833,11 @@ describe("SessionGeneratorPanel", () => {
     );
     expect(screen.getByText("Saved session loaded.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Save changes" })).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
+        "All changes are saved to this session."
+      );
+    });
     await openWorkoutEditorMetadata();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
   }, 15_000);
