@@ -124,6 +124,14 @@ const SUPPORT_ACTION_META: Record<
     href: "/contact",
   },
 };
+const COURSE_SUPPORT_HELP_CARD_CLASS = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const COURSE_SUPPORT_ACTION_BASE_CLASS =
+  "inline-flex min-h-11 w-full items-center justify-center px-4 py-3 text-center text-[14px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const COURSE_SUPPORT_PRIMARY_ACTION_CLASS = cx("fs-cta-primary", COURSE_SUPPORT_ACTION_BASE_CLASS);
+const COURSE_SUPPORT_SECONDARY_ACTION_CLASS = cx(
+  "fs-cta-secondary hover:bg-white",
+  COURSE_SUPPORT_ACTION_BASE_CLASS
+);
 const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
   id: DEFAULT_LESSON_ID,
   title: "Freestyle lesson",
@@ -3251,14 +3259,13 @@ function CoursePageClient() {
 
                   {showExtraHelpCard ? (
                     <div
+                      data-testid="course-support-card"
                       className={cx(
-                        "rounded-2xl border border-slate-200/68 bg-white/80 p-4",
+                        COURSE_SUPPORT_HELP_CARD_CLASS,
                         showDrillSection || showPassOrNextCard ? "mt-5" : ""
                       )}
                     >
-                      <h3 className="text-[14px] font-semibold tracking-wide text-slate-900">
-                        Need extra help?
-                      </h3>
+                      <h3 className="text-[15px] font-semibold text-slate-900">Need extra help?</h3>
                       <p className="mt-1 text-[12px] leading-5 text-slate-600">
                         If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be
                         elsewhere.
@@ -3273,12 +3280,12 @@ function CoursePageClient() {
                               key={action.id}
                               tier={isPrimary ? "cta" : "nav"}
                               href={action.href}
-                              className={cx(
-                                "flex items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold",
+                              data-testid={`course-support-action-${action.id}`}
+                              className={
                                 isPrimary
-                                  ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_14px_40px_rgba(37,99,235,0.20)]"
-                                  : "bg-white/92 text-slate-900 shadow-sm ring-1 ring-slate-200/70"
-                              )}
+                                  ? COURSE_SUPPORT_PRIMARY_ACTION_CLASS
+                                  : COURSE_SUPPORT_SECONDARY_ACTION_CLASS
+                              }
                             >
                               {action.label}
                             </PressLink>
