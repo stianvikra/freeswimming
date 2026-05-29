@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import type { Database } from "@/types/database";
 
 type AdminProductRow = Database["public"]["Tables"]["products"]["Row"];
@@ -32,6 +33,20 @@ type ProductDraft = {
   title: string;
   active: boolean;
 };
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
 
 export default function AdminCommerceManager() {
   const [items, setItems] = useState<AdminProductRow[]>([]);
@@ -164,60 +179,65 @@ export default function AdminCommerceManager() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Commerce</h2>
-          <p className="mt-2 text-sm text-slate-600">{productCountLabel}</p>
+    <section className="space-y-4" data-testid="admin-commerce-manager">
+      <div className={managerHeaderClass} data-testid="admin-commerce-manager-header">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={eyebrowClass}>Commerce</p>
+            <h2 className={cx("mt-1", headingClass)}>Product catalog</h2>
+            <p className={cx("mt-2", mutedTextClass)}>{productCountLabel}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadProducts()}
+            className={secondaryActionClass}
+          >
+            Refresh
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadProducts()}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Refresh
-        </button>
       </div>
 
-      {loading ? (
-        <AdminManagerState tone="loading">Loading product catalog…</AdminManagerState>
-      ) : null}
+      <div>
+        {loading ? (
+          <AdminManagerState tone="loading">Loading product catalog…</AdminManagerState>
+        ) : null}
 
-      {!loading && error ? (
-        <AdminManagerState
-          tone="error"
-          actions={
-            <button
-              type="button"
-              onClick={() => void loadProducts()}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          }
-        >
-          {error}
-        </AdminManagerState>
-      ) : null}
+        {!loading && error ? (
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadProducts()}
+                className={secondaryActionClass}
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
+        ) : null}
 
-      {!schemaReady && warning ? (
-        <AdminManagerState tone="warning">{warning}</AdminManagerState>
-      ) : null}
+        {!schemaReady && warning ? (
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
+        ) : null}
 
-      {!loading && !error && items.length === 0 ? (
-        <AdminManagerState tone="empty">
-          Product catalog is empty. Checkout flows depend on seeded products.
-        </AdminManagerState>
-      ) : null}
+        {!loading && !error && items.length === 0 ? (
+          <AdminManagerState tone="empty">
+            Product catalog is empty. Checkout flows depend on seeded products.
+          </AdminManagerState>
+        ) : null}
 
-      {actionError ? (
-        <AdminManagerState tone="error" announcement="polite" density="compact">
-          {actionError}
-        </AdminManagerState>
-      ) : null}
+        {actionError ? (
+          <AdminManagerState tone="error" announcement="polite" density="compact">
+            {actionError}
+          </AdminManagerState>
+        ) : null}
+      </div>
 
       {!loading && !error && items.length > 0 ? (
-        <ul className="mt-5 space-y-3">
+        <ul className="space-y-3">
           {items.map((item) => {
             const draft = draftById[item.id] ?? {
               title: item.title,
@@ -226,14 +246,15 @@ export default function AdminCommerceManager() {
             const dirty = isDirty(item);
 
             return (
-              <li key={item.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
+              <li key={item.id} className={rowCardClass} data-testid="admin-commerce-product-row">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      Product id: {item.id}
+                    <p className={metadataLabelClass}>Product id</p>
+                    <p className="mt-1 text-sm font-semibold break-all text-[color:var(--fs-color-ink-strong)]">
+                      {item.id}
                     </p>
                   </div>
-                  <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                  <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
                     <span>Title</span>
                     <input
                       type="text"
@@ -243,32 +264,28 @@ export default function AdminCommerceManager() {
                           title: event.target.value,
                         })
                       }
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
 
                   <div>
-                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-                      Slug
-                    </p>
-                    <p className="mt-1 text-sm text-slate-700">/{item.slug}</p>
+                    <p className={metadataLabelClass}>Slug</p>
+                    <p className="mt-1 text-sm text-[color:var(--fs-color-ink)]">/{item.slug}</p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-                      Kind
-                    </p>
-                    <p className="mt-1 text-sm text-slate-700">{item.kind}</p>
+                    <p className={metadataLabelClass}>Kind</p>
+                    <p className="mt-1 text-sm text-[color:var(--fs-color-ink)]">{item.kind}</p>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-                      Stripe price id
+                    <p className={metadataLabelClass}>Stripe price id</p>
+                    <p className="mt-1 text-sm break-all text-[color:var(--fs-color-ink)]">
+                      {item.stripe_price_id}
                     </p>
-                    <p className="mt-1 text-sm break-all text-slate-700">{item.stripe_price_id}</p>
                   </div>
 
-                  <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
                     <input
                       type="checkbox"
                       checked={draft.active}
@@ -277,24 +294,24 @@ export default function AdminCommerceManager() {
                           active: event.target.checked,
                         })
                       }
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className="h-4 w-4 rounded border-slate-300 text-[color:var(--fs-color-brand-600)]"
                     />
                     <span>
                       {draft.active ? "Active in plans/library" : "Hidden from new sales"}
                     </span>
                   </label>
 
-                  <div className="sm:col-span-2">
+                  <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
                     <button
                       type="button"
                       onClick={() => void saveProduct(item)}
                       disabled={Boolean(savingId) || !dirty}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className={primaryActionClass}
                     >
                       {savingId === item.id ? "Saving…" : "Save product"}
                     </button>
                     {savedId === item.id ? (
-                      <p className="mt-2 text-xs font-medium text-emerald-700">Saved.</p>
+                      <p className="text-xs font-semibold text-emerald-700">Saved.</p>
                     ) : null}
                   </div>
                 </div>

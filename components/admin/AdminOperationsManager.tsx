@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import type { AdminRuntimeFlagRow } from "@/lib/admin/runtime-flags";
 
 type SiteLockSnapshot = {
@@ -39,6 +40,21 @@ const SITE_LOCK_WORKFLOW_URL =
   "https://github.com/stianvikra/freeswimming/actions/workflows/site-lock-operations.yml";
 const SITE_LOCK_RUNBOOK_URL =
   "https://github.com/stianvikra/freeswimming/blob/main/docs/runbooks/site-lock-operations.md";
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const siteLockCardClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
 
 function runtimeFlagLabel(key: string): string {
   return key;
@@ -147,125 +163,132 @@ export default function AdminOperationsManager() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Operations</h2>
-          <p className="mt-2 text-sm text-slate-600">{flagCountLabel}</p>
+    <section className="space-y-4" data-testid="admin-operations-manager">
+      <div className={managerHeaderClass} data-testid="admin-operations-manager-header">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={eyebrowClass}>Operations</p>
+            <h2 className={cx("mt-1", headingClass)}>Runtime controls</h2>
+            <p className={cx("mt-2", mutedTextClass)}>{flagCountLabel}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadOperations()}
+            className={secondaryActionClass}
+          >
+            Refresh
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadOperations()}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Refresh
-        </button>
       </div>
 
-      {loading ? (
-        <AdminManagerState tone="loading">Loading operations state…</AdminManagerState>
-      ) : null}
+      <div>
+        {loading ? (
+          <AdminManagerState tone="loading">Loading operations state…</AdminManagerState>
+        ) : null}
 
-      {!loading && error ? (
-        <AdminManagerState
-          tone="error"
-          actions={
-            <button
-              type="button"
-              onClick={() => void loadOperations()}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          }
-        >
-          {error}
-        </AdminManagerState>
-      ) : null}
+        {!loading && error ? (
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadOperations()}
+                className={secondaryActionClass}
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
+        ) : null}
 
-      {!schemaReady && warning ? (
-        <AdminManagerState tone="warning">{warning}</AdminManagerState>
-      ) : null}
+        {!schemaReady && warning ? (
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
+        ) : null}
+      </div>
 
       {!loading && !error && siteLock ? (
-        <article className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+        <article className={siteLockCardClass} data-testid="admin-operations-site-lock-card">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Private Access Gate (env-controlled)
-            </h3>
+            <div>
+              <p className={metadataLabelClass}>Site lock</p>
+              <h3 className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                Private Access Gate (env-controlled)
+              </h3>
+            </div>
             <span
               className={[
-                "inline-flex rounded-full px-2 py-1 text-xs font-semibold",
+                "inline-flex min-h-8 items-center rounded-[var(--fs-radius-control)] px-3 text-xs font-semibold ring-1",
                 siteLock.enabled
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-slate-200 text-slate-700",
+                  ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                  : "bg-white text-[color:var(--fs-color-muted)] ring-[color:var(--fs-border-soft)]",
               ].join(" ")}
             >
               {siteLock.enabled ? "Enabled" : "Disabled"}
             </span>
           </div>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className={cx("mt-3", mutedTextClass)}>
             This lock is read-only in Admin. It is controlled by environment variables in hosting
             settings for security.
           </p>
-          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 text-xs text-[color:var(--fs-color-muted)] sm:grid-cols-3">
             <p>
-              <span className="font-semibold text-slate-700">Environment setup:</span>{" "}
+              <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                Environment setup:
+              </span>{" "}
               {siteLock.configured ? "yes" : "no"}
             </p>
             <p>
-              <span className="font-semibold text-slate-700">Access method:</span> {siteLock.mode}
+              <span className="font-semibold text-[color:var(--fs-color-ink)]">Access method:</span>{" "}
+              {siteLock.mode}
             </p>
             <p>
-              <span className="font-semibold text-slate-700">Session TTL:</span>{" "}
+              <span className="font-semibold text-[color:var(--fs-color-ink)]">Session TTL:</span>{" "}
               {formatDuration(siteLock.sessionMaxAgeSeconds)}
             </p>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <a
               href={SITE_LOCK_WORKFLOW_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100"
+              className={compactSecondaryActionClass}
             >
               Open lock operations workflow
             </a>
-            <a
-              href="/preview-access?next=%2Fadmin"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-            >
+            <a href="/preview-access?next=%2Fadmin" className={compactSecondaryActionClass}>
               Open unlock page
             </a>
-            <a
-              href="/preview-access/clear?next=%2Fadmin"
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-            >
+            <a href="/preview-access/clear?next=%2Fadmin" className={compactSecondaryActionClass}>
               Sign out this browser
             </a>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-[color:var(--fs-color-muted)]">
             Operator runbook:{" "}
             <a
               href={SITE_LOCK_RUNBOOK_URL}
               target="_blank"
               rel="noreferrer"
-              className="font-medium text-slate-700 underline underline-offset-2"
+              className="font-semibold text-[color:var(--fs-color-ink)] underline underline-offset-2"
             >
               docs/runbooks/site-lock-operations.md
             </a>
           </p>
-          <p className="mt-3 text-xs text-slate-500">
-            Signed-in admins are issued preview access automatically; the shared preview password
-            remains the fallback for non-admin preview access.
-          </p>
-          <p className="mt-3 text-xs text-slate-500">
-            To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
-            and redeploy.
-          </p>
-          <p className="mt-3 text-xs text-slate-500">
-            Required env vars: <code>SITE_LOCK_ENABLED</code>, <code>SITE_LOCK_PASSWORD_HASH</code>,{" "}
-            <code>SITE_LOCK_BYPASS_TOKEN</code>.
-          </p>
+          <div className="mt-3 space-y-2 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+            <p>
+              Signed-in admins are issued preview access automatically; the shared preview password
+              remains the fallback for non-admin preview access.
+            </p>
+            <p>
+              To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
+              and redeploy.
+            </p>
+            <p>
+              Required env vars: <code>SITE_LOCK_ENABLED</code>,{" "}
+              <code>SITE_LOCK_PASSWORD_HASH</code>, <code>SITE_LOCK_BYPASS_TOKEN</code>.
+            </p>
+          </div>
         </article>
       ) : null}
 
@@ -276,18 +299,18 @@ export default function AdminOperationsManager() {
       ) : null}
 
       {!loading && !error && flags.length > 0 ? (
-        <ul className="mt-5 space-y-3">
+        <ul className="space-y-3">
           {flags.map((flag) => (
-            <li key={flag.key} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+            <li key={flag.key} className={rowCardClass} data-testid="admin-operations-flag-row">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                     {runtimeFlagLabel(flag.key)}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className={cx("mt-1", mutedTextClass)}>
                     {runtimeFlagHint(flag.key, flag.description)}
                   </p>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-[color:var(--fs-color-muted)]">
                     key: <code>{flag.key}</code> • {flag.is_public ? "public-read" : "admin-only"}
                   </p>
                 </div>
@@ -295,13 +318,7 @@ export default function AdminOperationsManager() {
                   type="button"
                   onClick={() => void toggleFlag(flag)}
                   disabled={Boolean(updatingKey)}
-                  className={[
-                    "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition",
-                    flag.enabled
-                      ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                      : "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
-                    updatingKey ? "cursor-not-allowed opacity-60" : "",
-                  ].join(" ")}
+                  className={flag.enabled ? compactSecondaryActionClass : primaryActionClass}
                 >
                   {updatingKey === flag.key ? "Saving…" : flag.enabled ? "Disable" : "Enable"}
                 </button>
