@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-30-aw-006-admin-messages-manager-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-30`
 - `updated`: `2026-05-30`
@@ -231,7 +231,7 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 
 ## Completion Mode
 
-In progress after owner explicitly requested `execute Admin Messages Manager Token/Action Parity` on `2026-05-30`.
+Done via PR `#912` after owner explicitly approved merge when tests were good and cleanup was complete.
 
 ## Checkpoint Log
 
@@ -241,3 +241,31 @@ In progress after owner explicitly requested `execute Admin Messages Manager Tok
 - `2026-05-30 | screenshot-handoff-ready | latest commit d0a491d; targeted Vitest, targeted ESLint, lint:briefs:all, route/label/support sweep, and git diff --check passed; captured after/reference screenshots in output/aw-006-admin-messages-token-parity-2026-05-30-125949 at 2026-05-30 12:59 with a temporary local visual route and mocked admin message/email template responses; temporary visual route/script were removed afterward, and no scoped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr, commit, push, PR creation, CI, and pre-merge gates`
 - `2026-05-30 | screenshot-approved | owner approved screenshot handoff; owner also approved merge after tests are good and cleanup; no scoped product-rendering files changed after capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge and clean up when gates are green`
 - `2026-05-30 | pre-pr-ready | latest commit d0a491d; npm run verify:pre-pr passed full lane from artifacts/test-runs/20260530-130701 after screenshot approval, including branch-current, quality/admin/env/pr-body lint, ESLint, typecheck, unit tests, build, performance budgets, and Playwright e2e | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge and clean up when gates are green`
+- `2026-05-30 | merged | PR #912 shipped as squash commit abf82eb after npm run verify:pre-pr passed full lane from artifacts/test-runs/20260530-132023, required CI passed, and npm run verify:pre-merge recorded PASS at artifacts/verify-pre-merge/20260530-113407.json | next: repo-managed docs-only closeout moves this brief to done and clears active queue/inventory references`
+
+## Completion Record
+
+- `completed`: `2026-05-30`
+- `merged_pr`: `#912`
+- `squash_commit`: `abf82eb`
+- `result`: Closed AW-006 Admin Messages Manager Token/Action Parity. The admin Messages manager now visually matches the newer admin management surfaces for shell, filters, stored requests, detail panels, diagnostics, delivery attempts, and visible actions while preserving message data, API behavior, status transitions, One.com inbox behavior, Help/Guide, email delivery, and support procedures.
+- `validation`: targeted Vitest and ESLint during implementation; `npm run lint:briefs:all`; route/label/support sweep; `git diff --check`; owner-approved after/reference screenshot handoff at `output/aw-006-admin-messages-token-parity-2026-05-30-125949`; `npm run verify:pre-pr` full lane PASS at `artifacts/test-runs/20260530-132023`; PR #912 CI PASS including CodeQL, Vercel, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify; `npm run verify:pre-merge` PASS marker at `artifacts/verify-pre-merge/20260530-113407.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained at their scoped `4/5` targets because this slice intentionally avoided broader analytics, commerce, i18n, privacy, performance, or scalability changes.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #912 scope, queue closeout, design inventory closeout, and no active AW-006 slice left selected after closeout.              | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff and component tests covering filters, list, detail, actions, delete confirmation, and states. | None.        |
+| Visual design quality                         | `5/5`          | `fs-*` token/action parity implementation plus after/reference screenshots against current admin reference surfaces.            | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests and diff review preserved GET/PATCH payloads, filters, pagination, restore/delete, and diagnostics.          | None.        |
+| Admin editor ergonomics                       | `5/5`          | Existing refresh, search, filter, inspect, inbox, status, archive, delete, restore, and load-older workflows were preserved.    | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, preserved labels/roles/live regions, and screenshot review for desktop/mobile states.               | None.        |
+| Data placement and sync boundaries            | `5/5`          | No server/local data boundary changes; admin messages remain server-canonical with component-local UI state.                    | None.        |
+| Caching and invalidation strategy             | `5/5`          | Existing `cache: "no-store"`, manual refresh, and load-older behavior were unchanged.                                           | None.        |
+| Reliability and failure handling              | `5/5`          | Loading, schema warning, retry, action feedback, empty/no-results, no-selection, pagination, and confirmation paths preserved.  | None.        |
+| Security and authz                            | `5/5`          | Admin route/API/authz boundaries, credentials, role-gated mutation visibility, and PII display boundaries were untouched.       | None.        |
+| Content governance                            | `5/5`          | Workflow labels, Help/Guide behavior, runbook references, and support procedures were preserved; closeout clears docs fallout.  | None.        |
+| Admin workflow and editability                | `5/5`          | Same workflow status edits and API calls remain available through the same controls.                                            | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local state helper and global `fs-*` tokens; no dependency or broad primitive added.                      | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full local pre-PR, required CI, and local pre-merge all passed.                                                 | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal squash commit/revert path; no migrations, config, package, workflow, or deployment-setting changes.                      | None.        |
