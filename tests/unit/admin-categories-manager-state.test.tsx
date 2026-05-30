@@ -57,6 +57,42 @@ describe("AdminCategoriesManager state rendering", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses AW-006 token cards and actions for category scopes and rows", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(categoriesResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminCategoriesManager />);
+
+    await screen.findByText("Technique");
+
+    expect(screen.getByTestId("admin-categories-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("fs-cta-secondary");
+
+    const notesScope = screen.getByRole("button", { name: /Notes categories/i });
+    expect(notesScope).toHaveClass("fs-library-card", "fs-library-card-accent");
+
+    const contentScope = screen.getByRole("button", { name: /Content categories/i });
+    expect(contentScope).toHaveClass("fs-library-card");
+    expect(contentScope).not.toHaveClass("fs-library-card-accent");
+
+    expect(screen.getByTestId("admin-category-item")).toHaveClass("fs-library-card");
+    expect(screen.getByRole("button", { name: "Deactivate" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+
+    expect(screen.getByTestId("admin-categories-create-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByRole("button", { name: "Save category" })).toHaveClass("fs-cta-primary");
+  });
+
   it("shows a polite loading state before categories resolve", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(categoriesResponse());
     vi.stubGlobal("fetch", fetchMock);
@@ -101,6 +137,7 @@ describe("AdminCategoriesManager state rendering", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Could not load categories.");
+    expect(screen.getByRole("button", { name: "Retry" })).toHaveClass("fs-cta-secondary");
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
