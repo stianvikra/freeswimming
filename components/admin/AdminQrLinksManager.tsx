@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import type { AdminContentItemRow } from "@/lib/admin/content";
 import { parseAdminQrPrefillFromSearch } from "@/lib/qr-links/admin-prefill";
 import { generateQrAssets } from "@/lib/qr-links/codegen";
@@ -99,10 +100,12 @@ const STATUS_OPTIONS: Array<{ value: QrLinkStatus; label: string }> = [
 ];
 
 const STATUS_CHIP_CLASS_BY_VALUE: Record<QrLinkStatus, string> = {
-  draft: "border-slate-300 bg-slate-100 text-slate-700",
-  active: "border-emerald-300 bg-emerald-100 text-emerald-800",
+  draft: "border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)]",
+  active:
+    "border-emerald-300 bg-[color:var(--fs-color-emerald-100)] text-[color:var(--fs-color-emerald-700)]",
   disabled: "border-amber-300 bg-amber-100 text-amber-800",
-  archived: "border-slate-300 bg-slate-200 text-slate-700",
+  archived:
+    "border-[color:var(--fs-border-soft)] bg-[rgba(226,232,240,0.55)] text-[color:var(--fs-color-muted)]",
 };
 
 const STATUS_LABEL_BY_VALUE: Record<QrLinkStatus, string> = {
@@ -121,6 +124,33 @@ const INITIAL_FORM: LinkFormState = {
   placementKey: "",
   ownerUserId: "",
 };
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const mutedPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const qrPreviewPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] p-3";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactQuietActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-3 text-sm font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const dangerActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 function normalizeTextInput(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -587,95 +617,100 @@ export default function AdminQrLinksManager() {
   const exampleStableLink = `${origin || "https://freeswimming.org"}/go/v/intro-video`;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">QR registry</h2>
-          <p className="mt-2 text-sm text-slate-600">{summaryLabel}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsCreatePanelOpen((prev) => !prev)}
-            aria-expanded={isCreatePanelOpen}
-            aria-controls="admin-qr-link-create-panel"
-            data-testid="admin-qr-link-create-toggle"
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
-          >
-            {isCreatePanelOpen ? "Hide new link" : "New link"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void loadData()}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Refresh
-          </button>
+    <section className="space-y-4" data-testid="admin-qr-links-manager">
+      <div className={managerHeaderClass} data-testid="admin-qr-links-manager-header">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={eyebrowClass}>QR workflow</p>
+            <h2 className={cx("mt-1", headingClass)}>QR registry</h2>
+            <p className={cx("mt-2", mutedTextClass)}>{summaryLabel}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCreatePanelOpen((prev) => !prev)}
+              aria-expanded={isCreatePanelOpen}
+              aria-controls="admin-qr-link-create-panel"
+              data-testid="admin-qr-link-create-toggle"
+              className={primaryActionClass}
+            >
+              {isCreatePanelOpen ? "Hide new link" : "New link"}
+            </button>
+            <button type="button" onClick={() => void loadData()} className={secondaryActionClass}>
+              Refresh
+            </button>
+          </div>
         </div>
       </div>
 
-      {!schemaReady && warning ? (
-        <AdminManagerState tone="warning">{warning}</AdminManagerState>
-      ) : null}
+      <div>
+        {!schemaReady && warning ? (
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
+        ) : null}
 
-      {loading ? <AdminManagerState tone="loading">Loading QR registry…</AdminManagerState> : null}
+        {loading ? (
+          <AdminManagerState tone="loading">Loading QR registry…</AdminManagerState>
+        ) : null}
 
-      {!loading && error ? (
-        <AdminManagerState
-          tone="error"
-          actions={
-            <button
-              type="button"
-              onClick={() => void loadData()}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          }
-        >
-          {error}
-        </AdminManagerState>
-      ) : null}
-
-      {actionError ? (
-        <AdminManagerState tone="error" announcement="polite" density="compact">
-          {actionError}
-        </AdminManagerState>
-      ) : null}
-
-      {actionNotice ? (
-        <AdminManagerState tone="success" density="compact">
-          {actionNotice}
-        </AdminManagerState>
-      ) : null}
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Filter by status</span>
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as "all" | QrLinkStatus)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        {!loading && error ? (
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadData()}
+                className={compactSecondaryActionClass}
+              >
+                Retry
+              </button>
+            }
           >
-            <option value="all">All statuses</option>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {error}
+          </AdminManagerState>
+        ) : null}
 
-        <label className="space-y-1 text-sm font-medium text-slate-700">
-          <span>Search</span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="slug, destination, placement, attachment…"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-          />
-        </label>
+        {actionError ? (
+          <AdminManagerState tone="error" announcement="polite" density="compact">
+            {actionError}
+          </AdminManagerState>
+        ) : null}
+
+        {actionNotice ? (
+          <AdminManagerState tone="success" density="compact">
+            {actionNotice}
+          </AdminManagerState>
+        ) : null}
+      </div>
+
+      <div className={mutedPanelClass} data-testid="admin-qr-links-filter-panel">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
+            <span>Filter by status</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as "all" | QrLinkStatus)}
+              className={fieldClass}
+            >
+              <option value="all">All statuses</option>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
+            <span>Search</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="slug, destination, placement, attachment…"
+              className={fieldClass}
+            />
+          </label>
+        </div>
       </div>
 
       {showEmptyState ? (
@@ -686,17 +721,13 @@ export default function AdminQrLinksManager() {
           testId="admin-qr-empty-state"
           actions={
             <>
-              <button
-                type="button"
-                onClick={openCreatePanel}
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
-              >
+              <button type="button" onClick={openCreatePanel} className={compactPrimaryActionClass}>
                 Create first QR link
               </button>
               <button
                 type="button"
                 onClick={applyExampleDraft}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className={compactSecondaryActionClass}
               >
                 Use example values
               </button>
@@ -704,7 +735,9 @@ export default function AdminQrLinksManager() {
           }
         >
           Start with one stable slug. Example stable link:{" "}
-          <span className="font-medium text-slate-800">{exampleStableLink}</span>
+          <span className="font-medium text-[color:var(--fs-color-ink-strong)]">
+            {exampleStableLink}
+          </span>
         </AdminManagerState>
       ) : null}
 
@@ -713,11 +746,7 @@ export default function AdminQrLinksManager() {
           tone="no-results"
           actionsClassName="mt-2"
           actions={
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-            >
+            <button type="button" onClick={clearFilters} className={compactSecondaryActionClass}>
               Clear filters
             </button>
           }
@@ -727,7 +756,7 @@ export default function AdminQrLinksManager() {
       ) : null}
 
       {hasFilteredItems ? (
-        <ul className="mt-5 space-y-3" data-testid="admin-qr-link-list">
+        <ul className="space-y-3" data-testid="admin-qr-link-list">
           {filteredItems.map((item) => {
             const attachment = item.content_item_id ? contentItemById[item.content_item_id] : null;
             const stableLink = stableLinkForSlug(item.slug);
@@ -738,15 +767,13 @@ export default function AdminQrLinksManager() {
             const isMoreActionsOpen = openMoreActionsId === item.id;
 
             return (
-              <li
-                key={item.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-                data-testid="admin-qr-link-item"
-              >
+              <li key={item.id} className={rowCardClass} data-testid="admin-qr-link-item">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{item.slug}</p>
-                    <p className="mt-1 text-xs text-slate-600">
+                    <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {item.slug}
+                    </p>
+                    <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                       Updated: {formatTimestamp(item.updated_at)}
                     </p>
                   </div>
@@ -762,12 +789,14 @@ export default function AdminQrLinksManager() {
 
                 {!isEditing ? (
                   <>
-                    <div className="mt-3 space-y-1 text-sm">
+                    <div className="mt-3 space-y-1 text-sm text-[color:var(--fs-color-ink)]">
                       <p>
-                        <span className="font-medium text-slate-700">Stable link:</span>{" "}
+                        <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                          Stable link:
+                        </span>{" "}
                         <a
                           href={`/go/v/${item.slug}`}
-                          className="text-blue-700 underline underline-offset-2"
+                          className="text-[color:var(--fs-color-brand-700)] underline underline-offset-2"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -775,28 +804,30 @@ export default function AdminQrLinksManager() {
                         </a>
                       </p>
                       <p className="break-all">
-                        <span className="font-medium text-slate-700">Destination:</span>{" "}
+                        <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                          Destination:
+                        </span>{" "}
                         <a
                           href={item.destination_url}
-                          className="text-blue-700 underline underline-offset-2"
+                          className="text-[color:var(--fs-color-brand-700)] underline underline-offset-2"
                           target="_blank"
                           rel="noreferrer"
                         >
                           {item.destination_url}
                         </a>
                       </p>
-                      <p className="text-slate-700">
-                        <span className="font-medium">Attachment:</span>{" "}
+                      <p>
+                        <span className="font-semibold">Attachment:</span>{" "}
                         {attachment
                           ? `${attachment.title} (${attachment.content_type})`
                           : "Not attached"}
                       </p>
-                      <p className="text-slate-700">
-                        <span className="font-medium">Content label:</span>{" "}
+                      <p>
+                        <span className="font-semibold">Content label:</span>{" "}
                         {item.content_label || "Not set"}
                       </p>
-                      <p className="text-slate-700">
-                        <span className="font-medium">Placement key:</span>{" "}
+                      <p>
+                        <span className="font-semibold">Placement key:</span>{" "}
                         {item.placement_key || "Not set"}
                       </p>
                     </div>
@@ -805,7 +836,7 @@ export default function AdminQrLinksManager() {
                       <button
                         type="button"
                         onClick={() => void copyStableLink(item)}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+                        className={compactPrimaryActionClass}
                       >
                         {copiedLinkId === item.id ? "Copied" : "Copy link"}
                       </button>
@@ -813,7 +844,7 @@ export default function AdminQrLinksManager() {
                         type="button"
                         onClick={() => toggleQrPreview(item)}
                         disabled={isBusy}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 text-sm font-medium text-teal-800 transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        className={compactSecondaryActionClass}
                       >
                         {isQrPreviewOpen ? "Hide QR" : "Show QR"}
                       </button>
@@ -821,7 +852,7 @@ export default function AdminQrLinksManager() {
                         type="button"
                         onClick={() => startEdit(item)}
                         disabled={isBusy}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        className={compactSecondaryActionClass}
                       >
                         Edit
                       </button>
@@ -831,19 +862,19 @@ export default function AdminQrLinksManager() {
                           setOpenMoreActionsId((prev) => (prev === item.id ? null : item.id))
                         }
                         disabled={isBusy}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        className={compactQuietActionClass}
                       >
                         {isMoreActionsOpen ? "Hide actions" : "More actions"}
                       </button>
                     </div>
 
                     {isMoreActionsOpen ? (
-                      <div className="mt-2 flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-[color:var(--fs-border-soft)] pt-3">
                         <button
                           type="button"
                           onClick={() => void toggleActiveState(item)}
                           disabled={isBusy}
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-sm font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
+                          className={compactSecondaryActionClass}
                         >
                           {item.status === "active" ? "Disable" : "Activate"}
                         </button>
@@ -851,7 +882,7 @@ export default function AdminQrLinksManager() {
                           type="button"
                           onClick={() => void deleteItem(item)}
                           disabled={isBusy}
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
+                          className={dangerActionClass}
                         >
                           {deletingId === item.id ? "Deleting…" : "Delete"}
                         </button>
@@ -859,11 +890,9 @@ export default function AdminQrLinksManager() {
                     ) : null}
 
                     {isQrPreviewOpen ? (
-                      <div className="mt-3 rounded-lg border border-teal-200 bg-white p-3">
-                        <p className="text-xs font-semibold tracking-wide text-teal-800 uppercase">
-                          QR preview
-                        </p>
-                        <p className="mt-1 text-xs text-slate-600">
+                      <div className={cx("mt-3", qrPreviewPanelClass)}>
+                        <p className={metadataLabelClass}>QR preview</p>
+                        <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                           Scan from desktop to continue on mobile. Stable link: {stableLink}
                         </p>
 
@@ -883,7 +912,7 @@ export default function AdminQrLinksManager() {
                               <button
                                 type="button"
                                 onClick={() => void ensureQrAssets(item)}
-                                className="inline-flex h-8 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                                className={dangerActionClass}
                               >
                                 Retry
                               </button>
@@ -901,7 +930,7 @@ export default function AdminQrLinksManager() {
                               width={112}
                               height={112}
                               unoptimized
-                              className="h-28 w-28 rounded-lg border border-slate-200 bg-white p-1"
+                              className="h-28 w-28 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white p-1"
                             />
                             <div className="flex flex-wrap gap-2">
                               <button
@@ -910,7 +939,7 @@ export default function AdminQrLinksManager() {
                                   downloadDataUrl(qrAssetState.svgDataUrl, `${item.slug}.svg`);
                                   setActionNotice("QR SVG downloaded.");
                                 }}
-                                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                className={compactSecondaryActionClass}
                               >
                                 Download SVG
                               </button>
@@ -920,7 +949,7 @@ export default function AdminQrLinksManager() {
                                   downloadDataUrl(qrAssetState.pngDataUrl, `${item.slug}.png`);
                                   setActionNotice("QR PNG downloaded.");
                                 }}
-                                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                className={compactSecondaryActionClass}
                               >
                                 Download PNG
                               </button>
@@ -932,7 +961,7 @@ export default function AdminQrLinksManager() {
                   </>
                 ) : (
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Slug</span>
                       <input
                         type="text"
@@ -942,10 +971,10 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, slug: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Status</span>
                       <select
                         value={editState.status}
@@ -954,7 +983,7 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, status: event.target.value as QrLinkStatus } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       >
                         {STATUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -963,7 +992,7 @@ export default function AdminQrLinksManager() {
                         ))}
                       </select>
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
                       <span>Destination URL (https)</span>
                       <input
                         type="url"
@@ -973,10 +1002,10 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, destinationUrl: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Attach to content item (optional)</span>
                       <select
                         value={editState.contentItemId}
@@ -985,7 +1014,7 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, contentItemId: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       >
                         <option value="">Not attached</option>
                         {contentItems.map((entry) => (
@@ -995,7 +1024,7 @@ export default function AdminQrLinksManager() {
                         ))}
                       </select>
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Content label (optional)</span>
                       <input
                         type="text"
@@ -1005,10 +1034,10 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, contentLabel: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Placement key (optional)</span>
                       <input
                         type="text"
@@ -1018,10 +1047,10 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, placementKey: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
+                    <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                       <span>Owner user id (optional UUID)</span>
                       <input
                         type="text"
@@ -1031,7 +1060,7 @@ export default function AdminQrLinksManager() {
                             prev ? { ...prev, ownerUserId: event.target.value } : prev
                           )
                         }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
                     <div className="sm:col-span-2">
@@ -1039,7 +1068,7 @@ export default function AdminQrLinksManager() {
                         type="button"
                         onClick={() => void saveEdit(item.id)}
                         disabled={savingId === item.id}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                        className={primaryActionClass}
                       >
                         {savingId === item.id ? "Saving…" : "Save changes"}
                       </button>
@@ -1047,7 +1076,7 @@ export default function AdminQrLinksManager() {
                         type="button"
                         onClick={cancelEdit}
                         disabled={savingId === item.id}
-                        className="ml-2 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                        className={cx("ml-2", secondaryActionClass)}
                       >
                         Cancel
                       </button>
@@ -1060,21 +1089,20 @@ export default function AdminQrLinksManager() {
         </ul>
       ) : null}
 
-      <div
-        id="admin-qr-link-create-panel"
-        className="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-      >
+      <div id="admin-qr-link-create-panel" className={mutedPanelClass}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">New link</h3>
-            <p className="mt-1 text-sm text-slate-600">
+            <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+              New link
+            </h3>
+            <p className={cx("mt-1", mutedTextClass)}>
               Create links from stable slug to HTTPS destination. Required fields first.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setIsCreatePanelOpen((prev) => !prev)}
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            className={compactSecondaryActionClass}
           >
             {isCreatePanelOpen ? "Hide form" : "Open form"}
           </button>
@@ -1086,13 +1114,15 @@ export default function AdminQrLinksManager() {
             className="mt-4 space-y-3"
             data-testid="admin-qr-link-create-form"
           >
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-sm font-semibold text-slate-900">Required</p>
-              <p className="mt-1 text-xs text-slate-600">
+            <div className={nestedPanelClass}>
+              <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                Required
+              </p>
+              <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                 Slug and HTTPS destination are mandatory. Status defaults to draft.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1 text-sm font-medium text-slate-700">
+                <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                   <span>Slug</span>
                   <input
                     type="text"
@@ -1101,10 +1131,10 @@ export default function AdminQrLinksManager() {
                       setFormState((prev) => ({ ...prev, slug: event.target.value }))
                     }
                     placeholder="intro-video"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    className={fieldClass}
                   />
                 </label>
-                <label className="space-y-1 text-sm font-medium text-slate-700">
+                <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                   <span>Status</span>
                   <select
                     value={formState.status}
@@ -1114,7 +1144,7 @@ export default function AdminQrLinksManager() {
                         status: event.target.value as QrLinkStatus,
                       }))
                     }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    className={fieldClass}
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -1123,7 +1153,7 @@ export default function AdminQrLinksManager() {
                     ))}
                   </select>
                 </label>
-                <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
                   <span>Destination URL (https)</span>
                   <input
                     type="url"
@@ -1132,36 +1162,38 @@ export default function AdminQrLinksManager() {
                       setFormState((prev) => ({ ...prev, destinationUrl: event.target.value }))
                     }
                     placeholder="https://freeswimming.org/course?lesson=mod1-l1"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    className={fieldClass}
                   />
                 </label>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className={nestedPanelClass}>
               <button
                 type="button"
                 onClick={() => setIsAdvancedCreateOpen((prev) => !prev)}
                 aria-expanded={isAdvancedCreateOpen}
                 aria-controls="admin-qr-create-advanced"
-                className="flex w-full items-center justify-between gap-3 text-left"
+                className="flex w-full items-center justify-between gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
               >
-                <span className="text-sm font-semibold text-slate-900">Advanced (optional)</span>
-                <span className="text-xs font-medium text-slate-600">
+                <span className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  Advanced (optional)
+                </span>
+                <span className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
                   {isAdvancedCreateOpen ? "Hide" : "Show"}
                 </span>
               </button>
 
               {isAdvancedCreateOpen ? (
                 <div id="admin-qr-create-advanced" className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                     <span>Attach to content item (optional)</span>
                     <select
                       value={formState.contentItemId}
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, contentItemId: event.target.value }))
                       }
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     >
                       <option value="">Not attached</option>
                       {contentItems.map((item) => (
@@ -1171,7 +1203,7 @@ export default function AdminQrLinksManager() {
                       ))}
                     </select>
                   </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                     <span>Content label (optional)</span>
                     <input
                       type="text"
@@ -1180,10 +1212,10 @@ export default function AdminQrLinksManager() {
                         setFormState((prev) => ({ ...prev, contentLabel: event.target.value }))
                       }
                       placeholder="Module 1 intro"
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                     <span>Placement key (optional)</span>
                     <input
                       type="text"
@@ -1192,10 +1224,10 @@ export default function AdminQrLinksManager() {
                         setFormState((prev) => ({ ...prev, placementKey: event.target.value }))
                       }
                       placeholder="course.support-card"
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                  <label className="space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]">
                     <span>Owner user id (optional UUID)</span>
                     <input
                       type="text"
@@ -1203,30 +1235,22 @@ export default function AdminQrLinksManager() {
                       onChange={(event) =>
                         setFormState((prev) => ({ ...prev, ownerUserId: event.target.value }))
                       }
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
                 </div>
               ) : (
-                <p className="mt-2 text-xs text-slate-600">
+                <p className="mt-2 text-xs text-[color:var(--fs-color-muted)]">
                   Attach metadata when you need ownership and placement traceability.
                 </p>
               )}
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-              >
+              <button type="submit" disabled={submitting} className={primaryActionClass}>
                 {submitting ? "Creating…" : "Create QR link"}
               </button>
-              <button
-                type="button"
-                onClick={applyExampleDraft}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-              >
+              <button type="button" onClick={applyExampleDraft} className={secondaryActionClass}>
                 Use example values
               </button>
               <button
@@ -1235,14 +1259,14 @@ export default function AdminQrLinksManager() {
                   setFormState(INITIAL_FORM);
                   setIsAdvancedCreateOpen(false);
                 }}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className={secondaryActionClass}
               >
                 Clear form
               </button>
             </div>
           </form>
         ) : (
-          <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+          <p className="mt-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 px-3 py-2 text-sm text-[color:var(--fs-color-muted)]">
             Open form to create a new stable QR link.
           </p>
         )}
