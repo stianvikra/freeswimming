@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-05-29-aw-006-admin-commerce-operations-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-29`
-- `updated`: `2026-05-29`
+- `updated`: `2026-05-30`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
@@ -230,3 +230,31 @@ Completed before screenshot handoff on `2026-05-29`:
 - `2026-05-29 | in-progress | started from clean main@f11342e after PR #902 and repo-managed closeout #903; post-merge preflight passed with no closeout remaining; owner approved AW-006 Admin Commerce And Operations Manager Token/Action Parity after a fresh queue/design/code re-audit | next: implement scoped manager token/action parity, update tests/docs, run targeted QA, then capture screenshot handoff before broad PR gates`
 - `2026-05-29 | in-progress | implemented scoped Commerce/Operations token/action parity, added focused manager tests, updated AW-006 queue/design inventory, and passed targeted tests, brief lint, diff check, and route/label/support sweep | next: capture screenshot handoff and stop for owner visual approval before verify:pre-pr`
 - `2026-05-29 | screenshot handoff | captured after/reference artifacts in output/aw-006-admin-commerce-operations-token-action-parity-2026-05-29-215309; no runtime flag rows exist in current smoke data, so flag row rendering remains covered by unit tests | next: owner visual approval, then run npm run verify:pre-pr`
+- `2026-05-30 | merged | PR #904 merged as squash commit 45f99dc after full pre-pr verification, green CI, and pre-merge gate | next: complete repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-05-30`
+- `merged_pr`: `#904`
+- `squash_commit`: `45f99dcd20d803fd8793006ae9e46753a8820300`
+- `result`: Closed AW-006 Admin Commerce And Operations Manager Token/Action Parity by aligning the scoped Admin Commerce and Operations manager shells, rows, and visible actions with current AW-006 card/action tokens while preserving product, Stripe, runtime-flag, site-lock, API, authz, support, and finance behavior.
+- `validation`: targeted Vitest manager tests passed (`2` files / `7` tests), `npm run lint:briefs:all` passed, `git diff --check` passed, targeted route/label/support sweep passed, screenshot handoff was owner-approved, `npm run verify:pre-pr` passed full lane, PR #904 CI passed, and `npm run verify:pre-merge` passed before merge.
+- `screenshot_artifacts`: `output/aw-006-admin-commerce-operations-token-action-parity-2026-05-29-215309`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained at or above release gate.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                              | Gaps / Notes                                                                                                    |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #904 scoped diff, active queue/design inventory update, and closeout move.                                                                         | None.                                                                                                           |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff plus focused Commerce/Operations manager tests.                                                                     | None.                                                                                                           |
+| Visual design quality                         | `5/5`          | `after/reference` screenshot artifacts and `fs-library-card` / `fs-cta-*` class assertions.                                                           | No rendering files changed after screenshot capture.                                                            |
+| Business logic correctness and data integrity | `5/5`          | Focused tests verify unchanged product PATCH payloads and runtime flag PATCH payloads.                                                                | None.                                                                                                           |
+| Admin editor ergonomics                       | `5/5`          | Refresh, save, site-lock links, and enable/disable controls stayed in place with token-backed actions.                                                | None.                                                                                                           |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role/label coverage, preserved semantic buttons/links/labels, and full local/CI gates.                                                | None.                                                                                                           |
+| Reliability and failure handling              | `5/5`          | Existing `AdminManagerState` loading/error/retry behavior preserved and retry tests passed.                                                           | None.                                                                                                           |
+| Security and authz                            | `5/5`          | Auth/API boundaries and credentials modes unchanged; CI security/API checks passed.                                                                   | None.                                                                                                           |
+| Content governance                            | `5/5`          | Help/Guide/runbook impact marked N/A with scope rationale; queue and design inventory updated.                                                        | None.                                                                                                           |
+| Admin workflow and editability                | `5/5`          | Commerce edit/save and Operations toggle flows preserved by focused tests and CI.                                                                     | None.                                                                                                           |
+| Commerce and revenue ops                      | `5/5`          | Product IDs, slugs, titles, active status, and Stripe price ID display preserved; no Stripe/API/finance code changed.                                 | None.                                                                                                           |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `fs-*` tokens and admin-local state helper; no dependency, migration, workflow, package, or global primitive change.                  | None.                                                                                                           |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `lint:briefs:all`, `git diff --check`, route/label/support sweep, full `verify:pre-pr`, green CI, and `verify:pre-merge` all passed. | Private-gate regression was skipped because `SITE_LOCK_ENABLED!=1`; scope did not change private-gate behavior. |
+| DevOps and rollback readiness                 | `5/5`          | PR #904 was a normal squash merge with no migrations/config changes and is reversible through normal git revert.                                      | None.                                                                                                           |
