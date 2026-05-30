@@ -10,6 +10,7 @@ import {
   type AdminEmailTemplateStatus,
 } from "@/lib/admin/email-templates";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 
 type AdminEmailTemplatesResponse =
   | {
@@ -266,6 +267,34 @@ function nextQuickStatusOptions(current: AdminEmailTemplateStatus): AdminEmailTe
   if (current === "published") return ["review", "archived"];
   return ["draft"];
 }
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const createPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const previewPanelClass =
+  "space-y-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 px-3 py-2 text-xs text-[color:var(--fs-color-muted)]";
+const historyItemClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] px-3 py-2 text-xs text-[color:var(--fs-color-muted)]";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
+const labelClass = "space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const textareaClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function AdminEmailTemplatesManager() {
   const [items, setItems] = useState<AdminEmailTemplateRow[]>([]);
@@ -597,587 +626,601 @@ export default function AdminEmailTemplatesManager() {
   }
 
   return (
-    <section
-      className="rounded-2xl border border-slate-200 bg-white p-6"
-      data-testid="admin-email-templates-manager"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Email templates</h2>
-          <p className="mt-2 text-sm text-slate-600">{summary}</p>
+    <div className="space-y-4" data-testid="admin-email-templates-manager">
+      <section className={managerHeaderClass} data-testid="admin-email-templates-manager-header">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className={eyebrowClass}>Admin library</p>
+            <h2 className={cx("mt-1", headingClass)}>Email templates</h2>
+            <p className={cx("mt-2", mutedTextClass)}>{summary}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadTemplates()}
+            className={secondaryActionClass}
+          >
+            Refresh
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadTemplates()}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Refresh
-        </button>
+      </section>
+
+      <div>
+        {!schemaReady && warning ? (
+          <AdminManagerState tone="warning">{warning}</AdminManagerState>
+        ) : null}
+
+        {loading ? (
+          <AdminManagerState tone="loading">Loading email templates…</AdminManagerState>
+        ) : null}
+
+        {!loading && error ? (
+          <AdminManagerState
+            tone="error"
+            actions={
+              <button
+                type="button"
+                onClick={() => void loadTemplates()}
+                className={secondaryActionClass}
+              >
+                Retry
+              </button>
+            }
+          >
+            {error}
+          </AdminManagerState>
+        ) : null}
+
+        {actionError ? (
+          <AdminManagerState tone="error" announcement="polite" density="compact">
+            {actionError}
+          </AdminManagerState>
+        ) : null}
+
+        {actionNotice ? (
+          <AdminManagerState tone="success" density="compact">
+            {actionNotice}
+          </AdminManagerState>
+        ) : null}
       </div>
 
-      {!schemaReady && warning ? (
-        <AdminManagerState tone="warning">{warning}</AdminManagerState>
-      ) : null}
+      <section className={createPanelClass} data-testid="admin-email-templates-create-panel">
+        <div>
+          <h2 className={headingClass}>Create template</h2>
+          <p className={cx("mt-2", mutedTextClass)}>
+            Create as draft/review, then publish from list.
+          </p>
+        </div>
 
-      {loading ? (
-        <AdminManagerState tone="loading">Loading email templates…</AdminManagerState>
-      ) : null}
-
-      {!loading && error ? (
-        <AdminManagerState
-          tone="error"
-          actions={
-            <button
-              type="button"
-              onClick={() => void loadTemplates()}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Retry
-            </button>
-          }
+        <form
+          className="mt-5 grid gap-4"
+          data-testid="admin-email-templates-create-form"
+          onSubmit={(event) => void handleCreate(event)}
         >
-          {error}
-        </AdminManagerState>
-      ) : null}
-
-      {actionError ? (
-        <AdminManagerState tone="error" announcement="polite" density="compact">
-          {actionError}
-        </AdminManagerState>
-      ) : null}
-
-      {actionNotice ? (
-        <AdminManagerState tone="success" density="compact">
-          {actionNotice}
-        </AdminManagerState>
-      ) : null}
-
-      <form
-        className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-        data-testid="admin-email-templates-create-form"
-        onSubmit={(event) => void handleCreate(event)}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-slate-900">Create template</h3>
-          <p className="text-xs text-slate-500">Create as draft/review, then publish from list.</p>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Template key</span>
-            <input
-              type="text"
-              value={createState.templateKey}
-              onChange={(event) =>
-                setCreateState((prev) => ({ ...prev, templateKey: event.target.value }))
-              }
-              placeholder="auth_login_code"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              required
-            />
-          </label>
-
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Locale</span>
-            <input
-              type="text"
-              value={createState.locale}
-              onChange={(event) =>
-                setCreateState((prev) => ({ ...prev, locale: event.target.value }))
-              }
-              placeholder="nb-NO"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              required
-            />
-          </label>
-
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Status</span>
-            <select
-              value={createState.status}
-              onChange={(event) =>
-                setCreateState((prev) => ({
-                  ...prev,
-                  status: event.target.value as CreateFormState["status"],
-                }))
-              }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-            >
-              <option value="draft">Draft</option>
-              <option value="review">Review</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-3 space-y-3">
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Subject</span>
-            <input
-              type="text"
-              value={createState.subject}
-              onChange={(event) =>
-                setCreateState((prev) => ({ ...prev, subject: event.target.value }))
-              }
-              placeholder="Din kode er {{code}}"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              required
-            />
-          </label>
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Body</span>
-            <textarea
-              value={createState.body}
-              onChange={(event) =>
-                setCreateState((prev) => ({ ...prev, body: event.target.value }))
-              }
-              rows={4}
-              placeholder="Bruk {{code}} innen {{expires_minutes}} minutter."
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-              required
-            />
-          </label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              <span>Required placeholders</span>
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className={labelClass}>
+              <span>Template key</span>
               <input
                 type="text"
-                value={createState.requiredPlaceholders}
+                value={createState.templateKey}
+                onChange={(event) =>
+                  setCreateState((prev) => ({ ...prev, templateKey: event.target.value }))
+                }
+                placeholder="auth_login_code"
+                className={fieldClass}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span>Locale</span>
+              <input
+                type="text"
+                value={createState.locale}
+                onChange={(event) =>
+                  setCreateState((prev) => ({ ...prev, locale: event.target.value }))
+                }
+                placeholder="nb-NO"
+                className={fieldClass}
+                required
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span>Status</span>
+              <select
+                value={createState.status}
                 onChange={(event) =>
                   setCreateState((prev) => ({
                     ...prev,
-                    requiredPlaceholders: event.target.value,
+                    status: event.target.value as CreateFormState["status"],
                   }))
                 }
-                placeholder="code"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              />
-            </label>
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              <span>Optional placeholders</span>
-              <input
-                type="text"
-                value={createState.optionalPlaceholders}
-                onChange={(event) =>
-                  setCreateState((prev) => ({
-                    ...prev,
-                    optionalPlaceholders: event.target.value,
-                  }))
-                }
-                placeholder="expires_minutes"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-              />
-            </label>
-          </div>
-
-          <label className="space-y-1 text-sm font-medium text-slate-700">
-            <span>Preview sample values (JSON object)</span>
-            <textarea
-              value={createState.previewSampleValues}
-              onChange={(event) =>
-                setCreateState((prev) => ({ ...prev, previewSampleValues: event.target.value }))
-              }
-              rows={4}
-              placeholder='{"code":"654321","user_name":"Stian"}'
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-            />
-          </label>
-
-          <div
-            className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
-            data-testid="admin-email-template-create-preview"
-          >
-            <p data-testid="admin-email-template-create-preview-detected">
-              <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
-              {createPlaceholderPreview.length > 0 ? createPlaceholderPreview.join(", ") : "none"}
-            </p>
-            <AdminEmailTemplatePreviewError
-              message={createPreviewSample.error}
-              testId="admin-email-template-create-preview-error"
-            />
-            <p data-testid="admin-email-template-create-preview-subject">
-              <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
-              {createRenderedPreview.subject || "—"}
-            </p>
-            <p className="font-semibold text-slate-700">Rendered body:</p>
-            <pre
-              className="font-mono text-xs whitespace-pre-wrap text-slate-700"
-              data-testid="admin-email-template-create-preview-body"
-            >
-              {createRenderedPreview.body || "—"}
-            </pre>
-            {createRenderedPreview.usedFallbackKeys.length > 0 ? (
-              <p data-testid="admin-email-template-create-preview-fallback">
-                <span className="font-semibold text-slate-700">Fallback defaults used:</span>{" "}
-                {createRenderedPreview.usedFallbackKeys.join(", ")}
-              </p>
-            ) : null}
-            <AdminEmailTemplateMissingPreviewValues
-              missingKeys={createRenderedPreview.missingKeys}
-              testId="admin-email-template-create-preview-missing"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={submittingCreate || Boolean(savingId) || Boolean(quickStatusId)}
-          className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          {submittingCreate ? "Creating…" : "Create template"}
-        </button>
-      </form>
-
-      {!loading && !error && items.length === 0 ? (
-        <AdminManagerState tone="empty" testId="admin-email-templates-empty-state">
-          No templates created yet.
-        </AdminManagerState>
-      ) : null}
-
-      {!loading && !error && items.length > 0 ? (
-        <ul className="mt-5 space-y-3">
-          {items.map((item) => {
-            const isEditing = editingId === item.id;
-            const isHistoryOpen = openHistoryId === item.id;
-            const isHistoryLoading = historyLoadingId === item.id;
-            const historyError = historyErrorByTemplateId[item.id] ?? null;
-            const historyItems = historyByTemplateId[item.id] ?? [];
-            const nextStatusOptions = nextQuickStatusOptions(item.status).filter((nextStatus) =>
-              canTransitionAdminEmailTemplateStatus(item.status, nextStatus)
-            );
-            const disableRowActions = Boolean(savingId || quickStatusId || submittingCreate);
-
-            return (
-              <li
-                key={item.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-                data-testid="admin-email-template-item"
+                className={fieldClass}
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {item.template_key} · {item.locale}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      v{item.version} · updated {formatDateTime(item.updated_at)} · last published{" "}
-                      {formatDateTime(item.last_published_at)}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={[
-                        "inline-flex rounded-full px-2 py-1 text-xs font-semibold",
-                        toStatusChipClasses(item.status),
-                      ].join(" ")}
-                    >
-                      {toStatusLabel(item.status)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => (isEditing ? clearEdit() : startEdit(item))}
-                      disabled={disableRowActions}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isEditing ? "Close editor" : "Edit"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleHistory(item.id)}
-                      disabled={disableRowActions}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isHistoryOpen ? "Hide history" : "Show history"}
-                    </button>
-                  </div>
-                </div>
+                <option value="draft">Draft</option>
+                <option value="review">Review</option>
+              </select>
+            </label>
+          </div>
 
-                {nextStatusOptions.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {nextStatusOptions.map((nextStatus) => (
-                      <button
-                        key={`${item.id}-${nextStatus}`}
-                        type="button"
-                        disabled={disableRowActions}
-                        onClick={() => void updateTemplateStatus(item, nextStatus)}
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {quickStatusId === item.id
-                          ? "Saving…"
-                          : `Move to ${toStatusLabel(nextStatus)}`}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
+          <div className="mt-3 space-y-3">
+            <label className={labelClass}>
+              <span>Subject</span>
+              <input
+                type="text"
+                value={createState.subject}
+                onChange={(event) =>
+                  setCreateState((prev) => ({ ...prev, subject: event.target.value }))
+                }
+                placeholder="Din kode er {{code}}"
+                className={fieldClass}
+                required
+              />
+            </label>
+            <label className={labelClass}>
+              <span>Body</span>
+              <textarea
+                value={createState.body}
+                onChange={(event) =>
+                  setCreateState((prev) => ({ ...prev, body: event.target.value }))
+                }
+                rows={4}
+                placeholder="Bruk {{code}} innen {{expires_minutes}} minutter."
+                className={textareaClass}
+                required
+              />
+            </label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className={labelClass}>
+                <span>Required placeholders</span>
+                <input
+                  type="text"
+                  value={createState.requiredPlaceholders}
+                  onChange={(event) =>
+                    setCreateState((prev) => ({
+                      ...prev,
+                      requiredPlaceholders: event.target.value,
+                    }))
+                  }
+                  placeholder="code"
+                  className={fieldClass}
+                />
+              </label>
+              <label className={labelClass}>
+                <span>Optional placeholders</span>
+                <input
+                  type="text"
+                  value={createState.optionalPlaceholders}
+                  onChange={(event) =>
+                    setCreateState((prev) => ({
+                      ...prev,
+                      optionalPlaceholders: event.target.value,
+                    }))
+                  }
+                  placeholder="expires_minutes"
+                  className={fieldClass}
+                />
+              </label>
+            </div>
 
-                {isEditing && editState ? (
-                  <div className="mt-4 grid gap-3 border-t border-slate-200 pt-4">
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <label className="space-y-1 text-sm font-medium text-slate-700">
-                        <span>Template key</span>
-                        <input
-                          type="text"
-                          value={editState.templateKey}
-                          onChange={(event) =>
-                            setEditState((prev) =>
-                              prev ? { ...prev, templateKey: event.target.value } : prev
-                            )
-                          }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        />
-                      </label>
-                      <label className="space-y-1 text-sm font-medium text-slate-700">
-                        <span>Locale</span>
-                        <input
-                          type="text"
-                          value={editState.locale}
-                          onChange={(event) =>
-                            setEditState((prev) =>
-                              prev ? { ...prev, locale: event.target.value } : prev
-                            )
-                          }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        />
-                      </label>
-                      <label className="space-y-1 text-sm font-medium text-slate-700">
-                        <span>Status</span>
-                        <select
-                          value={editState.status}
-                          onChange={(event) =>
-                            setEditState((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    status: event.target.value as AdminEmailTemplateStatus,
-                                  }
-                                : prev
-                            )
-                          }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        >
-                          {ADMIN_EMAIL_TEMPLATE_STATUS_VALUES.map((status) => (
-                            <option key={status} value={status}>
-                              {toStatusLabel(status)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
+            <label className={labelClass}>
+              <span>Preview sample values (JSON object)</span>
+              <textarea
+                value={createState.previewSampleValues}
+                onChange={(event) =>
+                  setCreateState((prev) => ({ ...prev, previewSampleValues: event.target.value }))
+                }
+                rows={4}
+                placeholder='{"code":"654321","user_name":"Stian"}'
+                className={textareaClass}
+              />
+            </label>
 
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
-                      <span>Subject</span>
-                      <input
-                        type="text"
-                        value={editState.subject}
-                        onChange={(event) =>
-                          setEditState((prev) =>
-                            prev ? { ...prev, subject: event.target.value } : prev
-                          )
-                        }
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                      />
-                    </label>
+            <div className={previewPanelClass} data-testid="admin-email-template-create-preview">
+              <p data-testid="admin-email-template-create-preview-detected">
+                <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                  Detected placeholders:
+                </span>{" "}
+                {createPlaceholderPreview.length > 0 ? createPlaceholderPreview.join(", ") : "none"}
+              </p>
+              <AdminEmailTemplatePreviewError
+                message={createPreviewSample.error}
+                testId="admin-email-template-create-preview-error"
+              />
+              <p data-testid="admin-email-template-create-preview-subject">
+                <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                  Rendered subject:
+                </span>{" "}
+                {createRenderedPreview.subject || "—"}
+              </p>
+              <p className="font-semibold text-[color:var(--fs-color-ink)]">Rendered body:</p>
+              <pre
+                className="font-mono text-xs whitespace-pre-wrap text-[color:var(--fs-color-ink)]"
+                data-testid="admin-email-template-create-preview-body"
+              >
+                {createRenderedPreview.body || "—"}
+              </pre>
+              {createRenderedPreview.usedFallbackKeys.length > 0 ? (
+                <p data-testid="admin-email-template-create-preview-fallback">
+                  <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                    Fallback defaults used:
+                  </span>{" "}
+                  {createRenderedPreview.usedFallbackKeys.join(", ")}
+                </p>
+              ) : null}
+              <AdminEmailTemplateMissingPreviewValues
+                missingKeys={createRenderedPreview.missingKeys}
+                testId="admin-email-template-create-preview-missing"
+              />
+            </div>
+          </div>
 
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
-                      <span>Body</span>
-                      <textarea
-                        value={editState.body}
-                        onChange={(event) =>
-                          setEditState((prev) =>
-                            prev ? { ...prev, body: event.target.value } : prev
-                          )
-                        }
-                        rows={6}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                      />
-                    </label>
+          <button
+            type="submit"
+            disabled={submittingCreate || Boolean(savingId) || Boolean(quickStatusId)}
+            className={primaryActionClass}
+          >
+            {submittingCreate ? "Creating…" : "Create template"}
+          </button>
+        </form>
+      </section>
 
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1 text-sm font-medium text-slate-700">
-                        <span>Required placeholders</span>
-                        <input
-                          type="text"
-                          value={editState.requiredPlaceholders}
-                          onChange={(event) =>
-                            setEditState((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    requiredPlaceholders: event.target.value,
-                                  }
-                                : prev
-                            )
-                          }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        />
-                      </label>
-                      <label className="space-y-1 text-sm font-medium text-slate-700">
-                        <span>Optional placeholders</span>
-                        <input
-                          type="text"
-                          value={editState.optionalPlaceholders}
-                          onChange={(event) =>
-                            setEditState((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    optionalPlaceholders: event.target.value,
-                                  }
-                                : prev
-                            )
-                          }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                        />
-                      </label>
-                    </div>
+      <div>
+        {!loading && !error && items.length === 0 ? (
+          <AdminManagerState tone="empty" testId="admin-email-templates-empty-state">
+            No templates created yet.
+          </AdminManagerState>
+        ) : null}
 
-                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                      <span className="font-semibold text-slate-700">Detected placeholders:</span>{" "}
-                      {placeholderPreview.length > 0 ? placeholderPreview.join(", ") : "none"}
-                    </div>
+        {!loading && !error && items.length > 0 ? (
+          <ul className="mt-5 space-y-3">
+            {items.map((item) => {
+              const isEditing = editingId === item.id;
+              const isHistoryOpen = openHistoryId === item.id;
+              const isHistoryLoading = historyLoadingId === item.id;
+              const historyError = historyErrorByTemplateId[item.id] ?? null;
+              const historyItems = historyByTemplateId[item.id] ?? [];
+              const nextStatusOptions = nextQuickStatusOptions(item.status).filter((nextStatus) =>
+                canTransitionAdminEmailTemplateStatus(item.status, nextStatus)
+              );
+              const disableRowActions = Boolean(savingId || quickStatusId || submittingCreate);
 
-                    <label className="space-y-1 text-sm font-medium text-slate-700">
-                      <span>Preview sample values (JSON object)</span>
-                      <textarea
-                        value={editState.previewSampleValues}
-                        onChange={(event) =>
-                          setEditState((prev) =>
-                            prev ? { ...prev, previewSampleValues: event.target.value } : prev
-                          )
-                        }
-                        rows={4}
-                        placeholder='{"code":"654321","user_name":"Stian"}'
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
-                      />
-                    </label>
-
-                    {editRenderedPreview ? (
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                        <AdminEmailTemplatePreviewError
-                          message={editPreviewSample.error}
-                          testId="admin-email-template-edit-preview-error"
-                        />
-                        <p>
-                          <span className="font-semibold text-slate-700">Rendered subject:</span>{" "}
-                          {editRenderedPreview.subject || "—"}
-                        </p>
-                        <p className="font-semibold text-slate-700">Rendered body:</p>
-                        <pre className="font-mono text-xs whitespace-pre-wrap text-slate-700">
-                          {editRenderedPreview.body || "—"}
-                        </pre>
-                        {editRenderedPreview.usedFallbackKeys.length > 0 ? (
-                          <p>
-                            <span className="font-semibold text-slate-700">
-                              Fallback defaults used:
-                            </span>{" "}
-                            {editRenderedPreview.usedFallbackKeys.join(", ")}
-                          </p>
-                        ) : null}
-                        <AdminEmailTemplateMissingPreviewValues
-                          missingKeys={editRenderedPreview.missingKeys}
-                          testId="admin-email-template-edit-preview-missing"
-                        />
-                      </div>
-                    ) : null}
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void saveEdit()}
-                        disabled={Boolean(savingId) || Boolean(quickStatusId)}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-                      >
-                        {savingId === item.id ? "Saving…" : "Save changes"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditState(toEditFormState(item))}
-                        disabled={Boolean(savingId) || Boolean(quickStatusId)}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Reset draft
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {isHistoryOpen ? (
-                  <div
-                    className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-3"
-                    data-testid="admin-email-template-history-panel"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                        Revision history (latest 25)
+              return (
+                <li key={item.id} className={rowCardClass} data-testid="admin-email-template-item">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                        {item.template_key} · {item.locale}
                       </p>
+                      <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
+                        v{item.version} · updated {formatDateTime(item.updated_at)} · last published{" "}
+                        {formatDateTime(item.last_published_at)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={[
+                          "inline-flex rounded-full px-2 py-1 text-xs font-semibold",
+                          toStatusChipClasses(item.status),
+                        ].join(" ")}
+                      >
+                        {toStatusLabel(item.status)}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => void loadTemplateHistory(item.id)}
-                        disabled={isHistoryLoading}
-                        className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => (isEditing ? clearEdit() : startEdit(item))}
+                        disabled={disableRowActions}
+                        className={compactSecondaryActionClass}
                       >
-                        {isHistoryLoading ? "Loading…" : "Refresh history"}
+                        {isEditing ? "Close editor" : "Edit"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleHistory(item.id)}
+                        disabled={disableRowActions}
+                        className={compactSecondaryActionClass}
+                      >
+                        {isHistoryOpen ? "Hide history" : "Show history"}
                       </button>
                     </div>
-
-                    {isHistoryLoading ? (
-                      <AdminManagerState tone="loading" density="compact" className="!mt-0">
-                        Loading template history…
-                      </AdminManagerState>
-                    ) : null}
-
-                    {!isHistoryLoading && historyError ? (
-                      <AdminManagerState
-                        tone="error"
-                        density="compact"
-                        className="!mt-0"
-                        actionsClassName="mt-2 flex flex-wrap gap-2"
-                        actions={
-                          <button
-                            type="button"
-                            onClick={() => void loadTemplateHistory(item.id)}
-                            className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
-                          >
-                            Retry
-                          </button>
-                        }
-                      >
-                        {historyError}
-                      </AdminManagerState>
-                    ) : null}
-
-                    {!isHistoryLoading && !historyError && historyItems.length === 0 ? (
-                      <AdminManagerState tone="empty" density="compact" className="!mt-0">
-                        No revision entries yet.
-                      </AdminManagerState>
-                    ) : null}
-
-                    {!isHistoryLoading && !historyError && historyItems.length > 0 ? (
-                      <ul className="space-y-2">
-                        {historyItems.map((entry) => (
-                          <li
-                            key={entry.id}
-                            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700"
-                          >
-                            <p className="font-semibold text-slate-800">
-                              Rev {entry.revisionNumber} · {toRevisionActionLabel(entry.action)}
-                            </p>
-                            <p className="mt-1 text-slate-600">
-                              {formatDateTime(entry.createdAt)} · by{" "}
-                              {entry.changedByEmail ?? "unknown"}
-                            </p>
-                            <p className="mt-1 text-slate-600">
-                              Snapshot status: {toSnapshotStatusLabel(entry.snapshotStatus)} ·
-                              version {entry.snapshotVersion ?? "unknown"}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
                   </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-    </section>
+
+                  {nextStatusOptions.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {nextStatusOptions.map((nextStatus) => (
+                        <button
+                          key={`${item.id}-${nextStatus}`}
+                          type="button"
+                          disabled={disableRowActions}
+                          onClick={() => void updateTemplateStatus(item, nextStatus)}
+                          className={compactPrimaryActionClass}
+                        >
+                          {quickStatusId === item.id
+                            ? "Saving…"
+                            : `Move to ${toStatusLabel(nextStatus)}`}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {isEditing && editState ? (
+                    <div
+                      className={cx(
+                        "mt-4 grid gap-4 border-t border-[color:var(--fs-border-soft)] pt-4",
+                        nestedPanelClass
+                      )}
+                    >
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <label className={labelClass}>
+                          <span>Template key</span>
+                          <input
+                            type="text"
+                            value={editState.templateKey}
+                            onChange={(event) =>
+                              setEditState((prev) =>
+                                prev ? { ...prev, templateKey: event.target.value } : prev
+                              )
+                            }
+                            className={fieldClass}
+                          />
+                        </label>
+                        <label className={labelClass}>
+                          <span>Locale</span>
+                          <input
+                            type="text"
+                            value={editState.locale}
+                            onChange={(event) =>
+                              setEditState((prev) =>
+                                prev ? { ...prev, locale: event.target.value } : prev
+                              )
+                            }
+                            className={fieldClass}
+                          />
+                        </label>
+                        <label className={labelClass}>
+                          <span>Status</span>
+                          <select
+                            value={editState.status}
+                            onChange={(event) =>
+                              setEditState((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      status: event.target.value as AdminEmailTemplateStatus,
+                                    }
+                                  : prev
+                              )
+                            }
+                            className={fieldClass}
+                          >
+                            {ADMIN_EMAIL_TEMPLATE_STATUS_VALUES.map((status) => (
+                              <option key={status} value={status}>
+                                {toStatusLabel(status)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <label className={labelClass}>
+                        <span>Subject</span>
+                        <input
+                          type="text"
+                          value={editState.subject}
+                          onChange={(event) =>
+                            setEditState((prev) =>
+                              prev ? { ...prev, subject: event.target.value } : prev
+                            )
+                          }
+                          className={fieldClass}
+                        />
+                      </label>
+
+                      <label className={labelClass}>
+                        <span>Body</span>
+                        <textarea
+                          value={editState.body}
+                          onChange={(event) =>
+                            setEditState((prev) =>
+                              prev ? { ...prev, body: event.target.value } : prev
+                            )
+                          }
+                          rows={6}
+                          className={textareaClass}
+                        />
+                      </label>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className={labelClass}>
+                          <span>Required placeholders</span>
+                          <input
+                            type="text"
+                            value={editState.requiredPlaceholders}
+                            onChange={(event) =>
+                              setEditState((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      requiredPlaceholders: event.target.value,
+                                    }
+                                  : prev
+                              )
+                            }
+                            className={fieldClass}
+                          />
+                        </label>
+                        <label className={labelClass}>
+                          <span>Optional placeholders</span>
+                          <input
+                            type="text"
+                            value={editState.optionalPlaceholders}
+                            onChange={(event) =>
+                              setEditState((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      optionalPlaceholders: event.target.value,
+                                    }
+                                  : prev
+                              )
+                            }
+                            className={fieldClass}
+                          />
+                        </label>
+                      </div>
+
+                      <div className={previewPanelClass}>
+                        <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                          Detected placeholders:
+                        </span>{" "}
+                        {placeholderPreview.length > 0 ? placeholderPreview.join(", ") : "none"}
+                      </div>
+
+                      <label className={labelClass}>
+                        <span>Preview sample values (JSON object)</span>
+                        <textarea
+                          value={editState.previewSampleValues}
+                          onChange={(event) =>
+                            setEditState((prev) =>
+                              prev ? { ...prev, previewSampleValues: event.target.value } : prev
+                            )
+                          }
+                          rows={4}
+                          placeholder='{"code":"654321","user_name":"Stian"}'
+                          className={textareaClass}
+                        />
+                      </label>
+
+                      {editRenderedPreview ? (
+                        <div className={previewPanelClass}>
+                          <AdminEmailTemplatePreviewError
+                            message={editPreviewSample.error}
+                            testId="admin-email-template-edit-preview-error"
+                          />
+                          <p>
+                            <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                              Rendered subject:
+                            </span>{" "}
+                            {editRenderedPreview.subject || "—"}
+                          </p>
+                          <p className="font-semibold text-[color:var(--fs-color-ink)]">
+                            Rendered body:
+                          </p>
+                          <pre className="font-mono text-xs whitespace-pre-wrap text-[color:var(--fs-color-ink)]">
+                            {editRenderedPreview.body || "—"}
+                          </pre>
+                          {editRenderedPreview.usedFallbackKeys.length > 0 ? (
+                            <p>
+                              <span className="font-semibold text-[color:var(--fs-color-ink)]">
+                                Fallback defaults used:
+                              </span>{" "}
+                              {editRenderedPreview.usedFallbackKeys.join(", ")}
+                            </p>
+                          ) : null}
+                          <AdminEmailTemplateMissingPreviewValues
+                            missingKeys={editRenderedPreview.missingKeys}
+                            testId="admin-email-template-edit-preview-missing"
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void saveEdit()}
+                          disabled={Boolean(savingId) || Boolean(quickStatusId)}
+                          className={compactPrimaryActionClass}
+                        >
+                          {savingId === item.id ? "Saving…" : "Save changes"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditState(toEditFormState(item))}
+                          disabled={Boolean(savingId) || Boolean(quickStatusId)}
+                          className={compactSecondaryActionClass}
+                        >
+                          Reset draft
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {isHistoryOpen ? (
+                    <div
+                      className={cx("mt-4 space-y-3", nestedPanelClass)}
+                      data-testid="admin-email-template-history-panel"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={metadataLabelClass}>Revision history (latest 25)</p>
+                        <button
+                          type="button"
+                          onClick={() => void loadTemplateHistory(item.id)}
+                          disabled={isHistoryLoading}
+                          className={compactSecondaryActionClass}
+                        >
+                          {isHistoryLoading ? "Loading…" : "Refresh history"}
+                        </button>
+                      </div>
+
+                      {isHistoryLoading ? (
+                        <AdminManagerState tone="loading" density="compact" className="!mt-0">
+                          Loading template history…
+                        </AdminManagerState>
+                      ) : null}
+
+                      {!isHistoryLoading && historyError ? (
+                        <AdminManagerState
+                          tone="error"
+                          density="compact"
+                          className="!mt-0"
+                          actionsClassName="mt-2 flex flex-wrap gap-2"
+                          actions={
+                            <button
+                              type="button"
+                              onClick={() => void loadTemplateHistory(item.id)}
+                              className={compactSecondaryActionClass}
+                            >
+                              Retry
+                            </button>
+                          }
+                        >
+                          {historyError}
+                        </AdminManagerState>
+                      ) : null}
+
+                      {!isHistoryLoading && !historyError && historyItems.length === 0 ? (
+                        <AdminManagerState tone="empty" density="compact" className="!mt-0">
+                          No revision entries yet.
+                        </AdminManagerState>
+                      ) : null}
+
+                      {!isHistoryLoading && !historyError && historyItems.length > 0 ? (
+                        <ul className="space-y-2">
+                          {historyItems.map((entry) => (
+                            <li key={entry.id} className={historyItemClass}>
+                              <p className="font-semibold text-[color:var(--fs-color-ink)]">
+                                Rev {entry.revisionNumber} · {toRevisionActionLabel(entry.action)}
+                              </p>
+                              <p className="mt-1 text-[color:var(--fs-color-muted)]">
+                                {formatDateTime(entry.createdAt)} · by{" "}
+                                {entry.changedByEmail ?? "unknown"}
+                              </p>
+                              <p className="mt-1 text-[color:var(--fs-color-muted)]">
+                                Snapshot status: {toSnapshotStatusLabel(entry.snapshotStatus)} ·
+                                version {entry.snapshotVersion ?? "unknown"}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+      </div>
+    </div>
   );
 }
