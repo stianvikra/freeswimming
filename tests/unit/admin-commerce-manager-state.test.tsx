@@ -50,11 +50,20 @@ describe("AdminCommerceManager state rendering", () => {
 
     render(<AdminCommerceManager />);
 
+    expect(screen.getByTestId("admin-commerce-manager")).toHaveClass("space-y-4");
+    expect(screen.getByTestId("admin-commerce-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("fs-cta-secondary");
+
     const loading = screen.getByRole("status");
     expect(loading).toHaveTextContent("Loading product catalog…");
     expect(loading).toHaveAttribute("aria-live", "polite");
 
     await screen.findByDisplayValue("Poolside PDF");
+    expect(screen.getByTestId("admin-commerce-product-row")).toHaveClass("fs-library-card");
+    expect(screen.getByRole("button", { name: "Save product" })).toHaveClass("fs-cta-primary");
   });
 
   it("keeps load error retry wired to the original product loader", async () => {
@@ -92,5 +101,44 @@ describe("AdminCommerceManager state rendering", () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps product save payloads unchanged while using token actions", async () => {
+    const updatedProduct = {
+      ...product,
+      title: "Poolside PDF Updated",
+      active: false,
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(productsResponse())
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          item: updatedProduct,
+        }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminCommerceManager />);
+
+    const titleInput = await screen.findByDisplayValue("Poolside PDF");
+    fireEvent.change(titleInput, { target: { value: "Poolside PDF Updated" } });
+    fireEvent.click(screen.getByLabelText("Active in plans/library"));
+    fireEvent.click(screen.getByRole("button", { name: "Save product" }));
+
+    await screen.findByText("Saved.");
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/admin/products/product-poolside-pdf", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        title: "Poolside PDF Updated",
+        active: false,
+      }),
+    });
   });
 });
