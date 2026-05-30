@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-30-aw-006-admin-categories-manager-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-30`
 - `updated`: `2026-05-30`
@@ -208,9 +208,9 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 - Node.js LTS/npm available through the repo's normal `nvm use --silent` path.
 - Browser screenshot capture uses the local Freeswimming screenshot default from `docs/runbooks/ui-debug-hypothesis-and-handoff.md`.
 
-## Execution Mode
+## Completion Mode
 
-End-to-end implementation is now active on branch `aw-006-admin-categories-manager-token-parity`. Implement the scoped changes, run targeted validation, capture screenshot handoff, wait for screenshot approval, then continue through the normal PR gates.
+Completed through PR `#908`; this repo-managed docs-only closeout moves the brief to `done` and clears stale queue/design-inventory active references.
 
 ## Checkpoint Log
 
@@ -220,3 +220,30 @@ End-to-end implementation is now active on branch `aw-006-admin-categories-manag
 - `2026-05-30 | screenshot-review | npm run lint:briefs:all, targeted route/label/support sweep, and git diff --check passed; captured after/reference screenshots at output/aw-006-admin-categories-manager-token-action-parity-2026-05-30-102031 using a temporary local dev-only route with mocked Categories/Commerce API responses; the temporary route and script were removed before handoff | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, CI, and npm run verify:pre-merge`
 - `2026-05-30 | screenshot-approved | owner approved the after/reference screenshot handoff; no product-rendering files changed after screenshot capture | next: run npm run verify:pre-pr on the final pre-PR diff`
 - `2026-05-30 | pre-pr-ready | npm run verify:pre-pr passed full lane against origin/main@9f08c77 with lint, quality gates, admin/env/PR-body lint, eslint, typecheck, 1294 unit tests, build, performance budgets, and Playwright 102 passed / 492 skipped; verify log artifacts/test-runs/20260530-103043/verify.log; performance trend recommendation was hold, not tighten, because worst margin was 13.9% versus 15.0% tighten threshold | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-30 | merge-ready | committed as 5a48b1e, reran npm run verify:pre-pr full lane on final commit with PASS at artifacts/test-runs/20260530-103821/verify.log, opened PR #908, confirmed required CI green, regenerated final after/reference screenshot evidence at output/aw-006-admin-categories-manager-token-action-parity-2026-05-30-110050 after pre-commit formatting, and passed npm run verify:pre-merge with marker artifacts/verify-pre-merge/20260530-085152.json | next: merge PR #908 after owner approval`
+- `2026-05-30 | done | PR #908 merged as ff2ecf6 after owner-approved screenshot handoff, green full local pre-PR gate, green GitHub CI, regenerated final screenshot evidence, and green local pre-merge gate; repo-managed docs-only closeout moves this brief to done and clears stale queue/inventory active references | next: run closeout docs gates and merge closeout PR if green`
+
+## Completion Record
+
+- `completed`: `2026-05-30`
+- `merged_pr`: `#908`
+- `squash_commit`: `ff2ecf6`
+- `result`: Closed AW-006 Admin Categories Manager Token/Action Parity by aligning the Categories manager shell, scope cards, category rows, create panel, form fields, retry/refresh, save, activate/deactivate, and delete actions with the current `fs-library-card` and action-token direction while preserving category data, scopes, slugs, sort order, active/deactivated behavior, delete confirmation, APIs, authz, Help/Guide content, and support procedures.
+- `validation`: targeted unit test `./node_modules/.bin/vitest run tests/unit/admin-categories-manager-state.test.tsx`; `npm run lint:briefs:all`; targeted route/label/support sweep; `git diff --check`; owner-approved screenshot handoff; final regenerated screenshot evidence in `output/aw-006-admin-categories-manager-token-action-parity-2026-05-30-110050`; `npm run verify:pre-pr` full lane PASS on commit `5a48b1e`; GitHub CI PASS for PR `#908`; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260530-085152.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                  | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scope stayed inside `AdminCategoriesManager`, focused tests, AW-006 queue and design inventory updates, PR `#908`.                                        | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff, preserved labels/click paths, focused component tests, full local and CI gates.                                        | None.        |
+| Visual design quality                         | `5/5`          | `fs-library-card`, `fs-library-card-muted`, `fs-library-card-accent`, `fs-cta-primary`, and `fs-cta-secondary` reuse verified by DOM tests/screens.       | None.        |
+| Business logic correctness and data integrity | `5/5`          | Category payloads, scope switching, sort order, active-state toggles, delete confirmation, delete behavior, and form reset behavior untouched and tested. | None.        |
+| Admin editor ergonomics                       | `5/5`          | Refresh, scope switch, create, activate/deactivate, and delete flows preserved with no new workflow step.                                                 | None.        |
+| Accessibility (a11y)                          | `5/5`          | Buttons, inputs, active scope selection, disabled states, labels, Testing Library assertions, and E2E gate coverage remained green.                       | None.        |
+| Reliability and failure handling              | `5/5`          | Existing loading, warning, load error + retry, empty, action error, saving, deleting, and retry behavior preserved and tested.                            | None.        |
+| Security and authz                            | `5/5`          | Admin authz, API routes, cookies, credentials, category scope validation, secrets, and destructive confirmation boundaries were untouched.                | None.        |
+| Content governance                            | `5/5`          | Category labels, Help/Guide behavior, support procedures, AW-006 queue, and design inventory were preserved or updated for this slice only.               | None.        |
+| Admin workflow and editability                | `5/5`          | Same controls and API calls remain editable; only shell/card/action presentation changed.                                                                 | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and global `fs-*` tokens; no dependency, package, API, or global primitive changes.                                    | None.        |
+| Testing and QA automation                     | `5/5`          | Focused unit coverage, brief lint, route/label/support sweep, screenshot evidence, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/package/workflow changes; rollback is normal `git revert ff2ecf6`.                                                                   | None.        |
