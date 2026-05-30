@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import type { AdminRole } from "@/lib/admin/access";
 import {
   ADMIN_MESSAGE_SOURCE_FILTER_VALUES,
@@ -140,6 +141,48 @@ function mergeItems(current: AdminMessageItem[], next: AdminMessageItem[]): Admi
     right.createdAt.localeCompare(left.createdAt)
   );
 }
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const panelCardClass = "fs-library-card p-0";
+const detailPanelClass = "fs-library-card p-4 sm:p-5";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const mutedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactStatusActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const replyActionClass = cx(
+  compactStatusActionClass,
+  "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 focus-visible:ring-amber-500"
+);
+const repliedActionClass = cx(
+  compactStatusActionClass,
+  "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 focus-visible:ring-emerald-500"
+);
+const destructiveActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const destructivePrimaryActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-700 bg-rose-700 px-3 text-sm font-semibold text-white transition-colors hover:bg-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const statusFilterClass =
+  "fs-library-card inline-flex min-h-10 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const statusFilterActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+const listItemClass =
+  "block w-full px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-inset";
+const listItemActiveClass = "bg-[rgba(191,219,254,0.34)]";
+const listItemIdleClass = "bg-white/78 hover:bg-white";
 
 export default function AdminMessagesManager({ adminRole }: Props) {
   const [items, setItems] = useState<AdminMessageItem[]>([]);
@@ -295,14 +338,18 @@ export default function AdminMessagesManager({ adminRole }: Props) {
 
   return (
     <section className="space-y-4" data-testid="admin-messages-manager">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className={managerHeaderClass} data-testid="admin-messages-manager-header">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
+            <p className={eyebrowClass}>Admin inbox</p>
             <div className="flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-blue-700" aria-hidden="true" />
-              <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
+              <Inbox
+                className="h-5 w-5 text-[color:var(--fs-color-brand-700)]"
+                aria-hidden="true"
+              />
+              <h2 className={cx("mt-1", headingClass)}>Messages</h2>
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            <p className={cx("mt-2 max-w-2xl", mutedTextClass)}>
               Stored contact and intake requests with delivery diagnostics. Reply from the normal
               email inbox in v1.
             </p>
@@ -315,7 +362,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                 rel="noreferrer"
                 aria-label="Open hello@freeswimming.org inbox in a new tab"
                 title="Open hello@freeswimming.org inbox in One.com"
-                className="inline-flex h-9 max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                className={cx(secondaryActionClass, "max-w-full whitespace-nowrap")}
               >
                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 Open hello inbox
@@ -324,7 +371,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
             <button
               type="button"
               onClick={() => void loadMessages()}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={secondaryActionClass}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               Refresh
@@ -336,7 +383,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
           <label className="relative block">
             <span className="sr-only">Search messages</span>
             <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[color:var(--fs-color-muted)]"
               aria-hidden="true"
             />
             <input
@@ -344,15 +391,15 @@ export default function AdminMessagesManager({ adminRole }: Props) {
               value={searchDraft}
               onChange={(event) => setSearchDraft(event.target.value)}
               placeholder="Search name, email, or message"
-              className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-9 text-sm text-slate-900 transition outline-none placeholder:text-slate-400 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className={cx(fieldClass, "pl-9")}
             />
           </label>
-          <label className="flex min-w-52 items-center gap-2 text-sm font-medium text-slate-700">
+          <label className="flex min-w-52 items-center gap-2 text-sm font-semibold text-[color:var(--fs-color-ink)]">
             Source
             <select
               value={sourceFilter}
               onChange={(event) => setSourceFilter(event.target.value as AdminMessageSourceFilter)}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className={fieldClass}
             >
               {ADMIN_MESSAGE_SOURCE_FILTER_VALUES.map((source) => (
                 <option key={source} value={source}>
@@ -371,12 +418,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={[
-                  "inline-flex h-9 items-center rounded-lg border px-3 text-sm font-semibold transition",
-                  isActive
-                    ? "border-blue-300 bg-blue-50 text-blue-800"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
+                className={cx(statusFilterClass, isActive && statusFilterActiveClass)}
                 aria-pressed={isActive}
               >
                 {status === "all" ? "All" : getAdminMessageStatusLabel(status)}
@@ -395,7 +437,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
             <button
               type="button"
               onClick={() => void loadMessages()}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-800 transition hover:bg-rose-50"
+              className={destructiveActionClass}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               Retry
@@ -419,10 +461,12 @@ export default function AdminMessagesManager({ adminRole }: Props) {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-            <p className="text-sm font-semibold text-slate-900">Stored requests</p>
-            <p className="text-xs text-slate-500">{filteredSummary}</p>
+        <div className={panelCardClass} data-testid="admin-messages-list-panel">
+          <div className="flex items-center justify-between gap-2 border-b border-[color:var(--fs-border-soft)] px-4 py-3">
+            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+              Stored requests
+            </p>
+            <p className="text-xs text-[color:var(--fs-color-muted)]">{filteredSummary}</p>
           </div>
 
           {loading ? (
@@ -443,7 +487,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
               No messages match the current filters.
             </AdminManagerState>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[color:var(--fs-border-soft)]">
               {items.map((item) => {
                 const isSelected = item.id === selectedId;
                 return (
@@ -451,18 +495,21 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedId(item.id)}
-                    className={[
-                      "block w-full px-4 py-3 text-left transition",
-                      isSelected ? "bg-blue-50/70" : "bg-white hover:bg-slate-50",
-                    ].join(" ")}
+                    className={cx(
+                      listItemClass,
+                      isSelected ? listItemActiveClass : listItemIdleClass
+                    )}
                     aria-pressed={isSelected}
+                    data-testid="admin-message-list-item"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">
+                        <p className="truncate text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                           {item.submitterName}
                         </p>
-                        <p className="truncate text-xs text-slate-600">{item.submitterEmail}</p>
+                        <p className="truncate text-xs text-[color:var(--fs-color-muted)]">
+                          {item.submitterEmail}
+                        </p>
                       </div>
                       <span
                         className={[
@@ -473,10 +520,10 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                         {item.statusLabel}
                       </span>
                     </div>
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-700">
+                    <p className="mt-2 line-clamp-2 text-sm text-[color:var(--fs-color-ink)]">
                       {item.messageExcerpt}
                     </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[color:var(--fs-color-muted)]">
                       <span>{item.sourceLabel}</span>
                       <span aria-hidden="true">·</span>
                       <span>{formatDateTime(item.createdAt)}</span>
@@ -488,12 +535,12 @@ export default function AdminMessagesManager({ adminRole }: Props) {
           )}
 
           {nextCursor && !loading ? (
-            <div className="border-t border-slate-200 p-3">
+            <div className="border-t border-[color:var(--fs-border-soft)] p-3">
               <button
                 type="button"
                 onClick={() => void loadMessages({ before: nextCursor, append: true })}
                 disabled={loadingOlder}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className={cx(compactSecondaryActionClass, "w-full")}
               >
                 <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                 {loadingOlder ? "Loading..." : "Load older"}
@@ -502,18 +549,18 @@ export default function AdminMessagesManager({ adminRole }: Props) {
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white">
+        <div className={detailPanelClass} data-testid="admin-messages-detail-panel">
           {!selectedItem ? (
             <AdminManagerState
               tone="empty"
               density="spacious"
-              className="m-5 !mt-5"
+              className="!mt-0"
               testId="admin-messages-no-selection-state"
             >
               Select a message to inspect details and diagnostics.
             </AdminManagerState>
           ) : (
-            <div className="space-y-5 p-5">
+            <div className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -534,48 +581,51 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                       Notification: {selectedItem.notificationStatusLabel}
                     </span>
                   </div>
-                  <h3 className="mt-3 text-base font-semibold text-slate-900">
+                  <h3 className="mt-3 text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
                     {selectedItem.submitterName}
                   </h3>
-                  <p className="mt-1 text-sm break-all text-slate-600">
+                  <p className="mt-1 text-sm break-all text-[color:var(--fs-color-muted)]">
                     {selectedItem.submitterEmail}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                     {selectedItem.sourceLabel} · Received {formatDateTime(selectedItem.createdAt)}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Message
-                </p>
-                <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-slate-800">
+              <div className={mutedPanelClass} data-testid="admin-message-body-panel">
+                <p className={metadataLabelClass}>Message</p>
+                <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-[color:var(--fs-color-ink)]">
                   {selectedItem.messageBody || "No message body."}
                 </p>
               </div>
 
               {selectedItem.structuredIntake.length > 0 ? (
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Structured intake</p>
+                  <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    Structured intake
+                  </p>
                   <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                     {selectedItem.structuredIntake.map((entry) => (
-                      <div
-                        key={entry.key}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2"
-                      >
-                        <dt className="text-xs font-semibold text-slate-500">{entry.label}</dt>
-                        <dd className="mt-1 text-sm text-slate-800">{entry.value}</dd>
+                      <div key={entry.key} className={nestedPanelClass}>
+                        <dt className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+                          {entry.label}
+                        </dt>
+                        <dd className="mt-1 text-sm text-[color:var(--fs-color-ink)]">
+                          {entry.value}
+                        </dd>
                       </div>
                     ))}
                   </dl>
                 </div>
               ) : null}
 
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Actions</p>
+              <div className={mutedPanelClass} data-testid="admin-messages-actions-panel">
+                <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  Actions
+                </p>
                 {!canMutate ? (
-                  <p className="mt-2 text-sm text-slate-600">
+                  <p className={cx("mt-2", mutedTextClass)}>
                     Viewer access can inspect messages, but cannot change workflow status.
                   </p>
                 ) : (
@@ -585,7 +635,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                         type="button"
                         onClick={() => void runAction(selectedItem, "restore")}
                         disabled={updatingId === selectedItem.id}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={compactPrimaryActionClass}
                       >
                         <RotateCcw className="h-4 w-4" aria-hidden="true" />
                         Restore
@@ -601,7 +651,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                             )
                           }
                           disabled={updatingId === selectedItem.id}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={compactSecondaryActionClass}
                         >
                           {selectedItem.statusBucket === "new" ? (
                             <Eye className="h-4 w-4" aria-hidden="true" />
@@ -614,7 +664,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                           type="button"
                           onClick={() => void runAction(selectedItem, "needs_reply")}
                           disabled={updatingId === selectedItem.id}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={replyActionClass}
                         >
                           <Mail className="h-4 w-4" aria-hidden="true" />
                           Needs reply
@@ -623,7 +673,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                           type="button"
                           onClick={() => void runAction(selectedItem, "mark_replied")}
                           disabled={updatingId === selectedItem.id}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={repliedActionClass}
                         >
                           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                           Mark replied
@@ -632,7 +682,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                           type="button"
                           onClick={() => void runAction(selectedItem, "archive")}
                           disabled={updatingId === selectedItem.id}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={compactSecondaryActionClass}
                         >
                           <Archive className="h-4 w-4" aria-hidden="true" />
                           Archive
@@ -641,7 +691,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                           type="button"
                           onClick={() => void runAction(selectedItem, "delete")}
                           disabled={updatingId === selectedItem.id}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={destructiveActionClass}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                           Move to deleted
@@ -652,7 +702,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                 )}
 
                 {pendingConfirmation?.id === selectedItem.id ? (
-                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                  <div className="mt-3 rounded-[var(--fs-radius-control)] border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
                     <p className="font-semibold">Confirm soft delete</p>
                     <p className="mt-1">
                       The message content stays stored and can be restored from the Deleted filter.
@@ -661,7 +711,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                       <button
                         type="button"
                         onClick={() => void runAction(selectedItem, "delete")}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-rose-700 px-3 text-sm font-semibold text-white transition hover:bg-rose-600"
+                        className={destructivePrimaryActionClass}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
                         Confirm delete
@@ -669,7 +719,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                       <button
                         type="button"
                         onClick={() => setPendingConfirmation(null)}
-                        className="inline-flex h-9 items-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-semibold text-rose-800 transition hover:bg-rose-50"
+                        className={destructiveActionClass}
                       >
                         Cancel
                       </button>
@@ -679,36 +729,38 @@ export default function AdminMessagesManager({ adminRole }: Props) {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Request diagnostics</p>
+                <div className={mutedPanelClass} data-testid="admin-messages-diagnostics-panel">
+                  <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    Request diagnostics
+                  </p>
                   {selectedItem.requestDiagnostics.length > 0 ? (
                     <dl className="mt-2 space-y-2">
                       {selectedItem.requestDiagnostics.map((entry) => (
-                        <div
-                          key={entry.label}
-                          className="rounded-xl border border-slate-200 px-3 py-2"
-                        >
-                          <dt className="text-xs font-semibold text-slate-500">{entry.label}</dt>
-                          <dd className="mt-1 text-sm text-slate-800">{entry.value}</dd>
+                        <div key={entry.label} className={nestedPanelClass}>
+                          <dt className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+                            {entry.label}
+                          </dt>
+                          <dd className="mt-1 text-sm text-[color:var(--fs-color-ink)]">
+                            {entry.value}
+                          </dd>
                         </div>
                       ))}
                     </dl>
                   ) : (
-                    <p className="mt-2 text-sm text-slate-600">No request diagnostics recorded.</p>
+                    <p className={cx("mt-2", mutedTextClass)}>No request diagnostics recorded.</p>
                   )}
                 </div>
 
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Delivery attempts</p>
+                <div className={mutedPanelClass} data-testid="admin-messages-delivery-panel">
+                  <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    Delivery attempts
+                  </p>
                   {selectedItem.deliveryAttempts.length > 0 ? (
                     <div className="mt-2 space-y-2">
                       {selectedItem.deliveryAttempts.map((attempt) => (
-                        <article
-                          key={attempt.id}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2"
-                        >
+                        <article key={attempt.id} className={nestedPanelClass}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-slate-900">
+                            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                               {attempt.targetLabel}
                             </p>
                             <span
@@ -720,7 +772,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                               {getAdminMessageDeliveryStatusLabel(attempt.status)}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-600">
+                          <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                             {attempt.providerLabel} · {formatDateTime(attempt.createdAt)}
                           </p>
                           {attempt.errorCode ? (
@@ -735,9 +787,7 @@ export default function AdminMessagesManager({ adminRole }: Props) {
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-sm text-slate-600">
-                      No delivery attempts recorded yet.
-                    </p>
+                    <p className={cx("mt-2", mutedTextClass)}>No delivery attempts recorded yet.</p>
                   )}
                 </div>
               </div>

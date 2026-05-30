@@ -164,6 +164,66 @@ describe("AdminMessagesManager", () => {
     expect(screen.getByText("Message storage is not ready.")).toBeInTheDocument();
   });
 
+  it("uses AW-006 token cards and actions for the message manager shell", async () => {
+    const itemWithIntake: AdminMessageItem = {
+      ...baseItem,
+      structuredIntake: [{ key: "pool", label: "Preferred pool", value: "Toyenbadet" }],
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(listResponse([itemWithIntake], { nextCursor: "cursor-2" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminMessagesManager adminRole="admin" />);
+
+    const row = await screen.findByTestId("admin-message-list-item");
+    const bodyPanel = await screen.findByTestId("admin-message-body-panel");
+
+    expect(screen.getByTestId("admin-messages-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(
+      screen.getByRole("link", { name: "Open hello@freeswimming.org inbox in a new tab" })
+    ).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "All" })).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("admin-messages-list-panel")).toHaveClass("fs-library-card");
+    expect(row).toHaveClass("bg-[rgba(191,219,254,0.34)]");
+    expect(screen.getByTestId("admin-messages-detail-panel")).toHaveClass("fs-library-card");
+    expect(bodyPanel).toHaveClass("rounded-[var(--fs-radius-control)]");
+    const structuredIntakeEntry = screen.getByText("Preferred pool").closest("div");
+    if (!structuredIntakeEntry) {
+      throw new Error("Expected structured intake entry wrapper to render.");
+    }
+    expect(structuredIntakeEntry).toHaveClass("rounded-[var(--fs-radius-control)]");
+    expect(screen.getByTestId("admin-messages-diagnostics-panel")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByTestId("admin-messages-delivery-panel")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+
+    const actions = screen.getByTestId("admin-messages-actions-panel");
+    expect(within(actions).getByRole("button", { name: "Mark read" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(actions).getByRole("button", { name: "Needs reply" })).toHaveClass("bg-amber-50");
+    expect(within(actions).getByRole("button", { name: "Mark replied" })).toHaveClass(
+      "bg-emerald-50"
+    );
+    expect(within(actions).getByRole("button", { name: "Archive" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(actions).getByRole("button", { name: "Move to deleted" })).toHaveClass(
+      "text-rose-700"
+    );
+    expect(screen.getByRole("button", { name: "Load older" })).toHaveClass("fs-cta-secondary");
+  });
+
   it("renders unchanged empty and no-selection guidance without live-region noise", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(listResponse([]));
     vi.stubGlobal("fetch", fetchMock);
