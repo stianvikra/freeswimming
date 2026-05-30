@@ -217,7 +217,7 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 
 ## Completion Mode
 
-End-to-end implementation after owner explicitly said `execute`. Because this is visual UI work, stop after screenshot handoff for owner approval before `npm run verify:pre-pr`, PR creation, CI, or `npm run verify:pre-merge`.
+Completed through PR `#910`; this repo-managed docs-only closeout moves the brief to `done` and clears stale queue/design-inventory active references.
 
 ## Checkpoint Log
 
@@ -227,3 +227,30 @@ End-to-end implementation after owner explicitly said `execute`. Because this is
 - `2026-05-30 | in-progress | targeted validation is green: Vitest passed for tests/unit/admin-email-templates-manager-state.test.tsx and tests/unit/admin-email-templates.test.ts with 23 tests, npm run lint:briefs:all passed including this in-progress brief, route/label/support sweep found no required Help/Guide or runbook fallout because labels/workflows are unchanged, and git diff --check passed; npm run lint:briefs currently skips because the branch has no committed brief diff yet and will be covered again in pre-PR gates after commit | next: capture screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-05-30 | screenshot-review | captured required after/reference screenshot handoff at output/aw-006-admin-email-templates-manager-token-action-parity-2026-05-30-115101 at 2026-05-30 11:51 using a temporary local dev-only route with mocked Email Templates and Commerce API responses; temporary route/script were removed before handoff and git diff --check still passes | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, CI, or npm run verify:pre-merge`
 - `2026-05-30 | pre-pr | owner approved screenshot handoff and then approved merge/cleanup once tests are good; npm run verify:pre-pr passed the full lane on working tree with lint, typecheck, 1295 unit tests, build, performance budgets, and Playwright e2e 102 passed / 492 skipped | next: commit, push, open PR, monitor required CI, run npm run verify:pre-merge, then merge and clean up if green`
+- `2026-05-30 | merge-ready | committed as 1e752f4, reran npm run verify:pre-pr full lane on final commit with PASS at artifacts/test-runs/20260530-120255/verify.log, opened PR #910, confirmed required CI green, and passed npm run verify:pre-merge with marker artifacts/verify-pre-merge/20260530-101724.json | next: merge PR #910 under owner approval and run post-merge preflight`
+- `2026-05-30 | done | PR #910 merged as d52c988 after owner-approved screenshot handoff, green full local pre-PR gate, green GitHub CI, and green local pre-merge gate; repo-managed docs-only closeout moves this brief to done and clears stale queue/inventory active references | next: run closeout docs gates and merge closeout PR if green`
+
+## Completion Record
+
+- `completed`: `2026-05-30`
+- `merged_pr`: `#910`
+- `squash_commit`: `d52c988`
+- `result`: Closed AW-006 Admin Email Templates Manager Token/Action Parity by aligning the Email Templates manager shell, create/edit panels, template rows, form fields, preview blocks, revision history, retry/refresh, status, save, reset, and history actions with the current `fs-library-card` and action-token direction while preserving email template data, status transitions, placeholder validation, preview rendering, revision history, APIs, authz, Help/Guide content, email delivery, and support procedures.
+- `validation`: targeted unit tests `./node_modules/.bin/vitest run tests/unit/admin-email-templates-manager-state.test.tsx tests/unit/admin-email-templates.test.ts`; `npm run lint:briefs:all`; targeted route/label/support sweep; `git diff --check`; owner-approved screenshot handoff in `output/aw-006-admin-email-templates-manager-token-action-parity-2026-05-30-115101`; `npm run verify:pre-pr` full lane PASS on commit `1e752f4`; GitHub CI PASS for PR `#910`; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260530-101724.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scope stayed inside `AdminEmailTemplatesManager`, focused tests, AW-006 queue and design inventory updates, PR `#910`.                                                     | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff, preserved labels/click paths, focused component tests, full local and CI gates.                                                         | None.        |
+| Visual design quality                         | `5/5`          | `fs-library-card`, `fs-library-card-muted`, `fs-library-card-accent`, `fs-cta-primary`, and `fs-cta-secondary` reuse verified by DOM tests/screens.                        | None.        |
+| Business logic correctness and data integrity | `5/5`          | Fetch, create, edit, status transition, placeholder validation, preview rendering, revision history, retry, and form reset behavior preserved and tested.                  | None.        |
+| Admin editor ergonomics                       | `5/5`          | Refresh, create, edit, reset, status move, preview, and history flows preserved with no new workflow step.                                                                 | None.        |
+| Accessibility (a11y)                          | `5/5`          | Buttons, inputs, selects, textareas, disabled states, labels, Testing Library assertions, and E2E gate coverage remained green.                                            | None.        |
+| Reliability and failure handling              | `5/5`          | Existing loading, schema warning, load error + retry, action error, empty, no-match, preview warning, history loading/error/retry, and saving states preserved and tested. | None.        |
+| Security and authz                            | `5/5`          | Admin authz, API routes, cookies, credentials, placeholder rules, delivery behavior, secrets, and destructive boundaries were untouched.                                   | None.        |
+| Content governance                            | `5/5`          | Email template labels, Help/Guide behavior, support procedures, AW-006 queue, and design inventory were preserved or updated for this slice only.                          | None.        |
+| Admin workflow and editability                | `5/5`          | Same controls and API calls remain editable; only shell/card/action presentation changed.                                                                                  | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and global `fs-*` tokens; no dependency, package, API, schema, workflow, or global primitive changes.                                   | None.        |
+| Testing and QA automation                     | `5/5`          | Focused unit coverage, brief lint, route/label/support sweep, screenshot evidence, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                                 | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/package/workflow changes; rollback is normal `git revert d52c988`.                                                                                    | None.        |
