@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-30-aw-006-admin-qr-registry-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-30`
 - `updated`: `2026-05-30`
@@ -217,3 +217,29 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 
 - `2026-05-30 | in-progress | started from clean main@6253bd1 after PR #904 and repo-managed closeout #905; post-merge preflight passed with no closeout remaining; owner explicitly requested execution of AW-006 Admin QR Registry Manager Token/Action Parity after fresh queue/design/code re-audit | next: implement scoped manager token/action parity, update tests/docs, run targeted QA, then capture screenshot handoff before broad PR gates`
 - `2026-05-30 | in-progress | implemented QR Registry token/action parity in AdminQrLinksManager, updated focused unit assertions, refreshed AW-006 queue/design-inventory active-slice evidence, passed targeted unit test, all-brief lint, route/label/support sweep, and git diff whitespace check, then captured after/reference screenshot artifacts in output/aw-006-admin-qr-registry-token-action-parity-20260530083848 | next: owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI, and pre-merge gate`
+- `2026-05-30 | done | PR #906 merged as 04a7817 after owner-approved screenshot handoff, green full local pre-PR gate, green GitHub CI, and green local pre-merge gate; repo-managed docs-only closeout moves this brief to done and clears stale queue/inventory active references | next: run closeout docs gates and merge closeout PR if green`
+
+## Completion Record
+
+- `completed`: `2026-05-30`
+- `merged_pr`: `#906`
+- `squash_commit`: `04a7817`
+- `result`: Closed AW-006 Admin QR Registry Manager Token/Action Parity by aligning the QR Registry manager shell, filters, row cards, preview card, create/edit panels, and visible actions with the current `fs-library-card` and action-token direction while preserving QR link data, slugs, `/go/v/[slug]`, QR generation/downloads, APIs, authz, Help/Guide content, and support behavior.
+- `validation`: targeted unit test `./node_modules/.bin/vitest run tests/unit/admin-qr-links-manager-state.test.tsx`; `npm run lint:briefs:all`; targeted route/label/support sweep; `git diff --check`; owner-approved screenshot handoff in `output/aw-006-admin-qr-registry-token-action-parity-20260530083848`; `npm run verify:pre-pr` full lane PASS; GitHub CI PASS for PR `#906`; `npm run verify:pre-merge` PASS for `9755536`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scope stayed inside `AdminQrLinksManager`, focused tests, AW-006 queue and design inventory updates, PR `#906`.                                       | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff, preserved labels/click paths, focused component tests, full local and CI gates.                                    | None.        |
+| Visual design quality                         | `5/5`          | `fs-library-card`, `fs-library-card-muted`, `fs-library-card-accent`, `fs-cta-primary`, and `fs-cta-secondary` reuse verified by DOM tests/screens.   | None.        |
+| Business logic correctness and data integrity | `5/5`          | QR payload, slug, redirect, filter, asset generation, and download behavior untouched; targeted tests and full gates passed.                          | None.        |
+| Admin editor ergonomics                       | `5/5`          | Refresh, create, filter, edit, activate/disable, delete, copy, preview, and SVG/PNG download flows preserved with no new workflow step.               | None.        |
+| Accessibility (a11y)                          | `5/5`          | Labels, buttons, links, disabled states, expanded panels, QR image alt text, Testing Library assertions, and E2E gate coverage remained green.        | None.        |
+| Reliability and failure handling              | `5/5`          | Existing warning, loading, error, empty, no-results, action notice/error, QR asset retry, and retry behavior preserved and tested.                    | None.        |
+| Security and authz                            | `5/5`          | Admin authz, API routes, cookies, credentials, redirects, destination validation, secrets, and RLS were untouched; CI security coverage stayed green. | None.        |
+| Content governance                            | `5/5`          | QR labels, Help/Guide behavior, support procedures, AW-006 queue, and design inventory were preserved or updated for this slice only.                 | None.        |
+| Admin workflow and editability                | `5/5`          | Same controls and API calls remain editable; only shell/card/action presentation changed.                                                             | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local helper and global `fs-*` tokens; no dependency, package, API, or global primitive changes.                                | None.        |
+| Testing and QA automation                     | `5/5`          | Focused unit coverage, brief lint, route/label/support sweep, screenshot evidence, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.            | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations/config/package/workflow changes; rollback is normal `git revert 04a7817`.                                                               | None.        |
