@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import type { AdminCategoryRow, AdminCategoryScope } from "@/lib/admin/categories";
 
 type AdminCategoriesResponse =
@@ -70,6 +71,35 @@ const INITIAL_FORM: FormState = {
   slug: "",
   sortOrder: "0",
 };
+
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const createPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactStatusActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const activateActionClass = cx(
+  compactStatusActionClass,
+  "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 focus-visible:ring-emerald-500"
+);
+const deactivateActionClass = cx(
+  compactStatusActionClass,
+  "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 focus-visible:ring-amber-500"
+);
+const destructiveActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const scopeCardClass =
+  "fs-library-card p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const scopeCardActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+const labelClass = "space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]";
 
 export default function AdminCategoriesManager() {
   const [scope, setScope] = useState<AdminCategoryScope>("notes");
@@ -244,23 +274,24 @@ export default function AdminCategoriesManager() {
   }
 
   return (
-    <div className="space-y-6" data-testid="admin-categories-manager">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="space-y-4" data-testid="admin-categories-manager">
+      <section className={managerHeaderClass} data-testid="admin-categories-manager-header">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
-            <p className="mt-2 text-sm text-slate-600">{categorySummary}</p>
+            <p className={eyebrowClass}>Admin library</p>
+            <h2 className={cx("mt-1", headingClass)}>Categories</h2>
+            <p className={cx("mt-2", mutedTextClass)}>{categorySummary}</p>
           </div>
           <button
             type="button"
             onClick={() => void loadCategories(scope)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            className={secondaryActionClass}
           >
             Refresh
           </button>
         </div>
 
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {CATEGORY_SCOPES.map((option) => {
             const isActive = scope === option.id;
             return (
@@ -268,28 +299,27 @@ export default function AdminCategoriesManager() {
                 key={option.id}
                 type="button"
                 onClick={() => setScope(option.id)}
-                className={[
-                  "rounded-xl border px-4 py-3 text-left transition",
-                  isActive
-                    ? "border-blue-300 bg-blue-50/70"
-                    : "border-slate-200 bg-white hover:bg-slate-50",
-                ].join(" ")}
+                className={cx(scopeCardClass, isActive && scopeCardActiveClass)}
                 aria-pressed={isActive}
               >
                 <p
-                  className={[
+                  className={cx(
                     "text-sm font-semibold",
-                    isActive ? "text-blue-800" : "text-slate-900",
-                  ].join(" ")}
+                    isActive
+                      ? "text-[color:var(--fs-color-brand-700)]"
+                      : "text-[color:var(--fs-color-ink-strong)]"
+                  )}
                 >
                   {option.label}
                 </p>
-                <p className="mt-1 text-xs text-slate-600">{option.subtitle}</p>
+                <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">{option.subtitle}</p>
               </button>
             );
           })}
         </div>
+      </section>
 
+      <div>
         {!schemaReady && warning ? (
           <AdminManagerState tone="warning">{warning}</AdminManagerState>
         ) : null}
@@ -303,7 +333,7 @@ export default function AdminCategoriesManager() {
               <button
                 type="button"
                 onClick={() => void loadCategories(scope)}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                className={secondaryActionClass}
               >
                 Retry
               </button>
@@ -320,17 +350,15 @@ export default function AdminCategoriesManager() {
         ) : null}
 
         {!loading && !error && items.length > 0 ? (
-          <ul className="mt-5 space-y-2">
+          <ul className="mt-4 space-y-3">
             {items.map((item) => (
-              <li
-                key={item.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3"
-                data-testid="admin-category-item"
-              >
+              <li key={item.id} className={rowCardClass} data-testid="admin-category-item">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                       {item.slug} · order {item.sort_order}
                     </p>
                   </div>
@@ -339,12 +367,7 @@ export default function AdminCategoriesManager() {
                       type="button"
                       onClick={() => void toggleActive(item)}
                       disabled={Boolean(updatingId || deletingId)}
-                      className={[
-                        "inline-flex h-8 items-center justify-center rounded-lg px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
-                        item.is_active
-                          ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                          : "border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
-                      ].join(" ")}
+                      className={item.is_active ? deactivateActionClass : activateActionClass}
                     >
                       {updatingId === item.id
                         ? "Saving…"
@@ -356,7 +379,7 @@ export default function AdminCategoriesManager() {
                       type="button"
                       onClick={() => void handleDelete(item)}
                       disabled={Boolean(updatingId || deletingId)}
-                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={destructiveActionClass}
                     >
                       {deletingId === item.id ? "Deleting…" : "Delete"}
                     </button>
@@ -366,45 +389,45 @@ export default function AdminCategoriesManager() {
             ))}
           </ul>
         ) : null}
-      </section>
+      </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Create category</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className={createPanelClass} data-testid="admin-categories-create-panel">
+        <h2 className={headingClass}>Create category</h2>
+        <p className={cx("mt-2", mutedTextClass)}>
           Add a reusable category for {scope === "notes" ? "admin notes" : "content records"}.
         </p>
 
         <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleCreate}>
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+          <label className={cx(labelClass, "sm:col-span-2")}>
             <span>Title</span>
             <input
               type="text"
               required
               value={formState.title}
               onChange={(e) => setFormState((prev) => ({ ...prev, title: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
               placeholder="Technique"
             />
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Slug (optional)</span>
             <input
               type="text"
               value={formState.slug}
               onChange={(e) => setFormState((prev) => ({ ...prev, slug: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
               placeholder="technique"
             />
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Sort order</span>
             <input
               type="number"
               value={formState.sortOrder}
               onChange={(e) => setFormState((prev) => ({ ...prev, sortOrder: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
             />
           </label>
 
@@ -420,11 +443,7 @@ export default function AdminCategoriesManager() {
           ) : null}
 
           <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
+            <button type="submit" disabled={submitting} className={primaryActionClass}>
               {submitting ? "Saving…" : "Save category"}
             </button>
           </div>
