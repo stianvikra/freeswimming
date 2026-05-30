@@ -68,6 +68,25 @@ describe("AdminQrLinksManager state rendering", () => {
     render(<AdminQrLinksManager />);
 
     await screen.findByText("intro-video");
+    expect(screen.getByTestId("admin-qr-links-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("admin-qr-links-filter-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByRole("button", { name: "New link" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("fs-cta-secondary");
+
+    const row = screen.getByTestId("admin-qr-link-item");
+    expect(row).toHaveClass("fs-library-card");
+    expect(within(row).getByRole("button", { name: "Copy link" })).toHaveClass("fs-cta-primary");
+    expect(within(row).getByRole("button", { name: "Show QR" })).toHaveClass("fs-cta-secondary");
+    expect(within(row).getByRole("button", { name: "Edit" })).toHaveClass("fs-cta-secondary");
+    expect(within(row).getByRole("button", { name: "More actions" }).className).toContain(
+      "rounded-[var(--fs-radius-control)]"
+    );
 
     fireEvent.change(screen.getByLabelText("Filter by status"), {
       target: { value: "archived" },
@@ -101,6 +120,12 @@ describe("AdminQrLinksManager state rendering", () => {
     expect(screen.getByRole("button", { name: "Create first QR link" })).toHaveAttribute(
       "type",
       "button"
+    );
+    expect(within(emptyState).getByRole("button", { name: "Create first QR link" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(emptyState).getByRole("button", { name: "Use example values" })).toHaveClass(
+      "fs-cta-secondary"
     );
 
     fireEvent.click(within(emptyState).getByRole("button", { name: "Use example values" }));
@@ -154,7 +179,9 @@ describe("AdminQrLinksManager state rendering", () => {
 
     fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
-    await screen.findByRole("button", { name: "Download SVG" });
+    expect(await screen.findByRole("button", { name: "Download SVG" })).toHaveClass(
+      "fs-cta-secondary"
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(generateQrAssetsMock).toHaveBeenCalledTimes(2);
   });
