@@ -72,6 +72,59 @@ describe("AdminEmailTemplatesManager state rendering", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses AW-006 token cards and actions for template create, rows, edit, and history", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(templatesResponse())
+      .mockResolvedValueOnce(revisionsResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminEmailTemplatesManager />);
+
+    const templateItem = await screen.findByTestId("admin-email-template-item");
+
+    expect(screen.getByTestId("admin-email-templates-manager")).toHaveClass("space-y-4");
+    expect(screen.getByTestId("admin-email-templates-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByRole("button", { name: "Refresh" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("admin-email-templates-create-panel")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByRole("button", { name: "Create template" })).toHaveClass("fs-cta-primary");
+    expect(templateItem).toHaveClass("fs-library-card");
+    expect(within(templateItem).getByRole("button", { name: "Edit" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(templateItem).getByRole("button", { name: "Show history" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(templateItem).getByRole("button", { name: "Move to Review" })).toHaveClass(
+      "fs-cta-primary"
+    );
+
+    fireEvent.click(within(templateItem).getByRole("button", { name: "Edit" }));
+
+    expect(within(templateItem).getByRole("button", { name: "Save changes" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(templateItem).getByRole("button", { name: "Reset draft" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+
+    fireEvent.click(within(templateItem).getByRole("button", { name: "Show history" }));
+
+    const historyPanel = await within(templateItem).findByTestId(
+      "admin-email-template-history-panel"
+    );
+    expect(historyPanel.className).toContain("rounded-[var(--fs-radius-control)]");
+    expect(within(historyPanel).getByRole("button", { name: "Refresh history" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+  });
+
   it("shows a polite loading state before templates resolve", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(templatesResponse());
     vi.stubGlobal("fetch", fetchMock);
