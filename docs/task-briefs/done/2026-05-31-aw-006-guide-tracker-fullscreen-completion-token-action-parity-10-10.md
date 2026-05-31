@@ -3,15 +3,15 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-guide-tracker-fullscreen-completion-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
-- `updated`: `2026-05-31`
+- `updated`: `2026-06-01`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-guide-tracker-fullscreen-token-parity`
-- `execution_mode`: `implementation through screenshot handoff after owner approval`
+- `execution_mode`: `merged via PR #930 with repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
@@ -42,7 +42,6 @@ Critical target categories for a `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Stack-fit and dependency discipline`
@@ -278,3 +277,33 @@ Broad gates after screenshot approval or explicit waiver:
 - `2026-05-31 | in-progress | owner asked whether the dark button background was standard; audit confirmed it was local to the two guide fullscreen surfaces; scoped correction switched fullscreen action bars back to light standard guide CTA helpers | next: rerun targeted validation, refresh after/reference screenshots, and stop before npm run verify:pre-pr`
 - `2026-05-31 | in-progress | owner flagged mobile fullscreen buttons as messy and nearly invisible; scoped correction made the overlay action bar a stable two-column mobile grid, strengthened the completed-state contrast, and removed the completed-state color transition that caused screenshot capture to hit a near-invisible intermediate frame | next: rerun targeted validation, refresh after/reference screenshots, and stop before npm run verify:pre-pr`
 - `2026-06-01 | in-progress | owner approved making navigation secondary wherever Next competed with Mark complete; scoped correction changed guide fullscreen and Poolside drill/visual Next buttons to secondary while keeping Mark complete as the single primary action | next: rerun targeted validation, refresh after/reference screenshots, and stop before npm run verify:pre-pr`
+- `2026-06-01 | done | PR #930 merged as 11679c9 after owner-approved screenshot handoff, green GitHub checks, and local pre-merge gate on bedb1b8 | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-01`
+- `merged_pr`: `#930`
+- `squash_commit`: `11679c96f7d048d45f2b37c7d5f9df6ff2586980`
+- `implementation_commit`: `bedb1b87f34ea802a191ece3b0b87a309b45195f`
+- `result`: Closed AW-006 Guide Tracker Fullscreen And Completion Feedback Token/Action Parity. Guide fullscreen action bars now use the light guide action hierarchy; `Mark complete` is the only blue primary action before completion, `Next` is secondary where it competes with completion, `Completed` is green/readable on mobile, and undo feedback sits above the fullscreen action bar.
+- `validation`: `npm run verify:pre-pr` PASS on `bedb1b8`; GitHub checks PASS for PR `#930`; `npm run verify:pre-merge` PASS on `bedb1b87f34ea802a191ece3b0b87a309b45195f`; screenshot artifacts captured at `output/aw-006-guide-fullscreen-token-parity-2026-06-01-005020`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Reliability and failure handling, Security and authz, Stack-fit and dependency discipline, Testing and QA automation, and DevOps and rollback readiness. Accessibility (a11y) also scored `5/5` as a target category.
+
+| Category                                      | Achieved Score | Evidence                                                                                                   | Gaps / Notes                                                                                 |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#930`, targeted guide tests, `npm run verify:pre-pr`, `npm run verify:pre-merge`                       | None.                                                                                        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff, mobile two-column action grid, guide tracker tests                      | None.                                                                                        |
+| Visual design quality                         | `5/5`          | `output/aw-006-guide-fullscreen-token-parity-2026-06-01-005020`, shared guide token helpers, PR `#930`     | Existing Poolside placeholder SVG dummy-text clipping remains outside this slice.            |
+| Business logic correctness and data integrity | `5/5`          | No progress/storage/API contract changes, targeted sync tests, full pre-merge gate                         | None.                                                                                        |
+| Accessibility (a11y)                          | `5/5`          | Dialog/action semantics preserved, Testing Library queries, full Playwright gate                           | None.                                                                                        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/config/assets added, build PASS, perf budgets PASS                                           | No tighten prompt: trend recommendation stayed `hold` due worst margin under tighten target. |
+| Data placement and sync boundaries            | `5/5`          | Existing local-first guide progress/server sync contract unchanged, targeted guide sync tests              | None.                                                                                        |
+| Reliability and failure handling              | `5/5`          | Completion undo behavior preserved, sync/offline retry tests, full pre-merge gate                          | None.                                                                                        |
+| Security and authz                            | `5/5`          | Protected guide route boundaries unchanged, no API/auth/entitlement diff                                   | None.                                                                                        |
+| Privacy and compliance                        | `5/5`          | UI-only diff; no user IDs, emails, provider diagnostics, or raw private payloads exposed                   | None.                                                                                        |
+| Content governance                            | `5/5`          | Active brief moved to done in this closeout, queue/inventory stale active references removed               | None after closeout.                                                                         |
+| Commerce and revenue ops                      | `5/5`          | Checkout, portal, pricing, entitlements, Stripe IDs, guide access, and PDF behavior unchanged              | None.                                                                                        |
+| i18n operational readiness                    | `5/5`          | Short existing labels preserved, mobile screenshots confirm button text fits                               | Future locales still require normal explicit mapping.                                        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused guide-local helpers; no dependency, broad primitive, config, workflow, or package change            | None.                                                                                        |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, screenshot approval stop, `npm run verify:pre-pr`, GitHub checks, `verify:pre-merge`   | None.                                                                                        |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `11679c9`; rollback by reverting PR `#930`; no migrations/env/provider changes needed | None.                                                                                        |
