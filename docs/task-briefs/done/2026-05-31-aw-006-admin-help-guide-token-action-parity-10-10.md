@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-help-guide-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
@@ -43,7 +43,7 @@ Critical target categories for a `10/10` claim:
 - `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
+- `Security and authz`
 - `Content governance`
 - `Admin workflow and editability`
 - `Stack-fit and dependency discipline`
@@ -230,3 +230,29 @@ Required because this slice touches an admin Help/Guide surface and operator-fac
 - `2026-05-31 | screenshot-review-update | owner requested moving the Help/Guide section menu into the left side to avoid scrolling back to top; implemented `ADMIN_HELP_QUICK_ACTIONS`as the shared source for mobile top links and a Help/Guide-only top desktop rail submenu in`AdminWorkspace`; targeted validation passed with ./node_modules/.bin/vitest run tests/unit/admin-help-center.test.tsx tests/unit/admin-workspace-shell.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check, and route/label/support sweep; after/reference screenshots refreshed in output/aw-006-admin-help-guide-token-parity-2026-05-31-101339 via a temporary local visual harness that was removed after capture | next: owner screenshot approval before npm run verify:pre-pr, PR creation, CI, and npm run verify:pre-merge`
 - `2026-05-31 | pre-pr-gate-fix | owner approved screenshot handoff; first npm run verify:pre-pr stopped on quality-gate wording because the route/label/support sweep lacked explicit identifiers searched and surfaces checked evidence in this brief; added the missing evidence without changing product scope | next: rerun npm run verify:pre-pr`
 - `2026-05-31 | pre-pr-green | npm run verify:pre-pr passed full public lane after route/label/support evidence wording was added; result included quality gate PASS, lint/typecheck/unit/build/perf PASS, perf trend recommendation hold, and Playwright E2E 102 passed / 492 skipped with expected auth-dependent skips from local dev-login/Supabase returning HTML | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-05-31 | closeout | Admin Help/Guide Token/Action Parity shipped in PR #918 as squash commit 4bc1926; this repo-managed closeout moves its brief to done and leaves no active AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#918`
+- `squash_commit`: `4bc1926`
+- `result`: Admin Help/Guide now matches the current admin token/action hierarchy, with the section menu available in the active desktop left rail to reduce scroll-to-top friction while mobile keeps the top quick links. Help/Guide copy, workflow labels, runbook paths, admin routing, authz, APIs, and support procedures were preserved.
+- `validation`: targeted unit coverage, typecheck, brief lint, route/label/support sweep, screenshot handoff, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed before merge. Local admin-help e2e remained auth-dependent in the local Supabase/dev-login setup and was covered by the full pre-PR/pre-merge lane with expected local skips.
+- `screenshot_artifacts`: `output/aw-006-admin-help-guide-token-parity-2026-05-31-101339`
+- `10/10 claim`: yes - all critical target categories and target categories closed at `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                               |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | AW-006 queue and design inventory now point to this done brief with no active slice selected.          |
+| UX flow clarity                               | `5/5`          | Desktop Help/Guide section navigation moved into the active left rail; mobile quick links stayed.      |
+| Visual design quality                         | `5/5`          | Admin Help/Guide shell, cards, actions, table wrapper, and runbook references use AW-006 tokens.       |
+| Business logic correctness and data integrity | `5/5`          | Presentation-only diff preserved static guidance arrays, anchors, runbook paths, and assertions.       |
+| Admin editor ergonomics                       | `5/5`          | Operators can reach Help/Guide sections from the desktop rail without returning to the top.            |
+| Accessibility (a11y)                          | `5/5`          | Headings, anchors, table semantics, focus-visible actions, and responsive wrapping were retained.      |
+| Security and authz                            | `5/5`          | Admin route gating, authz, APIs, secrets, and role behavior were untouched by the presentation change. |
+| Content governance                            | `5/5`          | Help/Guide copy, workflow labels, runbook paths, support procedures, and assertions stayed aligned.    |
+| Admin workflow and editability                | `5/5`          | No workflow meaning, recovery instruction, admin route behavior, API, authz, or support path changed.  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `AdminHelpCenter`, `AdminWorkspace`, local constants, and admin `fs-*` tokens.         |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, brief lint, route/label/support sweep, broad gates, CI, and screenshots passed.    |
+| DevOps and rollback readiness                 | `5/5`          | Scoped UI/admin docs diff shipped through normal PR, CI, pre-merge gate, and squash merge.             |
