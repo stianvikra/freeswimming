@@ -2,8 +2,10 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ImageIcon, Link2, RefreshCcw, Save, Search, Trash2, Upload } from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
+import { cx } from "@/components/ui/cx";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import {
   createAdminNoteStagedImages,
@@ -69,14 +71,53 @@ import { uploadAdminNoteFiles } from "@/lib/admin/notes-client";
 
 type PendingScreenshot = AdminNoteStagedImage;
 
-const adminNotesFilterBaseClass = "space-y-1 text-sm font-medium text-slate-700";
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const panelCardClass = "fs-library-card p-4 sm:p-5";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const mutedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const noteCardBaseClass =
+  "rounded-[var(--fs-radius-card)] border px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)] transition-colors";
+const noteCardOpenClass = "border-[color:var(--fs-border-soft)] bg-white/82";
+const noteCardDoneClass = "border-emerald-200 bg-emerald-50/55";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const smallHeadingClass = "text-sm font-semibold text-[color:var(--fs-color-ink-strong)]";
+const metadataClass = "text-xs text-[color:var(--fs-color-muted)]";
+const adminNotesFilterBaseClass =
+  "space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]";
 const adminNotesFilterSelectClass =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900";
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
 const adminNotesFilterSearchClass = `${adminNotesFilterBaseClass} min-w-[min(100%,16rem)] flex-1 basis-full sm:basis-[18rem] xl:flex-none xl:basis-[16rem]`;
 const adminNotesFilterStatusClass = `${adminNotesFilterBaseClass} min-w-[min(100%,20rem)] flex-1 basis-full sm:basis-[20rem] xl:flex-none xl:basis-[20rem]`;
 const adminNotesFilterCompactClass = `${adminNotesFilterBaseClass} min-w-[min(100%,10rem)] flex-1 basis-[10rem] xl:flex-none xl:basis-[10rem]`;
 const adminNotesFilterContextClass = `${adminNotesFilterBaseClass} min-w-[min(100%,11rem)] flex-1 basis-[11rem] xl:flex-none xl:basis-[11rem]`;
 const adminNotesFilterRouteClass = `${adminNotesFilterBaseClass} min-w-[min(100%,12rem)] flex-1 basis-[12rem] xl:flex-none xl:basis-[12rem]`;
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const compactFieldClass =
+  "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const textAreaClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const labelClass = "space-y-1 text-sm font-semibold text-[color:var(--fs-color-ink)]";
+const compactLabelClass = "space-y-1 text-xs font-semibold text-[color:var(--fs-color-ink)]";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const destructiveActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const statusFilterClass =
+  "fs-library-card inline-flex min-h-10 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const statusFilterActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+const checkboxClass =
+  "h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500";
 
 export default function AdminNotesManager() {
   const pathname = usePathname() ?? "/admin";
@@ -984,19 +1025,19 @@ export default function AdminNotesManager() {
 
   return (
     <div className="space-y-6" data-testid="admin-notes-manager">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Notes</h2>
-            <p className="mt-2 text-sm text-slate-600">{noteSummary}</p>
+      <section className="space-y-4">
+        <div className={managerHeaderClass} data-testid="admin-notes-manager-header">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className={eyebrowClass}>Admin workspace</p>
+              <h2 className={cx("mt-1", headingClass)}>Notes</h2>
+              <p className={cx("mt-2 max-w-2xl", mutedTextClass)}>{noteSummary}</p>
+            </div>
+            <button type="button" onClick={() => void loadNotes()} className={secondaryActionClass}>
+              <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+              Refresh
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadNotes()}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            Refresh
-          </button>
         </div>
 
         {!schemaReady && warning ? (
@@ -1012,8 +1053,9 @@ export default function AdminNotesManager() {
               <button
                 type="button"
                 onClick={() => void loadNotes()}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                className={destructiveActionClass}
               >
+                <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                 Retry
               </button>
             }
@@ -1037,11 +1079,11 @@ export default function AdminNotesManager() {
         {actionNotice ? <AdminManagerState tone="success">{actionNotice}</AdminManagerState> : null}
 
         {!loading && !error && items.length > 0 ? (
-          <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <div className={cx("mt-5 space-y-4", mutedPanelClass)}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Work queue filters</p>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className={smallHeadingClass}>Work queue filters</p>
+                <p className={cx("mt-1", metadataClass)}>
                   Showing {filteredItems.length} of {noteCounts.all} notes.
                 </p>
               </div>
@@ -1052,7 +1094,7 @@ export default function AdminNotesManager() {
                     setSearchDraft("");
                     updateNotesFilters(DEFAULT_ADMIN_NOTES_FILTER_STATE);
                   }}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  className={compactSecondaryActionClass}
                 >
                   Clear filters
                 </button>
@@ -1065,18 +1107,24 @@ export default function AdminNotesManager() {
             >
               <label className={adminNotesFilterSearchClass}>
                 <span>Search</span>
-                <input
-                  type="search"
-                  value={searchDraft}
-                  onChange={(e) => {
-                    const nextQuery = e.target.value;
-                    setSearchDraft(nextQuery);
-                    updateNotesFilters({ query: nextQuery });
-                  }}
-                  data-testid="admin-notes-search"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  placeholder="Search notes"
-                />
+                <span className="relative block">
+                  <Search
+                    className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[color:var(--fs-color-muted)]"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={searchDraft}
+                    onChange={(e) => {
+                      const nextQuery = e.target.value;
+                      setSearchDraft(nextQuery);
+                      updateNotesFilters({ query: nextQuery });
+                    }}
+                    data-testid="admin-notes-search"
+                    className={cx(fieldClass, "pl-9")}
+                    placeholder="Search notes"
+                  />
+                </span>
               </label>
 
               <div className={adminNotesFilterStatusClass} data-testid="admin-notes-status-filter">
@@ -1101,12 +1149,7 @@ export default function AdminNotesManager() {
                         type="button"
                         data-testid={`admin-notes-status-${status}`}
                         onClick={() => updateNotesFilters({ status })}
-                        className={[
-                          "inline-flex h-10 items-center justify-center rounded-xl border px-3 text-sm font-semibold transition",
-                          isActive
-                            ? "border-blue-300 bg-blue-50 text-blue-800"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
-                        ].join(" ")}
+                        className={cx(statusFilterClass, isActive && statusFilterActiveClass)}
                         aria-pressed={isActive}
                       >
                         {status === "open"
@@ -1223,17 +1266,17 @@ export default function AdminNotesManager() {
                 <li
                   key={item.id}
                   data-testid="admin-note-item"
-                  className={[
-                    "rounded-xl border px-4 py-3",
-                    item.is_done
-                      ? "border-emerald-200 bg-emerald-50/40"
-                      : "border-slate-200 bg-slate-50/70",
-                  ].join(" ")}
+                  className={cx(
+                    noteCardBaseClass,
+                    item.is_done ? noteCardDoneClass : noteCardOpenClass
+                  )}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-900">{item.title}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="font-semibold text-[color:var(--fs-color-ink-strong)]">
+                        {item.title}
+                      </p>
+                      <p className={cx("mt-1", metadataClass)}>
                         {item.category} · {formatAdminNoteDateLabel(item.note_date)}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -1246,42 +1289,44 @@ export default function AdminNotesManager() {
                           {formatAdminNotePriorityLabel(item.priority)}
                         </span>
                         {item.attachments.length > 0 ? (
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                          <span className="inline-flex items-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/86 px-2 py-0.5 text-[11px] font-medium text-[color:var(--fs-color-ink)]">
                             {item.attachments.length} image
                             {item.attachments.length === 1 ? "" : "s"}
                           </span>
                         ) : null}
                         {item.related_notes.length > 0 ? (
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                          <span className="inline-flex items-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/86 px-2 py-0.5 text-[11px] font-medium text-[color:var(--fs-color-ink)]">
                             {item.related_notes.length} related note
                             {item.related_notes.length === 1 ? "" : "s"}
                           </span>
                         ) : null}
                       </div>
                       <p
-                        className="mt-1 text-[11px] font-medium tracking-wide text-slate-500 uppercase"
+                        className="mt-1 text-[11px] font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase"
                         data-testid="admin-note-id"
                       >
                         {buildAdminNoteReferenceLabel(item.id)}
                       </p>
                       {item.context_type && item.context_ref ? (
                         <>
-                          <p className="mt-1 text-xs font-medium text-slate-600">
+                          <p className="mt-1 text-xs font-medium text-[color:var(--fs-color-muted)]">
                             {resolveAdminNoteContextLabel({
                               catalog: contextCatalog,
                               contextType: item.context_type,
                               contextRef: item.context_ref,
                             })}
                           </p>
-                          <p className="mt-1 text-[11px] text-slate-500">
+                          <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                             Context ref:{" "}
-                            <span className="font-mono text-slate-700">{item.context_ref}</span>
+                            <span className="font-mono text-[color:var(--fs-color-ink)]">
+                              {item.context_ref}
+                            </span>
                           </p>
                         </>
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                         <input
                           type="checkbox"
                           checked={item.is_done}
@@ -1297,7 +1342,7 @@ export default function AdminNotesManager() {
                           onChange={() => {
                             void toggleDone(item);
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                          className={checkboxClass}
                         />
                         {isUpdating ? "Saving…" : "Done"}
                       </label>
@@ -1315,7 +1360,7 @@ export default function AdminNotesManager() {
                         onClick={() => {
                           startEdit(item);
                         }}
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={compactSecondaryActionClass}
                       >
                         Edit
                       </button>
@@ -1332,20 +1377,25 @@ export default function AdminNotesManager() {
                         onClick={() => {
                           void handleDelete(item);
                         }}
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={destructiveActionClass}
                       >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         {isDeleting ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </div>
 
                   {!isEditing && item.body ? (
-                    <p className="mt-3 text-sm whitespace-pre-wrap text-slate-700">{item.body}</p>
+                    <p className="mt-3 text-sm leading-6 whitespace-pre-wrap text-[color:var(--fs-color-ink)]">
+                      {item.body}
+                    </p>
                   ) : null}
 
                   {!isEditing && item.attachments.length > 0 ? (
-                    <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                      <p className="text-xs font-semibold text-slate-700">Admin-only images</p>
+                    <div className={cx("mt-3 space-y-2", nestedPanelClass)}>
+                      <p className="text-xs font-semibold text-[color:var(--fs-color-ink)]">
+                        Admin-only images
+                      </p>
                       <div className="flex flex-wrap gap-3">
                         {item.attachments.map((attachment, index) => (
                           <a
@@ -1353,7 +1403,7 @@ export default function AdminNotesManager() {
                             href={attachment.signed_url ?? undefined}
                             target="_blank"
                             rel="noreferrer"
-                            className="group flex w-32 flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2"
+                            className="group flex w-32 flex-col gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 p-2 transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
                           >
                             {attachment.signed_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -1363,21 +1413,21 @@ export default function AdminNotesManager() {
                                 className="h-20 w-full rounded-md object-cover"
                               />
                             ) : (
-                              <div className="flex h-20 w-full items-center justify-center rounded-md bg-slate-200 text-[11px] font-medium text-slate-600">
+                              <div className="flex h-20 w-full items-center justify-center rounded-md bg-[rgba(226,232,240,0.72)] text-[11px] font-medium text-[color:var(--fs-color-muted)]">
                                 Preview unavailable
                               </div>
                             )}
                             <div className="space-y-1">
-                              <p className="text-[11px] font-semibold text-slate-900">
+                              <p className="text-[11px] font-semibold text-[color:var(--fs-color-ink-strong)]">
                                 {buildAdminNoteAttachmentOrdinalLabel(
                                   index,
                                   item.attachments.length
                                 )}
                               </p>
-                              <p className="truncate text-[11px] font-medium text-slate-700">
+                              <p className="truncate text-[11px] font-medium text-[color:var(--fs-color-ink)]">
                                 {attachment.file_name}
                               </p>
-                              <p className="text-[10px] text-slate-500">
+                              <p className="text-[10px] text-[color:var(--fs-color-muted)]">
                                 {buildAdminNoteAttachmentEvidenceSummary({
                                   mimeType: attachment.mime_type,
                                   sizeBytes: attachment.size_bytes,
@@ -1392,24 +1442,26 @@ export default function AdminNotesManager() {
                   ) : null}
 
                   {!isEditing && item.related_notes.length > 0 ? (
-                    <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                      <p className="text-xs font-semibold text-slate-700">Related notes</p>
+                    <div className={cx("mt-3 space-y-2", nestedPanelClass)}>
+                      <p className="text-xs font-semibold text-[color:var(--fs-color-ink)]">
+                        Related notes
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {item.related_notes.map((relatedNote) => (
                           <div
                             key={relatedNote.id}
-                            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] text-slate-700"
+                            className="rounded-full border border-[color:var(--fs-border-soft)] bg-white/78 px-3 py-1 text-[11px] text-[color:var(--fs-color-ink)]"
                           >
                             <button
                               type="button"
                               onClick={() => {
                                 jumpToRelatedNote(relatedNote);
                               }}
-                              className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                              className="font-semibold text-[color:var(--fs-color-brand-700)] underline decoration-[color:var(--fs-border-brand)] underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                             >
                               {relatedNote.title}
                             </button>
-                            <span className="text-slate-500">
+                            <span className="text-[color:var(--fs-color-muted)]">
                               {" "}
                               · {buildAdminNoteReferenceLabel(relatedNote.id)}
                             </span>
@@ -1429,7 +1481,7 @@ export default function AdminNotesManager() {
                         void saveEdit(item.id);
                       }}
                     >
-                      <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                      <label className={cx(compactLabelClass, "sm:col-span-2")}>
                         <span>Edit title</span>
                         <input
                           type="text"
@@ -1438,11 +1490,11 @@ export default function AdminNotesManager() {
                           onChange={(e) => {
                             setEditField((prev) => ({ ...prev, title: e.target.value }));
                           }}
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={compactFieldClass}
                         />
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={compactLabelClass}>
                         <span>Edit category</span>
                         <input
                           type="text"
@@ -1451,11 +1503,11 @@ export default function AdminNotesManager() {
                           onChange={(e) => {
                             setEditField((prev) => ({ ...prev, category: e.target.value }));
                           }}
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={compactFieldClass}
                         />
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={compactLabelClass}>
                         <span>Edit date</span>
                         <input
                           type="date"
@@ -1464,11 +1516,11 @@ export default function AdminNotesManager() {
                           onChange={(e) => {
                             setEditField((prev) => ({ ...prev, noteDate: e.target.value }));
                           }}
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={compactFieldClass}
                         />
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={compactLabelClass}>
                         <span>Priority</span>
                         <select
                           value={editState.priority}
@@ -1478,7 +1530,7 @@ export default function AdminNotesManager() {
                               priority: e.target.value as AdminNotePriority,
                             }));
                           }}
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={compactFieldClass}
                         >
                           {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                             <option key={priority} value={priority}>
@@ -1488,7 +1540,7 @@ export default function AdminNotesManager() {
                         </select>
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                      <label className={cx(compactLabelClass, "sm:col-span-2")}>
                         <span>Edit text</span>
                         <textarea
                           rows={3}
@@ -1496,11 +1548,11 @@ export default function AdminNotesManager() {
                           onChange={(e) => {
                             setEditField((prev) => ({ ...prev, body: e.target.value }));
                           }}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                          className={textAreaClass}
                         />
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={compactLabelClass}>
                         <span>Attach to (optional)</span>
                         <select
                           value={editState.contextType}
@@ -1508,7 +1560,7 @@ export default function AdminNotesManager() {
                             setEditContextType(e.target.value as AdminNoteContextType | "");
                           }}
                           data-testid="admin-note-edit-context-type"
-                          className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={compactFieldClass}
                         >
                           <option value="">No attachment</option>
                           {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
@@ -1519,14 +1571,14 @@ export default function AdminNotesManager() {
                         </select>
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={compactLabelClass}>
                         <span>Selected target</span>
                         {editState.contextType === "" ? (
                           <input
                             type="text"
                             value=""
                             disabled
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500"
+                            className={compactFieldClass}
                             placeholder="No attachment"
                           />
                         ) : null}
@@ -1537,7 +1589,7 @@ export default function AdminNotesManager() {
                               setEditContextRef(e.target.value);
                             }}
                             data-testid="admin-note-edit-context-module"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose module</option>
                             {contextCatalog.modules.map((option) => (
@@ -1561,7 +1613,7 @@ export default function AdminNotesManager() {
                                 setEditContextModuleRef(e.target.value);
                               }}
                               data-testid="admin-note-edit-context-lesson-module"
-                              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              className={compactFieldClass}
                             >
                               <option value="">Choose module first</option>
                               {contextCatalog.modules.map((option) => (
@@ -1576,7 +1628,7 @@ export default function AdminNotesManager() {
                                 setEditContextRef(e.target.value);
                               }}
                               data-testid="admin-note-edit-context-lesson"
-                              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                              className={compactFieldClass}
                             >
                               <option value="">Choose lesson</option>
                               {editLessonOptions.map((option) => (
@@ -1594,7 +1646,7 @@ export default function AdminNotesManager() {
                               setEditContextRef(e.target.value);
                             }}
                             data-testid="admin-note-edit-context-session"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose session</option>
                             {contextCatalog.sessions.map((option) => (
@@ -1611,7 +1663,7 @@ export default function AdminNotesManager() {
                               setEditContextRef(e.target.value);
                             }}
                             data-testid="admin-note-edit-context-drill"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose drill</option>
                             {contextCatalog.drills.map((option) => (
@@ -1628,7 +1680,7 @@ export default function AdminNotesManager() {
                               setEditContextRef(e.target.value);
                             }}
                             data-testid="admin-note-edit-context-product"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose product</option>
                             {contextCatalog.products.map((option) => (
@@ -1645,7 +1697,7 @@ export default function AdminNotesManager() {
                               setEditContextRef(e.target.value);
                             }}
                             data-testid="admin-note-edit-context-page"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose page</option>
                             {contextCatalog.pages.map((option) => (
@@ -1657,17 +1709,20 @@ export default function AdminNotesManager() {
                         ) : null}
                       </label>
 
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
+                      <div className={cx("space-y-2 sm:col-span-2", nestedPanelClass)}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs font-semibold text-slate-900">Images</p>
-                            <p className="mt-1 text-[11px] text-slate-600">
+                            <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                              Images
+                            </p>
+                            <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                               PNG, JPEG, WEBP, or GIF up to 5 MB each. Upload images or paste one
                               image from clipboard directly.
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <AdminNoteClipboardPasteButton
+                              className={compactSecondaryActionClass}
                               onPasteReady={async (file) => {
                                 setActionError(null);
                                 setActionNotice(null);
@@ -1681,7 +1736,10 @@ export default function AdminNotesManager() {
                                 isUploading || deletingAttachmentId || updatingId || deletingId
                               )}
                             />
-                            <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100">
+                            <label
+                              className={cx(compactSecondaryActionClass, "cursor-pointer py-2")}
+                            >
+                              <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                               <span>{isUploading ? "Uploading…" : "Upload images"}</span>
                               <input
                                 type="file"
@@ -1708,7 +1766,7 @@ export default function AdminNotesManager() {
                               return (
                                 <li
                                   key={attachment.id}
-                                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                                  className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2"
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
                                     {attachment.signed_url ? (
@@ -1719,21 +1777,21 @@ export default function AdminNotesManager() {
                                         className="h-12 w-12 rounded-md object-cover"
                                       />
                                     ) : (
-                                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-200 text-[10px] font-medium text-slate-600">
+                                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[rgba(226,232,240,0.72)] text-[10px] font-medium text-[color:var(--fs-color-muted)]">
                                         No preview
                                       </div>
                                     )}
                                     <div className="min-w-0">
-                                      <p className="text-[11px] font-semibold text-slate-900">
+                                      <p className="text-[11px] font-semibold text-[color:var(--fs-color-ink-strong)]">
                                         {buildAdminNoteAttachmentOrdinalLabel(
                                           index,
                                           item.attachments.length
                                         )}
                                       </p>
-                                      <p className="truncate text-xs font-medium text-slate-700">
+                                      <p className="truncate text-xs font-medium text-[color:var(--fs-color-ink)]">
                                         {attachment.file_name}
                                       </p>
-                                      <p className="text-[11px] text-slate-500">
+                                      <p className="text-[11px] text-[color:var(--fs-color-muted)]">
                                         {buildAdminNoteAttachmentEvidenceSummary({
                                           mimeType: attachment.mime_type,
                                           sizeBytes: attachment.size_bytes,
@@ -1748,8 +1806,9 @@ export default function AdminNotesManager() {
                                         href={attachment.signed_url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                        className={compactSecondaryActionClass}
                                       >
+                                        <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
                                         Open
                                       </a>
                                     ) : null}
@@ -1765,8 +1824,9 @@ export default function AdminNotesManager() {
                                       onClick={() => {
                                         void deleteAttachment(item.id, attachment.id);
                                       }}
-                                      className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className={destructiveActionClass}
                                     >
+                                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                                       {isDeletingAttachment ? "Deleting…" : "Delete image"}
                                     </button>
                                   </div>
@@ -1775,14 +1835,18 @@ export default function AdminNotesManager() {
                             })}
                           </ul>
                         ) : (
-                          <p className="text-[11px] text-slate-600">No images attached yet.</p>
+                          <p className="text-[11px] text-[color:var(--fs-color-muted)]">
+                            No images attached yet.
+                          </p>
                         )}
                       </div>
 
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
+                      <div className={cx("space-y-2 sm:col-span-2", nestedPanelClass)}>
                         <div>
-                          <p className="text-xs font-semibold text-slate-900">Related notes</p>
-                          <p className="mt-1 text-[11px] text-slate-600">
+                          <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                            Related notes
+                          </p>
+                          <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                             Connect follow-up notes without merging their identities.
                           </p>
                         </div>
@@ -1795,21 +1859,21 @@ export default function AdminNotesManager() {
                               return (
                                 <li
                                   key={relatedNote.id}
-                                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                                  className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2"
                                 >
                                   <div>
-                                    <p className="text-xs font-medium text-slate-700">
+                                    <p className="text-xs font-medium text-[color:var(--fs-color-ink)]">
                                       <button
                                         type="button"
                                         onClick={() => {
                                           jumpToRelatedNote(relatedNote);
                                         }}
-                                        className="text-left text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                                        className="text-left font-semibold text-[color:var(--fs-color-brand-700)] underline decoration-[color:var(--fs-border-brand)] underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                                       >
                                         {relatedNote.title}
                                       </button>
                                     </p>
-                                    <p className="text-[11px] text-slate-500">
+                                    <p className="text-[11px] text-[color:var(--fs-color-muted)]">
                                       {formatAdminNotePriorityLabel(relatedNote.priority)} ·{" "}
                                       {buildAdminNoteReferenceLabel(relatedNote.id)}
                                     </p>
@@ -1823,7 +1887,7 @@ export default function AdminNotesManager() {
                                     onClick={() => {
                                       void removeRelatedNote(item.id, relatedNote.id);
                                     }}
-                                    className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className={compactSecondaryActionClass}
                                   >
                                     {isUnlinking ? "Removing…" : "Remove link"}
                                   </button>
@@ -1832,7 +1896,9 @@ export default function AdminNotesManager() {
                             })}
                           </ul>
                         ) : (
-                          <p className="text-[11px] text-slate-600">No related notes linked yet.</p>
+                          <p className="text-[11px] text-[color:var(--fs-color-muted)]">
+                            No related notes linked yet.
+                          </p>
                         )}
 
                         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -1845,7 +1911,7 @@ export default function AdminNotesManager() {
                               }));
                             }}
                             data-testid="admin-note-related-select"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Choose note to link</option>
                             {linkableNotes.map((linkableNote) => (
@@ -1869,21 +1935,22 @@ export default function AdminNotesManager() {
                             onClick={() => {
                               void addRelatedNote(item.id);
                             }}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
+                            <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
                             {isLinking ? "Linking…" : "Link note"}
                           </button>
                         </div>
                       </div>
 
-                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
                         <input
                           type="checkbox"
                           checked={editState.isDone}
                           onChange={(e) => {
                             setEditField((prev) => ({ ...prev, isDone: e.target.checked }));
                           }}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                          className={checkboxClass}
                         />
                         Mark as done
                       </label>
@@ -1891,7 +1958,7 @@ export default function AdminNotesManager() {
                       <div className="flex items-center gap-2 sm:col-span-2">
                         <button
                           type="submit"
-                          className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                          className={compactPrimaryActionClass}
                           disabled={Boolean(
                             updatingId ||
                             deletingId ||
@@ -1902,11 +1969,12 @@ export default function AdminNotesManager() {
                             unlinkingKey
                           )}
                         >
+                          <Save className="h-3.5 w-3.5" aria-hidden="true" />
                           {isUpdating ? "Saving…" : "Save changes"}
                         </button>
                         <button
                           type="button"
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={compactSecondaryActionClass}
                           onClick={cancelEdit}
                           disabled={Boolean(
                             updatingId ||
@@ -1921,7 +1989,7 @@ export default function AdminNotesManager() {
                         </button>
                       </div>
                       {editContextInvalid ? (
-                        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:col-span-2">
+                        <p className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:col-span-2">
                           Set both context type and context ref, or clear both.
                         </p>
                       ) : null}
@@ -1941,16 +2009,16 @@ export default function AdminNotesManager() {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Create note</h2>
-        <p className="mt-2 text-sm text-slate-600">
+      <section className={panelCardClass} data-testid="admin-notes-create-panel">
+        <h2 className={headingClass}>Create note</h2>
+        <p className={cx("mt-2", mutedTextClass)}>
           Store planning notes with category, priority, date, and completion tracking.
         </p>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className={cx("mt-2", metadataClass)}>
           Stage up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} images before save if needed, then use Edit
           to attach more images or link related notes afterward.
         </p>
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+        <div className="mt-3 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
           <p className="mt-1 text-xs text-amber-800">
             Use these for runbook incidents so severity, owner, and update cadence stay
@@ -1960,7 +2028,7 @@ export default function AdminNotesManager() {
             {INCIDENT_NOTE_SEVERITIES.map((severity) => (
               <div
                 key={severity}
-                className="rounded-lg border border-amber-200 bg-white/80 px-3 py-2"
+                className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-white/85 px-3 py-2"
               >
                 <p className="text-xs font-semibold text-amber-950">{severity}</p>
                 <p className="mt-1 text-xs text-amber-900">
@@ -1975,7 +2043,7 @@ export default function AdminNotesManager() {
                 key={severity}
                 type="button"
                 onClick={() => applyIncidentTemplate(severity)}
-                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+                className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
               >
                 Use {severity} template
               </button>
@@ -1989,26 +2057,26 @@ export default function AdminNotesManager() {
           onSubmit={handleCreate}
           data-testid="admin-notes-create-form"
         >
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+          <label className={cx(labelClass, "sm:col-span-2")}>
             <span>Title</span>
             <input
               type="text"
               required
               value={formState.title}
               onChange={(e) => setFormState((prev) => ({ ...prev, title: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
               placeholder="Launch checklist"
             />
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Category</span>
             <input
               type="text"
               list="admin-note-category-options"
               value={formState.category}
               onChange={(e) => setFormState((prev) => ({ ...prev, category: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
               placeholder="Operations"
             />
             <datalist id="admin-note-category-options">
@@ -2018,17 +2086,17 @@ export default function AdminNotesManager() {
             </datalist>
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Date</span>
             <input
               type="date"
               value={formState.noteDate}
               onChange={(e) => setFormState((prev) => ({ ...prev, noteDate: e.target.value }))}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
             />
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Priority</span>
             <select
               value={formState.priority}
@@ -2038,7 +2106,7 @@ export default function AdminNotesManager() {
                   priority: e.target.value as AdminNotePriority,
                 }))
               }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
             >
               {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                 <option key={priority} value={priority}>
@@ -2048,28 +2116,29 @@ export default function AdminNotesManager() {
             </select>
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+          <label className={cx(labelClass, "sm:col-span-2")}>
             <span>Text</span>
             <textarea
               rows={4}
               value={formState.body}
               onChange={(e) => setFormState((prev) => ({ ...prev, body: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+              className={textAreaClass}
               placeholder="What to do, blockers, and owner notes."
             />
           </label>
 
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:col-span-2">
+          <div className={cx("space-y-3 p-4 sm:col-span-2", nestedPanelClass)}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Image (optional)</p>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className={smallHeadingClass}>Image (optional)</p>
+                <p className={cx("mt-1", metadataClass)}>
                   Copy a screenshot or image to clipboard, then paste it here, or upload up to{" "}
                   {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files before save.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <AdminNoteClipboardPasteButton
+                  className={compactSecondaryActionClass}
                   onPasteReady={async (file) => {
                     setActionError(null);
                     appendCreatePendingScreenshots([file]);
@@ -2080,7 +2149,8 @@ export default function AdminNotesManager() {
                   }}
                   disabled={Boolean(submitting)}
                 />
-                <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                <label className={cx(compactSecondaryActionClass, "cursor-pointer py-2")}>
+                  <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Upload images</span>
                   <input
                     type="file"
@@ -2099,14 +2169,14 @@ export default function AdminNotesManager() {
 
             {createPendingScreenshots.length > 0 ? (
               <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                <div className={nestedPanelClass}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-slate-900">
+                      <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                         {formatAdminNoteImageCountLabel(createPendingScreenshots.length)} ready to
                         attach
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-600">
+                      <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                         {createCaptureRecovery
                           ? `Saved note "${createCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
                           : "These images stay local until this note save finishes successfully."}
@@ -2119,8 +2189,9 @@ export default function AdminNotesManager() {
                           void retryCreatePendingScreenshotUpload();
                         }}
                         disabled={submitting}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                        className={compactPrimaryActionClass}
                       >
+                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                         {submitting ? "Retrying…" : "Retry upload"}
                       </button>
                     ) : null}
@@ -2129,10 +2200,7 @@ export default function AdminNotesManager() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {createPendingScreenshots.map((image, index) => (
-                    <div
-                      key={image.id}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-3"
-                    >
+                    <div key={image.id} className={nestedPanelClass}>
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -2141,16 +2209,16 @@ export default function AdminNotesManager() {
                           className="h-14 w-14 rounded-lg object-cover"
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-900">
+                          <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                             {buildAdminNoteAttachmentOrdinalLabel(
                               index,
                               createPendingScreenshots.length
                             )}
                           </p>
-                          <p className="mt-1 truncate text-[11px] text-slate-600">
+                          <p className="mt-1 truncate text-[11px] text-[color:var(--fs-color-muted)]">
                             {image.file.name}
                           </p>
-                          <p className="mt-1 text-[11px] text-slate-500">
+                          <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                             {buildAdminNoteAttachmentEvidenceSummary({
                               mimeType: image.file.type,
                               sizeBytes: image.file.size,
@@ -2165,7 +2233,7 @@ export default function AdminNotesManager() {
                           removeCreatePendingScreenshot(image.id);
                         }}
                         disabled={submitting}
-                        className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={cx("mt-3", compactSecondaryActionClass)}
                       >
                         Remove image {index + 1}
                       </button>
@@ -2174,7 +2242,7 @@ export default function AdminNotesManager() {
                 </div>
 
                 {createCaptureRecovery ? (
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-[color:var(--fs-color-muted)]">
                     Saved note: {createCaptureRecovery.title}. Retry the upload here or use Edit
                     from the work queue later.
                   </p>
@@ -2183,13 +2251,13 @@ export default function AdminNotesManager() {
             ) : null}
           </div>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Attach to (optional)</span>
             <select
               value={formState.contextType}
               onChange={(e) => setCreateContextType(e.target.value as AdminNoteContextType | "")}
               data-testid="admin-note-create-context-type"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className={fieldClass}
             >
               <option value="">No attachment</option>
               {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
@@ -2200,14 +2268,14 @@ export default function AdminNotesManager() {
             </select>
           </label>
 
-          <label className="space-y-1 text-sm font-medium text-slate-700">
+          <label className={labelClass}>
             <span>Selected target</span>
             {formState.contextType === "" ? (
               <input
                 type="text"
                 value=""
                 disabled
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500"
+                className={fieldClass}
                 placeholder="No attachment"
               />
             ) : null}
@@ -2216,7 +2284,7 @@ export default function AdminNotesManager() {
                 value={formState.contextRef}
                 onChange={(e) => setCreateContextRef(e.target.value)}
                 data-testid="admin-note-create-context-module"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 <option value="">Choose module</option>
                 {contextCatalog.modules.map((option) => (
@@ -2234,7 +2302,7 @@ export default function AdminNotesManager() {
                     setCreateContextModuleRef(e.target.value);
                   }}
                   data-testid="admin-note-create-context-lesson-module"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={fieldClass}
                 >
                   <option value="">Choose module first</option>
                   {contextCatalog.modules.map((option) => (
@@ -2249,7 +2317,7 @@ export default function AdminNotesManager() {
                     setCreateContextRef(e.target.value);
                   }}
                   data-testid="admin-note-create-context-lesson"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={fieldClass}
                 >
                   <option value="">Choose lesson</option>
                   {createLessonOptions.map((option) => (
@@ -2265,7 +2333,7 @@ export default function AdminNotesManager() {
                 value={formState.contextRef}
                 onChange={(e) => setCreateContextRef(e.target.value)}
                 data-testid="admin-note-create-context-session"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 <option value="">Choose session</option>
                 {contextCatalog.sessions.map((option) => (
@@ -2280,7 +2348,7 @@ export default function AdminNotesManager() {
                 value={formState.contextRef}
                 onChange={(e) => setCreateContextRef(e.target.value)}
                 data-testid="admin-note-create-context-drill"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 <option value="">Choose drill</option>
                 {contextCatalog.drills.map((option) => (
@@ -2295,7 +2363,7 @@ export default function AdminNotesManager() {
                 value={formState.contextRef}
                 onChange={(e) => setCreateContextRef(e.target.value)}
                 data-testid="admin-note-create-context-product"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 <option value="">Choose product</option>
                 {contextCatalog.products.map((option) => (
@@ -2310,7 +2378,7 @@ export default function AdminNotesManager() {
                 value={formState.contextRef}
                 onChange={(e) => setCreateContextRef(e.target.value)}
                 data-testid="admin-note-create-context-page"
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 <option value="">Choose page</option>
                 {contextCatalog.pages.map((option) => (
@@ -2322,12 +2390,12 @@ export default function AdminNotesManager() {
             ) : null}
           </label>
 
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+          <label className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
             <input
               type="checkbox"
               checked={formState.isDone}
               onChange={(e) => setFormState((prev) => ({ ...prev, isDone: e.target.checked }))}
-              className="h-4 w-4 rounded border-slate-300 text-blue-600"
+              className={checkboxClass}
             />
             Mark as done now
           </label>
@@ -2336,13 +2404,14 @@ export default function AdminNotesManager() {
             <button
               type="submit"
               disabled={submitting || createContextInvalid || Boolean(createCaptureRecovery)}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className={primaryActionClass}
             >
+              <Save className="h-4 w-4" aria-hidden="true" />
               {submitting ? "Saving…" : "Save note"}
             </button>
           </div>
           {createContextInvalid ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
+            <p className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
               Set both context type and context ref, or leave both empty.
             </p>
           ) : null}

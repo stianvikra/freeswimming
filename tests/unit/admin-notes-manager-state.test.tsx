@@ -250,6 +250,35 @@ describe("AdminNotesManager state rendering", () => {
     );
   });
 
+  it("uses AW-006 token cards and actions for the notes manager shell", async () => {
+    installFetchMock();
+
+    render(<AdminNotesManager />);
+
+    await screen.findByText("Primary note");
+
+    const header = screen.getByTestId("admin-notes-manager-header");
+    expect(header.className).toContain("fs-library-card");
+    expect(header.className).toContain("fs-library-card-accent");
+
+    const openStatus = screen.getByTestId("admin-notes-status-open");
+    expect(openStatus.className).toContain("fs-library-card");
+    expect(openStatus.className).toContain("fs-library-card-accent");
+
+    const noteItem = screen.getByTestId("admin-note-item");
+    expect(noteItem.className).toContain("rounded-[var(--fs-radius-card)]");
+    expect(within(noteItem).getByRole("button", { name: "Edit" }).className).toContain(
+      "fs-cta-secondary"
+    );
+    expect(within(noteItem).getByRole("button", { name: /Delete/ }).className).toContain(
+      "text-rose-700"
+    );
+
+    const createPanel = screen.getByTestId("admin-notes-create-panel");
+    expect(createPanel.className).toContain("fs-library-card");
+    expect(screen.getByRole("button", { name: "Save note" }).className).toContain("fs-cta-primary");
+  });
+
   it("announces create action errors politely without changing the payload", async () => {
     const fetchMock = installFetchMock({
       notesResponses: [
