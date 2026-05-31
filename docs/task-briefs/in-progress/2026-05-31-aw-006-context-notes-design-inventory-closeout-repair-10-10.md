@@ -167,7 +167,7 @@ Required as a task-brief lifecycle and AW-006 queue/design-inventory sweep.
   - `npm run post-merge:preflight` on the feature branch -> expected branch warning only; no pending closeout detected from the current commit snapshot.
   - `npm run lint:briefs` before the first commit skipped because the script compares `origin/main...HEAD`; rerun after the first commit before PR handoff.
 - Broad gates:
-  - `npm run verify:pre-pr`
+  - `npm run verify:pre-pr` -> PASS, docs-only lane, artifact log `artifacts/test-runs/20260531-093542/verify.log`, exit code `0`.
   - required PR CI checks
   - `npm run verify:pre-merge`
 
@@ -186,3 +186,4 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 
 - `2026-05-31 | in-progress | started from clean main@f7225e5 after PR #914 and closeout PR #915; post-merge preflight passed with no pending closeout; owner approved a docs-only AW-006 Context Notes design-inventory closeout repair after fresh queue/design/code re-audit found a stale Active reference to the moved Context Notes token/action brief | next: update queue/inventory docs, run docs-only validation, then commit/push/PR`
 - `2026-05-31 | targeted validation | updated the canonical AW-006 queue audit base and design inventory Context Notes row, created this active docs-only repair brief, and passed all-brief lint, queue/inventory stale-reference sweep, diff whitespace checks, and feature-branch post-merge-preflight smoke | next: commit, run npm run lint:briefs and npm run verify:pre-pr against the committed docs-only diff, then push/open PR`
+- `2026-05-31 | pre-PR validation | committed the docs-only repair as f9f12a5; npm run lint:briefs passed on the committed changed briefs; npm run verify:pre-pr passed the docs-only lane with artifact log artifacts/test-runs/20260531-093542/verify.log; no screenshot handoff required because no UI, print, layout, brand, asset, or product-rendering files changed | next: commit validation evidence, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
