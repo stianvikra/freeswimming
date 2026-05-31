@@ -167,9 +167,9 @@ Required as a task-brief lifecycle and AW-006 queue/design-inventory sweep.
   - `npm run post-merge:preflight` on the feature branch -> expected branch warning only; no pending closeout detected from the current commit snapshot.
   - `npm run lint:briefs` before the first commit skipped because the script compares `origin/main...HEAD`; rerun after the first commit before PR handoff.
 - Broad gates:
-  - `npm run verify:pre-pr` -> PASS, docs-only lane, artifact log `artifacts/test-runs/20260531-093542/verify.log`, exit code `0`.
-  - required PR CI checks
-  - `npm run verify:pre-merge`
+  - `npm run verify:pre-pr` -> PASS after final evidence commit, docs-only lane, artifact log `artifacts/test-runs/20260531-093653/verify.log`, exit code `0`.
+  - required PR `#916` CI checks -> PASS.
+  - `npm run verify:pre-merge` -> PASS, docs-only lane, marker `artifacts/verify-pre-merge/20260531-073943.json`, exit code `0`.
 
 Docs-only lane is expected while the diff stays limited to Markdown docs.
 
@@ -187,3 +187,22 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 - `2026-05-31 | in-progress | started from clean main@f7225e5 after PR #914 and closeout PR #915; post-merge preflight passed with no pending closeout; owner approved a docs-only AW-006 Context Notes design-inventory closeout repair after fresh queue/design/code re-audit found a stale Active reference to the moved Context Notes token/action brief | next: update queue/inventory docs, run docs-only validation, then commit/push/PR`
 - `2026-05-31 | targeted validation | updated the canonical AW-006 queue audit base and design inventory Context Notes row, created this active docs-only repair brief, and passed all-brief lint, queue/inventory stale-reference sweep, diff whitespace checks, and feature-branch post-merge-preflight smoke | next: commit, run npm run lint:briefs and npm run verify:pre-pr against the committed docs-only diff, then push/open PR`
 - `2026-05-31 | pre-PR validation | committed the docs-only repair as f9f12a5; npm run lint:briefs passed on the committed changed briefs; npm run verify:pre-pr passed the docs-only lane with artifact log artifacts/test-runs/20260531-093542/verify.log; no screenshot handoff required because no UI, print, layout, brand, asset, or product-rendering files changed | next: commit validation evidence, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-31 | merge-ready | final branch commit 0734ff5; reran npm run verify:pre-pr after the evidence commit and passed docs-only lane with artifact log artifacts/test-runs/20260531-093653/verify.log; PR #916 CI passed; npm run verify:pre-merge passed with marker artifacts/verify-pre-merge/20260531-073943.json; owner approved merge and PR #916 merged to main as squash commit 32b74e2 | next: complete repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#916`
+- `squash_commit`: `32b74e2`
+- `result`: Closed AW-006 Context Notes Design Inventory Closeout Repair. The AW-006 queue and notice/empty-state inventory now agree that Context Notes token/action parity is done and no active implementation slice is selected.
+- `validation`: `npm run verify:pre-pr` PASS on docs-only lane (`artifacts/test-runs/20260531-093653/verify.log`); PR `#916` CI PASS; `npm run verify:pre-merge` PASS (`artifacts/verify-pre-merge/20260531-073943.json`).
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                            | Achieved Score | Evidence                                                                                                                                                   | Gaps / Notes |
+| ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                | `5/5`          | Queue/design-inventory diff plus PR `#916` merge evidence.                                                                                                 | No gaps.     |
+| Reliability and failure handling    | `5/5`          | Targeted stale-reference sweep, docs-only `verify:pre-pr`, PR CI, and `verify:pre-merge`.                                                                  | No gaps.     |
+| Content governance                  | `5/5`          | Done brief path, completion record, and corrected design inventory status for PR `#914/#915`.                                                              | No gaps.     |
+| Stack-fit and dependency discipline | `5/5`          | Diff stayed in Markdown docs only; no runtime, scripts, config, workflow, dependency, or provider changes.                                                 | No gaps.     |
+| Testing and QA automation           | `5/5`          | `npm run lint:briefs`, `npm run lint:briefs:all`, targeted sweeps, `git diff --check`, docs-only `verify:pre-pr`, PR CI, and docs-only `verify:pre-merge`. | No gaps.     |
+| DevOps and rollback readiness       | `5/5`          | PR `#916` merged as squash commit `32b74e2`; rollback is a normal docs-only revert.                                                                        | No gaps.     |
