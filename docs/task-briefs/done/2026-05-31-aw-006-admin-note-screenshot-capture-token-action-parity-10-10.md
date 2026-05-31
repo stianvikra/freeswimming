@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-note-screenshot-capture-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
@@ -17,8 +17,8 @@
 
 - `last_audited`: `2026-05-31`
 - `base`: `main@c54bffb`
-- `audit_status`: `ready`
-- `decision`: Execute this as the active AW-006 UI slice.
+- `audit_status`: `completed`
+- `decision`: Completed this AW-006 UI slice through PR `#922`.
 - `reason`: `main` is clean and synced after PR `#920` and repo-managed closeout PR `#921`; `npm run post-merge:preflight` is green with no closeout remaining. A fresh queue/design/code re-audit found no active AW-006 slice and identified `AdminNoteScreenshotCaptureButton` as a small admin notes utility that already has state-primitive parity but still uses older local `rounded-2xl`/`slate`/`blue` action and modal styling inside the screenshot capture dialog.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `components/admin/AdminNoteScreenshotCaptureButton.tsx`, `AdminNotesManager`, `AdminManagerState`, screenshot capture client behavior, admin notes upload/recovery behavior, Help/Guide assertions, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before implementation or PR handoff.
 
@@ -43,7 +43,6 @@ Critical target categories for a `10/10` claim:
 - `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Content governance`
@@ -230,8 +229,36 @@ Stop at screenshot handoff for owner visual approval before broad PR gates. Cont
 
 ## Checkpoint Log
 
-- `2026-05-31 | in-progress | started from clean main@c54bffb after PR #920 and repo-managed closeout #921; post-merge preflight passed with no closeout remaining; owner said continue after the Norwegian non-programmer explanation, so Admin Note Screenshot Capture Token/Action Parity is active on branch aw-006-admin-screenshot-capture-token-parity | next: update queue/inventory, implement scoped screenshot capture token/action parity, run targeted QA, then capture screenshot handoff before broad PR gates`
+- `2026-05-31 | in-progress | started from clean main@c54bffb after PR #920 and repo-managed closeout #921; post-merge preflight passed with no closeout remaining; owner said continue after the Norwegian non-programmer explanation, so Admin Note Screenshot Capture Token/Action Parity was selected on branch aw-006-admin-screenshot-capture-token-parity | next: update queue/inventory, implement scoped screenshot capture token/action parity, run targeted QA, then capture screenshot handoff before broad PR gates`
 - `2026-05-31 | targeted-qa | implemented scoped screenshot capture token/action parity for the trigger, modal header, recovery actions, preview panel, selected-region panel, and reset/cancel/save actions while preserving capture driver, hidden-target restore, crop-to-file, save callback, close behavior, and labels; targeted Vitest, targeted ESLint, typecheck, lint:briefs:all, route/label/support sweep, and git diff --check passed | next: capture screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-05-31 | screenshot-handoff | captured after/reference visual artifacts against local Next dev at output/aw-006-admin-screenshot-capture-token-parity-2026-05-31-122431: recovery desktop, recovery mobile, save-error desktop, and admin state reference desktop; the first capture set was discarded because it included the Next dev indicator, the final set hides dev overlay, and the temporary fixture route was removed after capture with no scoped product-rendering source changes after the final screenshots | next: owner visual approval or corrections before npm run verify:pre-pr`
 - `2026-05-31 | screenshot-approved | owner approved the screenshot handoff in output/aw-006-admin-screenshot-capture-token-parity-2026-05-31-122431; no scoped product-rendering source changed after the final screenshots | next: run npm run verify:pre-pr before commit/push/PR`
 - `2026-05-31 | pre-pr-green | npm run verify:pre-pr passed on branch aw-006-admin-screenshot-capture-token-parity after owner screenshot approval; full lane included lint, typecheck, unit tests, build, performance budgets, and Playwright E2E with 102 passed / 492 skipped | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness handoff`
+- `2026-05-31 | merged | PR #922 merged to main as squash commit 786e62e after CI and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: move brief to done, record completion evidence, update queue/inventory fallout, validate docs-only closeout, and auto-merge closeout PR if gates stay green`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#922`
+- `squash_commit`: `786e62e`
+- `result`: Closed AW-006 Admin Note Screenshot Capture Token/Action Parity by aligning the admin note screenshot capture trigger, dialog, preview, crop reset, cancel, retry, upload fallback, and save actions with the current admin token/action hierarchy while preserving capture, crop, upload handoff, attachment, recovery, API/auth, labels, Help/Guide, and support behavior.
+- `validation`: targeted Vitest, targeted ESLint, typecheck, `npm run lint:briefs:all`, route/label/support sweep, `git diff --check`, screenshot handoff + owner approval, refreshed screenshot artifacts after pre-commit formatting, `npm run verify:pre-pr`, PR #922 CI, and `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- `screenshot_artifacts`: `output/aw-006-admin-screenshot-capture-token-parity-2026-05-31-130128`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #922 changed only the scoped screenshot capture utility, focused tests, queue, inventory, and active brief.                | None.        |
+| UX flow clarity                               | `5/5`          | Screenshot handoff and unit tests preserved capture start, retry, upload fallback, full capture reset, cancel, and save flow. | None.        |
+| Visual design quality                         | `5/5`          | Refreshed `after/reference` screenshots in `output/aw-006-admin-screenshot-capture-token-parity-2026-05-31-130128`.           | None.        |
+| Business logic correctness and data integrity | `5/5`          | Capture driver, crop math, save callback, upload handoff, and attachment behavior were unchanged; unit tests passed.          | None.        |
+| Admin editor ergonomics                       | `5/5`          | Visible admin actions now use the same token/action hierarchy without adding steps or changing labels.                        | None.        |
+| Accessibility (a11y)                          | `5/5`          | Dialog label, live status, image alt text, disabled states, and button semantics preserved; broad E2E a11y gate passed.       | None.        |
+| Data placement and sync boundaries            | `5/5`          | Component-local transient screenshot state stayed local-only; no server/API/storage boundary changed.                         | None.        |
+| Reliability and failure handling              | `5/5`          | Permission denied, unsupported, save-error, retry, fallback, preview cleanup, and cancel paths retained focused coverage.     | None.        |
+| Security and authz                            | `5/5`          | Admin route/API/auth/storage behavior was untouched; CI security gates passed.                                                | None.        |
+| Content governance                            | `5/5`          | Labels, Help/Guide, support copy, queue, and inventory were preserved or updated in scope.                                    | None.        |
+| Admin workflow and editability                | `5/5`          | Existing admin screenshot workflow remains editable and recovery-safe with no changed operational procedure.                  | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local component patterns, `fs-*` token/action direction, and lucide icons already in the project.       | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full pre-PR, PR CI, and full pre-merge all passed.                                                            | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single scoped squash commit `786e62e`; rollback is isolated to one component, one unit test, and docs.                        | None.        |
