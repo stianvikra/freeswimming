@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-31`
-- `base`: `main@34c7afd`
+- `base`: `main@f7225e5`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#914` are recorded below. No active AW-006 implementation slice is selected after Admin Context Notes Panel Token/Action Parity shipped.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#914` and repo-managed closeout PR `#915` are recorded below. No active AW-006 implementation slice is selected after Admin Context Notes Panel Token/Action Parity closed.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, admin message manager/status/source/action contracts, dryland routes/micro-session state contracts, `/my-library/goals`, goals API/storage contracts, `/my-library/habits`, habit API/storage contracts, `/my-library/generator`, generator-intake/session-draft/workout-save contracts, task-brief closeout rules, forward compatibility rules, screenshot handoff rules, phase-plan wording, or verification lanes change before selecting or executing a future AW-006 slice.
 
 ## Goal
