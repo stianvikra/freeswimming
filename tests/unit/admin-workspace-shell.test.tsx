@@ -42,7 +42,14 @@ vi.mock("@/components/admin/AdminCategoriesManager", () => mockManager("admin-ma
 vi.mock("@/components/admin/AdminEmailTemplatesManager", () =>
   mockManager("admin-manager-email-templates")
 );
-vi.mock("@/components/admin/AdminHelpCenter", () => mockManager("admin-manager-help"));
+vi.mock("@/components/admin/AdminHelpCenter", () => ({
+  ...mockManager("admin-manager-help"),
+  ADMIN_HELP_QUICK_ACTIONS: [
+    { id: "overview", label: "Start here" },
+    { id: "learning-path", label: "Learning path" },
+    { id: "change-log", label: "Change governance" },
+  ],
+}));
 vi.mock("@/components/admin/AdminMessagesManager", () => mockManager("admin-manager-messages"));
 vi.mock("@/components/admin/AdminNotesManager", () => mockManager("admin-manager-notes"));
 vi.mock("@/components/admin/AdminOperationsManager", () => mockManager("admin-manager-operations"));
@@ -103,5 +110,26 @@ describe("AdminWorkspace shell", () => {
     fireEvent.click(screen.getByTestId("admin-tab-qr-links"));
 
     expect(replaceMock).toHaveBeenCalledWith("/admin?tab=qr-links", { scroll: false });
+  });
+
+  it("shows Help/Guide section links in the active desktop rail", () => {
+    searchParamsValue.current = "tab=help";
+
+    render(<AdminWorkspace role="admin" />);
+
+    expect(screen.getByTestId("admin-tab-help")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("admin-manager-help")).toBeVisible();
+
+    const subnav = screen.getByTestId("admin-help-subnav");
+    expect(subnav).toHaveClass("hidden", "lg:block");
+    expect(screen.getByTestId("admin-help-subnav-overview")).toHaveAttribute("href", "#overview");
+    expect(screen.getByTestId("admin-help-subnav-learning-path")).toHaveAttribute(
+      "href",
+      "#learning-path"
+    );
+    expect(screen.getByTestId("admin-help-subnav-change-log")).toHaveAttribute(
+      "href",
+      "#change-log"
+    );
   });
 });
