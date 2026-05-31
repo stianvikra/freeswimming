@@ -3,22 +3,22 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-content-manager-course-workspace-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `owner approved selected slice; stop at screenshot handoff before broad PR gates`
+- `execution_mode`: `completed via PR #928; repo-managed closeout`
 - `branch`: `aw-006-admin-content-manager-course-workspace-token-parity`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-05-31`
 - `base`: `main@525c79a`
-- `audit_status`: `ready`
-- `decision`: Execute this as the active AW-006 UI slice through screenshot handoff.
+- `audit_status`: `closed`
+- `decision`: Completed through PR `#928` and closeout.
 - `reason`: `main` is clean and synced after PR `#926` and repo-managed closeout PR `#927`; `npm run post-merge:preflight` is green with no closeout remaining. A fresh queue/design/code re-audit found no active AW-006 slice, confirmed recent admin token/action slices are done, and identified `AdminContentManager` Course Workspace plus adjacent content shell/filter/action controls as the clearest remaining admin presentation gap after state/utility parity work.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `components/admin/AdminContentManager.tsx`, `AdminManagerState`, admin content API/authz/course-structure behavior, Context Notes/QR placement, Help/Guide assertions, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before PR handoff.
 
@@ -242,3 +242,31 @@ Stop at screenshot handoff for owner visual approval before broad PR gates. Cont
 - `2026-05-31 | screenshot refresh | regenerated after/reference screenshot artifacts at output/aw-006-admin-content-manager-course-workspace-token-parity-2026-05-31-162003 after owner asked whether the Admin console header was intentionally omitted. The refreshed set includes full admin-shell desktop/mobile context with Admin console header, plus Content Manager element captures and Admin Notes shell reference. Local /dev/login still returned 500, so capture used the same temporary local preview route with production AdminWorkspace/AdminContentManager and deterministic API mocks; temporary preview route and capture script were removed after capture. This supersedes the 16:15 artifact set. No scoped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-05-31 | screenshot approved | owner approved refreshed 16:20 screenshot handoff in chat; no visual/rendering files changed after the approved capture | next: run npm run verify:pre-pr, then commit/push/open PR if green`
 - `2026-05-31 | pre-pr verified | npm run verify:pre-pr PASS full lane for code-touching diff: branch current with origin/main@525c79a, quality gates/admin audit/env parity/generated PR body/lint/typecheck/unit/build/perf/e2e passed; unit suite passed 1303 tests, Playwright passed 102 tests with 492 local env-driven skips, and perf trend recommendation stayed hold. Screenshot artifacts remain the approved 16:20 after/reference set at output/aw-006-admin-content-manager-course-workspace-token-parity-2026-05-31-162003; no scoped product-rendering files changed after capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-31 | merged | PR #928 merged to main as ad342a6 after green CI and npm run verify:pre-merge PASS full lane; post-merge preflight surfaced this repo-managed docs-only closeout | next: complete closeout PR and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#928`
+- `squash_commit`: `ad342a6`
+- `result`: Closed AW-006 Admin Content Manager Course Workspace Token/Action Parity. Content Manager and Course Workspace now use the same calmer admin token/action hierarchy as adjacent admin managers while preserving content data, course-structure behavior, Context Notes/QR, revision history, labels, Help/Guide, support procedures, APIs, authz, and data contracts.
+- `validation`: targeted unit PASS (15 tests), targeted eslint PASS, route/label/support sweep expected-only, `git diff --check` PASS, approved after/reference screenshot handoff at `output/aw-006-admin-content-manager-course-workspace-token-parity-2026-05-31-162003`, `npm run verify:pre-pr` PASS full lane, PR #928 CI PASS, `npm run verify:pre-merge` PASS full lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories stayed in scope with no release-blocking gap.
+
+| Category                                      | Achieved Score | Evidence                                                                      | Gaps / Notes                       |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------- | ---------------------------------- |
+| Product goals and IA                          | `5/5`          | Scoped PR #928 diff + queue/inventory closeout.                               | None.                              |
+| UX flow clarity                               | `5/5`          | Screenshot handoff + targeted unit coverage + unchanged workflow labels.      | None.                              |
+| Visual design quality                         | `5/5`          | Approved 16:20 after/reference screenshots + token/class review.              | None.                              |
+| Business logic correctness and data integrity | `5/5`          | Targeted tests + unchanged API/payload/course-structure diff review.          | None.                              |
+| Admin editor ergonomics                       | `5/5`          | Screenshot handoff + tests for workspace/actions/create flow.                 | None.                              |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions + full-lane e2e/a11y coverage.                     | None.                              |
+| Data placement and sync boundaries            | `5/5`          | Data/sync contract preserved; no server/local boundary changes.               | None.                              |
+| Caching and invalidation strategy             | `5/5`          | Fetch/mutation/cache behavior unchanged in diff review and gates.             | None.                              |
+| Reliability and failure handling              | `5/5`          | Existing loading/warning/error/empty/create feedback states preserved.        | None.                              |
+| Security and authz                            | `5/5`          | Auth/API surfaces unchanged; CI and pre-merge negative-path coverage green.   | None.                              |
+| Content governance                            | `5/5`          | Labels, Help/Guide, support scope preserved; queue/inventory updated.         | None.                              |
+| Admin workflow and editability                | `5/5`          | Same edit/open/preview/move/delete/create paths with tokenized presentation.  | None.                              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused local/global `fs-*` tokens; no dependency/package/config changes.      | None.                              |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot approval, `verify:pre-pr`, CI, `verify:pre-merge`. | None.                              |
+| DevOps and rollback readiness                 | `5/5`          | Normal squash merge `ad342a6`; no migration/config/runtime setting changes.   | Revert PR #928 if rollback needed. |
