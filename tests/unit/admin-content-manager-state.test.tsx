@@ -322,6 +322,32 @@ describe("AdminContentManager state rendering", () => {
 
     render(<AdminContentManager />);
 
+    expect(await screen.findByTestId("admin-content-manager-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("admin-content-primary-view-tabs")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByRole("button", { name: "Course Workspace" })).toHaveClass(
+      "text-[color:var(--fs-color-brand-700)]"
+    );
+    expect(screen.getByTestId("admin-course-lesson-workspace")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByTestId("admin-course-module-status-row")).toHaveClass("fs-library-card");
+    const moduleRow = screen.getByTestId("admin-course-module-status-row");
+    expect(within(moduleRow).getByRole("button", { name: "Open module scope" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(moduleRow).getByRole("button", { name: "Edit module" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(moduleRow).getByRole("button", { name: "Add lesson" }).className).toContain(
+      "border-emerald-200"
+    );
+
     const previewEmpty = await screen.findByTestId(
       "admin-course-module-lesson-preview-empty-state"
     );
@@ -416,6 +442,13 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.click(within(moduleRow).getByRole("button", { name: "Add lesson" }));
 
     const workspaceCreateForm = await screen.findByTestId("admin-workspace-lesson-create-form");
+    expect(workspaceCreateForm).toHaveClass("border-[color:var(--fs-border-brand)]");
+    expect(
+      within(workspaceCreateForm).getByRole("button", { name: "Create lesson" }).className
+    ).toContain("border-emerald-200");
+    expect(within(workspaceCreateForm).getByRole("button", { name: "Cancel" })).toHaveClass(
+      "fs-cta-secondary"
+    );
     fireEvent.change(within(workspaceCreateForm).getByLabelText("Title"), {
       target: { value: "Broken workspace lesson" },
     });
