@@ -100,6 +100,50 @@ const STATUS_CHIP_CLASS_BY_VALUE: Record<AdminContentStatus, string> = {
   archived: "border-slate-300 bg-slate-200 text-slate-700",
 };
 
+const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const workspacePanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-4 sm:p-5";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const mutedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const activePanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] p-3";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const smallHeadingClass = "text-sm font-semibold text-[color:var(--fs-color-ink-strong)]";
+const metadataClass = "text-xs text-[color:var(--fs-color-muted)]";
+const metadataLabelClass = "text-xs font-semibold text-[color:var(--fs-color-muted)]";
+const compactLabelClass = "space-y-1 text-xs font-semibold text-[color:var(--fs-color-ink)]";
+const inlineFieldClass =
+  "h-10 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const compactFieldClass =
+  "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const textAreaClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactQuietActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-3 text-xs font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSuccessActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactWarningActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactDangerActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const tabButtonClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const tabButtonActiveClass = "bg-white text-[color:var(--fs-color-brand-700)] shadow-sm";
+const tabButtonInactiveClass = "text-[color:var(--fs-color-ink)] hover:bg-white/75";
+const statusFilterClass =
+  "fs-library-card inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const statusFilterActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+
 const COURSE_WORKSPACE_OVERVIEW_PREVIEW_LIMIT = 3;
 
 type ListSortOption =
@@ -2311,28 +2355,31 @@ export default function AdminContentManager() {
 
   return (
     <div className="space-y-6" data-testid="admin-content-manager">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+      <section className={managerHeaderClass} data-testid="admin-content-manager-header">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 id="admin-content-list-anchor" className="text-lg font-semibold text-slate-900">
+            <p className={eyebrowClass}>Content workflow</p>
+            <h2 id="admin-content-list-anchor" className={headingClass}>
               Content items
             </h2>
-            <p className="mt-2 text-sm text-slate-600">{groupedCountLabel}</p>
+            <p className={["mt-2", mutedTextClass].join(" ")}>{groupedCountLabel}</p>
             {isAllContentView && filteredCountLabel ? (
-              <p className="mt-1 text-xs text-slate-500">{filteredCountLabel}</p>
+              <p className={["mt-1", metadataClass].join(" ")}>{filteredCountLabel}</p>
             ) : null}
             {isAllContentView && moduleScopeLabel ? (
-              <p className="mt-1 text-xs font-medium text-blue-700">{moduleScopeLabel}</p>
+              <p className="mt-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)]">
+                {moduleScopeLabel}
+              </p>
             ) : null}
             {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className={["mt-1", metadataClass].join(" ")}>
                 {shouldHideCourseRowsInCatalog
                   ? "Course module/lesson rows are hidden in full catalog by default. Use workspace or enable full list visibility."
                   : "Course module/lesson rows are visible in full catalog."}
               </p>
             ) : null}
             {isCourseWorkspaceView ? (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className={["mt-1", metadataClass].join(" ")}>
                 Workspace-first mode for course modules and lessons.
               </p>
             ) : null}
@@ -2351,7 +2398,7 @@ export default function AdminContentManager() {
                   setListQuery(event.target.value);
                 }}
                 placeholder="Search title, slug, category..."
-                className="h-10 w-56 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 md:w-64"
+                className={[inlineFieldClass, "w-56 md:w-64"].join(" ")}
               />
               <label className="sr-only" htmlFor="admin-content-type-filter">
                 Filter by type
@@ -2362,7 +2409,7 @@ export default function AdminContentManager() {
                 onChange={(event) =>
                   handleManualTypeFilterChange(event.target.value as "all" | AdminContentType)
                 }
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={inlineFieldClass}
               >
                 {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -2380,7 +2427,7 @@ export default function AdminContentManager() {
                   setListFocusState(null);
                   setListStatusFilter(event.target.value as "all" | AdminContentStatus);
                 }}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={inlineFieldClass}
               >
                 <option value="all">All statuses</option>
                 {STATUS_OPTIONS.map((option) => (
@@ -2399,7 +2446,7 @@ export default function AdminContentManager() {
                   setListFocusState(null);
                   setListSort(event.target.value as ListSortOption);
                 }}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={inlineFieldClass}
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -2410,7 +2457,7 @@ export default function AdminContentManager() {
               <button
                 type="button"
                 onClick={() => void loadItems()}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className={secondaryActionClass}
               >
                 Refresh
               </button>
@@ -2418,7 +2465,10 @@ export default function AdminContentManager() {
           ) : null}
         </div>
 
-        <div className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <div
+          className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/62 p-1"
+          data-testid="admin-content-primary-view-tabs"
+        >
           <button
             type="button"
             data-testid="admin-content-view-tab-course-workspace"
@@ -2426,10 +2476,8 @@ export default function AdminContentManager() {
             aria-pressed={isCourseWorkspaceView}
             disabled={!hasCourseWorkspaceItems}
             className={[
-              "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition",
-              isCourseWorkspaceView
-                ? "bg-white text-blue-800 shadow-sm"
-                : "text-slate-700 hover:bg-white/70",
+              tabButtonClass,
+              isCourseWorkspaceView ? tabButtonActiveClass : tabButtonInactiveClass,
               !hasCourseWorkspaceItems ? "cursor-not-allowed opacity-60" : "",
             ].join(" ")}
           >
@@ -2441,10 +2489,8 @@ export default function AdminContentManager() {
             onClick={() => handleContentPrimaryViewChange("all_content")}
             aria-pressed={isAllContentView}
             className={[
-              "inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition",
-              isAllContentView
-                ? "bg-white text-blue-800 shadow-sm"
-                : "text-slate-700 hover:bg-white/70",
+              tabButtonClass,
+              isAllContentView ? tabButtonActiveClass : tabButtonInactiveClass,
             ].join(" ")}
           >
             All Content
@@ -2453,7 +2499,7 @@ export default function AdminContentManager() {
 
         {isAllContentView ? (
           <div className="mt-4 space-y-2">
-            <p className="text-xs text-slate-600">
+            <p className={metadataClass}>
               Content scope: choose one group to avoid long mixed scrolling. Use{" "}
               <span className="font-semibold">All content (audit)</span> only when you need full
               cross-type review.
@@ -2466,10 +2512,10 @@ export default function AdminContentManager() {
                   data-testid={`admin-content-type-chip-${option.value}`}
                   onClick={() => handleManualTypeFilterChange(option.value)}
                   className={[
-                    "inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition",
+                    statusFilterClass,
                     listTypeFilter === option.value
-                      ? "border-blue-300 bg-blue-50 text-blue-800"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                      ? statusFilterActiveClass
+                      : "text-[color:var(--fs-color-ink)] hover:bg-white",
                   ].join(" ")}
                 >
                   {option.label} (
@@ -2492,13 +2538,13 @@ export default function AdminContentManager() {
         ) : null}
 
         {isAllContentView && schemaReady && courseLessonWorkspaceItems.length > 0 ? (
-          <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700">
+          <label className="mt-3 inline-flex items-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/68 px-3 py-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
             <input
               type="checkbox"
               checked={showCourseRowsInContentList}
               onChange={(event) => setShowCourseRowsInContentList(event.target.checked)}
               data-testid="admin-course-list-visibility-toggle"
-              className="h-4 w-4 border border-slate-300"
+              className="h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500"
             />
             Show course modules and lessons in full content list
           </label>
@@ -2515,7 +2561,7 @@ export default function AdminContentManager() {
               <button
                 type="button"
                 onClick={clearFocusMode}
-                className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                className={compactSecondaryActionClass}
               >
                 Clear focus
               </button>
@@ -2546,7 +2592,7 @@ export default function AdminContentManager() {
                     onClick={handleCleanupQaTestRecords}
                     disabled={cleanupSubmitting}
                     data-testid="admin-mirror-cleanup-test-records"
-                    className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={compactSecondaryActionClass}
                   >
                     {cleanupSubmitting
                       ? "Cleaning QA/test records..."
@@ -2672,50 +2718,46 @@ export default function AdminContentManager() {
 
         {isCourseWorkspaceView ? (
           <article
-            className="mt-5 flex flex-col rounded-xl border border-slate-200 bg-slate-50/80 p-4"
+            className={["mt-5 flex flex-col", workspacePanelClass].join(" ")}
             data-testid="admin-course-lesson-workspace"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-900">Course workspace overview</h3>
-                <span className="inline-flex h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-600">
+                <h3 className={smallHeadingClass}>Course workspace overview</h3>
+                <span className="inline-flex h-6 items-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/82 px-2 text-[11px] font-semibold text-[color:var(--fs-color-muted)]">
                   {isFocusedCourseWorkspace ? "Focus mode active" : "Overview mode"}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className={metadataClass}>
                 {courseLessonWorkspaceItems.length} lesson
                 {courseLessonWorkspaceItems.length === 1 ? "" : "s"} ready for edit
               </p>
             </div>
-            <p className="mt-2 text-xs text-slate-600">
+            <p className={["mt-2", metadataClass].join(" ")}>
               {isFocusedCourseWorkspace
                 ? "Overview stays compact while the selected module becomes the primary lesson workspace below."
                 : "Scan modules here first, then open one module when you are ready to edit or reorder its lessons."}
             </p>
 
             <div
-              className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-2"
+              className={["mt-3 grid gap-2 sm:grid-cols-2", nestedPanelClass].join(" ")}
               data-testid="admin-course-status-overview"
             >
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                  Modules
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
+              <div className={mutedPanelClass}>
+                <p className={metadataLabelClass}>Modules</p>
+                <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                   {courseModuleWorkspaceItems.length} total
                 </p>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className={["mt-1", metadataClass].join(" ")}>
                   {statusCountSummary(moduleStatusCounts)}
                 </p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                  Lessons
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
+              <div className={mutedPanelClass}>
+                <p className={metadataLabelClass}>Lessons</p>
+                <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                   {courseLessonWorkspaceItems.length} total
                 </p>
-                <p className="mt-1 text-xs text-slate-600">
+                <p className={["mt-1", metadataClass].join(" ")}>
                   {statusCountSummary(lessonStatusCounts)}
                 </p>
               </div>
@@ -2754,15 +2796,13 @@ export default function AdminContentManager() {
                     <li
                       key={moduleItem.id}
                       className={[
-                        "rounded-lg border px-3 py-2",
-                        moduleScopeActive
-                          ? "border-blue-300 bg-blue-50/40"
-                          : "border-slate-200 bg-white",
+                        rowCardClass,
+                        moduleScopeActive ? "border-[color:var(--fs-border-brand)]" : "",
                       ].join(" ")}
                       data-testid="admin-course-module-status-row"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                           {moduleItem.sortOrder + 1}. {moduleItem.title}
                         </p>
                         <span
@@ -2775,11 +2815,11 @@ export default function AdminContentManager() {
                         </span>
                       </div>
                       {moduleScopeActive ? (
-                        <p className="mt-1 text-[11px] font-semibold text-blue-800">
+                        <p className="mt-1 text-[11px] font-semibold text-[color:var(--fs-color-brand-700)]">
                           Active module scope
                         </p>
                       ) : null}
-                      <p className="mt-1 text-xs text-slate-600">
+                      <p className={["mt-1", metadataClass].join(" ")}>
                         {moduleLessonCount} linked lesson{moduleLessonCount === 1 ? "" : "s"} ·{" "}
                         {statusCountSummary(moduleLessonCounts)}
                       </p>
@@ -2787,21 +2827,21 @@ export default function AdminContentManager() {
                         <button
                           type="button"
                           onClick={() => handleWorkspaceFocusModule(moduleItem.id)}
-                          className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                          className={compactSecondaryActionClass}
                         >
                           Open module scope
                         </button>
                         <button
                           type="button"
                           onClick={() => handleWorkspaceEditModule(moduleItem.id)}
-                          className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-medium text-blue-800 transition hover:bg-blue-100"
+                          className={compactPrimaryActionClass}
                         >
                           Edit module
                         </button>
                         <button
                           type="button"
                           onClick={() => openWorkspaceLessonCreate(moduleItem.id)}
-                          className="inline-flex h-7 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100"
+                          className={compactSuccessActionClass}
                         >
                           Add lesson
                         </button>
@@ -2812,7 +2852,7 @@ export default function AdminContentManager() {
                             void handleDelete(moduleRecord);
                           }}
                           disabled={!moduleRecord}
-                          className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                          className={compactDangerActionClass}
                         >
                           Delete module
                         </button>
@@ -2821,30 +2861,28 @@ export default function AdminContentManager() {
                             href={modulePreviewUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                            className={compactWarningActionClass}
                           >
                             Open module preview
                           </a>
                         ) : (
-                          <span className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-medium text-slate-500">
+                          <span className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)]">
                             Open module preview (no lessons)
                           </span>
                         )}
                       </div>
                       {isFocusedCourseWorkspace ? (
-                        <p className="mt-3 text-[11px] text-slate-500">
+                        <p className="mt-3 text-[11px] text-[color:var(--fs-color-muted)]">
                           {moduleScopeActive
                             ? "Detailed lesson order and actions are shown below in Module workspace."
                             : "Overview stays compact while one module is focused below."}
                         </p>
                       ) : (
-                        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className={["mt-3", mutedPanelClass].join(" ")}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                              Lesson preview
-                            </p>
+                            <p className={metadataLabelClass}>Lesson preview</p>
                             {moduleLessonCount > 0 ? (
-                              <span className="text-[11px] text-slate-500">
+                              <span className="text-[11px] text-[color:var(--fs-color-muted)]">
                                 Use module scope for reordering and full lesson workspace
                               </span>
                             ) : null}
@@ -2870,10 +2908,10 @@ export default function AdminContentManager() {
                                     <li
                                       key={lesson.id}
                                       data-testid="admin-course-module-lesson-preview-row"
-                                      className="rounded-md border border-slate-200 bg-white px-2 py-2"
+                                      className="rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/88 px-3 py-2"
                                     >
                                       <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="text-xs font-medium text-slate-900">
+                                        <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                           {lessonIndex + 1}. {lesson.title}
                                         </p>
                                         <div className="flex flex-wrap items-center gap-2">
@@ -2883,14 +2921,14 @@ export default function AdminContentManager() {
                                             )}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50"
+                                            className={compactSecondaryActionClass}
                                           >
                                             Open lesson
                                           </a>
                                           <button
                                             type="button"
                                             onClick={() => handleWorkspaceEditLesson(lesson.id)}
-                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[11px] font-medium text-blue-800 transition hover:bg-blue-100"
+                                            className={compactPrimaryActionClass}
                                           >
                                             Edit lesson
                                           </button>
@@ -2901,7 +2939,7 @@ export default function AdminContentManager() {
                                               void handleDelete(lessonRecord);
                                             }}
                                             disabled={!lessonRecord}
-                                            className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className={compactDangerActionClass}
                                           >
                                             Delete lesson
                                           </button>
@@ -2912,7 +2950,7 @@ export default function AdminContentManager() {
                                 })}
                               </ol>
                               {moduleLessonPreview.hiddenCount > 0 ? (
-                                <p className="mt-2 text-[11px] text-slate-500">
+                                <p className="mt-2 text-[11px] text-[color:var(--fs-color-muted)]">
                                   {moduleLessonPreview.hiddenCount} more lesson
                                   {moduleLessonPreview.hiddenCount === 1 ? "" : "s"} in module
                                   workspace.
@@ -2930,17 +2968,24 @@ export default function AdminContentManager() {
 
             {workspaceModuleId !== WORKSPACE_ALL_MODULES_ID ? (
               <div
-                className="order-first mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2"
+                className={[
+                  "order-first mt-3 flex flex-wrap items-center justify-between gap-2",
+                  activePanelClass,
+                ].join(" ")}
                 data-testid="admin-course-workspace-current-scope"
               >
                 <div>
-                  <p className="text-xs font-semibold text-blue-900">Current workspace scope</p>
-                  <p className="text-xs text-blue-800">{workspaceScopeLabel}</p>
+                  <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    Current workspace scope
+                  </p>
+                  <p className="text-xs text-[color:var(--fs-color-brand-700)]">
+                    {workspaceScopeLabel}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => focusCourseWorkspaceScope(WORKSPACE_ALL_MODULES_ID)}
-                  className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                  className={compactSecondaryActionClass}
                 >
                   Show all modules
                 </button>
@@ -2948,16 +2993,16 @@ export default function AdminContentManager() {
             ) : null}
 
             <div
-              className="order-first mt-3 rounded-xl border border-slate-200 bg-white p-3"
+              className={["order-first mt-3", rowCardClass].join(" ")}
               data-testid="admin-course-workspace-focus-panel"
             >
               <div className="flex flex-wrap items-end justify-between gap-3">
-                <label className="space-y-1 text-xs font-medium text-slate-700">
+                <label className={compactLabelClass}>
                   <span>Module workspace</span>
                   <select
                     value={workspaceModuleId}
                     onChange={(event) => focusCourseWorkspaceScope(event.target.value)}
-                    className="h-9 min-w-[240px] rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    className={[compactFieldClass, "min-w-[240px]"].join(" ")}
                   >
                     <option value={WORKSPACE_ALL_MODULES_ID}>
                       All modules ({courseLessonWorkspaceItems.length})
@@ -2983,14 +3028,14 @@ export default function AdminContentManager() {
                   <button
                     type="button"
                     onClick={() => openWorkspaceLessonCreate(workspaceModuleId)}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                    className={compactSuccessActionClass}
                   >
                     Add lesson in this module
                   </button>
                 ) : null}
               </div>
 
-              <p className="mt-2 text-xs text-slate-600">
+              <p className={["mt-2", metadataClass].join(" ")}>
                 {workspaceModuleId === WORKSPACE_ALL_MODULES_ID
                   ? "Current workspace stays on top. Use overview below to scan modules quickly, then open a module here when you need full lesson ordering, move controls, or in-context create."
                   : workspaceModuleId === WORKSPACE_UNLINKED_MODULE_ID
@@ -3000,21 +3045,19 @@ export default function AdminContentManager() {
 
               {workspaceLessonCreateOpen ? (
                 <form
-                  className="mt-3 grid gap-3 rounded-xl border border-emerald-200 bg-slate-50 p-3 sm:grid-cols-2"
+                  className={["mt-3 grid gap-3 sm:grid-cols-2", activePanelClass].join(" ")}
                   onSubmit={handleWorkspaceLessonCreate}
                   data-testid="admin-workspace-lesson-create-form"
                 >
                   <div className="sm:col-span-2">
-                    <h4 className="text-sm font-semibold text-slate-900">
-                      Create lesson in context
-                    </h4>
-                    <p className="mt-1 text-xs text-slate-600">
+                    <h4 className={smallHeadingClass}>Create lesson in context</h4>
+                    <p className={["mt-1", metadataClass].join(" ")}>
                       Start in the intended module now. You can still override the parent module
                       before save if you intentionally want another module.
                     </p>
                   </div>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <label className={compactLabelClass}>
                     <span>Parent module</span>
                     <select
                       value={workspaceLessonCreateState.parentId}
@@ -3024,7 +3067,7 @@ export default function AdminContentManager() {
                           parentId: event.target.value,
                         }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={compactFieldClass}
                     >
                       <option value="">Select module</option>
                       {moduleOptions.map((option) => (
@@ -3035,7 +3078,7 @@ export default function AdminContentManager() {
                     </select>
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <label className={compactLabelClass}>
                     <span>Status</span>
                     <select
                       value={workspaceLessonCreateState.status}
@@ -3045,7 +3088,7 @@ export default function AdminContentManager() {
                           status: event.target.value as AdminContentStatus,
                         }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={compactFieldClass}
                     >
                       {STATUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -3055,7 +3098,7 @@ export default function AdminContentManager() {
                     </select>
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                     <span>Title</span>
                     <input
                       type="text"
@@ -3067,12 +3110,12 @@ export default function AdminContentManager() {
                           title: event.target.value,
                         }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={compactFieldClass}
                       placeholder="First breaths"
                     />
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                     <span>Slug (optional)</span>
                     <input
                       type="text"
@@ -3083,16 +3126,16 @@ export default function AdminContentManager() {
                           slug: event.target.value,
                         }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={compactFieldClass}
                       placeholder="first-breaths"
                     />
-                    <p className="text-[11px] font-normal text-slate-500">
+                    <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                       Slug stays human-readable. Runtime lesson ID is assigned automatically and
                       locked after creation.
                     </p>
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                     <span>Summary</span>
                     <textarea
                       rows={3}
@@ -3103,7 +3146,7 @@ export default function AdminContentManager() {
                           summary: event.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className={textAreaClass}
                       placeholder="What this lesson helps the swimmer do."
                     />
                   </label>
@@ -3124,7 +3167,7 @@ export default function AdminContentManager() {
                     <button
                       type="submit"
                       disabled={workspaceLessonCreateSubmitting}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={compactSuccessActionClass}
                     >
                       {workspaceLessonCreateSubmitting ? "Creating…" : "Create lesson"}
                     </button>
@@ -3135,7 +3178,7 @@ export default function AdminContentManager() {
                         setWorkspaceLessonCreateError(null);
                       }}
                       disabled={workspaceLessonCreateSubmitting}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={compactSecondaryActionClass}
                     >
                       Cancel
                     </button>
@@ -3145,7 +3188,7 @@ export default function AdminContentManager() {
 
               {workspaceModuleId === WORKSPACE_ALL_MODULES_ID ? (
                 <p
-                  className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+                  className="mt-3 rounded-[var(--fs-radius-control)] border border-dashed border-[color:var(--fs-border-soft)] bg-white/62 px-3 py-2 text-xs text-[color:var(--fs-color-muted)]"
                   data-testid="admin-course-workspace-overview-guidance"
                 >
                   Overview mode now supports quick lesson open/edit/delete from each module card.
@@ -3182,11 +3225,11 @@ export default function AdminContentManager() {
                       <li
                         key={lesson.id}
                         data-testid="admin-workspace-lesson-row"
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-3 py-3"
                       >
                         <div className="min-w-[220px]">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900">
+                            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                               Lesson {index + 1}: {lesson.title}
                             </p>
                             <span
@@ -3198,7 +3241,7 @@ export default function AdminContentManager() {
                               {statusLabel(lesson.status)}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className={["mt-1", metadataClass].join(" ")}>
                             {lesson.moduleLabel ?? "Unlinked module"} · /{lesson.slug} · id:{" "}
                             {lesson.runtimeLessonId}
                           </p>
@@ -3208,7 +3251,7 @@ export default function AdminContentManager() {
                             type="button"
                             onClick={() => void handleMoveLesson(lesson.id, "up")}
                             disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
                             Move up
                           </button>
@@ -3216,7 +3259,7 @@ export default function AdminContentManager() {
                             type="button"
                             onClick={() => void handleMoveLesson(lesson.id, "down")}
                             disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
                             Move down
                           </button>
@@ -3233,7 +3276,7 @@ export default function AdminContentManager() {
                               }))
                             }
                             disabled={workspaceActionBusy || moduleOptions.length === 0}
-                            className="h-8 min-w-[170px] rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-900"
+                            className={[compactFieldClass, "min-w-[170px] text-xs"].join(" ")}
                           >
                             <option value="">Select module</option>
                             {moduleOptions.map((option) => (
@@ -3248,14 +3291,14 @@ export default function AdminContentManager() {
                               void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
                             }
                             disabled={workspaceActionBusy || !canMoveToTargetModule}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactQuietActionClass}
                           >
                             Move to module
                           </button>
                           <button
                             type="button"
                             onClick={() => handleWorkspaceEditLesson(lesson.id)}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100"
+                            className={compactPrimaryActionClass}
                           >
                             Edit lesson
                           </button>
@@ -3268,7 +3311,7 @@ export default function AdminContentManager() {
                             })}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                            className={compactWarningActionClass}
                           >
                             Open preview
                           </a>
@@ -3276,7 +3319,7 @@ export default function AdminContentManager() {
                             href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className={compactSecondaryActionClass}
                           >
                             Open lesson
                           </a>
@@ -3304,7 +3347,7 @@ export default function AdminContentManager() {
               <button
                 type="button"
                 onClick={() => void loadItems()}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                className={compactDangerActionClass}
               >
                 Retry
               </button>
@@ -3332,7 +3375,7 @@ export default function AdminContentManager() {
                   )
                 }
                 disabled={courseStructureBusy || moduleDeleteSubmitting}
-                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className={compactWarningActionClass}
               >
                 {courseStructureBusy ? "Normalizing…" : "Normalize order"}
               </button>
@@ -4427,11 +4470,11 @@ export default function AdminContentManager() {
             return (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 px-4 py-6">
                 <div
-                  className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+                  className="fs-library-card w-full max-w-xl p-5 shadow-xl"
                   data-testid="admin-module-delete-dialog"
                 >
-                  <h3 className="text-base font-semibold text-slate-900">Delete module</h3>
-                  <p className="mt-2 text-sm text-slate-700">
+                  <h3 className={headingClass}>Delete module</h3>
+                  <p className="mt-2 text-sm text-[color:var(--fs-color-ink)]">
                     Delete <span className="font-semibold">{pendingModuleDelete.moduleTitle}</span>?
                     {pendingModuleDelete.lessonCount > 0
                       ? ` ${pendingModuleDelete.lessonCount} lesson${
@@ -4441,11 +4484,11 @@ export default function AdminContentManager() {
                   </p>
 
                   {pendingModuleDelete.lessonCount > 0 ? (
-                    <fieldset className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                    <fieldset className={["mt-4 space-y-2", mutedPanelClass].join(" ")}>
+                      <legend className="px-1 text-xs font-semibold text-[color:var(--fs-color-muted)]">
                         Lesson handling strategy
                       </legend>
-                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                      <label className="flex items-start gap-2 text-sm text-[color:var(--fs-color-ink)]">
                         <input
                           type="radio"
                           name="module-delete-strategy"
@@ -4463,14 +4506,14 @@ export default function AdminContentManager() {
                                 : previous
                             )
                           }
-                          className="mt-1 h-4 w-4 border border-slate-300"
+                          className="mt-1 h-4 w-4 border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500"
                         />
                         <span>
                           Reassign lessons to another module
                           {!canReassign ? " (no target module available)" : ""}
                         </span>
                       </label>
-                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                      <label className="flex items-start gap-2 text-sm text-[color:var(--fs-color-ink)]">
                         <input
                           type="radio"
                           name="module-delete-strategy"
@@ -4481,11 +4524,11 @@ export default function AdminContentManager() {
                               previous ? { ...previous, strategy: "archive_lessons" } : previous
                             )
                           }
-                          className="mt-1 h-4 w-4 border border-slate-300"
+                          className="mt-1 h-4 w-4 border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500"
                         />
                         <span>Archive lessons and unlink from module</span>
                       </label>
-                      <label className="flex items-start gap-2 text-sm text-slate-700">
+                      <label className="flex items-start gap-2 text-sm text-[color:var(--fs-color-ink)]">
                         <input
                           type="radio"
                           name="module-delete-strategy"
@@ -4496,13 +4539,13 @@ export default function AdminContentManager() {
                               previous ? { ...previous, strategy: "unlink_lessons" } : previous
                             )
                           }
-                          className="mt-1 h-4 w-4 border border-slate-300"
+                          className="mt-1 h-4 w-4 border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500"
                         />
                         <span>Unlink lessons only (keep current status)</span>
                       </label>
 
                       {pendingModuleDelete.strategy === "reassign" ? (
-                        <label className="mt-2 block space-y-1 text-xs font-medium text-slate-700">
+                        <label className={["mt-2 block", compactLabelClass].join(" ")}>
                           <span>Target module</span>
                           <select
                             value={pendingModuleDelete.targetModuleId}
@@ -4518,7 +4561,7 @@ export default function AdminContentManager() {
                             }
                             disabled={!canReassign || moduleDeleteSubmitting}
                             data-testid="admin-module-delete-target-select"
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={compactFieldClass}
                           >
                             <option value="">Select target module</option>
                             {alternativeModules.map((option) => (
@@ -4537,7 +4580,7 @@ export default function AdminContentManager() {
                       type="button"
                       onClick={clearModuleDeleteDialog}
                       disabled={moduleDeleteSubmitting}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={compactSecondaryActionClass}
                     >
                       Cancel
                     </button>
@@ -4546,7 +4589,7 @@ export default function AdminContentManager() {
                       onClick={() => void confirmModuleDelete()}
                       disabled={deleteDisabled}
                       data-testid="admin-module-delete-confirm"
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={compactDangerActionClass}
                     >
                       {moduleDeleteSubmitting ? "Deleting module…" : "Delete module"}
                     </button>
