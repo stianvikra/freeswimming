@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import { cx } from "@/components/ui/cx";
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import {
@@ -128,6 +129,30 @@ type ContextualCreateDraftSnapshot = {
 };
 
 const contextualCreateDraftCache = new Map<string, ContextualCreateDraftSnapshot>();
+
+const panelShellClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const createPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const noteRowClass = "fs-library-card p-4 sm:p-5";
+const doneNoteRowClass = "fs-library-card border-emerald-200 bg-emerald-50/50 p-4 sm:p-5";
+const fieldLabelClass = "space-y-1 text-xs font-semibold text-[color:var(--fs-color-ink)]";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const textareaClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors focus:border-[color:var(--fs-border-brand)] focus:outline-none";
+const checkboxClass = "h-4 w-4 rounded border-slate-300 text-[color:var(--fs-color-brand-600)]";
+const secondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const destructiveActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const innerPanelBaseClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] p-3";
+const innerPanelClass = cx(innerPanelBaseClass, "bg-white/80");
+const mutedInnerPanelClass = cx(innerPanelBaseClass, "bg-slate-50/70");
+const linkClass =
+  "font-semibold text-[color:var(--fs-color-brand-700)] underline decoration-slate-300 underline-offset-2 transition hover:text-[color:var(--fs-color-brand-800)]";
+const mutedTextClass = "text-[color:var(--fs-color-muted)]";
 
 function formatDateLabel(value: string): string {
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -804,17 +829,16 @@ export default function AdminContextNotesPanel({
   const canMutateNotes = Boolean(adminRole && hasRequiredAdminRole(adminRole, "editor"));
 
   return (
-    <section
-      data-testid="admin-context-notes-panel"
-      className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)] ${className}`}
-    >
+    <section data-testid="admin-context-notes-panel" className={cx(panelShellClass, className)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold tracking-wide text-slate-600 uppercase">
+          <h3 className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
             Admin notes
           </h3>
-          <p className="mt-1 text-sm text-slate-700">{contextLabel}</p>
-          <p className="text-xs text-slate-500">
+          <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+            {contextLabel}
+          </p>
+          <p className={cx("text-xs", mutedTextClass)}>
             {items.length} attached note(s)
             {inheritedModuleCount > 0 ? ` · ${inheritedModuleCount} inherited from module` : ""}
           </p>
@@ -826,6 +850,7 @@ export default function AdminContextNotesPanel({
             contextRef={normalizedContextRef}
             contextLabel={contextLabel}
             triggerLabel="Quick note"
+            triggerClassName={primaryActionClass}
             onSaved={(item) => {
               setItems((prev) => [item, ...prev.filter((entry) => entry.id !== item.id)]);
               setActionError(null);
@@ -836,7 +861,7 @@ export default function AdminContextNotesPanel({
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            className={secondaryActionClass}
             data-testid="admin-context-notes-toggle"
           >
             {expanded ? "Collapse notes" : "Show notes"}
@@ -868,7 +893,7 @@ export default function AdminContextNotesPanel({
                 <button
                   type="button"
                   onClick={() => void loadNotes()}
-                  className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-700"
+                  className={destructiveActionClass}
                 >
                   Retry
                 </button>
@@ -879,11 +904,13 @@ export default function AdminContextNotesPanel({
           ) : null}
 
           {canMutateNotes ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+            <div className={createPanelClass} data-testid="admin-context-note-create-panel">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900">Add note</h4>
-                  <p className="mt-1 text-xs text-slate-600">
+                  <h4 className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    Add note
+                  </h4>
+                  <p className={cx("mt-1 text-xs", mutedTextClass)}>
                     Save an admin reminder directly on this item.
                   </p>
                 </div>
@@ -891,7 +918,7 @@ export default function AdminContextNotesPanel({
                   <button
                     type="button"
                     onClick={() => setCreateFormExpanded((prev) => !prev)}
-                    className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className={secondaryActionClass}
                     data-testid="admin-context-note-create-toggle"
                   >
                     {createFormExpanded ? "Collapse add note" : "Expand add note"}
@@ -906,7 +933,7 @@ export default function AdminContextNotesPanel({
                   onPasteCapture={handleCreateFormPaste}
                   data-testid="admin-context-note-create-form"
                 >
-                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                     <span>Title</span>
                     <input
                       type="text"
@@ -914,11 +941,11 @@ export default function AdminContextNotesPanel({
                       value={formState.title}
                       onChange={(e) => setFormState((prev) => ({ ...prev, title: e.target.value }))}
                       placeholder="What should be changed?"
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <label className={fieldLabelClass}>
                     <span>Category</span>
                     <input
                       type="text"
@@ -927,11 +954,11 @@ export default function AdminContextNotesPanel({
                       onChange={(e) =>
                         setFormState((prev) => ({ ...prev, category: e.target.value }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <label className={fieldLabelClass}>
                     <span>Date</span>
                     <input
                       type="date"
@@ -939,11 +966,11 @@ export default function AdminContextNotesPanel({
                       onChange={(e) =>
                         setFormState((prev) => ({ ...prev, noteDate: e.target.value }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     />
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                  <label className={fieldLabelClass}>
                     <span>Priority</span>
                     <select
                       value={formState.priority}
@@ -953,7 +980,7 @@ export default function AdminContextNotesPanel({
                           priority: e.target.value as AdminNotePriority,
                         }))
                       }
-                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                      className={fieldClass}
                     >
                       {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                         <option key={priority} value={priority}>
@@ -963,24 +990,24 @@ export default function AdminContextNotesPanel({
                     </select>
                   </label>
 
-                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                     <span>Text</span>
                     <textarea
                       rows={3}
                       value={formState.body}
                       onChange={(e) => setFormState((prev) => ({ ...prev, body: e.target.value }))}
                       placeholder="Write details you need to remember."
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                      className={textareaClass}
                     />
                   </label>
 
-                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 sm:col-span-2">
+                  <div className={cx(innerPanelClass, "sm:col-span-2")}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                        <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                           Image evidence
                         </p>
-                        <p className="mt-1 text-xs text-slate-600">
+                        <p className={cx("mt-1 text-xs", mutedTextClass)}>
                           Paste from clipboard or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES}{" "}
                           images before save.
                         </p>
@@ -996,8 +1023,9 @@ export default function AdminContextNotesPanel({
                             setActionError(message);
                           }}
                           disabled={submitting}
+                          className={secondaryActionClass}
                         />
-                        <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                        <label className={cx(secondaryActionClass, "cursor-pointer")}>
                           <span>Upload images</span>
                           <input
                             type="file"
@@ -1015,19 +1043,19 @@ export default function AdminContextNotesPanel({
                     </div>
 
                     {pendingImages.length === 0 ? (
-                      <p className="mt-3 text-xs text-slate-600">
+                      <p className={cx("mt-3 text-xs", mutedTextClass)}>
                         No images attached yet. Copy a screenshot first if you want to paste it from
                         clipboard, or upload up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files.
                       </p>
                     ) : (
                       <div className="mt-3 space-y-3">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <div className={mutedInnerPanelClass}>
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold text-slate-900">
+                              <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                 {formatImageCountLabel(pendingImages.length)} ready to attach
                               </p>
-                              <p className="mt-1 text-[11px] text-slate-600">
+                              <p className={cx("mt-1 text-[11px]", mutedTextClass)}>
                                 {pendingImageRecovery
                                   ? `The note "${pendingImageRecovery.noteTitle}" is already saved. Retry upload or remove any staged images you no longer need.`
                                   : "The next note save will upload these images as admin-only attachments."}
@@ -1040,7 +1068,7 @@ export default function AdminContextNotesPanel({
                                   void retryPendingImageUpload();
                                 }}
                                 disabled={submitting}
-                                className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                                className={primaryActionClass}
                               >
                                 {submitting ? "Retrying…" : "Retry upload"}
                               </button>
@@ -1052,7 +1080,7 @@ export default function AdminContextNotesPanel({
                           {pendingImages.map((image, index) => (
                             <div
                               key={image.id}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                              className={mutedInnerPanelClass}
                               data-testid="admin-context-note-image-preview"
                             >
                               <div className="flex items-center gap-3">
@@ -1060,19 +1088,19 @@ export default function AdminContextNotesPanel({
                                 <img
                                   src={image.previewUrl}
                                   alt={`Pending note image preview ${index + 1}`}
-                                  className="h-14 w-14 rounded-lg object-cover"
+                                  className="h-14 w-14 rounded-[var(--fs-radius-control)] object-cover"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold text-slate-900">
+                                  <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                     {buildAdminNoteAttachmentOrdinalLabel(
                                       index,
                                       pendingImages.length
                                     )}
                                   </p>
-                                  <p className="mt-1 truncate text-[11px] text-slate-600">
+                                  <p className={cx("mt-1 truncate text-[11px]", mutedTextClass)}>
                                     {image.file.name}
                                   </p>
-                                  <p className="mt-1 text-[11px] text-slate-500">
+                                  <p className={cx("mt-1 text-[11px]", mutedTextClass)}>
                                     {buildAdminNoteAttachmentEvidenceSummary({
                                       mimeType: image.file.type,
                                       sizeBytes: image.file.size,
@@ -1087,7 +1115,7 @@ export default function AdminContextNotesPanel({
                                   removePendingImage(image.id);
                                 }}
                                 disabled={submitting}
-                                className="mt-3 inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={cx(secondaryActionClass, "mt-3")}
                               >
                                 Remove image {index + 1}
                               </button>
@@ -1098,14 +1126,14 @@ export default function AdminContextNotesPanel({
                     )}
                   </div>
 
-                  <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                  <label className="inline-flex items-center gap-2 text-xs font-medium text-[color:var(--fs-color-ink)] sm:col-span-2">
                     <input
                       type="checkbox"
                       checked={formState.isDone}
                       onChange={(e) =>
                         setFormState((prev) => ({ ...prev, isDone: e.target.checked }))
                       }
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className={checkboxClass}
                     />
                     Mark as done
                   </label>
@@ -1114,14 +1142,14 @@ export default function AdminContextNotesPanel({
                     <button
                       type="submit"
                       disabled={submitting || !schemaReady || Boolean(pendingImageRecovery)}
-                      className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className={primaryActionClass}
                     >
                       {submitting ? "Saving…" : "Save note"}
                     </button>
                   </div>
                 </form>
               ) : (
-                <p className="mt-3 text-xs text-slate-600">
+                <p className={cx("mt-3 text-xs", mutedTextClass)}>
                   Keep the compose form tucked away while you review existing notes, then expand it
                   again when you are ready to add a new one.
                 </p>
@@ -1178,41 +1206,39 @@ export default function AdminContextNotesPanel({
                 return (
                   <li
                     key={item.id}
-                    className={`rounded-xl border px-3 py-2 ${
-                      item.is_done
-                        ? "border-emerald-200 bg-emerald-50/40"
-                        : "border-slate-200 bg-slate-50/70"
-                    }`}
+                    className={item.is_done ? doneNoteRowClass : noteRowClass}
                     data-testid="admin-context-note-item"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                          {item.title}
+                        </p>
+                        <p className={cx("text-xs", mutedTextClass)}>
                           {item.category} · {formatPriorityLabel(item.priority)} ·{" "}
                           {formatDateLabel(item.note_date)}
                         </p>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
-                          <span className="font-medium text-slate-500">
+                          <span className={cx("font-medium", mutedTextClass)}>
                             {buildAdminNoteReferenceLabel(item.id)}
                           </span>
                           <a
                             href={buildAdminNotesQueueHref(item.id, item.is_done)}
-                            className="font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800"
+                            className={linkClass}
                           >
                             Open in Notes
                           </a>
                         </div>
                         {contextType === "course_lesson" &&
                         item.context_type === "course_module" ? (
-                          <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
+                          <p className={cx("text-[11px] font-semibold", mutedTextClass)}>
                             Inherited from module
                           </p>
                         ) : null}
                       </div>
                       {canMutateNotes ? (
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-[color:var(--fs-color-ink)]">
                             <input
                               type="checkbox"
                               checked={item.is_done}
@@ -1226,7 +1252,7 @@ export default function AdminContextNotesPanel({
                               onChange={() => {
                                 void toggleDone(item);
                               }}
-                              className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                              className={checkboxClass}
                             />
                             {isUpdating ? "Saving…" : "Done"}
                           </label>
@@ -1240,7 +1266,7 @@ export default function AdminContextNotesPanel({
                               deletingAttachmentId
                             )}
                             onClick={() => startEdit(item)}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={secondaryActionClass}
                           >
                             Edit
                           </button>
@@ -1252,13 +1278,13 @@ export default function AdminContextNotesPanel({
                             onClick={() => {
                               void handleDelete(item);
                             }}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={destructiveActionClass}
                           >
                             {isDeleting ? "Deleting…" : "Delete"}
                           </button>
                         </div>
                       ) : (
-                        <p className="text-xs font-medium text-slate-500">Read only</p>
+                        <p className={cx("text-xs font-semibold", mutedTextClass)}>Read only</p>
                       )}
                     </div>
 
@@ -1272,7 +1298,7 @@ export default function AdminContextNotesPanel({
                         }}
                         data-testid="admin-context-note-edit-form"
                       >
-                        <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                           <span>Edit title</span>
                           <input
                             type="text"
@@ -1281,11 +1307,11 @@ export default function AdminContextNotesPanel({
                             onChange={(e) =>
                               setEditField((prev) => ({ ...prev, title: e.target.value }))
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <label className={fieldLabelClass}>
                           <span>Edit category</span>
                           <input
                             type="text"
@@ -1294,11 +1320,11 @@ export default function AdminContextNotesPanel({
                             onChange={(e) =>
                               setEditField((prev) => ({ ...prev, category: e.target.value }))
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <label className={fieldLabelClass}>
                           <span>Edit date</span>
                           <input
                             type="date"
@@ -1307,11 +1333,11 @@ export default function AdminContextNotesPanel({
                             onChange={(e) =>
                               setEditField((prev) => ({ ...prev, noteDate: e.target.value }))
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <label className={fieldLabelClass}>
                           <span>Priority</span>
                           <select
                             value={editState.priority}
@@ -1321,7 +1347,7 @@ export default function AdminContextNotesPanel({
                                 priority: e.target.value as AdminNotePriority,
                               }))
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           >
                             {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                               <option key={priority} value={priority}>
@@ -1331,7 +1357,7 @@ export default function AdminContextNotesPanel({
                           </select>
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                           <span>Edit text</span>
                           <textarea
                             rows={3}
@@ -1339,15 +1365,17 @@ export default function AdminContextNotesPanel({
                             onChange={(e) =>
                               setEditField((prev) => ({ ...prev, body: e.target.value }))
                             }
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                            className={textareaClass}
                           />
                         </label>
 
-                        <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:col-span-2">
+                        <div className={cx(mutedInnerPanelClass, "space-y-2 sm:col-span-2")}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                              <p className="text-xs font-semibold text-slate-900">Images</p>
-                              <p className="mt-1 text-[11px] text-slate-600">
+                              <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                                Images
+                              </p>
+                              <p className={cx("mt-1 text-[11px]", mutedTextClass)}>
                                 Add or remove image evidence on this saved note.
                               </p>
                             </div>
@@ -1366,8 +1394,9 @@ export default function AdminContextNotesPanel({
                                 disabled={Boolean(
                                   isUploading || deletingAttachmentId || updatingId || deletingId
                                 )}
+                                className={secondaryActionClass}
                               />
-                              <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                              <label className={cx(secondaryActionClass, "cursor-pointer")}>
                                 <span>{isUploading ? "Uploading…" : "Upload images"}</span>
                                 <input
                                   type="file"
@@ -1395,7 +1424,10 @@ export default function AdminContextNotesPanel({
                                 return (
                                   <li
                                     key={attachment.id}
-                                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                                    className={cx(
+                                      innerPanelClass,
+                                      "flex flex-wrap items-center justify-between gap-3"
+                                    )}
                                   >
                                     <div className="flex min-w-0 items-center gap-3">
                                       {attachment.signed_url ? (
@@ -1403,24 +1435,24 @@ export default function AdminContextNotesPanel({
                                         <img
                                           src={attachment.signed_url}
                                           alt={attachment.file_name}
-                                          className="h-12 w-12 rounded-md object-cover"
+                                          className="h-12 w-12 rounded-[var(--fs-radius-control)] object-cover"
                                         />
                                       ) : (
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-200 text-[10px] font-medium text-slate-600">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-[var(--fs-radius-control)] bg-slate-200 text-[10px] font-medium text-slate-600">
                                           No preview
                                         </div>
                                       )}
                                       <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold text-slate-900">
+                                        <p className="text-[11px] font-semibold text-[color:var(--fs-color-ink-strong)]">
                                           {buildAdminNoteAttachmentOrdinalLabel(
                                             index,
                                             item.attachments.length
                                           )}
                                         </p>
-                                        <p className="truncate text-xs font-medium text-slate-700">
+                                        <p className="truncate text-xs font-medium text-[color:var(--fs-color-ink)]">
                                           {attachment.file_name}
                                         </p>
-                                        <p className="text-[11px] text-slate-500">
+                                        <p className={cx("text-[11px]", mutedTextClass)}>
                                           {buildAdminNoteAttachmentEvidenceSummary({
                                             mimeType: attachment.mime_type,
                                             sizeBytes: attachment.size_bytes,
@@ -1435,7 +1467,7 @@ export default function AdminContextNotesPanel({
                                           href={attachment.signed_url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                          className={secondaryActionClass}
                                         >
                                           Open
                                         </a>
@@ -1452,7 +1484,7 @@ export default function AdminContextNotesPanel({
                                         onClick={() => {
                                           void deleteAttachment(item.id, attachment.id);
                                         }}
-                                        className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className={destructiveActionClass}
                                       >
                                         {isDeletingAttachment ? "Deleting…" : "Delete image"}
                                       </button>
@@ -1462,18 +1494,20 @@ export default function AdminContextNotesPanel({
                               })}
                             </ul>
                           ) : (
-                            <p className="text-[11px] text-slate-600">No images attached yet.</p>
+                            <p className={cx("text-[11px]", mutedTextClass)}>
+                              No images attached yet.
+                            </p>
                           )}
                         </div>
 
-                        <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-[color:var(--fs-color-ink)] sm:col-span-2">
                           <input
                             type="checkbox"
                             checked={editState.isDone}
                             onChange={(e) =>
                               setEditField((prev) => ({ ...prev, isDone: e.target.checked }))
                             }
-                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                            className={checkboxClass}
                           />
                           Mark as done
                         </label>
@@ -1484,7 +1518,7 @@ export default function AdminContextNotesPanel({
                             disabled={Boolean(
                               updatingId || deletingId || uploadingNoteId || deletingAttachmentId
                             )}
-                            className="inline-flex h-8 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                            className={primaryActionClass}
                           >
                             {isUpdating ? "Saving…" : "Save changes"}
                           </button>
@@ -1494,7 +1528,7 @@ export default function AdminContextNotesPanel({
                             disabled={Boolean(
                               updatingId || deletingId || uploadingNoteId || deletingAttachmentId
                             )}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={secondaryActionClass}
                           >
                             Cancel
                           </button>
@@ -1503,28 +1537,29 @@ export default function AdminContextNotesPanel({
                     ) : (
                       <div className="mt-2 space-y-3">
                         {item.body ? (
-                          <p className="text-sm whitespace-pre-wrap text-slate-700">{item.body}</p>
+                          <p className="text-sm whitespace-pre-wrap text-[color:var(--fs-color-ink)]">
+                            {item.body}
+                          </p>
                         ) : null}
 
                         {item.related_notes.length > 0 ? (
-                          <div className="space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                            <p className="text-xs font-semibold text-slate-700">Related notes</p>
+                          <div className={cx(innerPanelClass, "space-y-2")}>
+                            <p className="text-xs font-semibold text-[color:var(--fs-color-ink)]">
+                              Related notes
+                            </p>
                             <ul className="space-y-2">
                               {item.related_notes.map((relatedNote) => (
-                                <li
-                                  key={relatedNote.id}
-                                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                                >
+                                <li key={relatedNote.id} className={mutedInnerPanelClass}>
                                   <a
                                     href={buildAdminNotesQueueHref(
                                       relatedNote.id,
                                       relatedNote.is_done
                                     )}
-                                    className="text-xs font-medium text-blue-700 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-800"
+                                    className={cx(linkClass, "text-xs")}
                                   >
                                     {relatedNote.title}
                                   </a>
-                                  <p className="mt-1 text-[11px] text-slate-500">
+                                  <p className={cx("mt-1 text-[11px]", mutedTextClass)}>
                                     {formatPriorityLabel(relatedNote.priority)} ·{" "}
                                     {buildAdminNoteReferenceLabel(relatedNote.id)}
                                   </p>
@@ -1535,8 +1570,8 @@ export default function AdminContextNotesPanel({
                         ) : null}
 
                         {item.attachments.length > 0 ? (
-                          <div className="space-y-2 rounded-lg border border-slate-200 bg-white/80 p-3">
-                            <p className="text-xs font-semibold text-slate-700">
+                          <div className={cx(innerPanelClass, "space-y-2")}>
+                            <p className="text-xs font-semibold text-[color:var(--fs-color-ink)]">
                               Admin-only images
                             </p>
                             <div className="flex flex-wrap gap-3">
@@ -1546,31 +1581,34 @@ export default function AdminContextNotesPanel({
                                   href={attachment.signed_url ?? undefined}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="group flex w-32 flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2"
+                                  className={cx(
+                                    mutedInnerPanelClass,
+                                    "group flex w-32 flex-col gap-2 p-2"
+                                  )}
                                 >
                                   {attachment.signed_url ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                       src={attachment.signed_url}
                                       alt={attachment.file_name}
-                                      className="h-20 w-full rounded-md object-cover"
+                                      className="h-20 w-full rounded-[var(--fs-radius-control)] object-cover"
                                     />
                                   ) : (
-                                    <div className="flex h-20 w-full items-center justify-center rounded-md bg-slate-200 text-[11px] font-medium text-slate-600">
+                                    <div className="flex h-20 w-full items-center justify-center rounded-[var(--fs-radius-control)] bg-slate-200 text-[11px] font-medium text-slate-600">
                                       Preview unavailable
                                     </div>
                                   )}
                                   <div className="space-y-1">
-                                    <p className="text-[11px] font-semibold text-slate-900">
+                                    <p className="text-[11px] font-semibold text-[color:var(--fs-color-ink-strong)]">
                                       {buildAdminNoteAttachmentOrdinalLabel(
                                         index,
                                         item.attachments.length
                                       )}
                                     </p>
-                                    <p className="truncate text-[11px] font-medium text-slate-700">
+                                    <p className="truncate text-[11px] font-medium text-[color:var(--fs-color-ink)]">
                                       {attachment.file_name}
                                     </p>
-                                    <p className="text-[10px] text-slate-500">
+                                    <p className={cx("text-[10px]", mutedTextClass)}>
                                       {buildAdminNoteAttachmentEvidenceSummary({
                                         mimeType: attachment.mime_type,
                                         sizeBytes: attachment.size_bytes,
@@ -1592,7 +1630,7 @@ export default function AdminContextNotesPanel({
           ) : null}
 
           {!canMutateNotes ? (
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <p className={cx(mutedInnerPanelClass, "text-sm", mutedTextClass)}>
               Viewer role can review contextual notes here, but only editors/admins can create or
               change them.
             </p>
