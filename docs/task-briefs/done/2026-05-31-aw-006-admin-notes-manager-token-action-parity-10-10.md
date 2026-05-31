@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-notes-manager-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
@@ -242,3 +242,31 @@ Stop at screenshot handoff for owner visual approval before broad PR gates. Cont
 - `2026-05-31 | targeted-qa | implemented scoped AdminNotesManager token/action parity for shell, filters, note rows, attachment/related-note panels, edit/create forms, incident template cards, upload/retry/save/delete actions, queue/design-inventory docs, and focused class assertions while preserving notes data/API behavior; targeted Vitest passed for admin notes manager tests, targeted ESLint passed, npm run typecheck passed, npm run lint:briefs:all passed, route/label/support sweep completed, and git diff --check passed | next: capture after/reference screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-05-31 | screenshot-handoff | captured after/reference visual artifacts against local Next dev at output/aw-006-admin-notes-manager-token-action-parity-2026-05-31-112657: Notes desktop, Notes edit desktop, Notes mobile, and Messages desktop reference; temporary capture route/script removed after capture, with no scoped product-rendering file changes after the final screenshots | next: owner visual approval or corrections before npm run verify:pre-pr`
 - `2026-05-31 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed full lane with lint, typecheck, unit, build, performance budgets, and Playwright E2E (102 passed, 492 expected skips) | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-05-31 | merged | shipped in PR #920 as squash commit 3f118c2 after PR CI was green and npm run verify:pre-merge passed with Playwright E2E 102 passed / 492 expected skips; post-merge preflight surfaced this repo-managed docs-only closeout | next: close out lifecycle docs, rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before any new AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#920`
+- `squash_commit`: `3f118c2`
+- `result`: Closed AW-006 Admin Notes Manager Token/Action Parity by aligning the Notes manager shell, filters, note rows, attachment/related-note panels, edit/create forms, incident templates, upload/retry controls, and visible actions with the current admin token/action hierarchy while preserving note data, APIs, uploads, related notes, labels, Help/Guide, and support procedures.
+- `validation`: Targeted Vitest for admin notes manager suites, targeted ESLint, `npm run typecheck`, `npm run lint:briefs:all`, route/label/support sweep, `git diff --check`, screenshot handoff approved from `output/aw-006-admin-notes-manager-token-action-parity-2026-05-31-112657`, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                      | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scoped component/docs diff, queue/inventory update, PR #920 review, `npm run verify:pre-merge`                | None         |
+| UX flow clarity                               | `5/5`          | Approved after/reference screenshots, focused class assertions, `npm run verify:pre-pr`                       | None         |
+| Visual design quality                         | `5/5`          | Approved screenshot handoff and token/class diff against current admin manager references                     | None         |
+| Business logic correctness and data integrity | `5/5`          | Notes payload/API paths unchanged, targeted admin notes tests, PR CI, `npm run verify:pre-merge`              | None         |
+| Admin editor ergonomics                       | `5/5`          | Notes controls preserved with no added workflow step, component tests, approved screenshots                   | None         |
+| Accessibility (a11y)                          | `5/5`          | Existing labels/controls preserved, Testing Library assertions, broad Playwright gate                         | None         |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical and component-local boundaries unchanged, diff review, broad gates                           | None         |
+| Caching and invalidation strategy             | `5/5`          | Existing `cache: "no-store"` fetch/mutation refresh behavior unchanged, diff review                           | None         |
+| Reliability and failure handling              | `5/5`          | Loading/error/empty/no-results/upload recovery states preserved, targeted tests, broad gates                  | None         |
+| Security and authz                            | `5/5`          | Admin route/API/auth/storage behavior unchanged, existing negative-path coverage in broad gates               | None         |
+| Content governance                            | `5/5`          | Workflow labels, incident guidance, Help/Guide, runbook references, and support procedures preserved          | None         |
+| Admin workflow and editability                | `5/5`          | Create/edit/delete/done/upload/link/unlink actions preserved, targeted tests, screenshots                     | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `fs-*` tokens and admin-local helper direction; no dependency/package/config changes          | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, brief lint, sweep, screenshot handoff, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed  | None         |
+| DevOps and rollback readiness                 | `5/5`          | Docs/code diff is revertable by normal git revert; no migrations, config, package, workflow, or deploy change | None         |
