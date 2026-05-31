@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-quick-capture-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
@@ -17,8 +17,8 @@
 
 - `last_audited`: `2026-05-31`
 - `base`: `main@bbbd8c2`
-- `audit_status`: `ready`
-- `decision`: Execute this AW-006 UI slice as the active Admin Quick Capture Token/Action Parity pass.
+- `audit_status`: `completed`
+- `decision`: Completed this AW-006 UI slice through PR `#924`.
 - `reason`: `main` is clean and synced after PR `#922` and repo-managed closeout PR `#923`; `npm run post-merge:preflight` is green with no closeout remaining. A fresh queue/design/code re-audit found no active AW-006 slice and identified `AdminNoteQuickCaptureLauncher` as a high-frequency admin notes utility that already has feedback-state parity but still uses older local `rounded-*`/`slate`/`blue` panel, trigger, form, image-tool, and action styling while adjacent admin notes surfaces now use the current `fs-*` token/action hierarchy. The owner approved this slice on `2026-05-31`.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `AdminNoteQuickCaptureLauncher`, `AdminNoteClipboardPasteButton`, `AdminNotesManager`, `AdminManagerState`, admin notes upload/recovery behavior, quick-capture draft-store behavior, Help/Guide assertions, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before implementation or PR handoff.
 
@@ -43,7 +43,6 @@ Critical target categories for a `10/10` claim:
 - `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
 - `Data placement and sync boundaries`
 - `Reliability and failure handling`
 - `Security and authz`
@@ -245,3 +244,31 @@ Stop at screenshot handoff for owner visual approval before broad PR gates. Cont
 - `2026-05-31 | targeted-qa | implemented scoped Quick Capture token/action parity for the trigger, collapsed rail, panel shell, locked-context card, image tools, staged-image rows, form controls, retry/remove/discard/save actions, queue, inventory, and focused class assertions while preserving note save, upload/retry/remove, draft, context, category, and open-in-notes behavior; targeted Vitest, targeted ESLint, typecheck, lint:briefs:all, route/label/support sweep, and git diff --check passed | next: capture after/reference screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-05-31 | screenshot-handoff | captured after/reference artifacts in output/aw-006-admin-quick-capture-token-parity-2026-05-31-133300 covering open desktop, image-upload recovery desktop, context warning mobile, and screenshot-capture reference preview; removed temporary local handoff route/script after capture, with no scoped product-rendering files changed after the final screenshots | next: wait for owner visual approval or correction request before npm run verify:pre-pr`
 - `2026-05-31 | pre-pr-green | owner approved screenshot handoff; npm run verify:pre-pr passed full lane on branch aw-006-admin-quick-capture-token-action-parity with lint, typecheck, unit tests, build, performance budgets, and Playwright e2e green; screenshot artifacts remain unchanged since capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge-readiness summary`
+- `2026-05-31 | merged | PR #924 merged to main as squash commit 9bb0bc1 after required CI and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: move brief to done, record completion evidence, update queue/inventory fallout, validate docs-only closeout, and auto-merge closeout PR if gates stay green`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#924`
+- `squash_commit`: `9bb0bc1`
+- `result`: Closed AW-006 Admin Quick Capture Token/Action Parity by aligning the quick-capture trigger, collapsed rail, panel shell, locked-context card, image tools, staged rows, form controls, retry/remove/discard/save actions, and open-in-notes handoff with the current admin token/action hierarchy while preserving note save, image recovery, drafts, context locking, category loading, API/authz, Help/Guide, and support behavior.
+- `validation`: targeted Vitest for `tests/unit/admin-note-quick-capture-launcher.test.tsx`, targeted ESLint, `npm run typecheck`, `npm run lint:briefs:all`, route/label/support sweep, `git diff --check`, approved screenshot handoff from `output/aw-006-admin-quick-capture-token-parity-2026-05-31-133300`, final `npm run verify:pre-pr` on `ad92cd8`, PR #924 CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- `screenshot_artifacts`: `output/aw-006-admin-quick-capture-token-parity-2026-05-31-133300`
+
+| Category                                      | Achieved Score | Evidence                                                                                                            | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #924 changed only the scoped quick-capture component, focused tests, queue, inventory, and active brief.         | None.        |
+| UX flow clarity                               | `5/5`          | Approved after/reference screenshots and unit tests preserved open, collapse, resume, save, retry, remove, discard. | None.        |
+| Visual design quality                         | `5/5`          | Screenshot handoff shows quick capture aligned to adjacent admin notes token/action references.                     | None.        |
+| Business logic correctness and data integrity | `5/5`          | Note payloads, upload/retry/remove behavior, drafts, context, categories, and `onSaved` stayed unchanged.           | None.        |
+| Admin editor ergonomics                       | `5/5`          | Admins keep the same quick-capture workflow with clearer action hierarchy and no added step.                        | None.        |
+| Accessibility (a11y)                          | `5/5`          | Labels, live feedback, disabled states, buttons, links, and collapsed resume affordance remained covered.           | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical notes/attachments and local draft/pending-image state boundaries stayed unchanged.                 | None.        |
+| Reliability and failure handling              | `5/5`          | Save errors, upload failures, retry/remove, context warning, draft restore, and close/discard behavior were kept.   | None.        |
+| Security and authz                            | `5/5`          | Admin note APIs, role gates, cookies, credentials, storage, and authz boundaries were untouched.                    | None.        |
+| Content governance                            | `5/5`          | Labels, Help/Guide, runbooks, queue, and design inventory were preserved or updated in scope.                       | None.        |
+| Admin workflow and editability                | `5/5`          | Create, attach image, retry, remove, discard, save, context, and Notes handoff contracts remained intact.           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `fs-*` admin token/action direction and local helpers without dependency/package/config changes.    | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, brief lint, sweep, screenshot approval, pre-PR, PR CI, and pre-merge gates passed.                  | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single scoped squash commit `9bb0bc1`; rollback is isolated to one component, one unit test, and docs.              | None.        |
