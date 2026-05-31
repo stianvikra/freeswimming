@@ -105,18 +105,31 @@ describe("AdminNoteQuickCaptureLauncher", () => {
       />
     );
 
-    await user.click(screen.getByTestId("admin-note-quick-capture-trigger"));
-    await screen.findByTestId("admin-note-quick-capture-dialog");
+    const trigger = screen.getByTestId("admin-note-quick-capture-trigger");
+    expect(trigger).toHaveClass("fs-cta-secondary");
+    expect(trigger).not.toHaveClass("bg-blue-50");
 
+    await user.click(trigger);
+    const dialog = await screen.findByTestId("admin-note-quick-capture-dialog");
+
+    expect(dialog.className).toContain("rounded-l-[var(--fs-radius-panel)]");
+    expect(dialog.className).toContain("border-[color:var(--fs-border-soft)]");
     expect(screen.getByRole("heading", { name: "Admin note" })).toBeInTheDocument();
     expect(
       screen.queryByText("Capture a context-aware admin note without leaving this surface.")
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Create note fast")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(screen.getByText("Locked context").parentElement).toHaveClass("fs-library-card-accent");
+    const imagesPanel = screen.getByText("Images").closest(".fs-library-card");
+    expect(imagesPanel).toHaveClass("fs-library-card-muted");
+    expect(screen.getByRole("button", { name: "Save" })).toHaveClass("fs-cta-primary");
+    const uploadAction = screen.getByLabelText("Upload images").closest("label");
+    expect(uploadAction).toHaveClass("fs-cta-secondary");
 
     await user.type(screen.getByLabelText("Title"), "Tighten copy");
-    expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(2);
+    const discardActions = screen.getAllByRole("button", { name: "Discard" });
+    expect(discardActions).toHaveLength(2);
+    expect(discardActions[0]).toHaveClass("fs-cta-secondary");
     expect(screen.queryByText("Loading category suggestions…")).not.toBeInTheDocument();
   });
 
@@ -627,7 +640,11 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     );
 
     expect(screen.getByTestId("admin-note-quick-capture-minimized")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("admin-note-quick-capture-resume"));
+    const resumeButton = screen.getByTestId("admin-note-quick-capture-resume");
+    expect(resumeButton.className).toContain("rounded-l-[var(--fs-radius-panel)]");
+    expect(resumeButton.className).toContain("border-[color:var(--fs-border-brand)]");
+    expect(resumeButton).not.toHaveClass("border-blue-200");
+    fireEvent.click(resumeButton);
 
     await screen.findByTestId("admin-note-quick-capture-dialog");
     expect(screen.getByLabelText("Title")).toHaveValue("Carry this draft across pages");
@@ -717,7 +734,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(errorState).toHaveAttribute("role", "status");
     expect(errorState).toHaveAttribute("aria-live", "polite");
     expect(errorState).toHaveClass("border-rose-200", "bg-rose-50", "text-rose-700");
-    expect(screen.getByRole("button", { name: "Retry upload" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry upload" })).toHaveClass("fs-cta-primary");
     expect(screen.getByRole("link", { name: "Open in Notes" })).toBeInTheDocument();
   });
 
