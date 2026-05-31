@@ -1,5 +1,6 @@
 "use client";
 
+import { cx } from "@/components/ui/cx";
 import { ADMIN_NOTE_TEST_ARTIFACT_PREFIX } from "@/lib/admin/admin-note-test-artifacts";
 
 type TabGuide = {
@@ -20,7 +21,7 @@ type ActionGroup = {
 
 const LAST_UPDATED = "2026-05-07";
 
-const QUICK_ACTIONS = [
+export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
   { id: "learning-path", label: "Learning path" },
   { id: "tabs", label: "Dashboard tabs" },
@@ -35,7 +36,7 @@ const QUICK_ACTIONS = [
   { id: "playbooks", label: "Daily playbooks" },
   { id: "troubleshoot", label: "Troubleshoot" },
   { id: "change-log", label: "Change governance" },
-];
+] as const;
 
 const DASHBOARD_TABS: TabGuide[] = [
   {
@@ -691,27 +692,44 @@ const RUNBOOK_LINKS = [
   "docs/runbooks/ci-unblock.md",
 ];
 
+const helpHeroClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const helpSectionClass = "fs-library-card scroll-mt-28 p-4 sm:p-5";
+const helpQuickActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const helpItemClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 p-3";
+const helpCalloutClass = "rounded-[var(--fs-radius-control)] border p-3";
+const helpHeadingClass = "text-base font-semibold text-[color:var(--fs-color-ink-strong)]";
+const helpHeroHeadingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const helpItemTitleClass = "text-sm font-semibold text-[color:var(--fs-color-ink-strong)]";
+const helpBodyClass = "mt-2 text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const helpItemBodyClass = "mt-1 text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const helpStrongClass = "font-semibold text-[color:var(--fs-color-ink-strong)]";
+const helpListClass = "mt-2 list-inside list-disc space-y-1 text-sm leading-6";
+const helpCodeClass =
+  "rounded-[var(--fs-radius-control)] bg-white/80 px-1.5 py-0.5 text-xs text-[color:var(--fs-color-ink-strong)] ring-1 ring-[color:var(--fs-border-soft)]";
+
 export default function AdminHelpCenter() {
   return (
     <div className="space-y-6">
-      <section
-        className="rounded-2xl border border-slate-200 bg-white p-6"
-        data-testid="admin-help-center"
-      >
+      <section className={helpHeroClass} data-testid="admin-help-center">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">Help/Guide</h2>
-          <p className="text-xs font-medium text-slate-500">Last updated: {LAST_UPDATED}</p>
+          <h2 className={helpHeroHeadingClass}>Help/Guide</h2>
+          <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+            Last updated: {LAST_UPDATED}
+          </p>
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-slate-700">
+        <p className={`${helpBodyClass} max-w-3xl`}>
           This is the operator training surface for admin. Use it to learn daily workflows, avoid
           common mistakes, and recover quickly when something fails.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {QUICK_ACTIONS.map((action) => (
+        <div className="mt-4 flex flex-wrap gap-2 lg:hidden">
+          {ADMIN_HELP_QUICK_ACTIONS.map((action) => (
             <a
               key={action.id}
               href={`#${action.id}`}
-              className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+              className={helpQuickActionClass}
+              data-testid={`admin-help-quick-action-${action.id}`}
             >
               {action.label}
             </a>
@@ -719,146 +737,123 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="overview" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">What this dashboard is for</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="overview" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>What this dashboard is for</h3>
+        <p className={helpBodyClass}>
           Admin controls content, QR routing, product setup, and operational flags. If you do not
           have access, ask an owner to verify allowlist + role before troubleshooting UI behavior.
         </p>
       </section>
 
-      <section id="learning-path" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">
-          Operator learning path (first day)
-        </h3>
+      <section id="learning-path" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Operator learning path (first day)</h3>
         <div className="mt-3 space-y-3">
           {LEARNING_PATH.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="tabs" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">
-          Dashboard tabs and when to use them
-        </h3>
+      <section id="tabs" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Dashboard tabs and when to use them</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {DASHBOARD_TABS.map((tab) => (
-            <article
-              key={tab.name}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{tab.name}</p>
-              <p className="mt-1 text-sm text-slate-700">
-                <span className="font-semibold text-slate-900">Primary job:</span> {tab.primaryJob}
+            <article key={tab.name} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{tab.name}</p>
+              <p className={helpItemBodyClass}>
+                <span className={helpStrongClass}>Primary job:</span> {tab.primaryJob}
               </p>
-              <p className="mt-1 text-sm text-slate-700">
-                <span className="font-semibold text-slate-900">Common risk:</span> {tab.commonRisk}
+              <p className={helpItemBodyClass}>
+                <span className={helpStrongClass}>Common risk:</span> {tab.commonRisk}
               </p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="content-page" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">How the Content page works</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="content-page" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How the Content page works</h3>
+        <p className={helpBodyClass}>
           Work top-down: snapshot to workspace/list to row actions to create form.
         </p>
         <div className="mt-3 space-y-3">
           {CONTENT_PAGE_FLOW.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="qr-links" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">How QR Links work</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="qr-links" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How QR Links work</h3>
+        <p className={helpBodyClass}>
           QR Links is your stable redirect registry. Keep slugs stable, destinations verified, and
           status intentional.
         </p>
         <div className="mt-3 space-y-3">
           {QR_WORKFLOW.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="email-templates" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">How Email Templates work</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="email-templates" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How Email Templates work</h3>
+        <p className={helpBodyClass}>
           Email Templates is lifecycle-safe message governance for operational copy that should not
           require code edits for every wording update.
         </p>
         <div className="mt-3 space-y-3">
           {EMAIL_TEMPLATE_WORKFLOW.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="messages" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">How Messages work</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="messages" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How Messages work</h3>
+        <p className={helpBodyClass}>
           Messages is the source-of-truth safety net for stored public intake requests and
           notification diagnostics. The normal email inbox remains the v1 reply workspace.
         </p>
         <div className="mt-3 space-y-3">
           {MESSAGE_WORKFLOW.map((item) => (
-            <article
-              key={item.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.detail}</p>
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="buttons" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Buttons and what they do</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="buttons" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Buttons and what they do</h3>
+        <p className={helpBodyClass}>
           These meanings must stay aligned with real admin labels. Update this section whenever a
           label, action, or workflow changes.
         </p>
         <div className="mt-3 space-y-3">
           {BUTTON_GUIDE.map((group) => (
-            <article
-              key={group.section}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{group.section}</p>
+            <article key={group.section} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{group.section}</p>
               <ul className="mt-2 space-y-2">
                 {group.actions.map((action) => (
-                  <li key={action.label} className="text-sm text-slate-700">
-                    <span className="font-semibold text-slate-900">{action.label}:</span>{" "}
-                    {action.meaning}
+                  <li
+                    key={action.label}
+                    className="text-sm leading-6 text-[color:var(--fs-color-muted)]"
+                  >
+                    <span className={helpStrongClass}>{action.label}:</span> {action.meaning}
                   </li>
                 ))}
               </ul>
@@ -867,12 +862,12 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="edit-scope" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">What can be edited right now</h3>
+      <section id="edit-scope" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>What can be edited right now</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <article className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+          <article className={cx(helpCalloutClass, "border-emerald-200 bg-emerald-50/70")}>
             <p className="text-sm font-semibold text-emerald-900">Available now</p>
-            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-emerald-900">
+            <ul className={`${helpListClass} text-emerald-900`}>
               <li>Create/edit/publish/archive content rows.</li>
               <li>Move/reorder module and lesson structure using safe workflows.</li>
               <li>Create/edit/activate/disable/delete QR registry rows.</li>
@@ -886,9 +881,9 @@ export default function AdminHelpCenter() {
               <li>Run revision restore and QR rollback operations.</li>
             </ul>
           </article>
-          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">Guardrails</p>
-            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
+            <ul className={`${helpListClass} text-amber-900`}>
               <li>Use draft/review before publish for non-trivial changes.</li>
               <li>Prefer disable over delete when operational risk is uncertain.</li>
               <li>
@@ -901,17 +896,15 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="quality-matrix" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">
-          10/10 Help/Training quality coverage matrix
-        </h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="quality-matrix" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>10/10 Help/Training quality coverage matrix</h3>
+        <p className={helpBodyClass}>
           This matrix defines what must be documented for high-quality operator guidance.
         </p>
-        <div className="mt-3 overflow-x-auto">
+        <div className="mt-3 overflow-x-auto rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80">
           <table className="min-w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-700">
+              <tr className="border-b border-[color:var(--fs-border-soft)] text-left text-[color:var(--fs-color-muted)]">
                 <th className="px-2 py-2 font-semibold">Category</th>
                 <th className="px-2 py-2 font-semibold">Documentation contract</th>
                 <th className="px-2 py-2 font-semibold">Where covered</th>
@@ -921,9 +914,11 @@ export default function AdminHelpCenter() {
               {QUALITY_MATRIX.map((row) => (
                 <tr
                   key={row.category}
-                  className="border-b border-slate-100 align-top text-slate-700"
+                  className="border-b border-[color:var(--fs-border-soft)] align-top text-[color:var(--fs-color-muted)] last:border-b-0"
                 >
-                  <td className="px-2 py-2 font-medium text-slate-900">{row.category}</td>
+                  <td className="px-2 py-2 font-medium text-[color:var(--fs-color-ink-strong)]">
+                    {row.category}
+                  </td>
                   <td className="px-2 py-2">{row.contract}</td>
                   <td className="px-2 py-2">{row.where}</td>
                 </tr>
@@ -933,54 +928,44 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="controls" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">
-          Documentation controls (required)
-        </h3>
-        <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
+      <section id="controls" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Documentation controls (required)</h3>
+        <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-6 text-[color:var(--fs-color-muted)]">
           {DOC_CONTROLS.map((control) => (
             <li key={control}>{control}</li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-slate-700">
+        <p className="mt-3 text-sm leading-6 text-[color:var(--fs-color-muted)]">
           Runbook references:{" "}
           {RUNBOOK_LINKS.map((path, index) => (
             <span key={path}>
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
-                {path}
-              </code>
+              <code className={helpCodeClass}>{path}</code>
               {index < RUNBOOK_LINKS.length - 1 ? ", " : ""}
             </span>
           ))}
         </p>
       </section>
 
-      <section id="services" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Connected services</h3>
+      <section id="services" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Connected services</h3>
         <div className="mt-3 space-y-3">
           {CONNECTED_SERVICES.map((service) => (
-            <article
-              key={service.name}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{service.name}</p>
-              <p className="mt-1 text-sm text-slate-700">What it does: {service.purpose}</p>
-              <p className="mt-1 text-sm text-slate-700">Watch out for: {service.caution}</p>
+            <article key={service.name} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{service.name}</p>
+              <p className={helpItemBodyClass}>What it does: {service.purpose}</p>
+              <p className={helpItemBodyClass}>Watch out for: {service.caution}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="playbooks" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Daily playbooks</h3>
+      <section id="playbooks" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Daily playbooks</h3>
         <div className="mt-3 space-y-3">
           {DAILY_PLAYBOOKS.map((playbook) => (
-            <article
-              key={playbook.title}
-              className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
-            >
-              <p className="text-sm font-semibold text-slate-900">{playbook.title}</p>
-              <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-slate-700">
+            <article key={playbook.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{playbook.title}</p>
+              <ol className="mt-2 list-inside list-decimal space-y-1 text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 {playbook.steps.map((step) => (
                   <li key={step}>{step}</li>
                 ))}
@@ -990,29 +975,29 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="troubleshoot" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Troubleshoot fast</h3>
+      <section id="troubleshoot" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Troubleshoot fast</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">Admin setup warning appears</p>
             <p className="mt-1 text-sm text-amber-800">
               Apply latest migrations, refresh admin, then retest affected workflow.
             </p>
           </article>
-          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+          <article className={cx(helpCalloutClass, "border-rose-200 bg-rose-50")}>
             <p className="text-sm font-semibold text-rose-900">QR scan does not land correctly</p>
             <p className="mt-1 text-sm text-rose-800">
               Open stable link directly (`/go/v/&lt;slug&gt;`), disable or fix destination, then
               retest.
             </p>
           </article>
-          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+          <article className={cx(helpCalloutClass, "border-rose-200 bg-rose-50")}>
             <p className="text-sm font-semibold text-rose-900">Create or publish action fails</p>
             <p className="mt-1 text-sm text-rose-800">
               Read API error text, verify role/allowlist, and confirm required CI checks are green.
             </p>
           </article>
-          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">
               Message exists but notification failed
             </p>
@@ -1022,7 +1007,7 @@ export default function AdminHelpCenter() {
               response is needed, reply from the normal email inbox and mark the row replied.
             </p>
           </article>
-          <article className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">
               Clipboard paste is blocked, chat image is not enough, or image upload fails
             </p>
@@ -1034,9 +1019,9 @@ export default function AdminHelpCenter() {
               still unclear.
             </p>
           </article>
-          <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-sm font-semibold text-slate-900">Need escalation</p>
-            <p className="mt-1 text-sm text-slate-700">
+          <article className={helpItemClass}>
+            <p className={helpItemTitleClass}>Need escalation</p>
+            <p className={helpItemBodyClass}>
               Capture exact route, item id/slug, error text, and latest deployment/check status
               before escalating.
             </p>
@@ -1044,9 +1029,9 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
-      <section id="change-log" className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-slate-900">Change governance and freshness</h3>
-        <p className="mt-2 text-sm text-slate-700">
+      <section id="change-log" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Change governance and freshness</h3>
+        <p className={helpBodyClass}>
           Help/Guide is part of release quality. If workflow labels, behavior, or recovery steps
           change, update this page in the same PR and keep help e2e assertions aligned.
         </p>

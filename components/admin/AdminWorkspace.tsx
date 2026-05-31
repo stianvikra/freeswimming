@@ -7,7 +7,7 @@ import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
 import AdminEmailTemplatesManager from "@/components/admin/AdminEmailTemplatesManager";
-import AdminHelpCenter from "@/components/admin/AdminHelpCenter";
+import AdminHelpCenter, { ADMIN_HELP_QUICK_ACTIONS } from "@/components/admin/AdminHelpCenter";
 import AdminMessagesManager from "@/components/admin/AdminMessagesManager";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
@@ -69,9 +69,13 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
 ];
 
 const adminTabButtonBaseClass =
-  "fs-library-card p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+  "fs-library-card w-full p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const adminTabActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
 const adminTabInactiveClass = "hover:border-[color:var(--fs-border-brand)] hover:bg-white";
+const adminHelpSubnavClass =
+  "hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 p-3 lg:block";
+const adminHelpSubnavLinkClass =
+  "block rounded-[var(--fs-radius-control)] px-3 py-2 text-xs font-semibold text-[color:var(--fs-color-muted)] transition-colors hover:bg-white hover:text-[color:var(--fs-color-brand-700)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700";
 const adminShellActionClass =
   "fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const adminCardHeadingClass = "text-base font-semibold text-[color:var(--fs-color-ink-strong)]";
@@ -113,32 +117,57 @@ export default function AdminWorkspace({ role }: Props) {
         className="mt-6 grid gap-3 sm:grid-cols-2 lg:sticky lg:top-28 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
         data-testid="admin-tab-grid"
       >
+        {activeTab === "help" ? (
+          <nav
+            aria-label="Help/Guide sections"
+            className={adminHelpSubnavClass}
+            data-testid="admin-help-subnav"
+          >
+            <p className="px-3 text-[11px] font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase">
+              On this page
+            </p>
+            <div className="mt-2 space-y-1">
+              {ADMIN_HELP_QUICK_ACTIONS.map((action) => (
+                <a
+                  key={action.id}
+                  href={`#${action.id}`}
+                  className={adminHelpSubnavLinkClass}
+                  data-testid={`admin-help-subnav-${action.id}`}
+                >
+                  {action.label}
+                </a>
+              ))}
+            </div>
+          </nav>
+        ) : null}
+
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => selectTab(tab.id)}
-              data-testid={`admin-tab-${tab.id}`}
-              className={cx(
-                adminTabButtonBaseClass,
-                isActive ? adminTabActiveClass : adminTabInactiveClass
-              )}
-              aria-pressed={isActive}
-            >
-              <p
+            <div key={tab.id}>
+              <button
+                type="button"
+                onClick={() => selectTab(tab.id)}
+                data-testid={`admin-tab-${tab.id}`}
                 className={cx(
-                  "text-sm font-semibold",
-                  isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-900"
+                  adminTabButtonBaseClass,
+                  isActive ? adminTabActiveClass : adminTabInactiveClass
                 )}
+                aria-pressed={isActive}
               >
-                {tab.label}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-[color:var(--fs-color-muted)]">
-                {tab.subtitle}
-              </p>
-            </button>
+                <p
+                  className={cx(
+                    "text-sm font-semibold",
+                    isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-900"
+                  )}
+                >
+                  {tab.label}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+                  {tab.subtitle}
+                </p>
+              </button>
+            </div>
           );
         })}
       </nav>
