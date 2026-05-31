@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera, Maximize2, RefreshCcw, Save, Upload, X } from "lucide-react";
 import Modal from "@/components/Modal";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import { getAdminScreenshotCaptureDriver } from "@/lib/admin/screenshot-capture-client";
 import {
   buildAdminScreenshotSelectionFromDrag,
@@ -32,6 +34,29 @@ type HiddenCaptureTarget = {
   visibility: string;
   pointerEvents: string;
 };
+
+const actionFocusClass =
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass = cx(
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors hover:bg-white",
+  actionFocusClass
+);
+const secondaryActionClass = cx(
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white",
+  actionFocusClass
+);
+const primaryActionClass = cx(
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors",
+  actionFocusClass
+);
+const mutedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const metadataClass = "text-xs text-[color:var(--fs-color-muted)]";
 
 function hideAdminScreenshotCaptureTargets(): () => void {
   if (typeof document === "undefined") {
@@ -232,23 +257,22 @@ export default function AdminNoteScreenshotCaptureButton({
         onClick={() => {
           void beginCapture();
         }}
-        className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className={compactSecondaryActionClass}
       >
+        <Camera className="h-3.5 w-3.5" aria-hidden="true" />
         {buttonLabel}
       </button>
 
       <Modal open={open} onClose={closeDialog} ariaLabel={dialogTitle}>
         <div
-          className="flex h-full min-h-0 flex-col"
+          className="flex h-full min-h-0 flex-col bg-white/95 text-[color:var(--fs-color-ink)]"
           data-testid="admin-note-screenshot-capture-dialog"
         >
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div className="flex items-start justify-between gap-3 border-b border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.72)] px-5 py-4">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
-                Screenshot capture
-              </p>
-              <h2 className="mt-1 text-lg font-semibold text-slate-900">{dialogTitle}</h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className={eyebrowClass}>Screenshot capture</p>
+              <h2 className={cx("mt-1", headingClass)}>{dialogTitle}</h2>
+              <p className={cx("mt-1", mutedTextClass)}>
                 Use browser capture, then drag over the preview if you want a tighter crop before
                 save.
               </p>
@@ -257,17 +281,20 @@ export default function AdminNoteScreenshotCaptureButton({
               type="button"
               onClick={closeDialog}
               disabled={phase === "saving"}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className={secondaryActionClass}
             >
+              <X className="h-4 w-4" aria-hidden="true" />
               Close
             </button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             {phase === "requesting_permission" ? (
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-4 text-sm text-blue-900">
-                <p className="font-semibold">Choose what to capture</p>
-                <p className="mt-2">
+              <div className={mutedPanelClass} data-testid="admin-note-screenshot-permission-panel">
+                <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  Choose what to capture
+                </p>
+                <p className={cx("mt-2", mutedTextClass)}>
                   Select the relevant tab or window in the browser share dialog. Nothing is saved
                   until you confirm the preview here.
                 </p>
@@ -295,16 +322,14 @@ export default function AdminNoteScreenshotCaptureButton({
                         onClick={() => {
                           void beginCapture();
                         }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+                        className={primaryActionClass}
                       >
+                        <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                         Retry capture
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={closeDialog}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                    >
+                    <button type="button" onClick={closeDialog} className={secondaryActionClass}>
+                      <Upload className="h-4 w-4" aria-hidden="true" />
                       Use image upload instead
                     </button>
                   </>
@@ -317,11 +342,11 @@ export default function AdminNoteScreenshotCaptureButton({
 
             {(phase === "preview" || phase === "saving") && frame && previewUrl && selection ? (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-                  <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                <div className={mutedPanelClass} data-testid="admin-note-screenshot-preview-panel">
+                  <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                     Preview
                   </p>
-                  <p className="mt-1 text-sm text-slate-700">
+                  <p className={cx("mt-1", mutedTextClass)}>
                     Drag on the preview to choose a smaller region, or keep the full capture.
                   </p>
                 </div>
@@ -339,7 +364,7 @@ export default function AdminNoteScreenshotCaptureButton({
 
                 <div
                   ref={previewRef}
-                  className="relative w-full touch-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-950/5"
+                  className="relative w-full touch-none overflow-hidden rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-[rgba(15,23,42,0.04)]"
                   style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
@@ -357,24 +382,25 @@ export default function AdminNoteScreenshotCaptureButton({
                   />
                   <div className="pointer-events-none absolute inset-0 bg-slate-950/10" />
                   <div
-                    className="pointer-events-none absolute border-2 border-blue-500 bg-blue-500/15 shadow-[0_0_0_9999px_rgba(15,23,42,0.22)]"
+                    className="pointer-events-none absolute border-2 border-[color:var(--fs-color-brand-600)] bg-[rgba(59,130,246,0.16)] shadow-[0_0_0_9999px_rgba(15,23,42,0.22)]"
                     style={selectionToPercentStyle({ selection, frame })}
                   />
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+                <div className={cx(nestedPanelClass, metadataClass)}>
                   Selected region: {Math.round(selection.width)} × {Math.round(selection.height)} px
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--fs-border-soft)] pt-4">
                   <button
                     type="button"
                     disabled={phase === "saving"}
                     onClick={() =>
                       setSelection(buildDefaultAdminScreenshotSelection(frame.width, frame.height))
                     }
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={secondaryActionClass}
                   >
+                    <Maximize2 className="h-4 w-4" aria-hidden="true" />
                     Use full capture
                   </button>
                   <div className="flex flex-wrap items-center gap-2">
@@ -382,8 +408,9 @@ export default function AdminNoteScreenshotCaptureButton({
                       type="button"
                       onClick={closeDialog}
                       disabled={phase === "saving"}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={secondaryActionClass}
                     >
+                      <X className="h-4 w-4" aria-hidden="true" />
                       Cancel
                     </button>
                     <button
@@ -392,8 +419,9 @@ export default function AdminNoteScreenshotCaptureButton({
                         void handleSaveScreenshot();
                       }}
                       disabled={phase === "saving"}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className={primaryActionClass}
                     >
+                      <Save className="h-4 w-4" aria-hidden="true" />
                       {phase === "saving" ? "Saving…" : "Save screenshot"}
                     </button>
                   </div>

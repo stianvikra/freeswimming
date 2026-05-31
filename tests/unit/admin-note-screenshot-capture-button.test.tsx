@@ -39,10 +39,25 @@ describe("AdminNoteScreenshotCaptureButton", () => {
 
     render(<AdminNoteScreenshotCaptureButton onCaptureReady={onCaptureReady} />);
 
-    fireEvent.click(screen.getByTestId("admin-note-screenshot-capture-trigger"));
+    const trigger = screen.getByTestId("admin-note-screenshot-capture-trigger");
+    expect(trigger).toHaveClass("fs-cta-secondary");
+    fireEvent.click(trigger);
 
     await screen.findByTestId("admin-note-screenshot-capture-dialog");
     await screen.findByTestId("admin-note-screenshot-preview-image");
+    expect(screen.getByTestId("admin-note-screenshot-preview-panel")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-[color:var(--fs-border-soft)]"
+    );
+    expect(screen.getByTestId("admin-note-screenshot-preview-surface")).toHaveClass(
+      "rounded-[var(--fs-radius-card)]",
+      "border-[color:var(--fs-border-soft)]"
+    );
+    expect(screen.getByRole("button", { name: "Use full capture" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Save screenshot" })).toHaveClass("fs-cta-primary");
 
     fireEvent.click(screen.getByRole("button", { name: "Save screenshot" }));
 
@@ -110,7 +125,10 @@ describe("AdminNoteScreenshotCaptureButton", () => {
     expect(recoveryStatus).toHaveAttribute("aria-live", "polite");
     expect(recoveryStatus).toHaveTextContent("Capture did not start");
     expect(recoveryStatus).toHaveClass("border-amber-200", "bg-amber-50", "text-amber-800");
-    expect(screen.getByRole("button", { name: "Retry capture" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry capture" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Use image upload instead" })).toHaveClass(
+      "fs-cta-secondary"
+    );
   });
 
   it("shows unsupported capture feedback with the admin state primitive", async () => {
@@ -130,7 +148,9 @@ describe("AdminNoteScreenshotCaptureButton", () => {
     expect(recoveryStatus).toHaveTextContent("Capture is not available here");
     expect(recoveryStatus).toHaveTextContent(/does not support in-app screenshot capture/i);
     expect(screen.queryByRole("button", { name: "Retry capture" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Use image upload instead" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use image upload instead" })).toHaveClass(
+      "fs-cta-secondary"
+    );
   });
 
   it("keeps the preview open when save fails", async () => {
