@@ -5,14 +5,20 @@ import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
   getGuideTrackerSessionCardClass,
-  guideTrackerCompletedActionClass,
+  guideTrackerCompletionToastClass,
+  guideTrackerCompletionUndoActionClass,
+  guideTrackerCompletionToastViewportClass,
   guideTrackerEmptyClass,
+  guideTrackerFullscreenOverlayClass,
   guideTrackerHeroShellClass,
   guideTrackerMetricClass,
   guideTrackerMutedPanelClass,
+  guideTrackerOverlayActionBarClass,
+  guideTrackerOverlayCompletedActionClass,
+  guideTrackerOverlayCompletionToastViewportClass,
+  guideTrackerOverlayPrimaryActionClass,
+  guideTrackerOverlaySecondaryActionClass,
   guideTrackerPanelClass,
-  guideTrackerPrimaryActionClass,
-  guideTrackerSecondaryActionClass,
   guideTrackerSmallSecondaryActionClass,
   guideTrackerTextareaClass,
 } from "@/components/guides/guideTrackerShellStyles";
@@ -904,7 +910,12 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       )}
 
       {focusedSession ? (
-        <div className="fixed inset-0 z-[80] bg-slate-950/92">
+        <div
+          className={guideTrackerFullscreenOverlayClass}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Session full screen"
+        >
           <button
             type="button"
             onClick={closeSessionFullscreen}
@@ -973,12 +984,12 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               />
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/55 p-2 backdrop-blur">
+            <div className={`mt-3 ${guideTrackerOverlayActionBarClass}`}>
               <button
                 type="button"
                 onClick={openPreviousSessionFullscreen}
                 disabled={focusedSessionIndex <= 0}
-                className={`${guideTrackerSecondaryActionClass} min-w-[108px] border-white/35 bg-white/10 text-white hover:bg-white/15`}
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[108px]`}
               >
                 Previous
               </button>
@@ -988,7 +999,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                 disabled={
                   focusedSessionIndex < 0 || focusedSessionIndex >= sortedSessions.length - 1
                 }
-                className={`${guideTrackerPrimaryActionClass} min-w-[108px]`}
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[108px]`}
               >
                 Next
               </button>
@@ -997,8 +1008,8 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
                 onClick={() => toggleSessionCompleted(focusedSession)}
                 className={`min-w-[128px] ${
                   focusedSessionProgress?.completed
-                    ? guideTrackerCompletedActionClass
-                    : guideTrackerPrimaryActionClass
+                    ? guideTrackerOverlayCompletedActionClass
+                    : guideTrackerOverlayPrimaryActionClass
                 }`}
               >
                 {focusedSessionProgress?.completed ? "Completed" : "Mark complete"}
@@ -1006,7 +1017,7 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
               <button
                 type="button"
                 onClick={closeSessionFullscreen}
-                className={`${guideTrackerSecondaryActionClass} min-w-[96px] border-white/35 bg-white/10 text-white hover:bg-white/15`}
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[96px]`}
               >
                 Close
               </button>
@@ -1016,13 +1027,19 @@ export default function Guide0To1000Tracker({ guideSlug, sessions }: Props) {
       ) : null}
 
       {completionUndoState ? (
-        <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
-          <div className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]">
+        <div
+          className={
+            focusedSession
+              ? guideTrackerOverlayCompletionToastViewportClass
+              : guideTrackerCompletionToastViewportClass
+          }
+        >
+          <div className={guideTrackerCompletionToastClass}>
             <p className="text-sm font-medium text-emerald-900">Session marked complete.</p>
             <button
               type="button"
               onClick={undoLatestCompletion}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+              className={guideTrackerCompletionUndoActionClass}
             >
               Undo
             </button>

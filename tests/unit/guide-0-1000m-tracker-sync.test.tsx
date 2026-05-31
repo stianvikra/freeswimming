@@ -1,8 +1,12 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import Guide0To1000Tracker from "@/components/guides/Guide0To1000Tracker";
 import type { Guide0To1000Session } from "@/lib/guides/guide-0-1000m";
+
+vi.mock("@/components/admin/AdminContextNotesPanel", () => ({
+  default: () => <div data-testid="admin-context-notes-panel" />,
+}));
 
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_0_1000m_progress_v1";
 
@@ -38,6 +42,7 @@ describe("Guide0To1000Tracker sync", () => {
   });
 
   it("hydrates completion from server progress rows", async () => {
+    const user = userEvent.setup();
     setNavigatorOnline(true);
 
     const fetchMock = vi.fn().mockResolvedValue({
@@ -84,6 +89,37 @@ describe("Guide0To1000Tracker sync", () => {
     });
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
     expect(screen.getByText("Completed sessions (1)")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Open next session full screen" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Session full screen" });
+    expect(dialog).toHaveClass("bg-slate-900/72");
+    const previousButton = within(dialog).getByRole("button", { name: "Previous" });
+    expect(previousButton.parentElement).toHaveClass("grid-cols-2", "sm:flex");
+    expect(previousButton).toHaveClass("fs-cta-secondary");
+    expect(within(dialog).getByRole("button", { name: "Next" })).toHaveClass("fs-cta-secondary");
+    const completeButton = within(dialog).getByRole("button", { name: "Mark complete" });
+    expect(completeButton).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
+
+    await user.click(completeButton);
+
+    expect(within(dialog).getByRole("button", { name: "Completed" })).toHaveClass(
+      "bg-emerald-100",
+      "transition-none",
+      "text-emerald-950"
+    );
+    expect(screen.getByText("Session marked complete.").parentElement).toHaveClass(
+      "fs-library-card",
+      "bg-emerald-50/95"
+    );
+    expect(screen.getByText("Session marked complete.").parentElement?.parentElement).toHaveClass(
+      "bottom-40",
+      "sm:bottom-24"
+    );
+    expect(screen.getByRole("button", { name: "Undo" })).toHaveClass(
+      "fs-cta-secondary",
+      "border-emerald-300"
+    );
   });
 
   it("shows an offline status without calling the progress API", async () => {

@@ -6,10 +6,20 @@ import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import GuideSyncStatus from "@/components/guides/GuideSyncStatus";
 import {
   guideTrackerCompletedActionClass,
+  guideTrackerCompletionToastClass,
+  guideTrackerCompletionUndoActionClass,
+  guideTrackerCompletionToastViewportClass,
   guideTrackerEmptyClass,
+  guideTrackerFullscreenOverlayClass,
   guideTrackerHeroShellClass,
   guideTrackerMetricClass,
   guideTrackerMutedPanelClass,
+  guideTrackerOverlayActionBarClass,
+  guideTrackerOverlayCompletedActionClass,
+  guideTrackerOverlayCompletionToastViewportClass,
+  guideTrackerOverlayPrimaryActionClass,
+  guideTrackerOverlaySecondaryActionClass,
+  guideTrackerOverlayVisualFrameClass,
   guideTrackerPanelClass,
   guideTrackerPrimaryActionClass,
   guideTrackerSecondaryActionClass,
@@ -1065,7 +1075,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               type="button"
               onClick={goNext}
               disabled={!canGoNext}
-              className={`${guideTrackerPrimaryActionClass} min-w-[120px]`}
+              className={`${guideTrackerSecondaryActionClass} min-w-[120px]`}
             >
               Next
             </button>
@@ -1074,7 +1084,7 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
       ) : null}
 
       {visualDrill ? (
-        <div className="fixed inset-0 z-[80] bg-slate-950/92" role="dialog" aria-modal="true">
+        <div className={guideTrackerFullscreenOverlayClass} role="dialog" aria-modal="true">
           <button
             type="button"
             onClick={closeVisualView}
@@ -1195,7 +1205,10 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                 );
               }}
             >
-              <div className="flex h-full w-full max-w-[1280px] items-center justify-center overflow-hidden rounded-2xl">
+              <div
+                className={guideTrackerOverlayVisualFrameClass}
+                data-testid="guide-poolside-visual-frame"
+              >
                 <Image
                   src={visualDrill.visualAssetPath}
                   alt={visualDrill.visualAlt}
@@ -1214,12 +1227,12 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               </div>
             </div>
 
-            <div className="mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/55 p-2 backdrop-blur sm:mx-5">
+            <div className={`mx-3 mb-3 sm:mx-5 ${guideTrackerOverlayActionBarClass}`}>
               <button
                 type="button"
                 onClick={openVisualPrevious}
                 disabled={!canGoVisualPrevious}
-                className="inline-flex min-h-[44px] min-w-[104px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[104px]`}
               >
                 Previous
               </button>
@@ -1227,17 +1240,17 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
                 type="button"
                 onClick={openVisualNext}
                 disabled={!canGoVisualNext}
-                className="inline-flex min-h-[44px] min-w-[104px] items-center justify-center rounded-xl border border-white/35 bg-white px-4 text-sm font-semibold text-slate-900 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[104px]`}
               >
                 Next
               </button>
               <button
                 type="button"
                 onClick={() => toggleDrillCompleted(visualDrill.id)}
-                className={`inline-flex min-h-[44px] min-w-[126px] items-center justify-center rounded-xl px-4 text-sm font-semibold transition ${
+                className={`min-w-[126px] ${
                   progressByDrillId[visualDrill.id]?.completed
-                    ? "border border-emerald-300 bg-emerald-100 text-emerald-900 hover:bg-emerald-200"
-                    : "bg-blue-600 text-white hover:bg-blue-500"
+                    ? guideTrackerOverlayCompletedActionClass
+                    : guideTrackerOverlayPrimaryActionClass
                 }`}
               >
                 {progressByDrillId[visualDrill.id]?.completed ? "Completed" : "Mark complete"}
@@ -1245,11 +1258,11 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
               <button
                 type="button"
                 onClick={closeVisualView}
-                className="inline-flex min-h-[44px] min-w-[96px] items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                className={`${guideTrackerOverlaySecondaryActionClass} min-w-[96px]`}
               >
                 Close
               </button>
-              <p className="ml-auto text-xs text-slate-200">
+              <p className="col-span-2 text-center text-xs text-slate-600 sm:ml-auto sm:text-left">
                 Pinch or double tap to zoom. Swipe to move between visuals.
               </p>
             </div>
@@ -1258,13 +1271,19 @@ export default function PoolsideGuideTracker({ guideSlug, drills }: Props) {
       ) : null}
 
       {completionUndoState ? (
-        <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
-          <div className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]">
+        <div
+          className={
+            visualDrill
+              ? guideTrackerOverlayCompletionToastViewportClass
+              : guideTrackerCompletionToastViewportClass
+          }
+        >
+          <div className={guideTrackerCompletionToastClass}>
             <p className="text-sm font-medium text-emerald-900">Drill marked complete.</p>
             <button
               type="button"
               onClick={undoLatestCompletion}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+              className={guideTrackerCompletionUndoActionClass}
             >
               Undo
             </button>

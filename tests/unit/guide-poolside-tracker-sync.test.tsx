@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PoolsideGuideTracker from "@/components/guides/PoolsideGuideTracker";
@@ -6,6 +6,10 @@ import type { PoolsideDrill } from "@/lib/guides/guide-poolside";
 
 vi.mock("next/image", () => ({
   default: () => null,
+}));
+
+vi.mock("@/components/admin/AdminContextNotesPanel", () => ({
+  default: () => <div data-testid="admin-context-notes-panel" />,
 }));
 
 const GUIDE_PROGRESS_STORAGE_KEY = "fs_guide_poolside_progress_v1";
@@ -50,6 +54,7 @@ describe("PoolsideGuideTracker sync", () => {
   });
 
   it("hydrates completion from server progress rows", async () => {
+    const user = userEvent.setup();
     setNavigatorOnline(true);
 
     const fetchMock = vi.fn().mockResolvedValue({
@@ -95,6 +100,41 @@ describe("PoolsideGuideTracker sync", () => {
     });
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
     expect(screen.getByRole("button", { name: "Completed" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toHaveClass("fs-cta-secondary");
+
+    await user.click(screen.getByRole("button", { name: "Open next drill" }));
+    await user.click(screen.getByRole("button", { name: "Visual view" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("bg-slate-900/72");
+    const previousButton = within(dialog).getByRole("button", { name: "Previous" });
+    expect(previousButton.parentElement).toHaveClass("grid-cols-2", "sm:flex");
+    expect(previousButton).toHaveClass("fs-cta-secondary");
+    expect(within(dialog).getByRole("button", { name: "Next" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("guide-poolside-visual-frame")).toHaveClass("bg-white");
+    const completeButton = within(dialog).getByRole("button", { name: "Mark complete" });
+    expect(completeButton).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
+    expect(within(dialog).getByRole("button", { name: "Close" })).toHaveClass("fs-cta-secondary");
+
+    await user.click(completeButton);
+
+    expect(within(dialog).getByRole("button", { name: "Completed" })).toHaveClass(
+      "bg-emerald-100",
+      "transition-none",
+      "text-emerald-950"
+    );
+    expect(screen.getByText("Drill marked complete.").parentElement).toHaveClass(
+      "fs-library-card",
+      "bg-emerald-50/95"
+    );
+    expect(screen.getByText("Drill marked complete.").parentElement?.parentElement).toHaveClass(
+      "bottom-40",
+      "sm:bottom-24"
+    );
+    expect(screen.getByRole("button", { name: "Undo" })).toHaveClass(
+      "fs-cta-secondary",
+      "border-emerald-300"
+    );
   });
 
   it("shows an offline status without calling the progress API", async () => {
