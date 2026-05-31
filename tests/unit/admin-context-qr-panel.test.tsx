@@ -84,6 +84,55 @@ describe("AdminContextQrPanel", () => {
     );
   });
 
+  it("uses AW-006 token cards and actions for contextual QR links", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(qrLinksResponse({ items: [contextQrLink] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextQrPanel
+        contentItemId="123e4567-e89b-42d3-a456-426614174000"
+        contentLabel="First breaths"
+        slugHint="breathing-and-floating--first-breaths"
+        destinationPath="/course?lesson=breathing-and-floating--first-breaths"
+        placementKey="course.lesson.share"
+      />
+    );
+
+    await screen.findByText("breathing-and-floating--first-breaths");
+
+    const panel = screen.getByTestId("admin-context-qr-panel");
+    expect(panel).toHaveClass("fs-library-card", "fs-library-card-muted");
+    expect(screen.getByRole("link", { name: "Open full QR registry" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+
+    const item = screen.getByTestId("admin-context-qr-item");
+    expect(item).toHaveClass("fs-library-card");
+    expect(within(item).getByRole("button", { name: "Copy stable link" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(item).getByRole("link", { name: "Open redirect" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(item).getByRole("link", { name: "Open destination" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(item).getByRole("button", { name: "Edit QR" })).toHaveClass("fs-cta-secondary");
+    expect(within(item).getByRole("button", { name: "Set active" }).className).toContain(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(item).getByRole("button", { name: "Delete" })).toHaveClass("text-rose-700");
+
+    fireEvent.click(within(item).getByRole("button", { name: "Edit QR" }));
+
+    expect(within(item).getByRole("button", { name: "Save QR changes" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(item).getByRole("button", { name: "Cancel" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Create QR link" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Reset defaults" })).toHaveClass("fs-cta-secondary");
+  });
+
   it("announces contextual QR loading politely", () => {
     const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
     vi.stubGlobal("fetch", fetchMock);
