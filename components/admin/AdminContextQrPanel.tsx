@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
+import { cx } from "@/components/ui/cx";
 import { buildAdminQrPrefillHref } from "@/lib/qr-links/admin-prefill";
 import { type QrLinkStatus, type QrRedirectLinkRow } from "@/lib/qr-links/admin";
 
@@ -81,16 +82,35 @@ const STATUS_OPTIONS: Array<{ value: QrLinkStatus; label: string }> = [
 ];
 
 const STATUS_CHIP_CLASS_BY_VALUE: Record<QrLinkStatus, string> = {
-  draft: "border-slate-300 bg-slate-100 text-slate-700",
-  active: "border-emerald-300 bg-emerald-100 text-emerald-800",
+  draft: "border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)]",
+  active:
+    "border-emerald-300 bg-[color:var(--fs-color-emerald-100)] text-[color:var(--fs-color-emerald-700)]",
   disabled: "border-amber-300 bg-amber-100 text-amber-800",
-  archived: "border-slate-300 bg-slate-200 text-slate-700",
+  archived:
+    "border-[color:var(--fs-border-soft)] bg-[rgba(226,232,240,0.55)] text-[color:var(--fs-color-muted)]",
 };
 
 const STATUS_NOTICE_BY_VALUE: Partial<Record<QrLinkStatus, string>> = {
   active: "QR link activated.",
   disabled: "QR link disabled.",
 };
+
+const panelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const rowCardClass = "fs-library-card p-3 sm:p-4";
+const metadataLabelClass =
+  "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
+const mutedTextClass = "text-xs leading-5 text-[color:var(--fs-color-muted)]";
+const fieldLabelClass = "space-y-1 text-xs font-medium text-[color:var(--fs-color-ink)]";
+const fieldClass =
+  "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const compactPrimaryActionClass =
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactQuietActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-3 text-sm font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const dangerActionClass =
+  "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 function normalizeTextInput(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -436,19 +456,13 @@ export default function AdminContextQrPanel({
   }
 
   return (
-    <section
-      className={["rounded-lg border border-slate-200 bg-slate-50 p-3", className].join(" ")}
-      data-testid="admin-context-qr-panel"
-    >
+    <section className={cx(panelClass, className)} data-testid="admin-context-qr-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="text-xs font-semibold tracking-wide text-slate-600 uppercase">{title}</h4>
-          <p className="mt-1 text-xs text-slate-500">{description}</p>
+          <h4 className={metadataLabelClass}>{title}</h4>
+          <p className={cx("mt-1", mutedTextClass)}>{description}</p>
         </div>
-        <a
-          href={registryHref}
-          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-        >
+        <a href={registryHref} className={compactSecondaryActionClass}>
           Open full QR registry
         </a>
       </div>
@@ -487,7 +501,7 @@ export default function AdminContextQrPanel({
             <button
               type="button"
               onClick={() => void loadItems()}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+              className={compactSecondaryActionClass}
             >
               Retry
             </button>
@@ -504,7 +518,7 @@ export default function AdminContextQrPanel({
               tone="empty"
               title="No QR links attached yet"
               density="spacious"
-              className="mt-3 border-blue-200 bg-blue-50/60 text-blue-800"
+              className="mt-3"
               testId="admin-context-qr-empty-state"
             >
               Create the first stable `/go/v/` link from this editor.
@@ -516,15 +530,13 @@ export default function AdminContextQrPanel({
                 const isBusy = savingId === item.id || deletingId === item.id;
 
                 return (
-                  <li
-                    key={item.id}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-3"
-                    data-testid="admin-context-qr-item"
-                  >
+                  <li key={item.id} className={rowCardClass} data-testid="admin-context-qr-item">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{item.slug}</p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                          {item.slug}
+                        </p>
+                        <p className={cx("mt-1 break-all", mutedTextClass)}>
                           Stable link: {stableLinkForSlug(item.slug)}
                         </p>
                       </div>
@@ -540,7 +552,7 @@ export default function AdminContextQrPanel({
 
                     {isEditing && editState ? (
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <label className={fieldLabelClass}>
                           <span>Slug</span>
                           <input
                             type="text"
@@ -550,11 +562,11 @@ export default function AdminContextQrPanel({
                                 previous ? { ...previous, slug: event.target.value } : previous
                               )
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700">
+                        <label className={fieldLabelClass}>
                           <span>Status</span>
                           <select
                             value={editState.status}
@@ -568,7 +580,7 @@ export default function AdminContextQrPanel({
                                   : previous
                               )
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           >
                             {STATUS_OPTIONS.map((option) => (
                               <option key={option.value} value={option.value}>
@@ -578,7 +590,7 @@ export default function AdminContextQrPanel({
                           </select>
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                           <span>Destination URL (https)</span>
                           <input
                             type="url"
@@ -593,11 +605,11 @@ export default function AdminContextQrPanel({
                                   : previous
                               )
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
-                        <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
                           <span>Placement key</span>
                           <input
                             type="text"
@@ -612,7 +624,7 @@ export default function AdminContextQrPanel({
                                   : previous
                               )
                             }
-                            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                            className={fieldClass}
                           />
                         </label>
 
@@ -621,7 +633,7 @@ export default function AdminContextQrPanel({
                             type="button"
                             onClick={() => void saveEdit(item.id)}
                             disabled={isBusy}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactPrimaryActionClass}
                           >
                             {savingId === item.id ? "Saving…" : "Save QR changes"}
                           </button>
@@ -629,7 +641,7 @@ export default function AdminContextQrPanel({
                             type="button"
                             onClick={cancelEdit}
                             disabled={isBusy}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
                             Cancel
                           </button>
@@ -637,7 +649,7 @@ export default function AdminContextQrPanel({
                       </div>
                     ) : (
                       <>
-                        <div className="mt-2 space-y-1 text-xs text-slate-600">
+                        <div className={cx("mt-2 space-y-1", mutedTextClass)}>
                           <p>Destination: {item.destination_url}</p>
                           <p>Placement: {item.placement_key || "Not set"}</p>
                           <p>Updated: {formatTimestamp(item.updated_at)}</p>
@@ -647,7 +659,7 @@ export default function AdminContextQrPanel({
                           <button
                             type="button"
                             onClick={() => void copyStableLink(item)}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className={compactPrimaryActionClass}
                           >
                             {copiedLinkId === item.id ? "Copied" : "Copy stable link"}
                           </button>
@@ -655,7 +667,7 @@ export default function AdminContextQrPanel({
                             href={stableLinkForSlug(item.slug)}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className={compactSecondaryActionClass}
                           >
                             Open redirect
                           </a>
@@ -663,7 +675,7 @@ export default function AdminContextQrPanel({
                             href={item.destination_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className={compactSecondaryActionClass}
                           >
                             Open destination
                           </a>
@@ -671,7 +683,7 @@ export default function AdminContextQrPanel({
                             type="button"
                             onClick={() => startEdit(item)}
                             disabled={isBusy}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
                             Edit QR
                           </button>
@@ -679,7 +691,7 @@ export default function AdminContextQrPanel({
                             type="button"
                             onClick={() => void toggleStatus(item)}
                             disabled={isBusy}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactQuietActionClass}
                           >
                             {savingId === item.id
                               ? "Saving…"
@@ -691,7 +703,7 @@ export default function AdminContextQrPanel({
                             type="button"
                             onClick={() => void deleteItem(item)}
                             disabled={isBusy}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={dangerActionClass}
                           >
                             {deletingId === item.id ? "Deleting…" : "Delete"}
                           </button>
@@ -709,7 +721,7 @@ export default function AdminContextQrPanel({
             onSubmit={handleCreate}
             data-testid="admin-context-qr-create-form"
           >
-            <label className="space-y-1 text-xs font-medium text-slate-700">
+            <label className={fieldLabelClass}>
               <span>Slug</span>
               <input
                 type="text"
@@ -720,12 +732,12 @@ export default function AdminContextQrPanel({
                     slug: event.target.value,
                   }))
                 }
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
                 placeholder="lesson-share"
               />
             </label>
 
-            <label className="space-y-1 text-xs font-medium text-slate-700">
+            <label className={fieldLabelClass}>
               <span>Status</span>
               <select
                 value={formState.status}
@@ -735,7 +747,7 @@ export default function AdminContextQrPanel({
                     status: event.target.value as QrLinkStatus,
                   }))
                 }
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
               >
                 {STATUS_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -745,7 +757,7 @@ export default function AdminContextQrPanel({
               </select>
             </label>
 
-            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
               <span>Destination URL (https)</span>
               <input
                 type="url"
@@ -756,16 +768,16 @@ export default function AdminContextQrPanel({
                     destinationUrl: event.target.value,
                   }))
                 }
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
                 placeholder="https://freeswimming.org/course?lesson=intro-course--welcome-course-structure"
               />
-              <p className="text-[11px] font-normal text-slate-500">
+              <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                 {destinationHelpText ??
                   "Best default is the internal Freeswimming route. Use external video or other allowlisted HTTPS URLs only as an advanced override."}
               </p>
             </label>
 
-            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
               <span>Placement key</span>
               <input
                 type="text"
@@ -776,17 +788,13 @@ export default function AdminContextQrPanel({
                     placementKey: event.target.value,
                   }))
                 }
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                className={fieldClass}
                 placeholder="course.lesson.share"
               />
             </label>
 
             <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
+              <button type="submit" disabled={submitting} className={compactPrimaryActionClass}>
                 {submitting ? "Creating…" : "Create QR link"}
               </button>
               <button
@@ -802,7 +810,7 @@ export default function AdminContextQrPanel({
                   )
                 }
                 disabled={submitting}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className={compactSecondaryActionClass}
               >
                 Reset defaults
               </button>
