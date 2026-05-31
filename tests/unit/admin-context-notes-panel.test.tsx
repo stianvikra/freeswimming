@@ -44,12 +44,13 @@ function errorJson(payload: unknown, init?: Partial<Response>): Response {
 
 function buildNotesPayload(overrides?: {
   items?: AdminNoteItem[];
+  role?: "editor" | "viewer";
   schemaReady?: boolean;
   warning?: string | null;
 }) {
   return {
     ok: true,
-    role: "editor",
+    role: overrides?.role ?? "editor",
     items: overrides?.items ?? [],
     schemaReady: overrides?.schemaReady ?? true,
     warning: overrides?.warning ?? null,
@@ -253,6 +254,113 @@ describe("AdminContextNotesPanel", () => {
 
     const actionError = await screen.findByText("Could not save note.");
     expect(actionError.closest('[role="status"]')).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("uses AW-006 token cards and actions for contextual notes", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        return okJson(buildNotesPayload({ items: [buildItem()] }));
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-token-actions"
+        contextLabel="Context token actions"
+        collapsedByDefault={false}
+      />
+    );
+
+    const panel = await screen.findByTestId("admin-context-notes-panel");
+    expect(panel).toHaveClass("fs-library-card", "fs-library-card-accent");
+    expect(await screen.findByTestId("admin-note-quick-capture-trigger")).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(screen.getByTestId("admin-context-notes-toggle")).toHaveClass("fs-cta-secondary");
+
+    const createPanel = await screen.findByTestId("admin-context-note-create-panel");
+    expect(createPanel).toHaveClass("fs-library-card", "fs-library-card-muted");
+
+    const createForm = await screen.findByTestId("admin-context-note-create-form");
+    expect(within(createForm).getByRole("button", { name: "Save note" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(
+      within(createForm).getByRole("button", { name: "Paste image from clipboard" })
+    ).toHaveClass("fs-cta-secondary");
+    expect(within(createForm).getByText("Upload images").closest("label")).toHaveClass(
+      "fs-cta-secondary"
+    );
+
+    const item = await screen.findByTestId("admin-context-note-item");
+    expect(item).toHaveClass("fs-library-card");
+    expect(within(item).getByRole("button", { name: "Edit" })).toHaveClass("fs-cta-secondary");
+    expect(within(item).getByRole("button", { name: "Delete" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "text-rose-700"
+    );
+
+    fireEvent.click(within(item).getByRole("button", { name: "Edit" }));
+
+    const editForm = await screen.findByTestId("admin-context-note-edit-form");
+    expect(within(editForm).getByRole("button", { name: "Save changes" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(editForm).getByRole("button", { name: "Cancel" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(editForm).getByText("Upload images").closest("label")).toHaveClass(
+      "fs-cta-secondary"
+    );
+  });
+
+  it("keeps viewer contextual notes read-only after token/action parity", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.startsWith("/api/admin/notes?")) {
+        return okJson(buildNotesPayload({ items: [buildItem()], role: "viewer" }));
+      }
+
+      if (url === "/api/admin/categories/notes") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminContextNotesPanel
+        contextType="page"
+        contextRef="/context-viewer"
+        contextLabel="Context viewer"
+        collapsedByDefault={false}
+      />
+    );
+
+    const item = await screen.findByTestId("admin-context-note-item");
+
+    expect(screen.queryByTestId("admin-context-note-create-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("admin-note-quick-capture-trigger")).not.toBeInTheDocument();
+    expect(within(item).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(within(item).queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    expect(within(item).getByText("Read only")).toBeVisible();
+    expect(screen.getByText(/Viewer role can review contextual notes here/)).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
   });
 
   it("lets operators add and remove images on an already-saved contextual note", async () => {
