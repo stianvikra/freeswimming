@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ChevronLeft, ChevronRight, Plus, RefreshCcw, Save, Trash2, Upload, X } from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
+import { cx } from "@/components/ui/cx";
 import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
 import {
@@ -76,6 +78,46 @@ type Props = {
   onSaved?: (item: AdminNoteItem) => void;
 };
 
+const actionFocusClass =
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactSecondaryActionClass = cx(
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors hover:bg-white",
+  actionFocusClass
+);
+const secondaryActionClass = cx(
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white",
+  actionFocusClass
+);
+const primaryActionClass = cx(
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors",
+  actionFocusClass
+);
+const compactPrimaryActionClass = cx(
+  "fs-cta-primary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors",
+  actionFocusClass
+);
+const iconActionClass = cx(
+  "fs-cta-secondary inline-flex h-9 w-9 items-center justify-center p-0 text-[color:var(--fs-color-ink)] transition-colors hover:bg-white",
+  actionFocusClass
+);
+const destructiveActionClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const accentPanelClass = "fs-library-card fs-library-card-accent p-4";
+const mutedPanelClass = "fs-library-card fs-library-card-muted p-4";
+const nestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
+const mutedNestedPanelClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const labelClass = "space-y-1 text-xs font-medium text-[color:var(--fs-color-ink)]";
+const fieldClass =
+  "h-10 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
+const textareaClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const checkboxClass =
+  "h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500";
+const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const metadataTextClass = "text-xs text-[color:var(--fs-color-muted)]";
+
 function todayDateInputValue(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -113,27 +155,6 @@ function buildCurrentContext(params: Props): QuickCaptureLockedContext {
   };
 }
 
-function ChevronIcon({
-  direction,
-  className = "",
-}: {
-  direction: "left" | "right";
-  className?: string;
-}) {
-  const path = direction === "left" ? "M11.5 5.5L7 10l4.5 4.5" : "M8.5 5.5L13 10l-4.5 4.5";
-  return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={className}>
-      <path
-        d={path}
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export default function AdminNoteQuickCaptureLauncher(props: Props) {
   const {
     adminRole,
@@ -143,7 +164,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
     className = "",
     triggerLabel = "Quick note",
     triggerTestId = "admin-note-quick-capture-trigger",
-    triggerClassName = "inline-flex h-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100",
+    triggerClassName = compactSecondaryActionClass,
     description = "",
     onSaved,
   } = props;
@@ -618,10 +639,10 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                   onClick={openLauncher}
                   data-testid="admin-note-quick-capture-resume"
                   aria-label="Resume quick note"
-                  className="flex h-36 w-14 translate-x-[calc(100%-1.75rem)] flex-col items-center justify-start rounded-l-[22px] border border-r-0 border-blue-200 bg-white/96 px-2 py-3 text-blue-800 shadow-[0_18px_42px_rgba(15,23,42,0.16)] backdrop-blur transition-transform duration-200 ease-out hover:translate-x-[calc(100%-2.1rem)] hover:bg-blue-50"
+                  className="flex h-36 w-14 translate-x-[calc(100%-1.75rem)] flex-col items-center justify-start rounded-l-[var(--fs-radius-panel)] border border-r-0 border-[color:var(--fs-border-brand)] bg-white/94 px-2 py-3 text-[color:var(--fs-color-brand-700)] shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur transition-transform duration-200 ease-out hover:translate-x-[calc(100%-2.1rem)] hover:bg-white"
                 >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700">
-                    <ChevronIcon direction="left" className="h-4 w-4" />
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-[rgba(239,246,255,0.96)]">
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <span className="mt-3 text-center text-[11px] leading-tight font-semibold">
                     Quick
@@ -636,16 +657,18 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
               <aside
                 aria-label="Quick note capture panel"
                 data-testid="admin-note-quick-capture-dialog"
-                className="pointer-events-auto mt-16 mr-3 mb-3 flex h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
+                className="pointer-events-auto mt-16 mr-3 mb-3 flex h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] min-w-0 flex-col overflow-hidden rounded-l-[var(--fs-radius-panel)] border border-[color:var(--fs-border-soft)] bg-white/95 text-[color:var(--fs-color-ink)] shadow-[0_24px_64px_rgba(15,23,42,0.16)]"
               >
-                <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                <div className="flex items-start justify-between gap-3 border-b border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.72)] px-5 py-4">
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+                    <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
                       Quick capture
                     </p>
-                    <h2 className="mt-1 text-lg font-semibold text-slate-900">Admin note</h2>
+                    <h2 className="mt-1 text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      Admin note
+                    </h2>
                     {description.trim().length > 0 ? (
-                      <p className="mt-1 text-sm text-slate-600">{description}</p>
+                      <p className={cx("mt-1", mutedTextClass)}>{description}</p>
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
@@ -653,15 +676,16 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                       type="button"
                       onClick={minimizeLauncher}
                       aria-label="Collapse quick note"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+                      className={iconActionClass}
                     >
-                      <ChevronIcon direction="right" className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={closeLauncher}
-                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                      className={compactSecondaryActionClass}
                     >
+                      <X className="h-4 w-4" aria-hidden="true" />
                       {headerCloseActionLabel}
                     </button>
                   </div>
@@ -696,11 +720,11 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     </AdminManagerState>
                   ) : null}
 
-                  <div className="rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3">
-                    <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+                  <div className={accentPanelClass}>
+                    <p className="text-xs font-semibold text-[color:var(--fs-color-brand-700)]">
                       Locked context
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-900">
+                    <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                       {draftContext.contextLabel}
                     </p>
                   </div>
@@ -720,10 +744,10 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     </AdminManagerState>
                   ) : null}
 
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+                  <div className={cx("mt-4", mutedPanelClass)}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                        <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                           Images
                         </p>
                       </div>
@@ -737,8 +761,10 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                             setError(message);
                           }}
                           disabled={submitting}
+                          className={compactSecondaryActionClass}
                         />
-                        <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50">
+                        <label className={cx(compactSecondaryActionClass, "cursor-pointer")}>
+                          <Upload className="h-4 w-4" aria-hidden="true" />
                           <span>Upload images</span>
                           <input
                             aria-label="Upload images"
@@ -758,13 +784,13 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
 
                     {pendingImages.length > 0 ? (
                       <div className="mt-3 space-y-3">
-                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <div className={nestedPanelClass}>
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold text-slate-900">
+                              <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                 {formatImageCountLabel(pendingImages.length)} ready to attach
                               </p>
-                              <p className="mt-1 text-[11px] text-slate-600">
+                              <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                                 {createdCaptureRecovery
                                   ? `The saved note "${createdCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
                                   : "The next note save will upload these images as admin-only attachments."}
@@ -777,8 +803,9 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                                   void retryPendingImageUpload();
                                 }}
                                 disabled={submitting}
-                                className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                                className={compactPrimaryActionClass}
                               >
+                                <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                                 {submitting ? "Retrying…" : "Retry upload"}
                               </button>
                             ) : null}
@@ -789,7 +816,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           {pendingImages.map((image, index) => (
                             <div
                               key={image.id}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-3"
+                              className={nestedPanelClass}
                               data-testid="admin-note-quick-capture-image-preview"
                             >
                               <div className="flex items-center gap-3">
@@ -800,16 +827,16 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                                   className="h-14 w-14 rounded-lg object-cover"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold text-slate-900">
+                                  <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                     {buildAdminNoteAttachmentOrdinalLabel(
                                       index,
                                       pendingImages.length
                                     )}
                                   </p>
-                                  <p className="mt-1 truncate text-[11px] text-slate-600">
+                                  <p className="mt-1 truncate text-[11px] text-[color:var(--fs-color-ink)]">
                                     {image.file.name}
                                   </p>
-                                  <p className="mt-1 text-[11px] text-slate-500">
+                                  <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
                                     {buildAdminNoteAttachmentEvidenceSummary({
                                       mimeType: image.file.type,
                                       sizeBytes: image.file.size,
@@ -824,8 +851,9 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                                   removePendingImage(image.id);
                                 }}
                                 disabled={submitting}
-                                className="mt-3 inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={cx("mt-3", destructiveActionClass)}
                               >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
                                 Remove image {index + 1}
                               </button>
                             </div>
@@ -835,12 +863,12 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     ) : null}
 
                     {createdCaptureRecovery && notesHref ? (
-                      <p className="mt-3 text-xs text-slate-600">
+                      <p className={cx("mt-3", metadataTextClass)}>
                         Note saved already.{" "}
                         <Link
                           href={notesHref}
                           onClick={handleOpenInNotesClick}
-                          className="font-semibold text-blue-700 underline underline-offset-2"
+                          className="font-semibold text-[color:var(--fs-color-brand-700)] underline decoration-[color:var(--fs-border-brand)] underline-offset-2 transition hover:text-blue-800 focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                         >
                           Open in Notes
                         </Link>{" "}
@@ -867,7 +895,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                     onPasteCapture={handleFormPaste}
                     data-testid="admin-note-quick-capture-form"
                   >
-                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                    <label className={labelClass}>
                       <span>Title</span>
                       <input
                         ref={titleInputRef}
@@ -878,12 +906,12 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           setFormState((prev) => ({ ...prev, title: event.target.value }))
                         }
                         placeholder="What should be changed?"
-                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                        className={fieldClass}
                       />
                     </label>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={labelClass}>
                         <span>Category</span>
                         <input
                           type="text"
@@ -892,11 +920,11 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           onChange={(event) =>
                             setFormState((prev) => ({ ...prev, category: event.target.value }))
                           }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={fieldClass}
                         />
                       </label>
 
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={labelClass}>
                         <span>Date</span>
                         <input
                           type="date"
@@ -904,13 +932,13 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           onChange={(event) =>
                             setFormState((prev) => ({ ...prev, noteDate: event.target.value }))
                           }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={fieldClass}
                         />
                       </label>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="space-y-1 text-xs font-medium text-slate-700">
+                      <label className={labelClass}>
                         <span>Priority</span>
                         <select
                           value={formState.priority}
@@ -920,7 +948,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                               priority: event.target.value as AdminNotePriority,
                             }))
                           }
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                          className={fieldClass}
                         >
                           {ADMIN_NOTE_PRIORITY_VALUES.map((priority) => (
                             <option key={priority} value={priority}>
@@ -930,20 +958,25 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                         </select>
                       </label>
 
-                      <label className="inline-flex items-center gap-2 self-end rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-medium text-slate-700">
+                      <label
+                        className={cx(
+                          mutedNestedPanelClass,
+                          "inline-flex min-h-10 items-center gap-2 self-end text-xs font-medium text-[color:var(--fs-color-ink)]"
+                        )}
+                      >
                         <input
                           type="checkbox"
                           checked={formState.isDone}
                           onChange={(event) =>
                             setFormState((prev) => ({ ...prev, isDone: event.target.checked }))
                           }
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                          className={checkboxClass}
                         />
                         Mark as done
                       </label>
                     </div>
 
-                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                    <label className={labelClass}>
                       <span>Text</span>
                       <textarea
                         rows={5}
@@ -952,12 +985,12 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           setFormState((prev) => ({ ...prev, body: event.target.value }))
                         }
                         placeholder="Write the details you need to remember."
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                        className={textareaClass}
                       />
                     </label>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-                      <div className="text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--fs-border-soft)] pt-4">
+                      <div className={metadataTextClass}>
                         {createdCaptureRecovery ? (
                           <p>
                             The note is already saved. Retry the image upload or close and reopen it
@@ -970,16 +1003,18 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           type="button"
                           onClick={closeLauncher}
                           disabled={submitting}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={secondaryActionClass}
                         >
+                          <X className="h-4 w-4" aria-hidden="true" />
                           {closeActionLabel}
                         </button>
                         {!createdCaptureRecovery ? (
                           <button
                             type="submit"
                             disabled={submitting || Boolean(createdCaptureRecovery)}
-                            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                            className={primaryActionClass}
                           >
+                            <Save className="h-4 w-4" aria-hidden="true" />
                             {submitting ? "Saving…" : "Save"}
                           </button>
                         ) : null}
@@ -1008,6 +1043,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
         data-testid={triggerTestId}
         className={triggerClassName}
       >
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
         {triggerLabel}
       </button>
 
