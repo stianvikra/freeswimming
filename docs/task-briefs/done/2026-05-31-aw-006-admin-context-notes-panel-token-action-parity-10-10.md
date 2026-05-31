@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-31-aw-006-admin-context-notes-panel-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-31`
 - `updated`: `2026-05-31`
@@ -39,7 +39,6 @@ Critical target categories for a `10/10` claim:
 - `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Testing and QA automation`
@@ -214,3 +213,33 @@ Required because this slice touches an admin workflow surface and visible action
 - `2026-05-31 | pre-pr-ready | npm run verify:pre-pr first run exposed a session-generator unit-test order flake; the isolated test passed, and the permitted rerun passed full lane at artifacts/test-runs/20260531-081448/verify.log with lint, typecheck, 1298 unit tests, build, performance budgets, and Playwright 102 passed / 492 skipped; performance trend recommendation was hold because worst margin was 13.8% below the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge recommendation`
 - `2026-05-31 | final-screenshot-refresh | pre-commit formatting touched the UI component after the first screenshot capture, so final after/reference screenshot evidence was regenerated at output/aw-006-admin-context-notes-token-parity-2026-05-31-082217 at 2026-05-31 08:40 using the same temporary local route and mocked API responses; temporary product route was removed again, and no product-rendering file changed after this final capture | next: rerun npm run verify:pre-pr on the amended final commit before push`
 - `2026-05-31 | pre-pr-passed | npm run verify:pre-pr passed full lane on the final code commit at artifacts/test-runs/20260531-084153/verify.log with branch-current, lint:briefs, quality gate, lint, typecheck, 1298 unit tests, build, performance budgets, and Playwright 102 passed / 492 skipped; performance trend recommendation remained hold because worst margin was 13.8% below the 15.0% tighten threshold | next: amend this evidence-only brief checkpoint, push, open PR, monitor CI, and run npm run verify:pre-merge before merge recommendation`
+
+## Completion Record
+
+- `completed`: `2026-05-31`
+- `merged_pr`: `#914`
+- `squash_commit`: `34c7afd`
+- `result`: Closed AW-006 Admin Context Notes Panel Token/Action Parity by aligning the contextual admin notes shell, forms, rows, attachments, and visible actions with the current admin token/action hierarchy while preserving note data, context filters, upload/retry/delete behavior, authz, labels, Help/Guide, and support behavior.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/admin-context-notes-panel.test.tsx` passed; `npm run lint:briefs:all` passed; `npm run lint` passed with one pre-existing output warning; `npm run typecheck` passed; `git diff --check` passed; targeted route/label/support sweep completed; screenshot handoff approved; `npm run verify:pre-pr` passed full lane at `artifacts/test-runs/20260531-084854/verify.log`; PR #914 CI passed; `npm run verify:pre-merge` passed at `artifacts/verify-pre-merge/20260531-070304.json`.
+- `screenshot_artifacts`: `output/aw-006-admin-context-notes-token-parity-2026-05-31-082217` captured `2026-05-31 08:40`, owner approved, and no product-rendering files changed after final capture.
+- `10/10 claim`: yes - all critical target categories reached `5/5` within this slice.
+
+Critical target categories confirmed `5/5`: UX flow clarity, Visual design quality, Business logic correctness and data integrity, Admin editor ergonomics, Reliability and failure handling, Security and authz, Testing and QA automation, Stack-fit and dependency discipline.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | AW-006 queue/inventory diff, active brief, PR #914 merge, closeout queue update.                                                                | None.        |
+| UX flow clarity                               | `5/5`          | Focused contextual notes tests, screenshot handoff, PR #914 CI, `npm run verify:pre-pr`.                                                        | None.        |
+| Visual design quality                         | `5/5`          | Final after/reference screenshots at `output/aw-006-admin-context-notes-token-parity-2026-05-31-082217`, owner approval, code diff.             | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused unit coverage, unchanged API/data contracts, `npm run verify:pre-pr`, PR #914 CI.                                                       | None.        |
+| Admin editor ergonomics                       | `5/5`          | Screenshot handoff, token/action coverage, preserved create/edit/done/upload/open/delete actions.                                               | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing semantic labels/forms preserved, focused tests, screenshot review, `npm run verify:pre-pr`.                                            | None.        |
+| Data placement and sync boundaries            | `5/5`          | Brief data contract, changed-files review, no API/storage/cache diff.                                                                           | None.        |
+| Reliability and failure handling              | `5/5`          | Focused tests and changed-files review for preserved loading, warning, error, retry, action, upload-recovery, and read-only handling.           | None.        |
+| Security and authz                            | `5/5`          | Viewer/read-only unit coverage, no authz/API diff, PR #914 CI.                                                                                  | None.        |
+| Privacy and compliance                        | `5/5`          | No public exposure, logging, retention, signed URL, storage, or policy-impact diff; PR body policy impact N/A.                                  | None.        |
+| Content governance                            | `5/5`          | Brief lint, AW-006 queue update, design inventory update, completion record.                                                                    | None.        |
+| Admin workflow and editability                | `5/5`          | Route/label/support sweep, focused tests, unchanged workflow labels and Help/Guide impact N/A.                                                  | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `AdminContextNotesPanel`, local admin token/action classes, no new dependencies or broad primitive refactor.                    | None.        |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, lint/typecheck, `npm run verify:pre-pr`, PR #914 CI, `npm run verify:pre-merge`.                                            | None.        |
+| DevOps and rollback readiness                 | `5/5`          | PR #914 clean merge, rollback by reverting `34c7afd`, pre-merge marker `artifacts/verify-pre-merge/20260531-070304.json`, post-merge preflight. | None.        |
