@@ -42,6 +42,20 @@ const REASON_COPY: Record<string, { title: string; message: string }> = {
   },
 };
 
+const cardClass = "fs-library-card fs-library-card-accent w-full p-6 sm:p-8";
+const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
+const headingClass =
+  "mt-2 text-[26px] leading-tight font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]";
+const bodyTextClass = "text-sm leading-7 text-[color:var(--fs-color-muted)]";
+const metadataCardClass =
+  "mt-4 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/78 px-4 py-3 text-xs text-[color:var(--fs-color-muted)]";
+const actionBaseClass =
+  "inline-flex min-h-11 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:px-4";
+const primaryActionClass = `${actionBaseClass} fs-cta-primary hover:brightness-105`;
+const secondaryActionClass = `${actionBaseClass} fs-cta-secondary hover:bg-white`;
+const primaryActionLayoutClass = `${primaryActionClass} col-span-2 w-full sm:w-auto`;
+const secondaryActionLayoutClass = `${secondaryActionClass} w-full sm:w-auto`;
+
 export const metadata: Metadata = {
   title: "QR link unavailable",
   description: "Fallback page when a freeswimming QR redirect cannot be resolved safely.",
@@ -75,37 +89,30 @@ export default async function GoUnavailablePage({ searchParams }: Props) {
 
   return (
     <section className="mx-auto flex min-h-screen w-full max-w-[760px] items-center px-6 py-16">
-      <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_12px_42px_rgba(15,23,42,0.08)]">
-        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-          QR link status
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">{copy.title}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">{copy.message}</p>
+      <div className={cardClass} data-testid="go-unavailable-card">
+        <p className={eyebrowClass}>QR link status</p>
+        <h1 className={headingClass}>{copy.title}</h1>
+        <p className={`mt-3 ${bodyTextClass}`}>{copy.message}</p>
         {slug ? (
-          <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
-            Link slug: <span className="font-semibold text-slate-900">{slug}</span>
+          <p className={metadataCardClass}>
+            Link slug:{" "}
+            <span className="font-semibold text-[color:var(--fs-color-ink-strong)]">{slug}</span>
           </p>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div
+          className="mt-6 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap"
+          data-testid="go-unavailable-actions"
+        >
           {retryPath ? (
-            <Link
-              href={retryPath}
-              className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-            >
+            <Link href={retryPath} className={primaryActionLayoutClass}>
               Retry QR link
             </Link>
           ) : null}
-          <Link
-            href="/course"
-            className="inline-flex items-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
+          <Link href="/course" className={secondaryActionLayoutClass}>
             Open course
           </Link>
-          <Link
-            href="/contact"
-            className="inline-flex items-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
+          <Link href="/contact" className={secondaryActionLayoutClass}>
             Contact support
           </Link>
         </div>
