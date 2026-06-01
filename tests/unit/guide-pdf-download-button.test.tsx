@@ -83,7 +83,9 @@ describe("GuidePdfDownloadButton", () => {
 
     render(<GuidePdfDownloadButton apiPath="/api/guides/0-1000m/pdf" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
+    const idleButton = screen.getByRole("button", { name: "Download PDF" });
+    expect(idleButton).toHaveClass("fs-cta-secondary");
+    fireEvent.click(idleButton);
 
     const pendingStatus = await screen.findByRole("status");
     expect(pendingStatus).toHaveTextContent("Preparing PDF download...");
