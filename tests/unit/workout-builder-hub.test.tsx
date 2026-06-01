@@ -3309,6 +3309,16 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
     expect(screen.getByText("Delete this saved session?")).toBeVisible();
+    const currentActions = screen.getByTestId("workout-builder-current-workout-actions");
+    expect(currentActions).toHaveClass("rounded-[var(--fs-radius-card)]", "border-rose-200");
+    expect(screen.getByTestId("workout-builder-confirm-delete-current-workout")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "bg-rose-600"
+    );
+    expect(within(currentActions).getByRole("button", { name: "Cancel" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-rose-200"
+    );
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-current-workout"));
 
@@ -3342,11 +3352,21 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
-    expect(screen.getByRole("button", { name: "Build pool session" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Build open water session" })).toBeVisible();
+    expect(screen.getByTestId("workout-builder-browse-create-pool")).toHaveClass(
+      "fs-cta-primary",
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByTestId("workout-builder-browse-create-open-water")).toHaveClass(
+      "fs-cta-secondary",
+      "rounded-[var(--fs-radius-control)]"
+    );
     expect(screen.getByRole("link", { name: "AI session generator" })).toHaveAttribute(
       "href",
       "/my-library/generator"
+    );
+    expect(screen.getByRole("link", { name: "AI session generator" })).toHaveClass(
+      "fs-cta-secondary",
+      "rounded-[var(--fs-radius-control)]"
     );
   });
 
@@ -3592,6 +3612,10 @@ describe("WorkoutBuilderHub", () => {
       "href",
       "/my-library/workouts"
     );
+    expect(screen.getByTestId("workout-builder-view-sessions-link")).toHaveClass(
+      "fs-cta-secondary",
+      "rounded-[var(--fs-radius-control)]"
+    );
   });
 
   it("discards the current local draft without deleting any saved session", async () => {
@@ -3624,6 +3648,16 @@ describe("WorkoutBuilderHub", () => {
 
     fireEvent.click(screen.getByTestId("workout-builder-discard-current-draft"));
     expect(screen.getByText("Discard this local draft?")).toBeVisible();
+    const draftActions = screen.getByTestId("workout-builder-current-draft-actions");
+    expect(draftActions).toHaveClass("rounded-[var(--fs-radius-card)]", "border-amber-200");
+    expect(screen.getByTestId("workout-builder-confirm-discard-current-draft")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "bg-amber-500"
+    );
+    expect(within(draftActions).getByRole("button", { name: "Keep editing" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-amber-200"
+    );
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-discard-current-draft"));
 
