@@ -236,3 +236,29 @@ Required as a targeted public/support sweep because this slice changes visible p
 - `2026-06-01 | visual correction | owner approved turning the mobile orphan-action concern into a rule; QR fallback now renders safe retry full-width above equal course/support secondary actions on mobile, while desktop stays compact; design inventory and tests record the rule | next: rerun targeted QA, refresh screenshot handoff, then stop again for owner visual approval`
 - `2026-06-01 | visual correction | owner confirmed compact-card heading rule; QR fallback mobile heading reduced from hero-like scale to panel scale while keeping desktop scale unchanged; tests and design inventory record the rule | next: rerun targeted QA, refresh screenshot handoff, then stop again for owner visual approval`
 - `2026-06-01 | screenshot handoff | refreshed before/after screenshot artifacts in output/playwright/aw-006-public-policy-qr-fallback-token-parity-2026-06-01-073111 after mobile action-group and compact-heading corrections; privacy desktop, cookies mobile, and QR unavailable mobile captures have expected dimensions and no local dev indicator | next: owner visual approval, then npm run verify:pre-pr`
+
+## Completion Record
+
+- `completed`: `2026-06-01`
+- `merged_pr`: `#932`
+- `squash_commit`: `67a203c`
+- `result`: Closed AW-006 Public Policy And QR Fallback Token/Action Parity. Public policy pages and QR fallback recovery now use the same visual hierarchy as the newer AW-006 surfaces, while policy meaning, metadata, QR safety, support links, and runtime behavior stayed unchanged.
+- `validation`: targeted Vitest, ESLint, brief lint, quality gates, typecheck, route/label/support sweep, `git diff --check`, screenshot handoff approved by owner, `npm run verify:pre-pr` full lane PASS, PR #932 CI PASS, and `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                           | Gaps / Notes      |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Product goals and IA                          | `5/5`          | PR #932 diff, focused page tests, screenshot handoff, CI, and pre-merge gate.                                                                      | No remaining gap. |
+| UX flow clarity                               | `5/5`          | Owner-approved mobile action hierarchy screenshots and focused QR fallback tests.                                                                  | No remaining gap. |
+| Visual design quality                         | `5/5`          | Token/class assertions plus before/after screenshot artifacts `output/playwright/aw-006-public-policy-qr-fallback-token-parity-2026-06-01-073111`. | No remaining gap. |
+| Business logic correctness and data integrity | `5/5`          | QR fallback tests, route diff review, and `npm run verify:pre-pr`.                                                                                 | No remaining gap. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role/link assertions, keyboard-reachable links/actions, and CI verification.                                                       | No remaining gap. |
+| Reliability and failure handling              | `5/5`          | Safe retry, unsafe retry suppression, unknown reason fallback, and QR redirect tests stayed green.                                                 | No remaining gap. |
+| Security and authz                            | `5/5`          | Exact-path safe retry validation preserved; route/API/auth behavior unchanged; CI green.                                                           | No remaining gap. |
+| Privacy and compliance                        | `5/5`          | Policy copy, last-updated values, processor/retention meaning, rights links, and cookie/privacy links preserved.                                   | No remaining gap. |
+| Content governance                            | `5/5`          | Brief moved to done, AW-006 queue and design inventory closeout updated, `npm run lint:briefs:all` required in closeout PR.                        | No remaining gap. |
+| SEO and crawlability                          | `5/5`          | Metadata/canonical/noindex behavior preserved and broad gates passed.                                                                              | No remaining gap. |
+| i18n operational readiness                    | `5/5`          | Mobile text-fit and action hierarchy verified in screenshots; no fixed-width copy assumptions added.                                               | No remaining gap. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next pages, `PageTemplate`, `SiteChrome`, `Link`, and `fs-*` tokens; no dependency/config changes.                                 | No remaining gap. |
+| Testing and QA automation                     | `5/5`          | Focused tests, full local pre-PR lane, PR CI, and pre-merge gate passed.                                                                           | No remaining gap. |
+| DevOps and rollback readiness                 | `5/5`          | Normal squash-commit revert is sufficient; no migration, package, env, workflow, or data repair required.                                          | No remaining gap. |
