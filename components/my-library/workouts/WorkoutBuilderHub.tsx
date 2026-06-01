@@ -51,6 +51,31 @@ const workoutBuilderFeedbackToneClasses: Record<WorkoutBuilderFeedbackTone, stri
   empty: "border-slate-200 bg-slate-50/80 text-slate-700",
 };
 
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
+const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const dangerActionClass = cx(
+  actionBaseClass,
+  "border border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-400"
+);
+const dangerPrimaryActionClass = cx(
+  actionBaseClass,
+  "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus-visible:ring-rose-400"
+);
+const warningActionClass = cx(
+  actionBaseClass,
+  "border border-amber-200 bg-white/85 text-amber-900 hover:bg-amber-50 focus-visible:ring-amber-400"
+);
+const warningPrimaryActionClass = cx(
+  actionBaseClass,
+  "bg-amber-500 text-white hover:bg-amber-400 active:bg-amber-600 focus-visible:ring-amber-400"
+);
+const currentDangerPanelClass =
+  "rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-3 sm:p-4";
+const currentWarningPanelClass =
+  "rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50/80 p-3 sm:p-4";
+
 function WorkoutBuilderFeedback({
   tone,
   children,
@@ -474,7 +499,7 @@ export default function WorkoutBuilderHub({
                 testId="workout-builder-browse-create-pool"
                 manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
                 manualPoolCssPaceLabel={manualPoolCssPaceLabel}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                className={primaryActionClass}
               />
             ) : null}
             {workoutLibrary.schemaReady ? (
@@ -482,13 +507,10 @@ export default function WorkoutBuilderHub({
                 label="Build open water session"
                 builderMode="open_water"
                 testId="workout-builder-browse-create-open-water"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className={secondaryActionClass}
               />
             ) : null}
-            <Link
-              href="/my-library/generator"
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
+            <Link href="/my-library/generator" className={secondaryActionClass}>
               AI session generator
             </Link>
           </div>
@@ -510,7 +532,7 @@ export default function WorkoutBuilderHub({
               <Link
                 href="/my-library/workouts"
                 data-testid="workout-builder-view-sessions-link"
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
+                className={secondaryActionClass}
               >
                 <span className="sm:hidden">Sessions</span>
                 <span className="hidden sm:inline">My Swim Sessions</span>
@@ -561,7 +583,7 @@ export default function WorkoutBuilderHub({
         {!browseOnly && savedWorkout && pendingCurrentDelete ? (
           <div
             data-testid="workout-builder-current-workout-actions"
-            className="rounded-2xl border border-rose-200 bg-rose-50/80 p-3 sm:p-4"
+            className={currentDangerPanelClass}
           >
             <p className="text-sm font-medium text-rose-900">Delete this saved session?</p>
             <p className="mt-1 text-sm text-rose-900/90">
@@ -579,7 +601,7 @@ export default function WorkoutBuilderHub({
                 }
                 disabled={deletingWorkoutId === savedWorkout.id}
                 data-testid="workout-builder-confirm-delete-current-workout"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className={dangerPrimaryActionClass}
               >
                 {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete session"}
               </button>
@@ -587,7 +609,7 @@ export default function WorkoutBuilderHub({
                 type="button"
                 onClick={() => setPendingCurrentDelete(false)}
                 disabled={deletingWorkoutId === savedWorkout.id}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className={dangerActionClass}
               >
                 Cancel
               </button>
@@ -598,7 +620,7 @@ export default function WorkoutBuilderHub({
         {!browseOnly && !savedWorkout && activeLocalDraftMode && pendingCurrentDraftDiscard ? (
           <div
             data-testid="workout-builder-current-draft-actions"
-            className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4"
+            className={currentWarningPanelClass}
           >
             <p className="text-sm font-medium text-amber-900">Discard this local draft?</p>
             <p className="mt-1 text-sm text-amber-900/90">
@@ -611,14 +633,14 @@ export default function WorkoutBuilderHub({
                 type="button"
                 onClick={confirmDiscardLocalDraft}
                 data-testid="workout-builder-confirm-discard-current-draft"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 px-4 text-sm font-semibold text-white transition hover:bg-amber-400 active:bg-amber-600"
+                className={warningPrimaryActionClass}
               >
                 Discard draft
               </button>
               <button
                 type="button"
                 onClick={() => setPendingCurrentDraftDiscard(false)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
+                className={warningActionClass}
               >
                 Keep editing
               </button>
@@ -692,7 +714,7 @@ export default function WorkoutBuilderHub({
                     <Link
                       href="/my-library/workouts"
                       data-testid="workout-builder-empty-view-sessions-link"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={secondaryActionClass}
                     >
                       My Swim Sessions
                     </Link>
@@ -703,7 +725,7 @@ export default function WorkoutBuilderHub({
                       testId="workout-builder-empty-create-pool"
                       manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
                       manualPoolCssPaceLabel={manualPoolCssPaceLabel}
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                      className={primaryActionClass}
                     />
                   ) : null}
                   {workoutLibrary.schemaReady ? (
@@ -711,19 +733,13 @@ export default function WorkoutBuilderHub({
                       label="Build open water session"
                       builderMode="open_water"
                       testId="workout-builder-empty-create-open-water"
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={secondaryActionClass}
                     />
                   ) : null}
-                  <Link
-                    href="/my-library/generator"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100"
-                  >
+                  <Link href="/my-library/generator" className={secondaryActionClass}>
                     AI session generator
                   </Link>
-                  <Link
-                    href="/my-library/workouts"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-                  >
+                  <Link href="/my-library/workouts" className={secondaryActionClass}>
                     My Swim Sessions
                   </Link>
                 </>
