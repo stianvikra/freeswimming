@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-01`
-- `base`: `main@fd6ad01`
+- `base`: `main@8bbc436`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#933` are recorded below. Public Policy And QR Fallback Token/Action Parity shipped in PR `#932` with repo-managed closeout PR `#933`; a fresh queue/design/code re-audit selected Home Primary Action Token/Action Parity for the new owner-approved AW-006 implementation slot.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#938` are recorded below. Residual Action Token Parity shipped in PR `#937` with repo-managed closeout PR `#938`; a fresh queue/design/code re-audit selected Dryland Session Editor Token/Action Parity for the new owner-approved AW-006 implementation slot, and the owner explicitly requested execution after brief creation.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, admin message manager/status/source/action contracts, dryland routes/micro-session state contracts, `/my-library/goals`, goals API/storage contracts, `/my-library/habits`, habit API/storage contracts, `/my-library/generator`, generator-intake/session-draft/workout-save contracts, task-brief closeout rules, forward compatibility rules, screenshot handoff rules, phase-plan wording, or verification lanes change before selecting or executing a future AW-006 slice.
 
 ## Goal
@@ -660,3 +660,4 @@ Required only as a documentation-link sweep for this capture.
 - `2026-06-01 | closeout | Home Primary Action Token/Action Parity shipped in PR #935 as squash commit 62d8ce8; this repo-managed closeout moves its brief to done and leaves no AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
 - `2026-06-01 | in-progress | refreshed after Home Primary Action Token/Action Parity #935 and repo-managed closeout #936 on clean main@43bf927; post-merge preflight passed with no pending closeout, and the owner approved Residual Action Token Parity after fresh queue/design/code re-audit | next: complete screenshot-reviewed Dryland Micro Sessions and Guide PDF button action parity before npm run verify:pre-pr`
 - `2026-06-01 | closeout | Residual Action Token Parity shipped in PR #937 as squash commit 3b79df5; this repo-managed closeout moves its brief to done and leaves no AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+- `2026-06-01 | in-progress | refreshed after Residual Action Token Parity #937 and repo-managed closeout #938 on clean main@8bbc436; post-merge preflight passed with no pending closeout, and the owner approved then explicitly requested Dryland Session Editor Token/Action Parity after fresh queue/design/code re-audit | next: complete screenshot-reviewed Dryland Session Editor inner token/action parity before npm run verify:pre-pr`
