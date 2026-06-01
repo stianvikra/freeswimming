@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-01-aw-006-dryland-session-editor-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-01`
 - `updated`: `2026-06-01`
@@ -12,6 +12,8 @@
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-dryland-session-editor-token-parity`
 - `execution_mode`: `owner-approved implementation through screenshot handoff; stop before broad PR gates until screenshot approval`
+- `merged_pr`: `#939`
+- `squash_commit`: `230ae67`
 
 ## Brief Audit Record
 
@@ -40,7 +42,7 @@ Fremoverkompatibilitet: Nye dryland-editorhandlinger skal arve samme tokeniserte
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for a `10/10` claim:
+Critical release categories for a `10/10` claim:
 
 - `Product goals and IA`
 - `UX flow clarity`
@@ -294,3 +296,46 @@ Required because this changes visible UI/layout.
 - `2026-06-01 | screenshot-review | captured final before/after desktop and mobile build/train screenshots in output/aw006-dryland-session-editor-token-parity-2026-06-01-223654 with no console errors or horizontal overflow; temporary deterministic harness, capture script, dev servers, and before-worktree were removed after capture, and no scoped product-rendering files changed after final screenshot capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, CI, and npm run verify:pre-merge`
 - `2026-06-01 | screenshot-approved | owner approved the final screenshot handoff and asked whether the earlier mobile SiteChrome bottom-nav overlay needed product action; answer: no product change in this slice because the overlay came from the temporary capture harness and the final approved artifacts were regenerated without SiteChrome so review covers only the scoped DrylandSessionEditor inner UI | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-01 | pre-pr-green | npm run verify:pre-pr passed the full lane on the final scoped code/test/docs diff, including branch-current against origin/main@8bbc436, lint/typecheck/unit/build/performance/Playwright E2E; only warning was the pre-existing unused variable in output/capture-aw006-dryland-feedback.mjs | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-06-01 | merged | PR #939 merged as squash commit 230ae67 after final local npm run verify:pre-pr passed on commit 6fc2e1c, GitHub checks passed, and npm run verify:pre-merge passed | next: complete repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-01`
+- `merged_pr`: `#939`
+- `squash_commit`: `230ae67`
+- `result`: Closed AW-006 Dryland Session Editor Token/Action Parity. The inner Dryland editor now uses the same token/action direction as the surrounding Dryland and My Library surfaces while preserving dryland data, timers, local drafts, save/reset, micro-session, analytics, Help/Guide, and support behavior.
+- `validation`: focused Vitest PASS; screenshot handoff approved; final `npm run verify:pre-pr` PASS on commit `6fc2e1c` with full lane, 1308 unit tests, build, performance budget, and 102 Playwright tests; PR #939 CI PASS including Vercel, e2e-smoke, site-lock-smoke, CodeQL, size-check, and verify; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260601-211504.json`.
+- `10/10 claim`: yes - all scoped release gates reached `5/5`; no remaining scoped gaps.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | `DrylandSessionEditor` stayed in the existing dryland routes and was aligned with the surrounding Dryland/My Library token hierarchy in PR #939.                         | None         |
+| UX flow clarity                               | `5/5`          | Build/train, save/reset, timer, complete-set, customize, add-exercise, and bottom actions were visually regrouped with approved before/after screenshots.                | None         |
+| Visual design quality                         | `5/5`          | Screenshot artifacts `output/aw006-dryland-session-editor-token-parity-2026-06-01-223654` showed no console errors, no horizontal overflow, and no overflowing controls. | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused tests passed and code diff stayed presentation-only with no dryland API, draft, timer, set-completion, route refresh, or micro-plan data contract changes.       | None         |
+| Accessibility (a11y)                          | `5/5`          | Focused Testing Library assertions preserved action semantics, disabled state, tabs/toggles/disclosures, and the full gate included Playwright accessibility coverage.   | None         |
+| Performance (CWV + payloads)                  | `5/5`          | Final `npm run verify:pre-pr` full lane passed build and performance budget with no new dependency, media asset, API call, or polling loop.                              | None         |
+| Data placement and sync boundaries            | `5/5`          | Existing server-canonical dryland sessions/micro-plans and local-only draft/mode/timer UI boundaries remained unchanged.                                                 | None         |
+| Reliability and failure handling              | `5/5`          | Save-blocked, input-warning, active-source warning, update-current blocked, disabled action, and no-next-set flows remained covered by existing/focused behavior tests.  | None         |
+| Security and authz                            | `5/5`          | Authenticated Dryland routes and protected API boundaries were untouched; PR #939 CI and local full lane passed without security-sensitive route/API changes.            | None         |
+| Content governance                            | `5/5`          | Brief, AW-006 queue, design inventory, screenshot evidence, PR #939, and this completion record close the selected slice without stale active references.                | None         |
+| Analytics and KPI observability               | `5/5`          | No analytics event name, payload, conversion signal, or KPI instrumentation changed; diff review confirmed presentation-only scope.                                      | None         |
+| i18n operational readiness                    | `5/5`          | Responsive action grouping and screenshot text-fit review preserved wrapping room for longer future labels without fixed-width blocking controls.                        | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `DrylandSessionEditor`, existing dryland tests, `fs-library-card`, `fs-cta-*`, Tailwind, and current React/Next boundaries; no new dependency or broad primitive. | None         |
+| Testing and QA automation                     | `5/5`          | `tests/unit/dryland-builder-hub.test.tsx` gained token/action contract assertions; final full pre-PR lane, GitHub CI, and pre-merge gate passed.                         | None         |
+| DevOps and rollback readiness                 | `5/5`          | Normal git revert restores markup/tests/docs; no migration, env, provider, dependency, generated artifact, or feature flag rollback is needed.                           | None         |
