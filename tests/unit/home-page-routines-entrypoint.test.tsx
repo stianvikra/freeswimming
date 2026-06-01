@@ -118,6 +118,11 @@ describe("HomePage routines entrypoint", () => {
     expect(screen.queryByRole("link", { name: /Micro Sessions/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Habits/i })).not.toBeInTheDocument();
     expect(actionHrefs()).toEqual(["/course", "/programs", "/analysis", "/contact"]);
+    expect(screen.getByRole("link", { name: /Free course/i })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("link", { name: /Swim programs/i })).toHaveClass("fs-library-card");
+    expect(screen.getByRole("link", { name: /Video analysis/i })).toHaveClass("fs-library-card");
+    expect(screen.getByRole("link", { name: /Contact/i })).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("home-auth-link")).toHaveClass("fs-cta-secondary");
     expect(resolveAdminRoleFromSupabaseMock).not.toHaveBeenCalled();
     expect(loadDrylandLibrarySnapshotMock).not.toHaveBeenCalled();
     expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
@@ -145,6 +150,9 @@ describe("HomePage routines entrypoint", () => {
       "/my-library/dryland?micro=setup#micro-sessions"
     );
     expect(habitsLink).toHaveAttribute("href", "/my-library/habits?view=active#add-habit");
+    expect(microSessionsLink).toHaveClass("fs-library-card", "fs-library-card-muted");
+    expect(habitsLink).toHaveClass("fs-library-card", "fs-library-card-muted");
+    expect(screen.getByTestId("home-auth-link")).toHaveClass("fs-cta-secondary");
     expect(actionHrefs()).toEqual([
       "/course",
       "/my-library/dryland?micro=setup#micro-sessions",
@@ -158,5 +166,25 @@ describe("HomePage routines entrypoint", () => {
     });
     expect(loadDrylandLibrarySnapshotMock).toHaveBeenCalledWith(supabase, user.id, null);
     expect(loadHabitSnapshotMock).toHaveBeenCalledWith(supabase, user.id);
+  });
+
+  it("keeps the dashboard exit admin-gated while using token actions", async () => {
+    const supabase = {};
+    const user = {
+      id: "admin-1",
+      email: "admin@example.com",
+    };
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValue({
+      supabase,
+      user,
+    });
+    resolveAdminRoleFromSupabaseMock.mockResolvedValue("admin");
+
+    render(await HomePage());
+
+    const dashboardLink = screen.getByTestId("home-admin-link");
+    expect(dashboardLink).toHaveAttribute("href", "/admin");
+    expect(dashboardLink).toHaveClass("fs-cta-secondary");
+    expect(dashboardLink.getAttribute("class")).toContain("fs-color-brand-50");
   });
 });
