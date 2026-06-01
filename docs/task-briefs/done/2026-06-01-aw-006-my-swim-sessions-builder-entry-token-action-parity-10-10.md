@@ -3,15 +3,15 @@
 ## Metadata
 
 - `id`: `2026-06-01-aw-006-my-swim-sessions-builder-entry-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-01`
-- `updated`: `2026-06-01`
+- `updated`: `2026-06-02`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-workout-builder-entry-token-parity`
-- `execution_mode`: `owner-approved implementation through screenshot handoff; stop before broad PR gates until screenshot approval`
+- `execution_mode`: `merged and repo-managed closeout`
 
 ## Brief Audit Record
 
@@ -280,3 +280,46 @@ Required because this changes visible UI/layout.
 - `2026-06-01 | screenshot handoff stop | implemented WorkoutBuilderHub entry/current-action token parity, updated focused tests/docs, ran targeted validation, captured before/after desktop/mobile screenshots in output/aw006-workout-builder-entry-token-parity-2026-06-01-234911, removed temporary capture harness | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-02 | owner screenshot approval | owner approved screenshot handoff and merge on good tests | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, and merge only if gates are green`
 - `2026-06-02 | pre-pr gate passed | npm run verify:pre-pr passed full lane with lint/typecheck/unit/build/perf and e2e summary 102 passed / 492 skipped | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before conditional merge`
+- `2026-06-02 | merged | PR #941 merged as squash commit c6235c8 after green CI and local npm run verify:pre-merge on eecdb97 | next: complete repo-managed docs-only closeout, rerun post-merge preflight, then complete the mandatory chat-handoff assessment before selecting another AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#941`
+- `squash_commit`: `c6235c8`
+- `result`: Closed AW-006 My Swim Sessions Builder Entry Token/Action Parity. The swim-session builder entry actions, no-loaded-session actions, and current workout/draft confirmation panels now use the same My Library token/action hierarchy as the surrounding saved-list and route shell, while workout data, local drafts, save/delete/discard behavior, exports, Poolside preview, analytics, Help/Guide, and support behavior stayed unchanged.
+- `validation`: `PASS` targeted Vitest (`tests/unit/workout-builder-hub.test.tsx`, `64` tests), `PASS` `npm run typecheck`, `PASS` `npm run lint:briefs:all`, `PASS` `npm run lint:quality-gates`, `PASS` `git diff --check`, `PASS` targeted route/label/support sweep, `PASS` screenshot handoff (`output/aw006-workout-builder-entry-token-parity-2026-06-01-234911`, `8` screenshots), `PASS` `npm run verify:pre-pr` (`102` e2e passed / `492` skipped), `PASS` required GitHub checks on PR `#941`, and `PASS` `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#941`, component diff, focused tests, screenshot handoff, queue/design closeout                                                             | None         |
+| UX flow clarity                               | `5/5`          | PR `#941`, screenshot handoff, focused tests for entry/current-action controls                                                                  | None         |
+| Visual design quality                         | `5/5`          | Screenshot handoff: `output/aw006-workout-builder-entry-token-parity-2026-06-01-234911`; no overflow/buttons reported                           | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused behavior tests and code review confirmed no workout API, draft, export, Poolside, save/delete/discard, or route-refresh behavior change | None         |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and screenshot QA preserved accessible names, disabled states, feedback links, and touch-target sizing               | None         |
+| Performance (CWV + payloads)                  | `5/5`          | `npm run verify:pre-pr`, CI `verify`, and dependency diff; no new dependency, asset, API call, polling, or payload change                       | None         |
+| Data placement and sync boundaries            | `5/5`          | Data placement/sync contract unchanged; no localStorage key, server-canonical workout, or transient-state ownership change                      | None         |
+| Reliability and failure handling              | `5/5`          | Focused regression tests and preserved schema/load/action/local-draft/no-loaded/delete/discard feedback behavior                                | None         |
+| Security and authz                            | `5/5`          | Route/API/auth boundaries unchanged; PR body policy-impact scan was N/A for auth/policy changes                                                 | None         |
+| Content governance                            | `5/5`          | This closeout moves the brief to `done` and clears stale active queue/design-inventory references                                               | None         |
+| Analytics and KPI observability               | `5/5`          | Code review confirmed no analytics event name or payload changes                                                                                | None         |
+| i18n operational readiness                    | `5/5`          | Responsive action rows and screenshot text-fit review preserve wrapping room for longer future strings                                          | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `WorkoutBuilderHub`, `CreateManualWorkoutButton`, existing tests, `fs-library-card`, and `fs-cta-*`; no new dependency                   | None         |
+| Testing and QA automation                     | `5/5`          | Focused Vitest, screenshot handoff, `npm run verify:pre-pr`, CI checks, and `npm run verify:pre-merge`                                          | None         |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit `c6235c8`; rollback is normal `git revert c6235c8`; no migration, env, provider, or feature-flag rollback needed                  | None         |
