@@ -11,8 +11,17 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from "react";
-import { Bubbles, CheckCircle2, ListChecks, RefreshCcw, Trash2, Undo2 } from "lucide-react";
+import {
+  Bubbles,
+  CheckCircle2,
+  ChevronDown,
+  ListChecks,
+  RefreshCcw,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
+import { cx } from "@/components/ui/cx";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -98,6 +107,44 @@ const BUBBLE_TONE_CLASSES = [
   "border-red-200 bg-red-50 text-red-950 shadow-red-900/10",
 ] as const;
 const BUBBLE_OFFSETS_PX = [0, 14, 5, 20, 9, 16] as const;
+
+const MICRO_ACTION_FOCUS_CLASS =
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const MICRO_ACTION_DISABLED_CLASS = "disabled:cursor-not-allowed disabled:opacity-60";
+const MICRO_PRIMARY_ACTION_CLASS = cx(
+  "fs-cta-primary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_SECONDARY_ACTION_CLASS = cx(
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_COMPACT_SECONDARY_ACTION_CLASS = cx(
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-1.5 px-3 text-xs font-semibold transition-colors hover:bg-white sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_DANGER_ACTION_CLASS = cx(
+  MICRO_SECONDARY_ACTION_CLASS,
+  "border-rose-200 text-rose-700 hover:bg-rose-50"
+);
+const MICRO_WARNING_ACTION_CLASS = cx(
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-50",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_WARNING_PRIMARY_ACTION_CLASS = cx(
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-amber-300 bg-amber-100 px-4 text-sm font-semibold text-amber-950 transition-colors hover:bg-amber-200",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_COMPLETED_ACTION_CLASS = cx(
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-emerald-300 bg-emerald-100 px-4 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-200",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
 
 function formatDateLabel(value: string) {
   const parsed = new Date(value);
@@ -1047,7 +1094,7 @@ export default function DrylandMicroPlanPanel({
             setSuccess("");
           }}
           disabled={isClearingPlan || isSavingPlan}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className={MICRO_DANGER_ACTION_CLASS}
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
           Clear micro session
@@ -1058,7 +1105,7 @@ export default function DrylandMicroPlanPanel({
     return (
       <div
         data-testid="dryland-micro-clear-confirm"
-        className="rounded-xl border border-amber-200 bg-amber-50 p-3"
+        className="rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50 p-3"
       >
         <p className="text-sm font-semibold text-amber-950">Clear this Micro Session?</p>
         <p className="mt-1 text-sm text-amber-900">Only the active micro session is cleared.</p>
@@ -1068,7 +1115,7 @@ export default function DrylandMicroPlanPanel({
             data-testid="dryland-micro-clear-confirm-action"
             onClick={() => void clearPlan()}
             disabled={isClearingPlan}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 active:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_WARNING_PRIMARY_ACTION_CLASS}
           >
             {isClearingPlan ? "Clearing..." : "Clear micro session"}
           </button>
@@ -1076,7 +1123,7 @@ export default function DrylandMicroPlanPanel({
             type="button"
             onClick={() => setIsClearConfirmOpen(false)}
             disabled={isClearingPlan}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_WARNING_ACTION_CLASS}
           >
             Cancel
           </button>
@@ -1098,7 +1145,7 @@ export default function DrylandMicroPlanPanel({
             setError("");
             setSuccess("");
           }}
-          className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+          className={MICRO_SECONDARY_ACTION_CLASS}
         >
           {isEditing ? "Close edit" : "Edit micro session"}
         </button>
@@ -1108,7 +1155,7 @@ export default function DrylandMicroPlanPanel({
             data-testid="dryland-micro-toggle-plan-status"
             onClick={() => void updatePlanStatus(plan.status === "paused" ? "active" : "paused")}
             disabled={isPlanStatusSaving}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_SECONDARY_ACTION_CLASS}
           >
             {isPlanStatusSaving ? "Saving..." : plan.status === "paused" ? "Resume" : "Pause"}
           </button>
@@ -1129,11 +1176,11 @@ export default function DrylandMicroPlanPanel({
                 key={mode.value}
                 type="button"
                 onClick={() => setReleaseMode(mode.value)}
-                className={`min-h-10 rounded-xl border px-3 text-sm font-semibold transition ${
-                  releaseMode === mode.value
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
+                className={cx(
+                  "inline-flex min-h-10 items-center justify-center px-3 text-sm font-semibold transition-colors",
+                  releaseMode === mode.value ? "fs-cta-primary" : "fs-cta-secondary hover:bg-white",
+                  MICRO_ACTION_FOCUS_CLASS
+                )}
               >
                 {mode.label}
               </button>
@@ -1230,7 +1277,10 @@ export default function DrylandMicroPlanPanel({
                   </label>
                   <Link
                     href={`/my-library/dryland/${session.id}`}
-                    className="col-start-2 inline-flex min-h-9 w-fit items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:col-start-auto"
+                    className={cx(
+                      MICRO_COMPACT_SECONDARY_ACTION_CLASS,
+                      "col-start-2 w-fit sm:col-start-auto"
+                    )}
                   >
                     Edit
                   </Link>
@@ -1270,7 +1320,7 @@ export default function DrylandMicroPlanPanel({
             aria-label={`Complete ${targetLabel}`}
             onClick={() => void updateBlock(unit.block.id, "completed", { visualOrigin })}
             disabled={completeDisabled}
-            className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_SECONDARY_ACTION_CLASS}
           >
             {isPending ? "Saving..." : targetLabel}
           </button>
@@ -1282,7 +1332,7 @@ export default function DrylandMicroPlanPanel({
             aria-label={`Completed ${targetLabel}. Undo completion`}
             onClick={() => void updateBlock(unit.block.id, "queued", { visualOrigin })}
             disabled={isPending || isPaused}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 active:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_COMPLETED_ACTION_CLASS}
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
             {isPending ? "Saving..." : "Completed"}
@@ -1293,7 +1343,7 @@ export default function DrylandMicroPlanPanel({
             data-testid={`dryland-micro-undo-${unit.index}`}
             onClick={() => void updateBlock(unit.block.id, "queued", { visualOrigin })}
             disabled={isPending || isPaused}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className={MICRO_SECONDARY_ACTION_CLASS}
           >
             <Undo2 className="h-4 w-4" aria-hidden="true" />
             {isPending ? "Saving..." : "Undo"}
@@ -1319,7 +1369,10 @@ export default function DrylandMicroPlanPanel({
           aria-label={`Completed ${group.title}. Undo latest completion`}
           onClick={() => void updateBlock(latestUnit.block.id, "queued")}
           disabled={isPending || isPaused}
-          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 active:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
+          className={cx(
+            MICRO_COMPLETED_ACTION_CLASS,
+            "min-h-9 px-3 text-xs sm:min-h-10 sm:px-4 sm:text-sm"
+          )}
         >
           <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
           {isPending ? "Saving..." : "Completed"}
@@ -1334,7 +1387,7 @@ export default function DrylandMicroPlanPanel({
         aria-label={`Skipped ${group.title}. Undo latest skipped unit`}
         onClick={() => void updateBlock(latestUnit.block.id, "queued")}
         disabled={isPending || isPaused}
-        className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm"
+        className={MICRO_COMPACT_SECONDARY_ACTION_CLASS}
       >
         <Undo2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
         {isPending ? "Saving..." : "Undo"}
@@ -1353,7 +1406,7 @@ export default function DrylandMicroPlanPanel({
     ];
 
     return (
-      <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+      <div className="inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white p-1 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
         {modes.map((mode) => {
           const Icon = mode.icon;
           const isActive = executionMode === mode.value;
@@ -1364,11 +1417,13 @@ export default function DrylandMicroPlanPanel({
               data-testid={`dryland-micro-mode-${mode.value}`}
               aria-pressed={isActive}
               onClick={() => switchExecutionMode(mode.value)}
-              className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold transition ${
+              className={cx(
+                "inline-flex min-h-9 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors",
                 isActive
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-transparent text-slate-600 hover:bg-white hover:text-blue-700"
-              }`}
+                  ? "fs-cta-primary"
+                  : "rounded-[var(--fs-radius-control)] text-slate-600 hover:bg-slate-50 hover:text-[color:var(--fs-color-brand-700)]",
+                MICRO_ACTION_FOCUS_CLASS
+              )}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
               {mode.label}
@@ -1564,7 +1619,7 @@ export default function DrylandMicroPlanPanel({
                 data-testid="dryland-micro-resume-collapsed"
                 onClick={() => void updatePlanStatus("active")}
                 disabled={isPlanStatusSaving}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                className={MICRO_PRIMARY_ACTION_CLASS}
               >
                 {isPlanStatusSaving ? "Saving..." : "Resume"}
               </button>
@@ -1575,7 +1630,7 @@ export default function DrylandMicroPlanPanel({
                 data-testid={`dryland-micro-release-now-${nextUpcomingUnit.index}`}
                 onClick={() => void releaseBlockNow(nextUpcomingUnit.block.id)}
                 disabled={pendingBlockId === nextUpcomingUnit.block.id || plan?.status === "paused"}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className={MICRO_SECONDARY_ACTION_CLASS}
               >
                 {pendingBlockId === nextUpcomingUnit.block.id ? "Saving..." : "Move next to today"}
               </button>
@@ -1588,7 +1643,7 @@ export default function DrylandMicroPlanPanel({
                 setError("");
                 setSuccess("");
               }}
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={MICRO_SECONDARY_ACTION_CLASS}
             >
               Edit micro session
             </button>
@@ -1638,7 +1693,7 @@ export default function DrylandMicroPlanPanel({
               type="button"
               onClick={retryRouteRefresh}
               disabled={isRouteRefreshing}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={MICRO_WARNING_ACTION_CLASS}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               {isRouteRefreshing ? "Retrying..." : "Retry"}
@@ -1662,7 +1717,7 @@ export default function DrylandMicroPlanPanel({
               type="button"
               onClick={retryRouteRefresh}
               disabled={isRouteRefreshing}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={MICRO_DANGER_ACTION_CLASS}
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" />
               {isRouteRefreshing ? "Retrying..." : "Retry"}
@@ -1701,7 +1756,7 @@ export default function DrylandMicroPlanPanel({
                       setError("");
                       setSuccess("");
                     }}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                    className={MICRO_PRIMARY_ACTION_CLASS}
                   >
                     Create micro session
                   </button>
@@ -1741,7 +1796,7 @@ export default function DrylandMicroPlanPanel({
                       setError("");
                     }}
                     disabled={isSavingPlan}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={MICRO_SECONDARY_ACTION_CLASS}
                   >
                     Cancel
                   </button>
@@ -1750,7 +1805,7 @@ export default function DrylandMicroPlanPanel({
                     data-testid="dryland-micro-create"
                     onClick={() => void createPlan()}
                     disabled={isSavingPlan || selectedSessionIds.length === 0}
-                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    className={MICRO_PRIMARY_ACTION_CLASS}
                   >
                     {isSavingPlan ? "Creating..." : "Create micro session"}
                   </button>
@@ -1780,9 +1835,16 @@ export default function DrylandMicroPlanPanel({
             </div>
 
             {executionMode === "bubbles" && !shouldCollapsePlan ? (
-              <details className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-                  Manage micro session
+              <details className="group mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <summary
+                  data-testid="dryland-micro-manage-summary"
+                  className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden"
+                >
+                  <span>Manage micro session</span>
+                  <ChevronDown
+                    className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180"
+                    aria-hidden="true"
+                  />
                 </summary>
                 <div className="mt-3 flex flex-wrap gap-2">{renderPlanActionButtons()}</div>
               </details>
@@ -1801,7 +1863,7 @@ export default function DrylandMicroPlanPanel({
                       aria-label={`Undo last completed micro unit: ${latestUndoableCompletedUnit.title}`}
                       onClick={undoLatestCompletedUnit}
                       disabled={pendingBlockId === latestUndoableCompletedUnit.blockId}
-                      className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={cx(MICRO_COMPACT_SECONDARY_ACTION_CLASS, "min-h-8")}
                     >
                       <Undo2 className="h-4 w-4" aria-hidden="true" />
                       {pendingBlockId === latestUndoableCompletedUnit.blockId
@@ -1852,7 +1914,7 @@ export default function DrylandMicroPlanPanel({
                   type="button"
                   onClick={() => setIsEditing(false)}
                   disabled={isSavingPlan}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={MICRO_SECONDARY_ACTION_CLASS}
                 >
                   Cancel
                 </button>
@@ -1863,7 +1925,7 @@ export default function DrylandMicroPlanPanel({
                   disabled={
                     isSavingPlan || selectedSessionIds.length === 0 || releaseMode === "manual"
                   }
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className={MICRO_PRIMARY_ACTION_CLASS}
                 >
                   {isSavingPlan ? "Saving..." : "Update micro session"}
                 </button>
@@ -1942,7 +2004,7 @@ export default function DrylandMicroPlanPanel({
                               data-testid={`dryland-micro-release-now-${unit.index}`}
                               onClick={() => void releaseBlockNow(unit.block.id)}
                               disabled={isPending || plan.status === "paused"}
-                              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={MICRO_SECONDARY_ACTION_CLASS}
                             >
                               {isPending ? "Saving..." : releaseLabel}
                             </button>

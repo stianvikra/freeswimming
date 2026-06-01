@@ -166,7 +166,9 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(
       screen.getByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     );
-    fireEvent.click(screen.getByTestId("dryland-micro-create"));
+    const createButton = screen.getByTestId("dryland-micro-create");
+    expect(createButton).toHaveClass("fs-cta-primary");
+    fireEvent.click(createButton);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -207,7 +209,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
-    expect(screen.getByTestId("dryland-micro-start-create")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("fs-cta-primary");
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).not.toBeInTheDocument();
@@ -251,7 +253,9 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByTestId("dryland-micro-complete-0"));
+    const completeButton = screen.getByTestId("dryland-micro-complete-0");
+    expect(completeButton).toHaveClass("fs-cta-secondary");
+    fireEvent.click(completeButton);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -292,11 +296,15 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByTestId("dryland-micro-clear-open"));
+    const clearOpenButton = screen.getByTestId("dryland-micro-clear-open");
+    expect(clearOpenButton).toHaveClass("fs-cta-secondary", "text-rose-700");
+    fireEvent.click(clearOpenButton);
     expect(screen.getByTestId("dryland-micro-clear-confirm")).toHaveTextContent(
       "Only the active micro session is cleared."
     );
-    fireEvent.click(screen.getByTestId("dryland-micro-clear-confirm-action"));
+    const confirmClearButton = screen.getByTestId("dryland-micro-clear-confirm-action");
+    expect(confirmClearButton).toHaveClass("rounded-[var(--fs-radius-control)]");
+    fireEvent.click(confirmClearButton);
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -598,7 +606,7 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("bg-blue-600");
+      expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("fs-cta-primary");
     });
     expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
   });
@@ -644,9 +652,12 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
-    expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("bg-blue-600");
-    expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("bg-slate-950");
-    expect(screen.getByText("Manage micro session")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("dryland-micro-mode-ordered")).not.toHaveClass("fs-cta-primary");
+    const manageSummary = screen.getByTestId("dryland-micro-manage-summary");
+    expect(manageSummary).toHaveTextContent("Manage micro session");
+    expect(manageSummary).toHaveClass("list-none", "[&::-webkit-details-marker]:hidden");
+    expect(manageSummary.querySelector("svg")).toHaveClass("h-4", "w-4");
 
     const board = screen.getByTestId("dryland-micro-bubble-board");
     expect(board).toHaveClass("flex", "flex-wrap", "gap-x-2", "gap-y-2");
@@ -1197,7 +1208,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent(
       "Micro session paused"
     );
-    expect(screen.getByTestId("dryland-micro-resume-collapsed")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-resume-collapsed")).toHaveClass("fs-cta-primary");
     expect(screen.queryByTestId("dryland-micro-bubble-0")).not.toBeInTheDocument();
   });
 
