@@ -3,6 +3,7 @@
 
 import PressButton from "@/components/ui/PressButton";
 import PressLink from "@/components/ui/PressLink";
+import { cx } from "@/components/ui/cx";
 
 type Props = {
   title: string;
@@ -34,46 +35,36 @@ export default function ActionButton({
       : "min-h-[78px] sm:min-h-[82px]";
 
   // Base = structure + interaction system
-  const base =
-    `group relative w-full rounded-2xl ${compact ? "px-5" : "px-6"} ` +
-    `${heightClass} ` +
-    "flex items-center justify-center";
-
-  // Skins only (colors/shadows/rings) — hover/press lives in globals via ui-press
-  const primary =
-    "text-white bg-gradient-to-b from-[#5aa6ff] to-[#3a87e6] " +
-    "shadow-[0_18px_55px_rgba(45,143,255,0.26)]";
-
-  const secondary =
-    "bg-white/92 backdrop-blur border border-slate-200/80 " +
-    "text-slate-900 " +
-    "shadow-[0_10px_26px_rgba(15,23,42,0.085)]";
+  const base = cx(
+    "group relative flex w-full items-center justify-center",
+    compact ? "px-5" : "px-6",
+    heightClass,
+    "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+  );
 
   const disabledStyle = "opacity-55";
-
-  const skin = variant === "primary" ? primary : secondary;
+  const skin =
+    variant === "primary"
+      ? "fs-cta-primary"
+      : "fs-library-card bg-white/92 text-[color:var(--fs-color-ink)] hover:bg-white";
 
   // Inner content micro-motion (desktop-only; no motion when disabled)
   const content = (
     <div
-      className={[
+      className={cx(
         "flex w-full flex-col items-center justify-center text-center",
-        note ? "pb-0.5" : "",
+        note ? "pb-0.5" : undefined,
         disabled
-          ? ""
-          : [
-              "transition-transform duration-200 ease-out",
-              "[@media(hover:hover)_and_(pointer:fine)]:group-hover:-translate-y-[0.5px]",
-              "group-active:translate-y-[0.5px]",
-            ].join(" "),
-      ].join(" ")}
+          ? undefined
+          : "transition-transform duration-200 ease-out group-active:translate-y-[0.5px] [@media(hover:hover)_and_(pointer:fine)]:group-hover:-translate-y-[0.5px]"
+      )}
     >
       {/* TITLE */}
       <div
-        className={[
-          "text-[16px] font-semibold tracking-[0.09em] sm:text-[17px] sm:tracking-[0.1em]",
-          variant === "primary" ? "text-white/95" : "text-slate-900",
-        ].join(" ")}
+        className={cx(
+          "text-[16px] font-semibold tracking-[0.04em] sm:text-[17px]",
+          variant === "primary" ? "text-white/95" : "text-[color:var(--fs-color-ink-strong)]"
+        )}
       >
         {title}
       </div>
@@ -81,10 +72,10 @@ export default function ActionButton({
       {/* SUBTITLE */}
       {subtitle ? (
         <div
-          className={[
-            "mt-1 text-[14px] font-medium leading-[1.25] sm:text-[14px]",
-            variant === "primary" ? "text-white/85" : "text-slate-600",
-          ].join(" ")}
+          className={cx(
+            "mt-1 text-[14px] leading-[1.25] font-medium sm:text-[14px]",
+            variant === "primary" ? "text-white/85" : "text-[color:var(--fs-color-muted)]"
+          )}
         >
           {subtitle}
         </div>
@@ -93,10 +84,10 @@ export default function ActionButton({
       {/* NOTE */}
       {note ? (
         <div
-          className={[
-            "mt-2.5 text-[12px] font-medium leading-4 tracking-wide",
-            variant === "primary" ? "text-white/72" : "text-slate-500",
-          ].join(" ")}
+          className={cx(
+            "mt-2.5 text-[12px] leading-4 font-medium",
+            variant === "primary" ? "text-white/72" : "text-[color:var(--fs-color-muted)]"
+          )}
         >
           {note}
         </div>
@@ -107,7 +98,7 @@ export default function ActionButton({
   // Link variant (only when enabled)
   if (href && !disabled) {
     return (
-      <PressLink tier="cta" className={`${base} ${skin}`} href={href}>
+      <PressLink tier="cta" className={cx(base, skin)} href={href}>
         {content}
       </PressLink>
     );
@@ -116,7 +107,7 @@ export default function ActionButton({
   // If href exists but disabled: render a non-interactive element (no click, no keyboard action)
   if (href && disabled) {
     return (
-      <PressLink tier="cta" className={`${base} ${skin} ${disabledStyle}`} href={href} disabled>
+      <PressLink tier="cta" className={cx(base, skin, disabledStyle)} href={href} disabled>
         {content}
       </PressLink>
     );
@@ -126,7 +117,7 @@ export default function ActionButton({
   return (
     <PressButton
       tier="cta"
-      className={`${base} ${skin} ${disabled ? disabledStyle : ""}`}
+      className={cx(base, skin, disabled ? disabledStyle : undefined)}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
     >

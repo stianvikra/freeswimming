@@ -54,6 +54,9 @@ test.describe("home routines entrypoint", () => {
     await expect(page.getByRole("link", { name: /My Routines/i })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /Micro Sessions/i })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^Habits/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Free course/i })).toHaveClass(/fs-cta-primary/);
+    await expect(page.getByRole("link", { name: /Swim programs/i })).toHaveClass(/fs-library-card/);
+    await expect(page.getByTestId("home-auth-link")).toHaveClass(/fs-cta-secondary/);
     await expect(await getPrimaryActionLabels(page)).toEqual([
       "Free course Start swimming today No signup. No paywall. Just swim.",
       "Swim programs Structured plans and PDFs",
@@ -86,6 +89,9 @@ test.describe("home routines entrypoint", () => {
       "href",
       /\/my-library\/habits\?view=active#(today-habits|add-habit)/
     );
+    await expect(microSessionsLink).toHaveClass(/fs-library-card/);
+    await expect(habitsLink).toHaveClass(/fs-library-card/);
+    await expect(page.getByTestId("home-auth-link")).toHaveClass(/fs-cta-secondary/);
     await expect(await getPrimaryActionLabels(page)).toEqual([
       "Free course Start swimming today No signup. No paywall. Just swim.",
       expect.stringMatching(/^Micro Sessions /),

@@ -15,6 +15,9 @@ import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic";
 
+const homeSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+
 function RoutineQuickActionLink({ action }: { action: TodayRoutineQuickAction }) {
   return (
     <PressLink
@@ -22,13 +25,13 @@ function RoutineQuickActionLink({ action }: { action: TodayRoutineQuickAction })
       href={action.href}
       data-testid={`home-routine-action-${action.id}`}
       aria-label={`${action.title}: ${action.subtitle}`}
-      className="group relative flex min-h-[70px] min-w-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/92 px-3 text-center text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.085)] backdrop-blur transition hover:bg-white active:bg-slate-50 sm:min-h-[74px] sm:px-4"
+      className="fs-library-card fs-library-card-muted group relative flex min-h-[68px] min-w-0 items-center justify-center px-3 text-center transition-colors hover:bg-white active:bg-slate-50 sm:min-h-[72px] sm:px-4"
     >
       <span className="flex min-w-0 flex-col items-center justify-center">
-        <span className="max-w-full truncate text-[14px] leading-tight font-semibold sm:text-[15px]">
+        <span className="max-w-full truncate text-[14px] leading-tight font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[15px]">
           {action.title}
         </span>
-        <span className="mt-1 max-w-full truncate text-[12px] leading-snug font-medium text-slate-600 sm:text-[13px]">
+        <span className="mt-1 max-w-full truncate text-[12px] leading-snug font-medium text-[color:var(--fs-color-muted)] sm:text-[13px]">
           {action.subtitle}
         </span>
       </span>
@@ -139,7 +142,8 @@ export default async function HomePage() {
               <PressLink
                 tier="nav"
                 href={authHref}
-                className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                data-testid="home-auth-link"
+                className={homeSecondaryActionClass}
               >
                 {authLabel}
               </PressLink>
@@ -147,7 +151,8 @@ export default async function HomePage() {
                 <PressLink
                   tier="nav"
                   href="/admin"
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-blue-200/80 bg-blue-50/90 px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-100/85 active:bg-blue-200/75"
+                  data-testid="home-admin-link"
+                  className={`${homeSecondaryActionClass} border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)] hover:bg-white`}
                 >
                   Open Dashboard
                 </PressLink>
