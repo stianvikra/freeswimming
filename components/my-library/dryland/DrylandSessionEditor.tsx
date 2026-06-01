@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
+import { cx } from "@/components/ui/cx";
 import { buildCustomDrylandExercise } from "@/lib/dryland/exercise-bank";
 import type { DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import {
@@ -41,6 +42,27 @@ const DRYLAND_MIN_SETS_PER_EXERCISE = 1;
 const DEFAULT_STRENGTH_REPS = 8;
 const DEFAULT_STRENGTH_DURATION_SECONDS = 45;
 const DEFAULT_STRETCH_DURATION_SECONDS = 30;
+const editorCardClass = "fs-library-card p-4 sm:p-5";
+const editorAccentCardClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const editorMutedCardClass = "fs-library-card fs-library-card-muted p-4";
+const editorActionBaseClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const editorPrimaryActionClass = cx("fs-cta-primary", editorActionBaseClass);
+const editorSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", editorActionBaseClass);
+const editorDangerActionClass = cx(
+  "fs-cta-secondary border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500",
+  editorActionBaseClass
+);
+const editorCompactSecondaryActionClass = cx(
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-1.5 px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2 sm:px-4 sm:text-sm"
+);
+const editorFieldClass =
+  "w-full rounded-[var(--fs-radius-control)] border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const editorTextAreaClass = cx(editorFieldClass, "px-4 py-3");
+const editorPillClass =
+  "inline-flex min-h-8 items-center rounded-[var(--fs-radius-control)] border border-slate-200 bg-white px-3 text-xs font-semibold tracking-wide text-slate-600 uppercase";
+const editorInputGroupClass =
+  "flex h-11 overflow-hidden rounded-[var(--fs-radius-control)] border border-slate-200 bg-white transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100";
 
 const STATIC_TIME_TARGET_PATTERNS = [
   /\bplank\b/i,
@@ -775,7 +797,7 @@ export default function DrylandSessionEditor({
         aria-label={ariaLabel}
         title={ariaLabel}
         onClick={() => onChange(nextTargetType)}
-        className="inline-flex min-w-14 items-center justify-center border-l border-slate-200 bg-slate-50 px-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-inset active:bg-slate-200"
+        className="inline-flex min-w-14 items-center justify-center border-l border-slate-200 bg-slate-50 px-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none focus-visible:ring-inset active:bg-slate-100"
       >
         {getTargetUnitLabel(targetType)}
       </button>
@@ -801,7 +823,7 @@ export default function DrylandSessionEditor({
       <div
         id={panelId}
         data-testid={`dryland-exercise-card-${exerciseIndex}`}
-        className="mt-3 rounded-2xl border border-slate-200 border-l-blue-300 bg-white p-3 sm:p-4"
+        className="fs-library-card fs-library-card-muted mt-3 border-l-[color:var(--fs-border-brand)] p-3 sm:p-4"
       >
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
           <div>
@@ -826,7 +848,7 @@ export default function DrylandSessionEditor({
               }))
             }
             placeholder="Optional cue"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+            className={cx(editorFieldClass, "h-11")}
           />
         </label>
 
@@ -837,7 +859,7 @@ export default function DrylandSessionEditor({
               type="button"
               data-testid={`dryland-make-sets-equal-${exerciseIndex}`}
               onClick={() => makeSetsEqual(exercise.id)}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={editorCompactSecondaryActionClass}
             >
               Make sets equal
             </button>
@@ -846,7 +868,7 @@ export default function DrylandSessionEditor({
               data-testid={`dryland-add-set-${exerciseIndex}`}
               onClick={() => addSet(exercise.id)}
               disabled={exercise.sets.length >= DRYLAND_MAX_SETS_PER_EXERCISE}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={editorCompactSecondaryActionClass}
             >
               Add set
             </button>
@@ -872,7 +894,7 @@ export default function DrylandSessionEditor({
 
               <div className="grid gap-1">
                 <SetMetricLabel>Target</SetMetricLabel>
-                <div className="flex h-10 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
+                <div className={cx(editorInputGroupClass, "h-10")}>
                   <input
                     aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} set ${setIndex + 1} ${getTargetInputLabel(getTargetTypeForSet(set, draft.sessionKind)).toLowerCase()}`}
                     value={getTargetValueForSet(set, getTargetTypeForSet(set, draft.sessionKind))}
@@ -911,7 +933,7 @@ export default function DrylandSessionEditor({
                     updateSetField(exercise.id, set.id, "restSeconds", event.target.value)
                   }
                   inputMode="numeric"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                  className={cx(editorFieldClass, "h-10")}
                 />
               </label>
 
@@ -925,7 +947,7 @@ export default function DrylandSessionEditor({
                       updateSetField(exercise.id, set.id, "loadKg", event.target.value)
                     }
                     inputMode="decimal"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                    className={cx(editorFieldClass, "h-10")}
                   />
                 ) : (
                   <span className="hidden text-sm text-slate-400 sm:block">N/A</span>
@@ -937,7 +959,7 @@ export default function DrylandSessionEditor({
                 data-testid={`dryland-set-remove-${exerciseIndex}-${setIndex}`}
                 onClick={() => removeSet(exercise.id, set.id)}
                 disabled={exercise.sets.length === 1}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:justify-self-end"
+                className={cx(editorDangerActionClass, "min-h-10 px-3 text-xs sm:min-h-9")}
               >
                 Remove
               </button>
@@ -950,19 +972,20 @@ export default function DrylandSessionEditor({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-5">
+      <section className={editorAccentCardClass}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 data-testid="dryland-session-kind-locked"
-                className="inline-flex min-h-8 items-center rounded-full border border-blue-200 bg-blue-50 px-3 text-xs font-semibold tracking-wide text-blue-800 uppercase"
+                className={cx(
+                  editorPillClass,
+                  "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
+                )}
               >
                 {getDrylandSessionKindLabel(draft.sessionKind)}
               </span>
-              <span className="inline-flex min-h-8 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                {getDrylandStatusLabel(savedSession.status)}
-              </span>
+              <span className={editorPillClass}>{getDrylandStatusLabel(savedSession.status)}</span>
             </div>
             <h2 className="mt-3 text-2xl font-semibold text-slate-950">{draft.title}</h2>
             <p className="mt-1 text-sm text-slate-600">
@@ -977,7 +1000,7 @@ export default function DrylandSessionEditor({
               type="button"
               onClick={handleResetToSaved}
               disabled={!hasUnsavedChanges || isSaving}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className={editorSecondaryActionClass}
             >
               Reset
             </button>
@@ -986,7 +1009,7 @@ export default function DrylandSessionEditor({
               data-testid="dryland-builder-save"
               onClick={handleSave}
               disabled={isSaving || !hasUnsavedChanges || !canSaveOrTrain}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className={cx(editorPrimaryActionClass, "px-5")}
             >
               {isSaving ? "Saving..." : hasUnsavedChanges ? "Save" : "Saved"}
             </button>
@@ -1003,7 +1026,10 @@ export default function DrylandSessionEditor({
                 <Link
                   href="/my-library/dryland?micro=edit"
                   data-testid="dryland-go-current-micro-session"
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-50 active:bg-amber-100"
+                  className={cx(
+                    editorSecondaryActionClass,
+                    "border-amber-200 text-amber-800 hover:bg-amber-50 focus-visible:ring-amber-500"
+                  )}
                 >
                   Open current micro session
                 </Link>
@@ -1012,7 +1038,10 @@ export default function DrylandSessionEditor({
                   data-testid="dryland-update-current-micro-session"
                   onClick={onUpdateCurrentMicroPlan}
                   disabled={hasUnsavedChanges || isSaving || isUpdatingCurrentMicroPlan}
-                  className="inline-flex min-h-10 items-center justify-center rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-500 active:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+                  className={cx(
+                    editorPrimaryActionClass,
+                    "bg-amber-600 hover:bg-amber-500 active:bg-amber-700"
+                  )}
                 >
                   {isUpdatingCurrentMicroPlan ? "Updating..." : "Update current micro session"}
                 </button>
@@ -1024,7 +1053,7 @@ export default function DrylandSessionEditor({
               Saved changes apply to future micro sessions. Update the current micro session only if
               you want remaining queued units rebuilt now.
             </p>
-            <span className="mt-3 inline-flex min-h-7 items-center rounded-full border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
+            <span className="mt-3 inline-flex min-h-7 items-center rounded-[var(--fs-radius-control)] border border-amber-200 bg-white px-3 text-xs font-semibold text-amber-800">
               Default: future micro sessions
             </span>
             {hasUnsavedChanges ? (
@@ -1039,9 +1068,10 @@ export default function DrylandSessionEditor({
         ) : null}
 
         <div
-          className={`mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200 pt-4 ${
+          className={cx(
+            "mt-5 flex flex-wrap items-center gap-4 border-t border-slate-200 pt-4",
             mode === "train" ? "justify-between" : "justify-end"
-          }`}
+          )}
         >
           {mode === "train" ? (
             <div className="min-w-[min(100%,28rem)] flex-1">
@@ -1072,7 +1102,7 @@ export default function DrylandSessionEditor({
           <div
             role="tablist"
             aria-label="Dryland builder mode"
-            className="inline-flex h-12 rounded-2xl border border-slate-200 bg-slate-50 p-1"
+            className="fs-library-card fs-library-card-muted inline-flex min-h-12 gap-1 p-1"
           >
             {(["train", "build"] as const).map((option) => {
               const selected = mode === option;
@@ -1084,11 +1114,12 @@ export default function DrylandSessionEditor({
                   aria-selected={selected}
                   data-testid={`dryland-mode-${option}`}
                   onClick={() => setMode(option)}
-                  className={`inline-flex min-w-24 items-center justify-center rounded-xl px-4 text-sm font-semibold capitalize transition ${
+                  className={cx(
+                    "inline-flex min-h-10 min-w-24 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold capitalize transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
                     selected
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-700 hover:bg-white active:bg-slate-100"
-                  }`}
+                      ? "fs-cta-primary"
+                      : "fs-cta-secondary shadow-none hover:bg-white active:bg-slate-100"
+                  )}
                 >
                   {option}
                 </button>
@@ -1103,10 +1134,10 @@ export default function DrylandSessionEditor({
           <div className="space-y-4">
             <section
               data-testid="dryland-training-player"
-              className="relative rounded-[2rem] border border-blue-100 bg-white p-5 text-slate-950 shadow-[0_16px_44px_rgba(37,99,235,0.12)] sm:p-6"
+              className="fs-library-card fs-library-card-accent relative p-5 text-slate-950 sm:p-6"
             >
               <div className="min-w-0 md:pr-52">
-                <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase">
                   Workout player
                 </p>
                 <button
@@ -1114,7 +1145,10 @@ export default function DrylandSessionEditor({
                   data-testid="dryland-complete-next-set"
                   onClick={completeNextSet}
                   disabled={!executionSummary.nextSet}
-                  className="mt-4 inline-flex h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-6 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 md:absolute md:top-6 md:right-6 md:mt-0 md:w-auto"
+                  className={cx(
+                    editorPrimaryActionClass,
+                    "mt-4 min-h-14 w-full bg-emerald-700 px-6 hover:bg-emerald-600 active:bg-emerald-800 md:absolute md:top-6 md:right-6 md:mt-0 md:w-auto"
+                  )}
                 >
                   Complete set
                 </button>
@@ -1169,7 +1203,7 @@ export default function DrylandSessionEditor({
                     data-testid="dryland-draft-start-timer"
                     onClick={startTimer}
                     disabled={!canSaveOrTrain}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    className={editorPrimaryActionClass}
                   >
                     Start session
                   </button>
@@ -1179,7 +1213,10 @@ export default function DrylandSessionEditor({
                     type="button"
                     data-testid="dryland-draft-stop-timer"
                     onClick={stopTimer}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700"
+                    className={cx(
+                      editorPrimaryActionClass,
+                      "bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800"
+                    )}
                   >
                     Stop session
                   </button>
@@ -1189,7 +1226,7 @@ export default function DrylandSessionEditor({
                     type="button"
                     data-testid="dryland-draft-clear-timing"
                     onClick={clearTimer}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    className={editorSecondaryActionClass}
                   >
                     Clear timing
                   </button>
@@ -1198,23 +1235,23 @@ export default function DrylandSessionEditor({
             </section>
 
             {currentExercise ? (
-              <section className="rounded-[2rem] border border-slate-200 bg-white p-5">
+              <section className={cx(editorCardClass, "p-5")}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+                    <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase">
                       Current exercise
                     </p>
                     <h3 className="mt-2 text-2xl font-semibold text-slate-950">
                       {currentExercise.title}
                     </h3>
                   </div>
-                  <span className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700">
+                  <span className="inline-flex min-h-10 items-center rounded-[var(--fs-radius-control)] border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700">
                     {currentExerciseProgressPercent}%
                   </span>
                 </div>
 
                 <div className="mt-5 grid gap-3 md:grid-cols-[0.9fr_1.1fr]">
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6">
+                  <div className="rounded-[var(--fs-radius-card)] border border-dashed border-slate-300 bg-slate-50 px-4 py-6">
                     <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       {getMediaSlotLabel(currentExercise)}
                     </p>
@@ -1223,7 +1260,7 @@ export default function DrylandSessionEditor({
                     </p>
                   </div>
                   <div className="grid gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div className={cx(editorMutedCardClass, "px-4 py-3")}>
                       <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Note
                       </p>
@@ -1245,13 +1282,14 @@ export default function DrylandSessionEditor({
                         data-testid={`dryland-set-chip-${exerciseIndex}-${setIndex}`}
                         aria-pressed={set.isCompleted}
                         onClick={() => toggleSetCompletion(currentExercise.id, set.id)}
-                        className={`grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
+                        className={cx(
+                          "grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--fs-radius-control)] border px-4 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
                           set.isCompleted
                             ? "border-emerald-200 bg-emerald-50 text-emerald-950"
                             : isNext
-                              ? "border-blue-200 bg-blue-50 text-blue-950 ring-2 ring-blue-400 ring-offset-2 hover:bg-blue-100 active:bg-blue-200"
+                              ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-ink)] ring-2 ring-[color:var(--fs-border-brand)] ring-offset-2 hover:bg-white active:bg-[color:var(--fs-color-brand-100)]"
                               : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50 active:bg-slate-100"
-                        }`}
+                        )}
                       >
                         <span className="text-sm font-semibold">Set {setIndex + 1}</span>
                         <span className="truncate text-sm text-slate-700">
@@ -1268,7 +1306,7 @@ export default function DrylandSessionEditor({
             ) : null}
           </div>
 
-          <aside className="rounded-[2rem] border border-slate-200 bg-white p-5 lg:sticky lg:top-4 lg:self-start">
+          <aside className={cx(editorCardClass, "p-5 lg:sticky lg:top-4 lg:self-start")}>
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-950">Session plan</h3>
               <span className="text-sm font-medium text-slate-500">
@@ -1290,11 +1328,12 @@ export default function DrylandSessionEditor({
                     key={exercise.id}
                     type="button"
                     onClick={() => setMode("build")}
-                    className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
+                    className={cx(
+                      "w-full rounded-[var(--fs-radius-control)] border px-3 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
                       isCurrent
-                        ? "border-blue-200 bg-blue-50 text-blue-950"
-                        : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100"
-                    }`}
+                        ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-ink)]"
+                        : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-white"
+                    )}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold">
@@ -1312,7 +1351,7 @@ export default function DrylandSessionEditor({
         </section>
       ) : (
         <section data-testid="dryland-build-mode" className="space-y-4">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-4 sm:p-5">
+          <section className={editorCardClass}>
             <button
               type="button"
               data-testid="dryland-session-details-toggle"
@@ -1324,11 +1363,11 @@ export default function DrylandSessionEditor({
                   key: sessionDetailsResetKey,
                 }))
               }
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-transparent px-1 py-1 text-left transition hover:border-slate-200 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+              className="flex w-full items-center justify-between gap-3 rounded-[var(--fs-radius-control)] border border-transparent px-1 py-1 text-left transition-colors hover:border-slate-200 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:outline-none"
             >
               <span className="block text-lg font-semibold text-slate-950">Session details</span>
               <span className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
+                <span className={cx(editorCompactSecondaryActionClass, "pointer-events-none")}>
                   {isSessionDetailsOpen ? "Hide" : "Edit"}
                 </span>
               </span>
@@ -1346,7 +1385,7 @@ export default function DrylandSessionEditor({
                     data-testid="dryland-draft-title"
                     value={draft.title}
                     onChange={(event) => patchDraft({ title: event.target.value })}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                    className={cx(editorFieldClass, "h-12 px-4")}
                   />
                 </label>
                 <label className="space-y-2">
@@ -1356,17 +1395,14 @@ export default function DrylandSessionEditor({
                     value={draft.description}
                     onChange={(event) => patchDraft({ description: event.target.value })}
                     rows={3}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                    className={editorTextAreaClass}
                   />
                 </label>
               </div>
             ) : null}
           </section>
 
-          <section
-            data-testid="dryland-manual-exercises"
-            className="rounded-[2rem] border border-slate-200 bg-white p-5"
-          >
+          <section data-testid="dryland-manual-exercises" className={cx(editorCardClass, "p-5")}>
             <div>
               <h3 className="text-lg font-semibold text-slate-950">Quick session</h3>
               <p className="mt-1 text-sm text-slate-600">
@@ -1386,7 +1422,7 @@ export default function DrylandSessionEditor({
               </DrylandFeedback>
             ) : null}
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70">
+            <div className="fs-library-card fs-library-card-muted mt-5 overflow-hidden">
               {draft.exercises.map((exercise, exerciseIndex) => {
                 const firstSet = exercise.sets[0] ?? null;
                 const targetType = getTargetTypeForExercise(exercise, draft.sessionKind);
@@ -1402,7 +1438,7 @@ export default function DrylandSessionEditor({
                   <article
                     key={exercise.id}
                     data-testid={`dryland-simple-exercise-row-${exerciseIndex}`}
-                    className="border-b border-slate-200 bg-white/70 last:border-b-0"
+                    className="border-b border-slate-200 bg-white/74 last:border-b-0"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
                       <button
@@ -1415,7 +1451,7 @@ export default function DrylandSessionEditor({
                             setBuildExerciseOpen(exercise.id, false);
                           }
                         }}
-                        className="min-w-0 flex-1 rounded-xl px-1 py-1 text-left transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
+                        className="min-w-0 flex-1 rounded-[var(--fs-radius-control)] px-1 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:outline-none"
                       >
                         <span className="block text-sm font-semibold text-slate-950">
                           {exerciseLabel}
@@ -1451,7 +1487,7 @@ export default function DrylandSessionEditor({
                               setBuildExerciseOpen(exercise.id, false);
                             }
                           }}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                          className={editorSecondaryActionClass}
                         >
                           {isQuickExerciseOpen ? "Done" : "Edit"}
                         </button>
@@ -1460,7 +1496,7 @@ export default function DrylandSessionEditor({
                           data-testid={`dryland-exercise-remove-${exerciseIndex}`}
                           onClick={() => removeExercise(exercise.id)}
                           disabled={draft.exercises.length === 1}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={editorDangerActionClass}
                         >
                           Remove
                         </button>
@@ -1471,7 +1507,7 @@ export default function DrylandSessionEditor({
                       <div
                         id={quickEditorId}
                         data-testid={`dryland-quick-exercise-editor-${exerciseIndex}`}
-                        className="border-t border-slate-200 bg-slate-50/70 p-3 sm:p-4"
+                        className="border-t border-slate-200 bg-slate-50/72 p-3 sm:p-4"
                       >
                         <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_72px_minmax(144px,180px)_88px_88px_230px] lg:items-end">
                           <label className="grid gap-1">
@@ -1486,7 +1522,7 @@ export default function DrylandSessionEditor({
                               onChange={(event) =>
                                 updateExerciseTitle(exercise.id, event.target.value)
                               }
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 transition outline-none focus:border-blue-400"
+                              className={cx(editorFieldClass, "h-11 font-semibold")}
                             />
                           </label>
 
@@ -1506,13 +1542,13 @@ export default function DrylandSessionEditor({
                               inputMode="numeric"
                               min={DRYLAND_MIN_SETS_PER_EXERCISE}
                               max={DRYLAND_MAX_SETS_PER_EXERCISE}
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                              className={cx(editorFieldClass, "h-11")}
                             />
                           </label>
 
                           <div className="grid gap-1">
                             <span className="text-sm font-medium text-slate-900">Target</span>
-                            <div className="flex h-11 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-400">
+                            <div className={editorInputGroupClass}>
                               <input
                                 aria-label={`${exercise.title || `Exercise ${exerciseIndex + 1}`} ${getTargetInputLabel(targetType).toLowerCase()}`}
                                 data-testid={`dryland-manual-exercise-target-${exerciseIndex}`}
@@ -1558,7 +1594,7 @@ export default function DrylandSessionEditor({
                                 )
                               }
                               inputMode="numeric"
-                              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                              className={cx(editorFieldClass, "h-11")}
                             />
                           </label>
 
@@ -1590,10 +1626,15 @@ export default function DrylandSessionEditor({
                                   }
                                 }}
                                 inputMode="decimal"
-                                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400"
+                                className={cx(editorFieldClass, "h-11")}
                               />
                             ) : (
-                              <span className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
+                              <span
+                                className={cx(
+                                  editorFieldClass,
+                                  "flex h-11 items-center text-slate-400"
+                                )}
+                              >
                                 N/A
                               </span>
                             )}
@@ -1607,7 +1648,10 @@ export default function DrylandSessionEditor({
                               onClick={() =>
                                 setBuildExerciseOpen(exercise.id, !isBuildExerciseOpen)
                               }
-                              className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-700 transition hover:bg-blue-50 active:bg-blue-100"
+                              className={cx(
+                                editorSecondaryActionClass,
+                                "min-h-11 border-[color:var(--fs-border-brand)] text-[color:var(--fs-color-brand-700)] hover:bg-[color:var(--fs-color-brand-50)]"
+                              )}
                             >
                               {isBuildExerciseOpen ? "Close sets" : "Customize sets"}
                             </button>
@@ -1629,7 +1673,7 @@ export default function DrylandSessionEditor({
                 type="button"
                 data-testid="dryland-add-custom-exercise"
                 onClick={() => addCustomExercise(draft.sessionKind)}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                className={editorSecondaryActionClass}
               >
                 Add exercise
               </button>
@@ -1640,7 +1684,10 @@ export default function DrylandSessionEditor({
                   data-testid="dryland-builder-bottom-save"
                   onClick={handleSave}
                   disabled={isSaving || !hasUnsavedChanges || !canSaveOrTrain}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cx(
+                    editorSecondaryActionClass,
+                    "border-[color:var(--fs-border-brand)] text-[color:var(--fs-color-brand-700)] hover:bg-[color:var(--fs-color-brand-50)]"
+                  )}
                 >
                   {isSaving ? "Saving..." : hasUnsavedChanges ? "Save" : "Saved"}
                 </button>
@@ -1648,7 +1695,7 @@ export default function DrylandSessionEditor({
                   type="button"
                   onClick={switchToTrainMode}
                   disabled={!canSaveOrTrain}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className={editorPrimaryActionClass}
                 >
                   Open Train mode
                 </button>

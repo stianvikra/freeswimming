@@ -300,16 +300,27 @@ describe("DrylandBuilderHub", () => {
     });
 
     expect(screen.getByTestId("dryland-session-kind-locked")).toHaveTextContent("Strength session");
+    expect(screen.getByTestId("dryland-session-kind-locked")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-[color:var(--fs-border-brand)]"
+    );
     expect(screen.queryByTestId("dryland-draft-kind")).not.toBeInTheDocument();
     expect(screen.getByTestId("dryland-mode-train")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("dryland-mode-train")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("dryland-mode-build")).toHaveClass("fs-cta-secondary");
     expect(screen.getByTestId("dryland-train-mode")).toBeInTheDocument();
     expect(screen.getByText("Workout player")).toBeInTheDocument();
+    expect(screen.getByTestId("dryland-complete-next-set")).toHaveClass("fs-cta-primary");
     expect(screen.getByRole("progressbar", { name: "Execution progress" })).toHaveAttribute(
       "aria-valuenow",
       "0"
     );
     expect(screen.getByTestId("dryland-next-set-label")).toHaveTextContent("Air squat · Set 1");
     expect(screen.getByTestId("dryland-set-chip-0-0")).toHaveTextContent("Now");
+    expect(screen.getByTestId("dryland-set-chip-0-0")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-[color:var(--fs-border-brand)]"
+    );
 
     fireEvent.click(screen.getByTestId("dryland-complete-next-set"));
 
@@ -327,6 +338,9 @@ describe("DrylandBuilderHub", () => {
       expect(screen.getByTestId("dryland-build-mode")).toBeInTheDocument();
     });
     expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("dryland-mode-build")).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Reset" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("dryland-builder-save")).toHaveClass("fs-cta-primary");
 
     fireEvent.click(
       within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
@@ -341,9 +355,16 @@ describe("DrylandBuilderHub", () => {
 
     const exerciseDetails = screen.getByTestId("dryland-exercise-card-0");
     expect(exerciseDetails).toBeInTheDocument();
+    expect(exerciseDetails).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(within(exerciseDetails).getByText("Air squat details")).toBeVisible();
     expect(within(exerciseDetails).getByText("Air squat notes")).toBeVisible();
     expect(within(exerciseDetails).getByText("Air squat sets")).toBeVisible();
+    expect(within(exerciseDetails).getByRole("button", { name: "Make sets equal" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(exerciseDetails).getByRole("button", { name: "Add set" })).toHaveClass(
+      "fs-cta-secondary"
+    );
     expect(screen.queryByText("Common mistake")).not.toBeInTheDocument();
     expect(screen.queryByText("Focus cue")).not.toBeInTheDocument();
     expect(screen.queryByText("Detail title")).not.toBeInTheDocument();
@@ -560,8 +581,12 @@ describe("DrylandBuilderHub", () => {
 
     expect(screen.getByTestId("dryland-mode-build")).toHaveAttribute("aria-selected", "true");
     expect(screen.getByTestId("dryland-manual-exercises")).toBeVisible();
+    expect(screen.getByTestId("dryland-manual-exercises")).toHaveClass("fs-library-card");
     expect(screen.getByText("Quick session")).toBeVisible();
     expect(screen.getByText("Manually enter the exercises and their details.")).toBeVisible();
+    expect(screen.getByTestId("dryland-add-custom-exercise")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("dryland-builder-bottom-save")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Open Train mode" })).toHaveClass("fs-cta-primary");
     expect(screen.queryByText("Focus cue")).not.toBeInTheDocument();
     expect(screen.queryByText("Advanced: add from exercise bank")).not.toBeInTheDocument();
     expect(screen.queryByTestId("dryland-advanced-bank")).not.toBeInTheDocument();
@@ -572,6 +597,16 @@ describe("DrylandBuilderHub", () => {
         name: "Edit",
       })
     );
+    expect(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Done",
+      })
+    ).toHaveClass("fs-cta-secondary");
+    expect(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Remove",
+      })
+    ).toHaveClass("fs-cta-secondary", "text-rose-700");
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-name-0"), {
       target: { value: "Single-leg squat" },
     });
@@ -592,6 +627,11 @@ describe("DrylandBuilderHub", () => {
         name: "Customize sets",
       })
     );
+    expect(
+      within(screen.getByTestId("dryland-simple-exercise-row-0")).getByRole("button", {
+        name: "Close sets",
+      })
+    ).toHaveClass("fs-cta-secondary", "border-[color:var(--fs-border-brand)]");
     fireEvent.change(screen.getByTestId("dryland-manual-exercise-notes-0"), {
       target: { value: "Slow down." },
     });
