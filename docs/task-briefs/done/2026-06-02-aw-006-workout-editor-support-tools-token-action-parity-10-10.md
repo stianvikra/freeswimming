@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-workout-editor-support-tools-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -305,3 +305,46 @@ Required because this changes visible UI/layout.
 - `2026-06-02 | screenshot-refresh | captured refreshed after/reference artifacts in output/aw006-workout-editor-support-tools-token-parity-2026-06-02-095427 after mobile action layout implementation; visual check confirmed 4 metadata actions render as 2x2 on mobile, `Edit/Rearrange/View`renders as a 3-part segmented control,`Add step/Add repeat` and handoff actions render as equal two-column mobile groups, support tools show no raw preview boxes/readiness warning card, and undo toast is unobstructed; temporary harness/script were removed after capture | next: run final targeted validation, verify:pre-pr, commit, push, PR, CI, and verify:pre-merge`
 - `2026-06-02 | final targeted validation | PASS: port 3000 free; PASS: ./node_modules/.bin/vitest run tests/unit/action-layout.test.ts tests/unit/session-step-surface-renderer.test.tsx tests/unit/workout-builder-hub.test.tsx (69 tests); PASS: npm run typecheck; PASS: npm run lint:briefs:all; PASS: npm run lint:quality-gates; PASS: git diff --check; targeted route/label/support sweep found no Help/Guide, runbook, workflow, route, API, analytics, export, or support fallout beyond planned component/test/queue/design/brief updates; old `session-generator-draft-preview` references remain only in the separate generator-intake surface/tests and new absence assertions for WorkoutEditor; Garmin/export readiness strings remain only in historical docs/shared export tests, not in member-facing WorkoutEditor UI | next: stage diff and run npm run verify:pre-pr`
 - `2026-06-02 | pre-pr gate | PASS: npm run verify:pre-pr full public lane; branch-current confirmed origin/main@bd14f3d; lint/quality/admin/env/pr-body/eslint passed with one existing output-script warning; typecheck passed; unit suite passed (224 files, 1309 tests); build passed; perf budgets passed with hold recommendation; Playwright E2E passed (102 passed, 492 expected skips) | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#945`
+- `squash_commit`: `ba5a5d1`
+- `result`: Closed the Workout Editor support-tools token/action parity slice. The member-facing editor now keeps export/handoff functions while removing raw debug preview boxes and automatic Garmin/export readiness warning UI, and the changed metadata, support-tools, session-step, and undo actions share a predictable mobile/desktop button layout.
+- `validation`: `npm run verify:pre-pr` PASS on `e93b56a`; GitHub checks PASS for PR `#945`; `npm run verify:pre-merge` PASS on `e93b56a`; screenshot artifacts captured in `output/aw006-workout-editor-support-tools-token-parity-2026-06-02-095427/`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#945`, screenshot artifacts, component diff                                                                                | None         |
+| UX flow clarity                               | `5/5`          | PR `#945`, screenshot artifacts showing raw preview/readiness removal, focused tests                                           | None         |
+| Visual design quality                         | `5/5`          | `components/ui/actionLayout.ts`, mobile action contract, screenshot artifacts                                                  | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests, no export/API/data-contract changes, `npm run verify:pre-pr` PASS                                          | None         |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, preserved accessible labels/disabled states, screenshot QA                                         | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/API additions, perf budgets PASS                                                                           | None         |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical workout data and local draft boundaries unchanged, diff review                                                | None         |
+| Reliability and failure handling              | `5/5`          | Export/handoff feedback and discard undo behavior preserved, focused tests and full gates                                      | None         |
+| Security and authz                            | `5/5`          | Auth/API boundaries unchanged, CI security/API negative-path coverage unchanged                                                | None         |
+| Content governance                            | `5/5`          | Queue, design inventory, mobile action contract, active/done brief lifecycle updates                                           | None         |
+| Analytics and KPI observability               | `5/5`          | Analytics taxonomy/payloads unchanged, route/label/support sweep                                                               | None         |
+| i18n operational readiness                    | `5/5`          | Mobile layout helper supports wrapping and arbitrary action counts, screenshot text-fit review                                 | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Small local helper, no new dependency, reference-surface reuse                                                                 | None         |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, `npm run verify:pre-pr` PASS, CI PASS, `npm run verify:pre-merge` PASS                                     | None         |
+| DevOps and rollback readiness                 | `5/5`          | PR `#945` squash merge, rollback path `git revert ba5a5d1`, pre-merge marker `artifacts/verify-pre-merge/20260602-082500.json` | None         |
