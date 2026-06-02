@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-course-open-on-phone-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -162,3 +162,44 @@ Minimum surfaces:
 - `2026-06-02 | screenshot-handoff | updated CourseOpenOnPhoneCard card/action/mobile classes to fs-library-card/fs-cta-secondary/shared mobile action layout; preserved QR generation input, Share API payload, clipboard path, fallback, copy/share/QR retry behavior, course data, auth, analytics, Help/Guide, and support behavior; updated stale AW-006 queue/inventory records; validation passed: ./node_modules/.bin/vitest run tests/unit/course-open-on-phone-card.test.tsx (1 file / 7 tests), npx playwright test tests/e2e/course-support-card-actions.spec.ts --project=desktop-chromium --project=mobile-chromium (3 passed / 3 skipped by project guards), npm run lint:briefs:all, npm run lint:quality-gates, targeted route/label/support sweep, and git diff --check; before/after screenshots captured in output/aw-006-course-open-phone-token-action-2026-06-02-192822; no product-rendering files changed after screenshot capture | next: wait for owner screenshot approval before npm run verify:pre-pr, PR creation, or npm run verify:pre-merge`
 - `2026-06-02 | screenshot-approved | owner approved the before/after screenshot handoff; no product-rendering files changed after capture | next: run npm run verify:pre-pr`
 - `2026-06-02 | pre-pr gate | npm run verify:pre-pr passed the full public lane locally after screenshot approval: branch-current passed against origin/main@58764eb, quality gates/admin audit/env parity/generated PR body/eslint/typecheck passed, unit suite passed (224 files / 1311 tests), build and performance budgets passed, full Playwright lane passed (102 passed / 492 skipped), and verify-open passed; only known eslint warning remains in output/capture-aw006-dryland-feedback.mjs outside this slice; no product-rendering files changed after screenshot capture | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#949`
+- `squash_commit`: `f714ba1`
+- `result`: Closed AW-006 Course Open On Phone Token/Action Parity by aligning the `/course` open-on-phone card shell, visible share/copy/retry action tokens, and two-action mobile layout with the current AW-006 direction while preserving QR/share/copy behavior, course data, auth, analytics, Help/Guide, and support behavior.
+- `validation`: `npm run verify:pre-pr` passed full public lane locally; GitHub CI passed (`verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, Vercel); `npm run verify:pre-merge` passed full public lane locally after PR merge readiness.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; private-gate regression was skipped because `SITE_LOCK_ENABLED!=1` and private-gate behavior was outside scope.
+
+Critical target categories:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                     | Gaps / Notes                                    |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#949`, screenshots, `npm run verify:pre-merge`                                           | None.                                           |
+| UX flow clarity                               | `5/5`          | focused unit tests, mobile screenshot handoff, full E2E lane                                 | None.                                           |
+| Visual design quality                         | `5/5`          | before/after screenshots in `output/aw-006-course-open-phone-token-action-2026-06-02-192822` | Owner approved screenshot handoff.              |
+| Business logic correctness and data integrity | `5/5`          | focused unit tests and unchanged QR/share/copy diff review                                   | None.                                           |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, native buttons, preserved feedback roles/aria-live               | None.                                           |
+| Performance (CWV + payloads)                  | `5/5`          | build and performance budgets passed in pre-PR and pre-merge gates                           | None.                                           |
+| Data placement and sync boundaries            | `5/5`          | code diff preserved browser-local QR/share/copy UI state only                                | None.                                           |
+| Reliability and failure handling              | `5/5`          | retry/error/success tests plus screenshot QA                                                 | None.                                           |
+| Security and authz                            | `5/5`          | changed-files review; no auth/API/allowlist/credential changes                               | None.                                           |
+| Content governance                            | `5/5`          | active brief, AW-006 queue, and inventory closeout                                           | This repo-managed closeout records final state. |
+| Analytics and KPI observability               | `5/5`          | analytics diff review; no event taxonomy or payload changes                                  | None.                                           |
+| i18n operational readiness                    | `5/5`          | shared mobile action layout and screenshot review                                            | Future third action needs explicit mapping.     |
+| Stack-fit and dependency discipline           | `5/5`          | reused `CourseOpenOnPhoneCard`, `actionLayout`, `cx`, and `fs-*` tokens                      | No dependency added.                            |
+| Testing and QA automation                     | `5/5`          | Vitest, focused Playwright, full CI, `verify:pre-pr`, `verify:pre-merge`                     | None.                                           |
+| DevOps and rollback readiness                 | `5/5`          | PR `#949` clean merge, no migration/env/provider changes                                     | Normal revert restores previous presentation.   |
