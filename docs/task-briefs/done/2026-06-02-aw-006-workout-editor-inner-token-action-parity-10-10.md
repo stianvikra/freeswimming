@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-workout-editor-inner-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -280,3 +280,47 @@ Required because this changes visible UI/layout.
 - `2026-06-02 | screenshot-review | captured after/reference artifacts in output/aw006-workout-editor-inner-token-parity-2026-06-02-030807 using the local Freeswimming screenshot default; auth-backed capture was blocked by local Supabase egress guard, so a temporary deterministic workout-editor harness was used and then removed; no product-rendering files changed after final screenshot capture | next: wait for owner screenshot approval before npm run verify:pre-pr, commit, push, PR, CI monitoring, or npm run verify:pre-merge`
 - `2026-06-02 | screenshot-approved | owner approved screenshot handoff and merge on good tests at 03:17 CEST; no product-rendering files changed after the final screenshot capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if all gates are green`
 - `2026-06-02 | pre-pr | PASS: npm run verify:pre-pr full lane on working tree with lint, typecheck, 1308 unit tests, build, perf budgets, and Playwright e2e 102 passed / 492 skipped; perf trend recommendation is hold, not tighten, because worst margin is 13.9% against the 15.0% tighten threshold | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge`
+- `2026-06-02 | merged | PR #943 shipped as squash commit 1088395 after full npm run verify:pre-pr, green required GitHub checks, and full npm run verify:pre-merge on ad639d0; this repo-managed closeout moves the brief to done and clears stale active queue/design-inventory references | next: run closeout docs-only gates, merge closeout if green, rerun post-merge preflight, and complete the mandatory chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#943`
+- `squash_commit`: `1088395`
+- `result`: Closed AW-006 Workout Editor Inner Token/Action Parity. The inner swim-session editor metadata/current/export/save/discard/delete actions and shared session-step edit/rearrange/view/add/undo/delete/mobile action chrome now use the current My Library token/action hierarchy, while workout data, session-step behavior, local drafts, save/delete/discard behavior, exports, Poolside preview, analytics, Help/Guide, and support behavior stayed unchanged.
+- `validation`: `PASS` targeted Vitest (`tests/unit/session-step-surface-renderer.test.tsx`, `tests/unit/workout-builder-hub.test.tsx`, `68` tests), `PASS` `npm run typecheck`, `PASS` `npm run lint:briefs:all`, `PASS` `npm run lint:quality-gates`, `PASS` `git diff --check`, `PASS` targeted route/label/support sweep, `PASS` screenshot handoff (`output/aw006-workout-editor-inner-token-parity-2026-06-02-030807`, `4` screenshots), `PASS` `npm run verify:pre-pr` full lane (`1308` unit tests, `102` e2e passed / `492` skipped), `PASS` required GitHub checks on PR `#943`, and `PASS` `npm run verify:pre-merge` full lane (`artifacts/verify-pre-merge/20260602-013749.json`).
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining scoped gaps.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                  | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#943`, component diff, focused tests, screenshot handoff, queue/design closeout                                                                       | None         |
+| UX flow clarity                               | `5/5`          | PR `#943`, screenshot handoff, focused tests for mode/add/undo/delete/mobile and editor action controls                                                   | None         |
+| Visual design quality                         | `5/5`          | Screenshot handoff: `output/aw006-workout-editor-inner-token-parity-2026-06-02-030807`; no overflow/buttons reported                                      | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused behavior tests and code review confirmed no workout API, draft, export, Poolside, save/delete/discard, ordering, or route-refresh behavior change | None         |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and screenshot QA preserved accessible names, disabled states, live/status semantics, confirmation actions, and touch targets  | None         |
+| Performance (CWV + payloads)                  | `5/5`          | `npm run verify:pre-pr`, CI `verify`, `npm run verify:pre-merge`, and dependency diff; no new dependency, asset, API call, polling, or payload change     | None         |
+| Data placement and sync boundaries            | `5/5`          | Data placement/sync contract unchanged; no localStorage key, server-canonical workout, export URL, or transient-state ownership change                    | None         |
+| Reliability and failure handling              | `5/5`          | Focused regression tests and preserved schema/load/action/local-draft/remove/save/export feedback behavior                                                | None         |
+| Security and authz                            | `5/5`          | Route/API/auth boundaries unchanged; PR body policy-impact scan was N/A for auth/policy changes                                                           | None         |
+| Content governance                            | `5/5`          | This closeout moves the brief to `done` and clears stale active queue/design-inventory references                                                         | None         |
+| Analytics and KPI observability               | `5/5`          | Code review confirmed no analytics event name or payload changes                                                                                          | None         |
+| i18n operational readiness                    | `5/5`          | Responsive action rows and screenshot text-fit review preserve wrapping room for longer future strings                                                    | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `WorkoutEditor`, `SessionStepSurfaceRenderer`, `sessionStepSurfaceContract`, existing tests, `fs-library-card`, and `fs-cta-*`; no new dependency  | None         |
+| Testing and QA automation                     | `5/5`          | Focused Vitest, screenshot handoff, `npm run verify:pre-pr`, CI checks, and `npm run verify:pre-merge`                                                    | None         |
+| DevOps and rollback readiness                 | `5/5`          | Squash commit `1088395`; rollback is normal `git revert 1088395`; no migration, env, provider, or feature-flag rollback needed                            | None         |
