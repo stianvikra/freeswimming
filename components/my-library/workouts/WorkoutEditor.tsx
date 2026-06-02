@@ -11,6 +11,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
+import { cx } from "@/components/ui/cx";
 import {
   RemovalConfirm,
   SessionStepRepeatSummaryCard,
@@ -236,6 +237,35 @@ const workoutEditorFeedbackToneClasses: Record<WorkoutEditorFeedbackTone, string
   success: "border-emerald-200 bg-emerald-50 text-emerald-900",
   error: "border-rose-200 bg-rose-50 text-rose-800",
 };
+const workoutEditorActionBaseClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const workoutEditorCompactActionBaseClass =
+  "inline-flex min-h-9 items-center justify-center gap-1.5 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const workoutEditorPrimaryActionClass = cx("fs-cta-primary", workoutEditorActionBaseClass);
+const workoutEditorSecondaryActionClass = cx(
+  "fs-cta-secondary hover:bg-white",
+  workoutEditorActionBaseClass
+);
+const workoutEditorDangerActionClass = cx(
+  "fs-cta-secondary border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500",
+  workoutEditorActionBaseClass
+);
+const workoutEditorCautionActionClass = cx(
+  "fs-cta-secondary border-amber-200 text-amber-900 hover:bg-amber-50 focus-visible:ring-amber-500",
+  workoutEditorActionBaseClass
+);
+const workoutEditorCompactSecondaryActionClass = cx(
+  "fs-cta-secondary hover:bg-white",
+  workoutEditorCompactActionBaseClass
+);
+const workoutEditorCompactDangerActionClass = cx(
+  "fs-cta-secondary border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500",
+  workoutEditorCompactActionBaseClass
+);
+const workoutEditorCompactCautionActionClass = cx(
+  "fs-cta-secondary border-amber-200 text-amber-900 hover:bg-amber-50 focus-visible:ring-amber-500",
+  workoutEditorCompactActionBaseClass
+);
 
 function WorkoutEditorActionFeedback({
   id,
@@ -2631,7 +2661,7 @@ export default function WorkoutEditor({
       isTopLevelSessionStepBlock && !isRestStepCard ? (
         <div
           data-testid={`session-draft-step-linked-rest-panel-${index}`}
-          className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 md:col-span-2"
+          className="fs-library-card fs-library-card-muted border-[color:var(--fs-border-brand)] p-3 md:col-span-2"
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -2656,7 +2686,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={() => removeAttachedRestStep(linkedTopLevelRestStep.id, step.id)}
                 data-testid={`session-draft-step-linked-rest-remove-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+                className={workoutEditorCompactDangerActionClass}
               >
                 Remove rest
               </button>
@@ -2665,7 +2695,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={() => insertAttachedRestAfterStep(step.id)}
                 data-testid={`session-draft-step-linked-rest-add-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100"
+                className={workoutEditorCompactSecondaryActionClass}
               >
                 Add rest
               </button>
@@ -3386,7 +3416,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={handleAddStepAfter}
                 data-testid={`session-draft-step-add-after-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                className={workoutEditorCompactSecondaryActionClass}
               >
                 Add step after
               </button>
@@ -3396,7 +3426,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={handleAddRepeatAfter}
                 data-testid={`session-draft-step-add-repeat-after-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-50"
+                className={workoutEditorCompactSecondaryActionClass}
               >
                 Add repeat after
               </button>
@@ -3406,7 +3436,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={handleDuplicate}
                 data-testid={`session-draft-step-duplicate-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50"
+                className={workoutEditorCompactSecondaryActionClass}
               >
                 Duplicate
               </button>
@@ -3416,7 +3446,7 @@ export default function WorkoutEditor({
                 type="button"
                 onClick={() => requestStepRemoval(step.id)}
                 data-testid={`session-draft-step-remove-${index}`}
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                className={workoutEditorCompactDangerActionClass}
               >
                 Delete
               </button>
@@ -3425,7 +3455,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={() => setOpenStepId(null)}
               data-testid={`session-draft-step-done-bottom-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+              className={cx(workoutEditorCompactSecondaryActionClass, "sm:ml-auto")}
             >
               Done
             </button>
@@ -3612,14 +3642,14 @@ export default function WorkoutEditor({
                     onClick={() =>
                       updateRepeatGroupEndingRestMode(group.repeatGroupId, "skip_last_rest")
                     }
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-amber-200 bg-white px-3 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
+                    className={workoutEditorCompactCautionActionClass}
                   >
                     Use separate rest step
                   </button>
                   <button
                     type="button"
                     onClick={() => setRepeatConflictPendingReplacement(group.repeatGroupId)}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+                    className={workoutEditorCompactSecondaryActionClass}
                   >
                     Use repeat rest time
                   </button>
@@ -3634,7 +3664,7 @@ export default function WorkoutEditor({
                         current === group.repeatGroupId ? null : current
                       );
                     }}
-                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className={workoutEditorCompactSecondaryActionClass}
                   >
                     Keep both
                   </button>
@@ -3648,7 +3678,7 @@ export default function WorkoutEditor({
                       <button
                         type="button"
                         onClick={() => removeRepeatPostSetRestStep(group.repeatGroupId)}
-                        className="inline-flex h-9 items-center justify-center rounded-xl bg-rose-600 px-3 text-sm font-semibold text-white transition hover:bg-rose-500"
+                        className={workoutEditorCompactDangerActionClass}
                       >
                         Delete rest step
                       </button>
@@ -3659,7 +3689,7 @@ export default function WorkoutEditor({
                             current === group.repeatGroupId ? null : current
                           )
                         }
-                        className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        className={workoutEditorCompactSecondaryActionClass}
                       >
                         Cancel
                       </button>
@@ -3726,7 +3756,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={addStepAfterRepeat}
               data-testid={`session-draft-repeat-add-step-after-${groupIndex}`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+              className={workoutEditorCompactSecondaryActionClass}
             >
               Add step after
             </button>
@@ -3734,7 +3764,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={addRepeatAfterRepeat}
               data-testid={`session-draft-repeat-add-repeat-after-${groupIndex}`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+              className={workoutEditorCompactSecondaryActionClass}
             >
               Add repeat after
             </button>
@@ -3742,7 +3772,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={duplicateRepeat}
               data-testid={`session-draft-repeat-duplicate-${groupIndex}`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm text-blue-800 transition hover:bg-blue-100"
+              className={workoutEditorCompactSecondaryActionClass}
             >
               Duplicate repeat
             </button>
@@ -3750,7 +3780,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={requestRemoveRepeat}
               data-testid={`session-draft-repeat-remove-${groupIndex}`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+              className={workoutEditorCompactDangerActionClass}
             >
               Delete repeat
             </button>
@@ -3758,7 +3788,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={() => toggleRepeatEditor(group.repeatGroupId)}
               data-testid={`session-draft-repeat-done-bottom-${groupIndex}`}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 sm:ml-auto"
+              className={cx(workoutEditorCompactSecondaryActionClass, "sm:ml-auto")}
             >
               Done
             </button>
@@ -4173,7 +4203,7 @@ export default function WorkoutEditor({
                 onClick={() => openWorkoutPdfPrintView("standard")}
                 data-testid="workout-editor-pdf-open"
                 aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                className={workoutEditorSecondaryActionClass}
               >
                 {workoutPdfButtonLabel}
               </button>
@@ -4182,7 +4212,7 @@ export default function WorkoutEditor({
                 onClick={() => openWorkoutPdfPrintView("poolside")}
                 data-testid="workout-editor-poolside-pdf-open"
                 aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                className={workoutEditorSecondaryActionClass}
               >
                 {workoutPoolsidePdfButtonLabel}
               </button>
@@ -4390,7 +4420,7 @@ export default function WorkoutEditor({
           onClick={() => openWorkoutPdfPrintView("poolside")}
           data-testid="workout-editor-poolside-pdf-open"
           aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200"
+          className={workoutEditorSecondaryActionClass}
         >
           Print Preview
         </button>
@@ -4525,10 +4555,7 @@ export default function WorkoutEditor({
       {!showCalmBuilderLayout ? supportToolsPanel : null}
 
       {showCalmBuilderLayout ? (
-        <section
-          data-testid="workout-editor-metadata-panel"
-          className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
-        >
+        <section data-testid="workout-editor-metadata-panel" className="fs-library-card p-3 sm:p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
@@ -4581,7 +4608,7 @@ export default function WorkoutEditor({
                     onClick={() => setMetadataOpen((current) => !current)}
                     aria-expanded={metadataOpen}
                     data-testid="workout-editor-metadata-toggle"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    className={workoutEditorSecondaryActionClass}
                   >
                     {metadataOpen ? "Hide details" : "Show details"}
                   </button>
@@ -4592,7 +4619,7 @@ export default function WorkoutEditor({
                     onClick={() => openWorkoutPdfPrintView("standard")}
                     data-testid="workout-editor-pdf-open"
                     aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    className={workoutEditorSecondaryActionClass}
                   >
                     {workoutPdfButtonLabel}
                   </button>
@@ -4607,7 +4634,7 @@ export default function WorkoutEditor({
                     }}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={workoutEditorSecondaryActionClass}
                   >
                     Discard changes
                   </button>
@@ -4618,7 +4645,7 @@ export default function WorkoutEditor({
                     onClick={onRequestDiscardDraft}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-builder-discard-current-draft"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={workoutEditorCautionActionClass}
                   >
                     Discard draft
                   </button>
@@ -4629,7 +4656,7 @@ export default function WorkoutEditor({
                     onClick={onRequestDeleteCurrent}
                     disabled={isDeletingCurrent}
                     data-testid="workout-builder-delete-current-workout"
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={workoutEditorDangerActionClass}
                   >
                     {isDeletingCurrent ? "Deleting..." : "Delete session"}
                   </button>
@@ -4649,7 +4676,7 @@ export default function WorkoutEditor({
                     (savedWorkout ? !hasUnsavedChanges : false)
                   }
                   data-testid={saveButtonTestId}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={workoutEditorPrimaryActionClass}
                 >
                   {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
@@ -4765,7 +4792,7 @@ export default function WorkoutEditor({
                     onClick={() => openWorkoutPdfPrintView("poolside")}
                     data-testid="workout-editor-poolside-pdf-open"
                     aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-800 transition hover:bg-blue-50 active:bg-blue-100"
+                    className={cx(workoutEditorSecondaryActionClass, "min-h-11")}
                   >
                     {workoutPoolsidePdfButtonLabel}
                   </button>
@@ -4780,7 +4807,7 @@ export default function WorkoutEditor({
                     }}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={cx(workoutEditorSecondaryActionClass, "min-h-11")}
                   >
                     Discard changes
                   </button>
@@ -4791,7 +4818,7 @@ export default function WorkoutEditor({
                     onClick={onRequestDiscardDraft}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-builder-discard-current-draft"
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 text-sm font-medium text-amber-900 transition hover:bg-amber-50 active:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={cx(workoutEditorCautionActionClass, "min-h-11")}
                   >
                     Discard draft
                   </button>
@@ -4811,7 +4838,7 @@ export default function WorkoutEditor({
                     (savedWorkout ? !hasUnsavedChanges : false)
                   }
                   data-testid={saveButtonTestId}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cx(workoutEditorPrimaryActionClass, "min-h-11")}
                 >
                   {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
