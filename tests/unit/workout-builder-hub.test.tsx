@@ -390,6 +390,10 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("workout-editor-save-state")).toHaveClass("sr-only");
     expect(screen.getByTestId("workout-editor-pdf-source")).toHaveClass("sr-only");
+    expect(screen.getByTestId("workout-editor-metadata-panel")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("workout-editor-pdf-open")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("workout-builder-save")).toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
       "false"
@@ -508,6 +512,7 @@ describe("WorkoutBuilderHub", () => {
     fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
+    expect(screen.getByTestId("workout-editor-reset")).toHaveClass("fs-cta-secondary");
 
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
@@ -1575,6 +1580,7 @@ describe("WorkoutBuilderHub", () => {
       "aria-describedby",
       pdfError.id
     );
+    expect(screen.getByTestId("workout-editor-pdf-open")).toHaveClass("fs-cta-secondary");
 
     fireEvent.click(screen.getByTestId("workout-editor-poolside-pdf-open"));
 
@@ -1583,6 +1589,7 @@ describe("WorkoutBuilderHub", () => {
     expect(poolsidePdfError).toHaveAttribute("aria-live", "assertive");
     expect(poolsidePdfError).toHaveAttribute("data-feedback-tone", "error");
     expect(poolsidePdfError).toHaveTextContent("PDF could not open");
+    expect(screen.getByTestId("workout-editor-poolside-pdf-open")).toHaveClass("fs-cta-secondary");
     expect(poolsidePdfError).toHaveTextContent(
       "Could not open the poolside note PDF. Check whether pop-ups are blocked."
     );
@@ -3306,6 +3313,10 @@ describe("WorkoutBuilderHub", () => {
     openWorkoutMetadataPanel();
     expect(screen.queryByTestId("workout-editor-danger-zone")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-builder-delete-current-workout")).toBeVisible();
+    expect(screen.getByTestId("workout-builder-delete-current-workout")).toHaveClass(
+      "fs-cta-secondary",
+      "text-rose-700"
+    );
     fireEvent.click(screen.getByTestId("workout-builder-delete-current-workout"));
 
     expect(screen.getByText("Delete this saved session?")).toBeVisible();
@@ -3645,6 +3656,10 @@ describe("WorkoutBuilderHub", () => {
     await waitFor(() => {
       expect(screen.getByTestId("workout-builder-discard-current-draft")).toBeVisible();
     });
+    expect(screen.getByTestId("workout-builder-discard-current-draft")).toHaveClass(
+      "fs-cta-secondary",
+      "text-amber-900"
+    );
 
     fireEvent.click(screen.getByTestId("workout-builder-discard-current-draft"));
     expect(screen.getByText("Discard this local draft?")).toBeVisible();

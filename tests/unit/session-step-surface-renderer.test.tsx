@@ -124,9 +124,20 @@ afterEach(() => {
 it("renders shell states and delegates mode/add/undo callbacks", () => {
   const callbacks = renderSurface();
 
+  expect(screen.getByTestId("workout-editor-session-steps-surface")).toHaveClass("fs-library-card");
+  expect(screen.getByTestId("workout-editor-builder-mode-edit")).toHaveClass("fs-cta-primary");
+  expect(screen.getByTestId("workout-editor-builder-mode-view")).toHaveClass("fs-cta-secondary");
+  expect(screen.getByTestId("session-draft-add-step")).toHaveClass("fs-cta-secondary");
+  expect(screen.getByTestId("session-draft-add-repeat")).toHaveClass("fs-cta-secondary");
   expect(screen.getByTestId("session-draft-empty-steps")).toBeVisible();
+  expect(screen.getByTestId("session-draft-empty-steps")).toHaveClass("fs-library-card-muted");
   expect(screen.getByTestId("workout-editor-removal-undo")).toHaveTextContent(
     "Warmup and attached rest"
+  );
+  expect(screen.getByTestId("workout-editor-removal-undo")).toHaveClass("fs-library-card-accent");
+  expect(screen.getByTestId("workout-editor-removal-undo-button")).toHaveClass("fs-cta-primary");
+  expect(screen.getByTestId("workout-editor-removal-dismiss-button")).toHaveClass(
+    "fs-cta-secondary"
   );
 
   clickAll(
@@ -174,6 +185,29 @@ it("renders shared view sections as read-only when no open callbacks are provide
 
 it("renders shared single-step chrome and delegates card/delete actions", () => {
   const action = renderStepCard();
+
+  expect(screen.getByTestId("session-draft-step-toggle-0")).toHaveClass("fs-cta-secondary");
+  expect(screen.getByTestId("session-draft-step-mobile-add-after-0")).toHaveClass(
+    "fs-cta-secondary"
+  );
+  expect(screen.getByTestId("session-draft-step-mobile-add-repeat-after-0")).toHaveClass(
+    "fs-cta-secondary"
+  );
+  expect(screen.getByTestId("session-draft-step-mobile-remove-0")).toHaveClass(
+    "fs-cta-secondary",
+    "text-rose-700"
+  );
+  expect(screen.getByTestId("workout-editor-removal-confirm")).toHaveClass(
+    "fs-library-card",
+    "border-rose-200"
+  );
+  expect(screen.getByTestId("workout-editor-removal-confirm-button")).toHaveClass(
+    "fs-cta-secondary",
+    "text-rose-700"
+  );
+  expect(screen.getByTestId("workout-editor-removal-cancel-button")).toHaveClass(
+    "fs-cta-secondary"
+  );
 
   clickAll(
     "session-draft-step-summary-0",

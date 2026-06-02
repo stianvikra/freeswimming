@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import type { ReactNode } from "react";
+import { cx } from "@/components/ui/cx";
 import {
   getManualPoolCategoryLabelClass,
   getManualPoolViewSectionHeaderClass,
@@ -30,24 +31,41 @@ const SESSION_STEP_SURFACE_MODE_LABELS: Record<SessionStepSurfaceMode, string> =
 
 const mobileSummaryToggleClass =
   "w-full rounded-2xl text-left outline-none transition focus-visible:ring-2 focus-visible:ring-blue-200";
-const mobileIconButtonBaseClass =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition";
-const mobileActionToggleClass = `${mobileIconButtonBaseClass} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100`;
-const mobileActionPanelClass = "mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-2.5";
-const mobileSecondaryActionClass =
-  "inline-flex min-h-10 w-full items-center justify-start rounded-xl border px-3 py-2 text-sm font-medium transition";
-const rearrangeMoveButtonClass =
-  "inline-flex h-10 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-10";
+const mobileIconButtonLayoutClass =
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center p-0 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const mobileActionToggleClass = cx(
+  "fs-cta-secondary text-slate-700 hover:bg-white",
+  mobileIconButtonLayoutClass
+);
+const mobileActionPanelClass = "fs-library-card fs-library-card-muted mt-3 p-2.5 sm:hidden";
+const surfaceActionBaseClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const surfaceCompactActionBaseClass =
+  "inline-flex min-h-9 items-center justify-center gap-1.5 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const surfacePrimaryActionClass = cx("fs-cta-primary", surfaceActionBaseClass);
+const surfaceSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", surfaceActionBaseClass);
+const surfaceCompactSecondaryActionClass = cx(
+  "fs-cta-secondary hover:bg-white",
+  surfaceCompactActionBaseClass
+);
+const surfaceDangerActionClass = cx(
+  "fs-cta-secondary border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500",
+  surfaceActionBaseClass
+);
+const mobileSecondaryActionClass = cx(
+  "fs-cta-secondary w-full justify-start hover:bg-white",
+  surfaceActionBaseClass
+);
+const rearrangeMoveButtonClass = cx(mobileActionToggleClass, "sm:h-9 sm:w-10");
 const recentlyMovedBlockClass = "bg-teal-50/80 shadow-sm ring-2 ring-inset ring-teal-300";
 const desktopHeaderStackClass = "flex items-start justify-between gap-3";
 const desktopSummaryBlockClass = "min-w-0 flex-1";
 
 function getMobileExpandToggleClass(expanded: boolean) {
-  return `${mobileIconButtonBaseClass} ${
-    expanded
-      ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 active:bg-blue-100"
-      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100"
-  }`;
+  return cx(
+    mobileIconButtonLayoutClass,
+    expanded ? "fs-cta-primary" : "fs-cta-secondary text-slate-700 hover:bg-white"
+  );
 }
 
 export type SessionStepSummaryContentModel = {
@@ -105,10 +123,7 @@ export function SessionStepSurfaceRenderer({
   const isViewMode = mode === "view";
 
   return (
-    <div
-      data-testid="workout-editor-session-steps-surface"
-      className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
-    >
+    <div data-testid="workout-editor-session-steps-surface" className="fs-library-card p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>
         <div className="flex flex-wrap items-center gap-3">
@@ -116,7 +131,7 @@ export function SessionStepSurfaceRenderer({
             <div
               role="group"
               aria-label="Builder mode"
-              className="inline-flex rounded-xl border border-blue-100 bg-blue-50/60 p-1"
+              className="fs-library-card fs-library-card-muted inline-flex min-h-12 gap-1 p-1"
             >
               {SESSION_STEP_SURFACE_MODES.map((nextMode) => {
                 const isSelected = mode === nextMode;
@@ -128,11 +143,10 @@ export function SessionStepSurfaceRenderer({
                     onClick={() => onModeChange(nextMode)}
                     aria-pressed={isSelected}
                     data-testid={`workout-editor-builder-mode-${nextMode}`}
-                    className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-semibold transition ${
-                      isSelected
-                        ? "border border-blue-200 bg-blue-600 text-white shadow-sm"
-                        : "text-blue-900/70 hover:text-blue-900"
-                    }`}
+                    className={cx(
+                      surfaceCompactActionBaseClass,
+                      isSelected ? "fs-cta-primary" : "fs-cta-secondary shadow-none hover:bg-white"
+                    )}
                   >
                     {SESSION_STEP_SURFACE_MODE_LABELS[nextMode]}
                   </button>
@@ -146,7 +160,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onAddStep}
                 data-testid="session-draft-add-step"
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 sm:h-10 sm:px-4"
+                className={surfaceCompactSecondaryActionClass}
               >
                 Add step
               </button>
@@ -154,7 +168,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onAddRepeat}
                 data-testid="session-draft-add-repeat"
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100 active:bg-blue-200 sm:h-10 sm:px-4"
+                className={surfaceCompactSecondaryActionClass}
               >
                 Add repeat
               </button>
@@ -171,7 +185,7 @@ export function SessionStepSurfaceRenderer({
         {!hasSteps ? (
           <div
             data-testid="session-draft-empty-steps"
-            className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-3 sm:p-4"
+            className="fs-library-card fs-library-card-muted border-dashed p-3 sm:p-4"
           >
             <p className="text-sm font-medium text-slate-900">Start from a clean empty session.</p>
             <p className="mt-1 text-sm text-slate-600">
@@ -183,7 +197,7 @@ export function SessionStepSurfaceRenderer({
         {lastRemovedLabel ? (
           <div
             data-testid="workout-editor-removal-undo"
-            className="rounded-2xl border border-blue-200 bg-blue-50/90 p-3 sm:p-4"
+            className="fs-library-card fs-library-card-accent p-3 sm:p-4"
           >
             <p className="text-sm font-medium text-blue-950">
               Deleted <span className="font-semibold">{lastRemovedLabel}</span>.
@@ -196,7 +210,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onUndoLastRemoval}
                 data-testid="workout-editor-removal-undo-button"
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                className={surfacePrimaryActionClass}
               >
                 Undo delete
               </button>
@@ -204,7 +218,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onDismissLastRemoval}
                 data-testid="workout-editor-removal-dismiss-button"
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-900 transition hover:bg-blue-100 active:bg-blue-200"
+                className={surfaceSecondaryActionClass}
               >
                 Dismiss
               </button>
@@ -443,11 +457,10 @@ export function SessionStepSummaryCard({
               aria-expanded={isOpen}
               aria-controls={panelId}
               data-testid={`session-draft-step-toggle-${index}`}
-              className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
-                isOpen
-                  ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
+              className={cx(
+                surfaceCompactSecondaryActionClass,
+                isOpen ? "border-[color:var(--fs-border-brand)]" : ""
+              )}
             >
               {isOpen ? "Done" : "Edit"}
             </button>
@@ -558,7 +571,7 @@ export function SessionStepSummaryCard({
             type="button"
             onClick={onAddStepAfter}
             data-testid={`session-draft-step-mobile-primary-add-after-${index}`}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+            className={surfaceCompactSecondaryActionClass}
           >
             Add after
           </button>
@@ -567,7 +580,7 @@ export function SessionStepSummaryCard({
               type="button"
               onClick={onAddRepeatAfter}
               data-testid={`session-draft-step-mobile-primary-add-repeat-after-${index}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-100"
+              className={surfaceCompactSecondaryActionClass}
             >
               Repeat after
             </button>
@@ -708,11 +721,10 @@ export function SessionStepRepeatSummaryCard({
                 onClick={onToggle}
                 aria-expanded={isOpen}
                 data-testid={`session-draft-repeat-toggle-${groupIndex}`}
-                className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm transition ${
-                  isOpen
-                    ? "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
+                className={cx(
+                  surfaceCompactSecondaryActionClass,
+                  isOpen ? "border-[color:var(--fs-border-brand)]" : ""
+                )}
               >
                 {isOpen ? "Done" : "Edit"}
               </button>
@@ -777,7 +789,7 @@ export function SessionStepRepeatSummaryCard({
               type="button"
               onClick={onAddStepAfter}
               data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-800 transition hover:bg-blue-50"
+              className={surfaceCompactSecondaryActionClass}
             >
               Add step after
             </button>
@@ -922,17 +934,17 @@ function MobileActionButton({
 }) {
   const toneClass =
     tone === "blue"
-      ? "border-blue-200 bg-white text-blue-800 hover:bg-blue-50"
+      ? "border-[color:var(--fs-border-brand)]"
       : tone === "rose"
-        ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
-        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100";
+        ? "border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500"
+        : "";
 
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={testId}
-      className={`${mobileSecondaryActionClass} ${toneClass}`}
+      className={cx(mobileSecondaryActionClass, toneClass)}
     >
       {children}
     </button>
@@ -955,7 +967,7 @@ export function RemovalConfirm({
   return (
     <div
       data-testid="workout-editor-removal-confirm"
-      className={`${className} rounded-2xl border border-rose-200 bg-rose-50/90 p-3`}
+      className={cx(className, "fs-library-card border-rose-200 bg-rose-50/90 p-3")}
     >
       <p className="text-sm font-medium text-rose-950">
         Delete <span className="font-semibold">{label ?? fallbackLabel}</span>?
@@ -969,7 +981,7 @@ export function RemovalConfirm({
           type="button"
           onClick={onConfirm}
           data-testid="workout-editor-removal-confirm-button"
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 active:bg-rose-700"
+          className={surfaceDangerActionClass}
         >
           Delete now
         </button>
@@ -977,7 +989,7 @@ export function RemovalConfirm({
           type="button"
           onClick={onCancel}
           data-testid="workout-editor-removal-cancel-button"
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-900 transition hover:bg-rose-100 active:bg-rose-200"
+          className={surfaceSecondaryActionClass}
         >
           Keep it
         </button>
