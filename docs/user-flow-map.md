@@ -72,7 +72,9 @@ flowchart LR
 ## My Library Authenticated IA
 
 - Signed-in Home places direct `Micro Sessions` and `Habits` actions directly under `Free course`; `Micro Sessions` opens the active weekly micro plan or creation state, with active mobile entries defaulting to the compact `Bubbles` execution surface, and `Habits` opens a compact active-habits view or add-habit state.
-- `/my-library`: account home and top-level owner dashboard.
+- `/my-library`: account home and top-level owner dashboard. On desktop, the hub groups the
+  resume/new-content area, member workspaces, owned access, and explore cards into a dashboard
+  layout; mobile keeps the same scan-first sequence without the floating mobile nav.
 - `/my-library` hides the floating mobile nav so the account hub is scanned through its own cards
   and the header menu remains the global navigation entry; focused My Library subroutes keep their
   contextual mobile nav.

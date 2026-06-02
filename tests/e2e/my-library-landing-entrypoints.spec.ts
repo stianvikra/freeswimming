@@ -54,6 +54,14 @@ test.describe("my library landing entrypoints", () => {
 
     await loginToMyLibraryViaDevBypass(page);
 
+    const dashboardGrid = page.getByTestId("my-library-dashboard-grid");
+    await expect(dashboardGrid).toHaveClass(/lg:grid-cols-/);
+    await expect(page.getByTestId("my-library-dashboard-main")).toBeVisible();
+    await expect(page.getByTestId("my-library-dashboard-aside")).toHaveClass(/lg:sticky/);
+    await expect(page.getByRole("heading", { name: "Today in your library" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Explore available items" })).toBeVisible();
+
     await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
     await expect(page.getByTestId("my-library-today-tabs")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "My Swim Profile" })).toBeVisible();
