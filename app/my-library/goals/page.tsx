@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import GoalsHub from "@/components/my-library/goals/GoalsHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { GOALS_ACTIVE_LIMIT, GOAL_TEMPLATES } from "@/lib/goals/mvp";
 import { loadGoalViews } from "@/lib/goals/server";
@@ -39,8 +40,8 @@ export default async function MyLibraryGoalsPage() {
                 Track current swim targets and take the next action.
               </p>
             </div>
-            <div data-testid="goals-route-actions" className="flex flex-wrap gap-2">
-              <Link href="/my-library" className={routeActionClass}>
+            <div data-testid="goals-route-actions" className={getMobileActionGroupClass(1)}>
+              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                 Back to My Library
               </Link>
             </div>

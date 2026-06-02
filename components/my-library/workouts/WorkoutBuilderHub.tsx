@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { cx } from "@/components/ui/cx";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
@@ -482,6 +483,8 @@ export default function WorkoutBuilderHub({
     }
   }
 
+  const browseHeaderActionCount = workoutLibrary.schemaReady ? 3 : 1;
+
   return (
     <section
       data-testid="workout-builder-hub"
@@ -492,14 +495,20 @@ export default function WorkoutBuilderHub({
     >
       {browseOnly ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            data-testid="workout-builder-browse-actions"
+            className={getMobileActionGroupClass(browseHeaderActionCount, {
+              desktopJustify: "start",
+              stackOnMobile: true,
+            })}
+          >
             {workoutLibrary.schemaReady ? (
               <CreateManualWorkoutButton
                 label="Build pool session"
                 testId="workout-builder-browse-create-pool"
                 manualPoolCssMetricSecondsPer100m={manualPoolCssMetricSecondsPer100m}
                 manualPoolCssPaceLabel={manualPoolCssPaceLabel}
-                className={primaryActionClass}
+                className={cx(primaryActionClass, mobileActionItemClass)}
               />
             ) : null}
             {workoutLibrary.schemaReady ? (
@@ -507,10 +516,13 @@ export default function WorkoutBuilderHub({
                 label="Build open water session"
                 builderMode="open_water"
                 testId="workout-builder-browse-create-open-water"
-                className={secondaryActionClass}
+                className={cx(secondaryActionClass, mobileActionItemClass)}
               />
             ) : null}
-            <Link href="/my-library/generator" className={secondaryActionClass}>
+            <Link
+              href="/my-library/generator"
+              className={cx(secondaryActionClass, mobileActionItemClass)}
+            >
               AI session generator
             </Link>
           </div>
@@ -590,7 +602,10 @@ export default function WorkoutBuilderHub({
               This removes <span className="font-semibold">{savedWorkout.draft.title}</span> from My
               Library and discards any unsaved local builder edits tied to it.
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div
+              data-testid="workout-builder-current-workout-confirm-actions"
+              className={cx("mt-3", getMobileActionGroupClass(2, { desktopJustify: "start" }))}
+            >
               <button
                 type="button"
                 onClick={() =>
@@ -601,7 +616,7 @@ export default function WorkoutBuilderHub({
                 }
                 disabled={deletingWorkoutId === savedWorkout.id}
                 data-testid="workout-builder-confirm-delete-current-workout"
-                className={dangerPrimaryActionClass}
+                className={cx(dangerPrimaryActionClass, mobileActionItemClass)}
               >
                 {deletingWorkoutId === savedWorkout.id ? "Deleting..." : "Delete session"}
               </button>
@@ -609,7 +624,7 @@ export default function WorkoutBuilderHub({
                 type="button"
                 onClick={() => setPendingCurrentDelete(false)}
                 disabled={deletingWorkoutId === savedWorkout.id}
-                className={dangerActionClass}
+                className={cx(dangerActionClass, mobileActionItemClass)}
               >
                 Cancel
               </button>
@@ -628,19 +643,22 @@ export default function WorkoutBuilderHub({
                 ? "This removes the unsaved pool draft from this device. Nothing is deleted from My Swim Sessions."
                 : "This removes the unsaved open-water draft from this device. Nothing is deleted from My Swim Sessions."}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div
+              data-testid="workout-builder-current-draft-confirm-actions"
+              className={cx("mt-3", getMobileActionGroupClass(2, { desktopJustify: "start" }))}
+            >
               <button
                 type="button"
                 onClick={confirmDiscardLocalDraft}
                 data-testid="workout-builder-confirm-discard-current-draft"
-                className={warningPrimaryActionClass}
+                className={cx(warningPrimaryActionClass, mobileActionItemClass)}
               >
                 Discard draft
               </button>
               <button
                 type="button"
                 onClick={() => setPendingCurrentDraftDiscard(false)}
-                className={warningActionClass}
+                className={cx(warningActionClass, mobileActionItemClass)}
               >
                 Keep editing
               </button>

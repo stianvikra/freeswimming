@@ -162,9 +162,10 @@ describe("My Swim Sessions workspace pages", () => {
     );
 
     const actions = screen.getByTestId("workout-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "default");
     expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute("data-browse-only", "true");
@@ -193,7 +194,7 @@ describe("My Swim Sessions workspace pages", () => {
       name: "Back to My Swim Sessions",
     });
     expect(backLink).toHaveAttribute("href", "/my-library/workouts");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "hidden");
     expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute("data-browse-only", "false");
     expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
@@ -229,9 +230,10 @@ describe("My Swim Sessions workspace pages", () => {
     );
 
     const actions = screen.getByTestId("workout-builder-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     const backLink = within(actions).getByRole("link", { name: "Back to My Swim Sessions" });
     expect(backLink).toHaveAttribute("href", "/my-library/workouts");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "hidden");
     expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
       "data-selected-workout-id",

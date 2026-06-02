@@ -5,6 +5,7 @@ import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import TrainingContextHub, {
   type TrainingGoalPrefill,
 } from "@/components/my-library/training/TrainingContextHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 
@@ -78,11 +79,14 @@ export default async function MyLibraryTrainingPage({ searchParams }: Props) {
                 workspace without turning this page into a wall of setup text.
               </p>
             </div>
-            <div data-testid="my-training-route-actions" className="flex flex-wrap gap-2">
-              <Link href="/my-library/goals" className={routeActionClass}>
+            <div data-testid="my-training-route-actions" className={getMobileActionGroupClass(2)}>
+              <Link
+                href="/my-library/goals"
+                className={`${routeActionClass} ${mobileActionItemClass}`}
+              >
                 Open goals
               </Link>
-              <Link href="/my-library" className={routeActionClass}>
+              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                 Back to My Library
               </Link>
             </div>

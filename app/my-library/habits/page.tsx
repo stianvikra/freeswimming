@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadHabitSnapshot } from "@/lib/habits/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -61,8 +62,8 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
                 Private habit check-ins for today.
               </p>
             </div>
-            <div data-testid="habits-route-actions" className="flex flex-wrap gap-2">
-              <Link href="/my-library" className={routeActionClass}>
+            <div data-testid="habits-route-actions" className={getMobileActionGroupClass(1)}>
+              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                 Back to My Library
               </Link>
             </div>

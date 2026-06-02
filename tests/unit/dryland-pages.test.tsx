@@ -110,9 +110,10 @@ describe("Dryland workspace pages", () => {
     );
 
     const actions = screen.getByTestId("dryland-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute("data-browse-only", "true");
     expect(loadDrylandLibrarySnapshotMock).toHaveBeenCalledWith(
@@ -159,11 +160,16 @@ describe("Dryland workspace pages", () => {
     );
 
     const actions = screen.getByTestId("dryland-builder-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-2");
     expect(within(actions).getByRole("link", { name: "Dryland Sessions" })).toHaveClass(
-      "fs-cta-secondary"
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
     );
     expect(within(actions).getByRole("link", { name: "Back to My Library" })).toHaveClass(
-      "fs-cta-secondary"
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
     );
     expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "hidden");
     expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute("data-browse-only", "false");

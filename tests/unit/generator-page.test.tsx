@@ -124,12 +124,13 @@ describe("MyLibraryGeneratorPage", () => {
     ).toHaveClass("text-[color:var(--fs-color-ink-strong)]");
 
     const actions = screen.getByTestId("generator-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-2");
     const swimSessionsLink = within(actions).getByRole("link", { name: "My Swim Sessions" });
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(swimSessionsLink).toHaveAttribute("href", "/my-library/workouts");
-    expect(swimSessionsLink).toHaveClass("fs-cta-secondary");
+    expect(swimSessionsLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("generator-intake-hub")).toHaveAttribute("data-user-id", "user-123");
     expect(loadGeneratorIntakeSnapshotMock).toHaveBeenCalledWith(

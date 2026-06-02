@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
@@ -97,8 +98,14 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
                   {builderHeading}
                 </h1>
               </div>
-              <div data-testid="workout-builder-route-actions" className="flex flex-wrap gap-2">
-                <Link href="/my-library/workouts" className={routeActionClass}>
+              <div
+                data-testid="workout-builder-route-actions"
+                className={getMobileActionGroupClass(1)}
+              >
+                <Link
+                  href="/my-library/workouts"
+                  className={`${routeActionClass} ${mobileActionItemClass}`}
+                >
                   Back to My Swim Sessions
                 </Link>
               </div>

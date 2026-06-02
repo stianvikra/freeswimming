@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import ProgramBuilderHub from "@/components/my-library/programs/ProgramBuilderHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
 
@@ -36,6 +37,7 @@ export default async function ProgramBuilderPage({ params }: Props) {
   }
 
   const programLibrary = await loadProgramLibrarySnapshot(supabase, user.id, programId);
+  const routeActionCount = programLibrary.schemaReady ? 2 : 1;
 
   return (
     <SiteChrome>
@@ -57,14 +59,20 @@ export default async function ProgramBuilderPage({ params }: Props) {
                   Place saved swim sessions into weeks and days, then save or export the program.
                 </p>
               </div>
-              <div data-testid="program-builder-route-actions" className="flex flex-wrap gap-2">
+              <div
+                data-testid="program-builder-route-actions"
+                className={getMobileActionGroupClass(routeActionCount)}
+              >
                 {programLibrary.schemaReady ? (
                   <CreateManualProgramButton
                     testId="program-builder-route-create-manual"
-                    className={routePrimaryActionClass}
+                    className={`${routePrimaryActionClass} ${mobileActionItemClass}`}
                   />
                 ) : null}
-                <Link href="/my-library" className={routeSecondaryActionClass}>
+                <Link
+                  href="/my-library"
+                  className={`${routeSecondaryActionClass} ${mobileActionItemClass}`}
+                >
                   Back to My Library
                 </Link>
               </div>
