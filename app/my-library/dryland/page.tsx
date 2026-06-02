@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import DrylandBuilderHub from "@/components/my-library/dryland/DrylandBuilderHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
 
@@ -57,8 +58,8 @@ export default async function DrylandSessionsPage({ searchParams }: DrylandSessi
                   {isMicroFocused ? "Micro Sessions" : "Dryland Sessions"}
                 </h1>
               </div>
-              <div data-testid="dryland-route-actions" className="flex flex-wrap gap-2">
-                <Link href="/my-library" className={routeActionClass}>
+              <div data-testid="dryland-route-actions" className={getMobileActionGroupClass(1)}>
+                <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                   Back to My Library
                 </Link>
               </div>

@@ -139,12 +139,13 @@ describe("MyLibraryTrainingPage", () => {
     );
 
     const actions = screen.getByTestId("my-training-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-2");
     const openGoals = within(actions).getByRole("link", { name: "Open goals" });
     expect(openGoals).toHaveAttribute("href", "/my-library/goals");
-    expect(openGoals).toHaveClass("fs-cta-secondary");
+    expect(openGoals).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("training-context-hub")).toBeInTheDocument();
     expect(loadTrainingContextSnapshotMock).toHaveBeenCalledWith(

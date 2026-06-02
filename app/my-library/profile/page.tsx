@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import AthleteProfileHub from "@/components/my-library/profile/AthleteProfileHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -53,8 +54,11 @@ export default async function MyLibraryProfilePage() {
                   My Swim Profile
                 </h1>
               </div>
-              <div data-testid="my-swim-profile-route-actions" className="flex flex-wrap gap-2">
-                <Link href="/my-library" className={routeActionClass}>
+              <div
+                data-testid="my-swim-profile-route-actions"
+                className={getMobileActionGroupClass(1)}
+              >
+                <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                   Back to My Library
                 </Link>
               </div>

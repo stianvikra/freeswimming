@@ -24,6 +24,9 @@ design-system rule, not a completed app-wide migration.
 - Three equal short choices: three equal columns only when the labels fit comfortably, especially
   segmented controls.
 - Three mixed or longer actions: two equal actions plus the third full-width below.
+- Text-fit override: if any visible action label wraps, nearly wraps, or is likely to be longer in
+  translation, stack the whole mobile action group as full-width rows unless the surface is an
+  intentional short segmented control. Do not ship half-width buttons with wrapped primary labels.
 - Four actions: two-by-two grid.
 - Five actions: acceptable only after prioritization review; use two-by-two plus the fifth full-width
   or promote one primary full-width above secondary actions.

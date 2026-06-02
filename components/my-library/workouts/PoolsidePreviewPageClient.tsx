@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import { BRAND_FONT_PUBLIC_PATH, getWorkoutPdfLogoPath } from "@/lib/brand";
 import {
@@ -21,6 +22,10 @@ const EMBEDDED_PREVIEW_LOADING_HEIGHT = 180;
 const EMBEDDED_PREVIEW_MIN_READY_HEIGHT = 220;
 const EMBEDDED_PREVIEW_FRAME_PADDING = 48;
 const EMBEDDED_PREVIEW_STAGE_GUTTER = 12;
+const previewActionBaseClass =
+  "inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const previewPrimaryActionClass = cx("fs-cta-primary", previewActionBaseClass);
+const previewSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", previewActionBaseClass);
 
 function getEmbeddedPreviewFallbackWidth(layout: WorkoutPoolsidePreviewSettings["printLayout"]) {
   return layout === "landscape" ? 644 : 388;
@@ -505,13 +510,13 @@ export default function PoolsidePreviewPageClient() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div data-testid="poolside-preview-actions" className={getMobileActionGroupClass(3)}>
                 <button
                   type="button"
                   onClick={handlePrint}
                   disabled={previewUnavailable}
                   data-testid="poolside-preview-print"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cx(previewPrimaryActionClass, mobileActionItemClass)}
                 >
                   Print / Save PDF
                 </button>
@@ -521,7 +526,7 @@ export default function PoolsidePreviewPageClient() {
                   disabled={previewUnavailable || saveImagePending || !embeddedNoteReady}
                   aria-describedby={saveImageFeedbackMessage ? saveImageFeedbackId : undefined}
                   data-testid="poolside-preview-save-image"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 active:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cx(previewSecondaryActionClass, mobileActionItemClass)}
                 >
                   {saveImagePending ? "Preparing image..." : "Save image"}
                 </button>
@@ -529,7 +534,7 @@ export default function PoolsidePreviewPageClient() {
                   type="button"
                   onClick={handleClose}
                   data-testid="poolside-preview-close"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  className={cx(previewSecondaryActionClass, mobileActionItemClass)}
                 >
                   Close
                 </button>

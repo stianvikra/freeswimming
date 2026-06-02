@@ -122,13 +122,16 @@ describe("Program Builder workspace page", () => {
     );
 
     const actions = screen.getByTestId("program-builder-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-2");
     expect(within(actions).getByRole("button", { name: "Create program" })).toHaveClass(
       "fs-cta-primary",
-      "min-h-10"
+      "min-h-10",
+      "w-full",
+      "sm:w-auto"
     );
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary", "min-h-10");
+    expect(backLink).toHaveClass("fs-cta-secondary", "min-h-10", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("program-builder-hub")).toHaveAttribute(
       "data-selected-program-id",

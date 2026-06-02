@@ -105,9 +105,10 @@ describe("MyLibraryGoalsPage", () => {
     );
 
     const actions = screen.getByTestId("goals-route-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     expect(screen.getByTestId("goals-hub")).toHaveAttribute("data-goal-count", "1");
     expect(screen.getByTestId("goals-hub")).toHaveAttribute("data-active-limit", "3");

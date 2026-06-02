@@ -3312,13 +3312,22 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("Delete this saved session?")).toBeVisible();
     const currentActions = screen.getByTestId("workout-builder-current-workout-actions");
     expect(currentActions).toHaveClass("rounded-[var(--fs-radius-card)]", "border-rose-200");
+    expect(screen.getByTestId("workout-builder-current-workout-confirm-actions")).toHaveClass(
+      "grid",
+      "w-full",
+      "grid-cols-2"
+    );
     expect(screen.getByTestId("workout-builder-confirm-delete-current-workout")).toHaveClass(
       "rounded-[var(--fs-radius-control)]",
-      "bg-rose-600"
+      "bg-rose-600",
+      "w-full",
+      "sm:w-auto"
     );
     expect(within(currentActions).getByRole("button", { name: "Cancel" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]",
-      "border-rose-200"
+      "border-rose-200",
+      "w-full",
+      "sm:w-auto"
     );
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-delete-current-workout"));
@@ -3353,13 +3362,23 @@ describe("WorkoutBuilderHub", () => {
       );
     });
 
+    expect(screen.getByTestId("workout-builder-browse-actions")).toHaveClass(
+      "grid",
+      "w-full",
+      "grid-cols-1",
+      "sm:flex"
+    );
     expect(screen.getByTestId("workout-builder-browse-create-pool")).toHaveClass(
       "fs-cta-primary",
-      "rounded-[var(--fs-radius-control)]"
+      "rounded-[var(--fs-radius-control)]",
+      "w-full",
+      "sm:w-auto"
     );
     expect(screen.getByTestId("workout-builder-browse-create-open-water")).toHaveClass(
       "fs-cta-secondary",
-      "rounded-[var(--fs-radius-control)]"
+      "rounded-[var(--fs-radius-control)]",
+      "w-full",
+      "sm:w-auto"
     );
     expect(screen.getByRole("link", { name: "AI session generator" })).toHaveAttribute(
       "href",
@@ -3367,7 +3386,9 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByRole("link", { name: "AI session generator" })).toHaveClass(
       "fs-cta-secondary",
-      "rounded-[var(--fs-radius-control)]"
+      "rounded-[var(--fs-radius-control)]",
+      "w-full",
+      "sm:w-auto"
     );
   });
 
@@ -3655,13 +3676,22 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("Discard this local draft?")).toBeVisible();
     const draftActions = screen.getByTestId("workout-builder-current-draft-actions");
     expect(draftActions).toHaveClass("rounded-[var(--fs-radius-card)]", "border-amber-200");
+    expect(screen.getByTestId("workout-builder-current-draft-confirm-actions")).toHaveClass(
+      "grid",
+      "w-full",
+      "grid-cols-2"
+    );
     expect(screen.getByTestId("workout-builder-confirm-discard-current-draft")).toHaveClass(
       "rounded-[var(--fs-radius-control)]",
-      "bg-amber-500"
+      "bg-amber-500",
+      "w-full",
+      "sm:w-auto"
     );
     expect(within(draftActions).getByRole("button", { name: "Keep editing" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]",
-      "border-amber-200"
+      "border-amber-200",
+      "w-full",
+      "sm:w-auto"
     );
 
     fireEvent.click(screen.getByTestId("workout-builder-confirm-discard-current-draft"));

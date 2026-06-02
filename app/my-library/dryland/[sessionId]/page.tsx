@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import DrylandBuilderHub from "@/components/my-library/dryland/DrylandBuilderHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -50,11 +51,17 @@ export default async function DrylandBuilderPage({ params }: Props) {
                 Dryland builder
               </h1>
             </div>
-            <div data-testid="dryland-builder-route-actions" className="flex flex-wrap gap-2">
-              <Link href="/my-library/dryland" className={routeActionClass}>
+            <div
+              data-testid="dryland-builder-route-actions"
+              className={getMobileActionGroupClass(2)}
+            >
+              <Link
+                href="/my-library/dryland"
+                className={`${routeActionClass} ${mobileActionItemClass}`}
+              >
                 Dryland Sessions
               </Link>
-              <Link href="/my-library" className={routeActionClass}>
+              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                 Back to My Library
               </Link>
             </div>

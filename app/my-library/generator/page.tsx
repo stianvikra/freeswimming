@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import GeneratorIntakeHub from "@/components/my-library/generator/GeneratorIntakeHub";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import type { GeneratorIntakeBlockSummary } from "@/lib/generator-intake/shared";
 import { loadGeneratorIntakeSnapshot } from "@/lib/generator-intake/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
@@ -70,14 +71,14 @@ export default async function MyLibraryGeneratorPage({ searchParams }: Props) {
                 AI swim session generator
               </h1>
             </div>
-            <div
-              data-testid="generator-route-actions"
-              className="flex flex-wrap items-center gap-2"
-            >
-              <Link href="/my-library/workouts" className={routeActionClass}>
+            <div data-testid="generator-route-actions" className={getMobileActionGroupClass(2)}>
+              <Link
+                href="/my-library/workouts"
+                className={`${routeActionClass} ${mobileActionItemClass}`}
+              >
                 My Swim Sessions
               </Link>
-              <Link href="/my-library" className={routeActionClass}>
+              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
                 Back to My Library
               </Link>
             </div>

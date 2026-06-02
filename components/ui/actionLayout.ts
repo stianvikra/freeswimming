@@ -3,6 +3,7 @@ import { cx } from "@/components/ui/cx";
 type MobileActionGroupOptions = {
   desktopJustify?: "start" | "end";
   equalTrio?: boolean;
+  stackOnMobile?: boolean;
 };
 
 const desktopJustifyClass: Record<
@@ -13,7 +14,8 @@ const desktopJustifyClass: Record<
   end: "sm:justify-end",
 };
 
-function getMobileGridClass(count: number, equalTrio: boolean) {
+function getMobileGridClass(count: number, equalTrio: boolean, stackOnMobile: boolean) {
+  if (stackOnMobile) return "grid-cols-1";
   if (count <= 1) return "grid-cols-1";
   if (count === 2) return "grid-cols-2";
   if (count === 3) {
@@ -36,11 +38,15 @@ export const mobileSegmentedTrioClass = "grid w-full grid-cols-3 gap-1 sm:inline
 
 export function getMobileActionGroupClass(
   count: number,
-  { desktopJustify = "end", equalTrio = false }: MobileActionGroupOptions = {}
+  {
+    desktopJustify = "end",
+    equalTrio = false,
+    stackOnMobile = false,
+  }: MobileActionGroupOptions = {}
 ) {
   return cx(
     "grid w-full gap-2",
-    getMobileGridClass(count, equalTrio),
+    getMobileGridClass(count, equalTrio, stackOnMobile),
     "sm:w-auto sm:flex sm:flex-wrap sm:items-center",
     desktopJustifyClass[desktopJustify]
   );

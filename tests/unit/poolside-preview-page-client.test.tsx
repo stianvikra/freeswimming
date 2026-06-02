@@ -222,6 +222,28 @@ describe("PoolsidePreviewPageClient", () => {
     expect(html).toContain("height:180px");
   });
 
+  it("uses mobile action layout and button semantics for preview actions", () => {
+    render(<PoolsidePreviewPageClient />);
+
+    const actions = screen.getByTestId("poolside-preview-actions");
+    expect(actions).toHaveClass("grid", "w-full", "grid-cols-2", "[&>*:nth-child(3)]:col-span-2");
+    expect(screen.getByTestId("poolside-preview-print")).toHaveClass(
+      "fs-cta-primary",
+      "w-full",
+      "sm:w-auto"
+    );
+    expect(screen.getByTestId("poolside-preview-save-image")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+    expect(screen.getByTestId("poolside-preview-close")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+  });
+
   it("downloads a PNG on desktop fallback", async () => {
     const createObjectUrlSpy = vi
       .spyOn(URL, "createObjectURL")
