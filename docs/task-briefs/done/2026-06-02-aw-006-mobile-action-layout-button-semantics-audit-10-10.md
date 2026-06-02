@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-mobile-action-layout-button-semantics-audit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-02`
 - `base`: `main@d416dd8`
-- `audit_status`: `ready`
+- `audit_status`: `closed`
 - `decision`: Execute this as the current owner-approved AW-006 mobile action layout audit and bounded small-fix slice.
 - `reason`: PR `#945` and repo-managed closeout PR `#946` are merged, `main` is clean at `d416dd8`, `npm run post-merge:preflight` passed with no pending closeout, and a fresh queue/design/code re-audit found no active AW-006 implementation slice. The queue, design inventory, and WorkoutEditor support-tools closeout identify this mobile action layout audit as the next continuation of the recent design-token/action parity track. Owner approved auditing the already-migrated AW-006 surfaces as a control pass and implementing only clear mobile action contract violations, not another broad polish round.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `docs/design/mobile-action-layout-contract.md`, `components/ui/actionLayout.ts`, recently completed AW-006 token/action surfaces, screenshot handoff rules, route/label/support sweep rules, forward compatibility rules, or verification lanes change before screenshot handoff.
@@ -57,6 +57,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 | Business logic correctness and data integrity | `target`     | Layout and styling changes do not alter action callbacks, request payloads, persistence, exports, or state transitions.                                                   | code review + regression tests              | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | Admin action groups retain operator scanability and do not hide required workflow actions without documented overflow behavior.                                           | admin route screenshots + tests             | `5/5`                   |
 | Accessibility (a11y)                          | `target`     | Changed buttons keep accessible names, keyboard/focus behavior, disabled semantics, touch target sizing, and no text overlap.                                             | Testing Library assertions + screenshot QA  | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility target and evidence.                                                        | Testing Library assertions + screenshot QA  | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new runtime dependency, media payload, network request, polling, or heavy client state is introduced for action layout.                                                | dependency diff + pre-PR gate               | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Local/server data ownership for changed workflows remains unchanged; layout helpers do not own domain state.                                                              | changed-files review + brief scope          | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because this planned slice should not change route cache modes, revalidation, server fetch policy, or invalidation behavior.                                          | explicit cache scope rationale              | `N/A`                   |
@@ -229,7 +230,13 @@ Required because this slice changes visible route-header actions and Poolside Pr
   - build passed,
   - performance budgets passed with `hold` recommendation,
   - E2E passed: `102` passed, `492` skipped.
-- `npm run verify:pre-merge`
+- GitHub CI passed for PR `#947`: `verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, PR Size,
+  Vercel Preview, and Vercel status.
+- `npm run verify:pre-merge` passed locally on `2026-06-02` for branch head `a223342`:
+  - marker: `artifacts/verify-pre-merge/20260602-165845.json`,
+  - lane: full,
+  - E2E passed: `102` passed, `492` skipped,
+  - private gate was skipped because `SITE_LOCK_ENABLED=0`; CI `site-lock-smoke` passed.
 
 ## Implementation Checkpoint Log
 
@@ -240,3 +247,55 @@ Required because this slice changes visible route-header actions and Poolside Pr
 - `2026-06-02 | screenshot handoff | captured after/reference mobile screenshots under output/aw006-mobile-action-layout-2026-06-02-111430 using a temporary local harness because dev auth was blocked by Supabase egress guard; removed the harness after capture and left final runtime files unchanged after screenshot capture | next: wait for owner visual approval before npm run verify:pre-pr`
 - `2026-06-02 | owner approval | owner approved the refreshed mobile screenshot handoff for the text-fit stack correction; no product-rendering files changed after capture | next: run npm run verify:pre-pr`
 - `2026-06-02 | pre-pr gate | npm run verify:pre-pr passed the full public lane locally with unit/build/perf/e2e green; E2E reported 102 passed and 492 skipped under the existing auth-gated local matrix | next: commit, push, open PR, then monitor CI before npm run verify:pre-merge`
+- `2026-06-02 | merged | PR #947 merged as squash commit e66f91b; GitHub CI passed and npm run verify:pre-merge passed on branch head a223342 before merge | next: repo-managed closeout moved this brief to done and clears the active AW-006 queue slot`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#947`
+- `squash_commit`: `e66f91b`
+- `result`: Closed the mobile action layout and button semantics audit. My Library route actions,
+  WorkoutBuilderHub browse/confirmation actions, and Poolside Preview actions now share predictable
+  mobile grouping and button semantics; longer mobile labels stack full-width instead of wrapping in
+  cramped half-width buttons.
+- `validation`: `npm run verify:pre-pr` PASS on branch head `a223342`; owner-approved screenshot
+  handoff at `output/aw006-mobile-action-layout-2026-06-02-111430`; GitHub CI PASS for PR `#947`;
+  `npm run verify:pre-merge` PASS on `a223342` with marker
+  `artifacts/verify-pre-merge/20260602-165845.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Accessibility (a11y)
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#947`, audit inventory, route/header action diff, screenshot handoff                                                       | None         |
+| UX flow clarity                               | `5/5`          | Shared mobile grouping, text-fit correction, owner-approved screenshot artifacts                                               | None         |
+| Visual design quality                         | `5/5`          | `docs/design/mobile-action-layout-contract.md`, `components/ui/actionLayout.ts`, after/reference screenshots                   | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests, unchanged callbacks/payloads/persistence/export behavior, full gates                                       | None         |
+| Admin editor ergonomics                       | `5/5`          | Admin surfaces audited and intentionally deferred unless a concrete operator mobile failure appears; no admin workflow changed | None         |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, preserved accessible labels/roles, screenshot QA                                                   | None         |
+| Accessibility                                 | `5/5`          | Alias row for brief-lint closeout normalization of `Accessibility (a11y)`; same accessibility evidence.                        | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/media/network additions, perf budgets PASS with hold recommendation                                              | None         |
+| Data placement and sync boundaries            | `5/5`          | Layout helper owns presentation only; local/server workflow boundaries unchanged                                               | None         |
+| Reliability and failure handling              | `5/5`          | Confirmation/recovery actions remain reachable; focused tests and full gates passed                                            | None         |
+| Security and authz                            | `5/5`          | Auth/admin/API boundaries unchanged; CI `site-lock-smoke` and full local gate passed                                           | None         |
+| Content governance                            | `5/5`          | Design contract, inventory, queue, and done brief lifecycle updated                                                            | None         |
+| Admin workflow and editability                | `5/5`          | No operator labels, workflows, Help/Guide, or support procedures changed; admin internals recorded as deferred                 | None         |
+| Analytics and KPI observability               | `5/5`          | Analytics names and payloads unchanged; route/label/support sweep recorded                                                     | None         |
+| i18n operational readiness                    | `5/5`          | `stackOnMobile` text-fit rule covers longer labels and future localized button text                                            | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `components/ui/actionLayout.ts` and `fs-cta-*`; no new dependencies                                                     | None         |
+| Testing and QA automation                     | `5/5`          | Focused unit tests, screenshot handoff, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed              | None         |
+| DevOps and rollback readiness                 | `5/5`          | PR `#947` squash merge, rollback path `git revert e66f91b`, pre-merge marker `artifacts/verify-pre-merge/20260602-165845.json` | None         |
