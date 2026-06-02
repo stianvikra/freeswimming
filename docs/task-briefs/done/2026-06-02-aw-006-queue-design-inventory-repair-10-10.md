@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-queue-design-inventory-repair-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -182,3 +182,31 @@ Docs-only lane is expected while the diff stays limited to Markdown docs.
 - `2026-06-02 | in-progress | started from clean synced main@18ff2c3 after PR #949 and repo-managed closeout #950; short queue/design-inventory audit found stale Mobile Action Layout audit active text and old in-progress path in the design inventory while the canonical queue correctly left no active UI slice selected | next: repair docs-only lifecycle state, run targeted sweeps and docs-only validation, then open PR without selecting the next product/UI slice`
 - `2026-06-02 | targeted validation | repaired the design inventory and canonical AW-006 queue, staged the three Markdown files, and passed npm run lint:briefs:all, git diff --cached --check, and targeted stale-reference sweeps; npm run lint:briefs ran but reported no changed tracked brief set before all-brief lint covered the new in-progress brief | next: run npm run verify:pre-pr before commit/push/PR handoff`
 - `2026-06-02 | pre-pr gate | npm run verify:pre-pr passed the docs-only lane with artifact log artifacts/test-runs/20260602-201423/verify.log; the gate confirmed the branch contains origin/main@18ff2c3 and only the three Markdown docs/governance files changed | next: rerun verify:pre-pr after this checkpoint update, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-06-02 | closeout | AW-006 Queue Design Inventory Repair shipped in PR #951 as squash commit 883bdaf; this repo-managed closeout moves its brief to done and clears the active AW-006 lifecycle repair row while leaving no product/UI implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#951`
+- `squash_commit`: `883bdaf`
+- `result`: Closed AW-006 Queue Design Inventory Repair by correcting the canonical AW-006 queue and notice/empty-state design inventory so completed Mobile Action Layout audit work no longer appeared active, while preserving the no-selected-product/UI-slice state.
+- `validation`: `npm run verify:pre-pr` passed the docs-only lane locally; GitHub CI passed (`verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, Vercel); `npm run verify:pre-merge` passed the docs-only lane locally with branch-current confirmed against `origin/main@18ff2c3`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; runtime, UI, private-gate, screenshot, database, auth, Stripe, analytics, Help/Guide, and support behavior were outside scope.
+
+Critical target categories:
+
+- Product goals and IA
+- Reliability and failure handling
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                            | Achieved Score | Evidence                                                                                                                      | Gaps / Notes                       |
+| ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Product goals and IA                | `5/5`          | PR `#951`, queue diff, design-inventory diff, no selected product/UI implementation slice                                     | None.                              |
+| Reliability and failure handling    | `5/5`          | targeted stale-reference sweeps, brief lint, `npm run verify:pre-pr`, CI, `npm run verify:pre-merge`                          | None.                              |
+| Content governance                  | `5/5`          | canonical queue, design inventory, and done brief agree on Mobile Action Layout completion and AW-006 queue state             | This closeout records final state. |
+| Stack-fit and dependency discipline | `5/5`          | changed-files review confirmed Markdown docs-only lifecycle diff; no runtime, script, config, workflow, or dependency changes | None.                              |
+| Testing and QA automation           | `5/5`          | `npm run lint:briefs:all`, targeted sweeps, `git diff --check`, docs-only `verify:pre-pr`, required CI, `verify:pre-merge`    | None.                              |
+| DevOps and rollback readiness       | `5/5`          | PR `#951` clean squash merge; no migration, env, provider, package, workflow, or production setting changes                   | Normal revert restores prior docs. |
