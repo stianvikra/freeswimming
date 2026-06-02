@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getSafeNextPath } from "@/lib/auth/next-path";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -121,11 +122,17 @@ export default async function ClaimPage({ searchParams }: Props) {
                   Open the secure link or use the one-time code from that email.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <Link href={signInHref} className={primaryActionClass}>
+              <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
+                <Link
+                  href={signInHref}
+                  className={`${primaryActionClass} ${mobileActionItemClass}`}
+                >
                   Sign in to My Library
                 </Link>
-                <Link href="/programs" className={secondaryActionClass}>
+                <Link
+                  href="/programs"
+                  className={`${secondaryActionClass} ${mobileActionItemClass}`}
+                >
                   Back to Programs
                 </Link>
               </div>
