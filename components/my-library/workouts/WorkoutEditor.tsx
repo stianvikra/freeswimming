@@ -11,6 +11,11 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import PoolsideNotePanel from "@/components/my-library/workouts/PoolsideNotePanel";
+import {
+  getMobileActionGroupClass,
+  mobileActionItemClass,
+  mobilePrimaryActionItemClass,
+} from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import {
   RemovalConfirm,
@@ -115,7 +120,6 @@ import {
   buildWorkoutPdfHtmlDocument,
   buildWorkoutGarminReadyExport,
   buildWorkoutGarminReadyExportFileName,
-  buildWorkoutGarminReadinessReport,
   buildWorkoutHandoffFileName,
   buildWorkoutHandoffText,
   getDefaultWorkoutPoolsideFocusIds,
@@ -221,7 +225,6 @@ type AutoGrowingTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   minRows?: number;
 };
 
-type SupportSectionKey = "readiness" | "garminExport" | "handoff";
 type WorkoutEditorFeedbackTone = "success" | "error";
 type WorkoutEditorFeedback = {
   tone: WorkoutEditorFeedbackTone;
@@ -798,7 +801,6 @@ export default function WorkoutEditor({
   swimmerName = null,
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
-  const garminReadiness = buildWorkoutGarminReadinessReport(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
   const showCalmBuilderLayout = copyVariant === "default" || copyVariant === "generator";
   const isManualMetadataMode = showCalmBuilderLayout && savedWorkout?.sourceKind === "manual";
@@ -857,11 +859,6 @@ export default function WorkoutEditor({
   const [selectedPoolsideFocusIds, setSelectedPoolsideFocusIds] = useState<string[]>(() =>
     getDefaultWorkoutPoolsideFocusIds(trainingFocusOptions)
   );
-  const [supportSectionOpen, setSupportSectionOpen] = useState<Record<SupportSectionKey, boolean>>({
-    readiness: false,
-    garminExport: false,
-    handoff: false,
-  });
   const [supportToolsOpen, setSupportToolsOpen] = useState(
     () => copyVariant !== "default" && copyVariant !== "generator"
   );
@@ -1004,9 +1001,9 @@ export default function WorkoutEditor({
       : "Local draft Garmin-ready export";
   const garminExportStateDescription = savedWorkout
     ? hasUnsavedChanges
-      ? "JSON export preview reflects unsaved local edits. Save first if you want the canonical workout and export adapter output to match."
-      : "JSON export preview matches the saved canonical workout."
-    : "JSON export preview reflects the current local draft before canonical save.";
+      ? "JSON export uses unsaved local edits. Save first if you want the canonical workout and export adapter output to match."
+      : "JSON export matches the saved canonical workout."
+    : "JSON export uses the current local draft before canonical save.";
   const handoffText = buildWorkoutHandoffText(draft, {
     draftState: handoffDraftState,
   });
@@ -1017,9 +1014,9 @@ export default function WorkoutEditor({
     handoffDraftState === "canonical" ? "Canonical handoff" : "Local draft handoff";
   const handoffStateDescription = savedWorkout
     ? hasUnsavedChanges
-      ? "Handoff preview reflects unsaved local edits. Save first if you want the canonical workout and handoff to match."
-      : "Handoff preview matches the saved canonical workout."
-    : "Handoff preview reflects the current local draft before canonical save.";
+      ? "Handoff actions use unsaved local edits. Save first if you want the canonical workout and handoff to match."
+      : "Handoff actions match the saved canonical workout."
+    : "Handoff actions use the current local draft before canonical save.";
   const supportToolsAudienceDescription =
     "Advanced export and support tools stay here when you need them.";
   const shouldHideAutoPoolBuilderTitle =
@@ -1039,16 +1036,8 @@ export default function WorkoutEditor({
           draft.warnings.length === 1 ? "" : "s"
         } still need review here.`
       : null;
-  const supportToolsStatusLabel =
-    garminReadiness.status === "ready"
-      ? "Ready"
-      : `${garminReadiness.issues.length} review ${
-          garminReadiness.issues.length === 1 ? "item" : "items"
-        }`;
   const showInlinePdfAction = showCalmBuilderLayout || !showPdfPanel;
   const integratedSupportSectionClass = "border-t border-slate-200/80 pt-4";
-  const supportPreviewShellClass =
-    "mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950";
   const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-3 sm:p-4";
   const desktopRepeatControlRowClass = "grid gap-3";
   const isEditMode = builderViewMode === "edit";
@@ -1421,14 +1410,6 @@ export default function WorkoutEditor({
     setHandoffNotice("");
     setHandoffError("");
   }, [handoffText, handoffDraftState, savedWorkoutId, savedWorkout?.updatedAt]);
-
-  useEffect(() => {
-    setSupportSectionOpen({
-      readiness: false,
-      garminExport: false,
-      handoff: false,
-    });
-  }, [savedWorkoutId]);
 
   const syncDraftSelections = useCallback(
     (nextDraft: SessionDraft) => {
@@ -2356,7 +2337,9 @@ export default function WorkoutEditor({
       await navigator.clipboard.writeText(handoffText);
       setHandoffNotice("Workout handoff copied.");
     } catch {
-      setHandoffError("Could not copy the workout handoff automatically. Use the preview below.");
+      setHandoffError(
+        "Could not copy the workout handoff automatically. Download the handoff instead."
+      );
     }
   }
 
@@ -4102,84 +4085,6 @@ export default function WorkoutEditor({
         </div>
       ) : null}
 
-      <div
-        data-testid="workout-editor-garmin-readiness"
-        data-readiness-status={garminReadiness.status}
-        className={`rounded-2xl border p-3 sm:p-4 ${
-          garminReadiness.status === "ready"
-            ? "border-emerald-200 bg-emerald-50/80"
-            : "border-amber-200 bg-amber-50/80"
-        }`}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p
-              className={`text-xs font-semibold tracking-wide uppercase ${
-                garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
-              }`}
-            >
-              Garmin/export readiness
-            </p>
-            <p
-              data-testid="workout-editor-garmin-readiness-summary"
-              className={`mt-2 text-sm font-medium ${
-                garminReadiness.status === "ready" ? "text-emerald-950" : "text-amber-950"
-              }`}
-            >
-              {garminReadiness.summary}
-            </p>
-            <p
-              className={`mt-1 text-sm ${
-                garminReadiness.status === "ready" ? "text-emerald-900" : "text-amber-900"
-              }`}
-            >
-              {garminReadiness.status === "ready"
-                ? "This workout stays inside the current Garmin-ready builder contract."
-                : "Editing and saving still work, but these support tools should be treated as secondary until the mapping details below are resolved."}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p
-              className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
-                garminReadiness.status === "ready"
-                  ? "bg-white text-emerald-700"
-                  : "bg-white text-amber-700"
-              }`}
-            >
-              {garminReadiness.status === "ready"
-                ? "Ready"
-                : `${garminReadiness.issues.length} review ${
-                    garminReadiness.issues.length === 1 ? "item" : "items"
-                  }`}
-            </p>
-            <button
-              type="button"
-              aria-expanded={supportSectionOpen.readiness}
-              data-testid="workout-editor-garmin-readiness-toggle"
-              onClick={() =>
-                setSupportSectionOpen((current) => ({
-                  ...current,
-                  readiness: !current.readiness,
-                }))
-              }
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-white bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-white/80 active:bg-white/70"
-            >
-              {supportSectionOpen.readiness ? "Hide details" : "Show details"}
-            </button>
-          </div>
-        </div>
-
-        {supportSectionOpen.readiness && garminReadiness.issues.length > 0 ? (
-          <ul className="mt-3 space-y-2 text-sm text-amber-900">
-            {garminReadiness.issues.map((issue, index) => (
-              <li key={issue.id} data-testid={`workout-editor-garmin-readiness-issue-${index}`}>
-                {issue.detail}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-
       {showPdfPanel && !showCalmBuilderLayout ? (
         <section className={integratedSupportSectionClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -4197,13 +4102,13 @@ export default function WorkoutEditor({
               </p>
               <p className="mt-1 text-sm text-slate-600">{workoutPdfStateDescription}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div data-action-layout="mobile-equal" className={getMobileActionGroupClass(2)}>
               <button
                 type="button"
                 onClick={() => openWorkoutPdfPrintView("standard")}
                 data-testid="workout-editor-pdf-open"
                 aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                className={workoutEditorSecondaryActionClass}
+                className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
               >
                 {workoutPdfButtonLabel}
               </button>
@@ -4212,7 +4117,7 @@ export default function WorkoutEditor({
                 onClick={() => openWorkoutPdfPrintView("poolside")}
                 data-testid="workout-editor-poolside-pdf-open"
                 aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                className={workoutEditorSecondaryActionClass}
+                className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
               >
                 {workoutPoolsidePdfButtonLabel}
               </button>
@@ -4231,8 +4136,8 @@ export default function WorkoutEditor({
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
               Optional support export for manual review or later Garmin delivery work. Downloading
-              this JSON does not save or send anything; it only packages the workout exactly as the
-              current `garmin-ready` adapter sees it.
+              this file does not save or send anything; it only packages the workout for the
+              Garmin-ready export path.
             </p>
             <p
               data-testid="workout-editor-garmin-export-source"
@@ -4243,45 +4148,20 @@ export default function WorkoutEditor({
             </p>
             <p className="mt-1 text-sm text-slate-600">{garminExportStateDescription}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-action-layout="mobile-equal" className={getMobileActionGroupClass(1)}>
             <button
               type="button"
               onClick={downloadWorkoutGarminReadyExport}
               data-testid="workout-editor-garmin-export-download"
               aria-describedby={garminExportFeedback ? garminExportFeedbackId : undefined}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
             >
               Download .json
-            </button>
-            <button
-              type="button"
-              aria-expanded={supportSectionOpen.garminExport}
-              data-testid="workout-editor-garmin-export-toggle"
-              onClick={() =>
-                setSupportSectionOpen((current) => ({
-                  ...current,
-                  garminExport: !current.garminExport,
-                }))
-              }
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {supportSectionOpen.garminExport ? "Hide preview" : "Show preview"}
             </button>
           </div>
         </div>
 
         {renderGarminExportFeedback()}
-
-        {supportSectionOpen.garminExport ? (
-          <div className={supportPreviewShellClass}>
-            <pre
-              data-testid="workout-editor-garmin-export-preview"
-              className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
-            >
-              {garminReadyExportPreview}
-            </pre>
-          </div>
-        ) : null}
       </section>
 
       <section className={integratedSupportSectionClass}>
@@ -4303,13 +4183,13 @@ export default function WorkoutEditor({
             </p>
             <p className="mt-1 text-sm text-slate-600">{handoffStateDescription}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-action-layout="mobile-equal" className={getMobileActionGroupClass(2)}>
             <button
               type="button"
               onClick={copyWorkoutHandoff}
               data-testid="workout-editor-handoff-copy"
               aria-describedby={handoffFeedback ? handoffFeedbackId : undefined}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
             >
               Copy handoff
             </button>
@@ -4318,66 +4198,23 @@ export default function WorkoutEditor({
               onClick={downloadWorkoutHandoff}
               data-testid="workout-editor-handoff-download"
               aria-describedby={handoffFeedback ? handoffFeedbackId : undefined}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
             >
               Download .txt
-            </button>
-            <button
-              type="button"
-              aria-expanded={supportSectionOpen.handoff}
-              data-testid="workout-editor-handoff-toggle"
-              onClick={() =>
-                setSupportSectionOpen((current) => ({
-                  ...current,
-                  handoff: !current.handoff,
-                }))
-              }
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-            >
-              {supportSectionOpen.handoff ? "Hide preview" : "Show preview"}
             </button>
           </div>
         </div>
 
         {renderHandoffFeedback()}
-
-        {supportSectionOpen.handoff ? (
-          <div className={supportPreviewShellClass}>
-            <pre
-              data-testid="workout-editor-handoff-preview"
-              className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
-            >
-              {handoffText}
-            </pre>
-          </div>
-        ) : null}
       </section>
 
-      <section className={integratedSupportSectionClass}>
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Draft JSON</p>
-          <p className="mt-2 text-sm font-medium text-slate-900">
-            Raw builder draft for support review only.
-          </p>
-        </div>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-          <pre
-            data-testid="session-generator-draft-preview"
-            className="max-h-[420px] overflow-auto px-4 py-4 text-xs leading-relaxed text-slate-100"
-          >
-            {JSON.stringify(
-              {
-                ...draft,
-                totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
-                estimatedDurationMin:
-                  draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
-              },
-              null,
-              2
-            )}
-          </pre>
-        </div>
-      </section>
+      <span hidden aria-hidden="true" data-testid="session-generator-draft-state">
+        {JSON.stringify({
+          ...draft,
+          totalDistanceM: draftTotals.totalDistanceM ?? draft.totalDistanceM,
+          estimatedDurationMin: draftTotals.estimatedDurationMin ?? draft.estimatedDurationMin,
+        })}
+      </span>
 
       <div className="grid gap-3 border-t border-slate-200/80 pt-4 md:grid-cols-3">
         <div className={supportSummaryItemClass}>
@@ -4420,7 +4257,7 @@ export default function WorkoutEditor({
           onClick={() => openWorkoutPdfPrintView("poolside")}
           data-testid="workout-editor-poolside-pdf-open"
           aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-          className={workoutEditorSecondaryActionClass}
+          className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
         >
           Print Preview
         </button>
@@ -4428,6 +4265,28 @@ export default function WorkoutEditor({
     />
   ) : null;
   const supportStatusSectionList = <div className="space-y-4">{supportStatusSections}</div>;
+  const showMetadataToggleAction = isEditMode;
+  const showMetadataPdfAction = showInlinePdfAction;
+  const showMetadataResetAction = Boolean(savedWorkout && onDiscardChanges && hasUnsavedChanges);
+  const showMetadataDiscardDraftAction = Boolean(
+    isEditMode && !savedWorkout && onRequestDiscardDraft
+  );
+  const showMetadataDeleteAction = Boolean(isEditMode && savedWorkout && onRequestDeleteCurrent);
+  const metadataActionCount = [
+    showMetadataToggleAction,
+    showMetadataPdfAction,
+    showMetadataResetAction,
+    showMetadataDiscardDraftAction,
+    showMetadataDeleteAction,
+    true,
+  ].filter(Boolean).length;
+  const bottomPdfActionCount = [
+    showInlinePdfAction,
+    !showPdfPanel && !showCalmBuilderLayout,
+    savedWorkout && onDiscardChanges && hasUnsavedChanges,
+    !savedWorkout && onRequestDiscardDraft,
+    true,
+  ].filter(Boolean).length;
   const supportToolsPanel = showCalmBuilderLayout ? (
     <section
       data-testid="workout-editor-support-tools-panel"
@@ -4452,21 +4311,13 @@ export default function WorkoutEditor({
             </>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <p
-            data-testid="workout-editor-support-tools-status"
-            className={`rounded-full bg-white px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
-              garminReadiness.status === "ready" ? "text-emerald-700" : "text-amber-700"
-            }`}
-          >
-            {supportToolsStatusLabel}
-          </p>
+        <div data-action-layout="mobile-equal" className={getMobileActionGroupClass(1)}>
           <button
             type="button"
             aria-expanded={supportToolsOpen}
             data-testid="workout-editor-support-tools-toggle"
             onClick={() => setSupportToolsOpen((current) => !current)}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+            className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
           >
             {supportToolsOpen ? "Hide advanced tools" : "Show advanced tools"}
           </button>
@@ -4600,63 +4451,67 @@ export default function WorkoutEditor({
                 </p>
               ) : null}
             </div>
-            <div className="flex min-w-0 flex-col gap-2 sm:items-end">
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                {isEditMode ? (
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+              <div
+                data-action-layout="mobile-equal"
+                data-action-count={metadataActionCount}
+                className={getMobileActionGroupClass(metadataActionCount)}
+              >
+                {showMetadataToggleAction ? (
                   <button
                     type="button"
                     onClick={() => setMetadataOpen((current) => !current)}
                     aria-expanded={metadataOpen}
                     data-testid="workout-editor-metadata-toggle"
-                    className={workoutEditorSecondaryActionClass}
+                    className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
                   >
                     {metadataOpen ? "Hide details" : "Show details"}
                   </button>
                 ) : null}
-                {showInlinePdfAction ? (
+                {showMetadataPdfAction ? (
                   <button
                     type="button"
                     onClick={() => openWorkoutPdfPrintView("standard")}
                     data-testid="workout-editor-pdf-open"
                     aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                    className={workoutEditorSecondaryActionClass}
+                    className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
                   >
                     {workoutPdfButtonLabel}
                   </button>
                 ) : null}
-                {savedWorkout && onDiscardChanges && hasUnsavedChanges ? (
+                {showMetadataResetAction ? (
                   <button
                     type="button"
                     onClick={() => {
                       setPendingRemoval(null);
                       setLastRemovedBlock(null);
-                      onDiscardChanges();
+                      onDiscardChanges?.();
                     }}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
-                    className={workoutEditorSecondaryActionClass}
+                    className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
                   >
                     Discard changes
                   </button>
                 ) : null}
-                {isEditMode && !savedWorkout && onRequestDiscardDraft ? (
+                {showMetadataDiscardDraftAction ? (
                   <button
                     type="button"
-                    onClick={onRequestDiscardDraft}
+                    onClick={() => onRequestDiscardDraft?.()}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-builder-discard-current-draft"
-                    className={workoutEditorCautionActionClass}
+                    className={cx(workoutEditorCautionActionClass, mobileActionItemClass)}
                   >
                     Discard draft
                   </button>
                 ) : null}
-                {isEditMode && savedWorkout && onRequestDeleteCurrent ? (
+                {showMetadataDeleteAction ? (
                   <button
                     type="button"
-                    onClick={onRequestDeleteCurrent}
+                    onClick={() => onRequestDeleteCurrent?.()}
                     disabled={isDeletingCurrent}
                     data-testid="workout-builder-delete-current-workout"
-                    className={workoutEditorDangerActionClass}
+                    className={cx(workoutEditorDangerActionClass, mobileActionItemClass)}
                   >
                     {isDeletingCurrent ? "Deleting..." : "Delete session"}
                   </button>
@@ -4676,7 +4531,7 @@ export default function WorkoutEditor({
                     (savedWorkout ? !hasUnsavedChanges : false)
                   }
                   data-testid={saveButtonTestId}
-                  className={workoutEditorPrimaryActionClass}
+                  className={cx(workoutEditorPrimaryActionClass, mobilePrimaryActionItemClass)}
                 >
                   {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
@@ -4774,14 +4629,22 @@ export default function WorkoutEditor({
                   </p>
                 ) : null}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div
+                data-action-layout="mobile-equal"
+                data-action-count={bottomPdfActionCount}
+                className={getMobileActionGroupClass(bottomPdfActionCount)}
+              >
                 {showInlinePdfAction ? (
                   <button
                     type="button"
                     onClick={() => openWorkoutPdfPrintView("standard")}
                     data-testid="workout-editor-pdf-open"
                     aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                    className={cx(
+                      workoutEditorSecondaryActionClass,
+                      "min-h-11",
+                      mobileActionItemClass
+                    )}
                   >
                     {workoutPdfButtonLabel}
                   </button>
@@ -4792,7 +4655,11 @@ export default function WorkoutEditor({
                     onClick={() => openWorkoutPdfPrintView("poolside")}
                     data-testid="workout-editor-poolside-pdf-open"
                     aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-                    className={cx(workoutEditorSecondaryActionClass, "min-h-11")}
+                    className={cx(
+                      workoutEditorSecondaryActionClass,
+                      "min-h-11",
+                      mobileActionItemClass
+                    )}
                   >
                     {workoutPoolsidePdfButtonLabel}
                   </button>
@@ -4807,7 +4674,11 @@ export default function WorkoutEditor({
                     }}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-editor-reset"
-                    className={cx(workoutEditorSecondaryActionClass, "min-h-11")}
+                    className={cx(
+                      workoutEditorSecondaryActionClass,
+                      "min-h-11",
+                      mobileActionItemClass
+                    )}
                   >
                     Discard changes
                   </button>
@@ -4818,7 +4689,11 @@ export default function WorkoutEditor({
                     onClick={onRequestDiscardDraft}
                     disabled={isSaving || pendingRemoval !== null}
                     data-testid="workout-builder-discard-current-draft"
-                    className={cx(workoutEditorCautionActionClass, "min-h-11")}
+                    className={cx(
+                      workoutEditorCautionActionClass,
+                      "min-h-11",
+                      mobileActionItemClass
+                    )}
                   >
                     Discard draft
                   </button>
@@ -4838,7 +4713,11 @@ export default function WorkoutEditor({
                     (savedWorkout ? !hasUnsavedChanges : false)
                   }
                   data-testid={saveButtonTestId}
-                  className={cx(workoutEditorPrimaryActionClass, "min-h-11")}
+                  className={cx(
+                    workoutEditorPrimaryActionClass,
+                    "min-h-11",
+                    mobilePrimaryActionItemClass
+                  )}
                 >
                   {isSaving ? "Saving..." : savedWorkout ? "Save changes" : unsavedSaveButtonLabel}
                 </button>
@@ -4856,7 +4735,7 @@ export default function WorkoutEditor({
         <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
           <div
             data-testid="workout-editor-discard-undo"
-            className="flex w-full max-w-[560px] flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)]"
+            className="grid w-full max-w-[560px] grid-cols-1 gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-[0_12px_34px_rgba(15,23,42,0.18)] min-[380px]:grid-cols-[minmax(0,1fr)_auto] min-[380px]:items-center"
           >
             <p className="text-sm font-medium text-emerald-900" aria-live="polite">
               Changes discarded.
@@ -4865,7 +4744,7 @@ export default function WorkoutEditor({
               type="button"
               onClick={onUndoDiscardChanges}
               data-testid="workout-editor-discard-undo-button"
-              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+              className={cx(workoutEditorPrimaryActionClass, "w-full min-[380px]:w-auto")}
             >
               Undo
             </button>
