@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-02-aw-006-download-resend-form-token-input-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-02`
 - `updated`: `2026-06-02`
@@ -52,6 +52,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Email normalization, request URL, method, body, `nextPath`, `source`, pending lifecycle, and fallback errors remain unchanged.                                                                | existing and updated unit tests + diff review         | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, CRUD workflow, dashboard action, operator queue, or admin editability surface.                                                                      | explicit admin-editor scope rationale                 | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Label association, invalid state, `aria-describedby`, polite feedback, keyboard submission, and disabled pending state remain intact after visual token changes.                              | Testing Library assertions + screenshot/manual review | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for the 10/10 critical-category parser; same threshold and evidence as `Accessibility (a11y)`.                                                                                      | Testing Library assertions + screenshot/manual review | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: class-name reuse should not add dependencies, new routes, extra fetches, media, or meaningful JS payload.                                                                    | package/diff review + broad gate                      | `4/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this visual cleanup introduces no local storage, server-canonical data, sync queue, conflict policy, retention rule, or sensitive-data handling.                                  | data contract rationale                               | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache mode, API cache header, revalidation trigger, stale-data behavior, or invalidation path changes.                                                                   | cache scope rationale                                 | `N/A`                   |
@@ -217,8 +218,8 @@ Required as a targeted sweep because this slice touches visible recovery form an
   - `npm run verify:pre-pr`
   - `npm run verify:pre-pr`: first run stopped in `lint:quality-gates` because the route/label/support sweep evidence did not include the exact expected identifiers/surfaces wording; fixed in the brief.
   - `npm run verify:pre-pr`: passed on rerun in full lane, including quality gates, lint, typecheck, `224` unit files / `1312` tests, build, perf budgets, and Playwright E2E (`102` passed / `492` skipped).
-  - required PR CI checks
-  - `npm run verify:pre-merge`
+  - required PR CI checks for PR `#953`: passed, including `Analyze (javascript-typescript)`, `CodeQL`, `Vercel`, `Vercel Preview Comments`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, and `verify`.
+  - `npm run verify:pre-merge`: passed in full lane on branch current with `origin/main@a4e9934`, including quality gates, lint, typecheck, `224` unit files / `1312` tests, build, perf budgets, and Playwright E2E (`102` passed / `492` skipped). Private-gate regression was explicitly skipped because `SITE_LOCK_ENABLED!=1`; PR CI `site-lock-smoke` passed.
 
 ## Checkpoint Log
 
@@ -229,3 +230,30 @@ Required as a targeted sweep because this slice touches visible recovery form an
 - `2026-06-02 | screenshot-approved | owner approved refreshed after/reference screenshot handoff for DownloadResendForm token/input/action parity and adjacent recovery action layout parity | next: run npm run verify:pre-pr before commit, push, and PR handoff`
 - `2026-06-02 | pre-pr-fix | npm run verify:pre-pr stopped in quality-gate because route/label/support sweep evidence did not include the expected identifiers/surfaces wording; added explicit identifiers searched and surfaces checked evidence | next: rerun npm run verify:pre-pr`
 - `2026-06-02 | pre-pr-pass | npm run verify:pre-pr passed in full lane after the brief evidence fix; validation included quality gates, lint, typecheck, unit, build, perf budgets, and Playwright E2E | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
+- `2026-06-02 | done | shipped in PR #953 as squash commit d7795e2; required CI and npm run verify:pre-merge passed, and repo-managed closeout moved this brief to done | next: rerun post-merge preflight after closeout merge and complete mandatory chat-handoff assessment before starting another AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-06-02`
+- `merged_pr`: `#953`
+- `squash_commit`: `d7795e2`
+- `result`: Closed AW-006 Download Resend Form Token/Input Parity by aligning the resend email field, resend submit action, and adjacent sign-in/back recovery action groups with the current token/input/action and mobile layout rules while preserving payment, entitlement, email, labels, copy, analytics, Help/Guide, support, and recovery behavior.
+- `validation`: targeted Vitest (`3` files / `10` tests), brief lint, route/label/support sweep, screenshot handoff approved by owner, `npm run verify:pre-pr` full lane, required PR CI checks, and `npm run verify:pre-merge` full lane passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#953` route/component diff, approved screenshots, and unchanged `/checkout/success`, `/claim`, and My Library recovery routing.             | None.        |
+| UX flow clarity                               | `5/5`          | Focused route/component tests and screenshots preserved purchase email, sign-in, back, pending, success, and error flow clarity.                | None.        |
+| Visual design quality                         | `5/5`          | `ui-field`, `fs-cta-primary`, shared mobile action layout assertions, and approved after/reference screenshot artifacts.                        | None.        |
+| Business logic correctness and data integrity | `5/5`          | Unit tests and diff review preserved request method, body, `source`, `nextPath`, normalization, and fallback behavior.                          | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library coverage preserved label association, invalid state, `aria-describedby`, disabled pending state, and polite feedback semantics. | None.        |
+| Accessibility                                 | `5/5`          | Alias closeout row for the 10/10 critical-category parser; same evidence as `Accessibility (a11y)`.                                             | None.        |
+| Reliability and failure handling              | `5/5`          | Existing and updated validation, pending, success, and API-error tests passed.                                                                  | None.        |
+| Security and authz                            | `5/5`          | No protected route, authz, cookie, entitlement, Stripe, or resend API boundary changed; broad gates and CI passed.                              | None.        |
+| Privacy and compliance                        | `5/5`          | Privacy-safe generic resend behavior and copy were unchanged; no customer, entitlement, provider, or payment details were exposed.              | None.        |
+| Content governance                            | `5/5`          | Active brief, AW-006 queue, design inventory, and screenshot handoff runbook were updated and brief lint passed.                                | None.        |
+| Commerce and revenue ops                      | `5/5`          | Stripe, checkout, entitlements, email delivery, invoices, refunds, payouts, and finance behavior were unchanged; full gates passed.             | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `DownloadResendForm`, `ui-field`, `fs-cta-*`, and `components/ui/actionLayout.ts`; no dependency or primitive added.            | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed; screenshot artifacts were captured and approved.                        | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations, packages, config, workflow, deployment setting, or secret changes; PR is revertable by normal git revert.                        | None.        |
