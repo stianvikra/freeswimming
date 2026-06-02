@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useId, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
+import { cx } from "@/components/ui/cx";
 import { generateQrAssets } from "@/lib/qr-links/codegen";
 
 type QrReadyState = {
@@ -29,10 +31,19 @@ type Props = {
 };
 
 const feedbackToneClasses: Record<CourseOpenOnPhoneFeedbackTone, string> = {
-  loading: "border-slate-200 bg-white text-slate-600",
+  loading: "border-[color:var(--fs-border-soft)] bg-white/86 text-[color:var(--fs-color-muted)]",
   success: "border-emerald-200 bg-emerald-50 text-emerald-800",
   error: "border-rose-200 bg-rose-50 text-rose-700",
 };
+const cardClass = "fs-library-card fs-library-card-muted mt-3 p-3 sm:p-4";
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center px-3 text-center text-[12px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryActionClass = cx("fs-cta-secondary hover:bg-white", actionBaseClass);
+const actionItemClass = cx(secondaryActionClass, mobileActionItemClass);
+const retryActionClass = cx(
+  "fs-cta-secondary hover:bg-white",
+  "mt-2 inline-flex min-h-9 items-center justify-center px-3 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+);
 
 const EMPTY_SUBSCRIBE = () => () => {};
 
@@ -75,7 +86,11 @@ function CourseOpenOnPhoneFeedback({
       aria-live={isError ? "assertive" : "polite"}
       data-feedback-tone={tone}
       data-testid={testId}
-      className={`rounded-lg border px-3 py-2 text-[12px] leading-5 ${feedbackToneClasses[tone]} ${className}`.trim()}
+      className={cx(
+        "rounded-[var(--fs-radius-control)] border px-3 py-2 text-[12px] leading-5",
+        feedbackToneClasses[tone],
+        className
+      )}
     >
       {children}
     </div>
@@ -171,12 +186,11 @@ export default function CourseOpenOnPhoneCard({ lessonTitle, sharePath }: Props)
   }
 
   return (
-    <div
-      className="mt-3 rounded-2xl border border-teal-200/70 bg-teal-50/45 p-3"
-      data-testid="course-open-on-phone-card"
-    >
-      <h4 className="text-[13px] font-semibold text-slate-900">Open on phone</h4>
-      <p className="mt-1 text-[12px] leading-5 text-slate-600">
+    <div className={cardClass} data-testid="course-open-on-phone-card">
+      <h4 className="text-[13px] font-semibold text-[color:var(--fs-color-ink-strong)]">
+        Open on phone
+      </h4>
+      <p className="mt-1 text-[12px] leading-5 text-[color:var(--fs-color-muted)]">
         Desktop/tablet: scan the QR code. Mobile: share or copy the lesson link.
       </p>
 
@@ -202,7 +216,7 @@ export default function CourseOpenOnPhoneCard({ lessonTitle, sharePath }: Props)
               type="button"
               onClick={retryQrGeneration}
               aria-describedby={qrFeedbackId}
-              className="mt-2 inline-flex h-7 items-center justify-center rounded-md border border-rose-200 bg-white px-3 text-[11px] font-medium text-rose-700 transition hover:bg-rose-100"
+              className={retryActionClass}
             >
               Retry
             </button>
@@ -210,7 +224,7 @@ export default function CourseOpenOnPhoneCard({ lessonTitle, sharePath }: Props)
         ) : null}
 
         {qrSvgDataUrl ? (
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-2">
+          <div className="inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/90 p-2">
             <Image
               src={qrSvgDataUrl}
               alt={`QR code for ${lessonTitle}`}
@@ -224,12 +238,15 @@ export default function CourseOpenOnPhoneCard({ lessonTitle, sharePath }: Props)
         ) : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        className={cx("mt-3", getMobileActionGroupClass(2, { desktopJustify: "start" }))}
+        data-testid="course-open-on-phone-actions"
+      >
         <button
           type="button"
           onClick={() => void shareLink()}
           aria-describedby={actionFeedback ? actionFeedbackId : undefined}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 transition hover:bg-slate-50"
+          className={actionItemClass}
           data-testid="course-open-on-phone-share"
         >
           Share link
@@ -238,7 +255,7 @@ export default function CourseOpenOnPhoneCard({ lessonTitle, sharePath }: Props)
           type="button"
           onClick={() => void copyLink()}
           aria-describedby={actionFeedback ? actionFeedbackId : undefined}
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 transition hover:bg-slate-50"
+          className={actionItemClass}
           data-testid="course-open-on-phone-copy"
         >
           {copied ? "Copied" : "Copy link"}

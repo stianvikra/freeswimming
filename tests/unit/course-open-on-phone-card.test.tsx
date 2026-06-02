@@ -39,6 +39,33 @@ describe("CourseOpenOnPhoneCard", () => {
     vi.clearAllMocks();
   });
 
+  it("uses AW-006 card, action, and mobile layout tokens", () => {
+    generateQrAssetsMock.mockReturnValue(new Promise(() => {}));
+
+    renderCard();
+
+    expect(screen.getByTestId("course-open-on-phone-card")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByTestId("course-open-on-phone-actions")).toHaveClass(
+      "grid",
+      "grid-cols-2",
+      "sm:flex",
+      "sm:justify-start"
+    );
+    expect(screen.getByTestId("course-open-on-phone-share")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+    expect(screen.getByTestId("course-open-on-phone-copy")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+  });
+
   it("announces QR generation while preserving the generated share URL", async () => {
     generateQrAssetsMock.mockReturnValue(new Promise(() => {}));
 
@@ -71,6 +98,7 @@ describe("CourseOpenOnPhoneCard", () => {
 
     const retryButton = screen.getByRole("button", { name: "Retry" });
     expect(retryButton).toHaveAttribute("aria-describedby", alert.id);
+    expect(retryButton).toHaveClass("fs-cta-secondary");
 
     fireEvent.click(retryButton);
 
