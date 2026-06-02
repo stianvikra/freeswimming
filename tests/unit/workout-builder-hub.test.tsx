@@ -132,12 +132,12 @@ function buildWorkoutLibrary(overrides?: Partial<WorkoutLibrarySnapshot>): Worko
 }
 
 function readPreviewDraft() {
-  if (!screen.queryByTestId("session-generator-draft-preview")) {
+  if (!screen.queryByTestId("session-generator-draft-state")) {
     openSupportToolsPanel();
   }
 
   return JSON.parse(
-    screen.getByTestId("session-generator-draft-preview").textContent ?? "{}"
+    screen.getByTestId("session-generator-draft-state").textContent ?? "{}"
   ) as SessionDraft;
 }
 
@@ -226,7 +226,7 @@ describe("WorkoutBuilderHub", () => {
       "aria-expanded",
       "false"
     );
-    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent("Ready");
+    expect(screen.queryByTestId("workout-editor-support-tools-status")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Advanced export and support tools stay here when you need them.")
     ).not.toBeInTheDocument();
@@ -237,11 +237,14 @@ describe("WorkoutBuilderHub", () => {
 
     openSupportToolsPanel();
 
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toBeVisible();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
     expect(
       screen.getByText("Advanced export and support tools stay here when you need them.")
     ).toBeVisible();
     expect(screen.getByText("Open, copy, or download here without saving.")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-garmin-export-download")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-handoff-copy")).toBeVisible();
+    expect(screen.getByTestId("workout-editor-handoff-download")).toBeVisible();
   });
 
   it("uses the flatter containment markers for the calm workout builder layout", async () => {
@@ -305,6 +308,12 @@ describe("WorkoutBuilderHub", () => {
     );
     expect(screen.getByTestId("session-draft-step-mobile-primary-add-after-0")).toBeVisible();
     expect(
+      screen.getByTestId("session-draft-step-mobile-primary-add-after-0").parentElement
+    ).toHaveAttribute("data-action-layout", "mobile-equal");
+    expect(
+      screen.getByTestId("session-draft-step-mobile-primary-add-after-0").parentElement
+    ).toHaveClass("grid-cols-2");
+    expect(
       screen.getByTestId("session-draft-step-mobile-primary-add-repeat-after-0")
     ).toBeVisible();
 
@@ -312,6 +321,9 @@ describe("WorkoutBuilderHub", () => {
 
     expect(screen.getByTestId("session-draft-step-mobile-actions-panel-0")).toBeVisible();
     expect(screen.queryByTestId("session-draft-step-mobile-move-up-0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-draft-step-mobile-remove-0").parentElement).toHaveClass(
+      "grid-cols-2"
+    );
     expect(screen.getByTestId("session-draft-step-mobile-remove-0")).toBeVisible();
 
     fireEvent.click(screen.getByTestId("session-draft-add-repeat"));
@@ -319,10 +331,16 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1")
     ).toBeVisible();
+    expect(
+      screen.getByTestId("session-draft-repeat-mobile-primary-add-step-after-1").parentElement
+    ).toHaveClass("grid-cols-1");
 
     fireEvent.click(screen.getByTestId("session-draft-repeat-mobile-actions-toggle-1"));
 
     expect(screen.getByTestId("session-draft-repeat-mobile-actions-panel-1")).toBeVisible();
+    expect(
+      screen.getByTestId("session-draft-repeat-mobile-add-repeat-after-1").parentElement
+    ).toHaveClass("grid-cols-2", "[&>*:nth-child(3)]:col-span-2");
     expect(screen.getByTestId("session-draft-repeat-mobile-add-repeat-after-1")).toBeVisible();
     expect(screen.getByTestId("session-draft-repeat-mobile-remove-1")).toBeVisible();
   });
@@ -392,22 +410,45 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-pdf-source")).toHaveClass("sr-only");
     expect(screen.getByTestId("workout-editor-metadata-panel")).toHaveClass("fs-library-card");
     expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("workout-editor-metadata-toggle").parentElement).toHaveAttribute(
+      "data-action-count",
+      "4"
+    );
+    expect(screen.getByTestId("workout-editor-metadata-toggle").parentElement).toHaveClass(
+      "grid-cols-2"
+    );
     expect(screen.getByTestId("workout-editor-pdf-open")).toHaveClass("fs-cta-secondary");
     expect(screen.getByTestId("workout-builder-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveClass(
+      "fs-cta-secondary"
+    );
     expect(screen.getByTestId("workout-editor-support-tools-toggle")).toHaveAttribute(
       "aria-expanded",
       "false"
     );
+    expect(screen.getByTestId("workout-editor-support-tools-toggle").parentElement).toHaveClass(
+      "grid-cols-1"
+    );
     openSupportToolsPanel();
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
-      "data-readiness-status",
-      "ready"
+    expect(screen.queryByTestId("workout-editor-support-tools-status")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness-toggle")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-editor-garmin-export-download")).toHaveClass(
+      "fs-cta-secondary"
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Ready for the planned Garmin/export handoff."
+    expect(screen.getByTestId("workout-editor-garmin-export-download").parentElement).toHaveClass(
+      "grid-cols-1"
     );
-    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
-    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
+    expect(screen.getByTestId("workout-editor-handoff-copy")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("workout-editor-handoff-download")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("workout-editor-handoff-copy").parentElement).toHaveClass(
+      "grid-cols-2"
+    );
+    expect(screen.queryByTestId("workout-editor-garmin-export-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-handoff-toggle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-export-preview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-handoff-preview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-generator-draft-preview")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.queryByTestId("workout-editor-reset")).not.toBeInTheDocument();
 
@@ -480,36 +521,13 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "Unsaved changes stay local until you save this session."
     );
-    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
-      "3 review items"
-    );
     openSupportToolsPanel();
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
-      "data-readiness-status",
-      "review"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Review 3 Garmin/export mapping details before you treat this workout as handoff-ready."
-    );
-    fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "CSS-relative pacing"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "2:00/100m if no CSS is set"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent("Fins");
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "Manual Garmin translation is still required"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "CSS-Based Send-Off Time"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "Lap Button Press instead"
-    );
-    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
-    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
+    expect(screen.queryByTestId("workout-editor-support-tools-status")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
+    expect(screen.queryByText("CSS-relative pacing")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Manual Garmin translation is still required")
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-builder-save")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toBeEnabled();
     expect(screen.getByTestId("workout-editor-reset")).toHaveClass("fs-cta-secondary");
@@ -536,10 +554,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-save-state")).toHaveTextContent(
       "All changes are saved to this session."
     );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
-      "data-readiness-status",
-      "review"
-    );
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
     expect(screen.getByTestId("workout-builder-save")).toBeDisabled();
     expect(screen.queryByTestId("workout-editor-reset")).not.toBeInTheDocument();
 
@@ -662,6 +677,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("workout-editor-discard-undo")).toHaveTextContent(
       "Changes discarded."
     );
+    expect(screen.getByTestId("workout-editor-discard-undo-button")).toHaveClass("fs-cta-primary");
     openWorkoutMetadataPanel();
     expect(screen.getByTestId("session-draft-title")).toHaveValue("Accepted threshold workout");
     expect(screen.getByTestId("session-draft-description")).toHaveValue(
@@ -1330,7 +1346,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryAllByTestId(/session-draft-repeat-done-bottom-/)).toHaveLength(0);
   });
 
-  it("builds a truthful handoff preview and supports copy/download actions", async () => {
+  it("builds truthful handoff exports without exposing raw previews", async () => {
     const clipboardWriteText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(window.navigator, "clipboard", {
       configurable: true,
@@ -1357,29 +1373,18 @@ describe("WorkoutBuilderHub", () => {
     });
 
     openSupportToolsPanel();
-    fireEvent.click(screen.getByTestId("workout-editor-garmin-export-toggle"));
-    fireEvent.click(screen.getByTestId("workout-editor-handoff-toggle"));
 
     expect(screen.getByTestId("workout-editor-handoff-source")).toHaveAttribute(
       "data-handoff-state",
       "canonical"
     );
-    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
-      "Source: Canonical workout"
-    );
-    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
-      "Title: Accepted threshold workout"
-    );
     expect(screen.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
       "canonical"
     );
-    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
-      '"kind": "freeswimming_garmin_ready_workout_v1"'
-    );
-    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
-      '"draftState": "canonical"'
-    );
+    expect(screen.queryByTestId("workout-editor-handoff-preview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-export-preview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("session-generator-draft-preview")).not.toBeInTheDocument();
 
     openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
@@ -1394,28 +1399,12 @@ describe("WorkoutBuilderHub", () => {
       "data-handoff-state",
       "local_draft"
     );
-    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
-      "Source: Local draft"
-    );
-    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
-      "Title: Local handoff workout"
-    );
-    expect(screen.getByTestId("workout-editor-handoff-preview")).toHaveTextContent(
-      "Reverse IM order (RIMO)"
-    );
     expect(screen.getByTestId("workout-editor-garmin-export-source")).toHaveAttribute(
       "data-export-state",
       "local_draft"
     );
-    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
-      '"draftState": "local_draft"'
-    );
-    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
-      '"title": "Local handoff workout"'
-    );
-    expect(screen.getByTestId("workout-editor-garmin-export-preview")).toHaveTextContent(
-      '"reviewIssueIds": ['
-    );
+    expect(screen.queryByTestId("workout-editor-handoff-preview")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-editor-garmin-export-preview")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("workout-editor-handoff-copy"));
 
@@ -1424,6 +1413,9 @@ describe("WorkoutBuilderHub", () => {
         expect.stringContaining("Title: Local handoff workout")
       );
     });
+    const copiedHandoff = clipboardWriteText.mock.calls[0]?.[0] as string;
+    expect(copiedHandoff).toContain("Source: Local draft");
+    expect(copiedHandoff).toContain("Reverse IM order (RIMO)");
 
     await waitFor(() => {
       const handoffNotice = screen.getByTestId("workout-editor-handoff-notice");
@@ -1448,6 +1440,10 @@ describe("WorkoutBuilderHub", () => {
       expect(createUrlSpy).toHaveBeenCalledTimes(1);
       expect(clickSpy).toHaveBeenCalledTimes(1);
     });
+    const downloadedHandoff = (await (createUrlSpy.mock.calls[0]?.[0] as Blob).text()) ?? "";
+    expect(downloadedHandoff).toContain("Source: Local draft");
+    expect(downloadedHandoff).toContain("Title: Local handoff workout");
+    expect(downloadedHandoff).toContain("Reverse IM order (RIMO)");
 
     await waitFor(() => {
       const handoffNotice = screen.getByTestId("workout-editor-handoff-notice");
@@ -1472,6 +1468,11 @@ describe("WorkoutBuilderHub", () => {
       expect(createUrlSpy).toHaveBeenCalledTimes(2);
       expect(clickSpy).toHaveBeenCalledTimes(2);
     });
+    const garminExportJson = (await (createUrlSpy.mock.calls[1]?.[0] as Blob).text()) ?? "";
+    expect(garminExportJson).toContain('"kind": "freeswimming_garmin_ready_workout_v1"');
+    expect(garminExportJson).toContain('"draftState": "local_draft"');
+    expect(garminExportJson).toContain('"title": "Local handoff workout"');
+    expect(garminExportJson).toContain('"reviewIssueIds": [');
 
     await waitFor(() => {
       const garminNotice = screen.getByTestId("workout-editor-garmin-export-notice");
@@ -1530,7 +1531,7 @@ describe("WorkoutBuilderHub", () => {
       expect(handoffError).toHaveAttribute("data-feedback-tone", "error");
       expect(handoffError).toHaveTextContent("Handoff failed");
       expect(handoffError).toHaveTextContent(
-        "Could not copy the workout handoff automatically. Use the preview below."
+        "Could not copy the workout handoff automatically. Download the handoff instead."
       );
     });
     expect(screen.getByTestId("workout-editor-handoff-copy")).toHaveAttribute(
@@ -2895,25 +2896,14 @@ describe("WorkoutBuilderHub", () => {
 
     expect(saveButton).toBeDisabled();
     expect(screen.queryByText(/Enter a valid pool size/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("workout-editor-support-tools-status")).toHaveTextContent(
-      "1 review item"
-    );
+    expect(screen.queryByTestId("workout-editor-support-tools-status")).not.toBeInTheDocument();
 
     openSupportToolsPanel();
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveAttribute(
-      "data-readiness-status",
-      "review"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness-summary")).toHaveTextContent(
-      "Review 1 Garmin/export mapping detail before you treat this workout as handoff-ready."
-    );
-    fireEvent.click(screen.getByTestId("workout-editor-garmin-readiness-toggle"));
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "no exact pool size set"
-    );
-    expect(screen.getByTestId("workout-editor-garmin-readiness")).toHaveTextContent(
-      "Choose a pool size before Garmin/export handoff"
-    );
+    expect(screen.queryByTestId("workout-editor-garmin-readiness")).not.toBeInTheDocument();
+    expect(screen.queryByText("no exact pool size set")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Choose a pool size before Garmin/export handoff")
+    ).not.toBeInTheDocument();
   });
 
   it("converts exact yard pool sizes back into canonical meters on save", async () => {

@@ -2,6 +2,11 @@
 
 import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Ellipsis } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  getMobileActionGroupClass,
+  mobileActionItemClass,
+  mobileSegmentedTrioClass,
+} from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import {
   getManualPoolCategoryLabelClass,
@@ -53,7 +58,7 @@ const surfaceDangerActionClass = cx(
   surfaceActionBaseClass
 );
 const mobileSecondaryActionClass = cx(
-  "fs-cta-secondary w-full justify-start hover:bg-white",
+  "fs-cta-secondary w-full justify-center text-center hover:bg-white",
   surfaceActionBaseClass
 );
 const rearrangeMoveButtonClass = cx(mobileActionToggleClass, "sm:h-9 sm:w-10");
@@ -126,12 +131,18 @@ export function SessionStepSurfaceRenderer({
     <div data-testid="workout-editor-session-steps-surface" className="fs-library-card p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-        <div className="flex flex-wrap items-center gap-3">
+        <div
+          data-action-layout="mobile-surface-header"
+          className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"
+        >
           {showModeTabs ? (
             <div
               role="group"
               aria-label="Builder mode"
-              className="fs-library-card fs-library-card-muted inline-flex min-h-12 gap-1 p-1"
+              className={cx(
+                "fs-library-card fs-library-card-muted min-h-12 p-1",
+                mobileSegmentedTrioClass
+              )}
             >
               {SESSION_STEP_SURFACE_MODES.map((nextMode) => {
                 const isSelected = mode === nextMode;
@@ -145,6 +156,7 @@ export function SessionStepSurfaceRenderer({
                     data-testid={`workout-editor-builder-mode-${nextMode}`}
                     className={cx(
                       surfaceCompactActionBaseClass,
+                      "w-full",
                       isSelected ? "fs-cta-primary" : "fs-cta-secondary shadow-none hover:bg-white"
                     )}
                   >
@@ -155,12 +167,18 @@ export function SessionStepSurfaceRenderer({
             </div>
           ) : null}
           {showAddActions ? (
-            <div className="flex flex-wrap items-center gap-2 border-l border-slate-200 pl-3">
+            <div
+              data-action-layout="mobile-equal"
+              className={cx(
+                getMobileActionGroupClass(2, { desktopJustify: "start" }),
+                "border-t border-slate-200 pt-3 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-3"
+              )}
+            >
               <button
                 type="button"
                 onClick={onAddStep}
                 data-testid="session-draft-add-step"
-                className={surfaceCompactSecondaryActionClass}
+                className={cx(surfaceCompactSecondaryActionClass, mobileActionItemClass)}
               >
                 Add step
               </button>
@@ -168,7 +186,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onAddRepeat}
                 data-testid="session-draft-add-repeat"
-                className={surfaceCompactSecondaryActionClass}
+                className={cx(surfaceCompactSecondaryActionClass, mobileActionItemClass)}
               >
                 Add repeat
               </button>
@@ -205,12 +223,15 @@ export function SessionStepSurfaceRenderer({
             <p className="mt-1 text-sm text-blue-900">
               Undo restores it to the same local spot before you save this workout.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div
+              data-action-layout="mobile-equal"
+              className={cx("mt-3", getMobileActionGroupClass(2, { desktopJustify: "start" }))}
+            >
               <button
                 type="button"
                 onClick={onUndoLastRemoval}
                 data-testid="workout-editor-removal-undo-button"
-                className={surfacePrimaryActionClass}
+                className={cx(surfacePrimaryActionClass, mobileActionItemClass)}
               >
                 Undo delete
               </button>
@@ -218,7 +239,7 @@ export function SessionStepSurfaceRenderer({
                 type="button"
                 onClick={onDismissLastRemoval}
                 data-testid="workout-editor-removal-dismiss-button"
-                className={surfaceSecondaryActionClass}
+                className={cx(surfaceSecondaryActionClass, mobileActionItemClass)}
               >
                 Dismiss
               </button>
@@ -402,6 +423,12 @@ export function SessionStepSummaryCard({
   onConfirmRemoval,
   onCancelRemoval,
 }: SessionStepSummaryCardProps) {
+  const mobileOverflowActionCount =
+    Number(!showMobilePrimaryAddAfter && !isLinkedPostSetRest) +
+    Number(canAddRepeatAfter && !showMobilePrimaryAddRepeatAfter && !isLinkedPostSetRest) +
+    Number(!isLinkedPostSetRest) +
+    Number(!isLinkedPostSetRest);
+
   return (
     <article
       key={stepId}
@@ -524,7 +551,12 @@ export function SessionStepSummaryCard({
           data-testid={`session-draft-step-mobile-actions-panel-${index}`}
           className={`${mobileActionPanelClass} sm:hidden`}
         >
-          <div className="mt-2 grid gap-2">
+          <div
+            data-action-layout="mobile-equal"
+            className={getMobileActionGroupClass(mobileOverflowActionCount, {
+              desktopJustify: "start",
+            })}
+          >
             {!showMobilePrimaryAddAfter && !isLinkedPostSetRest ? (
               <MobileActionButton
                 testId={`session-draft-step-mobile-add-after-${index}`}
@@ -566,12 +598,20 @@ export function SessionStepSummaryCard({
       ) : null}
 
       {isEditMode && showMobilePrimaryAddAfter ? (
-        <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
+        <div
+          data-action-layout="mobile-equal"
+          className={cx(
+            "mt-3 sm:hidden",
+            getMobileActionGroupClass(showMobilePrimaryAddRepeatAfter ? 2 : 1, {
+              desktopJustify: "start",
+            })
+          )}
+        >
           <button
             type="button"
             onClick={onAddStepAfter}
             data-testid={`session-draft-step-mobile-primary-add-after-${index}`}
-            className={surfaceCompactSecondaryActionClass}
+            className={cx(surfaceCompactSecondaryActionClass, mobileActionItemClass)}
           >
             Add after
           </button>
@@ -580,7 +620,7 @@ export function SessionStepSummaryCard({
               type="button"
               onClick={onAddRepeatAfter}
               data-testid={`session-draft-step-mobile-primary-add-repeat-after-${index}`}
-              className={surfaceCompactSecondaryActionClass}
+              className={cx(surfaceCompactSecondaryActionClass, mobileActionItemClass)}
             >
               Repeat after
             </button>
@@ -784,12 +824,15 @@ export function SessionStepRepeatSummaryCard({
         </div>
 
         {isEditMode && isOpen ? (
-          <div className="sm:hidden">
+          <div
+            data-action-layout="mobile-equal"
+            className={cx("sm:hidden", getMobileActionGroupClass(1, { desktopJustify: "start" }))}
+          >
             <button
               type="button"
               onClick={onAddStepAfter}
               data-testid={`session-draft-repeat-mobile-primary-add-step-after-${groupIndex}`}
-              className={surfaceCompactSecondaryActionClass}
+              className={cx(surfaceCompactSecondaryActionClass, mobileActionItemClass)}
             >
               Add step after
             </button>
@@ -802,7 +845,10 @@ export function SessionStepRepeatSummaryCard({
             data-testid={`session-draft-repeat-mobile-actions-panel-${groupIndex}`}
             className={`${mobileActionPanelClass} sm:hidden`}
           >
-            <div className="mt-2 grid gap-2">
+            <div
+              data-action-layout="mobile-equal"
+              className={getMobileActionGroupClass(3, { desktopJustify: "start" })}
+            >
               <MobileActionButton
                 testId={`session-draft-repeat-mobile-add-repeat-after-${groupIndex}`}
                 tone="blue"
@@ -976,12 +1022,15 @@ export function RemovalConfirm({
         This builder change stays local until you save, and you can still undo it right after
         deletion.
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        data-action-layout="mobile-equal"
+        className={cx("mt-3", getMobileActionGroupClass(2, { desktopJustify: "start" }))}
+      >
         <button
           type="button"
           onClick={onConfirm}
           data-testid="workout-editor-removal-confirm-button"
-          className={surfaceDangerActionClass}
+          className={cx(surfaceDangerActionClass, mobileActionItemClass)}
         >
           Delete now
         </button>
@@ -989,7 +1038,7 @@ export function RemovalConfirm({
           type="button"
           onClick={onCancel}
           data-testid="workout-editor-removal-cancel-button"
-          className={surfaceSecondaryActionClass}
+          className={cx(surfaceSecondaryActionClass, mobileActionItemClass)}
         >
           Keep it
         </button>
