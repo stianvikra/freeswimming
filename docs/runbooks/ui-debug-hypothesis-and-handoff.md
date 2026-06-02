@@ -47,6 +47,7 @@ For visual/export work, do not use "looks fine in preview" as proof if the failu
 - Explain whether the set is `before/after` or `after/reference`.
 - In the final merge-ready handoff, repeat the same clickable `Screenshot artifacts` folder link.
 - If product-rendering files, styles, assets, or export HTML change after capture, regenerate the screenshots. If no visual/rendering files changed after capture, say so explicitly in the final merge-ready handoff.
+- Before handoff, inspect the changed surface and visible same-workflow controls in the screenshots against the active design contracts, including token use, mobile action layout, labels, and status semantics. If a nearby same-workflow element violates the active rule and can be fixed without changing behavior, include it in the scoped fix; otherwise call it out explicitly as out of scope or deferred in the brief and handoff.
 - In chat, summarize what changed and what to inspect. Do not rely on compressed chat thumbnails as the only review path.
 
 ## Freeswimming Local Screenshot Defaults

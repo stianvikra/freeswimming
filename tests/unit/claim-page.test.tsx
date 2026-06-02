@@ -101,6 +101,11 @@ describe("ClaimPage", () => {
     expect(signInUrl.searchParams.get("next")).toBe("/my-library/workouts");
     expect(signInUrl.searchParams.get("source")).toBe("claim_entry");
     expect(signInUrl.searchParams.get("email")).toBe("Buyer@Example.com");
+    expect(signInLink).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
+    expect(signInLink.parentElement).toHaveClass("grid-cols-1", "sm:justify-end");
+
+    const programsLink = screen.getByRole("link", { name: "Back to Programs" });
+    expect(programsLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
   });
 
   it("redirects signed-in users to the safe next path", async () => {

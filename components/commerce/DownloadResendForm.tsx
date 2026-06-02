@@ -80,10 +80,7 @@ export default function DownloadResendForm({
 
   return (
     <form onSubmit={onSubmit} className={`space-y-2 ${className}`}>
-      <label
-        htmlFor={inputId}
-        className="text-xs font-medium tracking-wide text-slate-600 uppercase"
-      >
+      <label htmlFor={inputId} className="ui-field-label uppercase">
         Purchase email
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -97,13 +94,13 @@ export default function DownloadResendForm({
           placeholder="you@example.com"
           aria-invalid={error ? true : undefined}
           aria-describedby={feedbackMessage ? feedbackId : undefined}
-          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 ring-0 transition outline-none placeholder:text-slate-400 focus:border-blue-500"
+          className="ui-field min-h-12"
         />
         <button
           type="submit"
           disabled={pending}
           aria-describedby={feedbackMessage ? feedbackId : undefined}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="fs-cta-primary inline-flex min-h-12 w-full shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {pending ? "Sending..." : "Email me access link"}
         </button>

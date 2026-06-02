@@ -80,10 +80,16 @@ describe("CheckoutSuccessPage", () => {
       screen.getByText(/entitlement checks decide what appears in your library/i)
     ).toBeVisible();
 
-    expect(screen.getByRole("link", { name: "Sign in to My Library" })).toHaveAttribute(
+    const signInLink = screen.getByRole("link", { name: "Sign in to My Library" });
+    expect(signInLink).toHaveAttribute(
       "href",
       "/auth/sign-in?next=%2Fmy-library&source=checkout_success"
     );
+    expect(signInLink).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
+    expect(signInLink.parentElement).toHaveClass("grid-cols-1", "sm:justify-start");
+
+    const programsLink = screen.getByRole("link", { name: "Back to Programs" });
+    expect(programsLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     expect(screen.getByRole("link", { name: "Open claim access" })).toHaveAttribute(
       "href",
       "/claim?next=%2Fmy-library"

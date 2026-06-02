@@ -9,6 +9,16 @@ describe("DownloadResendForm", () => {
     vi.restoreAllMocks();
   });
 
+  it("uses shared field and action tokens without changing labels", () => {
+    render(<DownloadResendForm initialEmail="buyer@example.com" source="checkout_success" />);
+
+    const input = screen.getByLabelText("Purchase email");
+    const button = screen.getByRole("button", { name: "Email me access link" });
+
+    expect(input).toHaveClass("ui-field", "min-h-12");
+    expect(button).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
+  });
+
   it("posts resend request and shows non-enumerating success message", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

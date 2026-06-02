@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import DownloadResendForm from "@/components/commerce/DownloadResendForm";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -63,11 +64,16 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
                 : "Use the same email you used at checkout. Sign-in confirms identity only; entitlement checks decide what appears in your library."}
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href={libraryHref} className={primaryActionClass}>
+            <div
+              className={`mt-5 ${getMobileActionGroupClass(2, {
+                desktopJustify: "start",
+                stackOnMobile: true,
+              })}`}
+            >
+              <Link href={libraryHref} className={`${primaryActionClass} ${mobileActionItemClass}`}>
                 {libraryCta}
               </Link>
-              <Link href="/programs" className={secondaryActionClass}>
+              <Link href="/programs" className={`${secondaryActionClass} ${mobileActionItemClass}`}>
                 Back to Programs
               </Link>
             </div>
