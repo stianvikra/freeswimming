@@ -148,8 +148,98 @@ describe("habits domain helpers", () => {
     const summary = buildHabitDaySummary([habit], [lapse], "2026-05-10");
 
     expect(summary.satisfiedPerfectDayItemCount).toBe(0);
-    expect(summary.items[0]?.evaluation.stateLabel).toBe("Lapse logged");
-    expect(summary.items[0]?.evaluation.valueLabel).toBe("0 days without");
+    expect(summary.items[0]?.evaluation.stateLabel).toBe("Slip logged today");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("3/4 days on track");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBeNull();
+  });
+
+  it("keeps quit progress visible after an earlier slip while hiding short current streaks", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Eating chips",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-05-01",
+        last_lapse_date: "2026-05-06",
+      })
+    );
+    const earlierSlip = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        check_in_date: "2026-05-06",
+        value_boolean: false,
+      })
+    );
+
+    const summary = buildHabitDaySummary([habit], [earlierSlip], "2026-05-10");
+
+    expect(summary.satisfiedPerfectDayItemCount).toBe(1);
+    expect(summary.items[0]?.evaluation.stateLabel).toBe("On track");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days on track");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBeNull();
+  });
+
+  it("shows quit current streak once it reaches five days", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Eating chips",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-05-01",
+        last_lapse_date: "2026-05-05",
+      })
+    );
+    const earlierSlip = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        check_in_date: "2026-05-05",
+        value_boolean: false,
+      })
+    );
+
+    const summary = buildHabitDaySummary([habit], [earlierSlip], "2026-05-10");
+
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days on track");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBe("Current streak 5 days");
+  });
+
+  it("shows build streak motivation for open daily habits with prior completions", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Read",
+        habit_mode: "build",
+        habit_type: "binary",
+        start_date: "2026-05-04",
+      })
+    );
+    const checkIns = [
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-09",
+    ].map((date, index) =>
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: `build-streak-${index}`,
+          habit_id: habit.id,
+          check_in_date: date,
+        })
+      )
+    );
+
+    const summary = buildHabitDaySummary([habit], checkIns, "2026-05-10");
+
+    expect(summary.items[0]?.evaluation.stateLabel).toBe("Open");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("6-day streak");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days on track");
   });
 
   it("builds timed habits with duration timer metadata", () => {
@@ -335,6 +425,99 @@ describe("habits domain helpers", () => {
     expect(summary.days).toHaveLength(7);
     expect(summary.perfectDayCount).toBe(2);
     expect(summary.averageCompletionPercent).toBe(29);
+  });
+
+  it("treats skipped check-ins as rest days that do not count as done or missed", () => {
+    const restHabit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
+    const doneHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "Drink water",
+      })
+    );
+    const restDay = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: restHabit.id,
+        status: "skipped",
+        value_boolean: null,
+        completed_at: null,
+      })
+    );
+    const done = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: doneHabit.id,
+        value_boolean: true,
+      })
+    );
+
+    const summary = buildHabitDaySummary([restHabit, doneHabit], [restDay, done], "2026-05-10");
+
+    expect(summary.perfectDayItemCount).toBe(1);
+    expect(summary.satisfiedPerfectDayItemCount).toBe(1);
+    expect(summary.completionPercent).toBe(100);
+    expect(summary.items.find((item) => item.habit.id === restHabit.id)?.priorityGroup).toBe(
+      "rest_day"
+    );
+    expect(summary.items.find((item) => item.habit.id === restHabit.id)?.evaluation).toMatchObject({
+      isSatisfied: false,
+      valueLabel: "Rest day",
+      stateLabel: "Rest day",
+      supportingLabel: "Not counted as done or missed",
+    });
+  });
+
+  it("keeps weekly and monthly target-met habits done for the rest of the period", () => {
+    const weekly = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "Weekly mobility",
+        cadence_period: "weekly",
+        cadence_target_count: 2,
+        cadence_day_policy: "any",
+      })
+    );
+    const monthly = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "44444444-4444-4444-8444-444444444444",
+        title: "Technique review",
+        start_date: "2026-05-01",
+        cadence_period: "monthly",
+        cadence_target_count: 1,
+        cadence_day_policy: "any",
+      })
+    );
+    const checkIns = [
+      buildHabitCheckInView(
+        buildCheckInRow({
+          habit_id: weekly.id,
+          check_in_date: "2026-05-05",
+          value_boolean: true,
+        })
+      ),
+      buildHabitCheckInView(
+        buildCheckInRow({
+          habit_id: weekly.id,
+          check_in_date: "2026-05-07",
+          value_boolean: true,
+        })
+      ),
+      buildHabitCheckInView(
+        buildCheckInRow({
+          habit_id: monthly.id,
+          check_in_date: "2026-05-02",
+          value_boolean: true,
+        })
+      ),
+    ];
+
+    const summary = buildHabitDaySummary([weekly, monthly], checkIns, "2026-05-10");
+
+    expect(summary.items.map((item) => [item.habit.title, item.priorityGroup])).toEqual([
+      ["Weekly mobility", "done_period"],
+      ["Technique review", "done_period"],
+    ]);
+    expect(summary.items.map((item) => item.isScheduledForDate)).toEqual([false, false]);
+    expect(summary.items.map((item) => item.cadenceProgress.isTargetMet)).toEqual([true, true]);
   });
 
   it("sorts active habits by nearest deadline before status and completion rows", () => {

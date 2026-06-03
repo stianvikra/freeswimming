@@ -432,6 +432,75 @@ describe("habits routes", () => {
     );
   });
 
+  it("logs rest days as skipped owner-scoped check-ins without completion time", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: { id: "11111111-1111-4111-8111-111111111111", habit_mode: "build" },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const upsertSingle = vi.fn().mockResolvedValue({
+      data: { id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
+    const upsertSelect = vi.fn(() => ({ single: upsertSingle }));
+    const upsert = vi.fn(() => ({ select: upsertSelect }));
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          status: "skipped",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        check_in_date: "2026-05-10",
+        status: "skipped",
+        value_boolean: null,
+        value_numeric: null,
+        value_time: null,
+        completed_at: null,
+      }),
+      { onConflict: "user_id,habit_id,check_in_date" }
+    );
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_rest_day_logged",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "build",
+          checkInDate: "2026-05-10",
+          status: "skipped",
+        }),
+      })
+    );
+  });
+
   it("logs quit habit lapses and updates the fast days-since anchor", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: {

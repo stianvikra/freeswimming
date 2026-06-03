@@ -33,6 +33,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "habit_check_in_logged",
   "habit_check_in_reset",
   "habit_lapse_logged",
+  "habit_rest_day_logged",
   "habit_timer_saved",
   "generator_intake_viewed",
   "generator_intake_refreshed",
