@@ -260,3 +260,29 @@ Required because this changes visible UI/layout.
 - `2026-06-03 | screenshot-handoff-ready | captured before/after desktop/mobile screenshots in output/aw-006-my-training-hub-inner-token-input-parity-2026-06-03-153025/ using a temporary deterministic TrainingContextHub route; removed the temporary route, stopped dev servers, removed the before worktree, and inspected artifacts for text-fit/action overflow | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-03 | owner-screenshot-correction | owner flagged that standalone mobile stack actions should be full-width and asked why the issue was not caught systemically; root cause was that the focused test asserted token classes but not mobile action-width intent; introduced named mobile action classes, updated focused tests to assert full-width stack actions and compact Collapse, reran targeted validation, regenerated after-screenshots in output/aw-006-my-training-hub-inner-token-input-parity-2026-06-03-154537/, removed the temporary route, and stopped the dev server | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-03 | pre-pr-gate | owner approved screenshots; PASS npm run verify:pre-pr full lane (branch-current, quality gates, lint, typecheck, unit tests, build, performance budgets, Playwright 106 passed / 530 skipped); no product-rendering files, styles, assets, or export HTML changed after the latest screenshot capture, only temporary route removal and brief evidence updates | next: commit, push, and open/update PR`
+- `2026-06-03 | merged | PR #967 merged as squash commit 0d2f680 after CI green and PASS npm run verify:pre-merge full lane; repo-managed closeout moved this brief to done and cleared active queue/inventory references | next: rerun post-merge preflight after closeout merge`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#967`
+- `squash_commit`: `0d2f680`
+- `result`: Closed AW-006 My Training Hub Inner Token/Input/Action Parity. `TrainingContextHub` inner cards, forms, inputs, and visible actions now use the current My Library token/input/action direction, and stacked mobile actions are full-width where they behave like primary form actions.
+- `validation`: PASS `npm exec vitest run tests/unit/training-context-hub.test.tsx`; PASS `npm run typecheck`; PASS `npm run lint:briefs:all`; PASS targeted route/label/support sweep; PASS `git diff --check`; PASS `npm run verify:pre-pr` full lane; owner-approved screenshot handoff in `output/aw-006-my-training-hub-inner-token-input-parity-2026-06-03-154537/`; GitHub CI green; PASS `npm run verify:pre-merge` full lane with 106 Playwright passed / 530 skipped.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the bounded slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                  | Gaps / Notes           |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Product goals and IA                          | `5/5`          | PR `#967`, done brief scope, queue/inventory closeout.                                                    | None for scoped slice. |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshots and focused Training Context workflow tests.                      | None for scoped slice. |
+| Visual design quality                         | `5/5`          | Screenshot handoff plus shared My Library token/input/action class adoption.                              | None for scoped slice. |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests and unchanged Training Context data/API boundaries.                                    | None for scoped slice. |
+| Accessibility (a11y)                          | `5/5`          | Existing labels/semantics preserved; full `verify:pre-pr` and `verify:pre-merge` passed.                  | None for scoped slice. |
+| Performance (CWV + payloads)                  | `5/5`          | Performance budgets passed in full gates.                                                                 | None for scoped slice. |
+| Reliability and failure handling              | `5/5`          | Existing pending/error/success/retry semantics preserved and tested through full gates.                   | None for scoped slice. |
+| Security and authz                            | `5/5`          | No auth/API changes; full CI and pre-merge gates passed.                                                  | None for scoped slice. |
+| Content governance                            | `5/5`          | Queue, design inventory, and brief lifecycle updated in closeout.                                         | None for scoped slice. |
+| i18n operational readiness                    | `5/5`          | No locale/user-facing copy contract changes beyond existing labels; canonical labels/fallbacks preserved. | None for scoped slice. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused local My Library token/action patterns; no new dependencies.                                       | None for scoped slice. |
+| Testing and QA automation                     | `5/5`          | Focused unit assertions, screenshot evidence, CI green, `verify:pre-pr`, and `verify:pre-merge`.          | None for scoped slice. |
+| DevOps and rollback readiness                 | `5/5`          | Single bounded PR `#967`, clean merge commit `0d2f680`, docs-only closeout path.                          | None for scoped slice. |
