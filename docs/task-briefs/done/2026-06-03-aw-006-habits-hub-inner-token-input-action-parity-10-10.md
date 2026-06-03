@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-habits-hub-inner-token-input-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
 - `updated`: `2026-06-03`
@@ -60,6 +60,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No changes to habit loading, create/update/archive/check-in payloads, cadence policy, timer state, localStorage keys, evaluation, sort order, filters, or Home/My Routines entrypoints. | changed-files review + targeted tests           | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this private member workspace slice changes no admin editor, CRUD workflow, publish flow, operator queue, or admin action surface.                                          | explicit admin-editor scope rationale           | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Labels, field associations, aria-pressed controls, aria-expanded details, visible focus styles, keyboard reachability, disabled states, and live feedback semantics remain intact.      | Testing Library assertions + screenshot QA      | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same labels, field associations, aria controls, focus, keyboard, disabled, and live feedback scope.                          | Testing Library assertions + screenshot QA      | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No dependency, media asset, new API call, polling loop, data model, or route payload growth beyond class/markup consolidation in the existing client component.                         | dependency diff + broad gate                    | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this visual/input/action hierarchy slice introduces no local storage, server-canonical data, sync trigger, conflict policy, retention rule, or sensitive-data flow.         | data-boundary rationale                         | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because existing `/my-library/habits` dynamic loading and habits mutation refresh behavior remain unchanged; no fetch/cache path changes.                                           | changed-files review                            | `N/A`                   |
@@ -224,10 +225,10 @@ Visual gate:
 After owner screenshot approval:
 
 - `npm run verify:pre-pr` - passed on retry after removing a stale generated `.next/dev/types/app/aw-006-habits-screenshot` file from the temporary screenshot harness; full lane, `verify-open` PASS, Playwright public matrix `106 passed` / `530 skipped`.
-- commit and push - pending.
-- open/update PR - pending.
-- required CI checks green - pending.
-- `npm run verify:pre-merge` - pending.
+- commit and push - passed as `ad718a3`.
+- open/update PR - passed, PR `#969`.
+- required CI checks green - passed for PR `#969`.
+- `npm run verify:pre-merge` - passed full lane; Playwright public matrix `106 passed` / `530 skipped`; private-gate regression skipped because `SITE_LOCK_ENABLED!=1`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -256,3 +257,30 @@ Required because this changes visible UI/layout.
 - `2026-06-03 | in-progress | started from clean main@c25372b after My Training Hub Inner Token/Input/Action Parity #967 and repo-managed closeout #968; owner explicitly requested HabitsHub Inner Token/Input/Action Parity execution, with later Habits product/UI findings intentionally deferred to a separate slice | next: implement focused HabitPerfectDayHub presentation parity, update queue/inventory/tests, run targeted validation, then capture before/after screenshot handoff`
 - `2026-06-03 | screenshot-handoff | implemented focused HabitPerfectDayHub token/input/action parity, updated focused tests plus AW-006 queue/design inventory, passed targeted validation, captured before/after desktop/mobile screenshots via deterministic harness, removed temp harness after capture | next: owner screenshot approval, then run npm run verify:pre-pr before PR prep`
 - `2026-06-03 | pre-pr | owner approved screenshot handoff; first pre-PR attempt exposed stale generated .next/dev type output from the removed temporary screenshot route; cleaned generated output, typecheck passed, then npm run verify:pre-pr passed full lane | next: commit, push, open PR, monitor CI`
+- `2026-06-03 | merged | PR #969 merged as squash commit 35ea67f after CI green and PASS npm run verify:pre-merge full lane; repo-managed closeout moved this brief to done and cleared active queue/inventory references | next: rerun post-merge preflight after closeout merge`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#969`
+- `squash_commit`: `35ea67f`
+- `result`: Closed AW-006 HabitsHub Inner Token/Input/Action Parity. `HabitPerfectDayHub` inner add/edit forms, cadence controls, habit rows, chips, timer/check-in controls, and visible actions now use the current My Library token/input/action direction without changing Habits behavior.
+- `validation`: PASS `npm exec vitest run tests/unit/habit-perfect-day-hub.test.tsx tests/unit/habits-page.test.tsx`; PASS `npm run typecheck`; PASS `npm run lint:briefs:all`; PASS `npm run lint:quality-gates`; PASS `npm run lint` with one unrelated existing warning in `output/capture-aw006-dryland-feedback.mjs`; PASS targeted route/label/support sweep; PASS `git diff --check`; owner-approved before/after screenshot handoff in `output/aw-006-habits-hub-inner-token-input-action-parity-2026-06-03-170100/`; PASS `npm run verify:pre-pr` full lane; GitHub CI green; PASS `npm run verify:pre-merge` full lane with 106 Playwright passed / 530 skipped.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the bounded slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                       | Gaps / Notes           |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Product goals and IA                          | `5/5`          | PR `#969`, done brief scope, queue/inventory closeout.                                                         | None for scoped slice. |
+| UX flow clarity                               | `5/5`          | Owner-approved before/after screenshots and focused Habits workflow tests.                                     | None for scoped slice. |
+| Visual design quality                         | `5/5`          | Screenshot handoff plus shared My Library token/input/action class adoption.                                   | None for scoped slice. |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests and unchanged Habits data/API/cadence/timer/check-in boundaries.                            | None for scoped slice. |
+| Accessibility (a11y)                          | `5/5`          | Existing labels/semantics preserved; full `verify:pre-pr` and `verify:pre-merge` passed.                       | None for scoped slice. |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence as the canonical accessibility row.   | None for scoped slice. |
+| Performance (CWV + payloads)                  | `5/5`          | Performance budgets passed in full gates.                                                                      | None for scoped slice. |
+| Reliability and failure handling              | `5/5`          | Existing pending/error/success/offline/schema/timer states preserved and tested through full gates.            | None for scoped slice. |
+| Security and authz                            | `5/5`          | No auth/API changes; full CI and pre-merge gates passed.                                                       | None for scoped slice. |
+| Content governance                            | `5/5`          | Queue, design inventory, and brief lifecycle updated in closeout.                                              | None for scoped slice. |
+| i18n operational readiness                    | `5/5`          | Screenshot text-fit review and responsive action/field classes keep labels layout-safe for later localization. | None for scoped slice. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, My Library token/action classes, and existing test surfaces; no new dependencies. | None for scoped slice. |
+| Testing and QA automation                     | `5/5`          | Focused unit assertions, screenshot evidence, CI green, `verify:pre-pr`, and `verify:pre-merge`.               | None for scoped slice. |
+| DevOps and rollback readiness                 | `5/5`          | Single bounded PR `#969`, clean merge commit `35ea67f`, docs-only closeout path.                               | None for scoped slice. |
