@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminWorkspace from "@/components/admin/AdminWorkspace";
 
@@ -110,6 +110,37 @@ describe("AdminWorkspace shell", () => {
     fireEvent.click(screen.getByTestId("admin-tab-qr-links"));
 
     expect(replaceMock).toHaveBeenCalledWith("/admin?tab=qr-links", { scroll: false });
+  });
+
+  it("keeps every top-level admin section keyboard-focusable with one active state", () => {
+    render(<AdminWorkspace role="admin" />);
+
+    const adminSections = screen.getByRole("navigation", { name: "Admin sections" });
+    const sectionButtons = within(adminSections).getAllByRole("button");
+    expect(sectionButtons).toHaveLength(9);
+    expect(sectionButtons.map((button) => button.textContent)).toEqual([
+      "ContentLessons, guides, and publish state",
+      "QR LinksStable redirect registry and ownership",
+      "CommerceProducts, titles, and active sales status",
+      "OperationsRuntime flags and private-access status",
+      "Email templatesDraft, review, publish, and rollback-safe message copy",
+      "MessagesStored intake, triage status, and notification diagnostics",
+      "NotesInternal tasks, categories, and completion status",
+      "CategoriesManage note/content taxonomy for dashboard workflows",
+      "Help/GuideHow admin works, what each service does, and recovery playbooks",
+    ]);
+
+    for (const button of sectionButtons) {
+      button.focus();
+      expect(button).toHaveFocus();
+    }
+
+    expect(
+      sectionButtons.filter((button) => button.getAttribute("aria-pressed") === "true")
+    ).toHaveLength(1);
+    expect(
+      sectionButtons.filter((button) => button.getAttribute("aria-pressed") === "false")
+    ).toHaveLength(8);
   });
 
   it("shows Help/Guide section links in the active desktop rail", () => {
