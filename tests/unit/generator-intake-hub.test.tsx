@@ -251,6 +251,17 @@ describe("GeneratorIntakeHub", () => {
     fireEvent.click(screen.getByTestId("generator-intake-include-goals"));
 
     expect(screen.getByText("3/4 included")).toBeInTheDocument();
+    expect(screen.getByTestId("generator-intake-include-goals")).toHaveClass(
+      "border-[color:var(--fs-border-soft)]",
+      "text-[color:var(--fs-color-brand-700)]"
+    );
+    expect(screen.getByTestId("generator-intake-source-actions-goals")).toHaveClass("justify-end");
+    expect(screen.getAllByText("Included")[0]).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-emerald-200",
+      "bg-emerald-50"
+    );
+    expect(screen.getByRole("link", { name: "Edit Goals" })).toHaveClass("fs-cta-secondary");
   });
 
   it("keeps the AI generator on the single-session path only", () => {
