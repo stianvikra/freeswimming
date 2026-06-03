@@ -33,7 +33,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
   return (
     <SiteChrome>
-      <main
+      <section
         data-testid="checkout-success-page"
         className="mx-auto min-h-screen w-full max-w-[980px] px-4 pt-24 pb-24 sm:px-6 sm:pt-28"
       >
@@ -160,7 +160,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
           </Link>
           .
         </p>
-      </main>
+      </section>
     </SiteChrome>
   );
 }
