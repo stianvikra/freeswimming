@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import { mobileActionItemClass } from "@/components/ui/actionLayout";
 import GeneratorFeedback from "@/components/my-library/generator/GeneratorFeedback";
 import SessionGeneratorPanel from "@/components/my-library/generator/SessionGeneratorPanel";
 import {
@@ -46,6 +47,16 @@ type SwimProfileDataRow = {
 const generatorAccentPanelClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
 const generatorSecondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const generatorCompactSecondaryActionClass =
+  "fs-cta-secondary inline-flex min-h-9 shrink-0 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const generatorSourceRowClass =
+  "grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center";
+const generatorSourceCheckboxClass =
+  "mt-1 h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
+const generatorSourceStatusBadgeBaseClass =
+  "rounded-[var(--fs-radius-control)] border px-2.5 py-1 text-[11px] font-semibold tracking-wide whitespace-nowrap uppercase";
+const generatorSummaryChipBaseClass =
+  "inline-flex max-w-full items-center rounded-[var(--fs-radius-control)] border px-3 py-1 text-sm font-medium";
 const generatorSourceSummaryClass =
   "rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)] ring-1 ring-[color:var(--fs-border-brand)]";
 
@@ -76,18 +87,18 @@ function serializeValue(value: unknown) {
 function buildStatusTone(status: SwimProfileDataStatus) {
   if (status === "Included") {
     return {
-      badge: "bg-emerald-100 text-emerald-800",
+      badge: "border-emerald-200 bg-emerald-50 text-emerald-800",
     };
   }
 
   if (status === "Unavailable") {
     return {
-      badge: "bg-amber-100 text-amber-800",
+      badge: "border-amber-200 bg-amber-50 text-amber-800",
     };
   }
 
   return {
-    badge: "bg-slate-200 text-slate-700",
+    badge: "border-[color:var(--fs-border-soft)] bg-white/85 text-[color:var(--fs-color-muted)]",
   };
 }
 
@@ -235,7 +246,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
             <button
               type="button"
               onClick={resetRecoveredDraft}
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
+              className={`${generatorCompactSecondaryActionClass} ${mobileActionItemClass}`}
             >
               Reset
             </button>
@@ -297,10 +308,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                 const block = snapshot.blocks[row.key];
 
                 return (
-                  <li
-                    key={row.key}
-                    className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                  >
+                  <li key={row.key} className={generatorSourceRowClass}>
                     <div className="flex min-w-0 items-start gap-3">
                       <input
                         id={checkboxId}
@@ -309,7 +317,7 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                         disabled={!block.available}
                         onChange={() => toggleBlock(row.key)}
                         data-testid={`generator-intake-include-${row.key}`}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={generatorSourceCheckboxClass}
                       />
                       <label htmlFor={checkboxId} className="min-w-0 cursor-pointer">
                         <span className="block text-sm font-semibold text-slate-900">
@@ -318,16 +326,17 @@ export default function GeneratorIntakeHub({ initialSnapshot, userId, workoutLib
                         <span className="mt-1 block text-sm text-slate-600">{row.summary}</span>
                       </label>
                     </div>
-                    <div className="flex items-center gap-3 pl-7 sm:pl-0">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide whitespace-nowrap uppercase ${tone.badge}`}
-                      >
+                    <div
+                      data-testid={`generator-intake-source-actions-${row.key}`}
+                      className="flex items-center justify-end gap-3 pl-7 sm:pl-0"
+                    >
+                      <span className={`${generatorSourceStatusBadgeBaseClass} ${tone.badge}`}>
                         {row.status}
                       </span>
                       <Link
                         href={row.manageHref}
                         aria-label={`${row.actionLabel} ${row.label}`}
-                        className="text-sm font-semibold text-[color:var(--fs-color-brand-700)] underline-offset-4 hover:underline"
+                        className={generatorCompactSecondaryActionClass}
                       >
                         {row.actionLabel}
                       </Link>
@@ -413,7 +422,7 @@ function SwimProfileSummaryRow({
     tone === "included"
       ? "border-emerald-200 bg-emerald-50 text-emerald-900"
       : tone === "missing"
-        ? "border-slate-200 bg-white text-slate-700"
+        ? "border-[color:var(--fs-border-soft)] bg-white text-[color:var(--fs-color-muted)]"
         : "border-amber-200 bg-amber-50 text-amber-900";
 
   return (
@@ -423,11 +432,7 @@ function SwimProfileSummaryRow({
         <ul className="flex min-w-0 flex-wrap gap-2">
           {rows.map((row) => (
             <li key={row.key}>
-              <span
-                className={`inline-flex max-w-full items-center rounded-full border px-3 py-1 text-sm font-medium ${chipClasses}`}
-              >
-                {row.label}
-              </span>
+              <span className={`${generatorSummaryChipBaseClass} ${chipClasses}`}>{row.label}</span>
             </li>
           ))}
         </ul>

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import {
+  getMobileActionGroupClass,
+  mobileActionItemClass,
+  mobilePrimaryActionItemClass,
+} from "@/components/ui/actionLayout";
 import GeneratorFeedback from "@/components/my-library/generator/GeneratorFeedback";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
 import { WORKOUT_NOTICE_AUTO_DISMISS_MS } from "@/components/my-library/workouts/useAutoDismissNotice";
@@ -48,6 +53,26 @@ const generatorSecondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const generatorCompactSecondaryActionClass =
   "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const generatorFieldClass = "ui-field rounded-[var(--fs-radius-control)]";
+const generatorFieldWithSuffixClass = `${generatorFieldClass} pr-12`;
+const generatorTextareaClass = `${generatorFieldClass} min-h-28`;
+const generatorFormGroupClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 p-4";
+const generatorNestedFieldsetClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.72)] p-3";
+const generatorNestedCardClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 p-3";
+const generatorChoiceBaseClass =
+  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] border px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const generatorChoiceActiveClass =
+  "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]";
+const generatorChoiceInactiveClass =
+  "border-[color:var(--fs-border-soft)] bg-white text-[color:var(--fs-color-muted)] hover:bg-[color:var(--fs-color-surface)]";
+const generatorOptionLabelClass =
+  "inline-flex items-center gap-2 text-sm font-medium text-[color:var(--fs-color-ink)]";
+const generatorInlineNoteClass =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.82)] px-3 py-2 text-sm text-[color:var(--fs-color-muted)]";
+const generatorSectionDividerClass = "border-t border-[color:var(--fs-border-subtle)]";
 
 type Props = {
   payload: GeneratorIntakeHandoffPayload;
@@ -139,24 +164,23 @@ function getLimitStatusLabel(hasProfileValue: boolean, hasChangedValue: boolean)
 
 function getLimitStatusClass(label: string) {
   if (label === "Changed") {
-    return "bg-blue-100 text-blue-800";
+    return "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]";
   }
   if (label === "Profile active") {
-    return "bg-slate-200 text-slate-700";
+    return "border-[color:var(--fs-border-soft)] bg-white text-[color:var(--fs-color-muted)]";
   }
 
-  return "bg-slate-100 text-slate-500";
+  return "border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.82)] text-[color:var(--fs-color-muted)]";
 }
 
-const LIMIT_INPUT_CLASS =
-  "mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+const LIMIT_INPUT_CLASS = `${generatorFieldClass} mt-2 min-h-10 px-3 py-2`;
 
 function LimitLegend({ label, status }: { label: string; status: string }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <span>{label}</span>
       <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap uppercase ${getLimitStatusClass(
+        className={`rounded-[var(--fs-radius-control)] border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap uppercase ${getLimitStatusClass(
           status
         )}`}
       >
@@ -180,7 +204,7 @@ function LimitNumberField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block text-sm text-slate-700">
+    <label className="block text-sm font-medium text-[color:var(--fs-color-muted)]">
       {label} ({unit})
       <input
         type="text"
@@ -644,13 +668,13 @@ export default function SessionGeneratorPanel({
               <p className="text-sm text-slate-600">
                 Draft generated. Review the session below before saving.
               </p>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={getMobileActionGroupClass(2)}>
                 <button
                   type="button"
                   onClick={() => setRegenerateSettingsOpen((current) => !current)}
                   aria-expanded={regenerateSettingsOpen}
                   data-testid="session-generator-regenerate-settings-toggle"
-                  className={generatorSecondaryActionClass}
+                  className={`${generatorSecondaryActionClass} ${mobileActionItemClass}`}
                 >
                   {regenerateSettingsOpen ? "Hide settings" : "Regenerate settings"}
                 </button>
@@ -659,7 +683,7 @@ export default function SessionGeneratorPanel({
                   onClick={generateDraft}
                   disabled={isGenerating}
                   data-testid="session-generator-generate"
-                  className={generatorPrimaryActionClass}
+                  className={`${generatorPrimaryActionClass} ${mobilePrimaryActionItemClass}`}
                 >
                   {isGenerating ? "Generating..." : "Regenerate"}
                 </button>
@@ -685,18 +709,20 @@ export default function SessionGeneratorPanel({
                     ) : null}
                   </div>
                   {hasProfileSkillLimits ? (
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
+                    <span className="rounded-[var(--fs-radius-control)] border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
                       {isSkillLimitOverride ? "Session-specific" : "From Swim Profile"}
                     </span>
                   ) : (
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                    <span className="rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
                       Not in Swim Profile
                     </span>
                   )}
                 </div>
 
                 {hasProfileSkillLimits && !showSkillLimitEditor ? (
-                  <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div
+                    className={`mt-4 flex flex-col gap-3 pt-4 sm:flex-row sm:items-start sm:justify-between ${generatorSectionDividerClass}`}
+                  >
                     <div className="min-w-0">
                       <ul className="grid gap-1.5 text-sm text-slate-700 sm:grid-cols-2">
                         {profileSkillLimitSummaryItems.map((item) => (
@@ -716,13 +742,13 @@ export default function SessionGeneratorPanel({
                       type="button"
                       onClick={() => updateSkillLimitMode("override")}
                       data-testid="session-generator-skill-limits-override"
-                      className={generatorSecondaryActionClass}
+                      className={`${generatorSecondaryActionClass} ${mobileActionItemClass}`}
                     >
                       Change for this session
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                  <div className={`mt-4 space-y-4 pt-4 ${generatorSectionDividerClass}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <p className="max-w-2xl text-sm text-slate-600">
                         {hasProfileSkillLimits
@@ -730,18 +756,21 @@ export default function SessionGeneratorPanel({
                           : "Add limits for this session generation only."}
                       </p>
                       {hasProfileSkillLimits ? (
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div
+                          data-testid="session-generator-skill-limit-edit-actions"
+                          className={getMobileActionGroupClass(2, { stackOnMobile: true })}
+                        >
                           <button
                             type="button"
                             onClick={() => updateSkillLimitMode("profile")}
-                            className={generatorCompactSecondaryActionClass}
+                            className={`${generatorCompactSecondaryActionClass} ${mobileActionItemClass}`}
                           >
                             Reset to Swim Profile
                           </button>
                           <button
                             type="button"
                             onClick={() => setSkillLimitsExpanded(false)}
-                            className={generatorCompactSecondaryActionClass}
+                            className={`${generatorCompactSecondaryActionClass} ${mobileActionItemClass}`}
                           >
                             Done
                           </button>
@@ -750,7 +779,7 @@ export default function SessionGeneratorPanel({
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
-                      <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                      <fieldset className={generatorNestedFieldsetClass}>
                         <legend className="px-1 text-sm font-medium text-slate-900">
                           <LimitLegend label="Drills" status={drillLimitStatus} />
                         </legend>
@@ -772,7 +801,7 @@ export default function SessionGeneratorPanel({
                         </div>
                       </fieldset>
 
-                      <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                      <fieldset className={generatorNestedFieldsetClass}>
                         <legend className="px-1 text-sm font-medium text-slate-900">
                           <LimitLegend label="Kick" status={kickLimitStatus} />
                         </legend>
@@ -795,7 +824,7 @@ export default function SessionGeneratorPanel({
                       </fieldset>
                     </div>
 
-                    <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <fieldset className={generatorNestedFieldsetClass}>
                       <legend className="px-1 text-sm font-medium text-slate-900">
                         Stroke limits
                       </legend>
@@ -821,10 +850,7 @@ export default function SessionGeneratorPanel({
                           );
 
                           return (
-                            <fieldset
-                              key={stroke}
-                              className="rounded-xl border border-slate-200 bg-white p-3"
-                            >
+                            <fieldset key={stroke} className={generatorNestedCardClass}>
                               <legend className="px-1 text-sm font-medium text-slate-900">
                                 <LimitLegend
                                   label={getSessionStrokeLabel(stroke)}
@@ -871,7 +897,7 @@ export default function SessionGeneratorPanel({
                       onClick={handleResetOverrides}
                       data-testid="session-generator-reset-overrides"
                       aria-label="Clear additional instructions"
-                      className={generatorSecondaryActionClass}
+                      className={`${generatorSecondaryActionClass} ${mobileActionItemClass}`}
                     >
                       Clear
                     </button>
@@ -879,7 +905,9 @@ export default function SessionGeneratorPanel({
                 </div>
 
                 <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
-                  <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
+                  <label
+                    className={`${generatorFormGroupClass} text-sm font-medium text-[color:var(--fs-color-muted)] md:col-span-2`}
+                  >
                     Session type
                     <select
                       value={formState.sessionType}
@@ -890,7 +918,7 @@ export default function SessionGeneratorPanel({
                         )
                       }
                       data-testid="session-generator-session-type"
-                      className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      className={`${generatorFieldClass} mt-2`}
                     >
                       {SESSION_GENERATOR_SESSION_TYPES.map((value) => (
                         <option key={value} value={value}>
@@ -900,7 +928,9 @@ export default function SessionGeneratorPanel({
                     </select>
                   </label>
 
-                  <label className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700 md:col-span-2">
+                  <label
+                    className={`${generatorFormGroupClass} text-sm font-medium text-[color:var(--fs-color-muted)] md:col-span-2`}
+                  >
                     Additional instructions (optional)
                     <textarea
                       value={overrides.constraintText}
@@ -909,7 +939,7 @@ export default function SessionGeneratorPanel({
                       }
                       data-testid="session-generator-constraint-text"
                       rows={4}
-                      className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      className={`${generatorTextareaClass} mt-2`}
                       placeholder="Anything you want your AI coach to consider before generating the session."
                     />
                   </label>
@@ -919,16 +949,13 @@ export default function SessionGeneratorPanel({
               <div data-testid="session-generator-rules-card" className={generatorMutedPanelClass}>
                 <h3 className="text-base font-semibold text-slate-900">Session Rules</h3>
                 <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <fieldset className={generatorFormGroupClass}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Environment
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {SESSION_GENERATOR_ENVIRONMENTS.map((value) => (
-                        <label
-                          key={value}
-                          className="inline-flex items-center gap-2 text-sm text-slate-700"
-                        >
+                        <label key={value} className={generatorOptionLabelClass}>
                           <input
                             type="radio"
                             name="session-generator-environment"
@@ -943,7 +970,7 @@ export default function SessionGeneratorPanel({
                   </fieldset>
 
                   {formState.environment === "pool" ? (
-                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <fieldset className={generatorFormGroupClass}>
                       <legend className="px-1 text-sm font-semibold text-slate-900">
                         Pool size
                       </legend>
@@ -964,10 +991,10 @@ export default function SessionGeneratorPanel({
                               aria-pressed={formState.poolLengthUnit === unit}
                               onClick={() => updatePoolLengthUnit(unit)}
                               data-testid={`session-generator-pool-length-unit-${unit}`}
-                              className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm transition ${
+                              className={`${generatorChoiceBaseClass} min-h-9 ${
                                 formState.poolLengthUnit === unit
-                                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                  ? generatorChoiceActiveClass
+                                  : generatorChoiceInactiveClass
                               }`}
                             >
                               {unit === "m" ? "Meters" : "Yards"}
@@ -987,10 +1014,10 @@ export default function SessionGeneratorPanel({
                                 key={value}
                                 type="button"
                                 onClick={() => updateFormState("poolLengthM", String(value))}
-                                className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm transition ${
+                                className={`${generatorChoiceBaseClass} ${
                                   isSelected
-                                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                                    ? generatorChoiceActiveClass
+                                    : generatorChoiceInactiveClass
                                 }`}
                               >
                                 {formatPoolQuickChoiceLabel(value, formState.poolLengthUnit)}
@@ -1010,7 +1037,7 @@ export default function SessionGeneratorPanel({
                                 updateFormState("poolLengthM", event.target.value)
                               }
                               data-testid="session-generator-pool-length"
-                              className="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-10 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              className={generatorFieldWithSuffixClass}
                             />
                             <span
                               aria-hidden="true"
@@ -1024,12 +1051,12 @@ export default function SessionGeneratorPanel({
                     </fieldset>
                   ) : null}
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <fieldset className={generatorFormGroupClass}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Session size
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
-                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <label className={generatorOptionLabelClass}>
                         <input
                           type="radio"
                           name="session-generator-size-mode"
@@ -1039,7 +1066,7 @@ export default function SessionGeneratorPanel({
                         />
                         Distance
                       </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <label className={generatorOptionLabelClass}>
                         <input
                           type="radio"
                           name="session-generator-size-mode"
@@ -1052,7 +1079,7 @@ export default function SessionGeneratorPanel({
                     </div>
 
                     {formState.sizeMode === "distance" ? (
-                      <label className="mt-4 block text-sm text-slate-700">
+                      <label className="mt-4 block text-sm font-medium text-[color:var(--fs-color-muted)]">
                         Target distance ({formState.poolLengthUnit})
                         <input
                           type="text"
@@ -1062,11 +1089,11 @@ export default function SessionGeneratorPanel({
                             updateFormState("targetDistanceM", event.target.value)
                           }
                           data-testid="session-generator-target-distance"
-                          className="mt-2 block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                          className={`${generatorFieldClass} mt-2`}
                         />
                       </label>
                     ) : (
-                      <label className="mt-4 block text-sm text-slate-700">
+                      <label className="mt-4 block text-sm font-medium text-[color:var(--fs-color-muted)]">
                         Duration
                         <div className="relative mt-2">
                           <input
@@ -1077,7 +1104,7 @@ export default function SessionGeneratorPanel({
                               updateFormState("targetTimeMin", event.target.value)
                             }
                             data-testid="session-generator-target-time"
-                            className="block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 pr-14 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            className={generatorFieldWithSuffixClass}
                           />
                           <span
                             aria-hidden="true"
@@ -1090,12 +1117,12 @@ export default function SessionGeneratorPanel({
                     )}
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <fieldset className={generatorFormGroupClass}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Optional structure
                     </legend>
                     <div className="mt-3 flex flex-col gap-3">
-                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <label className={generatorOptionLabelClass}>
                         <input
                           type="checkbox"
                           checked={formState.includeDrills}
@@ -1107,8 +1134,8 @@ export default function SessionGeneratorPanel({
                         Include drills
                       </label>
                       {formState.includeDrills ? (
-                        <div className="ml-6 grid gap-3 border-l border-slate-200 pl-4">
-                          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <div className="ml-6 grid gap-3 border-l border-[color:var(--fs-border-subtle)] pl-4">
+                          <label className={generatorOptionLabelClass}>
                             <input
                               type="radio"
                               name="session-generator-drill-volume-mode"
@@ -1118,7 +1145,7 @@ export default function SessionGeneratorPanel({
                             />
                             Coach decides drill meters
                           </label>
-                          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                          <label className={generatorOptionLabelClass}>
                             <input
                               type="radio"
                               name="session-generator-drill-volume-mode"
@@ -1129,7 +1156,7 @@ export default function SessionGeneratorPanel({
                             Set drill meters
                           </label>
                           {formState.drillVolumeMode === "explicit" ? (
-                            <label className="block text-sm text-slate-700">
+                            <label className="block text-sm font-medium text-[color:var(--fs-color-muted)]">
                               Drill distance ({formState.poolLengthUnit})
                               <input
                                 type="text"
@@ -1139,13 +1166,13 @@ export default function SessionGeneratorPanel({
                                   updateFormState("drillTargetMeters", event.target.value)
                                 }
                                 data-testid="session-generator-drill-meters"
-                                className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                className={`${generatorFieldClass} mt-2 min-h-10 px-3 py-2`}
                               />
                             </label>
                           ) : null}
                           {profileDrillLimitText ||
                           (isSkillLimitOverride && formState.drillMaxRepeatDistance) ? (
-                            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                            <p className={generatorInlineNoteClass}>
                               Drill max length:{" "}
                               <span className="font-medium text-slate-900">
                                 {isSkillLimitOverride && formState.drillMaxRepeatDistance
@@ -1159,7 +1186,7 @@ export default function SessionGeneratorPanel({
                           ) : null}
                         </div>
                       ) : null}
-                      <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <label className={generatorOptionLabelClass}>
                         <input
                           type="checkbox"
                           checked={formState.includeKick}
@@ -1169,8 +1196,8 @@ export default function SessionGeneratorPanel({
                         Include kick work
                       </label>
                       {formState.includeKick ? (
-                        <div className="ml-6 grid gap-3 border-l border-slate-200 pl-4">
-                          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <div className="ml-6 grid gap-3 border-l border-[color:var(--fs-border-subtle)] pl-4">
+                          <label className={generatorOptionLabelClass}>
                             <input
                               type="radio"
                               name="session-generator-kick-volume-mode"
@@ -1180,7 +1207,7 @@ export default function SessionGeneratorPanel({
                             />
                             Coach decides kick meters
                           </label>
-                          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                          <label className={generatorOptionLabelClass}>
                             <input
                               type="radio"
                               name="session-generator-kick-volume-mode"
@@ -1192,7 +1219,7 @@ export default function SessionGeneratorPanel({
                           </label>
                           {formState.kickVolumeMode === "explicit" ? (
                             <div className="grid gap-3">
-                              <label className="block text-sm text-slate-700">
+                              <label className="block text-sm font-medium text-[color:var(--fs-color-muted)]">
                                 Kick distance ({formState.poolLengthUnit})
                                 <input
                                   type="text"
@@ -1202,12 +1229,12 @@ export default function SessionGeneratorPanel({
                                     updateFormState("kickTargetMeters", event.target.value)
                                   }
                                   data-testid="session-generator-kick-meters"
-                                  className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                  className={`${generatorFieldClass} mt-2 min-h-10 px-3 py-2`}
                                 />
                               </label>
                               {profileKickLimitText ||
                               (isSkillLimitOverride && formState.kickIntervalMeters) ? (
-                                <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                <p className={generatorInlineNoteClass}>
                                   Kick max length:{" "}
                                   <span className="font-medium text-slate-900">
                                     {isSkillLimitOverride && formState.kickIntervalMeters
@@ -1223,8 +1250,8 @@ export default function SessionGeneratorPanel({
                           ) : null}
                         </div>
                       ) : null}
-                      <div className="grid gap-3 border-t border-slate-200 pt-3">
-                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                      <div className="grid gap-3 border-t border-[color:var(--fs-border-subtle)] pt-3">
+                        <label className={generatorOptionLabelClass}>
                           <input
                             type="radio"
                             name="session-generator-rest-mode"
@@ -1234,7 +1261,7 @@ export default function SessionGeneratorPanel({
                           />
                           Coach decides rest
                         </label>
-                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <label className={generatorOptionLabelClass}>
                           <input
                             type="radio"
                             name="session-generator-rest-mode"
@@ -1245,7 +1272,7 @@ export default function SessionGeneratorPanel({
                           Set rest seconds
                         </label>
                         {formState.restMode === "explicit" ? (
-                          <label className="block text-sm text-slate-700">
+                          <label className="block text-sm font-medium text-[color:var(--fs-color-muted)]">
                             Rest seconds
                             <input
                               type="text"
@@ -1255,7 +1282,7 @@ export default function SessionGeneratorPanel({
                                 updateFormState("restSeconds", event.target.value)
                               }
                               data-testid="session-generator-rest-seconds"
-                              className="mt-2 block h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 shadow-sm transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              className={`${generatorFieldClass} mt-2 min-h-10 px-3 py-2`}
                             />
                           </label>
                         ) : null}
@@ -1263,16 +1290,13 @@ export default function SessionGeneratorPanel({
                     </div>
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <fieldset className={generatorFormGroupClass}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Select strokes
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {SESSION_GENERATOR_STROKES.map((stroke) => (
-                        <label
-                          key={stroke}
-                          className="inline-flex items-center gap-2 text-sm text-slate-700"
-                        >
+                        <label key={stroke} className={generatorOptionLabelClass}>
                           <input
                             type="checkbox"
                             checked={formState.allowedStrokes.includes(stroke)}
@@ -1285,16 +1309,13 @@ export default function SessionGeneratorPanel({
                     </div>
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <fieldset className={generatorFormGroupClass}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">
                       Select equipment
                     </legend>
                     <div className="mt-3 flex flex-wrap gap-3">
                       {SESSION_GENERATOR_EQUIPMENT.map((item) => (
-                        <label
-                          key={item}
-                          className="inline-flex items-center gap-2 text-sm text-slate-700"
-                        >
+                        <label key={item} className={generatorOptionLabelClass}>
                           <input
                             type="checkbox"
                             checked={formState.equipmentAllowlist.includes(item)}
@@ -1318,13 +1339,13 @@ export default function SessionGeneratorPanel({
                     ? "Change settings here only when you want to regenerate the draft."
                     : "Generated draft will be editable."}
                 </p>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className={getMobileActionGroupClass(1)}>
                   <button
                     type="button"
                     onClick={generateDraft}
                     disabled={isGenerating}
                     data-testid="session-generator-generate"
-                    className={generatorPrimaryActionClass}
+                    className={`${generatorPrimaryActionClass} ${mobilePrimaryActionItemClass}`}
                   >
                     {isGenerating ? "Generating..." : draft ? "Regenerate" : "Generate session"}
                   </button>

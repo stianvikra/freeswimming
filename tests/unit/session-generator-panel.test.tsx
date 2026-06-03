@@ -339,7 +339,15 @@ describe("SessionGeneratorPanel", () => {
     );
     expect(screen.queryByTestId("session-generator-focus-text")).not.toBeInTheDocument();
     expect(screen.getByTestId("session-generator-session-type")).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-session-type")).toHaveClass(
+      "ui-field",
+      "rounded-[var(--fs-radius-control)]"
+    );
     expect(screen.getByText("Additional instructions (optional)")).toBeInTheDocument();
+    expect(screen.getByTestId("session-generator-constraint-text")).toHaveClass(
+      "ui-field",
+      "rounded-[var(--fs-radius-control)]"
+    );
     expect(
       screen.queryByText(
         "Leave blank and the coach will decide details from the profile inputs and session choices."
@@ -402,9 +410,18 @@ describe("SessionGeneratorPanel", () => {
       "compact-inline"
     );
     expect(screen.getByRole("button", { name: "Meters" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Meters" })).toHaveClass(
+      "border-[color:var(--fs-border-brand)]",
+      "bg-[color:var(--fs-color-brand-50)]"
+    );
     expect(screen.getByRole("button", { name: "Yards" })).toBeVisible();
     expect(screen.getByRole("button", { name: "25m" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "25m" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]",
+      "border-[color:var(--fs-border-brand)]"
+    );
     expect(screen.getByLabelText("Exact pool size (m)")).toHaveValue("25");
+    expect(screen.getByLabelText("Exact pool size (m)")).toHaveClass("ui-field");
     expect(screen.getByTestId("session-generator-rules-card")).toHaveClass(
       "fs-library-card",
       "fs-library-card-muted"
@@ -421,7 +438,12 @@ describe("SessionGeneratorPanel", () => {
     expect(screen.getByTestId("session-generator-profile-limits-card")).toHaveTextContent(
       "Session-specific"
     );
+    expect(screen.getByTestId("session-generator-skill-limit-edit-actions")).toHaveClass(
+      "grid-cols-1"
+    );
+    expect(screen.getByTestId("session-generator-drill-max-repeat")).toHaveClass("ui-field");
     expect(screen.getByTestId("session-generator-kick-interval")).toHaveValue("50");
+    expect(screen.getByTestId("session-generator-kick-interval")).toHaveClass("ui-field");
     expect(screen.getByTestId("session-generator-kick-approx-total")).toHaveValue("200");
     fireEvent.click(screen.getByTestId("session-generator-include-drills"));
     fireEvent.click(screen.getByTestId("session-generator-drill-volume-explicit"));
