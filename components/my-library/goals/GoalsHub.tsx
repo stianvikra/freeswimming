@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown, Plus } from "lucide-react";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
+import { cx } from "@/components/ui/cx";
 import { formatGoalDate, type GoalPrimaryAction, type GoalView } from "@/lib/goals/mvp";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
@@ -120,6 +122,28 @@ const goalsFeedbackToneClass: Record<GoalsFeedbackTone, string> = {
   empty:
     "rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-5 text-sm text-slate-700",
 };
+
+const actionBaseClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactActionBaseClass =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
+const compactPrimaryActionClass = cx("fs-cta-primary", compactActionBaseClass);
+const compactSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", compactActionBaseClass);
+const compactDangerActionClass = cx(
+  "fs-cta-secondary border-rose-200 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-500",
+  compactActionBaseClass
+);
+const compactSuccessActionClass = cx(
+  "fs-cta-secondary border-emerald-200 text-emerald-700 hover:bg-emerald-50 focus-visible:ring-emerald-600",
+  compactActionBaseClass
+);
+const fieldClass = "ui-field mt-1 min-h-10";
+const fieldLabelClass = "ui-field-label uppercase";
+const innerPanelClass = "fs-library-card p-4 sm:p-5";
+const innerMutedPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const templateCardClass = "fs-library-card fs-library-card-muted p-4";
+const detailsPanelClass = "fs-library-card fs-library-card-muted mt-4 p-4";
 
 function GoalsFeedback({
   tone,
@@ -637,7 +661,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
               type="button"
               onClick={refreshGoals}
               disabled={isRefreshing}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className={compactDangerActionClass}
             >
               {isRefreshing ? "Retrying…" : "Retry"}
             </button>
@@ -654,14 +678,13 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
       ) : null}
 
       {isAddGoalOpen ? (
-        <section
-          className="rounded-2xl border border-slate-200 bg-white p-5"
-          data-testid="goals-add-panel"
-        >
+        <section className={innerPanelClass} data-testid="goals-add-panel">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Add goal</h2>
-              <p className="mt-1 text-sm text-slate-600">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
+                Add goal
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 {canCreateGoal
                   ? `${Math.max(0, activeLimit - activeGoalCount)} active slot${
                       activeLimit - activeGoalCount === 1 ? "" : "s"
@@ -669,7 +692,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                   : "Archive one active goal before adding another."}
               </p>
             </div>
-            <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <div className="fs-library-card fs-library-card-muted inline-flex min-h-12 gap-1 p-1">
               {[
                 { key: "template", label: "Templates" },
                 { key: "custom", label: "Custom" },
@@ -679,12 +702,12 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                   type="button"
                   aria-pressed={addGoalMode === mode.key}
                   onClick={() => setAddGoalMode(mode.key as AddGoalMode)}
-                  className={[
-                    "inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-semibold transition",
+                  className={cx(
+                    "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
                     addGoalMode === mode.key
-                      ? "bg-white text-blue-800 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900",
-                  ].join(" ")}
+                      ? "fs-cta-primary"
+                      : "text-[color:var(--fs-color-muted)] hover:bg-white hover:text-[color:var(--fs-color-ink-strong)]"
+                  )}
                 >
                   {mode.label}
                 </button>
@@ -702,19 +725,29 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                 return (
                   <article
                     key={template.id}
-                    className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                    className={templateCardClass}
+                    data-testid={`goal-template-card-${template.id}`}
                   >
-                    <h3 className="text-base font-semibold text-slate-900">{template.title}</h3>
-                    <p className="mt-1 text-sm text-slate-600">{template.summary}</p>
-                    <p className="mt-2 text-xs font-medium text-slate-500">
+                    <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {template.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-6 text-[color:var(--fs-color-muted)]">
+                      {template.summary}
+                    </p>
+                    <p className="mt-2 text-xs font-semibold text-[color:var(--fs-color-muted)]">
                       Target: {getTemplateTargetCopy(template)}
                     </p>
-                    <div className="mt-4">
+                    <div
+                      className={cx(
+                        "mt-4",
+                        getMobileActionGroupClass(1, { desktopJustify: "start" })
+                      )}
+                    >
                       <button
                         type="button"
                         onClick={() => createTemplateGoal(template.id)}
                         disabled={isDisabled}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={cx(compactPrimaryActionClass, mobileActionItemClass)}
                       >
                         {pendingTemplateId === template.id
                           ? "Adding..."
@@ -730,10 +763,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
           ) : (
             <form onSubmit={createCustomGoal} className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label
-                  className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                  htmlFor="goal-title"
-                >
+                <label className={fieldLabelClass} htmlFor="goal-title">
                   Goal title
                 </label>
                 <input
@@ -741,24 +771,21 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
                   placeholder="Example: Swim 800m continuous with calm breathing"
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className={fieldClass}
                   maxLength={80}
                   required
                 />
               </div>
 
               <div>
-                <label
-                  className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                  htmlFor="goal-metric"
-                >
+                <label className={fieldLabelClass} htmlFor="goal-metric">
                   Target type
                 </label>
                 <select
                   id="goal-metric"
                   value={customMetric}
                   onChange={(e) => setCustomMetric(e.target.value as typeof customMetric)}
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className={fieldClass}
                 >
                   <option value="distance_time">Distance + time</option>
                   <option value="distance_continuous">Distance (continuous)</option>
@@ -767,10 +794,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
               </div>
 
               <div>
-                <label
-                  className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                  htmlFor="goal-target-date"
-                >
+                <label className={fieldLabelClass} htmlFor="goal-target-date">
                   Target date (optional)
                 </label>
                 <input
@@ -778,17 +802,14 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                   type="date"
                   value={customTargetDate}
                   onChange={(e) => setCustomTargetDate(e.target.value)}
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className={fieldClass}
                 />
               </div>
 
               {customMetric === "distance_time" ? (
                 <>
                   <div>
-                    <label
-                      className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                      htmlFor="goal-distance"
-                    >
+                    <label className={fieldLabelClass} htmlFor="goal-distance">
                       Distance (meters)
                     </label>
                     <input
@@ -796,21 +817,18 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                       value={customDistanceM}
                       onChange={(e) => setCustomDistanceM(e.target.value)}
                       inputMode="numeric"
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className={fieldClass}
                     />
                   </div>
                   <div>
-                    <label
-                      className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                      htmlFor="goal-time"
-                    >
+                    <label className={fieldLabelClass} htmlFor="goal-time">
                       Target time (seconds or mm:ss)
                     </label>
                     <input
                       id="goal-time"
                       value={customTimeSeconds}
                       onChange={(e) => setCustomTimeSeconds(e.target.value)}
-                      className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className={fieldClass}
                     />
                   </div>
                 </>
@@ -818,10 +836,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
 
               {customMetric === "distance_continuous" ? (
                 <div>
-                  <label
-                    className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                    htmlFor="goal-distance-only"
-                  >
+                  <label className={fieldLabelClass} htmlFor="goal-distance-only">
                     Distance (meters)
                   </label>
                   <input
@@ -829,17 +844,14 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                     value={customDistanceM}
                     onChange={(e) => setCustomDistanceM(e.target.value)}
                     inputMode="numeric"
-                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className={fieldClass}
                   />
                 </div>
               ) : null}
 
               {customMetric === "count" ? (
                 <div>
-                  <label
-                    className="text-xs font-semibold tracking-wide text-slate-600 uppercase"
-                    htmlFor="goal-count"
-                  >
+                  <label className={fieldLabelClass} htmlFor="goal-count">
                     Target count
                   </label>
                   <input
@@ -847,7 +859,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                     value={customCount}
                     onChange={(e) => setCustomCount(e.target.value)}
                     inputMode="numeric"
-                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className={fieldClass}
                   />
                 </div>
               ) : null}
@@ -856,7 +868,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                 <button
                   type="submit"
                   disabled={isCreatingCustom || !canCreateGoal}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cx(primaryActionClass, "w-full sm:w-auto")}
                 >
                   {isCreatingCustom ? "Creating…" : "Create custom goal"}
                 </button>
@@ -898,61 +910,67 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                 <article
                   key={goal.id}
                   data-testid={`goal-card-${goal.id}`}
-                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                  className={innerPanelClass}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">{goal.title}</h3>
+                        <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                          {goal.title}
+                        </h3>
                         <span
-                          className={`inline-flex h-6 items-center rounded-full px-2 text-xs font-semibold ${getGoalStatusBadgeClass(goal.statusTone)}`}
+                          className={cx(
+                            "inline-flex min-h-6 items-center rounded-[var(--fs-radius-control)] px-2 text-xs font-semibold",
+                            getGoalStatusBadgeClass(goal.statusTone)
+                          )}
                         >
                           {goal.statusLabel}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-slate-600">{goal.progressLabel}</p>
+                      <p className="mt-1 text-sm leading-6 text-[color:var(--fs-color-muted)]">
+                        {goal.progressLabel}
+                      </p>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
                         Progress
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                      <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                         {goal.progressPercent}%
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-3 h-2 overflow-hidden rounded-[var(--fs-radius-control)] bg-[color:var(--fs-border-soft)]">
                     <div
-                      className="h-full rounded-full bg-blue-500 transition-all"
+                      className="h-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)] transition-all"
                       style={{ width: `${goal.progressPercent}%` }}
                     />
                   </div>
 
                   {goal.showCelebration ? (
-                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                    <div className="fs-library-card mt-3 border-emerald-200 bg-emerald-50/70 px-3 py-2 text-sm font-semibold text-emerald-800">
                       Goal achieved. Nice work.
                     </div>
                   ) : null}
 
-                  <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     {goal.status === "archived" ? (
-                      <p className="text-sm font-medium text-slate-500">Archived goal</p>
+                      <p className="text-sm font-medium text-[color:var(--fs-color-muted)]">
+                        Archived goal
+                      </p>
                     ) : goal.primaryAction.kind === "link" ? (
                       <Link
                         href={goal.primaryAction.href}
-                        className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700"
+                        className={cx(compactPrimaryActionClass, "w-full sm:w-auto")}
                       >
                         {goal.primaryAction.label}
                       </Link>
                     ) : (
-                      <div className="flex flex-wrap items-end gap-2">
-                        <div>
-                          <label
-                            htmlFor={`goal-result-${goal.id}`}
-                            className="text-xs text-slate-600"
-                          >
+                      <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-end">
+                        <div className="w-full sm:w-[180px]">
+                          <label htmlFor={`goal-result-${goal.id}`} className="ui-field-label">
                             {getInputLabel(goal.primaryAction)}
                           </label>
                           <input
@@ -961,7 +979,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                             onChange={(e) =>
                               setResultDrafts((prev) => ({ ...prev, [goal.id]: e.target.value }))
                             }
-                            className="mt-1 h-9 w-[170px] rounded-lg border border-slate-200 px-3 text-sm text-slate-900 transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            className={fieldClass}
                             placeholder={getInputPlaceholder(goal.primaryAction)}
                           />
                         </div>
@@ -971,7 +989,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                             void logGoalResult(goal);
                           }}
                           disabled={pendingGoalId === goal.id}
-                          className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={cx(compactPrimaryActionClass, "w-full sm:w-auto")}
                         >
                           {pendingGoalId === goal.id ? "Saving…" : goal.primaryAction.label}
                         </button>
@@ -983,7 +1001,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                       data-testid={`goal-details-toggle-${goal.id}`}
                       aria-expanded={isDetailsOpen}
                       onClick={() => toggleGoalDetails(goal.id)}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                      className={cx(compactSecondaryActionClass, "w-full sm:w-auto")}
                     >
                       Details
                       <ChevronDown
@@ -994,41 +1012,51 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                   </div>
 
                   {isDetailsOpen ? (
-                    <div
-                      data-testid={`goal-details-${goal.id}`}
-                      className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
-                    >
-                      <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div data-testid={`goal-details-${goal.id}`} className={detailsPanelClass}>
+                      <div className="grid gap-3 text-sm text-[color:var(--fs-color-muted)] sm:grid-cols-2">
                         <div>
-                          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
                             Target
                           </p>
-                          <p className="mt-1 text-slate-800">{goal.summary}</p>
+                          <p className="mt-1 text-[color:var(--fs-color-ink)]">{goal.summary}</p>
                         </div>
                         <div>
-                          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
                             Target date
                           </p>
-                          <p className="mt-1 font-medium text-slate-800">
+                          <p className="mt-1 font-medium text-[color:var(--fs-color-ink)]">
                             {formatGoalDate(goal.targetDate)}
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <div
+                        className={cx(
+                          "mt-4",
+                          getMobileActionGroupClass(
+                            (goal.status !== "archived" ? 2 : 0) +
+                              (goal.primaryAction.kind === "log_result" && goal.progressValue > 0
+                                ? 1
+                                : 0) +
+                              (goal.showCelebration ? 1 : 0) +
+                              1,
+                            { desktopJustify: "start" }
+                          )
+                        )}
+                      >
                         {goal.status !== "archived" ? (
                           <>
                             <Link
                               href={`/my-library/training?goalId=${encodeURIComponent(goal.id)}&intent=focus`}
                               data-testid={`goal-use-focus-${goal.id}`}
-                              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                              className={cx(compactSecondaryActionClass, mobileActionItemClass)}
                             >
                               Use as focus
                             </Link>
                             <Link
                               href={`/my-library/training?goalId=${encodeURIComponent(goal.id)}&intent=note`}
                               data-testid={`goal-use-note-${goal.id}`}
-                              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                              className={cx(compactSecondaryActionClass, mobileActionItemClass)}
                             >
                               Add note
                             </Link>
@@ -1042,7 +1070,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                               void clearGoalResult(goal);
                             }}
                             disabled={pendingGoalId === goal.id}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={cx(compactSecondaryActionClass, mobileActionItemClass)}
                           >
                             Clear best result
                           </button>
@@ -1059,7 +1087,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                               );
                             }}
                             disabled={pendingGoalId === goal.id}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-emerald-200 bg-white px-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={cx(compactSuccessActionClass, mobileActionItemClass)}
                           >
                             Dismiss achievement
                           </button>
@@ -1077,7 +1105,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                               );
                             }}
                             disabled={pendingGoalId === goal.id}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={cx(compactPrimaryActionClass, mobileActionItemClass)}
                           >
                             Restore
                           </button>
@@ -1093,7 +1121,7 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
                               );
                             }}
                             disabled={pendingGoalId === goal.id}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={cx(compactSecondaryActionClass, mobileActionItemClass)}
                           >
                             Archive
                           </button>
@@ -1108,14 +1136,20 @@ export default function GoalsHub({ initialGoals, templates, activeLimit }: Props
         )}
       </section>
 
-      <section className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-        <p className="text-sm text-slate-600">Need a training schedule around these goals?</p>
-        <Link
-          href="/contact?source=goals_coaching"
-          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-        >
-          Request coaching schedule
-        </Link>
+      <section
+        className={cx(innerMutedPanelClass, "flex flex-wrap items-center justify-between gap-3")}
+      >
+        <p className="text-sm leading-6 text-[color:var(--fs-color-muted)]">
+          Need a training schedule around these goals?
+        </p>
+        <div className={getMobileActionGroupClass(1)}>
+          <Link
+            href="/contact?source=goals_coaching"
+            className={cx(compactSecondaryActionClass, mobileActionItemClass)}
+          >
+            Request coaching schedule
+          </Link>
+        </div>
       </section>
     </div>
   );

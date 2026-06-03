@@ -69,16 +69,27 @@ describe("GoalsHub", () => {
     expect(screen.getByTestId("goals-filter-active")).toHaveClass(
       "bg-[color:var(--fs-color-brand-700)]"
     );
+    expect(screen.getByTestId("goal-card-goal-1")).toHaveClass("fs-library-card");
+    expect(screen.getByLabelText("Result (seconds or mm:ss)")).toHaveClass("ui-field");
+    expect(screen.getByRole("button", { name: "Log result" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("goal-details-toggle-goal-1")).toHaveClass("fs-cta-secondary");
     expect(screen.queryByTestId("goal-use-focus-goal-1")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("goal-details-toggle-goal-1"));
+    expect(screen.getByTestId("goal-details-goal-1")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
     expect(screen.getByTestId("goal-use-focus-goal-1")).toHaveAttribute(
       "href",
       "/my-library/training?goalId=goal-1&intent=focus"
     );
+    expect(screen.getByTestId("goal-use-focus-goal-1")).toHaveClass("fs-cta-secondary");
     expect(screen.getByTestId("goal-use-note-goal-1")).toHaveAttribute(
       "href",
       "/my-library/training?goalId=goal-1&intent=note"
     );
+    expect(screen.getByTestId("goal-use-note-goal-1")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Archive" })).toHaveClass("fs-cta-secondary");
   });
 
   it("does not offer bridge actions for archived goals", () => {
@@ -124,6 +135,12 @@ describe("GoalsHub", () => {
 
     expect(screen.queryByText("A calm starting point.")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add goal" }));
+    expect(screen.getByTestId("goals-add-panel")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("goal-template-card-template-1")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByRole("button", { name: "Use template" })).toHaveClass("fs-cta-primary");
     expect(screen.getByText("A calm starting point.")).toBeInTheDocument();
   });
 
@@ -134,6 +151,11 @@ describe("GoalsHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add goal" }));
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     expect(screen.getByLabelText("Goal title")).toBeInTheDocument();
+    expect(screen.getByLabelText("Goal title")).toHaveClass("ui-field");
+    expect(screen.getByLabelText("Target type")).toHaveClass("ui-field");
+    expect(screen.getByRole("button", { name: "Create custom goal" })).toHaveClass(
+      "fs-cta-primary"
+    );
   });
 
   it("filters the goals list from one filter control", () => {
@@ -303,5 +325,13 @@ describe("GoalsHub", () => {
       ).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Clear best result" })).not.toBeInTheDocument();
     });
+  });
+
+  it("uses tokenized coaching schedule actions without changing the destination", () => {
+    render(<GoalsHub initialGoals={[buildGoal()]} templates={[]} activeLimit={3} />);
+
+    const coachingLink = screen.getByRole("link", { name: "Request coaching schedule" });
+    expect(coachingLink).toHaveAttribute("href", "/contact?source=goals_coaching");
+    expect(coachingLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
   });
 });
