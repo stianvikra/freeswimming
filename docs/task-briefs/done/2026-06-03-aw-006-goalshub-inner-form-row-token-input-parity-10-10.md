@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-goalshub-inner-form-row-token-input-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
 - `updated`: `2026-06-03`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-goals-hub-inner-token-parity`
-- `execution_mode`: `owner-approved implementation through screenshot handoff; stop before broad PR gates until screenshot approval`
+- `execution_mode`: `owner-approved implementation through screenshot handoff, PR #963, and repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
@@ -62,13 +62,14 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No changes to goal loading, create/log/archive/restore/reset payloads, filters, active-limit logic, templates, result parsing, status derivation, or My Training bridge links.       | changed-files review + targeted tests           | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this private member workspace slice changes no admin editor, CRUD workflow, publish flow, operator queue, or admin action surface.                                       | explicit admin-editor scope rationale           | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Labels, aria-pressed controls, aria-expanded details, visible focus styles, keyboard reachability, disabled states, and live feedback semantics remain intact after token changes.   | Testing Library assertions + screenshot QA      | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for the 10/10 critical-category parser; same threshold and evidence as `Accessibility (a11y)`.                                                                             | Testing Library assertions + screenshot QA      | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No dependency, media asset, new API call, polling loop, data model, or route payload growth beyond class/markup consolidation in the existing client component.                      | dependency diff + broad gate                    | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because this visual/action hierarchy slice introduces no local storage, server-canonical data, sync trigger, conflict policy, retention rule, or sensitive-data flow.            | data-boundary rationale                         | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because existing `/my-library/goals` dynamic loading and goals mutation refresh behavior remain unchanged; no fetch/cache path changes.                                          | changed-files review                            | `N/A`                   |
 | Reliability and failure handling              | `target`     | Existing offline, action-error, action-success, first-run empty, filtered no-results, pending create/log, and retry states continue to render deterministically.                     | existing/updated focused tests                  | `5/5`                   |
 | Security and authz                            | `target`     | Anonymous auth redirect, protected goals data loading, and fail-closed API boundaries remain untouched; no protected data moves to a new route or client boundary.                   | route/component diff + focused route test       | `5/5`                   |
 | Privacy and compliance                        | `N/A`        | N/A because no user data fields, telemetry payloads, legal copy, consent behavior, logs, secrets, provider data, or sensitive diagnostics change.                                    | privacy scope rationale                         | `N/A`                   |
-| Content governance                            | `target`     | Canonical AW-006 queue, this active brief, and design inventory record the selected GoalsHub inner parity slice without stale active-slice references.                               | docs diff + brief lint                          | `5/5`                   |
+| Content governance                            | `target`     | Canonical AW-006 queue, this brief, and design inventory record the selected GoalsHub inner parity slice without stale active-slice references.                                      | docs diff + brief lint                          | `5/5`                   |
 | Admin workflow and editability                | `N/A`        | N/A because this changes no admin workflow label, editable admin field, status transition, review/publish path, recovery procedure, Help/Guide assertion, or support action.         | explicit admin-workflow scope rationale         | `N/A`                   |
 | SEO and crawlability                          | `N/A`        | N/A because `/my-library/goals` is authenticated/private and this slice changes no public metadata, sitemap, robots, canonical URL, structured data, or indexability contract.       | private-route SEO rationale                     | `N/A`                   |
 | AI discoverability                            | `N/A`        | N/A because this changes no crawl-safe public entity model, structured data, public semantic content, or AI-facing documentation contract.                                           | AI-discoverability scope rationale              | `N/A`                   |
@@ -229,9 +230,9 @@ Visual gate:
 
 Broad gates after screenshot approval:
 
-- `npm run verify:pre-pr`
-- required PR CI checks
-- `npm run verify:pre-merge`
+- `npm run verify:pre-pr` - PASS; full lane, artifact log `artifacts/test-runs/20260603-124532/verify.log`.
+- required PR CI checks for PR `#963` - PASS; `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `Vercel`, `CodeQL`, and `size-check` were green.
+- `npm run verify:pre-merge` - PASS; full public lane, 106 E2E passed / 530 skipped in local public profile, private-gate regression skipped because `SITE_LOCK_ENABLED!=1`; PASS marker `artifacts/verify-pre-merge/20260603-110837.json`.
 
 ## Manual QA / Screenshot Handoff
 
@@ -262,3 +263,30 @@ Required because this changes visible UI/layout.
 - `2026-06-03 | targeted-validation | implemented component-local GoalsHub token/input/action presentation, focused tests, AW-006 queue, and design inventory updates; targeted Vitest, typecheck, brief lint, quality-gate lint, route/label/support sweep, and diff-check are green | next: capture before/after screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-06-03 | screenshot-handoff-ready | captured before/after desktop/mobile screenshots in output/aw-006-goalshub-inner-token-parity-2026-06-03-123549/ using a temporary deterministic GoalsHub route; removed the temporary route, stopped dev servers, and removed the before worktree | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-03 | screenshot-approved | owner approved the screenshot handoff in chat; no product-rendering files changed after capture except this brief checkpoint note | next: run npm run verify:pre-pr, then commit, push, and open/update PR`
+- `2026-06-03 | merged | PR #963 merged to main as squash commit be3ab3e after local pre-pr, green CI, and local pre-merge gates; post-merge preflight requested repo-managed docs-only closeout | next: move brief to done, clear stale active queue/inventory references, validate closeout, and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#963`
+- `squash_commit`: `be3ab3e`
+- `result`: Closed AW-006 GoalsHub Inner Goal Form And Row Action Token/Input Parity. The GoalsHub inner add-goal form, template cards, custom fields, result input/action, goal row cards, details panel actions, and coaching CTA now follow the current My Library token/input/action direction without changing goal data, APIs, filters, templates, active-limit logic, My Training bridge links, analytics, Help/Guide, support behavior, or route shell behavior.
+- `validation`: `npm exec vitest run tests/unit/goals-hub.test.tsx` PASS; `npm exec vitest run tests/unit/goals-page.test.tsx tests/unit/goals-hub.test.tsx` PASS; `npm run typecheck` PASS; `npm run lint:briefs:all` PASS; `npm run lint:quality-gates` PASS; targeted route/label/support sweep PASS; screenshot handoff approved; `npm run verify:pre-pr` PASS; PR CI PASS; `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5` within the scoped visual/input/action parity slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | Goals route/workspace purpose, labels, action order, and destinations preserved; PR #963 diff + focused tests + screenshots.               | None.        |
+| UX flow clarity                               | `5/5`          | Add-goal mode, template, custom form, log-result, details, and coaching CTA scan better; Testing Library assertions + screenshot approval. | None.        |
+| Visual design quality                         | `5/5`          | Inner panels/cards/fields/status/actions use My Library token/input/action classes; before/after desktop/mobile artifacts approved.        | None.        |
+| Business logic correctness and data integrity | `5/5`          | No goal data/API/payload/filter/template/result parsing changes; targeted tests and diff review passed.                                    | None.        |
+| Accessibility (a11y)                          | `5/5`          | Labels, aria state, disabled/pending semantics, focus classes, and feedback regions preserved; focused tests and broad gates passed.       | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)`; alias row retained for scorecard/lint compatibility.                                              | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, media, API, polling, or payload growth beyond markup/class changes; pre-pr/pre-merge perf budgets passed.                   | None.        |
+| Reliability and failure handling              | `5/5`          | Existing offline/error/success/empty/no-results/pending states remain deterministic; focused and broad tests passed.                       | None.        |
+| Security and authz                            | `5/5`          | Protected route/API boundaries unchanged; CI `site-lock-smoke` and local security coverage passed.                                         | None.        |
+| Content governance                            | `5/5`          | This done brief, AW-006 queue, and design inventory now record the shipped slice and closeout state.                                       | None.        |
+| i18n operational readiness                    | `5/5`          | Mobile/desktop text-fit and action stacking reviewed in screenshots with no fixed-width blocker introduced.                                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `GoalsHub`, existing tokens/classes, `ui-field`, `fs-cta-*`, and current tests; no dependency added.                                | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, typecheck, brief/quality lint, route/label/support sweep, screenshot approval, pre-pr, CI, and pre-merge passed.          | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert of PR #963 restores previous markup/tests/docs; no migration/config/provider rollback needed.                                | None.        |
