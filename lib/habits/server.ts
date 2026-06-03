@@ -73,6 +73,26 @@ function getMonthStartDate(selectedDate: string) {
     .slice(0, 10);
 }
 
+function getHabitCheckInStartDate(
+  selectedDate: string,
+  activeHabits: ReturnType<typeof buildHabitDefinitionView>[]
+) {
+  const weekStart = getWeekStartDate(selectedDate);
+  const monthStart = getMonthStartDate(selectedDate);
+  let checkInStart = weekStart < monthStart ? weekStart : monthStart;
+
+  for (const habit of activeHabits) {
+    const needsHistoryForMotivation =
+      habit.habitMode === "quit" ||
+      (habit.habitMode === "build" && habit.cadencePeriod === "daily");
+    if (needsHistoryForMotivation && habit.startDate < checkInStart) {
+      checkInStart = habit.startDate;
+    }
+  }
+
+  return checkInStart;
+}
+
 function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   const daySummary = buildHabitDaySummary([], [], selectedDate);
   return {
@@ -92,25 +112,14 @@ export async function loadHabitSnapshot(
   selectedDateInput?: unknown
 ): Promise<HabitSnapshot> {
   const selectedDate = normalizeHabitDate(selectedDateInput);
-  const weekStart = getWeekStartDate(selectedDate);
-  const monthStart = getMonthStartDate(selectedDate);
-  const checkInStart = weekStart < monthStart ? weekStart : monthStart;
-  const [habitResult, checkInResult] = await Promise.all([
-    supabase
-      .from("habit_definitions")
-      .select(HABIT_DEFINITION_SELECT)
-      .eq("user_id", userId)
-      .order("sort_order", { ascending: true })
-      .order("updated_at", { ascending: false }),
-    supabase
-      .from("habit_check_ins")
-      .select(HABIT_CHECK_IN_SELECT)
-      .eq("user_id", userId)
-      .gte("check_in_date", checkInStart)
-      .lte("check_in_date", selectedDate),
-  ]);
+  const habitResult = await supabase
+    .from("habit_definitions")
+    .select(HABIT_DEFINITION_SELECT)
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false });
 
-  if (isHabitsSchemaMissing(habitResult.error) || isHabitsSchemaMissing(checkInResult.error)) {
+  if (isHabitsSchemaMissing(habitResult.error)) {
     return buildUnavailableSnapshot(selectedDate);
   }
 
@@ -128,24 +137,34 @@ export async function loadHabitSnapshot(
     };
   }
 
+  const habits = ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView);
+  const activeHabits = habits.filter((habit) => habit.status === "active");
+  const archivedHabits = habits.filter((habit) => habit.status === "archived");
+  const checkInStart = getHabitCheckInStartDate(selectedDate, activeHabits);
+  const checkInResult = await supabase
+    .from("habit_check_ins")
+    .select(HABIT_CHECK_IN_SELECT)
+    .eq("user_id", userId)
+    .gte("check_in_date", checkInStart)
+    .lte("check_in_date", selectedDate);
+
+  if (isHabitsSchemaMissing(checkInResult.error)) {
+    return buildUnavailableSnapshot(selectedDate);
+  }
+
   if (checkInResult.error) {
     console.error("[Habits] Could not load habit check-ins", checkInResult.error);
-    const habits = ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView);
-    const activeHabits = habits.filter((habit) => habit.status === "active");
     return {
       schemaReady: true,
       loadError: "Could not load today's habit check-ins right now.",
       selectedDate,
       activeHabits,
-      archivedHabits: habits.filter((habit) => habit.status === "archived"),
+      archivedHabits,
       daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
       weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
     };
   }
 
-  const habits = ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView);
-  const activeHabits = habits.filter((habit) => habit.status === "active");
-  const archivedHabits = habits.filter((habit) => habit.status === "archived");
   const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView);
 
   return {
@@ -154,11 +173,7 @@ export async function loadHabitSnapshot(
     selectedDate,
     activeHabits,
     archivedHabits,
-    daySummary: buildHabitDaySummary(
-      activeHabits,
-      checkIns.filter((checkIn) => checkIn.checkInDate === selectedDate),
-      selectedDate
-    ),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
   };
 }

@@ -24,6 +24,7 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("habit_check_in_logged")).toBe(true);
     expect(isAnalyticsEventName("habit_check_in_reset")).toBe(true);
     expect(isAnalyticsEventName("habit_lapse_logged")).toBe(true);
+    expect(isAnalyticsEventName("habit_rest_day_logged")).toBe(true);
     expect(isAnalyticsEventName("habit_timer_saved")).toBe(true);
     expect(isAnalyticsEventName("unknown_event")).toBe(false);
   });

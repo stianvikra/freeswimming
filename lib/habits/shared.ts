@@ -65,6 +65,7 @@ export type HabitPriorityGroup =
   | "due_weekly"
   | "due_monthly"
   | "quit_status"
+  | "rest_day"
   | "done_today"
   | "done_period"
   | "not_due"
@@ -123,6 +124,7 @@ export type HabitEvaluation = {
   isSatisfied: boolean;
   valueLabel: string;
   stateLabel: string;
+  supportingLabel: string | null;
   progressRatio: number;
 };
 
@@ -883,51 +885,230 @@ function compareTime(valueTime: string, targetTime: string, operator: HabitOpera
   return operator === "after" ? value >= target : value <= target;
 }
 
-export function evaluateHabitForDate(
+function formatDayCount(value: number) {
+  return `${value} ${value === 1 ? "day" : "days"}`;
+}
+
+function formatStreakCount(value: number) {
+  return `${value}-day streak`;
+}
+
+function isRestDayCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
+  return checkIn?.status === "skipped";
+}
+
+function isQuitLapseCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
+  return (
+    checkIn?.status === "logged" &&
+    (checkIn.valueBoolean === false || (checkIn.valueNumeric ?? 0) > 0)
+  );
+}
+
+function isDailyBuildMotivationCandidate(habit: HabitDefinitionView): boolean {
+  return habit.habitMode === "build" && habit.cadencePeriod === "daily";
+}
+
+function isHabitScheduledOnDate(habit: HabitDefinitionView, date: string): boolean {
+  if (isAfterHabitDate(habit.startDate, date)) return false;
+  if (habit.cadenceDayPolicy === "any") return true;
+  const weekday = getWeekdayForHabitDate(date);
+  return weekday ? habit.scheduleDays.includes(weekday) : true;
+}
+
+function isBuildCheckInSatisfied(
+  habit: HabitDefinitionView,
+  checkIn: HabitCheckInView | null | undefined
+): boolean {
+  if (!checkIn || isRestDayCheckIn(checkIn)) return false;
+
+  if (habit.habitType === "binary") {
+    return checkIn.valueBoolean === true;
+  }
+
+  if (habit.habitType === "time_of_day") {
+    return Boolean(
+      checkIn.valueTime &&
+      habit.targetTime &&
+      compareTime(checkIn.valueTime, habit.targetTime, habit.targetOperator)
+    );
+  }
+
+  const value = checkIn.valueNumeric ?? 0;
+  const target = habit.targetValueNumeric ?? 0;
+  return habit.targetOperator === "at_most"
+    ? value <= target
+    : target <= 0
+      ? value > 0
+      : value >= target;
+}
+
+function getDailyBuildMotivation(
   habit: HabitDefinitionView,
   checkIn: HabitCheckInView | null,
-  date: string
-): HabitEvaluation {
-  if (habit.habitMode === "quit") {
-    const started = !isAfterHabitDate(habit.startDate, date);
-    const lapseLoggedToday =
-      checkIn?.status === "logged" &&
-      (checkIn.valueBoolean === false || (checkIn.valueNumeric ?? 0) > 0);
-    const lastLapseDate =
-      lapseLoggedToday && checkIn?.checkInDate
-        ? checkIn.checkInDate
-        : habit.lastLapseDate && !isAfterHabitDate(habit.lastLapseDate, date)
-          ? habit.lastLapseDate
-          : null;
-    const anchorDate = lastLapseDate ?? habit.startDate;
-    const daysSince = started ? getDayDelta(anchorDate, date) : 0;
+  date: string,
+  checkIns: HabitCheckInView[]
+): { valueLabel: string; supportingLabel: string | null; progressRatio: number } | null {
+  if (!isDailyBuildMotivationCandidate(habit)) return null;
+  if (isAfterHabitDate(habit.startDate, date)) return null;
 
+  const checkInsByDate = new Map<string, HabitCheckInView>();
+  for (const candidate of checkIns) {
+    if (candidate.habitId !== habit.id) continue;
+    if (candidate.checkInDate < habit.startDate || candidate.checkInDate > date) continue;
+    checkInsByDate.set(candidate.checkInDate, candidate);
+  }
+  if (checkIn) {
+    checkInsByDate.set(checkIn.checkInDate, checkIn);
+  }
+
+  let trackedDays = 0;
+  let onTrackDays = 0;
+  const totalDays = getDayDelta(habit.startDate, date);
+
+  for (let index = 0; index <= totalDays; index += 1) {
+    const day = addUtcDays(habit.startDate, index);
+    if (!isHabitScheduledOnDate(habit, day)) continue;
+    const candidate = checkInsByDate.get(day) ?? null;
+    if (isRestDayCheckIn(candidate)) continue;
+    trackedDays += 1;
+    if (isBuildCheckInSatisfied(habit, candidate)) {
+      onTrackDays += 1;
+    }
+  }
+
+  let currentStreak = 0;
+  for (let index = totalDays; index >= 0; index -= 1) {
+    const day = addUtcDays(habit.startDate, index);
+    if (!isHabitScheduledOnDate(habit, day)) continue;
+    const candidate = checkInsByDate.get(day) ?? null;
+    if (day === date && !candidate) continue;
+    if (isRestDayCheckIn(candidate)) continue;
+    if (!isBuildCheckInSatisfied(habit, candidate)) break;
+    currentStreak += 1;
+  }
+
+  if (trackedDays <= 0 || (currentStreak <= 0 && onTrackDays <= 0)) return null;
+
+  return {
+    valueLabel:
+      currentStreak >= 5
+        ? formatStreakCount(currentStreak)
+        : `${onTrackDays}/${trackedDays} days on track`,
+    supportingLabel: currentStreak >= 5 ? `${onTrackDays}/${trackedDays} days on track` : null,
+    progressRatio: Math.max(0, Math.min(1, onTrackDays / trackedDays)),
+  };
+}
+
+function getQuitLapseDates(
+  habit: HabitDefinitionView,
+  checkIn: HabitCheckInView | null,
+  checkIns: HabitCheckInView[],
+  date: string
+) {
+  const lapseDates = new Set<string>();
+  const candidates = checkIn ? [...checkIns, checkIn] : checkIns;
+
+  for (const candidate of candidates) {
+    if (candidate.habitId !== habit.id) continue;
+    if (candidate.checkInDate < habit.startDate || candidate.checkInDate > date) continue;
+    if (isQuitLapseCheckIn(candidate)) {
+      lapseDates.add(candidate.checkInDate);
+    }
+  }
+
+  if (
+    habit.lastLapseDate &&
+    habit.lastLapseDate >= habit.startDate &&
+    habit.lastLapseDate <= date
+  ) {
+    lapseDates.add(habit.lastLapseDate);
+  }
+
+  return [...lapseDates].sort();
+}
+
+function evaluateQuitHabitForDate(
+  habit: HabitDefinitionView,
+  checkIn: HabitCheckInView | null,
+  date: string,
+  checkIns: HabitCheckInView[]
+): HabitEvaluation {
+  const started = !isAfterHabitDate(habit.startDate, date);
+  if (!started) {
     return {
-      isSatisfied: started && !lapseLoggedToday,
-      valueLabel: started
-        ? `${daysSince} ${daysSince === 1 ? "day" : "days"} without`
-        : `Starts ${habit.startDate}`,
-      stateLabel: lapseLoggedToday ? "Lapse logged" : started ? "On track" : "Not started",
-      progressRatio: started && !lapseLoggedToday ? 1 : 0,
+      isSatisfied: false,
+      valueLabel: `Starts ${habit.startDate}`,
+      stateLabel: "Not started",
+      supportingLabel: null,
+      progressRatio: 0,
     };
   }
 
-  if (!checkIn || checkIn.status === "skipped") {
+  const lapseLoggedToday = isQuitLapseCheckIn(checkIn);
+  const lapseDates = getQuitLapseDates(habit, checkIn, checkIns, date);
+  const latestLapseDate = lapseDates.at(-1) ?? null;
+  const anchorDate = latestLapseDate ?? habit.startDate;
+  const daysSince = getDayDelta(anchorDate, date);
+  const totalDays = getDayDelta(habit.startDate, date) + 1;
+
+  if (lapseDates.length > 0) {
+    const onTrackDays = Math.max(0, totalDays - lapseDates.length);
+    return {
+      isSatisfied: !lapseLoggedToday,
+      valueLabel: `${onTrackDays}/${totalDays} days on track`,
+      stateLabel: lapseLoggedToday ? "Slip logged today" : "On track",
+      supportingLabel: daysSince >= 5 ? `Current streak ${formatDayCount(daysSince)}` : null,
+      progressRatio: Math.max(0, Math.min(1, onTrackDays / totalDays)),
+    };
+  }
+
+  return {
+    isSatisfied: true,
+    valueLabel: `${formatDayCount(daysSince)} without`,
+    stateLabel: "On track",
+    supportingLabel: null,
+    progressRatio: 1,
+  };
+}
+
+export function evaluateHabitForDate(
+  habit: HabitDefinitionView,
+  checkIn: HabitCheckInView | null,
+  date: string,
+  checkIns: HabitCheckInView[] = checkIn ? [checkIn] : []
+): HabitEvaluation {
+  if (habit.habitMode === "quit") {
+    return evaluateQuitHabitForDate(habit, checkIn, date, checkIns);
+  }
+
+  if (!checkIn || isRestDayCheckIn(checkIn)) {
+    const motivation = !isRestDayCheckIn(checkIn)
+      ? getDailyBuildMotivation(habit, checkIn, date, checkIns)
+      : null;
     return {
       isSatisfied: false,
-      valueLabel: "No check-in",
-      stateLabel: checkIn?.status === "skipped" ? "Skipped" : "Open",
-      progressRatio: 0,
+      valueLabel: isRestDayCheckIn(checkIn)
+        ? "Rest day"
+        : (motivation?.valueLabel ?? "No check-in"),
+      stateLabel: isRestDayCheckIn(checkIn) ? "Rest day" : "Open",
+      supportingLabel: isRestDayCheckIn(checkIn)
+        ? "Not counted as done or missed"
+        : (motivation?.supportingLabel ?? null),
+      progressRatio: motivation?.progressRatio ?? 0,
     };
   }
 
   if (habit.habitType === "binary") {
     const isSatisfied = checkIn.valueBoolean === true;
+    const motivation = getDailyBuildMotivation(habit, checkIn, date, checkIns);
     return {
       isSatisfied,
-      valueLabel: isSatisfied ? "Done" : "Open",
+      valueLabel: isSatisfied
+        ? (motivation?.valueLabel ?? "Done")
+        : (motivation?.valueLabel ?? "Open"),
       stateLabel: isSatisfied ? "Counts today" : "Open",
-      progressRatio: isSatisfied ? 1 : 0,
+      supportingLabel: motivation?.supportingLabel ?? null,
+      progressRatio: isSatisfied ? 1 : (motivation?.progressRatio ?? 0),
     };
   }
 
@@ -941,6 +1122,7 @@ export function evaluateHabitForDate(
       isSatisfied,
       valueLabel: valueTime ? valueTime.slice(0, 5) : "No time",
       stateLabel: isSatisfied ? "On target" : "Logged",
+      supportingLabel: null,
       progressRatio: isSatisfied ? 1 : 0,
     };
   }
@@ -972,6 +1154,7 @@ export function evaluateHabitForDate(
         ? "Timer saved"
         : "On target"
       : "Logged",
+    supportingLabel: null,
     progressRatio: ratio,
   };
 }
@@ -1052,6 +1235,7 @@ export function isHabitScheduledForDate(
 
 function getHabitPriorityGroup(
   habit: HabitDefinitionView,
+  checkIn: HabitCheckInView | null,
   evaluation: HabitEvaluation,
   cadenceProgress: HabitCadenceProgress,
   isScheduledForDate: boolean,
@@ -1059,6 +1243,7 @@ function getHabitPriorityGroup(
 ): HabitPriorityGroup {
   if (habit.status === "archived") return "archived";
   if (isAfterHabitDate(habit.startDate, date)) return "not_due";
+  if (checkIn?.status === "skipped") return "rest_day";
   if (habit.habitMode === "quit") return "quit_status";
   if (evaluation.isSatisfied || cadenceProgress.isTargetMet) {
     return habit.cadencePeriod === "daily" ? "done_today" : "done_period";
@@ -1078,10 +1263,11 @@ function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
     due_weekly: 2,
     due_monthly: 3,
     quit_status: 4,
-    done_today: 5,
-    done_period: 6,
-    not_due: 7,
-    archived: 8,
+    rest_day: 5,
+    done_today: 6,
+    done_period: 7,
+    not_due: 8,
+    archived: 9,
   };
   const cadenceOrder: Record<HabitCadencePeriod, number> = {
     daily: 0,
@@ -1106,7 +1292,7 @@ export function buildHabitDaySummary(
   const items = habits
     .map((habit) => {
       const checkIn = getCheckInForHabitDate(habit, checkIns, date);
-      const evaluation = evaluateHabitForDate(habit, checkIn, date);
+      const evaluation = evaluateHabitForDate(habit, checkIn, date, checkIns);
       const cadenceProgress = buildHabitCadenceProgress(habit, checkIns, date);
       const isScheduledForDate = isHabitScheduledForDate(habit, date, checkIns);
       return {
@@ -1117,6 +1303,7 @@ export function buildHabitDaySummary(
         isScheduledForDate,
         priorityGroup: getHabitPriorityGroup(
           habit,
+          checkIn,
           evaluation,
           cadenceProgress,
           isScheduledForDate,
@@ -1126,7 +1313,8 @@ export function buildHabitDaySummary(
     })
     .sort(compareHabitDayItems);
   const perfectDayItems = items.filter(
-    (item) => item.isScheduledForDate && item.habit.isPerfectDayItem
+    (item) =>
+      item.isScheduledForDate && item.habit.isPerfectDayItem && item.checkIn?.status !== "skipped"
   );
   const satisfiedPerfectDayItemCount = perfectDayItems.filter(
     (item) => item.evaluation.isSatisfied

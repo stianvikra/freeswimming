@@ -265,11 +265,14 @@ export async function POST(request: Request) {
 
   const snapshot = await loadHabitSnapshot(supabase, user.id, checkInDate);
   trackAnalyticsEvent({
-    eventName: isQuitHabit
-      ? "habit_lapse_logged"
-      : habitMode === "timed" && upsertPayload.value_numeric !== null
-        ? "habit_timer_saved"
-        : "habit_check_in_logged",
+    eventName:
+      upsertPayload.status === "skipped"
+        ? "habit_rest_day_logged"
+        : isQuitHabit
+          ? "habit_lapse_logged"
+          : habitMode === "timed" && upsertPayload.value_numeric !== null
+            ? "habit_timer_saved"
+            : "habit_check_in_logged",
     channel: "server",
     userId: user.id,
     payload: {

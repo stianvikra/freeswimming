@@ -330,6 +330,38 @@ function getCompletionStatusLabel(item: HabitDayItem) {
     : "Done today";
 }
 
+function getBuildMotivationLabel(item: HabitDayItem) {
+  if (item.habit.habitMode !== "build" || item.habit.habitType !== "binary") return null;
+  if (
+    item.evaluation.valueLabel === "Done" ||
+    item.evaluation.valueLabel === "No check-in" ||
+    item.evaluation.valueLabel === "Open" ||
+    item.evaluation.valueLabel === "Rest day"
+  ) {
+    return null;
+  }
+  return item.evaluation.valueLabel;
+}
+
+function getBuildOpenStatusLabel(item: HabitDayItem) {
+  const motivationLabel = getBuildMotivationLabel(item);
+  if (!motivationLabel) return item.evaluation.valueLabel;
+  return motivationLabel;
+}
+
+function shouldShowStatusChipOnMobile(statusLabel: string) {
+  return (
+    statusLabel === "Done today" ||
+    statusLabel.startsWith("Done this ") ||
+    statusLabel === "Slip logged today" ||
+    statusLabel === "Rest day"
+  );
+}
+
+function shouldShowStatusInDetails(statusLabel: string) {
+  return statusLabel === "Open" || statusLabel === "Later";
+}
+
 function getPriorityGroupLabel(item: HabitDayItem) {
   switch (item.priorityGroup) {
     case "due_build":
@@ -342,6 +374,8 @@ function getPriorityGroupLabel(item: HabitDayItem) {
       return "This month";
     case "quit_status":
       return "Quit status";
+    case "rest_day":
+      return "Rest day";
     case "done_today":
     case "done_period":
       return getCompletionStatusLabel(item);
@@ -1090,6 +1124,34 @@ export default function HabitPerfectDayHub({
     }
   }
 
+  async function markRestDay(item: HabitDayItem) {
+    setPendingKey(`rest-${item.habit.id}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: item.habit.id,
+          checkInDate: snapshot.selectedDate,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          status: "skipped",
+        }),
+      });
+      await applyResponse(response, "Could not save that rest day right now.");
+      collapseHabitDetails(item.habit.id);
+      clearTimer(item.habit.id);
+      setNotice("Rest day saved.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Could not save that rest day right now."
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
   async function finishTimer(item: HabitDayItem) {
     const seconds = getTimerSeconds(item.habit.id);
     if (seconds <= 0) {
@@ -1669,6 +1731,7 @@ export default function HabitPerfectDayHub({
               const isTimed = habit.habitMode === "timed";
               const isCompletionGroup =
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
+              const isRestDay = item.checkIn?.status === "skipped";
               const timerSeconds = getTimerSeconds(habit.id);
               const isTimerRunning = timers[habit.id]?.startedAtMs != null;
               const timerActionLabel = isTimerRunning
@@ -1687,39 +1750,43 @@ export default function HabitPerfectDayHub({
                   ? `${cadenceLabel} target ${formatTimer(timerTargetSeconds)}`
                   : habit.targetLabel;
               const canEditTodaysCheckIn = item.isScheduledForDate || item.checkIn !== null;
-              const statusLabel = isCompletionGroup
-                ? getCompletionStatusLabel(item)
-                : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
-                  ? "Later"
-                  : item.evaluation.stateLabel;
+              const statusLabel = isRestDay
+                ? "Rest day"
+                : isCompletionGroup
+                  ? getCompletionStatusLabel(item)
+                  : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                    ? "Later"
+                    : item.evaluation.stateLabel;
               const showGroupHeading =
                 index === 0 ||
                 getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
                   getPriorityGroupKey(item);
-              const quickStatusLabel = isCompletionGroup
-                ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
-                  ? `${formatCountValue(
-                      item.checkIn?.valueNumeric ?? 0,
-                      habit.targetUnit
-                    )} today · ${getCompletionStatusLabel(item)}`
-                  : isTimed
-                    ? `${getTimedStatusLabel(item, timerSeconds)} · ${getCompletionStatusLabel(
-                        item
-                      )}`
-                    : getCompletionStatusLabel(item)
-                : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
-                  ? "Not due today"
-                  : isQuit
-                    ? `${item.evaluation.valueLabel} · ${
-                        item.evaluation.stateLabel === "Lapse logged"
-                          ? "Slip logged today"
-                          : "On track today"
-                      }`
+              const quickStatusLabel = isRestDay
+                ? "Rest day today"
+                : isCompletionGroup
+                  ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
+                    ? `${formatCountValue(
+                        item.checkIn?.valueNumeric ?? 0,
+                        habit.targetUnit
+                      )} today · ${getCompletionStatusLabel(item)}`
                     : isTimed
-                      ? getTimedStatusLabel(item, timerSeconds)
-                      : habit.habitType === "count"
-                        ? getCountHabitStatus(item)
-                        : item.evaluation.valueLabel;
+                      ? `${getTimedStatusLabel(item, timerSeconds)} · ${getCompletionStatusLabel(
+                          item
+                        )}`
+                      : [getCompletionStatusLabel(item), getBuildMotivationLabel(item)]
+                          .filter(Boolean)
+                          .join(" · ")
+                  : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                    ? "Not due today"
+                    : isQuit
+                      ? [item.evaluation.valueLabel, item.evaluation.supportingLabel]
+                          .filter(Boolean)
+                          .join(" · ")
+                      : isTimed
+                        ? getTimedStatusLabel(item, timerSeconds)
+                        : habit.habitType === "count"
+                          ? getCountHabitStatus(item)
+                          : getBuildOpenStatusLabel(item);
               return (
                 <div key={habit.id} className="space-y-2">
                   {showGroupHeading ? (
@@ -1748,23 +1815,29 @@ export default function HabitPerfectDayHub({
                             Habit added
                           </p>
                         ) : null}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="min-w-0 text-base font-semibold text-slate-900">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+                          <h3 className="max-w-full min-w-0 basis-full truncate text-base font-semibold text-slate-900 sm:basis-auto">
                             {habit.title}
                           </h3>
-                          <span className={habitBrandChipClass}>
-                            {getHabitModeLabel(habit.habitMode)}
-                          </span>
-                          <span className={habitChipClass}>{cadenceLabel}</span>
-                          <span
-                            className={
-                              isSatisfied || isCompletionGroup
-                                ? habitSuccessChipClass
-                                : habitChipClass
-                            }
-                          >
-                            {statusLabel}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
+                              {getHabitModeLabel(habit.habitMode)}
+                            </span>
+                            <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
+                            <span
+                              className={cx(
+                                isRestDay
+                                  ? habitWarningChipClass
+                                  : isSatisfied || isCompletionGroup
+                                    ? habitSuccessChipClass
+                                    : habitChipClass,
+                                "shrink-0",
+                                shouldShowStatusChipOnMobile(statusLabel) ? "" : "max-sm:hidden"
+                              )}
+                            >
+                              {statusLabel}
+                            </span>
+                          </div>
                         </div>
                         <p className="mt-1 text-sm font-medium text-slate-600">
                           {quickStatusLabel}
@@ -1796,7 +1869,7 @@ export default function HabitPerfectDayHub({
                           </button>
                         ) : null}
 
-                        {canEditTodaysCheckIn && !isCompletionGroup && isTimed ? (
+                        {canEditTodaysCheckIn && !isCompletionGroup && !isRestDay && isTimed ? (
                           <>
                             <div className="flex h-10 w-full min-w-24 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/90 px-3 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:w-auto">
                               <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
@@ -1827,6 +1900,7 @@ export default function HabitPerfectDayHub({
 
                         {canEditTodaysCheckIn &&
                         !isCompletionGroup &&
+                        !isRestDay &&
                         !isQuit &&
                         !isTimed &&
                         habit.habitType !== "binary" ? (
@@ -2119,6 +2193,12 @@ export default function HabitPerfectDayHub({
                     {isExpanded ? (
                       <div id={detailsId} className="mt-4 border-t border-slate-200 pt-4">
                         <div className="flex flex-wrap items-center gap-2">
+                          <span className={habitBrandChipClass}>
+                            {getHabitModeLabel(habit.habitMode)}
+                          </span>
+                          {shouldShowStatusInDetails(statusLabel) ? (
+                            <span className={habitChipClass}>{statusLabel}</span>
+                          ) : null}
                           {habitTypeLabel !== habitTargetLabel ? (
                             <span className={habitChipClass}>{habitTypeLabel}</span>
                           ) : null}
@@ -2131,6 +2211,12 @@ export default function HabitPerfectDayHub({
 
                         {habit.notes ? (
                           <p className="mt-3 text-sm text-slate-500">{habit.notes}</p>
+                        ) : null}
+
+                        {item.evaluation.supportingLabel && isRestDay ? (
+                          <p className="mt-3 text-sm font-medium text-slate-600">
+                            {item.evaluation.supportingLabel}
+                          </p>
                         ) : null}
 
                         <div className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap">
@@ -2149,7 +2235,25 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          {canEditTodaysCheckIn && isTimed ? (
+                          {canEditTodaysCheckIn &&
+                          !isCompletionGroup &&
+                          !isQuit &&
+                          !item.checkIn ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                return markRestDay(item);
+                              }}
+                              disabled={disabled}
+                              className={habitMobileSecondaryActionClass}
+                            >
+                              <Pause className="h-4 w-4" aria-hidden="true" />
+                              Rest day
+                            </button>
+                          ) : null}
+
+                          {canEditTodaysCheckIn && !isRestDay && isTimed ? (
                             <>
                               <button
                                 type="button"
@@ -2207,6 +2311,7 @@ export default function HabitPerfectDayHub({
                           ) : null}
 
                           {canEditTodaysCheckIn &&
+                          !isRestDay &&
                           !isQuit &&
                           !isTimed &&
                           habit.habitType !== "binary" ? (
@@ -2255,7 +2360,7 @@ export default function HabitPerfectDayHub({
                               className={habitMobileSecondaryActionClass}
                             >
                               <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                              {isQuit ? "Undo slip" : "Reset"}
+                              {isQuit ? "Undo slip" : isRestDay ? "Undo rest day" : "Reset"}
                             </button>
                           ) : null}
 
@@ -2285,7 +2390,9 @@ export default function HabitPerfectDayHub({
                             Archive
                           </button>
 
-                          <p className="text-sm text-slate-500">{item.evaluation.valueLabel}</p>
+                          {getBuildMotivationLabel(item) ? null : (
+                            <p className="text-sm text-slate-500">{item.evaluation.valueLabel}</p>
+                          )}
                         </div>
                       </div>
                     ) : null}

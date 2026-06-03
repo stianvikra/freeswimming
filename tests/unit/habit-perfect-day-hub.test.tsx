@@ -78,6 +78,71 @@ function buildSnapshot(options?: { withHabit?: boolean; completed?: boolean }): 
   };
 }
 
+function buildOpenBuildStreakSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Read 10 pages",
+      start_date: "2026-05-04",
+    })
+  );
+  const checkIns = [
+    "2026-05-04",
+    "2026-05-05",
+    "2026-05-06",
+    "2026-05-07",
+    "2026-05-08",
+    "2026-05-09",
+  ].map((date, index) =>
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: `build-streak-${index}`,
+        habit_id: habit.id,
+        check_in_date: date,
+      })
+    )
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildOpenBuildShortStreakSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Read 10 pages",
+      start_date: "2026-05-06",
+    })
+  );
+  const checkIns = ["2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"].map((date, index) =>
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: `build-short-streak-${index}`,
+        habit_id: habit.id,
+        check_in_date: date,
+      })
+    )
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
 function buildSchemaPendingSnapshot(): HabitSnapshot {
   return {
     ...buildSnapshot(),
@@ -189,6 +254,110 @@ function buildNotDueFixedDaySnapshot(): HabitSnapshot {
     archivedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
+  };
+}
+
+function buildRestDaySnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "66666666-6666-4666-8666-666666666666",
+      title: "Mobility",
+    })
+  );
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        status: "skipped",
+        value_boolean: null,
+        completed_at: null,
+      })
+    ),
+  ];
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildWeeklyDonePeriodSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Spanish Verbs",
+      cadence_period: "weekly",
+      cadence_target_count: 2,
+      cadence_day_policy: "any",
+    })
+  );
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        check_in_date: "2026-05-05",
+        value_boolean: true,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        check_in_date: "2026-05-07",
+        value_boolean: true,
+      })
+    ),
+  ];
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildQuitSlipSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "88888888-8888-4888-8888-888888888888",
+      title: "No sweets",
+      habit_mode: "quit",
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+      start_date: "2026-05-01",
+      last_lapse_date: "2026-05-10",
+    })
+  );
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        value_boolean: false,
+      })
+    ),
+  ];
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
 }
 
@@ -640,6 +809,106 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+  });
+
+  it("saves rest days as skipped check-ins from Details", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildRestDaySnapshot(),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rest day" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"status":"skipped"'),
+        })
+      );
+    });
+    expect(await screen.findByText("Rest day saved.")).toBeVisible();
+    expect(screen.getByText("Rest day today")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeVisible();
+  });
+
+  it("keeps rest-day rows out of active timer and value controls", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildRestDaySnapshot()} />);
+
+    expect(screen.getByText("Rest day today")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+
+    expect(screen.getByText("Not counted as done or missed")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Rest day" })).toBeNull();
+  });
+
+  it("shows weekly target-met habits as done for the rest of the week", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildWeeklyDonePeriodSnapshot()} />);
+
+    expect(screen.getAllByText("Done this week").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
+  });
+
+  it("shows quit-slip consistency plus current streak instead of only zero days", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildQuitSlipSnapshot()} />);
+
+    expect(screen.getByText("9/10 days on track")).toBeVisible();
+    expect(screen.getByText("Slip logged today")).toBeVisible();
+    expect(screen.queryByText("Current streak 0 days")).toBeNull();
+  });
+
+  it("shows build streak motivation on collapsed open rows", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
+
+    expect(screen.getByText("6-day streak")).toBeVisible();
+    expect(screen.queryByText("6/7 days on track")).toBeNull();
+    expect(screen.queryByText("No check-in")).toBeNull();
+  });
+
+  it("uses consistency instead of streak before five-day build streaks", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildShortStreakSnapshot()} />);
+
+    expect(screen.getByText("4/5 days on track")).toBeVisible();
+    expect(screen.queryByText("4-day streak")).toBeNull();
+  });
+
+  it("keeps collapsed mobile chips focused on cadence and meaningful day state", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
+
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    expect(within(card).getByText("Build")).toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Open")).toHaveClass("max-sm:hidden");
+  });
+
+  it("keeps slip state visible on mobile while moving quit mode to details", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildQuitSlipSnapshot()} />);
+
+    const card = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
+    expect(within(card).getByText("Quit")).toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Slip logged today")).not.toHaveClass("max-sm:hidden");
+  });
+
+  it("does not repeat collapsed build motivation inside details", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+
+    expect(screen.getAllByText("6-day streak")).toHaveLength(1);
+    expect(
+      screen.getAllByText("Open").some((element) => !element.className.includes("max-sm:hidden"))
+    ).toBe(true);
   });
 
   it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
