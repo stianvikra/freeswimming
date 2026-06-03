@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-checkout-button-token-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
 - `updated`: `2026-06-03`
@@ -61,6 +61,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Product ID, cancel path tracking, pending/error state, response handling, and `window.location.assign` behavior are unchanged.                                                    | focused unit tests + changed-files review   | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this commerce UI slice changes no admin editor, CRUD workflow, publish flow, operator queue, or admin action surface.                                                 | explicit admin-editor scope rationale       | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Button name, disabled state, focus-visible ring, feedback `aria-describedby`, `role=status`, and `aria-live=polite` stay intact.                                                  | Testing Library assertions + screenshot QA  | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for the 10/10 critical-category parser; same threshold and evidence as `Accessibility (a11y)`.                                                                          | Testing Library assertions + screenshot QA  | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No dependency, media asset, API call, polling, state model, or route payload growth beyond class consolidation in an existing client component.                                   | dependency diff + broad gate                | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because no local storage, server-canonical data, sync trigger, conflict policy, cache invalidation, retention, or sensitive data boundary changes.                            | data-boundary scope review                  | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no fetch path, route cache mode, revalidation trigger, mutation response, or stale-data behavior changes.                                                             | changed-files review                        | `N/A`                   |
@@ -210,3 +211,33 @@ Required as a route/label/support and commerce-surface impact sweep before broad
 - `2026-06-03 | screenshot-handoff | implemented shared CheckoutButton token/action parity, updated focused unit tests and AW-006 queue/inventory docs, captured before/after /plans desktop/mobile artifacts at output/aw-006-checkout-button-token-parity-2026-06-03-212408; validation passed: ./node_modules/.bin/vitest run tests/unit/checkout-button.test.tsx, npm run lint:briefs:all, git diff --check, and targeted route/label/support sweep with expected hits only | next: owner screenshot approval before npm run verify:pre-pr, commit, push, and PR`
 - `2026-06-03 | copy-feedback | owner correctly flagged Open secure checkout as weak purchase CTA copy; expanded the same slice to generate product-specific /plans labels from catalog titles while preserving Stripe/API, prices, checkout payloads, analytics payloads, entitlements, finance/reporting, and support behavior | next: rerun focused validation and regenerate screenshot handoff before npm run verify:pre-pr`
 - `2026-06-03 | refreshed-screenshot-handoff | updated /plans CTA labels to product-title-derived Buy labels, updated unit/e2e coverage and AW-006 docs, and captured superseding before/after /plans desktop/mobile artifacts at output/aw-006-checkout-button-copy-parity-2026-06-03-214631; validation passed: ./node_modules/.bin/vitest run tests/unit/checkout-button.test.tsx tests/unit/plans-page.test.tsx, npm run lint:briefs:all, git diff --check, targeted route/label/support sweep, and env PW_PORT=3100 NEXT_DIST_DIR=.next-playwright-plans SITE_LOCK_ENABLED=0 STRIPE_PRICE_ID_0_1000M_GUIDE=price_1000 STRIPE_PRICE_ID_POOLSIDE_GUIDE=price_poolside STRIPE_PRICE_ID_ANALYSIS=price_analysis npm exec playwright -- test tests/e2e/mobile-bottom-nav-safe-area.spec.ts --project=mobile-chromium -g "plans primary action" | next: owner screenshot approval before npm run verify:pre-pr, commit, push, and PR`
+- `2026-06-03 | closeout | Checkout Button Token And Action Parity shipped in PR #975 as squash commit ef5c177; this repo-managed closeout moves its brief to done and clears the active AW-006 queue/design-inventory references | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#975`
+- `squash_commit`: `ef5c177`
+- `result`: Closed AW-006 Checkout Button Token And Action Parity; checkout purchase actions now use the shared primary action token and `/plans` says what the customer buys instead of the generic secure-checkout wording.
+- `validation`: Targeted Vitest, targeted mobile Playwright, route/label/support sweep, `npm run lint:briefs:all`, `git diff --check`, screenshot handoff at `output/aw-006-checkout-button-copy-parity-2026-06-03-214631`, `npm run verify:pre-pr` PASS on `d03322d`, GitHub CI PASS on PR `#975`, and `npm run verify:pre-merge` PASS on `d03322d`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                            | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#975`, screenshot handoff, `/plans` tests                                                       | None         |
+| UX flow clarity                               | `5/5`          | Product-title CTA helper tests, focused checkout tests, screenshot approval                         | None         |
+| Visual design quality                         | `5/5`          | `fs-cta-primary` class tests, before/after screenshots, owner approval                              | None         |
+| Business logic correctness and data integrity | `5/5`          | Checkout request/redirect/analytics unit assertions, changed-files review                           | None         |
+| Accessibility (a11y)                          | `5/5`          | Feedback semantics assertions and full `verify:pre-pr` Playwright gate                              | None         |
+| Accessibility                                 | `5/5`          | Alias closeout row for the 10/10 critical-category parser; same evidence as `Accessibility (a11y)`. | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency/assets added; perf budgets PASS in `verify:pre-pr`                                    | None         |
+| Reliability and failure handling              | `5/5`          | Pending/error/retry checkout tests and unchanged API error handling                                 | None         |
+| Security and authz                            | `5/5`          | Stripe/API/auth boundaries untouched; CI security/API negative paths remained green                 | None         |
+| Content governance                            | `5/5`          | Brief, queue, and design inventory closeout plus `npm run lint:briefs:all`                          | None         |
+| Analytics and KPI observability               | `5/5`          | Existing `upsell_accepted` payload asserted unchanged                                               | None         |
+| Commerce and revenue ops                      | `5/5`          | Checkout Sessions handoff, product IDs, and unavailable-product behavior preserved                  | None         |
+| Finance and reporting operations              | `5/5`          | No Stripe payload, price, entitlement, invoice, payout, reconciliation, or report behavior changed  | None         |
+| i18n operational readiness                    | `5/5`          | Product-title labels remain layout-safe through mobile full-width action behavior                   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `CheckoutButton`, `fs-cta-primary`, existing tests, and current Stripe-hosted integration    | None         |
+| Testing and QA automation                     | `5/5`          | Targeted unit/e2e tests, full `verify:pre-pr`, CI, and `verify:pre-merge` PASS                      | None         |
+| DevOps and rollback readiness                 | `5/5`          | No migration/config/dependency change; normal revert restores previous copy/styling                 | None         |
