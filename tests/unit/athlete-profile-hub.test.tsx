@@ -82,9 +82,23 @@ describe("AthleteProfileHub", () => {
     expect(readiness).toHaveClass("fs-library-card", "fs-library-card-accent");
     const nextAction = screen.getByTestId("athlete-profile-next-action");
     expect(nextAction).toHaveTextContent("Set up swimmer identity");
-    expect(nextAction).toHaveClass("fs-cta-primary");
+    expect(nextAction).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
     expect(screen.getByTestId("athlete-profile-readiness-profile")).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByTestId("athlete-profile-section-profile")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("athlete-profile-section-toggle-profile")).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(screen.getByTestId("athlete-profile-display-name")).toHaveClass(
+      "ui-field",
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByTestId("athlete-profile-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Reset draft" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-profile-save").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2"
     );
     expect(screen.getByTestId("athlete-profile-section-profile")).toHaveAttribute(
       "data-section-open",
@@ -247,6 +261,13 @@ describe("AthleteProfileHub", () => {
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-css"));
+    expect(screen.getByTestId("athlete-profile-css-pace")).toHaveClass("ui-field");
+    expect(screen.getByTestId("athlete-profile-css-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("athlete-profile-css-reset")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-profile-css-save").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2"
+    );
     fireEvent.change(screen.getByTestId("athlete-profile-css-pace"), {
       target: { value: "1:58" },
     });
@@ -265,6 +286,16 @@ describe("AthleteProfileHub", () => {
     expect(cssFeedback).toHaveAttribute("data-feedback-tone", "success");
 
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-preferences"));
+    expect(screen.getByTestId("athlete-preferences-pool-length")).toHaveClass("ui-field");
+    expect(screen.getByTestId("athlete-preferences-day-monday").closest("label")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByTestId("athlete-preferences-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("athlete-preferences-reset")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-preferences-save").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2"
+    );
     fireEvent.change(screen.getByTestId("athlete-preferences-pool-length"), {
       target: { value: "25" },
     });
@@ -343,6 +374,13 @@ describe("AthleteProfileHub", () => {
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-records"));
+    expect(screen.getByTestId("athlete-record-distance-m")).toHaveClass("ui-field");
+    expect(screen.getByTestId("athlete-record-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("athlete-record-reset")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-record-save").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2"
+    );
     fireEvent.change(screen.getByTestId("athlete-record-distance-m"), {
       target: { value: "100" },
     });
@@ -376,6 +414,21 @@ describe("AthleteProfileHub", () => {
     expect(screen.getAllByText("100m Freestyle · 25m pool").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-records"));
+    const recordRow = screen
+      .getAllByText("100m Freestyle · 25m pool")
+      .map((node) => node.closest("article"))
+      .find(Boolean);
+    expect(recordRow).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("athlete-record-edit-record-1")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-record-delete-record-1")).toHaveClass(
+      "fs-cta-danger",
+      "min-h-10"
+    );
+    expect(screen.getByTestId("athlete-record-delete-record-1").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2",
+      "w-full"
+    );
     fireEvent.click(screen.getByTestId("athlete-record-delete-record-1"));
 
     await waitFor(() => {
@@ -455,6 +508,13 @@ describe("AthleteProfileHub", () => {
     render(<AthleteProfileHub initialSnapshot={buildSnapshot()} userId="user-1" />);
 
     fireEvent.click(screen.getByTestId("athlete-profile-section-toggle-capabilities"));
+    expect(screen.getByTestId("athlete-capability-drill-max-repeat")).toHaveClass("ui-field");
+    expect(screen.getByTestId("athlete-capabilities-save")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("athlete-capabilities-reset")).toHaveClass("fs-cta-secondary");
+    expect(screen.getByTestId("athlete-capabilities-save").parentElement).toHaveClass(
+      "grid",
+      "grid-cols-2"
+    );
     fireEvent.change(screen.getByTestId("athlete-capability-drill-max-repeat"), {
       target: { value: "25" },
     });
