@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
+import { cx } from "@/components/ui/cx";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
@@ -17,6 +18,9 @@ type CheckoutResponse = {
   url?: string;
   error?: string;
 };
+
+const checkoutButtonClassName =
+  "fs-cta-primary inline-flex min-h-11 w-full items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
 
 export default function CheckoutButton({
   productId,
@@ -81,7 +85,7 @@ export default function CheckoutButton({
         onClick={onClick}
         disabled={pending}
         aria-describedby={feedbackMessage ? feedbackId : undefined}
-        className={`inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+        className={cx(checkoutButtonClassName, className)}
       >
         {pending ? "Opening checkout..." : label}
       </button>

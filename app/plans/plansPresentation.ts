@@ -106,3 +106,8 @@ export function getPlanCopy(product: PlansProductPresentationInput): PlanCopy {
 export function getPurchaseModelCopy(product: PlansProductPresentationInput): PurchaseModelCopy {
   return ONE_TIME_PRODUCT_IDS.has(product.id) ? ONE_TIME_PURCHASE_MODEL : FALLBACK_PURCHASE_MODEL;
 }
+
+export function getCheckoutCtaLabel(product: PlansProductPresentationInput) {
+  const title = product.title.trim();
+  return title ? `Buy ${title}` : "Buy this plan";
+}

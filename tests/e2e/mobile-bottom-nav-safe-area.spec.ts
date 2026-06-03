@@ -36,7 +36,9 @@ function skipUnlessMobileChromium(testInfo: TestInfo) {
 }
 
 async function getPlansPrimaryAction(page: Page) {
-  const purchaseActions = page.getByRole("button", { name: /^(Buy now|Open secure checkout)$/ });
+  const purchaseActions = page.getByRole("button", {
+    name: /^(Buy now|Buy 0-1000m guide|Buy Poolside guide|Buy Video analysis)$/,
+  });
   if ((await purchaseActions.count()) > 0) {
     return purchaseActions.first();
   }

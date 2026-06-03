@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PlansPage from "@/app/plans/page";
 import {
+  getCheckoutCtaLabel,
   getPlanCopy,
   getPurchaseModelCopy,
   type PlansProductPresentationInput,
@@ -139,7 +140,9 @@ describe("PlansPage", () => {
     expect(screen.getAllByText("Purchase model")).toHaveLength(3);
     expect(screen.getAllByText("One-time")).toHaveLength(3);
     expect(screen.getAllByText("Pay once for this offer. No subscription.")).toHaveLength(3);
-    expect(screen.getAllByRole("button", { name: "Open secure checkout" })).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Buy 0-1000m guide" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Buy Poolside guide" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Buy Video analysis" })).toBeVisible();
     expect(
       screen.getAllByText(
         "Opens secure Stripe Checkout. Final price, promo code field, and payment details are confirmed before you pay."
@@ -186,7 +189,7 @@ describe("PlansPage", () => {
       "/contact"
     );
     expect(screen.getAllByRole("button", { name: "Temporarily unavailable" })).toHaveLength(3);
-    expect(screen.queryByRole("button", { name: "Open secure checkout" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Buy / })).not.toBeInTheDocument();
     expect(trackEventOnMountMock).toHaveBeenCalledWith({
       eventName: "plans_viewed",
       payload: {
@@ -229,5 +232,7 @@ describe("PlansPage", () => {
       checkoutExpectation:
         "Opens secure Stripe Checkout. Final price, payment model, and payment details are confirmed before you pay.",
     });
+    expect(getCheckoutCtaLabel(futureProduct)).toBe("Buy Membership");
+    expect(getCheckoutCtaLabel({ ...futureProduct, title: "   " })).toBe("Buy this plan");
   });
 });

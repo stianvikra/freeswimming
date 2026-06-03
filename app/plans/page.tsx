@@ -13,7 +13,7 @@ import {
   type CatalogProductOverridesById,
   type CatalogProductAvailability,
 } from "@/lib/commerce/catalog";
-import { getPlanCopy, getPurchaseModelCopy } from "./plansPresentation";
+import { getCheckoutCtaLabel, getPlanCopy, getPurchaseModelCopy } from "./plansPresentation";
 
 export const dynamic = "force-dynamic";
 
@@ -53,8 +53,7 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
                 productId={product.id}
                 cancelPath="/plans"
                 analyticsSource="plans"
-                label="Open secure checkout"
-                className="fs-cta-primary w-full rounded-[var(--fs-radius-control)] sm:w-auto"
+                label={getCheckoutCtaLabel(product)}
               />
             </div>
           ) : (

@@ -14,6 +14,21 @@ describe("CheckoutButton", () => {
     vi.clearAllMocks();
   });
 
+  it("uses the shared primary action token contract by default", () => {
+    render(<CheckoutButton productId="guide_poolside" />);
+
+    const button = screen.getByRole("button", { name: "Buy now" });
+    expect(button).toHaveClass(
+      "fs-cta-primary",
+      "min-h-11",
+      "w-full",
+      "sm:w-auto",
+      "focus-visible:ring-blue-700",
+      "disabled:opacity-60"
+    );
+    expect(button).not.toHaveClass("rounded-xl", "bg-blue-600");
+  });
+
   it("tracks upsell_accepted and enriches cancel path tags before checkout request", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
@@ -52,9 +67,13 @@ describe("CheckoutButton", () => {
   });
 
   it("allows a clearer visible checkout label without changing the default contract", () => {
-    render(<CheckoutButton productId="guide_poolside" label="Open secure checkout" />);
+    render(
+      <CheckoutButton productId="guide_poolside" label="Buy Poolside guide" className="max-w-xs" />
+    );
 
-    expect(screen.getByRole("button", { name: "Open secure checkout" })).toBeVisible();
+    const button = screen.getByRole("button", { name: "Buy Poolside guide" });
+    expect(button).toBeVisible();
+    expect(button).toHaveClass("fs-cta-primary", "max-w-xs");
     expect(screen.queryByRole("button", { name: "Buy now" })).not.toBeInTheDocument();
   });
 
@@ -62,9 +81,9 @@ describe("CheckoutButton", () => {
     const fetchMock = vi.fn().mockReturnValue(new Promise(() => {}));
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<CheckoutButton productId="guide_poolside" label="Open secure checkout" />);
+    render(<CheckoutButton productId="guide_poolside" label="Buy Poolside guide" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Open secure checkout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buy Poolside guide" }));
 
     const feedback = await screen.findByTestId("checkout-feedback");
     const button = screen.getByRole("button", { name: "Opening checkout..." });
@@ -74,5 +93,6 @@ describe("CheckoutButton", () => {
     expect(feedback).toHaveAttribute("data-feedback-tone", "pending");
     expect(feedback).toHaveTextContent("Opening secure checkout...");
     expect(button).toHaveAttribute("aria-describedby", feedback.id);
+    expect(button).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
   });
 });
