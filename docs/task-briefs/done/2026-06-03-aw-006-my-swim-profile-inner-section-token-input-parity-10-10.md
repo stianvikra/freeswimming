@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-my-swim-profile-inner-section-token-input-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
 - `updated`: `2026-06-03`
@@ -223,6 +223,9 @@ Completed before pre-PR gate:
 - PASS after 100/50 mobile action correction and temporary harness removal: `npm run typecheck`.
 - PASS after 100/50 mobile action correction and temporary harness removal: `git diff --check`.
 - PASS: `npm run verify:pre-pr` (`106` Playwright tests passed, `530` skipped in local dev-auth mode, and `verify-open` passed).
+- PASS: GitHub CI for PR `#965` (`Analyze (javascript-typescript)`, `CodeQL`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `Vercel`, and `verify`).
+- PASS: `npm run verify:pre-merge` (`106` Playwright tests passed, `530` skipped in local dev-auth mode, `verify-open` passed, private-gate regression skipped because `SITE_LOCK_ENABLED!=1`, and `verify-pre-merge` passed).
+- PASS: PR `#965` merged as squash commit `fb4ac11`.
 
 Visual gate:
 
@@ -237,13 +240,10 @@ Visual gate:
 - Capture caveat: local `/dev/login` was blocked by the repo Supabase egress guard because `.env.local` points at a cloud Supabase project in a local/test context. Screenshots therefore used a temporary `/aw006-profile-harness` route in the before copy and working branch, rendering the real `AthleteProfileHub` with a deterministic `AthleteProfileSnapshot`. The temporary route was removed from the working branch after capture; no scoped product-rendering files, styles, assets, or export HTML that ship in the diff changed after the refreshed capture. Screenshot artifacts remain only under ignored `output/`.
 - Owner explicitly waived another screenshot approval stop and pre-approved PR + merge when gates are green.
 
-Next automation:
+Closeout automation:
 
-- commit + push
-- open/update PR
-- monitor CI
-- `npm run verify:pre-merge`
-- merge when local and CI gates are green
+- Post-merge preflight identified this single repo-managed docs-only closeout.
+- Move this brief to `done`, clear stale queue/inventory active references, run docs-only gates, and merge the closeout PR when green.
 
 ## Local Tooling Prerequisite
 
@@ -257,3 +257,30 @@ Next automation:
 - `2026-06-03 | refreshed screenshot handoff | owner flagged that Delete should be red and asked for a systemic button-format check; added shared fs-cta-danger token and danger action contract, applied it to My Swim Profile Delete, updated focused tests/docs, refreshed before/after screenshots at output/aw-006-my-swim-profile-inner-token-input-parity-2026-06-03-140001, removed the temporary harness route, and re-ran targeted Vitest/typecheck/brief-lint/git diff check green | next: wait for owner approval of refreshed screenshots before npm run verify:pre-pr`
 - `2026-06-03 | owner-approved end-to-end | owner requested the 100/50 mobile action rule explicitly, waived further screenshot approval, and pre-approved PR + merge when gates are green; implemented 100% mobile readiness action, 50/50 mobile row actions, local row action class constant, focused assertions, and final screenshots at output/aw-006-my-swim-profile-inner-token-input-parity-2026-06-03-140708; temporary harness removed and targeted Vitest/typecheck/git diff check green | next: run verify:pre-pr, commit, push, open PR, monitor CI, verify:pre-merge, and merge if green`
 - `2026-06-03 | pre-pr gate green | npm run verify:pre-pr passed with unit/build/perf/e2e gate coverage, including 106 Playwright tests passed and 530 skipped in local dev-auth mode | next: commit, push, open PR, monitor CI, verify:pre-merge, and merge if green`
+- `2026-06-03 | merged | PR #965 passed GitHub CI and npm run verify:pre-merge, then merged as squash commit fb4ac11 | next: complete the repo-managed docs-only post-merge closeout surfaced by npm run post-merge:preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#965`
+- `squash_commit`: `fb4ac11`
+- `result`: Closed AW-006 My Swim Profile Inner Section Token/Input Parity. My Swim Profile inner fields, row cards, and visible actions now use the same token/input/action direction as the surrounding My Library profile surface; scoped destructive Delete uses shared `fs-cta-danger`; one-action mobile groups are full-width and two peer actions split evenly.
+- `validation`: targeted Vitest/typecheck/brief-lint/diff checks, final before/after screenshot evidence, `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#965`, active brief scope, AW-006 queue closeout, and no route/data/IA behavior changes.                                           | None.        |
+| UX flow clarity                               | `5/5`          | Final screenshots and focused tests verify 100% single mobile action, 50/50 peer row actions, and preserved labels/feedback.           | None.        |
+| Visual design quality                         | `5/5`          | Shared `fs-cta-primary`, `fs-cta-secondary`, `fs-cta-danger`, `ui-field`, and card token usage plus final screenshot evidence.         | None.        |
+| Business logic correctness and data integrity | `5/5`          | Component changes are presentation-only; existing profile data/API/save/delete/reset semantics preserved and covered by focused tests. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing button/form semantics preserved; `verify:pre-pr`, CI `verify`, and `verify:pre-merge` passed.                                 | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as the canonical a11y target row; no new non-semantic controls introduced.                                               | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | `test:perf:budgets` passed in `verify:pre-pr` and `verify:pre-merge`; trend recommendation was hold.                                   | None.        |
+| Reliability and failure handling              | `5/5`          | Existing feedback, disabled, pending, and local-draft paths preserved; no new async behavior.                                          | None.        |
+| Security and authz                            | `5/5`          | No auth/API/Supabase/storage changes; CI and local gates passed.                                                                       | None.        |
+| Content governance                            | `5/5`          | AW-006 queue, design inventory, active brief, screenshots, and closeout evidence updated.                                              | None.        |
+| i18n operational readiness                    | `5/5`          | Presentation-only English copy/labels preserved; no locale or translation-surface changes.                                             | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing My Library token classes/local constants; no dependencies or broad component refactor.                                 | None.        |
+| Testing and QA automation                     | `5/5`          | Focused Vitest assertions, design-token contract assertions, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                       | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single scoped squash commit `fb4ac11`, branch-current gates, CI, pre-merge gate, and docs-only closeout path.                          | None.        |
