@@ -1,10 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, SelectHTMLAttributes } from "react";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState } from "react";
+import { ChevronsUpDown } from "lucide-react";
 import CreateManualProgramButton from "@/components/my-library/programs/CreateManualProgramButton";
 import { getManualPoolCategoryLabelClass } from "@/components/my-library/workouts/sessionStepSurfaceContract";
+import {
+  getMobileActionGroupClass,
+  mobileActionItemClass,
+  mobilePrimaryActionItemClass,
+} from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import {
   buildProgramGarminReadyExportFileName,
@@ -73,9 +79,22 @@ const actionBaseClass =
   "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
 const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const dangerActionClass = cx("fs-cta-danger", actionBaseClass);
+const mobilePrimaryActionClass = cx(primaryActionClass, mobilePrimaryActionItemClass);
+const mobileSecondaryActionClass = cx(secondaryActionClass, mobileActionItemClass);
+const mobileDangerActionClass = cx(dangerActionClass, mobileActionItemClass);
+const panelClass = "fs-library-card p-4 sm:p-5";
 const mutedPanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
+const nestedCardClass = "fs-library-card p-3";
+const nestedMutedCardClass = "fs-library-card fs-library-card-muted p-3";
+const fieldClass = "ui-field mt-2 min-h-10 rounded-[var(--fs-radius-control)]";
+const selectFieldClass = cx(fieldClass, "appearance-none pr-12 text-left");
+const fieldLabelClass = "ui-field-label uppercase";
+const supportingTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
+const compactStatusChipClass =
+  "inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)]";
 const recentProgramRowClass =
-  "flex flex-wrap items-center justify-between gap-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-subtle)] bg-white/80 p-3";
+  "fs-library-card flex flex-wrap items-center justify-between gap-3 p-3";
 
 function buildProgramExportPreviewError(message: string, status?: number): RetryablePreviewError {
   const error = new Error(message) as RetryablePreviewError;
@@ -130,6 +149,28 @@ type VisibleWorkoutPreviewSection = Omit<WorkoutSummaryPreviewSection, "rows"> &
   rows: WorkoutSummaryPreviewLineItem[];
 };
 
+function ProgramBuilderSelect({
+  children,
+  className,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  children: ReactNode;
+}) {
+  return (
+    <span className="relative block w-full">
+      <select {...props} className={cx(selectFieldClass, "w-full", className)}>
+        {children}
+      </select>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400"
+      >
+        <ChevronsUpDown className="h-3.5 w-3.5" strokeWidth={2.1} />
+      </span>
+    </span>
+  );
+}
+
 function buildVisibleWorkoutPreviewSections(
   sections: WorkoutSummaryPreviewSection[] | null | undefined
 ): {
@@ -180,7 +221,7 @@ function ScheduledWorkoutStepPreview({
     <div
       data-testid={`program-assignment-step-preview-${assignmentId}`}
       aria-label={`Scheduled workout step preview for ${workout.title}`}
-      className="mt-3 space-y-2 border-t border-slate-100 pt-3"
+      className="mt-3 space-y-2 border-t border-[color:var(--fs-border-soft)] pt-3"
     >
       {visibleSections.map((section) => {
         const category = section.category ?? "main";
@@ -194,12 +235,14 @@ function ScheduledWorkoutStepPreview({
             >
               {section.title}
             </p>
-            <div className="space-y-1 border-l border-slate-200 pl-2">
+            <div className="space-y-1 border-l border-[color:var(--fs-border-soft)] pl-2">
               {section.rows.map((row, rowIndex) => (
                 <div key={`${section.key}-${rowIndex}`} className="space-y-0.5">
-                  <p className="text-xs leading-5 break-words text-slate-800">{row.text}</p>
+                  <p className="text-xs leading-5 break-words text-[color:var(--fs-color-ink)]">
+                    {row.text}
+                  </p>
                   {row.secondaryText ? (
-                    <p className="text-xs leading-5 font-semibold text-blue-800">
+                    <p className="text-xs leading-5 font-semibold text-[color:var(--fs-color-brand-700)]">
                       {row.secondaryText}
                     </p>
                   ) : null}
@@ -212,7 +255,7 @@ function ScheduledWorkoutStepPreview({
       {hiddenRowCount > 0 ? (
         <p
           data-testid={`program-assignment-step-preview-more-${assignmentId}`}
-          className="text-xs font-medium text-slate-500"
+          className="text-xs font-medium text-[color:var(--fs-color-muted)]"
         >
           +{hiddenRowCount} more scheduled step{hiddenRowCount === 1 ? "" : "s"}
         </p>
@@ -238,7 +281,11 @@ function ProgramBuilderFeedback({
       aria-atomic={isStaticEmpty ? undefined : "true"}
       data-feedback-tone={tone}
       data-testid={testId}
-      className={cx("rounded-2xl border p-4", programBuilderFeedbackToneClasses[tone], className)}
+      className={cx(
+        "rounded-[var(--fs-radius-card)] border p-4",
+        programBuilderFeedbackToneClasses[tone],
+        className
+      )}
     >
       <div className="min-w-0 text-sm leading-6">{children}</div>
       {action ? <div className="mt-4 flex flex-wrap gap-2">{action}</div> : null}
@@ -255,7 +302,7 @@ function ProgramExportFeedback({ id, title, message, tone, testId }: ProgramExpo
       aria-atomic="true"
       data-feedback-tone={tone}
       data-testid={testId}
-      className={`mt-3 max-w-2xl rounded-xl border px-3 py-2 text-sm leading-6 ${programExportFeedbackToneClasses[tone]}`}
+      className={`mt-3 max-w-2xl rounded-[var(--fs-radius-card)] border px-3 py-2 text-sm leading-6 ${programExportFeedbackToneClasses[tone]}`}
     >
       <p className="font-semibold">{title}</p>
       <p className="text-xs leading-5">{message}</p>
@@ -790,10 +837,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
           <div className={mutedPanelClass}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="max-w-[48rem]">
-                <label
-                  htmlFor="program-draft-title"
-                  className="text-xs font-semibold tracking-wide text-slate-500 uppercase"
-                >
+                <label htmlFor="program-draft-title" className={fieldLabelClass}>
                   Program title
                 </label>
                 <input
@@ -805,24 +849,27 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     setDraftTitle(event.target.value);
                     setSuccess("");
                   }}
-                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                  className={`${fieldClass} w-full`}
                 />
-                <p data-testid="program-editor-save-state" className="mt-3 text-sm text-slate-600">
+                <p
+                  data-testid="program-editor-save-state"
+                  className="mt-3 text-sm text-[color:var(--fs-color-muted)]"
+                >
                   {hasUnsavedChanges
                     ? "Unsaved changes stay local until you save this program."
                     : "All changes are saved."}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-[color:var(--fs-color-muted)]">
                   Program export uses the saved version.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className={getMobileActionGroupClass(2)}>
                 <button
                   type="button"
                   data-testid="program-editor-reset"
                   onClick={resetDraftToSavedProgram}
                   disabled={!hasUnsavedChanges || isSaving}
-                  className={secondaryActionClass}
+                  className={mobileSecondaryActionClass}
                 >
                   Reset
                 </button>
@@ -831,7 +878,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   data-testid="program-builder-save"
                   onClick={saveProgram}
                   disabled={!hasUnsavedChanges || isSaving}
-                  className={primaryActionClass}
+                  className={mobilePrimaryActionClass}
                 >
                   {isSaving ? "Saving..." : "Save program"}
                 </button>
@@ -845,19 +892,19 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
               <section
                 key={week.id}
                 data-testid={`program-week-${weekIndex}`}
-                className="rounded-2xl border border-slate-200 bg-white p-4"
+                className={panelClass}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-base font-semibold text-slate-900">{week.label}</h3>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {week.label}
+                    </h3>
+                    <p className={cx("mt-1", supportingTextClass)}>
                       Place accepted workouts into day slots. This first version keeps the program
                       simple and ready to save.
                     </p>
                   </div>
-                  <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                    {week.assignments.length} scheduled
-                  </p>
+                  <p className={compactStatusChipClass}>{week.assignments.length} scheduled</p>
                 </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -866,14 +913,14 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                     const dayAssignments = days[dayIndex];
 
                     return (
-                      <div
-                        key={dayLabel}
-                        className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
-                      >
-                        <p className="text-sm font-semibold text-slate-900">{dayLabel}</p>
+                      <div key={dayLabel} className={cx(nestedMutedCardClass, "min-w-0")}>
+                        <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                          {dayLabel}
+                        </p>
                         <div className="mt-3 flex flex-col gap-2">
-                          <select
+                          <ProgramBuilderSelect
                             data-testid={`program-day-picker-week-${weekIndex}-day-${dayIndex}`}
+                            aria-label={`Choose workout for ${dayLabel} in ${week.label}`}
                             value={pickerSelections[pickerKey] ?? ""}
                             onChange={(event) =>
                               setPickerSelections((current) => ({
@@ -881,7 +928,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                 [pickerKey]: event.target.value,
                               }))
                             }
-                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                            className="mt-0"
                           >
                             <option value="">Choose workout</option>
                             {availableWorkouts.map((workout) => (
@@ -889,34 +936,37 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                 {workout.title}
                               </option>
                             ))}
-                          </select>
+                          </ProgramBuilderSelect>
                           <button
                             type="button"
                             data-testid={`program-day-add-week-${weekIndex}-day-${dayIndex}`}
                             onClick={() => addAssignment(week.id, dayIndex)}
                             disabled={!pickerSelections[pickerKey]}
-                            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-blue-200 bg-white px-3 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={mobileSecondaryActionClass}
                           >
                             Add workout
                           </button>
                         </div>
 
                         {dayAssignments.length === 0 ? (
-                          <p className="mt-3 text-sm text-slate-500">No workout scheduled.</p>
+                          <p className="mt-3 text-sm text-[color:var(--fs-color-muted)]">
+                            No workout scheduled.
+                          </p>
                         ) : (
                           <div className="mt-3 space-y-2">
                             {dayAssignments.map((assignment, assignmentIndex) => {
                               const workout = workoutLookup.get(assignment.workoutId);
+                              const assignmentDaySelectId = `program-assignment-day-select-${assignment.id}`;
                               return (
                                 <div
                                   key={assignment.id}
                                   data-testid={`program-assignment-card-${assignment.id}`}
-                                  className="min-w-0 rounded-xl border border-white bg-white p-3 shadow-sm"
+                                  className={cx(nestedCardClass, "min-w-0")}
                                 >
-                                  <p className="text-sm font-medium break-words text-slate-900">
+                                  <p className="text-sm font-semibold break-words text-[color:var(--fs-color-ink-strong)]">
                                     {workout?.title ?? "Missing workout reference"}
                                   </p>
-                                  <p className="mt-1 text-xs text-slate-500">
+                                  <p className="mt-1 text-xs text-[color:var(--fs-color-muted)]">
                                     {workout
                                       ? [
                                           workout.totalDistanceM
@@ -939,10 +989,14 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                   ) : null}
 
                                   <div className="mt-3 space-y-2">
-                                    <label className="block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    <label
+                                      htmlFor={assignmentDaySelectId}
+                                      className={fieldLabelClass}
+                                    >
                                       Move to day
                                     </label>
-                                    <select
+                                    <ProgramBuilderSelect
+                                      id={assignmentDaySelectId}
                                       data-testid={`program-assignment-day-${assignment.id}`}
                                       value={String(assignment.dayIndex)}
                                       onChange={(event) =>
@@ -952,17 +1006,17 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                           Number(event.target.value)
                                         )
                                       }
-                                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className="mt-0"
                                     >
                                       {PROGRAM_WEEKDAY_LABELS.map((label, optionDayIndex) => (
                                         <option key={label} value={optionDayIndex}>
                                           {label}
                                         </option>
                                       ))}
-                                    </select>
+                                    </ProgramBuilderSelect>
                                   </div>
 
-                                  <div className="mt-3 flex flex-wrap gap-2">
+                                  <div className={cx("mt-3", getMobileActionGroupClass(3))}>
                                     <button
                                       type="button"
                                       data-testid={`program-assignment-up-${assignment.id}`}
@@ -970,7 +1024,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                       onClick={() =>
                                         moveAssignmentPosition(week.id, assignment.id, -1)
                                       }
-                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className={mobileSecondaryActionClass}
                                     >
                                       Move up
                                     </button>
@@ -981,7 +1035,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                       onClick={() =>
                                         moveAssignmentPosition(week.id, assignment.id, 1)
                                       }
-                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                      className={mobileSecondaryActionClass}
                                     >
                                       Move down
                                     </button>
@@ -989,7 +1043,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                                       type="button"
                                       data-testid={`program-assignment-remove-${assignment.id}`}
                                       onClick={() => removeAssignment(week.id, assignment.id)}
-                                      className="inline-flex h-9 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-sm text-rose-700 transition hover:bg-rose-50"
+                                      className={mobileDangerActionClass}
                                     >
                                       Remove
                                     </button>
@@ -1007,13 +1061,13 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             );
           })}
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={panelClass}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold tracking-wide text-sky-700 uppercase">
+                <p className="text-xs font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
                   Garmin-ready JSON
                 </p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
+                <p className="mt-2 text-sm font-medium text-[color:var(--fs-color-ink-strong)]">
                   Download the saved program as the truthful FreeSwimming `garmin-ready` bundle. It
                   keeps missing references and workout review warnings explicit so later provider
                   delivery can stay deterministic.
@@ -1021,20 +1075,20 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                 <p
                   data-testid="program-editor-garmin-export-source"
                   data-export-state="canonical"
-                  className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
+                  className={cx("mt-2", fieldLabelClass)}
                 >
                   {programExportStateLabel}
                 </p>
-                <p className="mt-1 text-sm text-slate-600">{programExportStateDescription}</p>
+                <p className={cx("mt-1", supportingTextClass)}>{programExportStateDescription}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={getMobileActionGroupClass(2)}>
                 <button
                   type="button"
                   data-testid="program-editor-garmin-export-download"
                   onClick={downloadProgramGarminReadyExport}
                   disabled={!savedProgram || isProgramExportDownloading}
                   aria-describedby={programExportFeedbackTone ? programExportFeedbackId : undefined}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={mobileSecondaryActionClass}
                 >
                   {isProgramExportDownloading ? "Downloading..." : "Download .json"}
                 </button>
@@ -1043,7 +1097,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
                   data-testid="program-editor-garmin-export-details-toggle"
                   aria-expanded={showProgramExportDetails}
                   onClick={() => setShowProgramExportDetails((current) => !current)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  className={mobileSecondaryActionClass}
                 >
                   {showProgramExportDetails ? "Hide export details" : "Show export details"}
                 </button>
@@ -1074,7 +1128,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             ) : null}
 
             {showProgramExportDetails ? (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+              <div className="mt-4 overflow-hidden rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-slate-950">
                 <pre
                   data-testid="program-editor-garmin-export-preview"
                   className="max-h-[320px] overflow-auto px-4 py-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-100"
@@ -1088,33 +1142,31 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
             ) : null}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={panelClass}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold tracking-wide text-amber-700 uppercase">
-                  Program PDF
-                </p>
-                <p className="mt-2 text-sm font-medium text-slate-900">
+                <p className="text-xs font-semibold text-amber-700 uppercase">Program PDF</p>
+                <p className="mt-2 text-sm font-medium text-[color:var(--fs-color-ink-strong)]">
                   Open a print-ready program schedule in a dedicated tab, then use your
                   browser&apos;s Print / Save PDF flow for a coach-readable weekly handoff.
                 </p>
                 <p
                   data-testid="program-editor-pdf-source"
                   data-pdf-state="canonical"
-                  className="mt-2 text-xs font-semibold tracking-wide text-slate-600 uppercase"
+                  className={cx("mt-2", fieldLabelClass)}
                 >
                   {programPdfStateLabel}
                 </p>
-                <p className="mt-1 text-sm text-slate-600">{programPdfStateDescription}</p>
+                <p className={cx("mt-1", supportingTextClass)}>{programPdfStateDescription}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={getMobileActionGroupClass(1)}>
                 <button
                   type="button"
                   data-testid="program-editor-pdf-open"
                   onClick={openProgramPdfPrintView}
                   disabled={!savedProgram}
                   aria-describedby={programPdfFeedbackTone ? programPdfFeedbackId : undefined}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={mobileSecondaryActionClass}
                 >
                   Open print view
                 </button>
