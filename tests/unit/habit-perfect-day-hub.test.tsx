@@ -232,6 +232,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("fs-library-card-accent");
     expect(screen.getByTestId("habit-active-list")).toHaveClass("fs-library-card");
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
     const emptyState = screen.getByTestId("habits-empty-state");
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
@@ -247,7 +248,27 @@ describe("HabitPerfectDayHub", () => {
       "fs-library-card"
     );
     expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("w-full");
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("button", { name: "Details" })).toHaveClass("w-full");
+  });
+
+  it("uses My Library token fields and choices in the Add habit form", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    openAddHabitForm();
+
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByLabelText("Name")).toHaveClass("ui-field");
+    expect(screen.getByLabelText("Category")).toHaveClass("ui-field");
+    expect(screen.getByRole("button", { name: "Build" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByRole("button", { name: "Daily" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByRole("button", { name: "Create habit" })).toHaveClass("fs-cta-primary");
+    expect(screen.getByRole("button", { name: "Create habit" })).toHaveClass("w-full");
   });
 
   it("creates a first habit for My Perfect Day", async () => {
@@ -805,6 +826,13 @@ describe("HabitPerfectDayHub", () => {
       screen.getByText("Updates this habit definition. Check-ins and history stay attached.")
     ).toBeVisible();
     const editForm = screen.getByTestId("habit-edit-form-11111111-1111-4111-8111-111111111111");
+    expect(within(editForm).getByDisplayValue("Read")).toHaveClass("ui-field");
+    expect(within(editForm).getByRole("button", { name: "Cancel" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(editForm).getByRole("button", { name: "Save changes" })).toHaveClass(
+      "fs-cta-primary"
+    );
     fireEvent.change(screen.getByDisplayValue("Read"), {
       target: { value: "Read deeply" },
     });

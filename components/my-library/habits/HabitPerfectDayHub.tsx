@@ -32,6 +32,7 @@ import {
   type HabitWeekday,
 } from "@/lib/habits/shared";
 import { cx } from "@/components/ui/cx";
+import { mobileActionItemClass, mobilePrimaryActionItemClass } from "@/components/ui/actionLayout";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 type Props = {
@@ -394,10 +395,44 @@ const habitFeedbackToneClasses: Record<HabitFeedbackTone, string> = {
 const habitPanelClass = "fs-library-card p-4 sm:p-5";
 const habitAccentPanelClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
 const habitMutedPanelClass = "fs-library-card fs-library-card-muted p-4";
-const habitPrimaryActionClass =
-  "fs-cta-primary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
-const habitSecondaryActionClass =
-  "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const habitNestedCardClass = "fs-library-card p-3";
+const habitNestedMutedCardClass = "fs-library-card fs-library-card-muted p-3";
+const habitFieldClass = "ui-field mt-1 min-h-10";
+const habitLabelClass = "ui-field-label uppercase";
+const habitActionBaseClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const habitPrimaryActionClass = cx("fs-cta-primary", habitActionBaseClass);
+const habitSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", habitActionBaseClass);
+const habitSuccessSecondaryActionClass = cx(
+  "fs-cta-secondary border-emerald-200 text-emerald-700 hover:bg-emerald-50",
+  habitActionBaseClass
+);
+const habitDangerActionClass = cx("fs-cta-danger", habitActionBaseClass);
+const habitMobilePrimaryActionClass = cx(habitPrimaryActionClass, mobilePrimaryActionItemClass);
+const habitMobileSecondaryActionClass = cx(habitSecondaryActionClass, mobileActionItemClass);
+const habitMobileSuccessSecondaryActionClass = cx(
+  habitSuccessSecondaryActionClass,
+  mobileActionItemClass
+);
+const habitMobileDangerActionClass = cx(habitDangerActionClass, mobileActionItemClass);
+const habitChipClass =
+  "inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)]";
+const habitBrandChipClass =
+  "inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-white/90 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-brand-700)]";
+const habitSuccessChipClass =
+  "inline-flex rounded-[var(--fs-radius-control)] border border-emerald-200 bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700";
+const habitWarningChipClass =
+  "inline-flex rounded-[var(--fs-radius-control)] border border-amber-200 bg-white/90 px-3 py-1 text-xs font-semibold text-amber-700";
+const habitChoiceBaseClass =
+  "min-h-10 rounded-[var(--fs-radius-control)] border px-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const habitChoiceSelectedClass =
+  "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]";
+const habitChoiceIdleClass =
+  "border-[color:var(--fs-border-soft)] bg-white/90 text-[color:var(--fs-color-muted)] hover:bg-white";
+
+function getHabitChoiceClass(isSelected: boolean) {
+  return cx(habitChoiceBaseClass, isSelected ? habitChoiceSelectedClass : habitChoiceIdleClass);
+}
 
 function getDefaultHabitFeedbackAnnouncement(tone: HabitFeedbackTone): HabitFeedbackAnnouncement {
   if (tone === "empty") return "none";
@@ -1143,9 +1178,7 @@ export default function HabitPerfectDayHub({
 
     return (
       <fieldset className="md:col-span-2">
-        <legend className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Cadence
-        </legend>
+        <legend className={habitLabelClass}>Cadence</legend>
         <div className="mt-1 grid gap-2 sm:grid-cols-3">
           {[
             ["daily", "Daily"],
@@ -1157,11 +1190,7 @@ export default function HabitPerfectDayHub({
               type="button"
               aria-pressed={currentDraft.cadencePeriod === mode}
               onClick={() => setCadencePeriod(mode as HabitCadencePeriod)}
-              className={`min-h-10 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                currentDraft.cadencePeriod === mode
-                  ? "border-blue-600 bg-blue-50 text-blue-900"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
+              className={getHabitChoiceClass(currentDraft.cadencePeriod === mode)}
             >
               {label}
             </button>
@@ -1171,9 +1200,7 @@ export default function HabitPerfectDayHub({
         {currentDraft.cadencePeriod === "weekly" ? (
           <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div>
-              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Days
-              </span>
+              <span className={habitLabelClass}>Days</span>
               <div className="mt-1 grid gap-2 sm:grid-cols-2">
                 {[
                   ["any", "Any days"],
@@ -1197,11 +1224,7 @@ export default function HabitPerfectDayHub({
                                 : [getWeekdayForDate(snapshot.selectedDate)],
                       }))
                     }
-                    className={`min-h-10 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                      currentDraft.cadenceDayPolicy === policy
-                        ? "border-blue-600 bg-blue-50 text-blue-900"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
+                    className={getHabitChoiceClass(currentDraft.cadenceDayPolicy === policy)}
                   >
                     {label}
                   </button>
@@ -1211,9 +1234,7 @@ export default function HabitPerfectDayHub({
 
             {currentDraft.cadenceDayPolicy === "any" ? (
               <label className="block">
-                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Times per week
-                </span>
+                <span className={habitLabelClass}>Times per week</span>
                 <input
                   aria-label={`${idPrefix} times per week`}
                   type="number"
@@ -1227,7 +1248,7 @@ export default function HabitPerfectDayHub({
                       cadenceTargetCount: event.target.value,
                     }))
                   }
-                  className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={habitFieldClass}
                 />
               </label>
             ) : null}
@@ -1237,9 +1258,7 @@ export default function HabitPerfectDayHub({
         {currentDraft.cadencePeriod === "monthly" ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Times per month
-              </span>
+              <span className={habitLabelClass}>Times per month</span>
               <input
                 aria-label={`${idPrefix} times per month`}
                 type="number"
@@ -1253,14 +1272,12 @@ export default function HabitPerfectDayHub({
                     cadenceTargetCount: event.target.value,
                   }))
                 }
-                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className={habitFieldClass}
               />
             </label>
             <div>
-              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Days
-              </span>
-              <div className="mt-1 flex min-h-11 items-center rounded-xl border border-blue-100 bg-blue-50 px-3 text-sm font-semibold text-blue-900">
+              <span className={habitLabelClass}>Days</span>
+              <div className={cx("mt-1 flex items-center", habitBrandChipClass, "min-h-11")}>
                 Any days
               </div>
             </div>
@@ -1269,20 +1286,14 @@ export default function HabitPerfectDayHub({
 
         {currentDraft.cadencePeriod === "weekly" && currentDraft.cadenceDayPolicy === "fixed" ? (
           <fieldset className="mt-3">
-            <legend className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Fixed weekdays
-            </legend>
+            <legend className={habitLabelClass}>Fixed weekdays</legend>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {ALL_HABIT_WEEKDAYS.map((day) => {
                 const checked = currentDraft.scheduleDays.includes(day);
                 return (
                   <label
                     key={day}
-                    className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
-                      checked
-                        ? "border-blue-500 bg-blue-50 text-blue-900"
-                        : "border-slate-200 bg-white text-slate-700"
-                    }`}
+                    className={cx("flex items-center gap-2", getHabitChoiceClass(checked))}
                   >
                     <input
                       type="checkbox"
@@ -1301,7 +1312,7 @@ export default function HabitPerfectDayHub({
                           };
                         })
                       }
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     {WEEKDAY_LABELS[day]}
                   </label>
@@ -1368,26 +1379,20 @@ export default function HabitPerfectDayHub({
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              7-day perfect days
-            </p>
+          <div className={habitNestedMutedCardClass}>
+            <p className={habitLabelClass}>7-day perfect days</p>
             <p className="mt-1 text-xl font-bold text-slate-900">
               {snapshot.weekSummary.perfectDayCount}/7
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              7-day minutes
-            </p>
+          <div className={habitNestedMutedCardClass}>
+            <p className={habitLabelClass}>7-day minutes</p>
             <p className="mt-1 text-xl font-bold text-slate-900">
               {snapshot.weekSummary.totalDurationMinutes}
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              7-day count
-            </p>
+          <div className={habitNestedMutedCardClass}>
+            <p className={habitLabelClass}>7-day count</p>
             <p className="mt-1 text-xl font-bold text-slate-900">
               {snapshot.weekSummary.totalCount}
             </p>
@@ -1397,9 +1402,9 @@ export default function HabitPerfectDayHub({
         <div className="mt-5 grid grid-cols-7 gap-2" aria-label="Seven day habit consistency">
           {snapshot.weekSummary.days.map((day) => (
             <div key={day.date} className="min-w-0">
-              <div className="flex h-20 items-end rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
                 <div
-                  className="w-full rounded-lg bg-blue-600"
+                  className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
                   style={{ height: `${Math.max(6, day.completionPercent)}%` }}
                   aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
                 />
@@ -1435,17 +1440,13 @@ export default function HabitPerfectDayHub({
                 aria-expanded="false"
                 aria-controls="add-habit"
                 onClick={openAddHabitForm}
-                className={habitPrimaryActionClass}
+                className={habitMobilePrimaryActionClass}
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Add habit
               </button>
             )}
-            {online === false ? (
-              <p className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-                Offline
-              </p>
-            ) : null}
+            {online === false ? <p className={habitWarningChipClass}>Offline</p> : null}
           </div>
         </div>
 
@@ -1470,24 +1471,20 @@ export default function HabitPerfectDayHub({
               </div>
               <form onSubmit={createHabit} className="mt-4 grid gap-3 md:grid-cols-2">
                 <label className="block md:col-span-2">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Name
-                  </span>
+                  <span className={habitLabelClass}>Name</span>
                   <input
                     ref={addHabitNameInputRef}
                     value={draft.title}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, title: event.target.value }))
                     }
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className={habitFieldClass}
                     placeholder="Read 10 pages"
                   />
                 </label>
 
                 <div className="md:col-span-2">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Mode
-                  </span>
+                  <span className={habitLabelClass}>Mode</span>
                   <div className="mt-1 grid gap-2 sm:grid-cols-3">
                     {HABIT_MODE_VALUES.map((mode) => (
                       <button
@@ -1495,11 +1492,7 @@ export default function HabitPerfectDayHub({
                         type="button"
                         aria-pressed={draft.habitMode === mode}
                         onClick={() => setDraft((current) => applyHabitModeToDraft(current, mode))}
-                        className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                          draft.habitMode === mode
-                            ? "border-blue-600 bg-blue-50 text-blue-900"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        }`}
+                        className={cx("min-h-11", getHabitChoiceClass(draft.habitMode === mode))}
                       >
                         {getHabitModeLabel(mode)}
                       </button>
@@ -1509,9 +1502,7 @@ export default function HabitPerfectDayHub({
 
                 {draft.habitMode === "build" ? (
                   <label className="block">
-                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      Type
-                    </span>
+                    <span className={habitLabelClass}>Type</span>
                     <select
                       value={draft.habitType}
                       onChange={(event) => {
@@ -1525,7 +1516,7 @@ export default function HabitPerfectDayHub({
                             habitType === "avoidance" ? "0" : current.targetValueNumeric,
                         }));
                       }}
-                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className={habitFieldClass}
                     >
                       {HABIT_TYPE_VALUES.map((type) => (
                         <option key={type} value={type}>
@@ -1537,15 +1528,13 @@ export default function HabitPerfectDayHub({
                 ) : null}
 
                 <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Category
-                  </span>
+                  <span className={habitLabelClass}>Category</span>
                   <select
                     value={draft.category}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, category: event.target.value }))
                     }
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className={habitFieldClass}
                   >
                     {HABIT_CATEGORY_VALUES.map((category) => (
                       <option key={category} value={category}>
@@ -1556,7 +1545,7 @@ export default function HabitPerfectDayHub({
                 </label>
 
                 <label className="block">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  <span className={habitLabelClass}>
                     {draft.habitMode === "quit" ? "Quit date" : "Start date"}
                   </span>
                   <input
@@ -1566,22 +1555,20 @@ export default function HabitPerfectDayHub({
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, startDate: event.target.value }))
                     }
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className={habitFieldClass}
                   />
                 </label>
 
                 {draft.habitMode === "build" && draft.habitType === "time_of_day" ? (
                   <label className="block">
-                    <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      Target time
-                    </span>
+                    <span className={habitLabelClass}>Target time</span>
                     <input
                       type="time"
                       value={draft.targetTime}
                       onChange={(event) =>
                         setDraft((current) => ({ ...current, targetTime: event.target.value }))
                       }
-                      className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className={habitFieldClass}
                     />
                   </label>
                 ) : null}
@@ -1591,7 +1578,7 @@ export default function HabitPerfectDayHub({
                 draftHabitType !== "time_of_day" ? (
                   <>
                     <label className="block">
-                      <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                      <span className={habitLabelClass}>
                         {draft.habitMode === "timed" ? "Timer target" : "Target"}
                       </span>
                       <input
@@ -1605,13 +1592,11 @@ export default function HabitPerfectDayHub({
                             targetValueNumeric: event.target.value,
                           }))
                         }
-                        className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={habitFieldClass}
                       />
                     </label>
                     <label className="block">
-                      <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                        Unit
-                      </span>
+                      <span className={habitLabelClass}>Unit</span>
                       <select
                         value={draft.targetUnit}
                         onChange={(event) =>
@@ -1620,7 +1605,7 @@ export default function HabitPerfectDayHub({
                             targetUnit: event.target.value as HabitUnit,
                           }))
                         }
-                        className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={habitFieldClass}
                       >
                         {draftUnitOptions.map((unit) => (
                           <option key={unit} value={unit}>
@@ -1635,24 +1620,22 @@ export default function HabitPerfectDayHub({
                 {renderScheduleControls(draft, setDraft, "Add habit")}
 
                 <label className="block md:col-span-2">
-                  <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Note
-                  </span>
+                  <span className={habitLabelClass}>Note</span>
                   <input
                     value={draft.notes}
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, notes: event.target.value }))
                     }
-                    className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className={habitFieldClass}
                     placeholder="Optional"
                   />
                 </label>
 
-                <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+                <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-center md:col-span-2">
                   <button
                     type="submit"
                     disabled={pendingKey !== null}
-                    className={cx(habitPrimaryActionClass, "px-4")}
+                    className={cx(habitMobilePrimaryActionClass, "px-4")}
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     Create habit
@@ -1740,9 +1723,7 @@ export default function HabitPerfectDayHub({
               return (
                 <div key={habit.id} className="space-y-2">
                   {showGroupHeading ? (
-                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                      {getPriorityGroupLabel(item)}
-                    </p>
+                    <p className={habitLabelClass}>{getPriorityGroupLabel(item)}</p>
                   ) : null}
                   <article
                     ref={(element) => {
@@ -1762,7 +1743,7 @@ export default function HabitPerfectDayHub({
                           <p
                             role="status"
                             aria-live="polite"
-                            className="mb-2 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"
+                            className={cx("mb-2", habitSuccessChipClass)}
                           >
                             Habit added
                           </p>
@@ -1771,18 +1752,16 @@ export default function HabitPerfectDayHub({
                           <h3 className="min-w-0 text-base font-semibold text-slate-900">
                             {habit.title}
                           </h3>
-                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                          <span className={habitBrandChipClass}>
                             {getHabitModeLabel(habit.habitMode)}
                           </span>
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                            {cadenceLabel}
-                          </span>
+                          <span className={habitChipClass}>{cadenceLabel}</span>
                           <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            className={
                               isSatisfied || isCompletionGroup
-                                ? "bg-emerald-50 text-emerald-800"
-                                : "bg-white text-slate-600"
-                            }`}
+                                ? habitSuccessChipClass
+                                : habitChipClass
+                            }
                           >
                             {statusLabel}
                           </span>
@@ -1792,7 +1771,7 @@ export default function HabitPerfectDayHub({
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">
                         {canEditTodaysCheckIn && habit.habitType === "binary" && !isQuit ? (
                           <button
                             type="button"
@@ -1802,7 +1781,9 @@ export default function HabitPerfectDayHub({
                             }}
                             disabled={disabled}
                             className={cx(
-                              item.checkIn ? habitSecondaryActionClass : habitPrimaryActionClass,
+                              item.checkIn
+                                ? habitMobileSecondaryActionClass
+                                : habitMobilePrimaryActionClass,
                               "min-w-24 px-4"
                             )}
                           >
@@ -1817,7 +1798,7 @@ export default function HabitPerfectDayHub({
 
                         {canEditTodaysCheckIn && !isCompletionGroup && isTimed ? (
                           <>
-                            <div className="flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
+                            <div className="flex h-10 w-full min-w-24 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/90 px-3 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:w-auto">
                               <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
                               {formatTimer(timerSeconds)}
                             </div>
@@ -1832,7 +1813,7 @@ export default function HabitPerfectDayHub({
                                 }
                               }}
                               disabled={disabled}
-                              className={cx(habitPrimaryActionClass, "min-w-24 px-4")}
+                              className={cx(habitMobilePrimaryActionClass, "min-w-24 px-4")}
                             >
                               {isTimerRunning ? (
                                 <Pause className="h-4 w-4" aria-hidden="true" />
@@ -1849,8 +1830,8 @@ export default function HabitPerfectDayHub({
                         !isQuit &&
                         !isTimed &&
                         habit.habitType !== "binary" ? (
-                          <div className="flex flex-wrap items-end gap-2">
-                            <label className="block">
+                          <div className="grid w-full grid-cols-1 items-end gap-2 sm:w-auto sm:grid-cols-[6rem_auto]">
+                            <label className="block sm:w-24">
                               <span className="sr-only">
                                 {habit.title} {habit.habitType === "time_of_day" ? "time" : "value"}
                               </span>
@@ -1868,7 +1849,7 @@ export default function HabitPerfectDayHub({
                                     [habit.id]: event.target.value,
                                   }))
                                 }
-                                className="h-10 w-24 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className={cx(habitFieldClass, "mt-0 min-h-10")}
                               />
                             </label>
                             <button
@@ -1878,7 +1859,7 @@ export default function HabitPerfectDayHub({
                                 return saveCheckIn(item);
                               }}
                               disabled={disabled}
-                              className={habitPrimaryActionClass}
+                              className={habitMobilePrimaryActionClass}
                             >
                               <Save className="h-4 w-4" aria-hidden="true" />
                               Save
@@ -1894,7 +1875,7 @@ export default function HabitPerfectDayHub({
                             clearCreatedHabitNotice();
                             toggleHabitDetails(habit.id);
                           }}
-                          className={habitSecondaryActionClass}
+                          className={habitMobileSecondaryActionClass}
                         >
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -1910,16 +1891,14 @@ export default function HabitPerfectDayHub({
                       <form
                         data-testid={`habit-edit-form-${habit.id}`}
                         onSubmit={(event) => updateHabit(event, habit.id)}
-                        className="mt-4 grid gap-3 rounded-2xl border border-blue-100 bg-white p-4 md:grid-cols-2"
+                        className={cx("mt-4 grid gap-3 md:grid-cols-2", habitNestedCardClass)}
                       >
                         <p className="text-sm text-slate-600 md:col-span-2">
                           Updates this habit definition. Check-ins and history stay attached.
                         </p>
 
                         <label className="block md:col-span-2">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Name
-                          </span>
+                          <span className={habitLabelClass}>Name</span>
                           <input
                             value={editDraft.title}
                             onChange={(event) =>
@@ -1927,14 +1906,12 @@ export default function HabitPerfectDayHub({
                                 current ? { ...current, title: event.target.value } : current
                               )
                             }
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            className={habitFieldClass}
                           />
                         </label>
 
                         <div className="md:col-span-2">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Mode
-                          </span>
+                          <span className={habitLabelClass}>Mode</span>
                           <div className="mt-1 grid gap-2 sm:grid-cols-3">
                             {HABIT_MODE_VALUES.map((modeOption) => (
                               <button
@@ -1946,11 +1923,10 @@ export default function HabitPerfectDayHub({
                                     current ? applyHabitModeToDraft(current, modeOption) : current
                                   )
                                 }
-                                className={`min-h-11 rounded-xl border px-3 text-left text-sm font-semibold transition ${
-                                  editDraft.habitMode === modeOption
-                                    ? "border-blue-600 bg-blue-50 text-blue-900"
-                                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                                }`}
+                                className={cx(
+                                  "min-h-11",
+                                  getHabitChoiceClass(editDraft.habitMode === modeOption)
+                                )}
                               >
                                 {getHabitModeLabel(modeOption)}
                               </button>
@@ -1960,9 +1936,7 @@ export default function HabitPerfectDayHub({
 
                         {editDraft.habitMode === "build" ? (
                           <label className="block">
-                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                              Type
-                            </span>
+                            <span className={habitLabelClass}>Type</span>
                             <select
                               value={editDraft.habitType}
                               onChange={(event) => {
@@ -1982,7 +1956,7 @@ export default function HabitPerfectDayHub({
                                     : current
                                 );
                               }}
-                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              className={habitFieldClass}
                             >
                               {HABIT_TYPE_VALUES.map((type) => (
                                 <option key={type} value={type}>
@@ -1994,9 +1968,7 @@ export default function HabitPerfectDayHub({
                         ) : null}
 
                         <label className="block">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Category
-                          </span>
+                          <span className={habitLabelClass}>Category</span>
                           <select
                             value={editDraft.category}
                             onChange={(event) =>
@@ -2004,7 +1976,7 @@ export default function HabitPerfectDayHub({
                                 current ? { ...current, category: event.target.value } : current
                               )
                             }
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            className={habitFieldClass}
                           >
                             {HABIT_CATEGORY_VALUES.map((category) => (
                               <option key={category} value={category}>
@@ -2015,7 +1987,7 @@ export default function HabitPerfectDayHub({
                         </label>
 
                         <label className="block">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          <span className={habitLabelClass}>
                             {editDraft.habitMode === "quit" ? "Quit date" : "Start date"}
                           </span>
                           <input
@@ -2027,16 +1999,14 @@ export default function HabitPerfectDayHub({
                                 current ? { ...current, startDate: event.target.value } : current
                               )
                             }
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            className={habitFieldClass}
                           />
                         </label>
 
                         {editDraft.habitMode === "build" &&
                         editDraft.habitType === "time_of_day" ? (
                           <label className="block">
-                            <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                              Target time
-                            </span>
+                            <span className={habitLabelClass}>Target time</span>
                             <input
                               type="time"
                               value={editDraft.targetTime}
@@ -2045,7 +2015,7 @@ export default function HabitPerfectDayHub({
                                   current ? { ...current, targetTime: event.target.value } : current
                                 )
                               }
-                              className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                              className={habitFieldClass}
                             />
                           </label>
                         ) : null}
@@ -2055,7 +2025,7 @@ export default function HabitPerfectDayHub({
                         getResolvedDraftHabitType(editDraft) !== "time_of_day" ? (
                           <>
                             <label className="block">
-                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              <span className={habitLabelClass}>
                                 {editDraft.habitMode === "timed" ? "Timer target" : "Target"}
                               </span>
                               <input
@@ -2070,13 +2040,11 @@ export default function HabitPerfectDayHub({
                                       : current
                                   )
                                 }
-                                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className={habitFieldClass}
                               />
                             </label>
                             <label className="block">
-                              <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                Unit
-                              </span>
+                              <span className={habitLabelClass}>Unit</span>
                               <select
                                 value={editDraft.targetUnit}
                                 onChange={(event) =>
@@ -2089,7 +2057,7 @@ export default function HabitPerfectDayHub({
                                       : current
                                   )
                                 }
-                                className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                className={habitFieldClass}
                               >
                                 {getUnitOptions(getResolvedDraftHabitType(editDraft)).map(
                                   (unit) => (
@@ -2111,9 +2079,7 @@ export default function HabitPerfectDayHub({
                         )}
 
                         <label className="block md:col-span-2">
-                          <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Note
-                          </span>
+                          <span className={habitLabelClass}>Note</span>
                           <input
                             value={editDraft.notes}
                             onChange={(event) =>
@@ -2121,12 +2087,12 @@ export default function HabitPerfectDayHub({
                                 current ? { ...current, notes: event.target.value } : current
                               )
                             }
-                            className="mt-1 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                            className={habitFieldClass}
                             placeholder="Optional"
                           />
                         </label>
 
-                        <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                        <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end md:col-span-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -2134,14 +2100,14 @@ export default function HabitPerfectDayHub({
                               setEditDraft(null);
                             }}
                             disabled={pendingKey === `edit-${habit.id}`}
-                            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={habitMobileSecondaryActionClass}
                           >
                             Cancel
                           </button>
                           <button
                             type="submit"
                             disabled={pendingKey !== null}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={habitMobilePrimaryActionClass}
                           >
                             <Save className="h-4 w-4" aria-hidden="true" />
                             {pendingKey === `edit-${habit.id}` ? "Saving..." : "Save changes"}
@@ -2154,26 +2120,20 @@ export default function HabitPerfectDayHub({
                       <div id={detailsId} className="mt-4 border-t border-slate-200 pt-4">
                         <div className="flex flex-wrap items-center gap-2">
                           {habitTypeLabel !== habitTargetLabel ? (
-                            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                              {habitTypeLabel}
-                            </span>
+                            <span className={habitChipClass}>{habitTypeLabel}</span>
                           ) : null}
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                            {getCategoryLabel(habit.category)}
-                          </span>
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                          <span className={habitChipClass}>{getCategoryLabel(habit.category)}</span>
+                          <span className={habitChipClass}>
                             Started {getLongDateLabel(habit.startDate)}
                           </span>
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                            {habitTargetLabel}
-                          </span>
+                          <span className={habitChipClass}>{habitTargetLabel}</span>
                         </div>
 
                         {habit.notes ? (
                           <p className="mt-3 text-sm text-slate-500">{habit.notes}</p>
                         ) : null}
 
-                        <div className="mt-4 flex flex-wrap items-end gap-2">
+                        <div className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap">
                           {isQuit ? (
                             <button
                               type="button"
@@ -2182,7 +2142,7 @@ export default function HabitPerfectDayHub({
                                 return logLapse(item);
                               }}
                               disabled={disabled || item.checkIn !== null}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={habitMobileDangerActionClass}
                             >
                               <Flag className="h-4 w-4" aria-hidden="true" />
                               Log slip
@@ -2198,7 +2158,7 @@ export default function HabitPerfectDayHub({
                                   return finishTimer(item);
                                 }}
                                 disabled={disabled || timerSeconds <= 0}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={habitMobileSuccessSecondaryActionClass}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
                                 Finish
@@ -2210,15 +2170,13 @@ export default function HabitPerfectDayHub({
                                   resetTimer(habit.id);
                                 }}
                                 disabled={disabled || timerSeconds <= 0}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={habitMobileSecondaryActionClass}
                               >
                                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
                                 Reset
                               </button>
-                              <label className="block">
-                                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                  Manual min
-                                </span>
+                              <label className="block sm:w-32">
+                                <span className={habitLabelClass}>Manual min</span>
                                 <input
                                   type="number"
                                   min={0}
@@ -2230,7 +2188,7 @@ export default function HabitPerfectDayHub({
                                       [habit.id]: event.target.value,
                                     }))
                                   }
-                                  className="mt-1 h-10 w-32 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                  className={habitFieldClass}
                                 />
                               </label>
                               <button
@@ -2240,7 +2198,7 @@ export default function HabitPerfectDayHub({
                                   return saveCheckIn(item);
                                 }}
                                 disabled={disabled}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={habitMobilePrimaryActionClass}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
                                 Save manual
@@ -2253,8 +2211,8 @@ export default function HabitPerfectDayHub({
                           !isTimed &&
                           habit.habitType !== "binary" ? (
                             <>
-                              <label className="block">
-                                <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                              <label className="block sm:w-36">
+                                <span className={habitLabelClass}>
                                   {habit.habitType === "time_of_day" ? "Time" : "Value"}
                                 </span>
                                 <input
@@ -2268,7 +2226,7 @@ export default function HabitPerfectDayHub({
                                       [habit.id]: event.target.value,
                                     }))
                                   }
-                                  className="mt-1 h-10 w-36 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                  className={habitFieldClass}
                                 />
                               </label>
                               <button
@@ -2278,7 +2236,7 @@ export default function HabitPerfectDayHub({
                                   return saveCheckIn(item);
                                 }}
                                 disabled={disabled}
-                                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={habitMobilePrimaryActionClass}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
                                 Save
@@ -2294,7 +2252,7 @@ export default function HabitPerfectDayHub({
                                 return resetCheckIn(item);
                               }}
                               disabled={disabled}
-                              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={habitMobileSecondaryActionClass}
                             >
                               <RotateCcw className="h-4 w-4" aria-hidden="true" />
                               {isQuit ? "Undo slip" : "Reset"}
@@ -2308,7 +2266,7 @@ export default function HabitPerfectDayHub({
                               startEditingHabit(habit);
                             }}
                             disabled={disabled}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={habitMobileSecondaryActionClass}
                           >
                             <Pencil className="h-4 w-4" aria-hidden="true" />
                             Edit
@@ -2321,7 +2279,7 @@ export default function HabitPerfectDayHub({
                               return archiveHabit(habit.id);
                             }}
                             disabled={disabled}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={habitMobileSecondaryActionClass}
                           >
                             <Archive className="h-4 w-4" aria-hidden="true" />
                             Archive
