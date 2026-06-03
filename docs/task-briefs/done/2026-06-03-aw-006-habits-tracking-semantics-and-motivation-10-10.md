@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-habits-tracking-semantics-and-motivation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
-- `updated`: `2026-06-03`
+- `updated`: `2026-06-04`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
@@ -355,6 +355,42 @@ Completed so far:
 - Pill/motivation screenshot handoff captured on `2026-06-04 00:44`: `output/aw-006-habits-tracking-semantics-2026-06-04-004406`.
 - Pill/motivation screenshot capture findings: after desktop/mobile had `overflow: false` and no console errors; before artifacts were copied from the unchanged `origin/main` baseline captured in `output/aw-006-habits-tracking-semantics-2026-06-04-001220`.
 - Owner screenshot approval stop completed on `2026-06-04`: owner explicitly approved the `output/aw-006-habits-tracking-semantics-2026-06-04-004406` screenshot handoff before `npm run verify:pre-pr`.
+- `npm run verify:pre-pr` passed on `2026-06-04` for final commit `e4c5ed8` with the full lane: lint, typecheck, `1333` unit tests, build, perf budgets, and Playwright E2E `106 passed / 530 skipped`.
+- PR `#977` CI passed on `2026-06-04`: CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify.
+- `npm run verify:pre-merge` passed on `2026-06-04` for final commit `e4c5ed8`, reusing the fresh full public verify artifact and skipping private-gate regression because `SITE_LOCK_ENABLED!=1`.
+- PR `#977` merged on `2026-06-04` as squash commit `7ef85d7`.
+
+## Completion Record
+
+- `completed`: `2026-06-04`
+- `merged_pr`: `#977`
+- `squash_commit`: `7ef85d7`
+- `result`: Closed Child A by making Habits progress more truthful and motivating for slips, rest days, period completion, short/current streak display, and card metadata hierarchy without adding the deferred history/timer/sound features.
+- `validation`: Targeted Vitest, typecheck, lint, lint:briefs:all, lint:quality-gates, git diff check, screenshot handoff with owner approval, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the scoped Child A contract.
+
+| Category                                      | Achieved Score | Evidence                                                                                                         | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#977` keeps Habits as the private tracking workspace and returns remaining Habits scope to the parent.       | None.        |
+| UX flow clarity                               | `5/5`          | Screenshot-approved collapsed/details states remove duplicate slip/motivation copy and show truthful day state.  | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts `output/aw-006-habits-tracking-semantics-2026-06-04-004406` approved by owner.              | None.        |
+| Business logic correctness and data integrity | `5/5`          | Domain/API/component tests cover rest, slip, consistency, period target-met, and short/current streak behavior.  | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library coverage and screenshot QA preserve buttons, details disclosure, disabled states, and copy.      | None.        |
+| Accessibility                                 | `5/5`          | Same evidence as canonical `Accessibility (a11y)` row; lifecycle alias retained for brief lint compatibility.    | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | `verify:pre-pr` perf budgets passed with bounded server history loading and no client all-history payload.       | None.        |
+| Data placement and sync boundaries            | `5/5`          | Rest/slip/check-in truth remains server-canonical; display motivation is derived in typed Habits view models.    | None.        |
+| Caching and invalidation strategy             | `5/5`          | Existing mutation refresh/reset paths keep derived day summaries deterministic after check-in changes.           | None.        |
+| Reliability and failure handling              | `5/5`          | API route tests cover unauthenticated, invalid input, storage failure, and rest-day mutation paths.              | None.        |
+| Security and authz                            | `5/5`          | Protected Habits APIs remain owner-scoped and fail closed in route tests.                                        | None.        |
+| Privacy and compliance                        | `5/5`          | Analytics adds only `habit_rest_day_logged`; habit titles/reasons/notes are not exposed in public payloads.      | None.        |
+| Content governance                            | `5/5`          | This closeout moves the child to `done` and updates parent, AW-006 queue, and design inventory references.       | None.        |
+| Analytics and KPI observability               | `5/5`          | `habit_rest_day_logged` added to analytics taxonomy with unit coverage.                                          | None.        |
+| Incident response and support operations      | `5/5`          | Support/runbook and user-flow docs record rest/slip/status behavior and diagnostic surface impact.               | None.        |
+| i18n operational readiness                    | `5/5`          | Screenshot-reviewed chip/body layout avoids fixed-width assumptions for the new visible labels.                  | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Habits helpers, server route boundaries, My Library tokens, and existing test stack; no dependency added. | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests plus `verify:pre-pr`, PR CI, and `verify:pre-merge` all passed.                                   | None.        |
+| Scalability and cost efficiency               | `5/5`          | Server history widening is bounded to active daily build/quit needs and avoids unbounded client aggregation.     | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration or external service change; normal revert of PR `#977` restores prior behavior.                     | None.        |
 
 ## Checkpoint Log
 
@@ -366,3 +402,4 @@ Completed so far:
 - `2026-06-04 | in-progress | owner flagged duplicated build motivation between collapsed row and Details; kept motivation in collapsed row, removed repeated build/quit supporting copy from Details while preserving Rest day support explanation, added component regression coverage, and captured updated screenshots at output/aw-006-habits-tracking-semantics-2026-06-04-002920 | validation: updated screenshot handoff pending owner visual approval | next: after owner approves screenshots, run npm run verify:pre-pr, commit, push, and open/update PR`
 - `2026-06-04 | in-progress | owner refined pill hierarchy: desktop chips should read as title metadata, mobile collapsed should show only cadence plus meaningful day state, and motivation should choose streak or consistency rather than both; updated collapsed/details chip placement, added component coverage, and captured updated screenshots at output/aw-006-habits-tracking-semantics-2026-06-04-004406 | validation: updated screenshot handoff pending owner visual approval | next: after owner approves screenshots, run npm run verify:pre-pr, commit, push, and open/update PR`
 - `2026-06-04 | visual approval | owner approved the latest screenshot handoff and authorized merge when tests are green; recorded quality-gate evidence for no unexpected 500/failure-mode behavior, route/label/support sweep identifiers and surfaces, and owner screenshot approval stop | next: rerun npm run verify:pre-pr, then commit, push, open/update PR, monitor CI, run npm run verify:pre-merge, merge if green, and return to the parent/closeout flow`
+- `2026-06-04 | done | PR #977 merged as squash commit 7ef85d7 after local verify:pre-pr, PR CI, and verify:pre-merge passed; Child A resolved H-003/H-004/H-007 plus scoped H-010/H-013 behavior, while timed/manual/sound/history/backfill/best-streak/admin-notes items return to the parent intake | next: complete repo-managed docs-only closeout PR, rerun post-merge preflight, and then perform mandatory chat-handoff assessment before any new implementation slice`
