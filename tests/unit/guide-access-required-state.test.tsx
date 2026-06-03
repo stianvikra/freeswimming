@@ -19,7 +19,7 @@ const {
 
 vi.mock("@/components/SiteChrome", () => ({
   default: ({ children }: { children: ReactNode }) => (
-    <div data-testid="site-chrome">{children}</div>
+    <main data-testid="site-chrome">{children}</main>
   ),
 }));
 
@@ -28,11 +28,21 @@ vi.mock("@/components/guides/GuidePdfDownloadButton", () => ({
 }));
 
 vi.mock("@/components/guides/Guide0To1000Tracker", () => ({
-  default: () => <div data-testid="guide-0-1000m-tracker" />,
+  default: () => (
+    <section data-testid="guide-0-1000m-tracker">
+      <h1>0-1000m interactive plan</h1>
+      <button type="button">Open next session full screen</button>
+    </section>
+  ),
 }));
 
 vi.mock("@/components/guides/PoolsideGuideTracker", () => ({
-  default: () => <div data-testid="guide-poolside-tracker" />,
+  default: () => (
+    <section data-testid="guide-poolside-tracker">
+      <h1>Poolside interactive guide</h1>
+      <button type="button">Open next drill</button>
+    </section>
+  ),
 }));
 
 vi.mock("@/lib/admin/content-published", () => ({
@@ -81,6 +91,12 @@ const signedInUser = {
   id: "user_123",
   email: "swimmer@example.com",
 };
+
+function expectSingleMainAndH1(headingName: string) {
+  expect(screen.getAllByRole("main")).toHaveLength(1);
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  expect(screen.getByRole("heading", { name: headingName, level: 1 })).toBeInTheDocument();
+}
 
 describe("GuideAccessRequiredState", () => {
   beforeEach(() => {
@@ -160,7 +176,7 @@ describe("GuideAccessRequiredState", () => {
     render(await Guide0To1000Page());
 
     expect(screen.getByTestId("site-chrome")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Guide access required" })).toBeInTheDocument();
+    expectSingleMainAndH1("Guide access required");
     expect(
       screen.getByText(
         "Add 0-1000m guide to your library to open the interactive plan and download the offline PDF."
@@ -186,7 +202,7 @@ describe("GuideAccessRequiredState", () => {
     render(await GuidePoolsidePage());
 
     expect(screen.getByTestId("site-chrome")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Guide access required" })).toBeInTheDocument();
+    expectSingleMainAndH1("Guide access required");
     expect(
       screen.getByText(
         "Add Poolside guide to your library to open the interactive poolside drills and download the offline PDF."
@@ -209,6 +225,7 @@ describe("GuideAccessRequiredState", () => {
 
     render(await Guide0To1000Page());
 
+    expectSingleMainAndH1("0-1000m interactive plan");
     const routeActions = screen.getByTestId("guide-0-1000m-route-actions");
     expect(routeActions).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
@@ -230,6 +247,7 @@ describe("GuideAccessRequiredState", () => {
 
     render(await GuidePoolsidePage());
 
+    expectSingleMainAndH1("Poolside interactive guide");
     const routeActions = screen.getByTestId("guide-poolside-route-actions");
     expect(routeActions).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeInTheDocument();
