@@ -418,6 +418,70 @@ describe("TrainingContextHub", () => {
     expect(screen.getByTestId("training-overview-card-notes")).toHaveTextContent("Latest note");
   });
 
+  it("uses shared My Library tokens for inner cards, fields, and actions", () => {
+    render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
+
+    expect(screen.getByTestId("training-overview-card-goals")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("training-goals-section")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByTestId("training-focus-section")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("training-notes-section")).toHaveClass("fs-library-card");
+
+    const focusCard = screen.getByTestId("training-focus-card-focus-1");
+    expect(focusCard).toHaveClass("fs-library-card", "fs-library-card-accent");
+    expect(within(focusCard).getByRole("button", { name: "Edit focus" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+
+    fireEvent.click(screen.getByTestId("training-focus-form-toggle"));
+    expect(screen.getByPlaceholderText("Exhale calmly before turning to breathe")).toHaveClass(
+      "ui-field",
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(screen.getByRole("button", { name: "Save open focus" })).toHaveClass(
+      "fs-cta-primary",
+      "w-full",
+      "sm:w-auto"
+    );
+
+    fireEvent.click(screen.getByTestId("training-note-form-toggle"));
+    const collapseButtons = screen.getAllByRole("button", { name: "Collapse" });
+    expect(collapseButtons.length).toBeGreaterThanOrEqual(2);
+    for (const collapseButton of collapseButtons) {
+      expect(collapseButton).toHaveClass("fs-cta-secondary");
+      expect(collapseButton).not.toHaveClass("w-full");
+    }
+
+    expect(screen.getByTestId("training-note-goal-select")).toHaveClass("ui-field");
+    expect(screen.getByRole("button", { name: "Save note" })).toHaveClass(
+      "fs-cta-primary",
+      "w-full",
+      "sm:w-auto"
+    );
+
+    expect(screen.getByTestId("training-note-filters")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-muted"
+    );
+    expect(screen.getByTestId("training-note-search-input")).toHaveClass("ui-field");
+    fireEvent.change(screen.getByTestId("training-note-search-input"), {
+      target: { value: "breath" },
+    });
+    expect(screen.getByRole("button", { name: "Clear filters" })).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+
+    const noteCard = screen.getByTestId("training-note-card-note-1");
+    expect(noteCard).toHaveClass("fs-library-card");
+    expect(within(noteCard).getByRole("button", { name: "Edit note" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+  });
+
   it("collapses and reopens focus and note drafts without losing text", async () => {
     render(<TrainingContextHub initialSnapshot={buildSnapshot()} />);
 
