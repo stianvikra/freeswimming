@@ -248,6 +248,17 @@ describe("ProgramBuilderHub", () => {
     expect(screen.getByTestId("program-editor-save-state")).toHaveTextContent(
       "All changes are saved."
     );
+    expect(screen.getByTestId("program-draft-title")).toHaveClass("ui-field");
+    expect(screen.getByTestId("program-week-0")).toHaveClass("fs-library-card");
+    expect(screen.getByTestId("program-day-picker-week-0-day-0")).toHaveClass(
+      "ui-field",
+      "appearance-none",
+      "pr-12"
+    );
+    expect(screen.getByTestId("program-day-add-week-0-day-0")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full"
+    );
     expect(screen.getByTestId("program-editor-reset")).toHaveClass("fs-cta-secondary");
     expect(screen.getByTestId("program-builder-save")).toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("program-builder-save")).toBeDisabled();
@@ -260,7 +271,30 @@ describe("ProgramBuilderHub", () => {
     });
     fireEvent.click(screen.getByTestId("program-day-add-week-0-day-0"));
 
-    expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
+    const removeButton = screen.getByRole("button", { name: "Remove" });
+    const assignmentCardTestId = removeButton
+      .getAttribute("data-testid")
+      ?.replace("program-assignment-remove", "program-assignment-card");
+    expect(assignmentCardTestId).toBeTruthy();
+    const assignmentCard = screen.getByTestId(assignmentCardTestId!);
+    expect(assignmentCard).toHaveClass("fs-library-card");
+    expect(within(assignmentCard).getByRole("combobox", { name: /move to day/i })).toHaveClass(
+      "ui-field",
+      "appearance-none",
+      "pr-12"
+    );
+    expect(within(assignmentCard).getByRole("button", { name: "Move up" })).toHaveClass(
+      "fs-cta-secondary",
+      "w-full"
+    );
+    expect(within(assignmentCard).getByRole("button", { name: "Move down" })).toHaveClass(
+      "fs-cta-secondary",
+      "w-full"
+    );
+    expect(within(assignmentCard).getByRole("button", { name: "Remove" })).toHaveClass(
+      "fs-cta-danger",
+      "w-full"
+    );
     expect(
       screen.getByLabelText("Scheduled workout step preview for Threshold builder workout")
     ).toBeVisible();
@@ -471,6 +505,12 @@ describe("ProgramBuilderHub", () => {
     const detailsToggle = screen.getByTestId("program-editor-garmin-export-details-toggle");
     expect(detailsToggle).toHaveTextContent("Show export details");
     expect(detailsToggle).toHaveAttribute("aria-expanded", "false");
+    expect(detailsToggle).toHaveClass("fs-cta-secondary", "w-full");
+    expect(screen.getByTestId("program-editor-garmin-export-download")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full"
+    );
+    expect(screen.getByTestId("program-editor-pdf-open")).toHaveClass("fs-cta-secondary", "w-full");
     fireEvent.click(detailsToggle);
     expect(detailsToggle).toHaveTextContent("Hide export details");
     expect(detailsToggle).toHaveAttribute("aria-expanded", "true");
