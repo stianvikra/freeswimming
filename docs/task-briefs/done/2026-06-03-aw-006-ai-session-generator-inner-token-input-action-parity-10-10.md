@@ -278,3 +278,30 @@ Required because this changes visible UI/layout.
 - `2026-06-03 | in-progress | corrected second screenshot feedback by right-aligning mobile source-row Edit actions and matching screenshot-harness route links to the production route action class, reran focused generator tests, regenerated before/after desktop/mobile screenshots in a new artifact folder, removed harness, and stopped local dev servers | next: owner screenshot approval before verify:pre-pr, PR creation, and pre-merge gates`
 - `2026-06-03 | in-progress | owner approved screenshot handoff for output/aw-006-generator-inner-token-input-action-parity-2026-06-03-183100 | next: run verify:pre-pr, commit, push, open PR, monitor CI, then run verify:pre-merge when PR is ready`
 - `2026-06-03 | in-progress | owner approved merge on good tests; first verify:pre-pr attempt reached typecheck and failed on stale generated .next/dev/types/app/aw-006-generator-screenshot from the removed temporary screenshot harness | next: remove stale generated .next artifact, rerun verify:pre-pr, then continue PR and merge flow if gates stay green`
+- `2026-06-03 | done | PR #971 shipped as squash commit 6556d41 after green local full public pre-PR gate, green required CI, and green pre-merge gate; repo-managed closeout moves the brief to done and clears active AW-006 queue/inventory references | next: rerun post-merge preflight after closeout merge, then complete mandatory chat-handoff assessment before selecting a new AW-006 slice`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#971`
+- `squash_commit`: `6556d41`
+- `result`: Closed AW-006 AI Session Generator Inner Token/Input/Action Parity by aligning the generator's inner source rows, checkboxes, badges, chips, fields, skill-limit cards, quick choices, and visible actions with the current My Library token/input/action direction while preserving generator behavior.
+- `validation`: targeted generator unit tests passed; `npm run verify:pre-pr` passed full public lane on commit `14cc5ee`; PR #971 CI passed, including `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, CodeQL, and Vercel; `npm run verify:pre-merge` passed and reused the current full-public PASS artifact.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                  | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Scope stayed bounded to inner AI generator presentation; PR #971 preserved route and workflow destinations.                                               | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff confirmed mobile action wrapping and row alignment corrections.                                                         | None.        |
+| Visual design quality                         | `5/5`          | Screenshot artifacts in `output/aw-006-generator-inner-token-input-action-parity-2026-06-03-183100`; token/input/action classes covered by focused tests. | None.        |
+| Business logic correctness and data integrity | `5/5`          | No generator data/API/localStorage behavior changed; focused unit tests and full verify passed.                                                           | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing semantics preserved; full public verify and CI passed.                                                                                           | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | Local perf budget gate passed in `npm run verify:pre-pr`; CI `verify` passed.                                                                             | None.        |
+| Data placement and sync boundaries            | `5/5`          | Presentation-only patch preserved local/server boundaries and generator contracts.                                                                        | None.        |
+| Reliability and failure handling              | `5/5`          | Existing error/success/recovery states preserved; full local and CI gates passed.                                                                         | None.        |
+| Security and authz                            | `5/5`          | No auth/API changes; CI security and site-lock smoke checks passed.                                                                                       | None.        |
+| Content governance                            | `5/5`          | Queue/design inventory updated and closeout records PR #971.                                                                                              | None.        |
+| i18n operational readiness                    | `5/5`          | No new locale model or user-facing taxonomy; existing labels preserved.                                                                                   | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused shared token/action helpers and existing React/Tailwind patterns; no dependencies added.                                                           | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, full local `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                                                       | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Single PR #971, squash commit `6556d41`, green CI, and clean pre-merge gate.                                                                              | None.        |
