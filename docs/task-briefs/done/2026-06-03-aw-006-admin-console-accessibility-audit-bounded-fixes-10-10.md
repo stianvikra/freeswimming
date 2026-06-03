@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-03-aw-006-admin-console-accessibility-audit-bounded-fixes-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-03`
 - `updated`: `2026-06-03`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-03`
 - `base`: `main@5898f57`
-- `audit_status`: `ready`
+- `audit_status`: `closed`
 - `decision`: Execute a bounded AW-006 admin-console accessibility audit with permission for small deterministic fixes only when the audit finds serious/critical accessibility defects.
 - `reason`: `main` is clean and synced after AW-006 Guide Entitlement And Tracker Accessibility Audit PR `#959` and repo-managed closeout PR `#960`; post-merge preflight is green with no active AW-006 product/UI/audit slice. The two latest AW-006 accessibility audits intentionally left authenticated admin-console coverage outside their scope, while the design inventory records admin-console audit as the remaining separate fixture-backed gap.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `app/admin/layout.tsx`, `components/admin/AdminWorkspace.tsx`, admin tab IDs/labels, admin dev-login fixture behavior, Playwright projects, axe dependency, screenshot handoff rules, forward compatibility rules, or verification lanes change before PR handoff.
@@ -217,3 +217,28 @@ Screenshot artifacts: N/A for the expected audit/test-only or non-visual semanti
 - `2026-06-03 | in-progress | started from clean main@5898f57 after AW-006 Guide Entitlement And Tracker Accessibility Audit #959 and repo-managed closeout #960; owner explicitly requested AW-006 Admin Console Accessibility Audit + Bounded Fixes | next: add active docs, implement focused admin-console Playwright/axe audit, fix only concrete P0/P1 findings, then run targeted validation before broad gates`
 - `2026-06-03 | targeted-validation | added focused admin-console Playwright/axe audit plus deterministic AdminWorkspace unit semantics coverage; local Playwright run skipped explicitly because dev-login/Supabase test auth is unavailable in this environment, while unit shell semantics, typecheck, lint:briefs:all, ESLint on changed tests, route/label/support sweep, and git diff --check passed; no visible UI/style/product-rendering files changed, so screenshot handoff is not required | next: run npm run verify:pre-pr before commit/push/PR`
 - `2026-06-03 | pre-pr-green | npm run verify:pre-pr passed full lane on branch aw-006-admin-console-a11y-audit; full Playwright matrix ended with 106 passed and 530 expected skips, including local auth-dependent admin skips; no visible product-rendering/style files changed after targeted validation, so screenshot handoff remains N/A | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-03 | closeout | Admin Console Accessibility Audit + Bounded Fixes shipped in PR #961 as squash commit f2569e8; this repo-managed closeout moves its brief to done and leaves no active AW-006 implementation slice selected | next: rerun post-merge preflight after closeout merge, then complete the mandatory chat-handoff assessment before starting any new implementation slice`
+
+## Completion Record
+
+- `completed`: `2026-06-03`
+- `merged_pr`: `#961`
+- `squash_commit`: `f2569e80ff89a8ace0d20159724d6119b9936c5c`
+- `result`: Closed the AW-006 admin-console accessibility audit by adding explicit Playwright/axe coverage for the authenticated `/admin` shell and current top-level admin tabs, plus deterministic unit coverage for focusable admin section controls and single active state. No admin data, workflow labels, APIs, authz, Supabase, Stripe, analytics, Help/Guide, support, finance behavior, or visible UI rendering changed.
+- `validation`: Targeted Playwright and unit checks passed or skipped with explicit local dev-login rationale; route/label/support sweep found no product fallout; `npm run verify:pre-pr` passed the full public lane; GitHub CI for PR `#961` was green; `npm run verify:pre-merge` passed with `106 passed / 530 skipped`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; local authenticated admin E2E state skips explicitly when dev-login/Supabase test auth is unavailable, while the committed audit matrix and unit shell semantics keep the admin accessibility contract measurable.
+
+| Category                            | Achieved Score | Evidence                                                                                                                                                                      | Gaps / Notes                                                                                                             |
+| ----------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Product goals and IA                | `5/5`          | PR `#961`, focused admin-console Playwright audit, deterministic AdminWorkspace unit coverage, updated AW-006 queue/design inventory, `npm run verify:pre-pr`, CI, pre-merge. | None in scope.                                                                                                           |
+| UX flow clarity                     | `5/5`          | Keyboard/focus assertions for every current top-level admin section and deterministic active-section state coverage.                                                          | None in scope.                                                                                                           |
+| Visual design quality               | `5/5`          | Serious/critical axe checks in the focused audit; no product-rendering/style files changed and screenshot handoff remained N/A.                                               | None in scope.                                                                                                           |
+| Admin editor ergonomics             | `5/5`          | Admin section controls remain focusable and preserve one active state without adding clicks or changing operator workflows.                                                   | None in scope.                                                                                                           |
+| Accessibility (a11y)                | `5/5`          | One page-level `main`, one H1, keyboard-focusable tabs, single active state, and serious/critical axe audit coverage when dev-admin fixture is available.                     | Local authenticated admin E2E skips when dev-login is unavailable; unit coverage remains deterministic shell evidence.   |
+| Accessibility                       | `5/5`          | Same evidence as `Accessibility (a11y)`; alias row retained for scorecard/lint compatibility.                                                                                 | Same explicit local dev-login skip rationale as above.                                                                   |
+| Reliability and failure handling    | `5/5`          | Dev-login, site-lock, missing admin-role, and unexpected redirect states skip with explicit reasons instead of failing misleadingly.                                          | None in product scope.                                                                                                   |
+| Security and authz                  | `5/5`          | Dev bypass remains local-test-only; no secrets, raw env values, admin route authz, API guards, or persisted admin data paths changed.                                         | None in scope.                                                                                                           |
+| Content governance                  | `5/5`          | This closeout moves the brief to `done`, updates the canonical AW-006 queue, and updates the design inventory so no stale active/in-progress admin-audit reference remains.   | None after closeout gates pass.                                                                                          |
+| Stack-fit and dependency discipline | `5/5`          | Reused existing Next admin route, `AdminWorkspace`, Playwright, Testing Library, Vitest, and `@axe-core/playwright`; no dependency or runtime architecture change.            | None in scope.                                                                                                           |
+| Testing and QA automation           | `5/5`          | New focused E2E audit, strengthened admin shell unit coverage, targeted validation, `npm run verify:pre-pr`, green CI, and `npm run verify:pre-merge`.                        | Local authenticated admin E2E coverage depends on dev-login availability, with explicit skip and deterministic fallback. |
+| DevOps and rollback readiness       | `5/5`          | PR `#961` was a scoped test/docs change with green local gates, green required CI, clean `main` at `f2569e8`, and a repo-managed docs-only closeout path.                     | None in scope.                                                                                                           |
