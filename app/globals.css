@@ -16,6 +16,11 @@
   --fs-color-emerald-700: #047857;
   --fs-color-cyan-100: #cffafe;
   --fs-color-cyan-700: #0e7490;
+  --fs-color-danger-50: #fff1f2;
+  --fs-color-danger-100: #ffe4e6;
+  --fs-color-danger-200: #fecdd3;
+  --fs-color-danger-500: #f43f5e;
+  --fs-color-danger-700: #be123c;
   --fs-surface-elevated: rgba(255, 255, 255, 0.92);
   --fs-surface-subtle: rgba(255, 255, 255, 0.68);
   --fs-border-soft: rgba(226, 232, 240, 0.82);
@@ -106,6 +111,18 @@
   background: rgba(255, 255, 255, 0.86);
   color: var(--fs-color-ink);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.fs-cta-danger {
+  border-radius: var(--fs-radius-control);
+  border: 1px solid var(--fs-color-danger-200);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--fs-color-danger-700);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+}
+
+.fs-cta-danger:hover {
+  background: var(--fs-color-danger-50);
 }
 
 .fs-tone-blue {

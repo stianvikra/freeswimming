@@ -12,8 +12,9 @@ design-system rule, not a completed app-wide migration.
 - Secondary actions: view, details, download, copy, retry, dismiss, or support actions. Use
   `fs-cta-secondary`.
 - Mode choices: use a segmented control with equal segments, for example `Edit / Rearrange / View`.
-- Danger actions: delete, remove, discard, or destructive reset. Use danger color treatment and keep
-  the action visually distinct from primary save/continue.
+- Danger actions: delete, remove, discard, or destructive reset. Use `fs-cta-danger` where the
+  surface uses the shared `fs-cta-*` action system, and keep the action visually distinct from
+  primary save/continue.
 - Recovery actions: undo/restore in a notice or toast. Keep the recovery action near the message and
   visually clear without looking like a normal save action.
 
@@ -21,6 +22,8 @@ design-system rule, not a completed app-wide migration.
 
 - One visible action: full-width on mobile.
 - Two equal actions: two equal columns on mobile.
+- Two equal row actions inside a card: the action group must fill the card width on mobile before
+  splitting into two equal columns; avoid shrink-to-content alignment for the mobile state.
 - Three equal short choices: three equal columns only when the labels fit comfortably, especially
   segmented controls.
 - Three mixed or longer actions: two equal actions plus the third full-width below.

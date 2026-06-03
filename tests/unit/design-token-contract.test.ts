@@ -13,6 +13,7 @@ describe("design token foundation", () => {
     expect(css).toContain("--fs-color-brand-700");
     expect(css).toContain("--fs-color-emerald-700");
     expect(css).toContain("--fs-color-cyan-700");
+    expect(css).toContain("--fs-color-danger-700");
     expect(css).toContain("--fs-text-display");
     expect(css).toContain("--fs-space-card");
     expect(css).toContain("--fs-radius-card: 8px");
@@ -34,6 +35,7 @@ describe("design token foundation", () => {
     expect(css).toContain(".fs-library-card-muted");
     expect(css).toContain(".fs-cta-primary");
     expect(css).toContain(".fs-cta-secondary");
+    expect(css).toContain(".fs-cta-danger");
     expect(css).toContain(".fs-tone-blue");
     expect(css).toContain(".fs-tone-emerald");
     expect(css).toContain(".fs-tone-cyan");

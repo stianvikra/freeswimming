@@ -144,17 +144,35 @@ const SECTION_LABELS: Record<ProfileSectionKey, string> = {
   records: "best times",
   capabilities: "advanced generator limits",
 };
-const CAPABILITY_INPUT_CLASS =
-  "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const PROFILE_FIELD_CLASS = "ui-field rounded-[var(--fs-radius-control)]";
+const CAPABILITY_INPUT_CLASS = `${PROFILE_FIELD_CLASS} pr-10`;
 const PROFILE_SECTION_HEADER_CLASS =
   "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between";
 const PROFILE_SECTION_TOGGLE_CLASS =
-  "inline-flex h-10 min-w-10 items-center justify-center gap-2 self-end rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 sm:self-auto";
+  "fs-cta-secondary inline-flex min-h-10 min-w-10 items-center justify-center gap-2 self-end px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto";
 const PROFILE_PRIMARY_BUTTON_CLASS =
-  "inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300";
-const PROFILE_SECTION_CLASS = "rounded-2xl border border-slate-200 bg-white p-4 sm:p-5";
+  "fs-cta-primary inline-flex min-h-11 w-full items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+const PROFILE_SECONDARY_BUTTON_CLASS =
+  "fs-cta-secondary inline-flex min-h-11 w-full items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto";
+const PROFILE_SMALL_SECONDARY_BUTTON_CLASS =
+  "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-3 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const PROFILE_DESTRUCTIVE_BUTTON_CLASS =
+  "fs-cta-danger inline-flex min-h-10 items-center justify-center px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const PROFILE_ACTION_GROUP_CLASS = "grid grid-cols-2 gap-2 sm:flex sm:flex-wrap";
+const PROFILE_ROW_ACTION_GROUP_CLASS =
+  "grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:self-auto";
+const PROFILE_SECTION_CLASS = "fs-library-card p-4 sm:p-5";
+const PROFILE_FORM_PANEL_CLASS =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.72)] p-4";
+const PROFILE_ROW_CARD_CLASS = "fs-library-card p-4";
+const PROFILE_EMPTY_STATE_CLASS =
+  "rounded-[var(--fs-radius-control)] border border-dashed border-[color:var(--fs-border-soft)] bg-[rgba(248,250,252,0.78)] p-4 text-sm text-[color:var(--fs-color-muted)]";
+const PROFILE_SAVED_CHIP_CLASS =
+  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)]";
+const PROFILE_UNSAVED_CHIP_CLASS =
+  "rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800";
 const PROFILE_READINESS_ACTION_CLASS =
-  "fs-cta-primary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+  "fs-cta-primary inline-flex min-h-11 w-full shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:w-auto";
 const PROFILE_READINESS_CHIP_CLASS =
   "rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold ring-1";
 const PROFILE_READINESS_TILE_BASE_CLASS =
@@ -178,7 +196,7 @@ function ProfileSectionFeedback({
   return (
     <div
       className={cx(
-        "rounded-2xl border px-4 py-3 text-sm",
+        "rounded-[var(--fs-radius-card)] border px-4 py-3 text-sm",
         PROFILE_SECTION_FEEDBACK_CLASSES[notice.kind],
         className
       )}
@@ -221,7 +239,7 @@ function CapabilityInputField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`${CAPABILITY_INPUT_CLASS} pr-10`}
+          className={CAPABILITY_INPUT_CLASS}
         />
         <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-slate-500">
           {unit}
@@ -1627,38 +1645,38 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
       className="space-y-6"
     >
       {!isOnline ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
           You are offline. Unsaved profile, CSS, preferences, and best-time changes stay on this
           device until you reconnect and save.
         </div>
       ) : null}
 
       {profileDraftRecovered ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved swimmer-profile edits were restored on this device.
         </div>
       ) : null}
 
       {cssDraftRecovered ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved CSS edits were restored on this device.
         </div>
       ) : null}
 
       {preferencesDraftRecovered ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved training preferences edits were restored on this device.
         </div>
       ) : null}
 
       {capabilityLimitsDraftRecovered ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved stroke and skill limit edits were restored on this device.
         </div>
       ) : null}
 
       {recordDraftRecovered ? (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <div className="rounded-[var(--fs-radius-card)] border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
           Unsaved best-time edits were restored on this device.
         </div>
       ) : null}
@@ -1791,9 +1809,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Swimmer identity</h2>
               {hasUnsavedProfileChanges ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                  Unsaved edits
-                </span>
+                <span className={PROFILE_UNSAVED_CHIP_CLASS}>Unsaved edits</span>
               ) : null}
             </div>
             <p className="text-sm font-medium text-slate-900">{profileSummary.summary}</p>
@@ -1834,9 +1850,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
               <p className="max-w-2xl text-sm text-slate-600">
                 Save enough private swimmer context to make this feel like your own training space.
               </p>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                {primaryName ?? "Private swimmer"}
-              </div>
+              <div className={PROFILE_SAVED_CHIP_CLASS}>{primaryName ?? "Private swimmer"}</div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -1850,7 +1864,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
                   }
                   placeholder="How you want your swimmer profile to read"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
 
@@ -1865,7 +1879,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       ageBand: event.target.value as AthleteAgeBand | "",
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 >
                   <option value="">Not set</option>
                   {ATHLETE_AGE_BAND_OPTIONS.map((option) => (
@@ -1886,7 +1900,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
                   }
                   placeholder="Optional"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
 
@@ -1900,12 +1914,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
                   }
                   placeholder="Optional"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className={`mt-5 ${PROFILE_ACTION_GROUP_CLASS}`}>
               <button
                 data-testid="athlete-profile-save"
                 type="submit"
@@ -1918,7 +1932,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 type="button"
                 onClick={resetProfileDraftToSaved}
                 disabled={!hasUnsavedProfileChanges}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                className={PROFILE_SECONDARY_BUTTON_CLASS}
               >
                 Reset draft
               </button>
@@ -1939,9 +1953,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Current CSS pace</h2>
               {hasUnsavedCssChanges ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                  Unsaved edits
-                </span>
+                <span className={PROFILE_UNSAVED_CHIP_CLASS}>Unsaved edits</span>
               ) : null}
             </div>
             <p className="text-sm font-medium text-slate-900">{cssSummary.summary}</p>
@@ -1983,9 +1995,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 Save your current critical swim speed as pace per 100m so later generator work can
                 trust one canonical value.
               </p>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                Stored canonically as seconds per 100m
-              </div>
+              <div className={PROFILE_SAVED_CHIP_CLASS}>Stored canonically as seconds per 100m</div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-3">
@@ -2000,7 +2010,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     setCssDraft((current) => ({ ...current, pace: event.target.value }))
                   }
                   placeholder="1:58"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
 
@@ -2013,7 +2023,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   onChange={(event) =>
                     setCssDraft((current) => ({ ...current, recordedOn: event.target.value }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
 
@@ -2027,12 +2037,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   }
                   placeholder="Optional note about the test set or source"
                   rows={3}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className={`mt-5 ${PROFILE_ACTION_GROUP_CLASS}`}>
               <button
                 data-testid="athlete-profile-css-save"
                 type="submit"
@@ -2046,7 +2056,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 type="button"
                 onClick={resetCssDraftToSaved}
                 disabled={!hasUnsavedCssChanges}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                className={PROFILE_SECONDARY_BUTTON_CLASS}
               >
                 Reset draft
               </button>
@@ -2069,9 +2079,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Training defaults</h2>
               {hasUnsavedPreferencesChanges ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                  Unsaved edits
-                </span>
+                <span className={PROFILE_UNSAVED_CHIP_CLASS}>Unsaved edits</span>
               ) : null}
             </div>
             <p className="text-sm font-medium text-slate-900">{preferencesSummary.summary}</p>
@@ -2112,9 +2120,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
               <p className="max-w-2xl text-sm text-slate-600">
                 Save the pool and planning defaults you want later session generation to respect.
               </p>
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                Private to your account
-              </div>
+              <div className={PROFILE_SAVED_CHIP_CLASS}>Private to your account</div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -2129,7 +2135,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       poolLengthM: event.target.value as TrainingPreferencesDraft["poolLengthM"],
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 >
                   <option value="">Not set</option>
                   {TRAINING_POOL_LENGTH_OPTIONS.map((option) => (
@@ -2155,7 +2161,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     }))
                   }
                   placeholder="5"
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 />
               </label>
 
@@ -2171,7 +2177,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         .value as TrainingPreferencesDraft["preferredSessionMinutes"],
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className={PROFILE_FIELD_CLASS}
                 >
                   <option value="">Not set</option>
                   {TRAINING_SESSION_DURATION_OPTIONS.map((option) => (
@@ -2193,14 +2199,14 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     return (
                       <label
                         key={option.value}
-                        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                        className="flex items-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-2 text-sm text-[color:var(--fs-color-ink)]"
                       >
                         <input
                           data-testid={`athlete-preferences-day-${option.value}`}
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleAvailableDay(option.value)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                          className="h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500"
                         />
                         <span>{option.label}</span>
                       </label>
@@ -2210,7 +2216,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
               </fieldset>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className={`mt-5 ${PROFILE_ACTION_GROUP_CLASS}`}>
               <button
                 data-testid="athlete-preferences-save"
                 type="submit"
@@ -2224,7 +2230,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 type="button"
                 onClick={resetPreferencesDraftToSaved}
                 disabled={!hasUnsavedPreferencesChanges}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                className={PROFILE_SECONDARY_BUTTON_CLASS}
               >
                 Reset draft
               </button>
@@ -2247,9 +2253,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Stroke and skill limits</h2>
               {hasUnsavedCapabilityLimitsChanges ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                  Unsaved edits
-                </span>
+                <span className={PROFILE_UNSAVED_CHIP_CLASS}>Unsaved edits</span>
               ) : null}
             </div>
             <p className="text-sm font-medium text-slate-900">{capabilitiesSummary.summary}</p>
@@ -2295,7 +2299,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             ) : (
               <>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <fieldset className={PROFILE_FORM_PANEL_CLASS}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">Drills</legend>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <CapabilityInputField
@@ -2320,7 +2324,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     </div>
                   </fieldset>
 
-                  <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <fieldset className={PROFILE_FORM_PANEL_CLASS}>
                     <legend className="px-1 text-sm font-semibold text-slate-900">Kick</legend>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <CapabilityInputField
@@ -2346,7 +2350,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   </fieldset>
                 </div>
 
-                <fieldset className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <fieldset className={`mt-4 ${PROFILE_FORM_PANEL_CLASS}`}>
                   <legend className="px-1 text-sm font-semibold text-slate-900">
                     Stroke limits
                   </legend>
@@ -2355,10 +2359,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       const strokeDraft = capabilityLimitsDraft.strokeLimits[stroke];
 
                       return (
-                        <div
-                          key={stroke}
-                          className="rounded-xl border border-slate-200 bg-white p-3"
-                        >
+                        <div key={stroke} className={PROFILE_ROW_CARD_CLASS}>
                           <p className="text-sm font-semibold text-slate-900">
                             {getSwimCapabilityStrokeLabel(stroke)}
                           </p>
@@ -2391,7 +2392,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                   </div>
                 </fieldset>
 
-                <div className="mt-5 flex flex-wrap items-center gap-2">
+                <div className={`mt-5 ${PROFILE_ACTION_GROUP_CLASS}`}>
                   <button
                     data-testid="athlete-capabilities-save"
                     type="submit"
@@ -2405,7 +2406,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                     type="button"
                     onClick={resetCapabilityLimitsDraftToSaved}
                     disabled={!hasUnsavedCapabilityLimitsChanges}
-                    className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    className={PROFILE_SECONDARY_BUTTON_CLASS}
                   >
                     Reset draft
                   </button>
@@ -2430,9 +2431,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-slate-900">Best times</h2>
               {hasUnsavedRecordChanges ? (
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-                  Unsaved edits
-                </span>
+                <span className={PROFILE_UNSAVED_CHIP_CLASS}>Unsaved edits</span>
               ) : null}
             </div>
             <p className="text-sm font-medium text-slate-900">{recordsSummary.summary}</p>
@@ -2477,16 +2476,13 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
             ) : (
               <div className="space-y-4">
                 {snapshot.personalRecords.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-sm text-slate-600">
+                  <div className={PROFILE_EMPTY_STATE_CLASS}>
                     No best times saved yet. Start with the events you use most in training.
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {snapshot.personalRecords.map((record) => (
-                      <article
-                        key={record.id}
-                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                      >
+                      <article key={record.id} className={PROFILE_ROW_CARD_CLASS}>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -2502,12 +2498,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                               <p className="mt-2 text-sm text-slate-600">{record.sourceNote}</p>
                             ) : null}
                           </div>
-                          <div className="flex flex-wrap gap-2 self-end sm:self-auto">
+                          <div className={PROFILE_ROW_ACTION_GROUP_CLASS}>
                             <button
                               type="button"
                               data-testid={`athlete-record-edit-${record.id}`}
                               onClick={() => startEditingRecord(record)}
-                              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                              className={PROFILE_SMALL_SECONDARY_BUTTON_CLASS}
                             >
                               Edit
                             </button>
@@ -2516,7 +2512,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                               data-testid={`athlete-record-delete-${record.id}`}
                               onClick={() => void deletePersonalRecord(record)}
                               disabled={pendingRecordDeleteId === record.id}
-                              className="inline-flex h-10 items-center justify-center rounded-xl border border-rose-200 bg-white px-4 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-rose-300"
+                              className={PROFILE_DESTRUCTIVE_BUTTON_CLASS}
                             >
                               {pendingRecordDeleteId === record.id ? "Deleting..." : "Delete"}
                             </button>
@@ -2530,7 +2526,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                 <form
                   id="athlete-record-form"
                   onSubmit={savePersonalRecord}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5"
+                  className={PROFILE_FORM_PANEL_CLASS}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -2546,7 +2542,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         <button
                           type="button"
                           onClick={startNewRecord}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                          className={PROFILE_SMALL_SECONDARY_BUTTON_CLASS}
                         >
                           Add new
                         </button>
@@ -2570,7 +2566,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                           }))
                         }
                         placeholder="100"
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       />
                     </label>
 
@@ -2585,7 +2581,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             stroke: event.target.value as PersonalRecordStroke | "",
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       >
                         <option value="">Choose stroke</option>
                         {PERSONAL_RECORD_STROKE_OPTIONS.map((option) => (
@@ -2607,7 +2603,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             course: event.target.value as PersonalRecordCourse | "",
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       >
                         <option value="">Choose course</option>
                         {PERSONAL_RECORD_COURSE_OPTIONS.map((option) => (
@@ -2629,7 +2625,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                           setRecordDraft((current) => ({ ...current, time: event.target.value }))
                         }
                         placeholder="1:02.34"
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       />
                     </label>
 
@@ -2645,7 +2641,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                             recordedOn: event.target.value,
                           }))
                         }
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       />
                     </label>
 
@@ -2662,12 +2658,12 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                         }
                         placeholder="Optional note about meet, set, or source"
                         rows={3}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className={PROFILE_FIELD_CLASS}
                       />
                     </label>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <div className={`mt-5 ${PROFILE_ACTION_GROUP_CLASS}`}>
                     <button
                       data-testid="athlete-record-save"
                       type="submit"
@@ -2685,7 +2681,7 @@ export default function AthleteProfileHub({ initialSnapshot, userId }: Props) {
                       type="button"
                       onClick={resetRecordDraftToSaved}
                       disabled={!hasUnsavedRecordChanges}
-                      className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                      className={PROFILE_SECONDARY_BUTTON_CLASS}
                     >
                       Reset draft
                     </button>
