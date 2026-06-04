@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-04-aw-006-habits-history-calendar-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-04`
 - `updated`: `2026-06-04`
@@ -168,7 +168,7 @@ Required because Habits date selection and support behavior change:
 
 - update `docs/user-flow-map.md` with selected-day/week behavior and edit rules;
 - update `docs/runbooks/auth-account-support.md` with support diagnosis for historical check-in correction;
-- update parent/queue/design inventory with active Child C references.
+- update parent/queue/design inventory with Child C lifecycle references.
 
 ## Route / Label / Support Surface Sweep
 
@@ -312,7 +312,13 @@ After owner screenshot approval:
   - production build passed;
   - perf budgets passed;
   - Playwright passed (`106` passed, `530` skipped by existing environment/auth gating).
-- PR creation/update and `npm run verify:pre-merge` remain pending.
+- PR `#983` was created and CI passed on `2026-06-04`:
+  - CI `verify`, `e2e-smoke`, and `site-lock-smoke` passed;
+  - CodeQL/code scanning passed;
+  - PR Size passed;
+  - Vercel and deploy-preview passed.
+- `npm run verify:pre-merge` - passed on `2026-06-04`; it reused the current full-public PASS marker for commit `929c49e`, confirmed the branch contained `origin/main@6ef89bd`, and recorded `artifacts/verify-pre-merge/20260604-144806.json`.
+- PR `#983` was squash-merged on `2026-06-04` as `8dea26a`.
 
 Screenshot handoff evidence:
 
@@ -336,3 +342,31 @@ Screenshot handoff evidence:
 - `2026-06-04 | owner-correction | owner requested week number/year and confirmed week/month/year comparison should become a separate future calendar brief; added ISO week/year to the shared calendar contract and recorded period comparison as planned system-calendar follow-up | next: regenerate screenshot handoff with corrected production-like mobile shell before npm run verify:pre-pr`
 - `2026-06-04 | screenshot-refresh | regenerated after-only desktop/mobile Today/history screenshots in output/aw006-habits-child-c-2026-06-04-160424 with ISO Week 19, 2026 labels and a production-like mobile active shell that does not show the route-level Back to My Library action; temporary harness removed after capture | next: owner visual approval before npm run verify:pre-pr`
 - `2026-06-04 | pre-pr | owner approved screenshot handoff; npm run verify:pre-pr passed in full lane with quality gates, unit suite, build, perf budgets, and Playwright public matrix | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge`
+- `2026-06-04 | merged | PR #983 passed CI and npm run verify:pre-merge, then squash-merged to main as 8dea26a | next: repo-managed docs-only closeout and post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-04`
+- `merged_pr`: `#983`
+- `squash_commit`: `8dea26a`
+- `result`: Closed AW-006 Habits History Calendar by adding selected-day/week history, ISO week/year labels, previous/next week navigation, Today, selected-day state, and historical check-in correction rules while preserving Today-only setup edits.
+- `validation`: targeted Vitest (`4` files, `64` tests), `npm run typecheck`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr`, CI checks, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the scoped Child C slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                | Gaps / Notes   |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------- | -------------- |
+| Product goals and IA                          | `5/5`          | PR `#983`, selected-day/week route contract, future period-comparison brief             | No active gap. |
+| UX flow clarity                               | `5/5`          | Screenshot handoff, component tests, owner approval                                     | No active gap. |
+| Visual design quality                         | `5/5`          | Screenshot artifacts `output/aw006-habits-child-c-2026-06-04-160424` and owner approval | No active gap. |
+| Business logic correctness and data integrity | `5/5`          | Route/component/calendar tests and pre-PR/pre-merge gates                               | No active gap. |
+| Accessibility (a11y)                          | `5/5`          | Accessible date controls and broad CI/Playwright coverage                               | No active gap. |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical a11y category                                        | No active gap. |
+| Data placement and sync boundaries            | `5/5`          | URL-selected date, server-canonical check-ins, no new storage                           | No active gap. |
+| Reliability and failure handling              | `5/5`          | Invalid/future date normalization tests and support docs                                | No active gap. |
+| Privacy and compliance                        | `5/5`          | No new public exposure, logging, analytics, or storage                                  | No active gap. |
+| Content governance                            | `5/5`          | Parent, queue, support docs, planned follow-up, and closeout updates                    | No active gap. |
+| Incident response and support operations      | `5/5`          | Support runbook update for selected-date diagnosis and correction rules                 | No active gap. |
+| i18n operational readiness                    | `5/5`          | Centralized calendar labels and responsive screenshot evidence                          | No active gap. |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Habits route/component/API reused; no new dependency                           | No active gap. |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full local gates, CI, and pre-merge gate passed                         | No active gap. |
+| DevOps and rollback readiness                 | `5/5`          | No migration/flag; rollback is git revert of PR `#983`                                  | No active gap. |
