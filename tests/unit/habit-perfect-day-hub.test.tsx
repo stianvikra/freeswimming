@@ -446,7 +446,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("fs-cta-secondary");
     expect(screen.getByLabelText("Name")).toHaveClass("ui-field");
     expect(screen.getByLabelText("Category")).toHaveClass("ui-field");
-    expect(screen.getByRole("button", { name: "Build" })).toHaveClass(
+    expect(screen.getByRole("button", { name: "Do" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
     );
     expect(screen.getByRole("button", { name: "Daily" })).toHaveClass(
@@ -468,7 +468,7 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
     openAddHabitForm();
-    expect(screen.getByRole("button", { name: "Build" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Do" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("option", { name: "Done only" })).toBeVisible();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Read 10 pages" },
@@ -872,10 +872,10 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Archive" })).toBeVisible();
   });
 
-  it("shows a binary Build habit with only one Done only detail label", () => {
+  it("shows a binary Do habit with only one Done only detail label", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
-    expect(screen.getByText("Build")).toBeVisible();
+    expect(screen.getByText("Do")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getAllByText("Done only")).toHaveLength(1);
@@ -966,7 +966,7 @@ describe("HabitPerfectDayHub", () => {
   it("keeps count habit status compact with singular units and weekly adherence", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCountSnapshot()} />);
 
-    expect(screen.getByText("1 glass today · Done today")).toBeVisible();
+    expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.getByText("At least 1 glass")).toBeVisible();
   });
@@ -1038,7 +1038,7 @@ describe("HabitPerfectDayHub", () => {
   it("shows quit-slip consistency plus current streak instead of only zero days", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildQuitSlipSnapshot()} />);
 
-    expect(screen.getByText("9/10 days on track")).toBeVisible();
+    expect(screen.getByText("9/10 days clear")).toBeVisible();
     expect(screen.getByText("Slip logged today")).toBeVisible();
     expect(screen.queryByText("Current streak 0 days")).toBeNull();
   });
@@ -1046,7 +1046,7 @@ describe("HabitPerfectDayHub", () => {
   it("shows build streak motivation on collapsed open rows", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
 
-    expect(screen.getByText("6-day streak")).toBeVisible();
+    expect(screen.getByText("Streak: 6 days")).toBeVisible();
     expect(screen.queryByText("6/7 days on track")).toBeNull();
     expect(screen.queryByText("No check-in")).toBeNull();
   });
@@ -1054,15 +1054,16 @@ describe("HabitPerfectDayHub", () => {
   it("uses consistency instead of streak before five-day build streaks", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildShortStreakSnapshot()} />);
 
-    expect(screen.getByText("4/5 days on track")).toBeVisible();
+    expect(screen.getByText("4/5 days done")).toBeVisible();
     expect(screen.queryByText("4-day streak")).toBeNull();
+    expect(screen.queryByText("Streak: 4 days")).toBeNull();
   });
 
   it("keeps collapsed mobile chips focused on cadence and meaningful day state", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
 
     const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
-    expect(within(card).getByText("Build")).toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Do")).toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Open")).toHaveClass("max-sm:hidden");
   });
@@ -1074,6 +1075,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).getByText("Quit")).toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Slip logged today")).not.toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Slip logged today")).toHaveClass("bg-amber-50/90");
   });
 
   it("does not repeat collapsed build motivation inside details", () => {
@@ -1081,7 +1083,7 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
-    expect(screen.getAllByText("6-day streak")).toHaveLength(1);
+    expect(screen.getAllByText("Streak: 6 days")).toHaveLength(1);
     expect(
       screen.getAllByText("Open").some((element) => !element.className.includes("max-sm:hidden"))
     ).toBe(true);
@@ -1093,7 +1095,10 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
     expect(screen.getByText("1/1 on target today")).toBeVisible();
-    expect(screen.getByText("1 glass today · Done today")).toBeVisible();
+    expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
+    expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show week overview" }));
+    expect(screen.getByTestId("habits-week-overview-mobile")).toBeVisible();
     expect(screen.queryByLabelText("Water value")).toBeNull();
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
