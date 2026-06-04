@@ -8,7 +8,7 @@
 - `created`: `2026-06-04`
 - `updated`: `2026-06-04`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
-- `seeded_by`: `docs/task-briefs/in-progress/2026-06-04-aw-006-habits-history-calendar-10-10.md`
+- `seeded_by`: `docs/task-briefs/done/2026-06-04-aw-006-habits-history-calendar-10-10.md`
 - `branch`: `TBD`
 
 ## Brief Audit Record
