@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Flag,
   Pause,
@@ -16,6 +17,7 @@ import {
   Target,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   HABIT_CATEGORY_VALUES,
@@ -34,11 +36,17 @@ import {
 } from "@/lib/habits/shared";
 import { cx } from "@/components/ui/cx";
 import { mobileActionItemClass, mobilePrimaryActionItemClass } from "@/components/ui/actionLayout";
+import {
+  buildMyLibraryCalendarHref,
+  buildMyLibraryCalendarWindow,
+  getCalendarSourceFilterLabel,
+} from "@/lib/my-library/calendar";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
 type Props = {
   initialSnapshot: HabitSnapshot;
   preferMobileActiveFocus?: boolean;
+  todayDate?: string;
   userId?: string;
 };
 
@@ -299,6 +307,29 @@ function getLongDateLabel(date: string) {
     day: "numeric",
     timeZone: "UTC",
   }).format(new Date(parsed));
+}
+
+function getFullDateLabel(date: string) {
+  const parsed = Date.parse(`${date}T00:00:00.000Z`);
+  if (Number.isNaN(parsed)) return date;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(parsed));
+}
+
+function getMonthDayLabel(date: string) {
+  return getLongDateLabel(date);
+}
+
+function getWeekRangeLabel(startDate: string, endDate: string) {
+  return `${getMonthDayLabel(startDate)} - ${getMonthDayLabel(endDate)}`;
+}
+
+function getSelectedDateDisplayLabel(selectedDate: string, todayDate: string) {
+  return selectedDate === todayDate ? "Today" : getFullDateLabel(selectedDate);
 }
 
 function getHabitTypeLabel(type: HabitType) {
@@ -706,6 +737,7 @@ function writePersistedTimerRecords(
 export default function HabitPerfectDayHub({
   initialSnapshot,
   preferMobileActiveFocus = false,
+  todayDate = initialSnapshot.selectedDate,
   userId,
 }: Props) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
@@ -732,6 +764,21 @@ export default function HabitPerfectDayHub({
   const addHabitSectionRef = useRef<HTMLElement | null>(null);
   const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
   const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
+  const calendarWindow = buildMyLibraryCalendarWindow(snapshot.selectedDate);
+  const safeTodayDate = todayDate || snapshot.selectedDate;
+  const isSelectedToday = snapshot.selectedDate === safeTodayDate;
+  const isHistoricalDate = snapshot.selectedDate < safeTodayDate;
+  const canManageHabitSetup = isSelectedToday;
+  const nextWindowDate =
+    calendarWindow.nextWindowDate > safeTodayDate ? safeTodayDate : calendarWindow.nextWindowDate;
+  const canGoNextWindow = snapshot.selectedDate < safeTodayDate;
+  const calendarViewParam = preferMobileActiveFocus ? "active" : undefined;
+  const selectedDateLabel = getSelectedDateDisplayLabel(snapshot.selectedDate, safeTodayDate);
+  const weekLabel = calendarWindow.weekLabel;
+  const weekRangeLabel = getWeekRangeLabel(calendarWindow.startDate, calendarWindow.endDate);
+  const editRuleLabel = isHistoricalDate
+    ? "History day - correct existing check-ins here. Add, edit, and archive habits on Today."
+    : "Today - manage habit setup and log today's check-ins here.";
 
   useEffect(() => {
     setCheckInInputs(buildInputState(snapshot));
@@ -761,7 +808,7 @@ export default function HabitPerfectDayHub({
     if (typeof window === "undefined") return;
 
     function openFromHash() {
-      if (window.location.hash === "#add-habit") {
+      if (window.location.hash === "#add-habit" && canManageHabitSetup) {
         setIsAddHabitOpen(true);
         setRecentlyCreatedHabitId(null);
         setNotice(null);
@@ -772,7 +819,7 @@ export default function HabitPerfectDayHub({
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
-  }, []);
+  }, [canManageHabitSetup]);
 
   useEffect(() => {
     const hasRunningTimer = Object.values(timers).some((timer) => timer.startedAtMs !== null);
@@ -884,6 +931,11 @@ export default function HabitPerfectDayHub({
   const draftUnitOptions = useMemo(() => getUnitOptions(draftHabitType), [draftHabitType]);
 
   function openAddHabitForm() {
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to add or edit habit setup.");
+      setError(null);
+      return;
+    }
     setIsAddHabitOpen(true);
     setRecentlyCreatedHabitId(null);
     setNotice(null);
@@ -1002,6 +1054,11 @@ export default function HabitPerfectDayHub({
   async function createHabit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!snapshot.schemaReady) return;
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to add or edit habit setup.");
+      setError(null);
+      return;
+    }
 
     const habitMode = draft.habitMode;
     const timerTargetSeconds = getTimerTargetSeconds(draft);
@@ -1046,6 +1103,11 @@ export default function HabitPerfectDayHub({
   }
 
   function startEditingHabit(habit: HabitDefinitionView) {
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to add or edit habit setup.");
+      setError(null);
+      return;
+    }
     setEditingHabitId(habit.id);
     setEditDraft(buildDraftFromHabit(habit));
     setExpandedHabitIds((current) => [...new Set([...current, habit.id])]);
@@ -1056,6 +1118,11 @@ export default function HabitPerfectDayHub({
   async function updateHabit(event: FormEvent<HTMLFormElement>, habitId: string) {
     event.preventDefault();
     if (!editDraft || editingHabitId !== habitId) return;
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to add or edit habit setup.");
+      setError(null);
+      return;
+    }
 
     const habitMode = editDraft.habitMode;
     const timerTargetSeconds = getTimerTargetSeconds(editDraft);
@@ -1099,6 +1166,11 @@ export default function HabitPerfectDayHub({
   }
 
   async function archiveHabit(habitId: string) {
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to add or edit habit setup.");
+      setError(null);
+      return;
+    }
     setPendingKey(`archive-${habitId}`);
     setNotice(null);
     setError(null);
@@ -1470,24 +1542,114 @@ export default function HabitPerfectDayHub({
     return (
       <div
         className="mt-5 grid grid-cols-7 gap-2"
-        aria-label="Seven day habit consistency"
+        aria-label={`Habits calendar ${weekLabel} ${weekRangeLabel}`}
         data-testid={testId}
       >
-        {snapshot.weekSummary.days.map((day) => (
-          <div key={day.date} className="min-w-0">
-            <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
-              <div
-                className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
-                style={{ height: `${Math.max(6, day.completionPercent)}%` }}
-                aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
-              />
-            </div>
-            <p className="mt-1 truncate text-center text-[11px] font-semibold text-slate-600">
-              {getWeekdayLabel(day.date)}
-            </p>
-            <p className="text-center text-[11px] text-slate-500">{day.completionPercent}%</p>
+        {snapshot.weekSummary.days.map((day) => {
+          const isSelected = day.date === snapshot.selectedDate;
+          const isToday = day.date === safeTodayDate;
+          return (
+            <Link
+              key={day.date}
+              href={buildMyLibraryCalendarHref({
+                path: "/my-library/habits",
+                selectedDate: day.date,
+                view: calendarViewParam,
+                hash: "today-habits",
+              })}
+              aria-current={isSelected ? "date" : undefined}
+              aria-label={`${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
+                day.completionPercent
+              }% complete${isSelected ? ", selected" : ""}${isToday ? ", today" : ""}`}
+              className={cx(
+                "min-w-0 rounded-[var(--fs-radius-card)] p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
+                isSelected
+                  ? "bg-[color:var(--fs-color-brand-50)] ring-2 ring-[color:var(--fs-border-brand)]"
+                  : "hover:bg-white"
+              )}
+            >
+              <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
+                <div
+                  className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
+                  style={{ height: `${Math.max(6, day.completionPercent)}%` }}
+                  aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
+                />
+              </div>
+              <p className="mt-1 truncate text-center text-[11px] font-semibold text-slate-700">
+                {getWeekdayLabel(day.date)}
+              </p>
+              <p className="text-center text-[11px] font-medium text-slate-500">
+                {getMonthDayLabel(day.date)}
+              </p>
+              <p className="text-center text-[11px] text-slate-500">{day.completionPercent}%</p>
+            </Link>
+          );
+        })}
+      </div>
+    );
+  }
+
+  function renderCalendarControls(testId: string) {
+    const previousHref = buildMyLibraryCalendarHref({
+      path: "/my-library/habits",
+      selectedDate: calendarWindow.previousWindowDate,
+      view: calendarViewParam,
+      hash: "today-habits",
+    });
+    const todayHref = buildMyLibraryCalendarHref({
+      path: "/my-library/habits",
+      selectedDate: safeTodayDate,
+      view: calendarViewParam,
+      hash: "today-habits",
+    });
+    const nextHref = buildMyLibraryCalendarHref({
+      path: "/my-library/habits",
+      selectedDate: nextWindowDate,
+      view: calendarViewParam,
+      hash: "today-habits",
+    });
+
+    return (
+      <div
+        data-testid={testId}
+        className="grid gap-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/80 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={habitBrandChipClass}>{getCalendarSourceFilterLabel("habits")}</span>
+            {isHistoricalDate ? <span className={habitWarningChipClass}>History</span> : null}
           </div>
-        ))}
+          <p className="mt-2 text-sm font-semibold text-slate-900">{selectedDateLabel}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {weekLabel} · {weekRangeLabel}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">{editRuleLabel}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <Link href={previousHref} className={cx(habitSecondaryActionClass, "px-3")}>
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            <span className="max-sm:sr-only">Previous week</span>
+          </Link>
+          <Link href={todayHref} className={cx(habitSecondaryActionClass, "px-3")}>
+            Today
+          </Link>
+          {canGoNextWindow ? (
+            <Link href={nextHref} className={cx(habitSecondaryActionClass, "px-3")}>
+              <span className="max-sm:sr-only">Next week</span>
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled
+              aria-label="Next week unavailable"
+              className={cx(habitSecondaryActionClass, "px-3")}
+            >
+              <span className="max-sm:sr-only">Next week</span>
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -1529,7 +1691,7 @@ export default function HabitPerfectDayHub({
               My Perfect Day
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-900">
-              {snapshot.daySummary.isPerfectDay ? "Perfect day logged" : "Today"}
+              {snapshot.daySummary.isPerfectDay ? "Perfect day logged" : selectedDateLabel}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               {snapshot.daySummary.satisfiedPerfectDayItemCount}/
@@ -1571,6 +1733,8 @@ export default function HabitPerfectDayHub({
           </div>
         </div>
 
+        <div className="mt-5">{renderCalendarControls("habits-calendar-controls-summary")}</div>
+
         {renderWeekOverview("habits-week-overview-summary")}
       </section>
 
@@ -1585,8 +1749,8 @@ export default function HabitPerfectDayHub({
             <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
             <p className="mt-1 text-sm text-slate-600">
               {preferMobileActiveFocus
-                ? `${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount} on target today`
-                : getLongDateLabel(snapshot.selectedDate)}
+                ? `${selectedDateLabel} · ${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount} on target`
+                : `${selectedDateLabel} · ${weekLabel} · ${weekRangeLabel}`}
             </p>
           </div>
           <div
@@ -1613,7 +1777,7 @@ export default function HabitPerfectDayHub({
                 <span className="sr-only">Week overview</span>
               </button>
             ) : null}
-            {isAddHabitOpen ? null : (
+            {isAddHabitOpen || !canManageHabitSetup ? null : (
               <button
                 type="button"
                 aria-expanded="false"
@@ -1630,20 +1794,20 @@ export default function HabitPerfectDayHub({
         </div>
 
         {preferMobileActiveFocus && isMobileWeekOpen ? (
-          <div
-            id="mobile-habits-week-overview"
-            className={cx("mt-4 sm:hidden", habitNestedMutedCardClass)}
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className={habitLabelClass}>Week overview</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {getLongDateLabel(snapshot.selectedDate)} · {snapshot.weekSummary.perfectDayCount}
-                  /7 perfect days
-                </p>
+          <div id="mobile-habits-week-overview" className="mt-4 space-y-3 sm:hidden">
+            {renderCalendarControls("habits-calendar-controls-mobile")}
+            <div className={habitNestedMutedCardClass}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className={habitLabelClass}>Week overview</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {weekLabel} · {weekRangeLabel} · {snapshot.weekSummary.perfectDayCount}/7
+                    perfect days
+                  </p>
+                </div>
               </div>
+              {renderWeekOverview("habits-week-overview-mobile")}
             </div>
-            {renderWeekOverview("habits-week-overview-mobile")}
           </div>
         ) : null}
 
@@ -1854,7 +2018,9 @@ export default function HabitPerfectDayHub({
             className={cx("mt-4", isAddHabitOpen ? "max-sm:hidden" : "")}
             testId="habits-empty-state"
           >
-            Use Add habit to start tracking today.
+            {canManageHabitSetup
+              ? "Use Add habit to start tracking today."
+              : "No editable habits were available for this date."}
           </HabitFeedback>
         ) : (
           <div className={`mt-4 space-y-3 ${isAddHabitOpen ? "max-sm:hidden" : ""}`}>
@@ -1895,19 +2061,20 @@ export default function HabitPerfectDayHub({
                 isTimed && timerTargetSeconds
                   ? `${cadenceLabel} target ${formatTimer(timerTargetSeconds)}`
                   : habit.targetLabel;
-              const canEditTodaysCheckIn = item.isScheduledForDate || item.checkIn !== null;
+              const canEditSelectedCheckIn = item.isScheduledForDate || item.checkIn !== null;
+              const canRunTimerForSelectedDate = canEditSelectedCheckIn && isSelectedToday;
               const statusLabel = isRestDay
                 ? "Rest day"
                 : isCompletionGroup
                   ? getCompletionStatusLabel(item)
-                  : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                  : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
                     ? "Later"
                     : item.evaluation.stateLabel;
               const showGroupHeading =
                 index === 0 ||
                 getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
                   getPriorityGroupKey(item);
-              const showTimedProgressModule = isTimed && !isRestDay && canEditTodaysCheckIn;
+              const showTimedProgressModule = isTimed && !isRestDay && canEditSelectedCheckIn;
               const timedProgressContextLabel = isCompletionGroup
                 ? `${timedTargetContextLabel} · ${getCompletionStatusLabel(item)}`
                 : timedTargetContextLabel;
@@ -1921,7 +2088,7 @@ export default function HabitPerfectDayHub({
                           item
                         )}`
                       : getBuildCompletionMotivationLabel(item)
-                  : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
+                  : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
                     ? "Not due today"
                     : isQuit
                       ? [
@@ -2026,7 +2193,7 @@ export default function HabitPerfectDayHub({
                       </div>
 
                       <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">
-                        {canEditTodaysCheckIn && habit.habitType === "binary" && !isQuit ? (
+                        {canEditSelectedCheckIn && habit.habitType === "binary" && !isQuit ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -2050,7 +2217,10 @@ export default function HabitPerfectDayHub({
                           </button>
                         ) : null}
 
-                        {canEditTodaysCheckIn && !isCompletionGroup && !isRestDay && isTimed ? (
+                        {canRunTimerForSelectedDate &&
+                        !isCompletionGroup &&
+                        !isRestDay &&
+                        isTimed ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -2073,7 +2243,7 @@ export default function HabitPerfectDayHub({
                           </button>
                         ) : null}
 
-                        {canEditTodaysCheckIn &&
+                        {canEditSelectedCheckIn &&
                         !isCompletionGroup &&
                         !isRestDay &&
                         !isQuit &&
@@ -2410,7 +2580,7 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          {canEditTodaysCheckIn &&
+                          {canEditSelectedCheckIn &&
                           !isCompletionGroup &&
                           !isQuit &&
                           !item.checkIn ? (
@@ -2428,7 +2598,7 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          {canEditTodaysCheckIn && !isRestDay && isTimed ? (
+                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
                             <>
                               <button
                                 type="button"
@@ -2454,6 +2624,11 @@ export default function HabitPerfectDayHub({
                                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
                                 Reset
                               </button>
+                            </>
+                          ) : null}
+
+                          {canEditSelectedCheckIn && !isRestDay && isTimed ? (
+                            <>
                               <label className="block sm:w-32">
                                 <span className={habitLabelClass}>Manual time</span>
                                 <input
@@ -2486,7 +2661,7 @@ export default function HabitPerfectDayHub({
                             </>
                           ) : null}
 
-                          {canEditTodaysCheckIn &&
+                          {canEditSelectedCheckIn &&
                           !isRestDay &&
                           !isQuit &&
                           !isTimed &&
@@ -2540,31 +2715,35 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              clearCreatedHabitNotice();
-                              startEditingHabit(habit);
-                            }}
-                            disabled={disabled}
-                            className={habitMobileSecondaryActionClass}
-                          >
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                            Edit
-                          </button>
+                          {canManageHabitSetup ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  startEditingHabit(habit);
+                                }}
+                                disabled={disabled}
+                                className={habitMobileSecondaryActionClass}
+                              >
+                                <Pencil className="h-4 w-4" aria-hidden="true" />
+                                Edit
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              clearCreatedHabitNotice();
-                              return archiveHabit(habit.id);
-                            }}
-                            disabled={disabled}
-                            className={habitMobileSecondaryActionClass}
-                          >
-                            <Archive className="h-4 w-4" aria-hidden="true" />
-                            Archive
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  clearCreatedHabitNotice();
+                                  return archiveHabit(habit.id);
+                                }}
+                                disabled={disabled}
+                                className={habitMobileSecondaryActionClass}
+                              >
+                                <Archive className="h-4 w-4" aria-hidden="true" />
+                                Archive
+                              </button>
+                            </>
+                          ) : null}
 
                           {getBuildMotivationLabel(item) ? null : (
                             <p className="text-sm text-slate-500">{item.evaluation.valueLabel}</p>

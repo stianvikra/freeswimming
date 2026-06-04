@@ -5,6 +5,10 @@ import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
 import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadHabitSnapshot } from "@/lib/habits/server";
+import {
+  getTodayCalendarDate,
+  normalizeMyLibraryCalendarDateParam,
+} from "@/lib/my-library/calendar";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +31,11 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
   const viewParam = resolvedSearchParams.view;
   const viewValues = Array.isArray(viewParam) ? viewParam : viewParam ? [viewParam] : [];
   const preferMobileActiveFocus = viewValues.includes("active");
-  const initialSnapshot = await loadHabitSnapshot(supabase, user.id);
+  const todayDate = getTodayCalendarDate();
+  const selectedDate = normalizeMyLibraryCalendarDateParam(resolvedSearchParams.date, todayDate);
+  const initialSnapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
+  const selectedDateLabel =
+    initialSnapshot.selectedDate === todayDate ? "today" : initialSnapshot.selectedDate;
 
   return (
     <SiteChrome>
@@ -59,7 +67,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
                 Habits
               </h1>
               <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
-                Private habit check-ins for today.
+                Private habit check-ins for {selectedDateLabel}.
               </p>
             </div>
             <div data-testid="habits-route-actions" className={getMobileActionGroupClass(1)}>
@@ -74,6 +82,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
           <HabitPerfectDayHub
             initialSnapshot={initialSnapshot}
             preferMobileActiveFocus={preferMobileActiveFocus}
+            todayDate={todayDate}
             userId={user.id}
           />
         </div>
