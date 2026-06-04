@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-04-aw-006-habits-timed-timer-manual-ux-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-04`
 - `updated`: `2026-06-04`
@@ -406,6 +406,37 @@ Completed during execution so far:
 - route/label/support sweep PASS after updating support runbook and user-flow map; remaining old-label mentions are intentional historical/negative-test evidence.
 - screenshot handoff captured under `output/aw006-habits-child-b-2026-06-04-085433` as after/reference evidence; local dev auth was blocked by the Supabase egress guard, so capture used a temporary deterministic harness that rendered the production `HabitPerfectDayHub` with fixture data; the harness was removed after capture and the scoped component/styles were not changed after capture.
 - owner approved the refreshed screenshot handoff in chat on `2026-06-04`; only docs/brief text was updated after capture, so screenshot regeneration is not required before `npm run verify:pre-pr`.
+- `npm run verify:pre-pr` PASS on `2026-06-04` with full lane: lint/quality/typecheck/unit/build/perf/E2E all passed; E2E result was 106 passed / 530 skipped under the known local dev-auth skip pattern.
+- PR `#979` required checks PASS: size-check, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, Analyze (javascript-typescript), CodeQL, and verify.
+- `npm run verify:pre-merge` PASS on `2026-06-04`; marker `artifacts/verify-pre-merge/20260604-072432.json`; E2E result was 106 passed / 530 skipped under the same known local dev-auth skip pattern.
+
+## Completion Record
+
+- `completed`: `2026-06-04`
+- `merged_pr`: `#979`
+- `squash_commit`: `e17b50c`
+- `result`: Closed AW-006 Habits Timed Timer/Manual UX. Timed Habits now show one daily total, manual time is clearly additive external time, the duplicate timer readout is gone, and starting another timed habit pauses/switches the current timer without losing elapsed local time.
+- `validation`: targeted Habits Vitest PASS, scoped ESLint PASS, typecheck PASS, `lint:briefs:all` PASS, `git diff --check` PASS, screenshot handoff approved, `npm run verify:pre-pr` PASS, PR `#979` CI PASS, `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#979`, approved screenshots, parent/queue closeout updates                                                                                             | None.        |
+| UX flow clarity                               | `5/5`          | Component tests cover one visible daily total, additive manual time, start/pause/resume/finish/reset, and one-active-timer behavior; screenshots approved. | None.        |
+| Visual design quality                         | `5/5`          | Screenshot handoff approved after moving `Daily` to the heading, removing redundant pills, and replacing the old time chip with one progress module.       | None.        |
+| Business logic correctness and data integrity | `5/5`          | Focused Habits Vitest PASS; timer totals, manual additions, finish save, reset, rest state, local restore, and timer switching covered.                    | None.        |
+| Accessibility (a11y)                          | `5/5`          | Component assertions cover accessible labels/status/progress semantics; broad E2E/a11y gates in `verify:pre-pr` and `verify:pre-merge` passed.             | None.        |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for `Accessibility (a11y)`; same evidence.                                                                                            | None.        |
+| Data placement and sync boundaries            | `5/5`          | Brief data-boundary contract plus implementation keeps server saved minutes canonical and local running timer state local-only until saved.                | None.        |
+| Reliability and failure handling              | `5/5`          | Tests cover localStorage recovery, save failure/success paths through existing component harness, and switching timers without losing elapsed time.        | None.        |
+| Security and authz                            | `5/5`          | No API/schema/auth expansion; existing protected Habits API contract preserved; broad security/E2E gates passed.                                           | None.        |
+| Privacy and compliance                        | `5/5`          | No new raw habit-name analytics, external services, or cross-user data path; existing private route/API boundaries preserved.                              | None.        |
+| Content governance                            | `5/5`          | This closeout moves the brief to `done`, updates parent return status, queue, and design inventory; `lint:briefs:all` is the first closeout gate.          | None.        |
+| Incident response and support operations      | `5/5`          | Support runbook/user-flow docs updated for additive manual time and one-active-timer support diagnosis.                                                    | None.        |
+| i18n operational readiness                    | `5/5`          | Screenshots approved on mobile/desktop with compact heading pill and no fixed-width duplicate time chip; labels avoid narrow one-off containers.           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, existing Habits API/domain contracts, and current My Library tokens; no new dependency.                                       | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, scoped ESLint, typecheck, full unit lane, `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                             | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration or dependency added; rollback is normal git revert of PR `#979`; broad local and CI gates passed before merge.                                | None.        |
 
 ## Checkpoint Log
 
@@ -414,3 +445,4 @@ Completed during execution so far:
 - `2026-06-04 | implemented + targeted validation | changed HabitPerfectDayHub timed habit behavior so displayed total is saved minutes plus local timer seconds, Finish saves that additive total, Manual time/Add manual time adds external minutes, starting another timed habit pauses the current local timer, and the duplicate standalone timer readout is removed; updated component tests plus support/user-flow docs; targeted Habits Vitest PASS (53 tests); route/label/support sweep PASS with old labels retained only as historical brief context and negative test assertions | next: capture screenshot handoff and stop for owner visual approval before npm run verify:pre-pr`
 - `2026-06-04 | screenshot handoff refreshed | captured after/reference desktop and mobile screenshots in output/aw006-habits-child-b-2026-06-04-085433 after moving Daily to the timed-card heading, removing redundant Timed/Logged collapsed pills, and replacing the old time chip with one progress module; screenshots show saved+local total, Manual time/Add manual time, removed duplicate timer box, and one-active-timer mobile state; local dev auth was blocked by the Supabase egress guard, so a temporary deterministic harness rendered the production HabitPerfectDayHub and was removed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-04 | screenshot approved | owner approved refreshed screenshots in chat; recorded Build to Do mode-copy idea as a deferred follow-up outside Child B; no runtime/rendering files changed after screenshot capture | next: run npm run verify:pre-pr`
+- `2026-06-04 | done | PR #979 shipped as squash commit e17b50c after approved screenshot handoff, local pre-PR, green CI, and local pre-merge gates; this repo-managed docs-only closeout moves the brief to done and returns H-ID status to the Habits parent | next: run docs-only closeout gates, merge the closeout PR if green, rerun post-merge preflight, then complete the mandatory chat-handoff assessment before starting another implementation slice`
