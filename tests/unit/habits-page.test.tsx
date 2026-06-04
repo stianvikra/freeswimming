@@ -31,16 +31,19 @@ vi.mock("@/components/my-library/habits/HabitPerfectDayHub", () => ({
   default: ({
     initialSnapshot,
     preferMobileActiveFocus,
+    todayDate,
     userId,
   }: {
     initialSnapshot: HabitSnapshot;
     preferMobileActiveFocus?: boolean;
+    todayDate?: string;
     userId?: string;
   }) => (
     <div
       data-testid="habit-perfect-day-hub"
       data-active-count={initialSnapshot.activeHabits.length}
       data-mobile-focus={preferMobileActiveFocus ? "true" : "false"}
+      data-today-date={todayDate ?? ""}
       data-user-id={userId ?? ""}
     />
   ),
@@ -109,7 +112,11 @@ describe("MyLibraryHabitsPage", () => {
       "data-mobile-focus",
       "false"
     );
-    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.any(Object), signedInUser.id);
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+    );
     expect(trackEventOnMountMock).toHaveBeenCalledWith({
       eventName: "habits_viewed",
       payload: {
@@ -124,6 +131,24 @@ describe("MyLibraryHabitsPage", () => {
 
     const workspace = screen.getByTestId("habits-workspace");
     expect(workspace).toHaveClass("max-sm:max-w-[720px]");
+    expect(screen.getByTestId("habit-perfect-day-hub")).toHaveAttribute(
+      "data-mobile-focus",
+      "true"
+    );
+  });
+
+  it("loads a valid selected history date from the route query", async () => {
+    render(
+      await MyLibraryHabitsPage({
+        searchParams: Promise.resolve({ view: "active", date: "2026-05-03" }),
+      })
+    );
+
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      "2026-05-03"
+    );
     expect(screen.getByTestId("habit-perfect-day-hub")).toHaveAttribute(
       "data-mobile-focus",
       "true"

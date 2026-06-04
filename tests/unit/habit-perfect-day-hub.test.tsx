@@ -60,21 +60,30 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
   };
 }
 
-function buildSnapshot(options?: { withHabit?: boolean; completed?: boolean }): HabitSnapshot {
+function buildSnapshot(options?: {
+  withHabit?: boolean;
+  completed?: boolean;
+  selectedDate?: string;
+}): HabitSnapshot {
+  const selectedDate = options?.selectedDate ?? "2026-05-10";
   const habit = options?.withHabit ? buildHabitDefinitionView(buildHabitRow()) : null;
   const checkIns =
     habit && options?.completed
-      ? [buildHabitCheckInView(buildCheckInRow({ habit_id: habit.id }))]
+      ? [
+          buildHabitCheckInView(
+            buildCheckInRow({ habit_id: habit.id, check_in_date: selectedDate })
+          ),
+        ]
       : [];
   const activeHabits = habit ? [habit] : [];
   return {
     schemaReady: true,
     loadError: null,
-    selectedDate: "2026-05-10",
+    selectedDate,
     activeHabits,
     archivedHabits: [],
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
   };
 }
 
@@ -153,7 +162,9 @@ function buildSchemaPendingSnapshot(): HabitSnapshot {
 function buildTimedSnapshot(options?: {
   savedMinutes?: number;
   includeSecondHabit?: boolean;
+  selectedDate?: string;
 }): HabitSnapshot {
+  const selectedDate = options?.selectedDate ?? "2026-05-10";
   const habit = buildHabitDefinitionView(
     buildHabitRow({
       id: "33333333-3333-4333-8333-333333333333",
@@ -192,6 +203,7 @@ function buildTimedSnapshot(options?: {
           buildHabitCheckInView(
             buildCheckInRow({
               habit_id: habit.id,
+              check_in_date: selectedDate,
               value_boolean: null,
               value_numeric: options.savedMinutes,
             })
@@ -202,11 +214,11 @@ function buildTimedSnapshot(options?: {
   return {
     schemaReady: true,
     loadError: null,
-    selectedDate: "2026-05-10",
+    selectedDate,
     activeHabits,
     archivedHabits: [],
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
   };
 }
 
@@ -438,6 +450,69 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("w-full");
   });
 
+  it("shows selected-date calendar controls and selected day state", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    const controls = screen.getByTestId("habits-calendar-controls-summary");
+    expect(within(controls).getByRole("link", { name: "Today" })).toBeVisible();
+    expect(within(controls).getByText("Week 19, 2026 · May 4 - May 10")).toBeVisible();
+    expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-03#today-habits"
+    );
+    expect(screen.getByRole("link", { name: /May 10 .*selected.*today/i })).toHaveAttribute(
+      "aria-current",
+      "date"
+    );
+  });
+
+  it("allows past check-in correction while keeping habit setup on Today", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({
+          withHabit: true,
+          completed: true,
+          selectedDate: "2026-05-09",
+        }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-09" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    expect(screen.getByText("History")).toBeVisible();
+    expect(screen.getByText(/correct existing check-ins/i)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Add habit" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"checkInDate":"2026-05-09"'),
+        })
+      );
+    });
+  });
+
   it("uses My Library token fields and choices in the Add habit form", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
 
@@ -619,6 +694,22 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.queryByText("Manual min")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save manual" })).toBeNull();
     expect(await screen.findByText("No check-in")).toBeVisible();
+  });
+
+  it("keeps historical timed corrections manual instead of starting a past timer", async () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ selectedDate: "2026-05-09" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+
+    expect(screen.queryByRole("button", { name: "Finish" })).toBeNull();
+    expect(await screen.findByText("Manual time")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Add manual time" })).toBeDisabled();
   });
 
   it("restores a paused timed habit timer from local user-date storage", async () => {
@@ -1094,7 +1185,7 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
-    expect(screen.getByText("1/1 on target today")).toBeVisible();
+    expect(screen.getByText("Today · 1/1 on target")).toBeVisible();
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show week overview" }));
