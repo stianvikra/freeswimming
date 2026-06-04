@@ -1,5 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const navigationState = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigationState,
+}));
+
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
 import {
   buildHabitCheckInView,
@@ -261,6 +270,32 @@ function buildCountSnapshot(): HabitSnapshot {
   };
 }
 
+function buildOpenCountSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "Wall Slides",
+      habit_mode: "build",
+      habit_type: "count",
+      category: "movement",
+      target_operator: "at_least",
+      target_value_numeric: 10,
+      target_unit: "times",
+    })
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
+  };
+}
+
 function buildNotDueFixedDaySnapshot(): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
@@ -400,6 +435,7 @@ function openAddHabitForm() {
 describe("HabitPerfectDayHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    navigationState.push.mockClear();
     window.localStorage.clear();
   });
 
@@ -448,6 +484,9 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("w-full");
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("fs-cta-secondary");
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("w-full");
+    expect(
+      screen.getByTestId("habit-heading-row-11111111-1111-4111-8111-111111111111")
+    ).toHaveClass("justify-between");
   });
 
   it("shows selected-date calendar controls and selected day state", () => {
@@ -468,6 +507,45 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("link", { name: /May 10 .*selected.*today/i })).toHaveAttribute(
       "aria-current",
       "date"
+    );
+
+    fireEvent.click(within(controls).getByRole("link", { name: "Previous week" }));
+    expect(navigationState.push).toHaveBeenCalledWith(
+      "/my-library/habits?date=2026-05-03#today-habits"
+    );
+    fireEvent.click(screen.getByRole("link", { name: /Sat May 9/i }));
+    expect(navigationState.push).toHaveBeenCalledWith(
+      "/my-library/habits?date=2026-05-09#today-habits"
+    );
+  });
+
+  it("swipes the blue week bar container to nearby habit weeks", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-03" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    const weekOverview = screen.getByTestId("habits-week-overview-summary");
+    fireEvent.touchStart(weekOverview, {
+      touches: [{ clientX: 24, clientY: 80 }],
+    });
+    fireEvent.touchEnd(weekOverview, {
+      changedTouches: [{ clientX: 150, clientY: 84 }],
+    });
+    expect(navigationState.push).toHaveBeenCalledWith(
+      "/my-library/habits?date=2026-04-26#today-habits"
+    );
+
+    fireEvent.touchStart(weekOverview, {
+      touches: [{ clientX: 150, clientY: 80 }],
+    });
+    fireEvent.touchEnd(weekOverview, {
+      changedTouches: [{ clientX: 24, clientY: 84 }],
+    });
+    expect(navigationState.push).toHaveBeenCalledWith(
+      "/my-library/habits?date=2026-05-10#today-habits"
     );
   });
 
@@ -524,6 +602,13 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Do" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
     );
+    expect(screen.getByRole("button", { name: "Done only: Any amount" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Specific count: Fixed amount" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
     expect(screen.getByRole("button", { name: "Daily" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
     );
@@ -544,7 +629,10 @@ describe("HabitPerfectDayHub", () => {
 
     openAddHabitForm();
     expect(screen.getByRole("button", { name: "Do" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("option", { name: "Done only" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Done only: Any amount" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Read 10 pages" },
     });
@@ -571,6 +659,48 @@ describe("HabitPerfectDayHub", () => {
       "aria-expanded",
       "false"
     );
+  });
+
+  it("creates count targets with a full-row stepper instead of native number arrows", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildOpenCountSnapshot(),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    openAddHabitForm();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Wall Slides" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Specific count: Fixed amount" }));
+    expect(screen.getByRole("button", { name: "Decrease Target" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Increase Target" })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Target"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"habitType":"count"'),
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      habitType: string;
+      targetValueNumeric: string;
+      targetUnit: string;
+    };
+    expect(body.habitType).toBe("count");
+    expect(body.targetValueNumeric).toBe("10");
+    expect(body.targetUnit).toBe("times");
   });
 
   it("keeps the add form collapsed until requested", () => {
@@ -687,7 +817,18 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
-    expect(await screen.findByRole("button", { name: "Finish" })).toBeDisabled();
+    const finishButton = await screen.findByRole("button", { name: "Finish" });
+    expect(finishButton).toBeDisabled();
+    expect(finishButton).toHaveClass("fs-cta-primary");
+    expect(finishButton).toHaveClass("min-w-28");
+    const detailsActions = screen.getByTestId(
+      "habit-details-actions-33333333-3333-4333-8333-333333333333"
+    );
+    const actionNames = within(detailsActions)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.replace(/\s+/g, " ").trim());
+    expect(actionNames.indexOf("Finish")).toBeLessThan(actionNames.indexOf("Rest day"));
+    expect(actionNames.indexOf("Rest day")).toBeLessThan(actionNames.indexOf("Reset"));
     expect(await screen.findByText("Daily target 8:00")).toBeVisible();
     expect(await screen.findByText("Manual time")).toBeVisible();
     expect(await screen.findByRole("button", { name: "Add manual time" })).toBeDisabled();
@@ -1060,6 +1201,23 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.getByText("At least 1 glass")).toBeVisible();
+  });
+
+  it("aligns open count habit input, Save, and Details as one mobile-safe action row", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildOpenCountSnapshot()} />);
+
+    const card = screen.getByTestId("habit-card-44444444-4444-4444-8444-444444444444");
+    const valueInput = within(card).getByLabelText("Wall Slides value");
+    expect(valueInput).toHaveAttribute("type", "text");
+    expect(valueInput).toHaveAttribute("inputmode", "decimal");
+
+    fireEvent.click(within(card).getByRole("button", { name: "Increase Wall Slides value" }));
+    expect(valueInput).toHaveValue("1");
+    expect(within(card).getByRole("button", { name: "Decrease Wall Slides value" })).toBeVisible();
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("min-w-28");
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("sm:!w-28");
+    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("min-w-28");
+    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("sm:!w-28");
   });
 
   it("shows not-due fixed-day habits without a quick check-in action", () => {
