@@ -150,7 +150,10 @@ function buildSchemaPendingSnapshot(): HabitSnapshot {
   };
 }
 
-function buildTimedSnapshot(): HabitSnapshot {
+function buildTimedSnapshot(options?: {
+  savedMinutes?: number;
+  includeSecondHabit?: boolean;
+}): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
       id: "33333333-3333-4333-8333-333333333333",
@@ -165,7 +168,36 @@ function buildTimedSnapshot(): HabitSnapshot {
       timer_target_seconds: 480,
     })
   );
-  const activeHabits = [habit];
+  const secondHabit = options?.includeSecondHabit
+    ? buildHabitDefinitionView(
+        buildHabitRow({
+          id: "99999999-9999-4999-8999-999999999999",
+          title: "Breathing timer",
+          habit_mode: "timed",
+          habit_type: "duration",
+          category: "breathing",
+          target_operator: "at_least",
+          target_value_numeric: 5,
+          target_unit: "minutes",
+          timer_enabled: true,
+          timer_target_seconds: 300,
+          sort_order: 2,
+        })
+      )
+    : null;
+  const activeHabits = secondHabit ? [habit, secondHabit] : [habit];
+  const checkIns =
+    typeof options?.savedMinutes === "number"
+      ? [
+          buildHabitCheckInView(
+            buildCheckInRow({
+              habit_id: habit.id,
+              value_boolean: null,
+              value_numeric: options.savedMinutes,
+            })
+          ),
+        ]
+      : [];
 
   return {
     schemaReady: true,
@@ -173,29 +205,13 @@ function buildTimedSnapshot(): HabitSnapshot {
     selectedDate: "2026-05-10",
     activeHabits,
     archivedHabits: [],
-    daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
-    weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
   };
 }
 
 function buildCompletedTimedSnapshot(): HabitSnapshot {
-  const base = buildTimedSnapshot();
-  const habit = base.activeHabits[0]!;
-  const checkIns = [
-    buildHabitCheckInView(
-      buildCheckInRow({
-        habit_id: habit.id,
-        value_boolean: null,
-        value_numeric: 2.08,
-      })
-    ),
-  ];
-
-  return {
-    ...base,
-    daySummary: buildHabitDaySummary(base.activeHabits, checkIns, "2026-05-10"),
-    weekSummary: buildHabitWeekSummary(base.activeHabits, checkIns, "2026-05-10"),
-  };
+  return buildTimedSnapshot({ savedMinutes: 2.08 });
 }
 
 function buildCountSnapshot(): HabitSnapshot {
@@ -582,13 +598,26 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByText("7-day minutes")).toBeVisible();
     expect(screen.getAllByText("Daily").length).toBeGreaterThan(0);
-    expect(screen.getByText("0:00 / 8:00 today")).toBeVisible();
+    const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
+    expect(within(card).getByText("Daily")).toBeVisible();
+    expect(within(card).queryByText("Timed")).toBeNull();
+    expect(within(card).queryByText("Logged")).toBeNull();
+    expect(within(card).getByText("0:00")).toBeVisible();
+    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(
+      within(card).getByRole("progressbar", { name: "Mobility timer timed progress" })
+    ).toHaveAttribute("aria-valuenow", "0");
+    expect(within(card).queryByText("Total 0:00 / 8:00 today")).toBeNull();
     expect(screen.getByRole("button", { name: "Start" })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(await screen.findByRole("button", { name: "Finish" })).toBeDisabled();
     expect(await screen.findByText("Daily target 8:00")).toBeVisible();
+    expect(await screen.findByText("Manual time")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Add manual time" })).toBeDisabled();
+    expect(screen.queryByText("Manual min")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save manual" })).toBeNull();
     expect(await screen.findByText("No check-in")).toBeVisible();
   });
 
@@ -608,7 +637,9 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
 
-    expect(await screen.findByText("2:05 / 8:00 today")).toBeVisible();
+    const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
+    expect(await within(card).findByText("2:05")).toBeVisible();
+    expect(within(card).getByText("of 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
   });
 
@@ -630,8 +661,153 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
 
-    expect(await screen.findByText("1:05 / 8:00 today")).toBeVisible();
+    const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
+    expect(await within(card).findByText("1:05")).toBeVisible();
+    expect(within(card).getByText("of 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Pause" })).toBeVisible();
+  });
+
+  it("adds saved timed minutes to the visible local timer total without a duplicate timer readout", async () => {
+    const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
+    vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 20,
+          startedAtMs: nowMs - 45_000,
+          targetSeconds: 480,
+          updatedAtMs: nowMs - 45_000,
+        },
+      })
+    );
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2 })}
+        userId="user-1"
+      />
+    );
+
+    const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
+    expect(await within(card).findByText("3:05")).toBeVisible();
+    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).queryByText("Timed")).toBeNull();
+    expect(within(card).queryByText("Logged")).toBeNull();
+    expect(within(card).queryByText("Done today")).toBeNull();
+    expect(
+      within(card).getByRole("progressbar", { name: "Mobility timer timed progress" })
+    ).toHaveAttribute("aria-valuenow", "185");
+    expect(screen.queryByText("1:05")).toBeNull();
+    expect(within(card).queryByText("Total 3:05 / 8:00 today")).toBeNull();
+  });
+
+  it("pauses the current timed habit when another timer starts", async () => {
+    const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
+    const dateNow = vi.spyOn(Date, "now").mockReturnValue(nowMs);
+    render(
+      <HabitPerfectDayHub initialSnapshot={buildTimedSnapshot({ includeSecondHabit: true })} />
+    );
+
+    const mobilityCard = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
+    const breathingCard = screen.getByTestId("habit-card-99999999-9999-4999-8999-999999999999");
+
+    fireEvent.click(within(mobilityCard).getByRole("button", { name: "Start" }));
+    dateNow.mockReturnValue(nowMs + 10_000);
+    fireEvent.click(within(breathingCard).getByRole("button", { name: "Start" }));
+
+    expect(within(mobilityCard).getByText("0:10")).toBeVisible();
+    expect(within(mobilityCard).getByText("of 8:00 today")).toBeVisible();
+    expect(within(mobilityCard).getByRole("button", { name: "Resume" })).toBeVisible();
+    expect(within(breathingCard).getByRole("button", { name: "Pause" })).toBeVisible();
+  });
+
+  it("adds manual time on top of saved and local timed habit minutes", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 30,
+          startedAtMs: null,
+          targetSeconds: 480,
+          updatedAtMs: Date.now(),
+        },
+      })
+    );
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildTimedSnapshot({ savedMinutes: 3 }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2 })}
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
+    fireEvent.change(await screen.findByLabelText("Mobility timer manual time"), {
+      target: { value: "0.5" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Add manual time" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"valueNumeric":"3"'),
+        })
+      );
+    });
+  });
+
+  it("saves timer finishes on top of existing saved timed minutes", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v3:timers:user-1:2026-05-10",
+      JSON.stringify({
+        "33333333-3333-4333-8333-333333333333": {
+          version: 1,
+          elapsedSeconds: 125,
+          startedAtMs: null,
+          targetSeconds: 480,
+          updatedAtMs: Date.now(),
+        },
+      })
+    );
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildTimedSnapshot({ savedMinutes: 4.08 }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2 })}
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Finish" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"valueNumeric":"4.08"'),
+        })
+      );
+    });
   });
 
   it("clears persisted timed habit state after a successful timer save", async () => {

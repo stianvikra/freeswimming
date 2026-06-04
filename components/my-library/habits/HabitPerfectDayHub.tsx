@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
   Flag,
   Pause,
   Pencil,
@@ -186,6 +185,7 @@ function getInputValue(item: HabitDayItem) {
     item.habit.habitType === "duration" ||
     item.habit.habitType === "avoidance"
   ) {
+    if (item.habit.habitMode === "timed") return "";
     return item.checkIn?.valueNumeric === null || item.checkIn?.valueNumeric === undefined
       ? ""
       : String(item.checkIn.valueNumeric);
@@ -257,18 +257,27 @@ function getTimerTargetDisplaySeconds(habit: HabitDefinitionView) {
   return habit.targetUnit === "seconds" ? Math.round(target) : Math.round(target * 60);
 }
 
-function getTimedProgressSeconds(item: HabitDayItem, timerSeconds: number) {
-  if (timerSeconds > 0) return timerSeconds;
+function getSavedTimedSeconds(item: HabitDayItem) {
   const savedMinutes = item.checkIn?.valueNumeric;
   if (typeof savedMinutes !== "number" || savedMinutes <= 0) return 0;
   return Math.round(savedMinutes * 60);
 }
 
+function getTimedProgressSeconds(item: HabitDayItem, timerSeconds: number) {
+  return getSavedTimedSeconds(item) + Math.max(0, timerSeconds);
+}
+
 function getTimedStatusLabel(item: HabitDayItem, timerSeconds: number) {
   const progressSeconds = getTimedProgressSeconds(item, timerSeconds);
   const targetSeconds = getTimerTargetDisplaySeconds(item.habit);
-  if (!targetSeconds) return `${formatTimer(progressSeconds)} today`;
-  return `${formatTimer(progressSeconds)} / ${formatTimer(targetSeconds)} today`;
+  if (!targetSeconds) return `Total ${formatTimer(progressSeconds)} today`;
+  return `Total ${formatTimer(progressSeconds)} / ${formatTimer(targetSeconds)} today`;
+}
+
+function getTimedTargetContextLabel(habit: HabitDefinitionView) {
+  const targetSeconds = getTimerTargetDisplaySeconds(habit);
+  if (!targetSeconds) return "today";
+  return `of ${formatTimer(targetSeconds)} today`;
 }
 
 function getWeekdayLabel(date: string) {
@@ -858,18 +867,31 @@ export default function HabitPerfectDayHub({
   }
 
   function startTimer(habitId: string) {
+    const startedAtMs = Date.now();
     setTimers((current) => {
       const existing = current[habitId] ?? { elapsedSeconds: 0, startedAtMs: null };
       if (existing.startedAtMs !== null) return current;
+
+      const next = { ...current };
+      for (const [currentHabitId, timer] of Object.entries(current)) {
+        if (currentHabitId === habitId || timer.startedAtMs === null) continue;
+        next[currentHabitId] = {
+          elapsedSeconds:
+            timer.elapsedSeconds +
+            Math.max(0, Math.floor((startedAtMs - timer.startedAtMs) / 1000)),
+          startedAtMs: null,
+        };
+      }
+
       return {
-        ...current,
+        ...next,
         [habitId]: {
           ...existing,
-          startedAtMs: Date.now(),
+          startedAtMs,
         },
       };
     });
-    setNowMs(Date.now());
+    setNowMs(startedAtMs);
   }
 
   function pauseTimer(habitId: string) {
@@ -1159,7 +1181,8 @@ export default function HabitPerfectDayHub({
       return;
     }
 
-    const value = secondsToMinutesInput(seconds);
+    const totalSeconds = getSavedTimedSeconds(item) + seconds;
+    const value = secondsToMinutesInput(totalSeconds);
     setTimers((current) => ({
       ...current,
       [item.habit.id]: {
@@ -1167,6 +1190,21 @@ export default function HabitPerfectDayHub({
         startedAtMs: null,
       },
     }));
+    setCheckInInputs((current) => ({ ...current, [item.habit.id]: value }));
+    await saveCheckIn(item, false, value);
+  }
+
+  async function addManualTime(item: HabitDayItem) {
+    const input = checkInInputs[item.habit.id]?.trim() ?? "";
+    const manualMinutes = Number(input);
+    if (!Number.isFinite(manualMinutes) || manualMinutes <= 0) {
+      setError("Enter manual time before adding it.");
+      return;
+    }
+
+    const totalSeconds =
+      getSavedTimedSeconds(item) + getTimerSeconds(item.habit.id) + Math.round(manualMinutes * 60);
+    const value = secondsToMinutesInput(totalSeconds);
     setCheckInInputs((current) => ({ ...current, [item.habit.id]: value }));
     await saveCheckIn(item, false, value);
   }
@@ -1733,12 +1771,23 @@ export default function HabitPerfectDayHub({
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const isRestDay = item.checkIn?.status === "skipped";
               const timerSeconds = getTimerSeconds(habit.id);
+              const timedProgressSeconds = getTimedProgressSeconds(item, timerSeconds);
+              const timedProgressLabel = formatTimer(timedProgressSeconds);
+              const timedTargetSeconds = getTimerTargetDisplaySeconds(habit) ?? 0;
+              const timedProgressPercent =
+                timedTargetSeconds > 0
+                  ? Math.min(100, Math.round((timedProgressSeconds / timedTargetSeconds) * 100))
+                  : 0;
+              const timedTargetContextLabel = getTimedTargetContextLabel(habit);
               const isTimerRunning = timers[habit.id]?.startedAtMs != null;
               const timerActionLabel = isTimerRunning
                 ? "Pause"
                 : timerSeconds > 0
                   ? "Resume"
                   : "Start";
+              const manualTimeInputMinutes = Number(checkInInputs[habit.id]);
+              const canAddManualTime =
+                Number.isFinite(manualTimeInputMinutes) && manualTimeInputMinutes > 0;
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
               const cadenceLabel = habit.cadenceLabel;
@@ -1761,6 +1810,10 @@ export default function HabitPerfectDayHub({
                 index === 0 ||
                 getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
                   getPriorityGroupKey(item);
+              const showTimedProgressModule = isTimed && !isRestDay && canEditTodaysCheckIn;
+              const timedProgressContextLabel = isCompletionGroup
+                ? `${timedTargetContextLabel} · ${getCompletionStatusLabel(item)}`
+                : timedTargetContextLabel;
               const quickStatusLabel = isRestDay
                 ? "Rest day today"
                 : isCompletionGroup
@@ -1815,33 +1868,71 @@ export default function HabitPerfectDayHub({
                             Habit added
                           </p>
                         ) : null}
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-                          <h3 className="max-w-full min-w-0 basis-full truncate text-base font-semibold text-slate-900 sm:basis-auto">
-                            {habit.title}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
-                              {getHabitModeLabel(habit.habitMode)}
-                            </span>
+                        {showTimedProgressModule ? (
+                          <div className="flex min-w-0 items-center justify-between gap-3">
+                            <h3 className="min-w-0 truncate text-base font-semibold text-slate-900">
+                              {habit.title}
+                            </h3>
                             <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
-                            <span
-                              className={cx(
-                                isRestDay
-                                  ? habitWarningChipClass
-                                  : isSatisfied || isCompletionGroup
-                                    ? habitSuccessChipClass
-                                    : habitChipClass,
-                                "shrink-0",
-                                shouldShowStatusChipOnMobile(statusLabel) ? "" : "max-sm:hidden"
-                              )}
-                            >
-                              {statusLabel}
-                            </span>
                           </div>
-                        </div>
-                        <p className="mt-1 text-sm font-medium text-slate-600">
-                          {quickStatusLabel}
-                        </p>
+                        ) : (
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+                            <h3 className="max-w-full min-w-0 basis-full truncate text-base font-semibold text-slate-900 sm:basis-auto">
+                              {habit.title}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
+                                {getHabitModeLabel(habit.habitMode)}
+                              </span>
+                              <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
+                              <span
+                                className={cx(
+                                  isRestDay
+                                    ? habitWarningChipClass
+                                    : isSatisfied || isCompletionGroup
+                                      ? habitSuccessChipClass
+                                      : habitChipClass,
+                                  "shrink-0",
+                                  shouldShowStatusChipOnMobile(statusLabel) ? "" : "max-sm:hidden"
+                                )}
+                              >
+                                {statusLabel}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {showTimedProgressModule ? (
+                          <div
+                            className="mt-2 max-w-sm text-sm font-medium text-slate-600"
+                            aria-label={`Total timed progress ${timedProgressLabel} ${timedProgressContextLabel}`}
+                          >
+                            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                              <span className="text-lg leading-none font-bold text-[color:var(--fs-color-ink)] tabular-nums">
+                                {timedProgressLabel}
+                              </span>
+                              <span>{timedProgressContextLabel}</span>
+                            </div>
+                            {timedTargetSeconds > 0 ? (
+                              <div
+                                className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/80"
+                                role="progressbar"
+                                aria-label={`${habit.title} timed progress`}
+                                aria-valuemin={0}
+                                aria-valuemax={timedTargetSeconds}
+                                aria-valuenow={Math.min(timedProgressSeconds, timedTargetSeconds)}
+                              >
+                                <div
+                                  className="h-full rounded-full bg-blue-600"
+                                  style={{ width: `${timedProgressPercent}%` }}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm font-medium text-slate-600">
+                            {quickStatusLabel}
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">
@@ -1870,32 +1961,26 @@ export default function HabitPerfectDayHub({
                         ) : null}
 
                         {canEditTodaysCheckIn && !isCompletionGroup && !isRestDay && isTimed ? (
-                          <>
-                            <div className="flex h-10 w-full min-w-24 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/90 px-3 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:w-auto">
-                              <Clock className="h-4 w-4 text-blue-700" aria-hidden="true" />
-                              {formatTimer(timerSeconds)}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                clearCreatedHabitNotice();
-                                if (isTimerRunning) {
-                                  pauseTimer(habit.id);
-                                } else {
-                                  startTimer(habit.id);
-                                }
-                              }}
-                              disabled={disabled}
-                              className={cx(habitMobilePrimaryActionClass, "min-w-24 px-4")}
-                            >
-                              {isTimerRunning ? (
-                                <Pause className="h-4 w-4" aria-hidden="true" />
-                              ) : (
-                                <Play className="h-4 w-4" aria-hidden="true" />
-                              )}
-                              {timerActionLabel}
-                            </button>
-                          </>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              if (isTimerRunning) {
+                                pauseTimer(habit.id);
+                              } else {
+                                startTimer(habit.id);
+                              }
+                            }}
+                            disabled={disabled}
+                            className={cx(habitMobilePrimaryActionClass, "min-w-24 px-4")}
+                          >
+                            {isTimerRunning ? (
+                              <Pause className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Play className="h-4 w-4" aria-hidden="true" />
+                            )}
+                            {timerActionLabel}
+                          </button>
                         ) : null}
 
                         {canEditTodaysCheckIn &&
@@ -2280,11 +2365,12 @@ export default function HabitPerfectDayHub({
                                 Reset
                               </button>
                               <label className="block sm:w-32">
-                                <span className={habitLabelClass}>Manual min</span>
+                                <span className={habitLabelClass}>Manual time</span>
                                 <input
                                   type="number"
                                   min={0}
                                   step="0.25"
+                                  aria-label={`${habit.title} manual time`}
                                   value={checkInInputs[habit.id] ?? ""}
                                   onChange={(event) =>
                                     setCheckInInputs((current) => ({
@@ -2299,13 +2385,13 @@ export default function HabitPerfectDayHub({
                                 type="button"
                                 onClick={() => {
                                   clearCreatedHabitNotice();
-                                  return saveCheckIn(item);
+                                  return addManualTime(item);
                                 }}
-                                disabled={disabled}
+                                disabled={disabled || !canAddManualTime}
                                 className={habitMobilePrimaryActionClass}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
-                                Save manual
+                                Add manual time
                               </button>
                             </>
                           ) : null}
