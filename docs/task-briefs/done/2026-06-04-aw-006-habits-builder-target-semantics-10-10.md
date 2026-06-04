@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-04-aw-006-habits-builder-target-semantics-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-04`
 - `updated`: `2026-06-04`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-habits-builder-target-semantics`
-- `execution_mode`: `implementation to screenshot approval; stop before npm run verify:pre-pr`
+- `execution_mode`: `merged in PR #985; repo-managed docs-only closeout`
 
 ## Brief Audit Record
 
@@ -267,3 +267,46 @@ Critical target categories for a `10/10` claim:
 - `2026-06-04 | in-progress | owner confirmed the blue Habits week-bar container is intended to support swipe and flagged non-responsive day/week navigation plus header pills falling below the heading; added H-025/H-026 to Child F scope; targeted HabitPerfectDayHub test is green at 43/43 after implementation | next: update parent/queue/inventory docs, run broader targeted validation, then capture screenshot handoff`
 - `2026-06-04 | in-progress | owner approved recommended split: include Details action hierarchy in Child F and defer midnight auto-complete; Finish is now primary/blue and ordered before Rest day/Reset, while auto-complete remains a future data-integrity brief because current completion is derived from saved check-ins only | next: update parent/queue docs, rerun targeted validation, regenerate screenshot artifacts, and stop for owner approval`
 - `2026-06-04 | screenshot approval | targeted Habits component test is green at 43/43, git diff whitespace check is clean, and screenshot artifacts were regenerated at output/habits-child-f-2026-06-04-180220 after removing temporary capture files; no scoped product rendering files changed after this capture | next: owner screenshot review before npm run verify:pre-pr`
+- `2026-06-04 | merged | PR #985 shipped as squash commit 2af10f2 after owner screenshot approval, refreshed committed-code screenshot artifacts at output/habits-child-f-2026-06-04-182644, CI green, and local npm run verify:pre-merge PASS | next: complete repo-managed docs-only closeout and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-04`
+- `merged_pr`: `#985`
+- `squash_commit`: `2af10f2`
+- `result`: Closed AW-006 Habits Builder Target Semantics. Habits setup now separates Done-only reminders from count/timed targets, count and timed rows have clearer steppers and aligned actions, Habits week bars click/swipe correctly, heading pills align to the right, and Details puts the primary Finish action first.
+- `validation`: Targeted Habits unit tests PASS, broader Habits targeted tests PASS, `npm run lint:briefs -- --all` PASS, `npm run lint:quality-gates` PASS, `git diff --check` PASS, screenshot handoff owner-approved, `npm run verify:pre-pr` PASS on `6403728`, PR #985 CI PASS, and `npm run verify:pre-merge` PASS before merge.
+- `screenshot_artifacts`: `output/habits-child-f-2026-06-04-182644`, captured `2026-06-04 18:26` Europe/Oslo on committed code.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target category confirmation for `10/10`:
+
+- `Product goals and IA`: `5/5`
+- `UX flow clarity`: `5/5`
+- `Visual design quality`: `5/5`
+- `Business logic correctness and data integrity`: `5/5`
+- `Data placement and sync boundaries`: `5/5`
+- `Reliability and failure handling`: `5/5`
+- `Privacy and compliance`: `5/5`
+- `Incident response and support operations`: `5/5`
+- `i18n operational readiness`: `5/5`
+- `Stack-fit and dependency discipline`: `5/5`
+- `Testing and QA automation`: `5/5`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                          | Gaps / Notes                                                                                        |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Builder target choices and row states shipped in PR `#985`; focused tests cover target-choice payloads and row behavior.                          | None.                                                                                               |
+| UX flow clarity                               | `5/5`          | Screenshots show explicit target choices, aligned count/timed rows, Details hierarchy, and week navigation; CI/unit tests passed.                 | Midnight auto-complete intentionally deferred as separate data-integrity scope.                     |
+| Visual design quality                         | `5/5`          | Owner-approved screenshots at `output/habits-child-f-2026-06-04-182644` cover desktop/mobile row, builder, and Details surfaces.                  | None.                                                                                               |
+| Business logic correctness and data integrity | `5/5`          | No unsupported `litres` write or schema change; existing check-in semantics preserved; unit and route-adjacent tests passed.                      | Persisted `litres` remains future migration scope.                                                  |
+| Accessibility (a11y)                          | `5/5`          | New controls keep button/input labels, focus-visible classes, and keyboard-accessible actions; focused component tests passed.                    | None.                                                                                               |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence.                                                                         | None.                                                                                               |
+| Data placement and sync boundaries            | `5/5`          | Brief records server-canonical definitions/check-ins and local-only timer/draft boundaries; implementation did not add background sync.           | Midnight rollover remains future server-canonical decision.                                         |
+| Reliability and failure handling              | `5/5`          | Typed target mapping and safe fallback avoid unsupported rendered choices; full pre-PR and CI verify passed.                                      | None.                                                                                               |
+| Privacy and compliance                        | `5/5`          | No analytics/logging/public exposure of private habit titles; support docs updated for sensitive habit diagnosis.                                 | None.                                                                                               |
+| Content governance                            | `5/5`          | Parent, queue, design inventory, support runbook, and user-flow docs updated; closeout moves brief to `done`.                                     | None after this closeout.                                                                           |
+| Incident response and support operations      | `5/5`          | Support runbook documents Done-only/Any amount, specific count targets, and `litres` migration boundary.                                          | None.                                                                                               |
+| i18n operational readiness                    | `5/5`          | Screenshots and layout classes verify compact/mobile labels do not overlap and action widths remain stable.                                       | None.                                                                                               |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, existing Habits helpers, My Library tokens, and lucide icons; no new dependency.                                     | None.                                                                                               |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, broader Habits targeted tests, brief/quality lint, screenshot artifacts, `verify:pre-pr`, CI, and `verify:pre-merge` all passed. | Local Playwright full lane still reports known dev-login/Supabase fallback skips while gate passes. |
+| DevOps and rollback readiness                 | `5/5`          | No migration; rollback is normal revert of squash commit `2af10f2` / PR `#985`; post-merge closeout is docs-only.                                 | None.                                                                                               |
