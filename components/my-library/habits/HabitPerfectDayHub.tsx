@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -25,6 +26,7 @@ import {
   type HabitCadencePeriod,
   type HabitDayItem,
   type HabitMode,
+  type HabitOperator,
   type HabitSnapshot,
   type HabitType,
   type HabitUnit,
@@ -323,8 +325,20 @@ function getHabitModeLabel(mode: HabitMode) {
       return "Timed";
     case "build":
     default:
-      return "Build";
+      return "Do";
   }
+}
+
+function formatMotivationLabel(label: string) {
+  const streakMatch = label.match(/^(\d+)-day streak$/);
+  if (streakMatch?.[1]) {
+    return `Streak: ${streakMatch[1]} days`;
+  }
+  const doneDaysMatch = label.match(/^(\d+)\/(\d+) days on track$/);
+  if (doneDaysMatch?.[1] && doneDaysMatch[2]) {
+    return `${doneDaysMatch[1]}/${doneDaysMatch[2]} days done`;
+  }
+  return label;
 }
 
 function getPriorityGroupKey(item: HabitDayItem) {
@@ -349,13 +363,26 @@ function getBuildMotivationLabel(item: HabitDayItem) {
   ) {
     return null;
   }
-  return item.evaluation.valueLabel;
+  return formatMotivationLabel(item.evaluation.valueLabel);
 }
 
 function getBuildOpenStatusLabel(item: HabitDayItem) {
   const motivationLabel = getBuildMotivationLabel(item);
   if (!motivationLabel) return item.evaluation.valueLabel;
   return motivationLabel;
+}
+
+function getBuildCompletionMotivationLabel(item: HabitDayItem) {
+  const motivationLabel = getBuildMotivationLabel(item);
+  return motivationLabel?.startsWith("Streak:") ? motivationLabel : null;
+}
+
+function formatQuitProgressLabel(label: string) {
+  const clearDaysMatch = label.match(/^(\d+)\/(\d+) days on track$/);
+  if (clearDaysMatch?.[1] && clearDaysMatch[2]) {
+    return `${clearDaysMatch[1]}/${clearDaysMatch[2]} days clear`;
+  }
+  return label;
 }
 
 function shouldShowStatusChipOnMobile(statusLabel: string) {
@@ -429,6 +456,19 @@ function formatCountValue(value: number, unit: HabitUnit | null) {
   return `${value} ${getDisplayUnit(unit, value)}`;
 }
 
+function getCountTargetPrefix(operator: HabitOperator) {
+  switch (operator) {
+    case "at_most":
+      return "Limit";
+    case "at_least":
+      return "Goal";
+    case "after":
+    case "before":
+    default:
+      return "Target";
+  }
+}
+
 const habitFeedbackToneClasses: Record<HabitFeedbackTone, string> = {
   warning: "border-amber-200 bg-amber-50 text-amber-800",
   error: "border-rose-200 bg-rose-50 text-rose-800",
@@ -465,7 +505,7 @@ const habitBrandChipClass =
 const habitSuccessChipClass =
   "inline-flex rounded-[var(--fs-radius-control)] border border-emerald-200 bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700";
 const habitWarningChipClass =
-  "inline-flex rounded-[var(--fs-radius-control)] border border-amber-200 bg-white/90 px-3 py-1 text-xs font-semibold text-amber-700";
+  "inline-flex rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50/90 px-3 py-1 text-xs font-semibold text-amber-700";
 const habitChoiceBaseClass =
   "min-h-10 rounded-[var(--fs-radius-control)] border px-3 text-left text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const habitChoiceSelectedClass =
@@ -680,6 +720,7 @@ export default function HabitPerfectDayHub({
   const [timers, setTimers] = useState<Record<string, TimerState>>({});
   const [expandedHabitIds, setExpandedHabitIds] = useState<string[]>([]);
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
+  const [isMobileWeekOpen, setIsMobileWeekOpen] = useState(false);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -1425,11 +1466,42 @@ export default function HabitPerfectDayHub({
     );
   }
 
+  function renderWeekOverview(testId: string) {
+    return (
+      <div
+        className="mt-5 grid grid-cols-7 gap-2"
+        aria-label="Seven day habit consistency"
+        data-testid={testId}
+      >
+        {snapshot.weekSummary.days.map((day) => (
+          <div key={day.date} className="min-w-0">
+            <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
+              <div
+                className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
+                style={{ height: `${Math.max(6, day.completionPercent)}%` }}
+                aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
+              />
+            </div>
+            <p className="mt-1 truncate text-center text-[11px] font-semibold text-slate-600">
+              {getWeekdayLabel(day.date)}
+            </p>
+            <p className="text-center text-[11px] text-slate-500">{day.completionPercent}%</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function getCountHabitStatus(item: HabitDayItem) {
     const todayValue = item.checkIn?.valueNumeric ?? 0;
-    return `${formatCountValue(todayValue, item.habit.targetUnit)} today · ${
-      item.cadenceProgress.completedCount
-    }/${item.cadenceProgress.targetCount} ${item.cadenceProgress.periodLabel}`;
+    const target = item.habit.targetValueNumeric;
+    const todayLabel = formatCountValue(todayValue, item.habit.targetUnit);
+    if (typeof target === "number" && target > 0) {
+      return `Today: ${todayLabel} · ${getCountTargetPrefix(
+        item.habit.targetOperator
+      )}: ${formatCountValue(target, item.habit.targetUnit)}`;
+    }
+    return `Today: ${todayLabel}`;
   }
 
   if (!snapshot.schemaReady) {
@@ -1499,23 +1571,7 @@ export default function HabitPerfectDayHub({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-7 gap-2" aria-label="Seven day habit consistency">
-          {snapshot.weekSummary.days.map((day) => (
-            <div key={day.date} className="min-w-0">
-              <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
-                <div
-                  className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
-                  style={{ height: `${Math.max(6, day.completionPercent)}%` }}
-                  aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
-                />
-              </div>
-              <p className="mt-1 truncate text-center text-[11px] font-semibold text-slate-600">
-                {getWeekdayLabel(day.date)}
-              </p>
-              <p className="text-center text-[11px] text-slate-500">{day.completionPercent}%</p>
-            </div>
-          ))}
-        </div>
+        {renderWeekOverview("habits-week-overview-summary")}
       </section>
 
       <section
@@ -1533,7 +1589,30 @@ export default function HabitPerfectDayHub({
                 : getLongDateLabel(snapshot.selectedDate)}
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div
+            className={cx(
+              preferMobileActiveFocus
+                ? "grid w-full grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end"
+                : "flex flex-wrap items-center justify-end gap-2"
+            )}
+          >
+            {preferMobileActiveFocus ? (
+              <button
+                type="button"
+                aria-label={isMobileWeekOpen ? "Hide week overview" : "Show week overview"}
+                aria-expanded={isMobileWeekOpen}
+                aria-controls="mobile-habits-week-overview"
+                title="Week overview"
+                onClick={() => setIsMobileWeekOpen((current) => !current)}
+                className={cx(
+                  habitSecondaryActionClass,
+                  "h-11 w-11 px-0 max-sm:rounded-[var(--fs-radius-control)] sm:hidden"
+                )}
+              >
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Week overview</span>
+              </button>
+            ) : null}
             {isAddHabitOpen ? null : (
               <button
                 type="button"
@@ -1549,6 +1628,24 @@ export default function HabitPerfectDayHub({
             {online === false ? <p className={habitWarningChipClass}>Offline</p> : null}
           </div>
         </div>
+
+        {preferMobileActiveFocus && isMobileWeekOpen ? (
+          <div
+            id="mobile-habits-week-overview"
+            className={cx("mt-4 sm:hidden", habitNestedMutedCardClass)}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className={habitLabelClass}>Week overview</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {getLongDateLabel(snapshot.selectedDate)} · {snapshot.weekSummary.perfectDayCount}
+                  /7 perfect days
+                </p>
+              </div>
+            </div>
+            {renderWeekOverview("habits-week-overview-mobile")}
+          </div>
+        ) : null}
 
         <section
           id="add-habit"
@@ -1818,21 +1915,19 @@ export default function HabitPerfectDayHub({
                 ? "Rest day today"
                 : isCompletionGroup
                   ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
-                    ? `${formatCountValue(
-                        item.checkIn?.valueNumeric ?? 0,
-                        habit.targetUnit
-                      )} today · ${getCompletionStatusLabel(item)}`
+                    ? getCountHabitStatus(item)
                     : isTimed
                       ? `${getTimedStatusLabel(item, timerSeconds)} · ${getCompletionStatusLabel(
                           item
                         )}`
-                      : [getCompletionStatusLabel(item), getBuildMotivationLabel(item)]
-                          .filter(Boolean)
-                          .join(" · ")
+                      : getBuildCompletionMotivationLabel(item)
                   : !canEditTodaysCheckIn && item.priorityGroup === "not_due"
                     ? "Not due today"
                     : isQuit
-                      ? [item.evaluation.valueLabel, item.evaluation.supportingLabel]
+                      ? [
+                          formatQuitProgressLabel(item.evaluation.valueLabel),
+                          item.evaluation.supportingLabel,
+                        ]
                           .filter(Boolean)
                           .join(" · ")
                       : isTimed
@@ -1868,26 +1963,21 @@ export default function HabitPerfectDayHub({
                             Habit added
                           </p>
                         ) : null}
-                        {showTimedProgressModule ? (
-                          <div className="flex min-w-0 items-center justify-between gap-3">
-                            <h3 className="min-w-0 truncate text-base font-semibold text-slate-900">
-                              {habit.title}
-                            </h3>
-                            <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
-                          </div>
-                        ) : (
-                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-                            <h3 className="max-w-full min-w-0 basis-full truncate text-base font-semibold text-slate-900 sm:basis-auto">
-                              {habit.title}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+                          <h3 className="max-w-full min-w-0 basis-full truncate text-[17px] leading-6 font-semibold text-slate-900 sm:basis-auto">
+                            {habit.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {showTimedProgressModule ? null : (
                               <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
                                 {getHabitModeLabel(habit.habitMode)}
                               </span>
-                              <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
+                            )}
+                            <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
+                            {showTimedProgressModule ? null : (
                               <span
                                 className={cx(
-                                  isRestDay
+                                  isRestDay || statusLabel === "Slip logged today"
                                     ? habitWarningChipClass
                                     : isSatisfied || isCompletionGroup
                                       ? habitSuccessChipClass
@@ -1898,9 +1988,9 @@ export default function HabitPerfectDayHub({
                               >
                                 {statusLabel}
                               </span>
-                            </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                         {showTimedProgressModule ? (
                           <div
                             className="mt-2 max-w-sm text-sm font-medium text-slate-600"
@@ -1928,11 +2018,11 @@ export default function HabitPerfectDayHub({
                               </div>
                             ) : null}
                           </div>
-                        ) : (
-                          <p className="mt-1 text-sm font-medium text-slate-600">
+                        ) : quickStatusLabel ? (
+                          <p className="mt-1 text-[15px] leading-6 font-medium text-slate-600">
                             {quickStatusLabel}
                           </p>
-                        )}
+                        ) : null}
                       </div>
 
                       <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">

@@ -565,7 +565,12 @@ export default function SiteChrome({
       <div className={isPublicRoute ? "pt-12 sm:pt-14" : undefined}>
         {children}
         {showAdminPageNotes ? (
-          <div className="mx-auto w-full max-w-[1100px] px-4 pb-8">
+          <div
+            className={[
+              "mx-auto w-full max-w-[1100px] px-4",
+              showDefaultMobileNav ? "pb-[calc(96px+env(safe-area-inset-bottom))] sm:pb-8" : "pb-8",
+            ].join(" ")}
+          >
             <AdminContextNotesPanel
               contextType="page"
               contextRef={normalizedPageContextRef}
