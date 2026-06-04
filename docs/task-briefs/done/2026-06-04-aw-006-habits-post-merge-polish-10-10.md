@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-04-aw-006-habits-post-merge-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-04`
 - `updated`: `2026-06-04`
@@ -11,7 +11,7 @@
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `branch`: `aw-006-habits-post-merge-polish`
-- `resolved_findings`: `H-029`, `H-030`, `H-031`, `H-032`, `H-033`, `H-034`, `H-035` pending merge
+- `resolved_findings`: `H-029`, `H-030`, `H-031`, `H-032`, `H-033`, `H-034`, `H-035`
 - `deferred_findings`: persisted `litres`, midnight auto-complete, sound/preferences, Habits Advanced Motivation, and My Library Calendar Period Comparison
 - `return_checkpoint`: update parent, queue, and design inventory before closeout
 - `next_return_target`: return to the Habits parent or explicitly select My Library Calendar Period Comparison after merge/closeout
@@ -99,7 +99,6 @@ Critical target categories for `10/10` claim:
 - `UX flow clarity`
 - `Visual design quality`
 - `Business logic correctness and data integrity`
-- `Accessibility (a11y)`
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
 
@@ -187,3 +186,27 @@ Sweep evidence:
 - `2026-06-04 | screenshot-review | owner flagged that count stepper minus/plus still looked vertically detached from the input; converted the number stepper into one segmented control with shared border/radius and refreshed artifacts at output/habits-post-merge-polish-2026-06-04-23-26-35 | next: rerun focused validation and wait for owner visual approval before npm run verify:pre-pr`
 - `2026-06-04 | screenshot-approved | owner approved the refreshed visual handoff and explicitly approved merge on good tests; focused validation after the segmented stepper patch is green: targeted Habits unit pack PASS 5 files/75 tests, eslint PASS, lint:briefs -- --all PASS, lint:quality-gates PASS, git diff --check PASS | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, and merge only if all gates stay green`
 - `2026-06-04 | pre-pr-green | npm run verify:pre-pr PASS on the full public lane: branch-current PASS, lint/quality/env/pr-body/eslint/typecheck PASS, unit PASS 226 files/1349 tests, build PASS, perf budgets PASS, Playwright PASS 106 passed/530 skipped | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-04`
+- `merged_pr`: `#987`
+- `squash_commit`: `be04634`
+- `result`: Closed the bounded Habits post-merge polish found after PR `#985`/closeout `#986`: open count habits now accept and clamp explicit `0-100` values, duplicate open count `Value`/`Save` controls are removed from Details when the row editor is visible, desktop `Mark done` stays on one line, Habits week/back-forward navigation resyncs visible state, desktop pills sit after headings, Save/Details no longer collide, and count steppers render as one segmented control.
+- `validation`: focused Habits unit pack PASS 5 files/75 tests; screenshot handoff approved with artifacts at `output/habits-post-merge-polish-2026-06-04-23-26-35`; `npm run verify:pre-pr` PASS full public lane; PR `#987` CI PASS; `npm run verify:pre-merge` PASS full public lane.
+- `10/10 claim`: no - release gate met, but this bounded polish does not claim full platform 10/10 because authenticated My Library E2E remains skipped locally when dev-login/Supabase is unavailable.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                         | Gaps / Notes                                                                                       |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#987`, owner-approved screenshots, done scope stayed Habits-only.                                                            | No remaining gap in scoped slice.                                                                  |
+| UX flow clarity                               | `5/5`          | Tests cover `0`/`100` count bounds, duplicate editor prevention, no-wrap actions, row pill placement, and route snapshot resync. | No remaining gap in scoped slice.                                                                  |
+| Visual design quality                         | `5/5`          | Owner-approved screenshot artifacts plus class assertions for segmented steppers and equal-height actions.                       | No visual caveat after approval.                                                                   |
+| Business logic correctness and data integrity | `5/5`          | Focused tests assert explicit `0` save payload, min/max clamping, and snapshot resync without schema/API changes.                | Persisted `litres` and midnight auto-complete remain separate deferred briefs.                     |
+| Accessibility (a11y)                          | `5/5`          | Buttons/inputs retain accessible names and keyboard semantics; targeted tests lock mobile calendar toggle text.                  | No remaining gap in scoped slice.                                                                  |
+| Data placement and sync boundaries            | `5/5`          | No new persisted boundary; local UI state follows new server snapshots.                                                          | No migration needed.                                                                               |
+| Reliability and failure handling              | `5/5`          | Invalid/out-of-range edits clamp safely; back-forward/week navigation has regression coverage.                                   | No remaining gap in scoped slice.                                                                  |
+| Content governance                            | `5/5`          | Parent, queue, design inventory, user-flow map, and closeout lifecycle updated.                                                  | Closeout PR is docs-only.                                                                          |
+| i18n operational readiness                    | `5/5`          | Layout avoids fixed-width wrapping/overlap for existing labels and adds no new non-localizable runtime strings.                  | Future longer translations still require normal locale review.                                     |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, local number-stepper contract, Tailwind token classes, and existing tests; no dependency.           | No remaining gap.                                                                                  |
+| Testing and QA automation                     | `5/5`          | Focused unit pack, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                                                       | Authenticated E2E was skipped by existing local dev-login availability, not changed by this slice. |
+| DevOps and rollback readiness                 | `5/5`          | No migration; rollback is normal revert of PR `#987` plus closeout docs.                                                         | No data cleanup required.                                                                          |
