@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Flag,
+  Minus,
   Pause,
   Pencil,
   Play,
@@ -18,11 +19,21 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import {
   HABIT_CATEGORY_VALUES,
   HABIT_MODE_VALUES,
-  HABIT_TYPE_VALUES,
   type HabitDefinitionView,
   type HabitCadenceDayPolicy,
   type HabitCadencePeriod,
@@ -89,9 +100,23 @@ type HabitFeedbackProps = {
   testId?: string;
 };
 
+type NumberStepperFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  inputAriaLabel?: string;
+  min?: number;
+  step?: number;
+  disabled?: boolean;
+  hideLabel?: boolean;
+  className?: string;
+};
+
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
 const HABIT_TIMER_STORAGE_PREFIX = "freeswimming:habits:v3:timers";
 const HABIT_TIMER_STORAGE_VERSION = 1;
+const HABIT_WEEK_SWIPE_THRESHOLD_PX = 48;
+const HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX = 40;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
   monday: "Mon",
   tuesday: "Tue",
@@ -109,6 +134,13 @@ const ALL_HABIT_WEEKDAYS: HabitWeekday[] = [
   "friday",
   "saturday",
   "sunday",
+];
+const BUILD_TARGET_TYPE_OPTIONS: HabitType[] = [
+  "binary",
+  "count",
+  "duration",
+  "time_of_day",
+  "avoidance",
 ];
 
 function buildDefaultDraft(selectedDate: string): HabitDraft {
@@ -223,6 +255,26 @@ function getResolvedDraftHabitType(draft: HabitDraft): HabitType {
   return draft.habitType;
 }
 
+function getDefaultTargetValueForHabitType(habitType: HabitType) {
+  if (habitType === "avoidance") return "0";
+  if (habitType === "count") return "1";
+  if (habitType === "duration") return "10";
+  return "10";
+}
+
+function applyHabitTypeToDraft(current: HabitDraft, habitType: HabitType): HabitDraft {
+  const unitOptions = getUnitOptions(habitType);
+  return {
+    ...current,
+    habitType,
+    targetUnit: unitOptions[0] ?? "times",
+    targetValueNumeric:
+      current.habitType === habitType
+        ? current.targetValueNumeric
+        : getDefaultTargetValueForHabitType(habitType),
+  };
+}
+
 function applyHabitModeToDraft(current: HabitDraft, mode: HabitMode): HabitDraft {
   if (mode === "build") {
     return {
@@ -258,6 +310,28 @@ function formatTimer(seconds: number) {
 
 function secondsToMinutesInput(seconds: number) {
   return String(Math.round((seconds / 60) * 100) / 100);
+}
+
+function getStepPrecision(step: number) {
+  const [, decimal = ""] = String(step).split(".");
+  return decimal.length;
+}
+
+function formatSteppedNumber(value: number, step: number) {
+  const precision = getStepPrecision(step);
+  const fixed = value.toFixed(precision);
+  return fixed.replace(/\.?0+$/, "");
+}
+
+function normalizeNumberInputValue(value: string) {
+  return value.replace(",", ".").replace(/[^\d.]/g, "");
+}
+
+function stepNumberInputValue(value: string, step: number, direction: 1 | -1, min: number) {
+  const parsed = Number(value);
+  const base = Number.isFinite(parsed) ? parsed : min;
+  const next = Math.max(min, base + step * direction);
+  return formatSteppedNumber(next, step);
 }
 
 function getTimerTargetDisplaySeconds(habit: HabitDefinitionView) {
@@ -345,6 +419,38 @@ function getHabitTypeLabel(type: HabitType) {
     case "binary":
     default:
       return "Done only";
+  }
+}
+
+function getBuildTargetChoiceLabel(type: HabitType) {
+  switch (type) {
+    case "count":
+      return "Specific count";
+    case "duration":
+      return "Duration target";
+    case "time_of_day":
+      return "Time of day";
+    case "avoidance":
+      return "Avoid/limit";
+    case "binary":
+    default:
+      return "Done only";
+  }
+}
+
+function getBuildTargetChoiceContext(type: HabitType) {
+  switch (type) {
+    case "count":
+      return "Fixed amount";
+    case "duration":
+      return "Manual time";
+    case "time_of_day":
+      return "Clock target";
+    case "avoidance":
+      return "Stay under";
+    case "binary":
+    default:
+      return "Any amount";
   }
 }
 
@@ -517,18 +623,12 @@ const habitActionBaseClass =
   "inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const habitPrimaryActionClass = cx("fs-cta-primary", habitActionBaseClass);
 const habitSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", habitActionBaseClass);
-const habitSuccessSecondaryActionClass = cx(
-  "fs-cta-secondary border-emerald-200 text-emerald-700 hover:bg-emerald-50",
-  habitActionBaseClass
-);
 const habitDangerActionClass = cx("fs-cta-danger", habitActionBaseClass);
 const habitMobilePrimaryActionClass = cx(habitPrimaryActionClass, mobilePrimaryActionItemClass);
 const habitMobileSecondaryActionClass = cx(habitSecondaryActionClass, mobileActionItemClass);
-const habitMobileSuccessSecondaryActionClass = cx(
-  habitSuccessSecondaryActionClass,
-  mobileActionItemClass
-);
 const habitMobileDangerActionClass = cx(habitDangerActionClass, mobileActionItemClass);
+const habitPeerActionWidthClass = "min-w-28 px-4 sm:!w-28";
+const habitWideActionWidthClass = "min-w-36 px-4 sm:!w-36";
 const habitChipClass =
   "inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)]";
 const habitBrandChipClass =
@@ -591,6 +691,66 @@ function HabitFeedback({
       <p className={cx("text-sm", title ? "mt-1" : "", tone === "error" ? "font-medium" : "")}>
         {children}
       </p>
+    </div>
+  );
+}
+
+function NumberStepperField({
+  label,
+  value,
+  onChange,
+  inputAriaLabel,
+  min = 0,
+  step = 1,
+  disabled = false,
+  hideLabel = false,
+  className,
+}: NumberStepperFieldProps) {
+  const inputId = useId();
+
+  return (
+    <div className={className}>
+      <label htmlFor={inputId} className={hideLabel ? "sr-only" : habitLabelClass}>
+        {label}
+      </label>
+      <div
+        className={cx(
+          hideLabel ? "mt-0" : "mt-1",
+          "grid min-h-10 grid-cols-[2.75rem_minmax(4rem,1fr)_2.75rem] items-stretch"
+        )}
+      >
+        <button
+          type="button"
+          aria-label={`Decrease ${label}`}
+          disabled={disabled}
+          onClick={() => onChange(stepNumberInputValue(value, step, -1, min))}
+          className={cx(habitSecondaryActionClass, "rounded-r-none px-0")}
+        >
+          <Minus className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <input
+          id={inputId}
+          type="text"
+          inputMode="decimal"
+          aria-label={inputAriaLabel}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(normalizeNumberInputValue(event.target.value))}
+          className={cx(
+            habitFieldClass,
+            "mt-0 min-h-10 rounded-none border-x-0 text-center tabular-nums"
+          )}
+        />
+        <button
+          type="button"
+          aria-label={`Increase ${label}`}
+          disabled={disabled}
+          onClick={() => onChange(stepNumberInputValue(value, step, 1, min))}
+          className={cx(habitSecondaryActionClass, "rounded-l-none px-0")}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -740,6 +900,7 @@ export default function HabitPerfectDayHub({
   todayDate = initialSnapshot.selectedDate,
   userId,
 }: Props) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [draft, setDraft] = useState<HabitDraft>(() =>
     buildDefaultDraft(initialSnapshot.selectedDate)
@@ -764,6 +925,7 @@ export default function HabitPerfectDayHub({
   const addHabitSectionRef = useRef<HTMLElement | null>(null);
   const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
   const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
+  const weekSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const calendarWindow = buildMyLibraryCalendarWindow(snapshot.selectedDate);
   const safeTodayDate = todayDate || snapshot.selectedDate;
   const isSelectedToday = snapshot.selectedDate === safeTodayDate;
@@ -773,6 +935,24 @@ export default function HabitPerfectDayHub({
     calendarWindow.nextWindowDate > safeTodayDate ? safeTodayDate : calendarWindow.nextWindowDate;
   const canGoNextWindow = snapshot.selectedDate < safeTodayDate;
   const calendarViewParam = preferMobileActiveFocus ? "active" : undefined;
+  const previousWindowHref = buildMyLibraryCalendarHref({
+    path: "/my-library/habits",
+    selectedDate: calendarWindow.previousWindowDate,
+    view: calendarViewParam,
+    hash: "today-habits",
+  });
+  const todayWindowHref = buildMyLibraryCalendarHref({
+    path: "/my-library/habits",
+    selectedDate: safeTodayDate,
+    view: calendarViewParam,
+    hash: "today-habits",
+  });
+  const nextWindowHref = buildMyLibraryCalendarHref({
+    path: "/my-library/habits",
+    selectedDate: nextWindowDate,
+    view: calendarViewParam,
+    hash: "today-habits",
+  });
   const selectedDateLabel = getSelectedDateDisplayLabel(snapshot.selectedDate, safeTodayDate);
   const weekLabel = calendarWindow.weekLabel;
   const weekRangeLabel = getWeekRangeLabel(calendarWindow.startDate, calendarWindow.endDate);
@@ -1349,6 +1529,34 @@ export default function HabitPerfectDayHub({
     }
   }
 
+  function renderBuildTargetControls(
+    currentDraft: HabitDraft,
+    updateDraft: (updater: (current: HabitDraft) => HabitDraft) => void
+  ) {
+    return (
+      <fieldset className="md:col-span-2">
+        <legend className={habitLabelClass}>Target</legend>
+        <div className="mt-1 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {BUILD_TARGET_TYPE_OPTIONS.map((type) => (
+            <button
+              key={type}
+              type="button"
+              aria-label={`${getBuildTargetChoiceLabel(type)}: ${getBuildTargetChoiceContext(type)}`}
+              aria-pressed={currentDraft.habitType === type}
+              onClick={() => updateDraft((current) => applyHabitTypeToDraft(current, type))}
+              className={cx("min-h-14", getHabitChoiceClass(currentDraft.habitType === type))}
+            >
+              <span className="block">{getBuildTargetChoiceLabel(type)}</span>
+              <span className="mt-1 block text-xs font-medium opacity-75">
+                {getBuildTargetChoiceContext(type)}
+              </span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    );
+  }
+
   function renderScheduleControls(
     currentDraft: HabitDraft,
     updateDraft: (updater: (current: HabitDraft) => HabitDraft) => void,
@@ -1538,25 +1746,82 @@ export default function HabitPerfectDayHub({
     );
   }
 
+  function navigateToCalendarHref(href: string) {
+    router.push(href);
+  }
+
+  function handleCalendarLinkClick(event: ReactMouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateToCalendarHref(href);
+  }
+
+  function handleWeekOverviewTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    if (!touch) {
+      weekSwipeStartRef.current = null;
+      return;
+    }
+
+    weekSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleWeekOverviewTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
+    const start = weekSwipeStartRef.current;
+    weekSwipeStartRef.current = null;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    const isVerticalScroll = absY > HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX && absY > absX;
+    if (absX < HABIT_WEEK_SWIPE_THRESHOLD_PX || isVerticalScroll) return;
+
+    if (deltaX > 0) {
+      navigateToCalendarHref(previousWindowHref);
+      return;
+    }
+
+    if (canGoNextWindow) {
+      navigateToCalendarHref(nextWindowHref);
+    }
+  }
+
   function renderWeekOverview(testId: string) {
     return (
       <div
-        className="mt-5 grid grid-cols-7 gap-2"
+        className="mt-5 grid touch-pan-y grid-cols-7 gap-2"
         aria-label={`Habits calendar ${weekLabel} ${weekRangeLabel}`}
         data-testid={testId}
+        onTouchStart={handleWeekOverviewTouchStart}
+        onTouchEnd={handleWeekOverviewTouchEnd}
       >
         {snapshot.weekSummary.days.map((day) => {
           const isSelected = day.date === snapshot.selectedDate;
           const isToday = day.date === safeTodayDate;
+          const dayHref = buildMyLibraryCalendarHref({
+            path: "/my-library/habits",
+            selectedDate: day.date,
+            view: calendarViewParam,
+            hash: "today-habits",
+          });
           return (
             <Link
               key={day.date}
-              href={buildMyLibraryCalendarHref({
-                path: "/my-library/habits",
-                selectedDate: day.date,
-                view: calendarViewParam,
-                hash: "today-habits",
-              })}
+              href={dayHref}
+              onClick={(event) => handleCalendarLinkClick(event, dayHref)}
               aria-current={isSelected ? "date" : undefined}
               aria-label={`${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
                 day.completionPercent
@@ -1590,25 +1855,6 @@ export default function HabitPerfectDayHub({
   }
 
   function renderCalendarControls(testId: string) {
-    const previousHref = buildMyLibraryCalendarHref({
-      path: "/my-library/habits",
-      selectedDate: calendarWindow.previousWindowDate,
-      view: calendarViewParam,
-      hash: "today-habits",
-    });
-    const todayHref = buildMyLibraryCalendarHref({
-      path: "/my-library/habits",
-      selectedDate: safeTodayDate,
-      view: calendarViewParam,
-      hash: "today-habits",
-    });
-    const nextHref = buildMyLibraryCalendarHref({
-      path: "/my-library/habits",
-      selectedDate: nextWindowDate,
-      view: calendarViewParam,
-      hash: "today-habits",
-    });
-
     return (
       <div
         data-testid={testId}
@@ -1626,15 +1872,27 @@ export default function HabitPerfectDayHub({
           <p className="mt-1 text-sm text-slate-500">{editRuleLabel}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-          <Link href={previousHref} className={cx(habitSecondaryActionClass, "px-3")}>
+          <Link
+            href={previousWindowHref}
+            onClick={(event) => handleCalendarLinkClick(event, previousWindowHref)}
+            className={cx(habitSecondaryActionClass, "px-3")}
+          >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             <span className="max-sm:sr-only">Previous week</span>
           </Link>
-          <Link href={todayHref} className={cx(habitSecondaryActionClass, "px-3")}>
+          <Link
+            href={todayWindowHref}
+            onClick={(event) => handleCalendarLinkClick(event, todayWindowHref)}
+            className={cx(habitSecondaryActionClass, "px-3")}
+          >
             Today
           </Link>
           {canGoNextWindow ? (
-            <Link href={nextHref} className={cx(habitSecondaryActionClass, "px-3")}>
+            <Link
+              href={nextWindowHref}
+              onClick={(event) => handleCalendarLinkClick(event, nextWindowHref)}
+              className={cx(habitSecondaryActionClass, "px-3")}
+            >
               <span className="max-sm:sr-only">Next week</span>
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -1861,32 +2119,7 @@ export default function HabitPerfectDayHub({
                   </div>
                 </div>
 
-                {draft.habitMode === "build" ? (
-                  <label className="block">
-                    <span className={habitLabelClass}>Type</span>
-                    <select
-                      value={draft.habitType}
-                      onChange={(event) => {
-                        const habitType = event.target.value as HabitType;
-                        const unitOptions = getUnitOptions(habitType);
-                        setDraft((current) => ({
-                          ...current,
-                          habitType,
-                          targetUnit: unitOptions[0] ?? "times",
-                          targetValueNumeric:
-                            habitType === "avoidance" ? "0" : current.targetValueNumeric,
-                        }));
-                      }}
-                      className={habitFieldClass}
-                    >
-                      {HABIT_TYPE_VALUES.map((type) => (
-                        <option key={type} value={type}>
-                          {getHabitTypeLabel(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
+                {draft.habitMode === "build" ? renderBuildTargetControls(draft, setDraft) : null}
 
                 <label className="block">
                   <span className={habitLabelClass}>Category</span>
@@ -1938,24 +2171,17 @@ export default function HabitPerfectDayHub({
                 draftHabitType !== "binary" &&
                 draftHabitType !== "time_of_day" ? (
                   <>
-                    <label className="block">
-                      <span className={habitLabelClass}>
-                        {draft.habitMode === "timed" ? "Timer target" : "Target"}
-                      </span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.25"
-                        value={draft.targetValueNumeric}
-                        onChange={(event) =>
-                          setDraft((current) => ({
-                            ...current,
-                            targetValueNumeric: event.target.value,
-                          }))
-                        }
-                        className={habitFieldClass}
-                      />
-                    </label>
+                    <NumberStepperField
+                      label={draft.habitMode === "timed" ? "Timer target" : "Target"}
+                      value={draft.targetValueNumeric}
+                      step={draftHabitType === "count" ? 1 : 0.25}
+                      onChange={(value) =>
+                        setDraft((current) => ({
+                          ...current,
+                          targetValueNumeric: value,
+                        }))
+                      }
+                    />
                     <label className="block">
                       <span className={habitLabelClass}>Unit</span>
                       <select
@@ -2130,11 +2356,14 @@ export default function HabitPerfectDayHub({
                             Habit added
                           </p>
                         ) : null}
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-                          <h3 className="max-w-full min-w-0 basis-full truncate text-[17px] leading-6 font-semibold text-slate-900 sm:basis-auto">
+                        <div
+                          data-testid={`habit-heading-row-${habit.id}`}
+                          className="flex min-w-0 items-start justify-between gap-3"
+                        >
+                          <h3 className="min-w-0 flex-1 truncate text-[17px] leading-6 font-semibold text-slate-900">
                             {habit.title}
                           </h3>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                             {showTimedProgressModule ? null : (
                               <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
                                 {getHabitModeLabel(habit.habitMode)}
@@ -2160,14 +2389,16 @@ export default function HabitPerfectDayHub({
                         </div>
                         {showTimedProgressModule ? (
                           <div
-                            className="mt-2 max-w-sm text-sm font-medium text-slate-600"
+                            className="mt-2 max-w-sm rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 py-2 text-sm font-medium text-slate-600"
                             aria-label={`Total timed progress ${timedProgressLabel} ${timedProgressContextLabel}`}
                           >
                             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                              <span className="text-lg leading-none font-bold text-[color:var(--fs-color-ink)] tabular-nums">
+                              <span className="text-xl leading-none font-bold text-[color:var(--fs-color-ink)] tabular-nums">
                                 {timedProgressLabel}
                               </span>
-                              <span>{timedProgressContextLabel}</span>
+                              <span className="text-sm text-[color:var(--fs-color-muted)]">
+                                {timedProgressContextLabel}
+                              </span>
                             </div>
                             {timedTargetSeconds > 0 ? (
                               <div
@@ -2205,7 +2436,7 @@ export default function HabitPerfectDayHub({
                               item.checkIn
                                 ? habitMobileSecondaryActionClass
                                 : habitMobilePrimaryActionClass,
-                              "min-w-24 px-4"
+                              habitPeerActionWidthClass
                             )}
                           >
                             {item.checkIn ? (
@@ -2232,7 +2463,7 @@ export default function HabitPerfectDayHub({
                               }
                             }}
                             disabled={disabled}
-                            className={cx(habitMobilePrimaryActionClass, "min-w-24 px-4")}
+                            className={cx(habitMobilePrimaryActionClass, habitPeerActionWidthClass)}
                           >
                             {isTimerRunning ? (
                               <Pause className="h-4 w-4" aria-hidden="true" />
@@ -2249,28 +2480,38 @@ export default function HabitPerfectDayHub({
                         !isQuit &&
                         !isTimed &&
                         habit.habitType !== "binary" ? (
-                          <div className="grid w-full grid-cols-1 items-end gap-2 sm:w-auto sm:grid-cols-[6rem_auto]">
-                            <label className="block sm:w-24">
-                              <span className="sr-only">
-                                {habit.title} {habit.habitType === "time_of_day" ? "time" : "value"}
-                              </span>
-                              <input
-                                type={habit.habitType === "time_of_day" ? "time" : "number"}
-                                min={habit.habitType === "time_of_day" ? undefined : 0}
-                                step={habit.habitType === "time_of_day" ? undefined : "0.25"}
-                                aria-label={`${habit.title} ${
-                                  habit.habitType === "time_of_day" ? "time" : "value"
-                                }`}
+                          <div className="grid w-full grid-cols-1 items-end gap-2 sm:w-auto sm:grid-cols-[12rem_7rem]">
+                            {habit.habitType === "time_of_day" ? (
+                              <label className="block sm:w-32">
+                                <span className="sr-only">{habit.title} time</span>
+                                <input
+                                  type="time"
+                                  aria-label={`${habit.title} time`}
+                                  value={checkInInputs[habit.id] ?? ""}
+                                  onChange={(event) =>
+                                    setCheckInInputs((current) => ({
+                                      ...current,
+                                      [habit.id]: event.target.value,
+                                    }))
+                                  }
+                                  className={cx(habitFieldClass, "mt-0 min-h-10")}
+                                />
+                              </label>
+                            ) : (
+                              <NumberStepperField
+                                label={`${habit.title} value`}
                                 value={checkInInputs[habit.id] ?? ""}
-                                onChange={(event) =>
+                                step={habit.habitType === "count" ? 1 : 0.25}
+                                disabled={disabled}
+                                hideLabel
+                                onChange={(value) =>
                                   setCheckInInputs((current) => ({
                                     ...current,
-                                    [habit.id]: event.target.value,
+                                    [habit.id]: value,
                                   }))
                                 }
-                                className={cx(habitFieldClass, "mt-0 min-h-10")}
                               />
-                            </label>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -2278,7 +2519,10 @@ export default function HabitPerfectDayHub({
                                 return saveCheckIn(item);
                               }}
                               disabled={disabled}
-                              className={habitMobilePrimaryActionClass}
+                              className={cx(
+                                habitMobilePrimaryActionClass,
+                                habitPeerActionWidthClass
+                              )}
                             >
                               <Save className="h-4 w-4" aria-hidden="true" />
                               Save
@@ -2294,7 +2538,7 @@ export default function HabitPerfectDayHub({
                             clearCreatedHabitNotice();
                             toggleHabitDetails(habit.id);
                           }}
-                          className={habitMobileSecondaryActionClass}
+                          className={cx(habitMobileSecondaryActionClass, habitPeerActionWidthClass)}
                         >
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -2353,38 +2597,11 @@ export default function HabitPerfectDayHub({
                           </div>
                         </div>
 
-                        {editDraft.habitMode === "build" ? (
-                          <label className="block">
-                            <span className={habitLabelClass}>Type</span>
-                            <select
-                              value={editDraft.habitType}
-                              onChange={(event) => {
-                                const habitType = event.target.value as HabitType;
-                                const unitOptions = getUnitOptions(habitType);
-                                setEditDraft((current) =>
-                                  current
-                                    ? {
-                                        ...current,
-                                        habitType,
-                                        targetUnit: unitOptions[0] ?? "times",
-                                        targetValueNumeric:
-                                          habitType === "avoidance"
-                                            ? "0"
-                                            : current.targetValueNumeric,
-                                      }
-                                    : current
-                                );
-                              }}
-                              className={habitFieldClass}
-                            >
-                              {HABIT_TYPE_VALUES.map((type) => (
-                                <option key={type} value={type}>
-                                  {getHabitTypeLabel(type)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ) : null}
+                        {editDraft.habitMode === "build"
+                          ? renderBuildTargetControls(editDraft, (updater) =>
+                              setEditDraft((current) => (current ? updater(current) : current))
+                            )
+                          : null}
 
                         <label className="block">
                           <span className={habitLabelClass}>Category</span>
@@ -2443,25 +2660,16 @@ export default function HabitPerfectDayHub({
                         getResolvedDraftHabitType(editDraft) !== "binary" &&
                         getResolvedDraftHabitType(editDraft) !== "time_of_day" ? (
                           <>
-                            <label className="block">
-                              <span className={habitLabelClass}>
-                                {editDraft.habitMode === "timed" ? "Timer target" : "Target"}
-                              </span>
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.25"
-                                value={editDraft.targetValueNumeric}
-                                onChange={(event) =>
-                                  setEditDraft((current) =>
-                                    current
-                                      ? { ...current, targetValueNumeric: event.target.value }
-                                      : current
-                                  )
-                                }
-                                className={habitFieldClass}
-                              />
-                            </label>
+                            <NumberStepperField
+                              label={editDraft.habitMode === "timed" ? "Timer target" : "Target"}
+                              value={editDraft.targetValueNumeric}
+                              step={getResolvedDraftHabitType(editDraft) === "count" ? 1 : 0.25}
+                              onChange={(value) =>
+                                setEditDraft((current) =>
+                                  current ? { ...current, targetValueNumeric: value } : current
+                                )
+                              }
+                            />
                             <label className="block">
                               <span className={habitLabelClass}>Unit</span>
                               <select
@@ -2564,7 +2772,10 @@ export default function HabitPerfectDayHub({
                           </p>
                         ) : null}
 
-                        <div className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap">
+                        <div
+                          data-testid={`habit-details-actions-${habit.id}`}
+                          className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap"
+                        >
                           {isQuit ? (
                             <button
                               type="button"
@@ -2580,72 +2791,40 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          {canEditSelectedCheckIn &&
-                          !isCompletionGroup &&
-                          !isQuit &&
-                          !item.checkIn ? (
+                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
                             <button
                               type="button"
                               onClick={() => {
                                 clearCreatedHabitNotice();
-                                return markRestDay(item);
+                                return finishTimer(item);
                               }}
-                              disabled={disabled}
-                              className={habitMobileSecondaryActionClass}
+                              disabled={disabled || timerSeconds <= 0}
+                              className={cx(
+                                habitMobilePrimaryActionClass,
+                                habitPeerActionWidthClass
+                              )}
                             >
-                              <Pause className="h-4 w-4" aria-hidden="true" />
-                              Rest day
+                              <Save className="h-4 w-4" aria-hidden="true" />
+                              Finish
                             </button>
-                          ) : null}
-
-                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  clearCreatedHabitNotice();
-                                  return finishTimer(item);
-                                }}
-                                disabled={disabled || timerSeconds <= 0}
-                                className={habitMobileSuccessSecondaryActionClass}
-                              >
-                                <Save className="h-4 w-4" aria-hidden="true" />
-                                Finish
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  clearCreatedHabitNotice();
-                                  resetTimer(habit.id);
-                                }}
-                                disabled={disabled || timerSeconds <= 0}
-                                className={habitMobileSecondaryActionClass}
-                              >
-                                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                                Reset
-                              </button>
-                            </>
                           ) : null}
 
                           {canEditSelectedCheckIn && !isRestDay && isTimed ? (
                             <>
-                              <label className="block sm:w-32">
-                                <span className={habitLabelClass}>Manual time</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step="0.25"
-                                  aria-label={`${habit.title} manual time`}
-                                  value={checkInInputs[habit.id] ?? ""}
-                                  onChange={(event) =>
-                                    setCheckInInputs((current) => ({
-                                      ...current,
-                                      [habit.id]: event.target.value,
-                                    }))
-                                  }
-                                  className={habitFieldClass}
-                                />
-                              </label>
+                              <NumberStepperField
+                                label="Manual time"
+                                inputAriaLabel={`${habit.title} manual time`}
+                                value={checkInInputs[habit.id] ?? ""}
+                                step={0.25}
+                                disabled={disabled}
+                                className="block sm:w-40"
+                                onChange={(value) =>
+                                  setCheckInInputs((current) => ({
+                                    ...current,
+                                    [habit.id]: value,
+                                  }))
+                                }
+                              />
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2653,7 +2832,10 @@ export default function HabitPerfectDayHub({
                                   return addManualTime(item);
                                 }}
                                 disabled={disabled || !canAddManualTime}
-                                className={habitMobilePrimaryActionClass}
+                                className={cx(
+                                  habitMobilePrimaryActionClass,
+                                  habitWideActionWidthClass
+                                )}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
                                 Add manual time
@@ -2667,24 +2849,36 @@ export default function HabitPerfectDayHub({
                           !isTimed &&
                           habit.habitType !== "binary" ? (
                             <>
-                              <label className="block sm:w-36">
-                                <span className={habitLabelClass}>
-                                  {habit.habitType === "time_of_day" ? "Time" : "Value"}
-                                </span>
-                                <input
-                                  type={habit.habitType === "time_of_day" ? "time" : "number"}
-                                  min={habit.habitType === "time_of_day" ? undefined : 0}
-                                  step={habit.habitType === "time_of_day" ? undefined : "0.25"}
+                              {habit.habitType === "time_of_day" ? (
+                                <label className="block sm:w-36">
+                                  <span className={habitLabelClass}>Time</span>
+                                  <input
+                                    type="time"
+                                    value={checkInInputs[habit.id] ?? ""}
+                                    onChange={(event) =>
+                                      setCheckInInputs((current) => ({
+                                        ...current,
+                                        [habit.id]: event.target.value,
+                                      }))
+                                    }
+                                    className={habitFieldClass}
+                                  />
+                                </label>
+                              ) : (
+                                <NumberStepperField
+                                  label="Value"
                                   value={checkInInputs[habit.id] ?? ""}
-                                  onChange={(event) =>
+                                  step={habit.habitType === "count" ? 1 : 0.25}
+                                  disabled={disabled}
+                                  className="block sm:w-40"
+                                  onChange={(value) =>
                                     setCheckInInputs((current) => ({
                                       ...current,
-                                      [habit.id]: event.target.value,
+                                      [habit.id]: value,
                                     }))
                                   }
-                                  className={habitFieldClass}
                                 />
-                              </label>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2692,12 +2886,54 @@ export default function HabitPerfectDayHub({
                                   return saveCheckIn(item);
                                 }}
                                 disabled={disabled}
-                                className={habitMobilePrimaryActionClass}
+                                className={cx(
+                                  habitMobilePrimaryActionClass,
+                                  habitPeerActionWidthClass
+                                )}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
                                 Save
                               </button>
                             </>
+                          ) : null}
+
+                          {canEditSelectedCheckIn &&
+                          !isCompletionGroup &&
+                          !isQuit &&
+                          !item.checkIn ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                return markRestDay(item);
+                              }}
+                              disabled={disabled}
+                              className={cx(
+                                habitMobileSecondaryActionClass,
+                                habitPeerActionWidthClass
+                              )}
+                            >
+                              <Pause className="h-4 w-4" aria-hidden="true" />
+                              Rest day
+                            </button>
+                          ) : null}
+
+                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                resetTimer(habit.id);
+                              }}
+                              disabled={disabled || timerSeconds <= 0}
+                              className={cx(
+                                habitMobileSecondaryActionClass,
+                                habitPeerActionWidthClass
+                              )}
+                            >
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                              Reset
+                            </button>
                           ) : null}
 
                           {item.checkIn && (habit.habitType !== "binary" || isQuit) ? (
