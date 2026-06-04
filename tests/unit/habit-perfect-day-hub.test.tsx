@@ -482,11 +482,16 @@ describe("HabitPerfectDayHub", () => {
     );
     expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("fs-cta-primary");
     expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("w-full");
+    expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("whitespace-nowrap");
+    expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("h-11");
+    expect(screen.getByRole("button", { name: "Mark done" })).toHaveClass("min-w-36");
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("fs-cta-secondary");
     expect(screen.getByRole("button", { name: "Details" })).toHaveClass("w-full");
-    expect(
-      screen.getByTestId("habit-heading-row-11111111-1111-4111-8111-111111111111")
-    ).toHaveClass("justify-between");
+    expect(screen.getByRole("button", { name: "Details" })).toHaveClass("h-11");
+    const headingRow = screen.getByTestId("habit-heading-row-11111111-1111-4111-8111-111111111111");
+    expect(headingRow).toHaveClass("justify-start");
+    expect(headingRow).toHaveClass("flex-wrap");
+    expect(headingRow).not.toHaveClass("justify-between");
   });
 
   it("shows selected-date calendar controls and selected day state", () => {
@@ -517,6 +522,43 @@ describe("HabitPerfectDayHub", () => {
     expect(navigationState.push).toHaveBeenCalledWith(
       "/my-library/habits?date=2026-05-09#today-habits"
     );
+  });
+
+  it("syncs the visible habit week when router history provides a new snapshot", async () => {
+    const { rerender } = render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-10" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    expect(
+      within(screen.getByTestId("habits-calendar-controls-summary")).getByText(
+        "Week 19, 2026 · May 4 - May 10"
+      )
+    ).toBeVisible();
+
+    rerender(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-03" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    await waitFor(() => {
+      const controls = screen.getByTestId("habits-calendar-controls-summary");
+      expect(within(controls).getByText("May 3, 2026")).toBeVisible();
+      expect(within(controls).getByText("History")).toBeVisible();
+      expect(within(controls).getByText("Week 18, 2026 · Apr 27 - May 3")).toBeVisible();
+      expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
+        "href",
+        "/my-library/habits?date=2026-04-26#today-habits"
+      );
+      expect(within(controls).getByRole("link", { name: "Next week" })).toHaveAttribute(
+        "href",
+        "/my-library/habits?date=2026-05-10#today-habits"
+      );
+    });
   });
 
   it("swipes the blue week bar container to nearby habit weeks", () => {
@@ -820,7 +862,7 @@ describe("HabitPerfectDayHub", () => {
     const finishButton = await screen.findByRole("button", { name: "Finish" });
     expect(finishButton).toBeDisabled();
     expect(finishButton).toHaveClass("fs-cta-primary");
-    expect(finishButton).toHaveClass("min-w-28");
+    expect(finishButton).toHaveClass("min-w-36");
     const detailsActions = screen.getByTestId(
       "habit-details-actions-33333333-3333-4333-8333-333333333333"
     );
@@ -1203,21 +1245,75 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("At least 1 glass")).toBeVisible();
   });
 
-  it("aligns open count habit input, Save, and Details as one mobile-safe action row", () => {
+  it("keeps open count habit input bounded and avoids duplicate Details save controls", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildOpenCountSnapshot(),
+      }),
+    } as Response);
+
     render(<HabitPerfectDayHub initialSnapshot={buildOpenCountSnapshot()} />);
 
     const card = screen.getByTestId("habit-card-44444444-4444-4444-8444-444444444444");
     const valueInput = within(card).getByLabelText("Wall Slides value");
     expect(valueInput).toHaveAttribute("type", "text");
     expect(valueInput).toHaveAttribute("inputmode", "decimal");
+    expect(valueInput).toHaveClass("h-full");
+    expect(valueInput).toHaveClass("border-0");
+    expect(valueInput.parentElement).toHaveClass("h-11");
+    expect(valueInput.parentElement).toHaveClass("overflow-hidden");
+    expect(valueInput.parentElement).toHaveClass("rounded-[var(--fs-radius-control)]");
 
     fireEvent.click(within(card).getByRole("button", { name: "Increase Wall Slides value" }));
     expect(valueInput).toHaveValue("1");
-    expect(within(card).getByRole("button", { name: "Decrease Wall Slides value" })).toBeVisible();
-    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("min-w-28");
-    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("sm:!w-28");
-    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("min-w-28");
-    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("sm:!w-28");
+    fireEvent.change(valueInput, { target: { value: "100" } });
+    fireEvent.click(within(card).getByRole("button", { name: "Increase Wall Slides value" }));
+    expect(valueInput).toHaveValue("100");
+    fireEvent.click(within(card).getByRole("button", { name: "Decrease Wall Slides value" }));
+    expect(valueInput).toHaveValue("99");
+    fireEvent.change(valueInput, { target: { value: "0" } });
+    expect(valueInput).toHaveValue("0");
+    fireEvent.click(within(card).getByRole("button", { name: "Decrease Wall Slides value" }));
+    expect(valueInput).toHaveValue("0");
+    expect(within(card).getByRole("button", { name: "Decrease Wall Slides value" })).toHaveClass(
+      "h-full"
+    );
+    expect(within(card).getByRole("button", { name: "Decrease Wall Slides value" })).toHaveClass(
+      "border-r"
+    );
+    expect(within(card).getByRole("button", { name: "Increase Wall Slides value" })).toHaveClass(
+      "h-full"
+    );
+    expect(within(card).getByRole("button", { name: "Increase Wall Slides value" })).toHaveClass(
+      "border-l"
+    );
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("min-w-36");
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("sm:!w-36");
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("h-11");
+    expect(within(card).getByRole("button", { name: "Save" })).toHaveClass("whitespace-nowrap");
+    expect(within(card).getByRole("button", { name: "Save" }).parentElement).toHaveClass(
+      "sm:grid-cols-[12rem_9rem]"
+    );
+    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("min-w-36");
+    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("sm:!w-36");
+    expect(within(card).getByRole("button", { name: "Details" })).toHaveClass("h-11");
+
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+    expect(within(card).getAllByRole("button", { name: "Save" })).toHaveLength(1);
+    expect(within(card).queryByText("Value")).toBeNull();
+
+    fireEvent.click(within(card).getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"valueNumeric":"0"'),
+        })
+      );
+    });
   });
 
   it("shows not-due fixed-day habits without a quick check-in action", () => {
@@ -1345,9 +1441,16 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
     expect(screen.getByText("Today · 1/1 on target")).toBeVisible();
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
     expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Show week overview" }));
+    const showWeekButton = screen.getByRole("button", { name: "Show week overview" });
+    expect(showWeekButton).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(showWeekButton);
     expect(screen.getByTestId("habits-week-overview-mobile")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Hide week overview" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
     expect(screen.queryByLabelText("Water value")).toBeNull();
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();

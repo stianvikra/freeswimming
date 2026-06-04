@@ -106,6 +106,7 @@ type NumberStepperFieldProps = {
   onChange: (value: string) => void;
   inputAriaLabel?: string;
   min?: number;
+  max?: number;
   step?: number;
   disabled?: boolean;
   hideLabel?: boolean;
@@ -320,17 +321,32 @@ function getStepPrecision(step: number) {
 function formatSteppedNumber(value: number, step: number) {
   const precision = getStepPrecision(step);
   const fixed = value.toFixed(precision);
-  return fixed.replace(/\.?0+$/, "");
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
 }
 
-function normalizeNumberInputValue(value: string) {
-  return value.replace(",", ".").replace(/[^\d.]/g, "");
+function clampSteppedNumber(value: number, min: number, max?: number) {
+  const lowerBounded = Math.max(min, value);
+  return typeof max === "number" ? Math.min(max, lowerBounded) : lowerBounded;
 }
 
-function stepNumberInputValue(value: string, step: number, direction: 1 | -1, min: number) {
+function normalizeNumberInputValue(value: string, min: number, step: number, max?: number) {
+  const normalized = value.replace(",", ".").replace(/[^\d.]/g, "");
+  if (normalized === "") return "";
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return normalized;
+  return formatSteppedNumber(clampSteppedNumber(parsed, min, max), step);
+}
+
+function stepNumberInputValue(
+  value: string,
+  step: number,
+  direction: 1 | -1,
+  min: number,
+  max?: number
+) {
   const parsed = Number(value);
   const base = Number.isFinite(parsed) ? parsed : min;
-  const next = Math.max(min, base + step * direction);
+  const next = clampSteppedNumber(base + step * direction, min, max);
   return formatSteppedNumber(next, step);
 }
 
@@ -620,15 +636,17 @@ const habitNestedMutedCardClass = "fs-library-card fs-library-card-muted p-3";
 const habitFieldClass = "ui-field mt-1 min-h-10";
 const habitLabelClass = "ui-field-label uppercase";
 const habitActionBaseClass =
-  "inline-flex min-h-10 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const habitPrimaryActionClass = cx("fs-cta-primary", habitActionBaseClass);
 const habitSecondaryActionClass = cx("fs-cta-secondary hover:bg-white", habitActionBaseClass);
 const habitDangerActionClass = cx("fs-cta-danger", habitActionBaseClass);
 const habitMobilePrimaryActionClass = cx(habitPrimaryActionClass, mobilePrimaryActionItemClass);
 const habitMobileSecondaryActionClass = cx(habitSecondaryActionClass, mobileActionItemClass);
 const habitMobileDangerActionClass = cx(habitDangerActionClass, mobileActionItemClass);
-const habitPeerActionWidthClass = "min-w-28 px-4 sm:!w-28";
-const habitWideActionWidthClass = "min-w-36 px-4 sm:!w-36";
+const habitPeerActionWidthClass = "h-11 min-h-11 min-w-36 px-4 sm:!w-36";
+const habitWideActionWidthClass = "h-11 min-h-11 min-w-36 px-4 sm:!w-36";
+const habitStepperButtonClass =
+  "inline-flex h-full min-h-0 items-center justify-center bg-white px-0 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 focus:z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-60";
 const habitChipClass =
   "inline-flex rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)]";
 const habitBrandChipClass =
@@ -701,6 +719,7 @@ function NumberStepperField({
   onChange,
   inputAriaLabel,
   min = 0,
+  max,
   step = 1,
   disabled = false,
   hideLabel = false,
@@ -716,15 +735,15 @@ function NumberStepperField({
       <div
         className={cx(
           hideLabel ? "mt-0" : "mt-1",
-          "grid min-h-10 grid-cols-[2.75rem_minmax(4rem,1fr)_2.75rem] items-stretch"
+          "grid h-11 min-h-11 grid-cols-[2.75rem_minmax(4rem,1fr)_2.75rem] items-stretch overflow-hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white shadow-sm"
         )}
       >
         <button
           type="button"
           aria-label={`Decrease ${label}`}
           disabled={disabled}
-          onClick={() => onChange(stepNumberInputValue(value, step, -1, min))}
-          className={cx(habitSecondaryActionClass, "rounded-r-none px-0")}
+          onClick={() => onChange(stepNumberInputValue(value, step, -1, min, max))}
+          className={cx(habitStepperButtonClass, "border-r border-[color:var(--fs-border-soft)]")}
         >
           <Minus className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -735,18 +754,20 @@ function NumberStepperField({
           aria-label={inputAriaLabel}
           value={value}
           disabled={disabled}
-          onChange={(event) => onChange(normalizeNumberInputValue(event.target.value))}
+          onChange={(event) =>
+            onChange(normalizeNumberInputValue(event.target.value, min, step, max))
+          }
           className={cx(
             habitFieldClass,
-            "mt-0 min-h-10 rounded-none border-x-0 text-center tabular-nums"
+            "mt-0 h-full min-h-0 rounded-none border-0 px-3 py-0 text-center tabular-nums shadow-none"
           )}
         />
         <button
           type="button"
           aria-label={`Increase ${label}`}
           disabled={disabled}
-          onClick={() => onChange(stepNumberInputValue(value, step, 1, min))}
-          className={cx(habitSecondaryActionClass, "rounded-l-none px-0")}
+          onClick={() => onChange(stepNumberInputValue(value, step, 1, min, max))}
+          className={cx(habitStepperButtonClass, "border-l border-[color:var(--fs-border-soft)]")}
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -959,6 +980,17 @@ export default function HabitPerfectDayHub({
   const editRuleLabel = isHistoricalDate
     ? "History day - correct existing check-ins here. Add, edit, and archive habits on Today."
     : "Today - manage habit setup and log today's check-ins here.";
+
+  useEffect(() => {
+    setSnapshot(initialSnapshot);
+    setDraft(buildDefaultDraft(initialSnapshot.selectedDate));
+    setError(initialSnapshot.loadError);
+    setIsAddHabitOpen(false);
+    setEditingHabitId(null);
+    setEditDraft(null);
+    setRecentlyCreatedHabitId(null);
+    setNotice(null);
+  }, [initialSnapshot]);
 
   useEffect(() => {
     setCheckInInputs(buildInputState(snapshot));
@@ -2301,6 +2333,20 @@ export default function HabitPerfectDayHub({
                 getPriorityGroupKey(snapshot.daySummary.items[index - 1]!) !==
                   getPriorityGroupKey(item);
               const showTimedProgressModule = isTimed && !isRestDay && canEditSelectedCheckIn;
+              const showQuickCheckInEditor =
+                canEditSelectedCheckIn &&
+                !isCompletionGroup &&
+                !isRestDay &&
+                !isQuit &&
+                !isTimed &&
+                habit.habitType !== "binary";
+              const showDetailsCheckInEditor =
+                canEditSelectedCheckIn &&
+                !isRestDay &&
+                !isQuit &&
+                !isTimed &&
+                habit.habitType !== "binary" &&
+                !showQuickCheckInEditor;
               const timedProgressContextLabel = isCompletionGroup
                 ? `${timedTargetContextLabel} · ${getCompletionStatusLabel(item)}`
                 : timedTargetContextLabel;
@@ -2358,12 +2404,12 @@ export default function HabitPerfectDayHub({
                         ) : null}
                         <div
                           data-testid={`habit-heading-row-${habit.id}`}
-                          className="flex min-w-0 items-start justify-between gap-3"
+                          className="flex min-w-0 flex-wrap items-center justify-start gap-x-2 gap-y-1"
                         >
-                          <h3 className="min-w-0 flex-1 truncate text-[17px] leading-6 font-semibold text-slate-900">
+                          <h3 className="max-w-full min-w-0 truncate text-[17px] leading-6 font-semibold text-slate-900">
                             {habit.title}
                           </h3>
-                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
                             {showTimedProgressModule ? null : (
                               <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
                                 {getHabitModeLabel(habit.habitMode)}
@@ -2474,13 +2520,8 @@ export default function HabitPerfectDayHub({
                           </button>
                         ) : null}
 
-                        {canEditSelectedCheckIn &&
-                        !isCompletionGroup &&
-                        !isRestDay &&
-                        !isQuit &&
-                        !isTimed &&
-                        habit.habitType !== "binary" ? (
-                          <div className="grid w-full grid-cols-1 items-end gap-2 sm:w-auto sm:grid-cols-[12rem_7rem]">
+                        {showQuickCheckInEditor ? (
+                          <div className="grid w-full grid-cols-1 items-end gap-2 sm:w-auto sm:grid-cols-[12rem_9rem]">
                             {habit.habitType === "time_of_day" ? (
                               <label className="block sm:w-32">
                                 <span className="sr-only">{habit.title} time</span>
@@ -2494,7 +2535,7 @@ export default function HabitPerfectDayHub({
                                       [habit.id]: event.target.value,
                                     }))
                                   }
-                                  className={cx(habitFieldClass, "mt-0 min-h-10")}
+                                  className={cx(habitFieldClass, "mt-0 h-11 min-h-11 py-0")}
                                 />
                               </label>
                             ) : (
@@ -2502,6 +2543,7 @@ export default function HabitPerfectDayHub({
                                 label={`${habit.title} value`}
                                 value={checkInInputs[habit.id] ?? ""}
                                 step={habit.habitType === "count" ? 1 : 0.25}
+                                max={habit.habitType === "count" ? 100 : undefined}
                                 disabled={disabled}
                                 hideLabel
                                 onChange={(value) =>
@@ -2843,11 +2885,7 @@ export default function HabitPerfectDayHub({
                             </>
                           ) : null}
 
-                          {canEditSelectedCheckIn &&
-                          !isRestDay &&
-                          !isQuit &&
-                          !isTimed &&
-                          habit.habitType !== "binary" ? (
+                          {showDetailsCheckInEditor ? (
                             <>
                               {habit.habitType === "time_of_day" ? (
                                 <label className="block sm:w-36">
@@ -2869,6 +2907,7 @@ export default function HabitPerfectDayHub({
                                   label="Value"
                                   value={checkInInputs[habit.id] ?? ""}
                                   step={habit.habitType === "count" ? 1 : 0.25}
+                                  max={habit.habitType === "count" ? 100 : undefined}
                                   disabled={disabled}
                                   className="block sm:w-40"
                                   onChange={(value) =>
