@@ -47,6 +47,8 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
     completed_at: "2026-05-04T09:00:00.000Z",
     created_at: "2026-05-04T09:00:00.000Z",
     updated_at: "2026-05-04T09:00:00.000Z",
+    timer_seconds: 0,
+    manual_minutes: 0,
     ...overrides,
   };
 }

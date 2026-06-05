@@ -2,6 +2,7 @@
 
 import {
   Archive,
+  BarChart3,
   CalendarDays,
   CheckCircle2,
   ChevronDown,
@@ -33,6 +34,7 @@ import {
 } from "react";
 import {
   HABIT_CATEGORY_VALUES,
+  HABIT_MANUAL_TIME_MAX_MINUTES,
   HABIT_MODE_VALUES,
   type HabitDefinitionView,
   type HabitCadenceDayPolicy,
@@ -49,6 +51,7 @@ import { cx } from "@/components/ui/cx";
 import { mobileActionItemClass, mobilePrimaryActionItemClass } from "@/components/ui/actionLayout";
 import {
   buildMyLibraryCalendarHref,
+  buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarWindow,
   getCalendarSourceFilterLabel,
   getMyLibraryCalendarPeriodStartDate,
@@ -106,6 +109,8 @@ type NumberStepperFieldProps = {
   value: string;
   onChange: (value: string) => void;
   inputAriaLabel?: string;
+  inputMode?: "decimal" | "numeric";
+  normalizeInputValue?: (value: string) => string;
   min?: number;
   max?: number;
   step?: number;
@@ -229,7 +234,7 @@ function getInputValue(item: HabitDayItem) {
     item.habit.habitType === "duration" ||
     item.habit.habitType === "avoidance"
   ) {
-    if (item.habit.habitMode === "timed") return "";
+    if (item.habit.habitMode === "timed") return String(item.checkIn?.manualMinutes ?? 0);
     return item.checkIn?.valueNumeric === null || item.checkIn?.valueNumeric === undefined
       ? ""
       : String(item.checkIn.valueNumeric);
@@ -314,10 +319,6 @@ function formatTimer(seconds: number) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-function secondsToMinutesInput(seconds: number) {
-  return String(Math.round((seconds / 60) * 100) / 100);
-}
-
 function getStepPrecision(step: number) {
   const [, decimal = ""] = String(step).split(".");
   return decimal.length;
@@ -342,6 +343,28 @@ function normalizeNumberInputValue(value: string, min: number, step: number, max
   return formatSteppedNumber(clampSteppedNumber(parsed, min, max), step);
 }
 
+function normalizeManualMinutesInputValue(value: string) {
+  const normalized = value
+    .trim()
+    .replace(",", ".")
+    .replace(/[^\d.]/g, "");
+  if (normalized === "") return "";
+  if (/^\d+$/.test(normalized)) {
+    return String(Math.min(HABIT_MANUAL_TIME_MAX_MINUTES, Number(normalized)));
+  }
+  return normalized.slice(0, 8);
+}
+
+function parseManualMinutesInput(value: string) {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > HABIT_MANUAL_TIME_MAX_MINUTES) {
+    return null;
+  }
+  return parsed;
+}
+
 function stepNumberInputValue(
   value: string,
   step: number,
@@ -362,10 +385,22 @@ function getTimerTargetDisplaySeconds(habit: HabitDefinitionView) {
   return habit.targetUnit === "seconds" ? Math.round(target) : Math.round(target * 60);
 }
 
+function getSavedTimerSeconds(item: HabitDayItem) {
+  return Math.max(0, item.checkIn?.timerSeconds ?? 0);
+}
+
+function getSavedManualMinutes(item: HabitDayItem) {
+  return Math.max(0, item.checkIn?.manualMinutes ?? 0);
+}
+
+function getLegacyTimedSeconds(item: HabitDayItem) {
+  return Math.max(0, item.checkIn?.legacyTimedSeconds ?? 0);
+}
+
 function getSavedTimedSeconds(item: HabitDayItem) {
-  const savedMinutes = item.checkIn?.valueNumeric;
-  if (typeof savedMinutes !== "number" || savedMinutes <= 0) return 0;
-  return Math.round(savedMinutes * 60);
+  return (
+    getSavedTimerSeconds(item) + getSavedManualMinutes(item) * 60 + getLegacyTimedSeconds(item)
+  );
 }
 
 function getTimedProgressSeconds(item: HabitDayItem, timerSeconds: number) {
@@ -725,6 +760,8 @@ function NumberStepperField({
   value,
   onChange,
   inputAriaLabel,
+  inputMode = "decimal",
+  normalizeInputValue,
   min = 0,
   max,
   step = 1,
@@ -757,12 +794,16 @@ function NumberStepperField({
         <input
           id={inputId}
           type="text"
-          inputMode="decimal"
+          inputMode={inputMode}
           aria-label={inputAriaLabel}
           value={value}
           disabled={disabled}
           onChange={(event) =>
-            onChange(normalizeNumberInputValue(event.target.value, min, step, max))
+            onChange(
+              normalizeInputValue
+                ? normalizeInputValue(event.target.value)
+                : normalizeNumberInputValue(event.target.value, min, step, max)
+            )
           }
           className={cx(
             habitFieldClass,
@@ -945,10 +986,15 @@ export default function HabitPerfectDayHub({
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [requestedDate, setRequestedDate] = useState<string | null>(null);
+  const [failedRequestedDate, setFailedRequestedDate] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialSnapshot.loadError);
   const hasLoadedRowPreferencesRef = useRef(false);
   const hasHydratedTimersRef = useRef(false);
+  const confirmedSelectedDateRef = useRef<string | null>(
+    initialSnapshot.loadError ? null : initialSnapshot.selectedDate
+  );
   const habitsSectionRef = useRef<HTMLElement | null>(null);
   const addHabitSectionRef = useRef<HTMLElement | null>(null);
   const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
@@ -988,9 +1034,31 @@ export default function HabitPerfectDayHub({
   const editRuleLabel = isHistoricalDate
     ? "History day - correct existing check-ins here. Add, edit, and archive habits on Today."
     : "Today - manage habit setup and log today's check-ins here.";
+  const pendingSelectedDate =
+    requestedDate && requestedDate !== snapshot.selectedDate ? requestedDate : null;
+  const analysisHref = buildMyLibraryCalendarComparisonHref({
+    source: "habits",
+    period: "week",
+    selectedDate: snapshot.selectedDate,
+  });
 
   useEffect(() => {
+    if (
+      initialSnapshot.loadError &&
+      confirmedSelectedDateRef.current &&
+      initialSnapshot.selectedDate !== confirmedSelectedDateRef.current
+    ) {
+      setRequestedDate(null);
+      setFailedRequestedDate(initialSnapshot.selectedDate);
+      setError(`${initialSnapshot.loadError} Showing ${confirmedSelectedDateRef.current}.`);
+      setNotice(null);
+      return;
+    }
+
     setSnapshot(initialSnapshot);
+    confirmedSelectedDateRef.current = initialSnapshot.selectedDate;
+    setRequestedDate((current) => (current === initialSnapshot.selectedDate ? null : current));
+    setFailedRequestedDate(null);
     setDraft(buildDefaultDraft(initialSnapshot.selectedDate));
     setError(initialSnapshot.loadError);
     setIsAddHabitOpen(false);
@@ -1232,7 +1300,6 @@ export default function HabitPerfectDayHub({
         startedAtMs: null,
       },
     }));
-    setCheckInInputs((current) => ({ ...current, [habitId]: "" }));
   }
 
   function clearTimer(habitId: string) {
@@ -1454,6 +1521,44 @@ export default function HabitPerfectDayHub({
     }
   }
 
+  async function saveTimedSources(
+    item: HabitDayItem,
+    input: {
+      timerSeconds: number;
+      manualMinutes: number;
+      successNotice: string;
+      clearLocalTimerOnSuccess: boolean;
+    }
+  ) {
+    const habit = item.habit;
+    setPendingKey(`check-${habit.id}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: habit.id,
+          checkInDate: snapshot.selectedDate,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          timerSeconds: input.timerSeconds,
+          manualMinutes: input.manualMinutes,
+        }),
+      });
+      await applyResponse(response, "Could not save that check-in right now.");
+      collapseHabitDetails(habit.id);
+      if (input.clearLocalTimerOnSuccess) clearTimer(habit.id);
+      setNotice(input.successNotice);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Could not save that check-in right now."
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
   async function logLapse(item: HabitDayItem) {
     setPendingKey(`lapse-${item.habit.id}`);
     setNotice(null);
@@ -1514,8 +1619,8 @@ export default function HabitPerfectDayHub({
       return;
     }
 
-    const totalSeconds = getSavedTimedSeconds(item) + seconds;
-    const value = secondsToMinutesInput(totalSeconds);
+    const timerSeconds = getSavedTimerSeconds(item) + getLegacyTimedSeconds(item) + seconds;
+    const manualMinutes = getSavedManualMinutes(item);
     setTimers((current) => ({
       ...current,
       [item.habit.id]: {
@@ -1523,23 +1628,30 @@ export default function HabitPerfectDayHub({
         startedAtMs: null,
       },
     }));
-    setCheckInInputs((current) => ({ ...current, [item.habit.id]: value }));
-    await saveCheckIn(item, false, value);
+    await saveTimedSources(item, {
+      timerSeconds,
+      manualMinutes,
+      successNotice: "Timer time saved.",
+      clearLocalTimerOnSuccess: true,
+    });
   }
 
-  async function addManualTime(item: HabitDayItem) {
+  async function saveManualTime(item: HabitDayItem) {
     const input = checkInInputs[item.habit.id]?.trim() ?? "";
-    const manualMinutes = Number(input);
-    if (!Number.isFinite(manualMinutes) || manualMinutes <= 0) {
-      setError("Enter manual time before adding it.");
+    const manualMinutes = parseManualMinutesInput(input);
+    if (manualMinutes === null) {
+      setError("Manual time must be whole minutes between 0 and 1440.");
       return;
     }
 
-    const totalSeconds =
-      getSavedTimedSeconds(item) + getTimerSeconds(item.habit.id) + Math.round(manualMinutes * 60);
-    const value = secondsToMinutesInput(totalSeconds);
-    setCheckInInputs((current) => ({ ...current, [item.habit.id]: value }));
-    await saveCheckIn(item, false, value);
+    const timerSeconds = getSavedTimerSeconds(item) + getLegacyTimedSeconds(item);
+    setCheckInInputs((current) => ({ ...current, [item.habit.id]: String(manualMinutes) }));
+    await saveTimedSources(item, {
+      timerSeconds,
+      manualMinutes,
+      successNotice: "Manual time saved.",
+      clearLocalTimerOnSuccess: false,
+    });
   }
 
   async function resetCheckIn(item: HabitDayItem) {
@@ -1786,11 +1898,19 @@ export default function HabitPerfectDayHub({
     );
   }
 
-  function navigateToCalendarHref(href: string) {
+  function navigateToCalendarHref(href: string, requestedSelectedDate: string) {
+    setRequestedDate(requestedSelectedDate);
+    setFailedRequestedDate(null);
+    setNotice(null);
+    setError(null);
     router.push(href);
   }
 
-  function handleCalendarLinkClick(event: ReactMouseEvent<HTMLAnchorElement>, href: string) {
+  function handleCalendarLinkClick(
+    event: ReactMouseEvent<HTMLAnchorElement>,
+    href: string,
+    requestedSelectedDate: string
+  ) {
     if (
       event.defaultPrevented ||
       event.button !== 0 ||
@@ -1803,7 +1923,7 @@ export default function HabitPerfectDayHub({
     }
 
     event.preventDefault();
-    navigateToCalendarHref(href);
+    navigateToCalendarHref(href, requestedSelectedDate);
   }
 
   function handleWeekOverviewTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
@@ -1830,12 +1950,12 @@ export default function HabitPerfectDayHub({
     if (absX < HABIT_WEEK_SWIPE_THRESHOLD_PX || isVerticalScroll) return;
 
     if (deltaX > 0) {
-      navigateToCalendarHref(previousWindowHref);
+      navigateToCalendarHref(previousWindowHref, calendarWindow.previousWindowDate);
       return;
     }
 
     if (canGoNextWindow) {
-      navigateToCalendarHref(nextWindowHref);
+      navigateToCalendarHref(nextWindowHref, nextWindowDate);
     }
   }
 
@@ -1850,6 +1970,8 @@ export default function HabitPerfectDayHub({
       >
         {snapshot.weekSummary.days.map((day) => {
           const isSelected = day.date === snapshot.selectedDate;
+          const isPending = pendingSelectedDate === day.date;
+          const didFailLoad = failedRequestedDate === day.date;
           const isToday = day.date === safeTodayDate;
           const isFutureDate = day.date > safeTodayDate;
           const dayHref = buildMyLibraryCalendarHref({
@@ -1860,14 +1982,20 @@ export default function HabitPerfectDayHub({
           });
           const dayLabel = `${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
             day.completionPercent
-          }% complete${isSelected ? ", selected" : ""}${isToday ? ", today" : ""}`;
+          }% complete${isSelected ? ", selected" : ""}${isPending ? ", loading" : ""}${
+            didFailLoad ? ", could not load" : ""
+          }${isToday ? ", today" : ""}`;
           const dayClassName = cx(
             "min-w-0 rounded-[var(--fs-radius-card)] p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
-            isSelected
-              ? "bg-[color:var(--fs-color-brand-50)] ring-2 ring-[color:var(--fs-border-brand)]"
-              : isFutureDate
-                ? "cursor-not-allowed opacity-60"
-                : "hover:bg-white"
+            isPending
+              ? "bg-amber-50 ring-2 ring-amber-400"
+              : didFailLoad
+                ? "bg-rose-50 ring-2 ring-rose-300"
+                : isSelected
+                  ? "bg-[color:var(--fs-color-brand-50)] ring-2 ring-[color:var(--fs-border-brand)]"
+                  : isFutureDate
+                    ? "cursor-not-allowed opacity-60"
+                    : "hover:bg-white"
           );
           const dayContent = (
             <>
@@ -1907,8 +2035,9 @@ export default function HabitPerfectDayHub({
             <Link
               key={day.date}
               href={dayHref}
-              onClick={(event) => handleCalendarLinkClick(event, dayHref)}
+              onClick={(event) => handleCalendarLinkClick(event, dayHref, day.date)}
               aria-current={isSelected ? "date" : undefined}
+              aria-busy={isPending ? "true" : undefined}
               aria-label={dayLabel}
               className={dayClassName}
             >
@@ -1921,6 +2050,15 @@ export default function HabitPerfectDayHub({
   }
 
   function renderCalendarControls(testId: string) {
+    function getCalendarControlClass(targetDate: string) {
+      return cx(
+        habitSecondaryActionClass,
+        "px-3",
+        pendingSelectedDate === targetDate ? "ring-2 ring-amber-400 ring-offset-2" : "",
+        failedRequestedDate === targetDate ? "ring-2 ring-rose-300 ring-offset-2" : ""
+      );
+    }
+
     return (
       <div
         data-testid={testId}
@@ -1940,24 +2078,31 @@ export default function HabitPerfectDayHub({
         <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           <Link
             href={previousWindowHref}
-            onClick={(event) => handleCalendarLinkClick(event, previousWindowHref)}
-            className={cx(habitSecondaryActionClass, "px-3")}
+            onClick={(event) =>
+              handleCalendarLinkClick(event, previousWindowHref, calendarWindow.previousWindowDate)
+            }
+            aria-busy={
+              pendingSelectedDate === calendarWindow.previousWindowDate ? "true" : undefined
+            }
+            className={getCalendarControlClass(calendarWindow.previousWindowDate)}
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             <span className="max-sm:sr-only">Previous week</span>
           </Link>
           <Link
             href={todayWindowHref}
-            onClick={(event) => handleCalendarLinkClick(event, todayWindowHref)}
-            className={cx(habitSecondaryActionClass, "px-3")}
+            onClick={(event) => handleCalendarLinkClick(event, todayWindowHref, safeTodayDate)}
+            aria-busy={pendingSelectedDate === safeTodayDate ? "true" : undefined}
+            className={getCalendarControlClass(safeTodayDate)}
           >
             Today
           </Link>
           {canGoNextWindow ? (
             <Link
               href={nextWindowHref}
-              onClick={(event) => handleCalendarLinkClick(event, nextWindowHref)}
-              className={cx(habitSecondaryActionClass, "px-3")}
+              onClick={(event) => handleCalendarLinkClick(event, nextWindowHref, nextWindowDate)}
+              aria-busy={pendingSelectedDate === nextWindowDate ? "true" : undefined}
+              className={getCalendarControlClass(nextWindowDate)}
             >
               <span className="max-sm:sr-only">Next week</span>
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -2080,7 +2225,7 @@ export default function HabitPerfectDayHub({
           <div
             className={cx(
               preferMobileActiveFocus
-                ? "grid w-full grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end"
+                ? "grid w-full grid-cols-[2.75rem_2.75rem_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end"
                 : "flex flex-wrap items-center justify-end gap-2"
             )}
           >
@@ -2100,6 +2245,20 @@ export default function HabitPerfectDayHub({
                 <CalendarDays className="h-4 w-4" aria-hidden="true" />
                 <span className="sr-only">Week overview</span>
               </button>
+            ) : null}
+            {preferMobileActiveFocus ? (
+              <Link
+                href={analysisHref}
+                aria-label="View Habits analysis"
+                title="View Habits analysis"
+                className={cx(
+                  habitSecondaryActionClass,
+                  "h-11 w-11 px-0 max-sm:rounded-[var(--fs-radius-control)] sm:hidden"
+                )}
+              >
+                <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">View Habits analysis</span>
+              </Link>
             ) : null}
             {isAddHabitOpen || !canManageHabitSetup ? null : (
               <button
@@ -2339,9 +2498,11 @@ export default function HabitPerfectDayHub({
                 : timerSeconds > 0
                   ? "Resume"
                   : "Start";
-              const manualTimeInputMinutes = Number(checkInInputs[habit.id]);
-              const canAddManualTime =
-                Number.isFinite(manualTimeInputMinutes) && manualTimeInputMinutes > 0;
+              const manualTimeInput = checkInInputs[habit.id]?.trim() ?? "";
+              const canSaveManualTime = manualTimeInput !== "";
+              const savedTimerSeconds = getSavedTimerSeconds(item);
+              const savedManualMinutes = getSavedManualMinutes(item);
+              const legacyTimedSeconds = getLegacyTimedSeconds(item);
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
               const cadenceLabel = habit.cadenceLabel;
@@ -2494,6 +2655,24 @@ export default function HabitPerfectDayHub({
                                 />
                               </div>
                             ) : null}
+                            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-[color:var(--fs-color-muted)]">
+                              <span className={habitChipClass}>
+                                Timer {formatTimer(savedTimerSeconds)}
+                              </span>
+                              <span className={habitChipClass}>
+                                Manual {savedManualMinutes} min
+                              </span>
+                              {timerSeconds > 0 ? (
+                                <span className={habitBrandChipClass}>
+                                  Active +{formatTimer(timerSeconds)}
+                                </span>
+                              ) : null}
+                              {legacyTimedSeconds > 0 ? (
+                                <span className={habitWarningChipClass}>
+                                  Legacy total {formatTimer(legacyTimedSeconds)}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         ) : quickStatusLabel ? (
                           <p className="mt-1 text-[15px] leading-6 font-medium text-slate-600">
@@ -2890,7 +3069,10 @@ export default function HabitPerfectDayHub({
                                 label="Manual time"
                                 inputAriaLabel={`${habit.title} manual time`}
                                 value={checkInInputs[habit.id] ?? ""}
-                                step={0.25}
+                                step={1}
+                                max={HABIT_MANUAL_TIME_MAX_MINUTES}
+                                inputMode="numeric"
+                                normalizeInputValue={normalizeManualMinutesInputValue}
                                 disabled={disabled}
                                 className="block sm:w-40"
                                 onChange={(value) =>
@@ -2904,16 +3086,16 @@ export default function HabitPerfectDayHub({
                                 type="button"
                                 onClick={() => {
                                   clearCreatedHabitNotice();
-                                  return addManualTime(item);
+                                  return saveManualTime(item);
                                 }}
-                                disabled={disabled || !canAddManualTime}
+                                disabled={disabled || !canSaveManualTime}
                                 className={cx(
                                   habitMobilePrimaryActionClass,
                                   habitWideActionWidthClass
                                 )}
                               >
                                 <Save className="h-4 w-4" aria-hidden="true" />
-                                Add manual time
+                                Save manual time
                               </button>
                             </>
                           ) : null}
@@ -2990,21 +3172,24 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
-                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
+                          {canRunTimerForSelectedDate &&
+                          !isRestDay &&
+                          isTimed &&
+                          timerSeconds > 0 ? (
                             <button
                               type="button"
                               onClick={() => {
                                 clearCreatedHabitNotice();
                                 resetTimer(habit.id);
                               }}
-                              disabled={disabled || timerSeconds <= 0}
+                              disabled={disabled}
                               className={cx(
                                 habitMobileSecondaryActionClass,
                                 habitPeerActionWidthClass
                               )}
                             >
                               <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                              Reset
+                              Reset timer
                             </button>
                           ) : null}
 

@@ -65,6 +65,8 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
     completed_at: "2026-05-10T09:00:00.000Z",
     created_at: "2026-05-10T09:00:00.000Z",
     updated_at: "2026-05-10T09:00:00.000Z",
+    timer_seconds: 0,
+    manual_minutes: 0,
     ...overrides,
   };
 }
@@ -170,6 +172,8 @@ function buildSchemaPendingSnapshot(): HabitSnapshot {
 
 function buildTimedSnapshot(options?: {
   savedMinutes?: number;
+  manualMinutes?: number;
+  legacyTotalMinutes?: number;
   includeSecondHabit?: boolean;
   selectedDate?: string;
 }): HabitSnapshot {
@@ -206,15 +210,27 @@ function buildTimedSnapshot(options?: {
       )
     : null;
   const activeHabits = secondHabit ? [habit, secondHabit] : [habit];
+  const timerSeconds =
+    typeof options?.savedMinutes === "number" ? Math.round(options.savedMinutes * 60) : 0;
+  const manualMinutes = options?.manualMinutes ?? 0;
+  const sourceTotalMinutes = Math.round(((timerSeconds + manualMinutes * 60) / 60) * 100) / 100;
+  const valueNumeric =
+    typeof options?.legacyTotalMinutes === "number"
+      ? options.legacyTotalMinutes
+      : timerSeconds > 0 || manualMinutes > 0
+        ? sourceTotalMinutes
+        : null;
   const checkIns =
-    typeof options?.savedMinutes === "number"
+    typeof valueNumeric === "number"
       ? [
           buildHabitCheckInView(
             buildCheckInRow({
               habit_id: habit.id,
               check_in_date: selectedDate,
               value_boolean: null,
-              value_numeric: options.savedMinutes,
+              value_numeric: valueNumeric,
+              timer_seconds: typeof options?.legacyTotalMinutes === "number" ? 0 : timerSeconds,
+              manual_minutes: typeof options?.legacyTotalMinutes === "number" ? 0 : manualMinutes,
             })
           ),
         ]
@@ -518,10 +534,73 @@ describe("HabitPerfectDayHub", () => {
     expect(navigationState.push).toHaveBeenCalledWith(
       "/my-library/habits?date=2026-05-03#today-habits"
     );
+    expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
     fireEvent.click(screen.getByRole("link", { name: /Sat May 9/i }));
     expect(navigationState.push).toHaveBeenCalledWith(
       "/my-library/habits?date=2026-05-09#today-habits"
     );
+    expect(screen.getByRole("link", { name: /Sat May 9 .*loading/i })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+  });
+
+  it("keeps stale habit data unconfirmed when a requested date load fails", async () => {
+    const { rerender } = render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-10" })}
+        todayDate="2026-05-10"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: /Sat May 9/i }));
+    expect(screen.getByRole("link", { name: /Sat May 9 .*loading/i })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+
+    rerender(
+      <HabitPerfectDayHub
+        initialSnapshot={{
+          ...buildSnapshot({ withHabit: true, selectedDate: "2026-05-09" }),
+          loadError: "Could not load your habits right now.",
+        }}
+        todayDate="2026-05-10"
+      />
+    );
+
+    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
+      "Could not load your habits right now. Showing 2026-05-10."
+    );
+    expect(screen.getByRole("link", { name: /Sun May 10 .*selected.*today/i })).toHaveAttribute(
+      "aria-current",
+      "date"
+    );
+    expect(screen.getByRole("link", { name: /Sat May 9 .*could not load/i })).not.toHaveAttribute(
+      "aria-current"
+    );
+  });
+
+  it("exposes the mobile Habits analysis shortcut with canonical calendar params", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-05-10" })}
+        todayDate="2026-05-10"
+        preferMobileActiveFocus
+      />
+    );
+
+    const analysisLink = screen.getByRole("link", { name: "View Habits analysis" });
+    expect(analysisLink).toHaveAttribute(
+      "href",
+      "/my-library/calendar?source=habits&period=week&date=2026-05-10"
+    );
+    expect(analysisLink).toHaveClass("h-11", "w-11");
+    expect(screen.getByRole("button", { name: "Show week overview" })).toHaveClass("h-11", "w-11");
+    expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
   });
 
   it("keeps the current Habits week Monday-start without clickable future days", () => {
@@ -920,6 +999,8 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).queryByText("Logged")).toBeNull();
     expect(within(card).getByText("0:00")).toBeVisible();
     expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("Timer 0:00")).toBeVisible();
+    expect(within(card).getByText("Manual 0 min")).toBeVisible();
     expect(
       within(card).getByRole("progressbar", { name: "Mobility timer timed progress" })
     ).toHaveAttribute("aria-valuenow", "0");
@@ -939,12 +1020,13 @@ describe("HabitPerfectDayHub", () => {
       .getAllByRole("button")
       .map((button) => button.textContent?.replace(/\s+/g, " ").trim());
     expect(actionNames.indexOf("Finish")).toBeLessThan(actionNames.indexOf("Rest day"));
-    expect(actionNames.indexOf("Rest day")).toBeLessThan(actionNames.indexOf("Reset"));
+    expect(within(detailsActions).queryByRole("button", { name: "Reset timer" })).toBeNull();
     expect(await screen.findByText("Daily target 8:00")).toBeVisible();
     expect(await screen.findByText("Manual time")).toBeVisible();
-    expect(await screen.findByRole("button", { name: "Add manual time" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Save manual time" })).toBeEnabled();
     expect(screen.queryByText("Manual min")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save manual" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add manual time" })).toBeNull();
     expect(await screen.findByText("No check-in")).toBeVisible();
   });
 
@@ -961,7 +1043,7 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.queryByRole("button", { name: "Finish" })).toBeNull();
     expect(await screen.findByText("Manual time")).toBeVisible();
-    expect(await screen.findByRole("button", { name: "Add manual time" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Save manual time" })).toBeEnabled();
   });
 
   it("restores a paused timed habit timer from local user-date storage", async () => {
@@ -984,6 +1066,8 @@ describe("HabitPerfectDayHub", () => {
     expect(await within(card).findByText("2:05")).toBeVisible();
     expect(within(card).getByText("of 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(await screen.findByRole("button", { name: "Reset timer" })).toBeEnabled();
   });
 
   it("restores a running timed habit timer using wall-clock elapsed time", async () => {
@@ -1036,6 +1120,8 @@ describe("HabitPerfectDayHub", () => {
     const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
     expect(await within(card).findByText("3:05")).toBeVisible();
     expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("Timer 2:00")).toBeVisible();
+    expect(within(card).getByText("Active +1:05")).toBeVisible();
     expect(within(card).queryByText("Timed")).toBeNull();
     expect(within(card).queryByText("Logged")).toBeNull();
     expect(within(card).queryByText("Done today")).toBeNull();
@@ -1066,7 +1152,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(breathingCard).getByRole("button", { name: "Pause" })).toBeVisible();
   });
 
-  it("adds manual time on top of saved and local timed habit minutes", async () => {
+  it("saves manual time as an absolute whole-minute source", async () => {
     window.localStorage.setItem(
       "freeswimming:habits:v3:timers:user-1:2026-05-10",
       JSON.stringify({
@@ -1083,32 +1169,85 @@ describe("HabitPerfectDayHub", () => {
       ok: true,
       json: async () => ({
         ok: true,
-        snapshot: buildTimedSnapshot({ savedMinutes: 3 }),
+        snapshot: buildTimedSnapshot({ savedMinutes: 2, manualMinutes: 5 }),
       }),
     } as Response);
 
     render(
       <HabitPerfectDayHub
-        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2 })}
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2, manualMinutes: 2 })}
         userId="user-1"
       />
     );
 
     fireEvent.click(await screen.findByRole("button", { name: "Details" }));
     fireEvent.change(await screen.findByLabelText("Mobility timer manual time"), {
-      target: { value: "0.5" },
+      target: { value: "5" },
     });
-    fireEvent.click(await screen.findByRole("button", { name: "Add manual time" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save manual time" }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
         "/api/my-library/habits/check-ins",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining('"valueNumeric":"3"'),
+          body: expect.stringContaining('"timerSeconds":120'),
         })
       );
     });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      timerSeconds: number;
+      manualMinutes: number;
+    };
+    expect(body).toMatchObject({
+      timerSeconds: 120,
+      manualMinutes: 5,
+    });
+    expect(
+      window.localStorage.getItem("freeswimming:habits:v3:timers:user-1:2026-05-10")
+    ).not.toBeNull();
+  });
+
+  it("allows zero manual minutes and rejects decimal manual input", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildTimedSnapshot({ savedMinutes: 2, manualMinutes: 0 }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 2, manualMinutes: 5 })}
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
+    const manualInput = await screen.findByLabelText("Mobility timer manual time");
+    fireEvent.change(manualInput, { target: { value: "0" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Save manual time" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timerSeconds: 120,
+      manualMinutes: 0,
+    });
+
+    vi.mocked(fetch).mockClear();
+    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
+    fireEvent.change(await screen.findByLabelText("Mobility timer manual time"), {
+      target: { value: "1.5" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Save manual time" }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
+      "Manual time must be whole minutes between 0 and 1440."
+    );
   });
 
   it("saves timer finishes on top of existing saved timed minutes", async () => {
@@ -1147,9 +1286,13 @@ describe("HabitPerfectDayHub", () => {
         "/api/my-library/habits/check-ins",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining('"valueNumeric":"4.08"'),
+          body: expect.stringContaining('"timerSeconds":245'),
         })
       );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timerSeconds: 245,
+      manualMinutes: 0,
     });
   });
 
@@ -1184,9 +1327,13 @@ describe("HabitPerfectDayHub", () => {
         "/api/my-library/habits/check-ins",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining('"valueNumeric":"2.08"'),
+          body: expect.stringContaining('"timerSeconds":125'),
         })
       );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timerSeconds: 125,
+      manualMinutes: 0,
     });
     await waitFor(() => {
       expect(

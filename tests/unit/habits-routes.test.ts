@@ -433,6 +433,174 @@ describe("habits routes", () => {
     );
   });
 
+  it("upserts timed check-ins with separate timer and manual sources", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const upsertSingle = vi.fn().mockResolvedValue({
+      data: { id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
+    const upsertSelect = vi.fn(() => ({ single: upsertSingle }));
+    const upsert = vi.fn(() => ({ select: upsertSelect }));
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 125,
+          manualMinutes: 5,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        check_in_date: "2026-05-10",
+        value_numeric: 7.08,
+        timer_seconds: 125,
+        manual_minutes: 5,
+      }),
+      { onConflict: "user_id,habit_id,check_in_date" }
+    );
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_timer_saved",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "timed",
+          hasTimerSeconds: true,
+          hasManualMinutes: true,
+          timedSourceKind: "timer_and_manual",
+        }),
+      })
+    );
+  });
+
+  it("rejects mixed timed source and legacy numeric payloads before writes", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const upsert = vi.fn();
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 120,
+          manualMinutes: 5,
+          valueNumeric: 99,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Timed source updates cannot include other check-in values.");
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects timed source values for non-timed habits before writes", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "build",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const upsert = vi.fn();
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          timerSeconds: 0,
+          manualMinutes: 5,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Timed source values require a timed habit.");
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it("logs rest days as skipped owner-scoped check-ins without completion time", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: { id: "11111111-1111-4111-8111-111111111111", habit_mode: "build" },

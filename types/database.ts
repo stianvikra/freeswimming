@@ -852,9 +852,11 @@ export type Database = {
           created_at: string;
           habit_id: string;
           id: string;
+          manual_minutes: number;
           note: string | null;
           status: string;
           timezone: string;
+          timer_seconds: number;
           updated_at: string;
           user_id: string;
           value_boolean: boolean | null;
@@ -867,9 +869,11 @@ export type Database = {
           created_at?: string;
           habit_id: string;
           id?: string;
+          manual_minutes?: number;
           note?: string | null;
           status?: string;
           timezone?: string;
+          timer_seconds?: number;
           updated_at?: string;
           user_id: string;
           value_boolean?: boolean | null;
@@ -882,9 +886,11 @@ export type Database = {
           created_at?: string;
           habit_id?: string;
           id?: string;
+          manual_minutes?: number;
           note?: string | null;
           status?: string;
           timezone?: string;
+          timer_seconds?: number;
           updated_at?: string;
           user_id?: string;
           value_boolean?: boolean | null;

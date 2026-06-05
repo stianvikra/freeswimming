@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarComparisonWindow,
   buildMyLibraryCalendarHref,
   buildMyLibraryCalendarWindow,
@@ -67,6 +68,13 @@ describe("my library calendar contract", () => {
         hash: "today-habits",
       })
     ).toBe("/my-library/habits?view=active&date=2026-05-03#today-habits");
+    expect(
+      buildMyLibraryCalendarComparisonHref({
+        source: "habits",
+        period: "week",
+        selectedDate: "2026-05-03",
+      })
+    ).toBe("/my-library/calendar?source=habits&period=week&date=2026-05-03");
   });
 
   it("keeps seven-day windows aligned to ISO Monday-Sunday weeks", () => {

@@ -12,12 +12,11 @@ import {
 import { cx } from "@/components/ui/cx";
 import type { MyLibraryCalendarComparisonModel } from "@/lib/my-library/calendar-comparison";
 import {
+  buildMyLibraryCalendarComparisonHref,
   getCalendarSourceFilterLabel,
   getMyLibraryCalendarPeriodLabel,
   MY_LIBRARY_CALENDAR_PERIODS,
   MY_LIBRARY_CALENDAR_SOURCE_FILTERS,
-  type MyLibraryCalendarPeriod,
-  type MyLibraryCalendarSourceFilter,
 } from "@/lib/my-library/calendar";
 
 type Props = {
@@ -42,25 +41,6 @@ const actionClass =
   "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const disabledActionClass =
   "inline-flex min-h-11 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/50 px-4 text-sm font-semibold text-[color:var(--fs-color-muted)]";
-
-function buildCalendarHref({
-  source,
-  period,
-  date,
-  compareTo,
-}: {
-  source: MyLibraryCalendarSourceFilter;
-  period: MyLibraryCalendarPeriod;
-  date: string;
-  compareTo?: string | null;
-}) {
-  const params = new URLSearchParams();
-  params.set("source", source);
-  params.set("period", period);
-  params.set("date", date);
-  if (compareTo) params.set("compareTo", compareTo);
-  return `/my-library/calendar?${params.toString()}`;
-}
 
 function getSafeSource(source: MyLibraryCalendarComparisonModel["selectedSource"]) {
   return source === "unmapped" ? "all" : source;
@@ -311,10 +291,10 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href={buildCalendarHref({
+              href={buildMyLibraryCalendarComparisonHref({
                 source: safeSource,
                 period: safePeriod,
-                date: model.window.previousPeriodDate,
+                selectedDate: model.window.previousPeriodDate,
               })}
               className={actionClass}
             >
@@ -322,10 +302,10 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
               Previous
             </Link>
             <Link
-              href={buildCalendarHref({
+              href={buildMyLibraryCalendarComparisonHref({
                 source: safeSource,
                 period: safePeriod,
-                date: model.window.todayDate,
+                selectedDate: model.window.todayDate,
               })}
               className={actionClass}
             >
@@ -334,10 +314,10 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             </Link>
             {model.window.canGoNext ? (
               <Link
-                href={buildCalendarHref({
+                href={buildMyLibraryCalendarComparisonHref({
                   source: safeSource,
                   period: safePeriod,
-                  date: model.window.nextPeriodDate,
+                  selectedDate: model.window.nextPeriodDate,
                 })}
                 className={actionClass}
               >
@@ -409,10 +389,10 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
                 return (
                   <Link
                     key={source}
-                    href={buildCalendarHref({
+                    href={buildMyLibraryCalendarComparisonHref({
                       source,
                       period: safePeriod,
-                      date: model.window.selectedDate,
+                      selectedDate: model.window.selectedDate,
                     })}
                     aria-current={isActive ? "page" : undefined}
                     className={cx(
@@ -440,10 +420,10 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
                 return (
                   <Link
                     key={period}
-                    href={buildCalendarHref({
+                    href={buildMyLibraryCalendarComparisonHref({
                       source: safeSource,
                       period,
-                      date: model.window.selectedDate,
+                      selectedDate: model.window.selectedDate,
                     })}
                     aria-current={isActive ? "page" : undefined}
                     className={cx(

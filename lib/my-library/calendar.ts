@@ -427,3 +427,22 @@ export function buildMyLibraryCalendarHref({
   const query = params.toString();
   return `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
 }
+
+export function buildMyLibraryCalendarComparisonHref({
+  source,
+  period,
+  selectedDate,
+  compareTo,
+}: {
+  source: MyLibraryCalendarSourceFilter;
+  period: MyLibraryCalendarPeriod;
+  selectedDate: string;
+  compareTo?: string | null;
+}) {
+  const params = new URLSearchParams();
+  params.set("source", source);
+  params.set("period", period);
+  params.set("date", selectedDate);
+  if (compareTo) params.set("compareTo", compareTo);
+  return `/my-library/calendar?${params.toString()}`;
+}

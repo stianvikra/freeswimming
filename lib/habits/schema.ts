@@ -15,6 +15,8 @@ const HABIT_SCHEMA_MARKERS = [
   "is_perfect_day_item",
   "start_date",
   "timer_enabled",
+  "timer_seconds",
+  "manual_minutes",
   "cadence_period",
   "cadence_target_count",
   "cadence_day_policy",
