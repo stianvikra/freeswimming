@@ -88,7 +88,7 @@ describe("habits routes", () => {
     expect(response.status).toBe(401);
   });
 
-  it("creates an owner-scoped habit definition", async () => {
+  it("creates an owner-scoped litres habit definition", async () => {
     const existingEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
     const existingEqUser = vi.fn(() => ({ eq: existingEqStatus }));
     const existingSelect = vi.fn(() => ({ eq: existingEqUser }));
@@ -117,11 +117,11 @@ describe("habits routes", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: "No sugar",
-          habitType: "avoidance",
+          title: "Drink water",
+          habitType: "count",
           category: "nutrition",
-          targetValueNumeric: 0,
-          targetUnit: "times",
+          targetValueNumeric: 2,
+          targetUnit: "litres",
           selectedDate: "2026-05-10",
         }),
       })
@@ -133,10 +133,11 @@ describe("habits routes", () => {
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: "user-1",
-        title: "No sugar",
-        habit_type: "avoidance",
-        target_operator: "at_most",
-        target_value_numeric: 0,
+        title: "Drink water",
+        habit_type: "count",
+        target_operator: "at_least",
+        target_value_numeric: 2,
+        target_unit: "litres",
         cadence_period: "daily",
         cadence_target_count: 1,
         cadence_day_policy: "fixed",
@@ -148,7 +149,7 @@ describe("habits routes", () => {
         userId: "user-1",
         payload: expect.objectContaining({
           habitMode: "build",
-          habitType: "avoidance",
+          habitType: "count",
           category: "nutrition",
           cadencePeriod: "daily",
           cadenceDayPolicy: "fixed",
@@ -281,7 +282,7 @@ describe("habits routes", () => {
             habitType: "count",
             category: "nutrition",
             targetValueNumeric: 1,
-            targetUnit: "glasses",
+            targetUnit: "litres",
             startDate: "2026-05-04",
             scheduleDays: ["monday", "wednesday", "friday"],
             selectedDate: "2026-05-10",
@@ -304,7 +305,7 @@ describe("habits routes", () => {
         habit_mode: "build",
         habit_type: "count",
         target_value_numeric: 1,
-        target_unit: "glasses",
+        target_unit: "litres",
         cadence_period: "weekly",
         cadence_target_count: 3,
         cadence_day_policy: "fixed",

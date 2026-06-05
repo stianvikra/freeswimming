@@ -246,9 +246,13 @@ function buildInputState(snapshot: HabitSnapshot) {
 
 function getUnitOptions(habitType: HabitType): HabitUnit[] {
   if (habitType === "duration") return ["minutes", "seconds"];
-  if (habitType === "count") return ["times", "steps", "pages", "glasses", "custom"];
-  if (habitType === "avoidance") return ["times", "glasses", "custom"];
+  if (habitType === "count") return ["times", "steps", "pages", "glasses", "litres", "custom"];
+  if (habitType === "avoidance") return ["times", "glasses", "litres", "custom"];
   return ["times"];
+}
+
+function getHabitUnitOptionLabel(unit: HabitUnit) {
+  return unit.charAt(0).toUpperCase() + unit.slice(1);
 }
 
 function getResolvedDraftHabitType(draft: HabitDraft): HabitType {
@@ -589,6 +593,8 @@ function getDisplayUnit(unit: HabitUnit | null, value: number) {
   switch (unit) {
     case "glasses":
       return value === 1 ? "glass" : "glasses";
+    case "litres":
+      return value === 1 ? "litre" : "litres";
     case "minutes":
       return value === 1 ? "minute" : "minutes";
     case "seconds":
@@ -2255,7 +2261,7 @@ export default function HabitPerfectDayHub({
                       >
                         {draftUnitOptions.map((unit) => (
                           <option key={unit} value={unit}>
-                            {unit}
+                            {getHabitUnitOptionLabel(unit)}
                           </option>
                         ))}
                       </select>
@@ -2758,7 +2764,7 @@ export default function HabitPerfectDayHub({
                                 {getUnitOptions(getResolvedDraftHabitType(editDraft)).map(
                                   (unit) => (
                                     <option key={unit} value={unit}>
-                                      {unit}
+                                      {getHabitUnitOptionLabel(unit)}
                                     </option>
                                   )
                                 )}

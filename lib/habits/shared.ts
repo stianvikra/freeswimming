@@ -24,6 +24,7 @@ export const HABIT_UNIT_VALUES = [
   "steps",
   "pages",
   "glasses",
+  "litres",
   "custom",
 ] as const;
 export const HABIT_WEEKDAY_VALUES = [
@@ -862,6 +863,8 @@ function formatHabitUnit(unit: HabitUnit, value: number) {
   switch (unit) {
     case "glasses":
       return "glass";
+    case "litres":
+      return "litre";
     case "minutes":
       return "minute";
     case "seconds":
