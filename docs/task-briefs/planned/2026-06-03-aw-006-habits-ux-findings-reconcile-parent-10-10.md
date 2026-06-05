@@ -16,10 +16,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-05`
-- `base`: `main@f3b51e51`
+- `base`: `main@ba6908ee`
 - `audit_status`: `ready`
 - `decision`: Use this as the canonical parent/intake for the owner's Habits product, tracking, history, and UX findings before any Habits child implementation starts.
-- `reason`: Post-merge preflight after PR `#995` reported the repo-managed Child J closeout items: move the done brief and clear active/in-progress queue references.
+- `reason`: PR `#995` shipped Child J, repo-managed closeout PR `#996` is merged, and post-merge preflight was reported green. No Habits child is active; this parent remains the return point before any future Habits child is selected.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, habits API/storage/local timer contracts, cadence/check-in/timer behavior, My Routines/Home Habits entrypoints, Help/Guide/support rules, benchmark assumptions about habit apps, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before selecting a child brief.
 
 ## Goal
@@ -513,3 +513,4 @@ Child briefs must define their own validation lane based on whether they touch d
 - `2026-06-05 | planned | owner added screenshot feedback that changing day scrolls away from weekly overview; added H-039 and expanded Child J to include date navigation scroll stability while keeping broad calendar redesign out of scope | next: wait for explicit owner execute/build/implement before moving Child J to in-progress`
 - `2026-06-05 | in-progress | owner said execute Child J; active brief moved to docs/task-briefs/in-progress/2026-06-05-aw-006-habits-sound-preferences-10-10.md and branch aw-006-habits-sound-scroll-stability is scoped to local sound preference plus date navigation scroll stability | next: implement targeted runtime/docs/tests and return here before closeout`
 - `2026-06-05 | done | PR #995 shipped Child J as squash commit 6c519e42 and returned exact H-005/H-006/H-039 status to this parent; no Habits child is active, with midnight auto-complete data integrity, reminders, server-stored preferences, user-selected/uploaded sounds, micro-session audio, advanced motivation/history, and export still requiring explicit owner selection | next: complete repo-managed docs-only closeout PR, rerun post-merge preflight, then complete mandatory chat-handoff before any new implementation slice`
+- `2026-06-05 | returned | repo-managed closeout PR #996 shipped as ba6908ee and post-merge preflight was reported green; fresh re-audit found only stale top-level lifecycle wording, now owned by docs/task-briefs/in-progress/2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10.md; no Habits child is active | next: after that docs-only repair, choose the next Habits child or return to broader AW-006 only by explicit owner selection after fresh audit`
