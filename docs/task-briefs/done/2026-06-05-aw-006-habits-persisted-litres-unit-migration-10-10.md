@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-05-aw-006-habits-persisted-litres-unit-migration-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
 - `updated`: `2026-06-05`
@@ -234,7 +234,7 @@ Evidence:
 
 - `identifiers searched`: `/my-library/habits`, `litres`, `litre`, `glasses`, `custom`, `HABIT_UNIT_VALUES`, `target_unit`, `Specific count`, `Done only`, `Any amount`, `HabitPerfectDayHub`, `docs/runbooks/auth-account-support.md`, and `docs/user-flow-map.md`.
 - `surfaces checked`: `app/`, `components/`, `lib/habits/`, `tests/`, `docs/task-briefs/`, `docs/design/`, `docs/runbooks/`, `docs/user-flow-map.md`, `supabase/migrations/`, and `types/database.ts`.
-- `fallout handled`: current user-flow/support copy now lists `litres` as supported; parent, AW-006 queue, and design inventory point at active Child H; historical done-brief references intentionally remain as past-scope evidence.
+- `fallout handled`: current user-flow/support copy now lists `litres` as supported; parent, AW-006 queue, and design inventory point at done Child H after closeout; historical done-brief references intentionally remain as past-scope evidence.
 
 ## UI Screenshot Evidence
 
@@ -264,3 +264,31 @@ Evidence:
 - `2026-06-05 | screenshot-approved | owner approved screenshot handoff, requested capitalized unit option labels, and explicitly said new screenshots were not necessary for that small dropdown-copy polish; visible labels are now capitalized while persisted values remain lowercase, targeted Habits Vitest still passed 75/75, and git diff --check passed | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-05 | pre-pr-fix | first npm run verify:pre-pr failed because the new Supabase migration was pending on the linked remote database; npx supabase db push --linked applied 20260605110000_habits_litres_unit.sql, and the rerun confirmed the linked remote is up to date before stopping on missing quality-gate evidence keywords now added above | next: rerun npm run verify:pre-pr`
 - `2026-06-05 | pre-pr-pass | npm run verify:pre-pr passed full lane after remote migration + quality-gate fixes; evidence: artifacts/test-runs/20260605-135424/verify.log, E2E 106 passed / 530 skipped, and terminal marker [verify-open] PASS | next: commit scoped diff, push, open PR, monitor CI, then run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-05`
+- `merged_pr`: `#991`
+- `squash_commit`: `7b7ad72c9521e4130a7626cf17224a0bd6e4c987`
+- `result`: Closed AW-006 Habits Persisted Litres Unit Migration. Habits can now save, edit, validate, display, and support `litres` as a real persisted unit instead of treating it as future-only copy.
+- `validation`: Targeted Habits Vitest 75/75 passed; `npm run lint:briefs:all` passed; `npm run verify:pre-pr` passed full lane at `artifacts/test-runs/20260605-135424/verify.log`; PR `#991` CI passed `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, Vercel, and Vercel Preview Comments; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260605-121654.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no release-blocking gaps remain for this slice.
+
+| Category                                      | Achieved Score | Evidence                                                                              | Gaps / Notes                                                                                                  |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#991`, screenshot handoff, support/user-flow docs                                 | None.                                                                                                         |
+| UX flow clarity                               | `5/5`          | Component tests and screenshot handoff                                                | None.                                                                                                         |
+| Visual design quality                         | `5/5`          | Screenshot artifacts `output/habits-litres-unit-migration-2026-06-05-094124`          | Owner waived screenshot regeneration for capitalization-only dropdown-label polish.                           |
+| Business logic correctness and data integrity | `5/5`          | Supabase migration, domain/route/component tests, pre-merge gates                     | None.                                                                                                         |
+| Accessibility (a11y)                          | `5/5`          | Native labelled select/options preserved, component coverage, broad gates             | None.                                                                                                         |
+| Accessibility                                 | `5/5`          | Same evidence as canonical `Accessibility (a11y)` row                                 | Lifecycle-lint alias only.                                                                                    |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical `habit_definitions.target_unit`, unchanged check-in numeric contract | No unit conversion; conversion remains intentionally out of scope.                                            |
+| Reliability and failure handling              | `5/5`          | Unsupported unit negative paths and migration drift gate                              | None.                                                                                                         |
+| Security and authz                            | `5/5`          | Existing owner-scoped protected Habits API tests plus unchanged RLS/authz paths       | None.                                                                                                         |
+| Privacy and compliance                        | `5/5`          | No public/raw-log/analytics exposure added                                            | None.                                                                                                         |
+| Content governance                            | `5/5`          | Parent, AW-006 queue, design inventory, support docs, and user-flow map updated       | This closeout moves the brief to done and clears active references.                                           |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` updated for supported `litres` diagnostics    | None.                                                                                                         |
+| i18n operational readiness                    | `5/5`          | Central formatter tests for `litre` / `litres`                                        | Broader locale translation remains out of scope.                                                              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Habits domain helpers, existing UI controls, Supabase migration discipline     | No new dependency.                                                                                            |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, CI, and `verify:pre-merge`                     | Local auth-backed E2E flows skipped under known Supabase egress guard; CI smoke and local public lane passed. |
+| DevOps and rollback readiness                 | `5/5`          | Additive migration, linked remote drift check, pre-merge marker, CI green             | None.                                                                                                         |
