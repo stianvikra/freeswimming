@@ -162,7 +162,7 @@ export default function MyLibraryHub({
                   testId="my-library-routines-row"
                   actionClassName={primaryActionClass}
                 />
-                <LibraryShortcut title="Calendar" href="/my-library/calendar">
+                <LibraryShortcut title="Comparison Report" href="/my-library/calendar">
                   <p className={cx("mt-2", mutedTextClass)}>
                     Compare weeks, months, and years across tracked activity.
                   </p>

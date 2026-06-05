@@ -36,7 +36,7 @@ function buildModel(): MyLibraryCalendarComparisonModel {
         source: "habits",
         label: "Habits",
         status: "mapped",
-        summary: "50% average on target across 4 days with habits.",
+        summary: "Habits were on target 50% across 4 tracked days.",
         supportLabel: "Habits counts existing check-ins only.",
         details: [
           {
@@ -58,10 +58,10 @@ function buildModel(): MyLibraryCalendarComparisonModel {
         metrics: [
           {
             id: "habit_completion_average",
-            label: "Average on target",
+            label: "Targets hit",
             currentLabel: "50%",
             comparisonLabel: "25%",
-            deltaLabel: "+25 pp",
+            deltaLabel: "50% vs 25%",
             tone: "positive",
           },
         ],
@@ -70,9 +70,9 @@ function buildModel(): MyLibraryCalendarComparisonModel {
         source: "swimming",
         label: "Swimming",
         status: "unmapped",
-        summary: "This source is not counted in comparison yet.",
+        summary: "This source needs better history before it can be compared.",
         supportLabel:
-          "Saved swim sessions do not yet have a canonical completed-on date, so Swimming is not counted in period comparison yet.",
+          "Swimming will be included after saved swim sessions have a canonical completed-on date.",
         metrics: [],
       },
     ],
@@ -84,23 +84,33 @@ describe("CalendarPeriodComparisonHub", () => {
     cleanup();
   });
 
-  it("renders insight-first comparison with source controls and secondary details", () => {
+  it("renders report controls before the insight with plain-language comparison details", () => {
     render(<CalendarPeriodComparisonHub model={buildModel()} />);
 
-    expect(screen.getByTestId("calendar-period-comparison-hub")).toBeInTheDocument();
+    const hub = screen.getByTestId("calendar-period-comparison-hub");
+    expect(hub).toBeInTheDocument();
+    const controls = screen.getByTestId("calendar-period-controls");
     const insight = screen.getByTestId("calendar-insight-summary");
-    expect(within(insight).getByText("The strongest signal is improving")).toBeVisible();
-    expect(within(insight).getByText("+25 pp")).toBeVisible();
+    expect(hub.firstElementChild).toBe(controls);
+    expect(controls.nextElementSibling).toBe(insight);
+    expect(within(controls).getByText("Comparison view")).toBeVisible();
+    expect(within(controls).getByText("All / Week / 1 Jun - 5 Jun")).toBeVisible();
+
+    expect(within(insight).getByText("Consistency improved")).toBeVisible();
+    expect(within(insight).getByText("50% vs 25%")).toBeVisible();
     expect(
-      within(insight).getByText("Habits: Average on target is 50%, compared with 25%.")
+      within(insight).getByText("You hit 50% of habit targets, up from 25% last week.")
     ).toBeVisible();
 
     const bestSignal = screen.getByTestId("calendar-insight-card-best-signal");
     expect(within(bestSignal).getByText("Best signal")).toBeVisible();
-    expect(within(bestSignal).getByText("+25 pp")).toBeVisible();
+    expect(within(bestSignal).getByText("50% vs 25%")).toBeVisible();
 
     const sourceCount = screen.getByTestId("calendar-insight-card-included-sources");
     expect(within(sourceCount).getByText("1/2")).toBeVisible();
+    expect(
+      within(sourceCount).getByText("Some sources need better history before they can be compared.")
+    ).toBeVisible();
 
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Month" })).toHaveAttribute(
@@ -119,14 +129,14 @@ describe("CalendarPeriodComparisonHub", () => {
     expect(within(habits).getByText("Morning mobility, Water, Read")).toBeVisible();
     expect(within(habits).getByText("Tracked days")).toBeVisible();
     expect(within(habits).getByText("4 days")).toBeVisible();
-    expect(within(habits).getByText("Average on target")).toBeVisible();
-    expect(within(habits).getByText("50% now, 25% before")).toBeVisible();
-    expect(within(habits).getByText("+25 pp")).toHaveClass("text-emerald-800");
+    expect(within(habits).getByText("Targets hit")).toBeVisible();
+    expect(within(habits).getByText("Current: 50%. Compare: 25%.")).toBeVisible();
+    expect(within(habits).getByText("50% vs 25%")).toHaveClass("text-emerald-800");
     expect(within(habits).getByText("Included")).toBeVisible();
 
     const swimming = screen.getByTestId("calendar-source-swimming");
-    expect(within(swimming).getByText("Not included")).toBeVisible();
-    expect(within(swimming).getByText(/not counted in period comparison yet/i)).toBeVisible();
+    expect(within(swimming).getByText("Not included yet")).toBeVisible();
+    expect(within(swimming).getByText(/canonical completed-on date/i)).toBeVisible();
 
     expect(screen.getByText("Detailed numbers")).toBeVisible();
   });

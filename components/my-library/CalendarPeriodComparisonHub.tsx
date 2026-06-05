@@ -14,6 +14,7 @@ import type { MyLibraryCalendarComparisonModel } from "@/lib/my-library/calendar
 import {
   buildMyLibraryCalendarComparisonHref,
   getCalendarSourceFilterLabel,
+  getCalendarSourceSelectionLabel,
   getMyLibraryCalendarPeriodLabel,
   MY_LIBRARY_CALENDAR_PERIODS,
   MY_LIBRARY_CALENDAR_SOURCE_FILTERS,
@@ -36,7 +37,7 @@ const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
 const eyebrowClass =
   "text-[12px] font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase";
 const segmentBaseClass =
-  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+  "inline-flex min-h-11 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const actionClass =
   "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const disabledActionClass =
@@ -61,7 +62,7 @@ function getStatusLabel(status: string) {
     case "error":
       return "Needs check";
     case "unmapped":
-      return "Not included";
+      return "Not included yet";
     default:
       return "Unknown";
   }
@@ -151,6 +152,12 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
   const negative = highlights.find((highlight) => highlight.metric.tone === "negative");
   const neutral = highlights.find((highlight) => highlight.metric.tone === "neutral");
   const lead = positive ?? negative ?? neutral;
+  const periodLabel = getMyLibraryCalendarPeriodLabel(getSafePeriod(model.selectedPeriod));
+  const comparisonLabel =
+    model.window.comparisonMode === "explicit" ? "selected comparison" : "previous period";
+  const periodPhrase = periodLabel.toLowerCase();
+  const comparisonPeriodPhrase =
+    model.window.comparisonMode === "explicit" ? "the selected comparison" : `last ${periodPhrase}`;
 
   if (!lead) {
     return {
@@ -161,12 +168,39 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
     };
   }
 
+  if (lead.source.source === "habits" && lead.metric.id === "habit_completion_average") {
+    if (lead.metric.tone === "positive") {
+      return {
+        tone: "positive",
+        value: lead.metric.deltaLabel,
+        title: "Consistency improved",
+        body: `You hit ${lead.metric.currentLabel} of habit targets, up from ${lead.metric.comparisonLabel} ${comparisonPeriodPhrase}.`,
+      };
+    }
+
+    if (lead.metric.tone === "negative") {
+      return {
+        tone: "negative",
+        value: lead.metric.deltaLabel,
+        title: "Consistency dropped",
+        body: `You hit ${lead.metric.currentLabel} of habit targets, down from ${lead.metric.comparisonLabel} ${comparisonPeriodPhrase}.`,
+      };
+    }
+
+    return {
+      tone: "neutral",
+      value: lead.metric.deltaLabel,
+      title: "Consistency stayed steady",
+      body: `You hit ${lead.metric.currentLabel} of habit targets, the same as ${lead.metric.comparisonLabel} ${comparisonPeriodPhrase}.`,
+    };
+  }
+
   if (lead.metric.tone === "positive") {
     return {
       tone: "positive",
       value: lead.metric.deltaLabel,
-      title: "The strongest signal is improving",
-      body: `${lead.source.label}: ${lead.metric.label} is ${lead.metric.currentLabel}, compared with ${lead.metric.comparisonLabel}.`,
+      title: `${lead.source.label}: ${lead.metric.label} improved`,
+      body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
     };
   }
 
@@ -174,16 +208,16 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
     return {
       tone: "negative",
       value: lead.metric.deltaLabel,
-      title: "One area needs attention",
-      body: `${lead.source.label}: ${lead.metric.label} is ${lead.metric.currentLabel}, compared with ${lead.metric.comparisonLabel}.`,
+      title: `${lead.source.label}: ${lead.metric.label} needs attention`,
+      body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
     };
   }
 
   return {
     tone: "neutral",
     value: lead.metric.deltaLabel,
-    title: "The comparison is steady",
-    body: `${lead.source.label}: ${lead.metric.label} is ${lead.metric.currentLabel}, compared with ${lead.metric.comparisonLabel}.`,
+    title: `${lead.source.label}: ${lead.metric.label} is steady`,
+    body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
   };
 }
 
@@ -198,15 +232,15 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
       id: "best-signal",
       tone: positive ? ("positive" as const) : ("neutral" as const),
       label: "Best signal",
-      value: positive?.metric.deltaLabel ?? "No lift yet",
+      value: positive?.metric.deltaLabel ?? "No improvement yet",
       body: positive
         ? `${positive.source.label}: ${positive.metric.label}`
-        : "No mapped metric is above the comparison period.",
+        : "No tracked metric is better than the comparison period.",
     },
     {
       id: "watch-next",
       tone: negative ? ("negative" as const) : ("neutral" as const),
-      label: "Watch next",
+      label: "Needs attention",
       value: negative?.metric.deltaLabel ?? "No drop flagged",
       body: negative
         ? `${negative.source.label}: ${negative.metric.label}`
@@ -221,7 +255,7 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
       body:
         sourceCount.included === sourceCount.total
           ? "All selected sources have comparison data."
-          : "Some sources are waiting for a safe data mapping.",
+          : "Some sources need better history before they can be compared.",
     },
   ];
 }
@@ -237,7 +271,7 @@ function renderMetricSummary(metric: SourceMetric) {
           {metric.label}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-[color:var(--fs-color-muted)]">
-          {metric.currentLabel} now, {metric.comparisonLabel} before
+          Current: {metric.currentLabel}. Compare: {metric.comparisonLabel}.
         </p>
       </div>
       <p className={cx("text-sm font-bold whitespace-nowrap", getDeltaClass(metric.tone))}>
@@ -277,14 +311,110 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
   const primaryInsight = buildPrimaryInsight(model);
   const insightCards = buildInsightCards(model);
   const compareLabel =
-    model.window.comparisonMode === "explicit" ? "selected comparison" : "previous period";
+    model.window.comparisonMode === "explicit"
+      ? "selected comparison"
+      : `last ${getMyLibraryCalendarPeriodLabel(safePeriod).toLowerCase()}`;
+  const reportSourceLabel = getCalendarSourceSelectionLabel(model.selectedSource);
+  const reportPeriodLabel = getMyLibraryCalendarPeriodLabel(safePeriod);
 
   return (
     <div className="space-y-6" data-testid="calendar-period-comparison-hub">
+      <section className={cardClass} data-testid="calendar-period-controls">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <div>
+            <p className={eyebrowClass}>Comparison view</p>
+            <p className="mt-2 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+              Source
+            </p>
+            <nav aria-label="Comparison Report sources" className="mt-2 flex flex-wrap gap-2">
+              {MY_LIBRARY_CALENDAR_SOURCE_FILTERS.map((source) => {
+                const isActive = model.selectedSource === source;
+                return (
+                  <Link
+                    key={source}
+                    href={buildMyLibraryCalendarComparisonHref({
+                      source,
+                      period: safePeriod,
+                      selectedDate: model.window.selectedDate,
+                    })}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cx(
+                      segmentBaseClass,
+                      "min-w-16",
+                      isActive
+                        ? "bg-[color:var(--fs-color-brand-700)] text-white shadow-sm"
+                        : "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)] hover:bg-[color:var(--fs-color-brand-50)] hover:text-[color:var(--fs-color-brand-700)]"
+                    )}
+                  >
+                    {getCalendarSourceFilterLabel(source)}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">Period</p>
+            <nav
+              aria-label="Comparison Report periods"
+              className="mt-2 grid max-w-[420px] grid-cols-3 gap-2"
+            >
+              {MY_LIBRARY_CALENDAR_PERIODS.map((period) => {
+                const isActive = model.selectedPeriod === period;
+                return (
+                  <Link
+                    key={period}
+                    href={buildMyLibraryCalendarComparisonHref({
+                      source: safeSource,
+                      period,
+                      selectedDate: model.window.selectedDate,
+                    })}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cx(
+                      segmentBaseClass,
+                      isActive
+                        ? "bg-[color:var(--fs-color-brand-700)] text-white shadow-sm"
+                        : "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)] hover:bg-[color:var(--fs-color-brand-50)] hover:text-[color:var(--fs-color-brand-700)]"
+                    )}
+                  >
+                    {getMyLibraryCalendarPeriodLabel(period)}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 border-t border-[color:var(--fs-border-soft)] pt-5 md:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <CalendarRange
+              className="mt-1 h-4 w-4 text-[color:var(--fs-color-brand-700)]"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                Current comparison
+              </p>
+              <p className={mutedTextClass}>
+                {reportSourceLabel} / {reportPeriodLabel} / {model.window.current.shortLabel}
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+              {model.window.comparisonMode === "explicit"
+                ? "Selected comparison"
+                : `Last ${reportPeriodLabel.toLowerCase()}`}
+            </p>
+            <p className={mutedTextClass}>{model.window.comparison.label}</p>
+          </div>
+        </div>
+      </section>
+
       <section className={cardClass} data-testid="calendar-insight-summary">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className={eyebrowClass}>Calendar insight</p>
+            <p className={eyebrowClass}>Comparison insight</p>
             <h2 className="mt-2 text-2xl font-semibold text-[color:var(--fs-color-ink-strong)]">
               {primaryInsight.title}
             </h2>
@@ -343,7 +473,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             <ToneIcon tone={primaryInsight.tone} className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[32px] leading-none font-bold tracking-normal sm:text-[40px]">
+            <p className="text-[26px] leading-tight font-bold tracking-normal break-words sm:text-[34px]">
               {primaryInsight.value}
             </p>
             <p className="mt-2 max-w-[70ch] text-sm leading-6">{primaryInsight.body}</p>
@@ -355,7 +485,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
         </div>
       </section>
 
-      <section aria-label="Calendar period key takeaways" className="grid gap-4 md:grid-cols-3">
+      <section aria-label="Comparison Report key takeaways" className="grid gap-4 md:grid-cols-3">
         {insightCards.map((card) => {
           return (
             <article
@@ -374,95 +504,6 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             </article>
           );
         })}
-      </section>
-
-      <section className={cardClass} data-testid="calendar-period-controls">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-          <div>
-            <p className={eyebrowClass}>View options</p>
-            <p className="mt-2 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-              Source
-            </p>
-            <nav aria-label="Calendar sources" className="mt-2 flex flex-wrap gap-2">
-              {MY_LIBRARY_CALENDAR_SOURCE_FILTERS.map((source) => {
-                const isActive = model.selectedSource === source;
-                return (
-                  <Link
-                    key={source}
-                    href={buildMyLibraryCalendarComparisonHref({
-                      source,
-                      period: safePeriod,
-                      selectedDate: model.window.selectedDate,
-                    })}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cx(
-                      segmentBaseClass,
-                      isActive
-                        ? "bg-[color:var(--fs-color-brand-700)] text-white shadow-sm"
-                        : "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)] hover:bg-[color:var(--fs-color-brand-50)] hover:text-[color:var(--fs-color-brand-700)]"
-                    )}
-                  >
-                    {getCalendarSourceFilterLabel(source)}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">Period</p>
-            <nav
-              aria-label="Calendar periods"
-              className="mt-2 grid max-w-[420px] grid-cols-3 gap-2"
-            >
-              {MY_LIBRARY_CALENDAR_PERIODS.map((period) => {
-                const isActive = model.selectedPeriod === period;
-                return (
-                  <Link
-                    key={period}
-                    href={buildMyLibraryCalendarComparisonHref({
-                      source: safeSource,
-                      period,
-                      selectedDate: model.window.selectedDate,
-                    })}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cx(
-                      segmentBaseClass,
-                      isActive
-                        ? "bg-[color:var(--fs-color-brand-700)] text-white shadow-sm"
-                        : "border border-[color:var(--fs-border-soft)] bg-white/75 text-[color:var(--fs-color-muted)] hover:bg-[color:var(--fs-color-brand-50)] hover:text-[color:var(--fs-color-brand-700)]"
-                    )}
-                  >
-                    {getMyLibraryCalendarPeriodLabel(period)}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 border-t border-[color:var(--fs-border-soft)] pt-5 md:grid-cols-2">
-          <div className="flex items-start gap-3">
-            <CalendarRange
-              className="mt-1 h-4 w-4 text-[color:var(--fs-color-brand-700)]"
-              aria-hidden="true"
-            />
-            <div>
-              <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-                Current
-              </p>
-              <p className={mutedTextClass}>{model.window.current.label}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-              {model.window.comparisonMode === "explicit"
-                ? "Selected comparison"
-                : "Previous period"}
-            </p>
-            <p className={mutedTextClass}>{model.window.comparison.label}</p>
-          </div>
-        </div>
       </section>
 
       <section aria-labelledby="calendar-source-comparison-heading" className="space-y-4">

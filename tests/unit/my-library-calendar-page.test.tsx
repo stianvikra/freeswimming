@@ -92,7 +92,7 @@ describe("MyLibraryCalendarPage", () => {
       "pt-24",
       "sm:pt-28"
     );
-    expect(screen.getByRole("heading", { name: "Calendar", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Comparison Report", level: 1 })).toBeVisible();
     const actions = screen.getByTestId("calendar-route-actions");
     expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     expect(within(actions).getByRole("link", { name: "Back to My Library" })).toHaveAttribute(
