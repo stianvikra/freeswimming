@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-05-aw-006-habits-sound-preferences-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
 - `updated`: `2026-06-05`
@@ -11,20 +11,20 @@
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `active implementation after owner said execute Child J`
-- `planned_resolved_findings`: `H-005`, `H-006`, `H-039`, and the optional-sound part of `H-010`
+- `execution_mode`: `completed implementation after owner said execute Child J`
+- `resolved_findings`: `H-005`, `H-006`, `H-039`, and the optional-sound part of `H-010`
 - `deferred_findings`: `H-028` midnight auto-complete, Habits Advanced Motivation/history-dashboard, reminders, micro-session audio, user-selected/uploaded sounds, server-stored preferences, native notifications, and broad analytics remain out of scope.
-- `return_checkpoint`: update the Habits parent before this child is closeout-ready.
+- `return_checkpoint`: Habits parent was updated before closeout and repo-managed closeout PR `#996` is merged.
 - `next_return_target`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-05`
-- `base`: `main@f3b51e51`
+- `base`: `main@ba6908ee`
 - `audit_status`: `ready`
-- `decision`: Implement Child J now after the owner explicitly said `execute Child J`, with the visual screenshot approval stop before `npm run verify:pre-pr`.
-- `reason`: Fresh re-audit after PR `#993` and repo-managed closeout PR `#994` found `main` clean/synced, no active AW-006 slice selected, and Habits parent findings `H-005`/`H-006` still deferred. Owner also reported that changing a day scrolls away from the weekly overview; code audit found Habits day links still target `#today-habits`, which can anchor the viewport down to the list. `HabitPerfectDayHub` already owns local timer state, same-day completion actions, and date/week navigation, but no sound or audio preference contract exists. Productive's official habit creation help includes a notification sound choice for reminders, while MDN documents that web audio/media playback may be blocked unless started from a user gesture, so the sound part should be local, opt-in, and fail-soft.
-- `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `/my-library/habits`, `HabitPerfectDayHub`, Habits local timer storage, check-in/completion semantics, `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, browser audio/autoplay guidance, screenshot handoff rules, route/label/support sweep rules, or verification lanes change before execution.
+- `decision`: Keep this done brief as the closeout evidence for Child J; do not execute it again.
+- `reason`: PR `#995` shipped Child J and repo-managed closeout PR `#996` moved the workstream to done state while returning to the Habits parent. The implemented scope was local opt-in Habits sound preference, completion/timed-target feedback, browser-audio/localStorage fallback, support docs, and date/week navigation scroll stability.
+- `must_refresh_before_execution_if`: N/A for this done brief; future Habits sound, reminder, notification, preference-sync, or calendar-scroll work must start from the Habits parent with a new fresh audit and child brief.
 
 ## Goal
 
@@ -205,6 +205,7 @@ Critical target categories for a `10/10` claim:
 - `Business logic correctness and data integrity`
 - `Data placement and sync boundaries`
 - `Accessibility (a11y)`
+- `Accessibility`
 - `Reliability and failure handling`
 - `Privacy and compliance`
 - `Stack-fit and dependency discipline`
@@ -218,6 +219,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | Sound triggers only on mapped successful events, and date navigation preserves selected/pending/failure semantics while changing only scroll/focus behavior.                         | component tests + trigger/navigation review   | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, CRUD, publish workflow, operator queue, or admin action surface.                                                                           | explicit admin-editor scope rationale         | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Preference controls have accessible labels and date navigation preserves keyboard/focus semantics without audio-only or scroll-only required information.                            | component tests + screenshot/manual QA        | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same threshold and evidence.                                                                                              | component tests + screenshot/manual QA        | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no dependency, no audio asset larger than a tiny generated tone or bundled minimal asset, and no polling/write loop.                                                | dependency diff + build/perf gate             | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Brief and implementation keep sound preference local-only and separate from server-canonical habit truth.                                                                            | data contract + component tests               | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: route/API cache behavior stays unchanged; preference hydration is client-local.                                                                                     | route diff review                             | `4/5`                   |
@@ -429,6 +431,7 @@ Required before PR/merge if implemented:
 | Visual design quality                         | `5/5`          | Screenshot handoff in `output/habits-sound-scroll-2026-06-05-170105/`; owner approved and waived new screenshots after the mobile sound-button grouping correction. | None.        |
 | Business logic correctness and data integrity | `5/5`          | Targeted tests cover success, no-sound negative triggers, failed actions, timed-target once, and browser failure paths.                                             | None.        |
 | Accessibility (a11y)                          | `5/5`          | Button controls keep accessible names and keyboard semantics through existing Habits button patterns.                                                               | None.        |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence and score.                                                                                 | None.        |
 | Data placement and sync boundaries            | `5/5`          | Preference is local-only under `freeswimming:habits:v1:sound`; no server writes or schema changes.                                                                  | None.        |
 | Reliability and failure handling              | `5/5`          | Audio and localStorage failures are non-blocking and covered by tests.                                                                                              | None.        |
 | Privacy and compliance                        | `5/5`          | No raw habit data, health-adjacent values, analytics payloads, or server-stored sound state added.                                                                  | None.        |

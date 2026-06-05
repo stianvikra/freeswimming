@@ -13,10 +13,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-05`
-- `base`: `main@f3b51e51`
+- `base`: `main@ba6908ee`
 - `audit_status`: `ready`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#994` are recorded below. The latest selected implementation slice, Habits Timed Manual Time + Pending Date + Analysis Shortcut, is shipped and closed out. Habits Sound Preferences And Date Navigation Scroll Stability is now planned but not active.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#996` are recorded below. The latest selected product/UI implementation slice, Habits Sound Preferences And Date Navigation Scroll Stability, shipped in PR `#995` and was closed out by repo-managed PR `#996`. No new product/UI implementation slice is selected.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, admin message manager/status/source/action contracts, dryland routes/micro-session state contracts, `/my-library/goals`, goals API/storage contracts, `/my-library/habits`, habit API/storage contracts, `/my-library/generator`, generator-intake/session-draft/workout-save contracts, task-brief closeout rules, forward compatibility rules, screenshot handoff rules, phase-plan wording, or verification lanes change before selecting or executing a future AW-006 slice.
 
 ## Goal
@@ -211,11 +211,13 @@ AW-006 latest product/UI implementation: PR `#995` closed `Habits Sound Preferen
 
 AW-006 latest audit implementation: PR `#961` closed `Admin Console Accessibility Audit + Bounded Fixes`.
 
-AW-006 latest lifecycle repair: PR `#990` closed the repo-managed My Library Calendar Period Comparison lifecycle closeout after PR `#989`.
+AW-006 latest lifecycle repair: PR `#996` closed the repo-managed Habits Sound Preferences lifecycle closeout after PR `#995`.
+
+AW-006 active lifecycle repair: `docs/task-briefs/in-progress/2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10.md` is docs-only and repairs stale top-level lifecycle text after PR `#996`.
 
 AW-006 completed Habits/calendar state: Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, and My Library Calendar Period Comparison are done.
 
-AW-006 active implementation: none selected.
+AW-006 active product/UI implementation: none selected.
 
 AW-006 deferred owner-selected Habits decisions after Child J: midnight auto-complete data integrity, reminders, server-stored preferences, user-selected/uploaded sounds, micro-session audio, Habits Advanced Motivation, and exports/history depth.
 
