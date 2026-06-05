@@ -17,6 +17,8 @@ import {
   RotateCcw,
   Save,
   Target,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +26,7 @@ import { useRouter } from "next/navigation";
 import {
   useEffect,
   useId,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -92,6 +95,8 @@ type TimerState = {
   startedAtMs: number | null;
 };
 
+type HabitSoundPlaybackResult = "played" | "blocked" | "unsupported";
+
 type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
 type HabitFeedbackAnnouncement = "polite" | "assertive" | "none";
 
@@ -122,6 +127,8 @@ type NumberStepperFieldProps = {
 const SEEN_HABIT_ROWS_STORAGE_KEY = "freeswimming:habits:v2:seen-row-ids";
 const HABIT_TIMER_STORAGE_PREFIX = "freeswimming:habits:v3:timers";
 const HABIT_TIMER_STORAGE_VERSION = 1;
+const HABIT_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:habits:v1:sound";
+const HABIT_SOUND_PREFERENCE_STORAGE_VERSION = 1;
 const HABIT_WEEK_SWIPE_THRESHOLD_PX = 48;
 const HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX = 40;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
@@ -847,6 +854,40 @@ function writeSeenHabitRowIds(ids: Set<string>) {
   }
 }
 
+function readHabitSoundPreference() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const raw = window.localStorage.getItem(HABIT_SOUND_PREFERENCE_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { version?: unknown; enabled?: unknown } | null;
+    return (
+      !!parsed &&
+      parsed.version === HABIT_SOUND_PREFERENCE_STORAGE_VERSION &&
+      parsed.enabled === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+function writeHabitSoundPreference(enabled: boolean) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.setItem(
+      HABIT_SOUND_PREFERENCE_STORAGE_KEY,
+      JSON.stringify({
+        version: HABIT_SOUND_PREFERENCE_STORAGE_VERSION,
+        enabled,
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getTimerStorageUserKey(userId: string | undefined) {
   const normalized = userId?.trim();
   return encodeURIComponent(normalized || "current-user");
@@ -963,6 +1004,71 @@ function writePersistedTimerRecords(
   }
 }
 
+function getHabitDayItem(snapshot: HabitSnapshot, habitId: string) {
+  return snapshot.daySummary.items.find((item) => item.habit.id === habitId) ?? null;
+}
+
+function shouldPlaySuccessfulCompletionSound(
+  beforeItem: HabitDayItem,
+  nextSnapshot: HabitSnapshot
+) {
+  const afterItem = getHabitDayItem(nextSnapshot, beforeItem.habit.id);
+  if (!afterItem) return false;
+  if (afterItem.checkIn?.status === "skipped") return false;
+  return !beforeItem.evaluation.isSatisfied && afterItem.evaluation.isSatisfied;
+}
+
+function getTimedTargetSoundKey(selectedDate: string, habitId: string, targetSeconds: number) {
+  return `${selectedDate}:${habitId}:${targetSeconds}`;
+}
+
+async function playHabitCompletionTone(): Promise<HabitSoundPlaybackResult> {
+  if (typeof window === "undefined") return "unsupported";
+
+  const audioWindow = window as Window &
+    typeof globalThis & {
+      webkitAudioContext?: typeof AudioContext;
+    };
+  const AudioContextConstructor = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
+  if (!AudioContextConstructor) return "unsupported";
+
+  try {
+    const context = new AudioContextConstructor();
+    if (context.state === "suspended") {
+      await context.resume();
+    }
+
+    const now = context.currentTime;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, now);
+    oscillator.frequency.exponentialRampToValueAtTime(880, now + 0.16);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
+    oscillator.addEventListener(
+      "ended",
+      () => {
+        void context.close().catch(() => {
+          // Audio feedback is optional; failed cleanup should not affect Habits tracking.
+        });
+      },
+      { once: true }
+    );
+
+    return "played";
+  } catch {
+    return "blocked";
+  }
+}
+
 export default function HabitPerfectDayHub({
   initialSnapshot,
   preferMobileActiveFocus = false,
@@ -990,8 +1096,12 @@ export default function HabitPerfectDayHub({
   const [failedRequestedDate, setFailedRequestedDate] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialSnapshot.loadError);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundNotice, setSoundNotice] = useState<string | null>(null);
   const hasLoadedRowPreferencesRef = useRef(false);
   const hasHydratedTimersRef = useRef(false);
+  const timedTargetProgressRef = useRef<Record<string, number>>({});
+  const timedTargetSoundKeysRef = useRef<Set<string>>(new Set());
   const confirmedSelectedDateRef = useRef<string | null>(
     initialSnapshot.loadError ? null : initialSnapshot.selectedDate
   );
@@ -1014,19 +1124,16 @@ export default function HabitPerfectDayHub({
     path: "/my-library/habits",
     selectedDate: calendarWindow.previousWindowDate,
     view: calendarViewParam,
-    hash: "today-habits",
   });
   const todayWindowHref = buildMyLibraryCalendarHref({
     path: "/my-library/habits",
     selectedDate: safeTodayDate,
     view: calendarViewParam,
-    hash: "today-habits",
   });
   const nextWindowHref = buildMyLibraryCalendarHref({
     path: "/my-library/habits",
     selectedDate: nextWindowDate,
     view: calendarViewParam,
-    hash: "today-habits",
   });
   const selectedDateLabel = getSelectedDateDisplayLabel(snapshot.selectedDate, safeTodayDate);
   const weekLabel = calendarWindow.weekLabel;
@@ -1041,6 +1148,10 @@ export default function HabitPerfectDayHub({
     period: "week",
     selectedDate: snapshot.selectedDate,
   });
+
+  useEffect(() => {
+    setSoundEnabled(readHabitSoundPreference());
+  }, []);
 
   useEffect(() => {
     if (
@@ -1207,6 +1318,82 @@ export default function HabitPerfectDayHub({
     return () => window.clearTimeout(timeout);
   }, [recentlyCreatedHabitId, snapshot.daySummary.items]);
 
+  const playHabitSound = useCallback(async (reason: "completion" | "target" | "test") => {
+    const result = await playHabitCompletionTone();
+    if (result === "played") {
+      setSoundNotice(reason === "test" ? "Test sound played." : null);
+      return;
+    }
+
+    setSoundNotice(
+      result === "unsupported"
+        ? "Sound is not available in this browser."
+        : "Sound was blocked. Your habit was still saved."
+    );
+  }, []);
+
+  const playEnabledHabitSound = useCallback(
+    (reason: "completion" | "target") => {
+      if (!soundEnabled) return;
+      void playHabitSound(reason);
+    },
+    [playHabitSound, soundEnabled]
+  );
+
+  const getTimerSeconds = useCallback(
+    (habitId: string) => {
+      const timer = timers[habitId];
+      if (!timer) return 0;
+      const runningSeconds =
+        timer.startedAtMs === null ? 0 : Math.floor((nowMs - timer.startedAtMs) / 1000);
+      return timer.elapsedSeconds + Math.max(0, runningSeconds);
+    },
+    [nowMs, timers]
+  );
+
+  useEffect(() => {
+    const nextProgress: Record<string, number> = {};
+
+    for (const item of snapshot.daySummary.items) {
+      if (item.habit.habitMode !== "timed" || item.habit.status !== "active") continue;
+      const targetSeconds = getTimerTargetDisplaySeconds(item.habit);
+      if (!targetSeconds) continue;
+
+      const timer = timers[item.habit.id];
+      const timerSeconds = getTimerSeconds(item.habit.id);
+      const progressSeconds = getTimedProgressSeconds(item, timerSeconds);
+      const soundKey = getTimedTargetSoundKey(snapshot.selectedDate, item.habit.id, targetSeconds);
+      const previousProgress = timedTargetProgressRef.current[soundKey];
+
+      if (
+        previousProgress !== undefined &&
+        isSelectedToday &&
+        timer?.startedAtMs != null &&
+        previousProgress < targetSeconds &&
+        progressSeconds >= targetSeconds &&
+        !timedTargetSoundKeysRef.current.has(soundKey)
+      ) {
+        timedTargetSoundKeysRef.current.add(soundKey);
+        playEnabledHabitSound("target");
+      }
+
+      if (progressSeconds < targetSeconds) {
+        timedTargetSoundKeysRef.current.delete(soundKey);
+      }
+      nextProgress[soundKey] = progressSeconds;
+    }
+
+    timedTargetProgressRef.current = nextProgress;
+  }, [
+    isSelectedToday,
+    getTimerSeconds,
+    nowMs,
+    playEnabledHabitSound,
+    snapshot.daySummary.items,
+    snapshot.selectedDate,
+    timers,
+  ]);
+
   const activeCount = snapshot.activeHabits.length;
   const preferredCountLabel =
     activeCount === 0
@@ -1239,12 +1426,17 @@ export default function HabitPerfectDayHub({
     setRecentlyCreatedHabitId(null);
   }
 
-  function getTimerSeconds(habitId: string) {
-    const timer = timers[habitId];
-    if (!timer) return 0;
-    const runningSeconds =
-      timer.startedAtMs === null ? 0 : Math.floor((nowMs - timer.startedAtMs) / 1000);
-    return timer.elapsedSeconds + Math.max(0, runningSeconds);
+  function toggleHabitSoundPreference() {
+    const nextEnabled = !soundEnabled;
+    setSoundEnabled(nextEnabled);
+    const didPersist = writeHabitSoundPreference(nextEnabled);
+    setSoundNotice(
+      didPersist
+        ? nextEnabled
+          ? "Sound on."
+          : "Sound off."
+        : "Sound preference cannot be saved in this browser."
+    );
   }
 
   function startTimer(habitId: string) {
@@ -1508,9 +1700,12 @@ export default function HabitPerfectDayHub({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      await applyResponse(response, "Could not save that check-in right now.");
+      const nextSnapshot = await applyResponse(response, "Could not save that check-in right now.");
       collapseHabitDetails(habit.id);
       clearTimer(habit.id);
+      if (shouldPlaySuccessfulCompletionSound(item, nextSnapshot)) {
+        playEnabledHabitSound("completion");
+      }
       setNotice("Check-in saved.");
     } catch (caught) {
       setError(
@@ -1546,9 +1741,12 @@ export default function HabitPerfectDayHub({
           manualMinutes: input.manualMinutes,
         }),
       });
-      await applyResponse(response, "Could not save that check-in right now.");
+      const nextSnapshot = await applyResponse(response, "Could not save that check-in right now.");
       collapseHabitDetails(habit.id);
       if (input.clearLocalTimerOnSuccess) clearTimer(habit.id);
+      if (shouldPlaySuccessfulCompletionSound(item, nextSnapshot)) {
+        playEnabledHabitSound("completion");
+      }
       setNotice(input.successNotice);
     } catch (caught) {
       setError(
@@ -1978,7 +2176,6 @@ export default function HabitPerfectDayHub({
             path: "/my-library/habits",
             selectedDate: day.date,
             view: calendarViewParam,
-            hash: "today-habits",
           });
           const dayLabel = `${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
             day.completionPercent
@@ -2274,6 +2471,41 @@ export default function HabitPerfectDayHub({
             )}
             {online === false ? <p className={habitWarningChipClass}>Offline</p> : null}
           </div>
+        </div>
+
+        <div
+          className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center"
+          data-testid="habits-sound-controls"
+        >
+          <p className={cx(habitLabelClass, "sm:mr-1")}>Completion sound</p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <button
+              type="button"
+              aria-pressed={soundEnabled}
+              onClick={toggleHabitSoundPreference}
+              className={cx(habitSecondaryActionClass, "w-full px-2 sm:w-auto sm:px-3")}
+            >
+              {soundEnabled ? (
+                <Volume2 className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <VolumeX className="h-4 w-4" aria-hidden="true" />
+              )}
+              {soundEnabled ? "Sound on" : "Sound off"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void playHabitSound("test")}
+              className={cx(habitSecondaryActionClass, "w-full px-2 sm:w-auto sm:px-3")}
+            >
+              <Volume2 className="h-4 w-4" aria-hidden="true" />
+              Test sound
+            </button>
+          </div>
+          {soundNotice ? (
+            <p role="status" className="text-sm font-medium text-slate-600">
+              {soundNotice}
+            </p>
+          ) : null}
         </div>
 
         {preferMobileActiveFocus && isMobileWeekOpen ? (

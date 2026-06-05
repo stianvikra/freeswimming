@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const navigationState = vi.hoisted(() => ({
@@ -448,6 +448,59 @@ function openAddHabitForm() {
   expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
 }
 
+function installAudioContextMock(options?: { resumeRejects?: boolean }) {
+  const audio = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    resume: vi.fn(() =>
+      options?.resumeRejects ? Promise.reject(new Error("blocked")) : Promise.resolve()
+    ),
+    close: vi.fn(() => Promise.resolve()),
+    oscillatorConnect: vi.fn(),
+    gainConnect: vi.fn(),
+    setFrequency: vi.fn(),
+    rampFrequency: vi.fn(),
+    setGain: vi.fn(),
+    rampGain: vi.fn(),
+    addEndedListener: vi.fn(),
+  };
+
+  class MockAudioContext {
+    state = options?.resumeRejects ? "suspended" : "running";
+    currentTime = 0;
+    destination = {};
+    resume = audio.resume;
+    close = audio.close;
+
+    createOscillator() {
+      return {
+        type: "sine",
+        frequency: {
+          setValueAtTime: audio.setFrequency,
+          exponentialRampToValueAtTime: audio.rampFrequency,
+        },
+        connect: audio.oscillatorConnect,
+        start: audio.start,
+        stop: audio.stop,
+        addEventListener: audio.addEndedListener,
+      };
+    }
+
+    createGain() {
+      return {
+        gain: {
+          setValueAtTime: audio.setGain,
+          exponentialRampToValueAtTime: audio.rampGain,
+        },
+        connect: audio.gainConnect,
+      };
+    }
+  }
+
+  vi.stubGlobal("AudioContext", MockAudioContext);
+  return audio;
+}
+
 describe("HabitPerfectDayHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
@@ -510,6 +563,178 @@ describe("HabitPerfectDayHub", () => {
     expect(headingRow).not.toHaveClass("justify-between");
   });
 
+  it("keeps Habits completion sound off by default and stores the opt-in locally", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    const controls = screen.getByTestId("habits-sound-controls");
+    expect(within(controls).getByRole("button", { name: "Sound off" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(within(controls).getByRole("button", { name: "Test sound" })).toBeVisible();
+    expect(window.localStorage.getItem("freeswimming:habits:v1:sound")).toBeNull();
+
+    fireEvent.click(within(controls).getByRole("button", { name: "Sound off" }));
+
+    expect(within(controls).getByRole("button", { name: "Sound on" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(JSON.parse(window.localStorage.getItem("freeswimming:habits:v1:sound") ?? "{}")).toEqual(
+      {
+        version: 1,
+        enabled: true,
+      }
+    );
+  });
+
+  it("lets the user test the Habits completion sound without saving a check-in", async () => {
+    const audio = installAudioContextMock();
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Test sound" }));
+
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await screen.findByText("Test sound played.")).toHaveAttribute("role", "status");
+  });
+
+  it("plays completion sound only after an enabled successful completion transition", async () => {
+    const audio = installAudioContextMock();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true, completed: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+  });
+
+  it("does not play completion sound while the preference is off", async () => {
+    const audio = installAudioContextMock();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true, completed: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(audio.start).not.toHaveBeenCalled();
+  });
+
+  it("does not play completion sound for rest day, reset, or failed check-in actions", async () => {
+    const audio = installAudioContextMock();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildRestDaySnapshot(),
+      }),
+    } as Response);
+
+    const { rerender } = render(
+      <HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rest day" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(audio.start).not.toHaveBeenCalled();
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true }),
+      }),
+    } as Response);
+    rerender(
+      <HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true, completed: true })} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(audio.start).not.toHaveBeenCalled();
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not save that check-in right now.",
+      }),
+    } as Response);
+    rerender(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+    expect(audio.start).not.toHaveBeenCalled();
+  });
+
+  it("keeps completion saves non-blocking when browser audio is rejected", async () => {
+    const audio = installAudioContextMock({ resumeRejects: true });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true, completed: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(audio.start).not.toHaveBeenCalled();
+    expect(await screen.findByText("Check-in saved.")).toBeVisible();
+    expect(
+      await screen.findByText("Sound was blocked. Your habit was still saved.")
+    ).toHaveAttribute("role", "status");
+  });
+
+  it("keeps the session sound toggle usable if localStorage cannot persist", () => {
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+      this: Storage,
+      key: string,
+      value: string
+    ) {
+      if (key === "freeswimming:habits:v1:sound") {
+        throw new Error("blocked storage");
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+
+    expect(screen.getByRole("button", { name: "Sound on" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByText("Sound preference cannot be saved in this browser.")).toHaveAttribute(
+      "role",
+      "status"
+    );
+  });
+
   it("shows selected-date calendar controls and selected day state", () => {
     render(
       <HabitPerfectDayHub
@@ -523,7 +748,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(controls).getByText("Week 19, 2026 · May 4 - May 10")).toBeVisible();
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
-      "/my-library/habits?date=2026-05-03#today-habits"
+      "/my-library/habits?date=2026-05-03"
     );
     expect(screen.getByRole("link", { name: /May 10 .*selected.*today/i })).toHaveAttribute(
       "aria-current",
@@ -531,17 +756,13 @@ describe("HabitPerfectDayHub", () => {
     );
 
     fireEvent.click(within(controls).getByRole("link", { name: "Previous week" }));
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/habits?date=2026-05-03#today-habits"
-    );
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-03");
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "aria-busy",
       "true"
     );
     fireEvent.click(screen.getByRole("link", { name: /Sat May 9/i }));
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/habits?date=2026-05-09#today-habits"
-    );
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-09");
     expect(screen.getByRole("link", { name: /Sat May 9 .*loading/i })).toHaveAttribute(
       "aria-busy",
       "true"
@@ -615,7 +836,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(controls).getByText("Week 23, 2026 · Jun 1 - Jun 7")).toBeVisible();
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
-      "/my-library/habits?date=2026-05-29#today-habits"
+      "/my-library/habits?date=2026-05-29"
     );
     expect(within(controls).queryByRole("link", { name: "Next week" })).toBeNull();
     expect(within(controls).getByRole("button", { name: "Next week unavailable" })).toBeDisabled();
@@ -625,7 +846,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(weekOverview).getByText("Jun 1")).toBeVisible();
     expect(within(weekOverview).getByRole("link", { name: /Mon Jun 1/i })).toHaveAttribute(
       "href",
-      "/my-library/habits?date=2026-06-01#today-habits"
+      "/my-library/habits?date=2026-06-01"
     );
     expect(
       within(weekOverview).getByRole("link", { name: /Fri Jun 5 .*selected.*today/i })
@@ -665,11 +886,11 @@ describe("HabitPerfectDayHub", () => {
       expect(within(controls).getByText("Week 18, 2026 · Apr 27 - May 3")).toBeVisible();
       expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
         "href",
-        "/my-library/habits?date=2026-04-26#today-habits"
+        "/my-library/habits?date=2026-04-26"
       );
       expect(within(controls).getByRole("link", { name: "Next week" })).toHaveAttribute(
         "href",
-        "/my-library/habits?date=2026-05-10#today-habits"
+        "/my-library/habits?date=2026-05-10"
       );
     });
   });
@@ -689,9 +910,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.touchEnd(weekOverview, {
       changedTouches: [{ clientX: 150, clientY: 84 }],
     });
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/habits?date=2026-04-26#today-habits"
-    );
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-04-26");
 
     fireEvent.touchStart(weekOverview, {
       touches: [{ clientX: 150, clientY: 80 }],
@@ -699,9 +918,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.touchEnd(weekOverview, {
       changedTouches: [{ clientX: 24, clientY: 84 }],
     });
-    expect(navigationState.push).toHaveBeenCalledWith(
-      "/my-library/habits?date=2026-05-10#today-habits"
-    );
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-10");
   });
 
   it("allows past check-in correction while keeping habit setup on Today", async () => {
@@ -1130,6 +1347,37 @@ describe("HabitPerfectDayHub", () => {
     ).toHaveAttribute("aria-valuenow", "185");
     expect(screen.queryByText("1:05")).toBeNull();
     expect(within(card).queryByText("Total 3:05 / 8:00 today")).toBeNull();
+  });
+
+  it("plays timed target sound once when a same-day running timer crosses target", async () => {
+    vi.useFakeTimers();
+    const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
+    vi.setSystemTime(nowMs);
+    const audio = installAudioContextMock();
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 7.98 })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    expect(audio.start).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(audio.start).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(audio.start).toHaveBeenCalledTimes(1);
   });
 
   it("pauses the current timed habit when another timer starts", async () => {
