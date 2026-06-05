@@ -68,7 +68,7 @@ Official or primary sources checked on `2026-06-04`:
 
 - Full My Library calendar route or global calendar storage.
 - Scheduling swim, dryland, or micro sessions in a calendar.
-- Month calendar, year heatmap, week/month/year comparison, habit score, best streak dashboard, export, or chart analytics. Period comparison is captured as planned system-calendar follow-up `docs/task-briefs/planned/2026-06-04-aw-006-my-library-calendar-period-comparison-10-10.md`.
+- Month calendar, year heatmap, week/month/year comparison, habit score, best streak dashboard, export, or chart analytics. Period comparison is captured as system-calendar follow-up `docs/task-briefs/in-progress/2026-06-04-aw-006-my-library-calendar-period-comparison-10-10.md`.
 - Habit notes per log.
 - Sound, reminders, notifications, native integrations, HealthKit, Apple Watch.
 - Builder target semantics for `Any amount`, litres, glasses, or no-fixed-amount count habits.
@@ -154,7 +154,7 @@ Official or primary sources checked on `2026-06-04`:
   - new Habits returned by the current snapshot inherit selected-day rendering automatically.
 - Explicit mapping requirements:
   - new calendar sources, context filters like work/off-work, month/year views, event types, external calendars, exports, reminders, or analytics events require mapping, tests, and support docs.
-  - week/month/year comparison requires the planned system-calendar follow-up `docs/task-briefs/planned/2026-06-04-aw-006-my-library-calendar-period-comparison-10-10.md`, using shared `source`, `period`, `range`, and `compareTo` concepts rather than a Habits-only analytics model.
+  - week/month/year comparison requires the system-calendar follow-up `docs/task-briefs/in-progress/2026-06-04-aw-006-my-library-calendar-period-comparison-10-10.md`, using shared `source`, `period`, `range`, and `compareTo` concepts rather than a Habits-only analytics model.
 - Unknown or deprecated values:
   - unknown sources are not shown and must not be counted as Habits.
   - invalid/future date params resolve to Today rather than creating future editable state.

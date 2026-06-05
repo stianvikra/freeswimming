@@ -1350,12 +1350,9 @@ export function buildHabitWeekSummary(
   checkIns: HabitCheckInView[],
   selectedDate: string
 ): HabitWeekSummary {
-  const selected = Date.parse(`${selectedDate}T00:00:00.000Z`);
-  const baseDate = Number.isNaN(selected) ? new Date() : new Date(selected);
+  const weekStart = getCalendarWeekStartDate(selectedDate);
   const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(baseDate);
-    date.setUTCDate(baseDate.getUTCDate() - (6 - index));
-    const dateKey = date.toISOString().slice(0, 10);
+    const dateKey = addUtcDays(weekStart, index);
     return buildHabitDaySummary(habits, checkIns, dateKey);
   });
   const daysWithItems = days.filter((day) => day.perfectDayItemCount > 0);

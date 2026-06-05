@@ -524,6 +524,40 @@ describe("HabitPerfectDayHub", () => {
     );
   });
 
+  it("keeps the current Habits week Monday-start without clickable future days", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildSnapshot({ withHabit: true, selectedDate: "2026-06-05" })}
+        todayDate="2026-06-05"
+      />
+    );
+
+    const controls = screen.getByTestId("habits-calendar-controls-summary");
+    expect(within(controls).getByText("Week 23, 2026 · Jun 1 - Jun 7")).toBeVisible();
+    expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-29#today-habits"
+    );
+    expect(within(controls).queryByRole("link", { name: "Next week" })).toBeNull();
+    expect(within(controls).getByRole("button", { name: "Next week unavailable" })).toBeDisabled();
+
+    const weekOverview = screen.getByTestId("habits-week-overview-summary");
+    expect(within(weekOverview).getByText("Mon")).toBeVisible();
+    expect(within(weekOverview).getByText("Jun 1")).toBeVisible();
+    expect(within(weekOverview).getByRole("link", { name: /Mon Jun 1/i })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-06-01#today-habits"
+    );
+    expect(
+      within(weekOverview).getByRole("link", { name: /Fri Jun 5 .*selected.*today/i })
+    ).toHaveAttribute("aria-current", "date");
+    expect(within(weekOverview).queryByRole("link", { name: /Sat Jun 6/i })).toBeNull();
+    expect(within(weekOverview).getByText("Jun 6").closest("span")).toHaveAttribute(
+      "aria-disabled",
+      "true"
+    );
+  });
+
   it("syncs the visible habit week when router history provides a new snapshot", async () => {
     const { rerender } = render(
       <HabitPerfectDayHub
@@ -1447,6 +1481,8 @@ describe("HabitPerfectDayHub", () => {
     expect(showWeekButton).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(showWeekButton);
     expect(screen.getByTestId("habits-week-overview-mobile")).toBeVisible();
+    expect(screen.getByText("Week 19, 2026 · 1/7 perfect days")).toBeVisible();
+    expect(screen.queryByText("Week 19, 2026 · May 4 - May 10 · 1/7 perfect days")).toBeNull();
     expect(screen.getByRole("button", { name: "Hide week overview" })).toHaveAttribute(
       "aria-expanded",
       "true"

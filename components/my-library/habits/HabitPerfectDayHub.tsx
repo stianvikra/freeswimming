@@ -51,6 +51,7 @@ import {
   buildMyLibraryCalendarHref,
   buildMyLibraryCalendarWindow,
   getCalendarSourceFilterLabel,
+  getMyLibraryCalendarPeriodStartDate,
 } from "@/lib/my-library/calendar";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 
@@ -949,12 +950,13 @@ export default function HabitPerfectDayHub({
   const weekSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const calendarWindow = buildMyLibraryCalendarWindow(snapshot.selectedDate);
   const safeTodayDate = todayDate || snapshot.selectedDate;
+  const todayWeekStartDate = getMyLibraryCalendarPeriodStartDate(safeTodayDate, "week");
   const isSelectedToday = snapshot.selectedDate === safeTodayDate;
   const isHistoricalDate = snapshot.selectedDate < safeTodayDate;
   const canManageHabitSetup = isSelectedToday;
   const nextWindowDate =
     calendarWindow.nextWindowDate > safeTodayDate ? safeTodayDate : calendarWindow.nextWindowDate;
-  const canGoNextWindow = snapshot.selectedDate < safeTodayDate;
+  const canGoNextWindow = calendarWindow.startDate < todayWeekStartDate;
   const calendarViewParam = preferMobileActiveFocus ? "active" : undefined;
   const previousWindowHref = buildMyLibraryCalendarHref({
     path: "/my-library/habits",
@@ -1834,7 +1836,7 @@ export default function HabitPerfectDayHub({
   function renderWeekOverview(testId: string) {
     return (
       <div
-        className="mt-5 grid touch-pan-y grid-cols-7 gap-2"
+        className="mt-5 grid touch-pan-y grid-cols-7 gap-1.5 sm:gap-2"
         aria-label={`Habits calendar ${weekLabel} ${weekRangeLabel}`}
         data-testid={testId}
         onTouchStart={handleWeekOverviewTouchStart}
@@ -1843,42 +1845,68 @@ export default function HabitPerfectDayHub({
         {snapshot.weekSummary.days.map((day) => {
           const isSelected = day.date === snapshot.selectedDate;
           const isToday = day.date === safeTodayDate;
+          const isFutureDate = day.date > safeTodayDate;
           const dayHref = buildMyLibraryCalendarHref({
             path: "/my-library/habits",
             selectedDate: day.date,
             view: calendarViewParam,
             hash: "today-habits",
           });
-          return (
-            <Link
-              key={day.date}
-              href={dayHref}
-              onClick={(event) => handleCalendarLinkClick(event, dayHref)}
-              aria-current={isSelected ? "date" : undefined}
-              aria-label={`${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
-                day.completionPercent
-              }% complete${isSelected ? ", selected" : ""}${isToday ? ", today" : ""}`}
-              className={cx(
-                "min-w-0 rounded-[var(--fs-radius-card)] p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
-                isSelected
-                  ? "bg-[color:var(--fs-color-brand-50)] ring-2 ring-[color:var(--fs-border-brand)]"
-                  : "hover:bg-white"
-              )}
-            >
-              <div className="flex h-20 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1">
+          const dayLabel = `${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
+            day.completionPercent
+          }% complete${isSelected ? ", selected" : ""}${isToday ? ", today" : ""}`;
+          const dayClassName = cx(
+            "min-w-0 rounded-[var(--fs-radius-card)] p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
+            isSelected
+              ? "bg-[color:var(--fs-color-brand-50)] ring-2 ring-[color:var(--fs-border-brand)]"
+              : isFutureDate
+                ? "cursor-not-allowed opacity-60"
+                : "hover:bg-white"
+          );
+          const dayContent = (
+            <>
+              <p className="truncate text-center text-[11px] font-semibold text-slate-700">
+                {getWeekdayLabel(day.date)}
+              </p>
+              <p className="text-center text-[10px] font-medium text-slate-500 sm:text-[11px]">
+                {getMonthDayLabel(day.date)}
+              </p>
+              <div className="mt-1 flex h-14 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1 sm:h-20">
                 <div
                   className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
                   style={{ height: `${Math.max(6, day.completionPercent)}%` }}
                   aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
                 />
               </div>
-              <p className="mt-1 truncate text-center text-[11px] font-semibold text-slate-700">
-                {getWeekdayLabel(day.date)}
+              <p className="mt-1 text-center text-[10px] text-slate-500 sm:text-[11px]">
+                {day.completionPercent}%
               </p>
-              <p className="text-center text-[11px] font-medium text-slate-500">
-                {getMonthDayLabel(day.date)}
-              </p>
-              <p className="text-center text-[11px] text-slate-500">{day.completionPercent}%</p>
+            </>
+          );
+
+          if (isFutureDate) {
+            return (
+              <span
+                key={day.date}
+                aria-disabled="true"
+                aria-label={`${dayLabel}, upcoming`}
+                className={dayClassName}
+              >
+                {dayContent}
+              </span>
+            );
+          }
+
+          return (
+            <Link
+              key={day.date}
+              href={dayHref}
+              onClick={(event) => handleCalendarLinkClick(event, dayHref)}
+              aria-current={isSelected ? "date" : undefined}
+              aria-label={dayLabel}
+              className={dayClassName}
+            >
+              {dayContent}
             </Link>
           );
         })}
@@ -2091,8 +2119,7 @@ export default function HabitPerfectDayHub({
                 <div>
                   <p className={habitLabelClass}>Week overview</p>
                   <p className="mt-1 text-sm text-slate-600">
-                    {weekLabel} · {weekRangeLabel} · {snapshot.weekSummary.perfectDayCount}/7
-                    perfect days
+                    {weekLabel} · {snapshot.weekSummary.perfectDayCount}/7 perfect days
                   </p>
                 </div>
               </div>
