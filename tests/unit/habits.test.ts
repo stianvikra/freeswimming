@@ -662,4 +662,68 @@ describe("habits domain helpers", () => {
     expect(habit.targetLabel).toBe("At least 1 glass");
     expect(item?.evaluation.valueLabel).toBe("1 glass");
   });
+
+  it("accepts litres as a persisted count unit and formats singular/plural labels", () => {
+    const insert = buildHabitDefinitionInsert(
+      "user-1",
+      {
+        title: "Drink water",
+        habitType: "count",
+        category: "nutrition",
+        targetValueNumeric: 2,
+        targetUnit: "litres",
+      },
+      2
+    );
+    const pluralHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Drink water",
+        habit_type: "count",
+        category: "nutrition",
+        target_value_numeric: insert.target_value_numeric,
+        target_unit: insert.target_unit,
+      })
+    );
+    const singularHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Drink water",
+        habit_type: "count",
+        category: "nutrition",
+        target_value_numeric: 1,
+        target_unit: "litres",
+      })
+    );
+    const [pluralItem] = buildHabitDaySummary(
+      [pluralHabit],
+      [
+        buildHabitCheckInView(
+          buildCheckInRow({
+            habit_id: pluralHabit.id,
+            value_boolean: null,
+            value_numeric: 2,
+          })
+        ),
+      ],
+      "2026-05-10"
+    ).items;
+    const [singularItem] = buildHabitDaySummary(
+      [singularHabit],
+      [
+        buildHabitCheckInView(
+          buildCheckInRow({
+            habit_id: singularHabit.id,
+            value_boolean: null,
+            value_numeric: 1,
+          })
+        ),
+      ],
+      "2026-05-10"
+    ).items;
+
+    expect(insert.target_unit).toBe("litres");
+    expect(pluralHabit.targetLabel).toBe("At least 2 litres");
+    expect(pluralItem?.evaluation.valueLabel).toBe("2 litres");
+    expect(singularHabit.targetLabel).toBe("At least 1 litre");
+    expect(singularItem?.evaluation.valueLabel).toBe("1 litre");
+  });
 });

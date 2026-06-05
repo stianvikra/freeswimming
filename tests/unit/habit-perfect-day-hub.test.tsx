@@ -779,6 +779,41 @@ describe("HabitPerfectDayHub", () => {
     expect(body.targetUnit).toBe("times");
   });
 
+  it("offers litres for specific count targets and sends the selected unit", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildCountSnapshot(),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    openAddHabitForm();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Drink water" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Specific count: Fixed amount" }));
+    const unitSelect = screen.getByLabelText("Unit") as HTMLSelectElement;
+    expect(within(unitSelect).getByRole("option", { name: "Litres" })).toBeInTheDocument();
+    fireEvent.change(unitSelect, { target: { value: "litres" } });
+    fireEvent.change(screen.getByLabelText("Target"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"targetUnit":"litres"'),
+        })
+      );
+    });
+  });
+
   it("keeps the add form collapsed until requested", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
@@ -1187,6 +1222,44 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getAllByText("Done only")).toHaveLength(1);
+  });
+
+  it("renders saved litres count targets with readable unit labels", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "77777777-7777-4777-8777-777777777777",
+        title: "Drink water",
+        habit_mode: "build",
+        habit_type: "count",
+        category: "nutrition",
+        target_operator: "at_least",
+        target_value_numeric: 2,
+        target_unit: "litres",
+      })
+    );
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: habit.id,
+        value_boolean: null,
+        value_numeric: 2,
+      })
+    );
+    const activeHabits = [habit];
+    const snapshot: HabitSnapshot = {
+      schemaReady: true,
+      loadError: null,
+      selectedDate: "2026-05-10",
+      activeHabits,
+      archivedHabits: [],
+      daySummary: buildHabitDaySummary(activeHabits, [checkIn], "2026-05-10"),
+      weekSummary: buildHabitWeekSummary(activeHabits, [checkIn], "2026-05-10"),
+    };
+
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+
+    expect(screen.getByText("Today: 2 litres · Goal: 2 litres")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    expect(screen.getByText("At least 2 litres")).toBeVisible();
   });
 
   it("marks a binary habit done through the check-in API", async () => {
