@@ -211,9 +211,9 @@ AW-006 latest product/UI implementation: PR `#995` closed `Habits Sound Preferen
 
 AW-006 latest audit implementation: PR `#961` closed `Admin Console Accessibility Audit + Bounded Fixes`.
 
-AW-006 latest lifecycle repair: PR `#996` closed the repo-managed Habits Sound Preferences lifecycle closeout after PR `#995`.
+AW-006 previous lifecycle repair: PR `#996` closed the repo-managed Habits Sound Preferences lifecycle closeout after PR `#995`.
 
-AW-006 active lifecycle repair: `docs/task-briefs/in-progress/2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10.md` is docs-only and repairs stale top-level lifecycle text after PR `#996`.
+AW-006 latest lifecycle repair: PR `#997` closed `docs/task-briefs/done/2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10.md`, clearing stale top-level lifecycle text after PR `#996`.
 
 AW-006 completed Habits/calendar state: Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, and My Library Calendar Period Comparison are done.
 

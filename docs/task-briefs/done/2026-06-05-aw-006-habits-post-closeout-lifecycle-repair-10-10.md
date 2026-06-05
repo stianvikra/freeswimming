@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
 - `updated`: `2026-06-05`
@@ -12,6 +12,8 @@
 - `habits_parent`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `preceded_by`: `docs/task-briefs/done/2026-06-05-aw-006-habits-sound-preferences-10-10.md`
 - `branch`: `docs/aw-006-habits-lifecycle-repair`
+- `merged_pr`: `#997`
+- `squash_commit`: `a352b95a`
 
 ## Brief Audit Record
 
@@ -197,3 +199,22 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 
 - `2026-06-05 | in-progress | started from clean synced main@ba6908ee after PR #995 and repo-managed closeout PR #996; post-merge preflight was reported green; fresh re-audit found stale top-level Child J lifecycle text in the done brief, AW-006 queue, and Habits parent while no product/UI implementation slice is selected | next: repair docs-only lifecycle state, run targeted sweeps and docs-only validation, then open PR without selecting the next product/UI slice`
 - `2026-06-05 | pre-pr gate | repaired Child J done metadata, AW-006 queue audit/current-state text, and Habits parent latest checkpoint; npm run lint:briefs:all passed, git diff --cached --check passed, targeted lifecycle sweep found only expected historical/checkpoint references, and npm run verify:pre-pr passed the docs-only lane with artifact log artifacts/test-runs/20260605-205004/verify.log | next: rerun the docs-only pre-PR gate after this checkpoint update, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-06-05 | done | PR #997 merged as a352b95a; post-merge preflight surfaced this repo-managed docs-only closeout, moving the repair brief to done and clearing the AW-006 active lifecycle repair reference | next: run closeout docs-only gates, merge the closeout PR, sync main, rerun post-merge preflight, and complete chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-06-05`
+- `merged_pr`: `#997`
+- `squash_commit`: `a352b95a`
+- `result`: Closed the AW-006 Habits lifecycle repair so the queue, Habits parent, and Child J history no longer point at stale active work after PR `#995` and closeout PR `#996`.
+- `validation`: `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr`, PR `#997` CI, and `npm run verify:pre-merge` passed before merge; closeout PR repeats the docs-only gate sequence after moving this brief to `done`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this docs-only lifecycle repair scope.
+
+| Category                            | Achieved Score | Evidence                                                                                                                                                   | Gaps / Notes                                                                         |
+| ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Product goals and IA                | `5/5`          | PR `#997` docs diff aligned Child J, Habits parent, and AW-006 queue around completed #995/#996 state and no selected product/UI slice.                    | No remaining gap in docs-only scope.                                                 |
+| Reliability and failure handling    | `5/5`          | Targeted lifecycle sweep, brief lint, docs-only `verify:pre-pr`, CI, and `verify:pre-merge` passed for commit `a352b95a`.                                  | No remaining stale active Child J lifecycle text in the repaired top-level surfaces. |
+| Content governance                  | `5/5`          | Done brief metadata, parent checkpoint, and canonical queue/current-state wording were made consistent in PR `#997`.                                       | No Help/Guide, runbook, or support fallout for this docs-only repair.                |
+| Stack-fit and dependency discipline | `5/5`          | Changed files stayed limited to Markdown task-brief lifecycle docs; no runtime, script, config, workflow, dependency, provider, or generated-file changes. | No architecture gap.                                                                 |
+| Testing and QA automation           | `5/5`          | `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr`, PR `#997` CI, and `npm run verify:pre-merge` passed.        | Closeout PR repeats docs-only validation after lifecycle move.                       |
+| DevOps and rollback readiness       | `5/5`          | PR `#997` was docs-only, current with `origin/main`, green in CI, and rollback remains a normal Markdown revert with no migration or environment impact.   | No release/rollback gap.                                                             |
