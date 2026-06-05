@@ -61,8 +61,20 @@ function getWeekStartDate(selectedDate: string) {
   const parsed = Date.parse(`${selectedDate}T00:00:00.000Z`);
   const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
   date.setUTCHours(0, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() - 6);
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
   return date.toISOString().slice(0, 10);
+}
+
+function addCalendarDays(dateKey: string, days: number): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getWeekEndDate(selectedDate: string) {
+  return addCalendarDays(getWeekStartDate(selectedDate), 6);
 }
 
 function getMonthStartDate(selectedDate: string) {
@@ -91,6 +103,12 @@ function getHabitCheckInStartDate(
   }
 
   return checkInStart;
+}
+
+function getHabitCheckInEndDate(selectedDate: string) {
+  const todayDate = normalizeHabitDate(undefined);
+  const weekEnd = getWeekEndDate(selectedDate);
+  return weekEnd > todayDate ? todayDate : weekEnd;
 }
 
 function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
@@ -141,12 +159,13 @@ export async function loadHabitSnapshot(
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const archivedHabits = habits.filter((habit) => habit.status === "archived");
   const checkInStart = getHabitCheckInStartDate(selectedDate, activeHabits);
+  const checkInEnd = getHabitCheckInEndDate(selectedDate);
   const checkInResult = await supabase
     .from("habit_check_ins")
     .select(HABIT_CHECK_IN_SELECT)
     .eq("user_id", userId)
     .gte("check_in_date", checkInStart)
-    .lte("check_in_date", selectedDate);
+    .lte("check_in_date", checkInEnd);
 
   if (isHabitsSchemaMissing(checkInResult.error)) {
     return buildUnavailableSnapshot(selectedDate);

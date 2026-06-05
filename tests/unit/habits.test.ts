@@ -427,6 +427,22 @@ describe("habits domain helpers", () => {
     expect(summary.averageCompletionPercent).toBe(29);
   });
 
+  it("builds Habits week summaries as Monday-Sunday ISO weeks", () => {
+    const habit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
+
+    const summary = buildHabitWeekSummary([habit], [], "2026-06-05");
+
+    expect(summary.days.map((day) => day.date)).toEqual([
+      "2026-06-01",
+      "2026-06-02",
+      "2026-06-03",
+      "2026-06-04",
+      "2026-06-05",
+      "2026-06-06",
+      "2026-06-07",
+    ]);
+  });
+
   it("treats skipped check-ins as rest days that do not count as done or missed", () => {
     const restHabit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
     const doneHabit = buildHabitDefinitionView(

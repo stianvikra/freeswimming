@@ -7,6 +7,12 @@ export const MY_LIBRARY_CALENDAR_SOURCE_FILTERS = [
 ] as const;
 
 export type MyLibraryCalendarSourceFilter = (typeof MY_LIBRARY_CALENDAR_SOURCE_FILTERS)[number];
+export type MyLibraryCalendarSourceSelection = MyLibraryCalendarSourceFilter | "unmapped";
+
+export const MY_LIBRARY_CALENDAR_PERIODS = ["week", "month", "year"] as const;
+
+export type MyLibraryCalendarPeriod = (typeof MY_LIBRARY_CALENDAR_PERIODS)[number];
+export type MyLibraryCalendarPeriodSelection = MyLibraryCalendarPeriod | "unmapped";
 
 export type MyLibraryCalendarWindow = {
   selectedDate: string;
@@ -19,14 +25,66 @@ export type MyLibraryCalendarWindow = {
   nextWindowDate: string;
 };
 
+export type MyLibraryCalendarPeriodRange = {
+  period: MyLibraryCalendarPeriod;
+  anchorDate: string;
+  startDate: string;
+  endDate: string;
+  fullStartDate: string;
+  fullEndDate: string;
+  dayCount: number;
+  label: string;
+  shortLabel: string;
+};
+
+export type MyLibraryCalendarComparisonWindow = {
+  selectedDate: string;
+  todayDate: string;
+  period: MyLibraryCalendarPeriod;
+  current: MyLibraryCalendarPeriodRange;
+  comparison: MyLibraryCalendarPeriodRange;
+  comparisonMode: "previous" | "explicit";
+  previousPeriodDate: string;
+  nextPeriodDate: string;
+  canGoNext: boolean;
+};
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_WINDOW_DAYS = 7;
+const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
 
 function parseCalendarDate(value: string): Date | null {
   if (!DATE_PATTERN.test(value)) return null;
   const parsed = Date.parse(`${value}T00:00:00.000Z`);
   if (Number.isNaN(parsed)) return null;
   return new Date(parsed);
+}
+
+function toDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getDaysInUtcMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+}
+
+function countCalendarDaysInclusive(startDate: string, endDate: string): number {
+  const start = parseCalendarDate(startDate);
+  const end = parseCalendarDate(endDate);
+  if (!start || !end || end < start) return 0;
+  return Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+}
+
+function minCalendarDate(left: string, right: string): string {
+  return left <= right ? left : right;
+}
+
+function maxCalendarDate(left: string, right: string): string {
+  return left >= right ? left : right;
 }
 
 export function getTodayCalendarDate(now = new Date()): string {
@@ -43,6 +101,38 @@ export function addCalendarDays(dateKey: string, days: number): string {
 
 export function isAfterCalendarDate(left: string, right: string): boolean {
   return left > right;
+}
+
+export function isMyLibraryCalendarSourceFilter(
+  value: unknown
+): value is MyLibraryCalendarSourceFilter {
+  return (
+    typeof value === "string" &&
+    MY_LIBRARY_CALENDAR_SOURCE_FILTERS.includes(value as MyLibraryCalendarSourceFilter)
+  );
+}
+
+export function normalizeMyLibraryCalendarSourceParam(
+  value: unknown
+): MyLibraryCalendarSourceSelection {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (rawValue === undefined || rawValue === null || rawValue === "") return "all";
+  return isMyLibraryCalendarSourceFilter(rawValue) ? rawValue : "unmapped";
+}
+
+export function isMyLibraryCalendarPeriod(value: unknown): value is MyLibraryCalendarPeriod {
+  return (
+    typeof value === "string" &&
+    MY_LIBRARY_CALENDAR_PERIODS.includes(value as MyLibraryCalendarPeriod)
+  );
+}
+
+export function normalizeMyLibraryCalendarPeriodParam(
+  value: unknown
+): MyLibraryCalendarPeriodSelection {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (rawValue === undefined || rawValue === null || rawValue === "") return "week";
+  return isMyLibraryCalendarPeriod(rawValue) ? rawValue : "unmapped";
 }
 
 export function getMyLibraryCalendarIsoWeek(dateKey: string): {
@@ -68,6 +158,19 @@ export function getMyLibraryCalendarWeekLabel(dateKey: string): string {
   return `Week ${weekNumber}, ${weekYear}`;
 }
 
+export function getMyLibraryCalendarPeriodLabel(period: MyLibraryCalendarPeriod): string {
+  switch (period) {
+    case "week":
+      return "Week";
+    case "month":
+      return "Month";
+    case "year":
+      return "Year";
+    default:
+      return "Week";
+  }
+}
+
 export function normalizeMyLibraryCalendarDateParam(
   value: unknown,
   todayDate = getTodayCalendarDate()
@@ -80,24 +183,209 @@ export function normalizeMyLibraryCalendarDateParam(
   return dateKey > todayDate ? todayDate : dateKey;
 }
 
+export function normalizeOptionalMyLibraryCalendarDateParam(
+  value: unknown,
+  todayDate = getTodayCalendarDate()
+): string | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (typeof rawValue !== "string") return null;
+  const parsed = parseCalendarDate(rawValue);
+  if (!parsed) return null;
+  const dateKey = parsed.toISOString().slice(0, 10);
+  return dateKey > todayDate ? todayDate : dateKey;
+}
+
 export function buildMyLibraryCalendarWindow(
   selectedDate: string,
   windowDays = DEFAULT_WINDOW_DAYS
 ): MyLibraryCalendarWindow {
   const safeWindowDays = Math.max(1, Math.min(31, Math.round(windowDays)));
-  const endDate = normalizeMyLibraryCalendarDateParam(selectedDate, selectedDate);
-  const startDate = addCalendarDays(endDate, -(safeWindowDays - 1));
-  const { weekNumber, weekYear } = getMyLibraryCalendarIsoWeek(endDate);
+  const normalizedDate = normalizeMyLibraryCalendarDateParam(selectedDate, selectedDate);
+  const startDate =
+    safeWindowDays === DEFAULT_WINDOW_DAYS
+      ? getMyLibraryCalendarPeriodStartDate(normalizedDate, "week")
+      : addCalendarDays(normalizedDate, -(safeWindowDays - 1));
+  const endDate =
+    safeWindowDays === DEFAULT_WINDOW_DAYS
+      ? addCalendarDays(startDate, safeWindowDays - 1)
+      : normalizedDate;
+  const { weekNumber, weekYear } = getMyLibraryCalendarIsoWeek(normalizedDate);
 
   return {
-    selectedDate: endDate,
+    selectedDate: normalizedDate,
     startDate,
     endDate,
     weekNumber,
     weekYear,
-    weekLabel: getMyLibraryCalendarWeekLabel(endDate),
-    previousWindowDate: addCalendarDays(endDate, -safeWindowDays),
-    nextWindowDate: addCalendarDays(endDate, safeWindowDays),
+    weekLabel: getMyLibraryCalendarWeekLabel(normalizedDate),
+    previousWindowDate: addCalendarDays(normalizedDate, -safeWindowDays),
+    nextWindowDate: addCalendarDays(normalizedDate, safeWindowDays),
+  };
+}
+
+export function getMyLibraryCalendarPeriodStartDate(
+  dateKey: string,
+  period: MyLibraryCalendarPeriod
+): string {
+  const parsed = parseCalendarDate(dateKey) ?? new Date();
+  if (period === "year") {
+    return `${parsed.getUTCFullYear()}-01-01`;
+  }
+  if (period === "month") {
+    return `${parsed.getUTCFullYear()}-${String(parsed.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  }
+
+  const date = new Date(
+    Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate())
+  );
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - (weekday - 1));
+  return toDateKey(date);
+}
+
+export function getMyLibraryCalendarPeriodEndDate(
+  dateKey: string,
+  period: MyLibraryCalendarPeriod
+): string {
+  const parsed = parseCalendarDate(dateKey) ?? new Date();
+  if (period === "year") {
+    return `${parsed.getUTCFullYear()}-12-31`;
+  }
+  if (period === "month") {
+    return `${parsed.getUTCFullYear()}-${String(parsed.getUTCMonth() + 1).padStart(2, "0")}-${String(
+      getDaysInUtcMonth(parsed.getUTCFullYear(), parsed.getUTCMonth())
+    ).padStart(2, "0")}`;
+  }
+
+  return addCalendarDays(getMyLibraryCalendarPeriodStartDate(dateKey, period), 6);
+}
+
+export function addMyLibraryCalendarPeriods(
+  dateKey: string,
+  period: MyLibraryCalendarPeriod,
+  amount: number
+): string {
+  const parsed = parseCalendarDate(dateKey) ?? new Date();
+  const date = new Date(
+    Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate())
+  );
+  if (period === "week") {
+    date.setUTCDate(date.getUTCDate() + amount * 7);
+    return toDateKey(date);
+  }
+
+  const originalDay = date.getUTCDate();
+  if (period === "month") {
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + amount);
+    date.setUTCDate(
+      Math.min(originalDay, getDaysInUtcMonth(date.getUTCFullYear(), date.getUTCMonth()))
+    );
+    return toDateKey(date);
+  }
+
+  date.setUTCDate(1);
+  date.setUTCFullYear(date.getUTCFullYear() + amount);
+  date.setUTCDate(
+    Math.min(originalDay, getDaysInUtcMonth(date.getUTCFullYear(), date.getUTCMonth()))
+  );
+  return toDateKey(date);
+}
+
+function formatCalendarDateLabel(dateKey: string): string {
+  const parsed = parseCalendarDate(dateKey) ?? new Date();
+  return parsed.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+function formatCalendarRangeLabel(startDate: string, endDate: string): string {
+  if (startDate === endDate) return formatCalendarDateLabel(startDate);
+  return `${formatCalendarDateLabel(startDate)} - ${formatCalendarDateLabel(endDate)}`;
+}
+
+function buildCalendarPeriodRange(
+  anchorDate: string,
+  period: MyLibraryCalendarPeriod,
+  options: {
+    dayCount?: number;
+    todayDate: string;
+  }
+): MyLibraryCalendarPeriodRange {
+  const fullStartDate = getMyLibraryCalendarPeriodStartDate(anchorDate, period);
+  const fullEndDate = getMyLibraryCalendarPeriodEndDate(anchorDate, period);
+  const maxEndDate = minCalendarDate(minCalendarDate(anchorDate, fullEndDate), options.todayDate);
+  const uncappedEndDate =
+    options.dayCount && options.dayCount > 0
+      ? minCalendarDate(addCalendarDays(fullStartDate, options.dayCount - 1), fullEndDate)
+      : maxEndDate;
+  const endDate = minCalendarDate(uncappedEndDate, options.todayDate);
+  const safeEndDate = maxCalendarDate(fullStartDate, endDate);
+  const dayCount = countCalendarDaysInclusive(fullStartDate, safeEndDate);
+  const label =
+    period === "week"
+      ? `${getMyLibraryCalendarWeekLabel(anchorDate)} (${formatCalendarRangeLabel(
+          fullStartDate,
+          safeEndDate
+        )})`
+      : period === "month"
+        ? `${MONTH_LABEL_FORMATTER.format(parseCalendarDate(anchorDate) ?? new Date())} (${formatCalendarRangeLabel(
+            fullStartDate,
+            safeEndDate
+          )})`
+        : `${anchorDate.slice(0, 4)} (${formatCalendarRangeLabel(fullStartDate, safeEndDate)})`;
+
+  return {
+    period,
+    anchorDate,
+    startDate: fullStartDate,
+    endDate: safeEndDate,
+    fullStartDate,
+    fullEndDate,
+    dayCount,
+    label,
+    shortLabel: formatCalendarRangeLabel(fullStartDate, safeEndDate),
+  };
+}
+
+export function buildMyLibraryCalendarComparisonWindow({
+  selectedDate,
+  period,
+  todayDate = getTodayCalendarDate(),
+  compareToDate,
+}: {
+  selectedDate: string;
+  period: MyLibraryCalendarPeriod;
+  todayDate?: string;
+  compareToDate?: string | null;
+}): MyLibraryCalendarComparisonWindow {
+  const safeSelectedDate = normalizeMyLibraryCalendarDateParam(selectedDate, todayDate);
+  const current = buildCalendarPeriodRange(safeSelectedDate, period, { todayDate });
+  const defaultComparisonDate = addMyLibraryCalendarPeriods(safeSelectedDate, period, -1);
+  const safeComparisonDate = compareToDate
+    ? normalizeMyLibraryCalendarDateParam(compareToDate, todayDate)
+    : defaultComparisonDate;
+  const comparison = buildCalendarPeriodRange(safeComparisonDate, period, {
+    dayCount: current.dayCount,
+    todayDate,
+  });
+  const nextPeriodDate = normalizeMyLibraryCalendarDateParam(
+    addMyLibraryCalendarPeriods(safeSelectedDate, period, 1),
+    todayDate
+  );
+
+  return {
+    selectedDate: safeSelectedDate,
+    todayDate,
+    period,
+    current,
+    comparison,
+    comparisonMode: compareToDate ? "explicit" : "previous",
+    previousPeriodDate: addMyLibraryCalendarPeriods(safeSelectedDate, period, -1),
+    nextPeriodDate,
+    canGoNext: nextPeriodDate !== safeSelectedDate,
   };
 }
 
@@ -116,6 +404,10 @@ export function getCalendarSourceFilterLabel(source: MyLibraryCalendarSourceFilt
     default:
       return "All";
   }
+}
+
+export function getCalendarSourceSelectionLabel(source: MyLibraryCalendarSourceSelection): string {
+  return source === "unmapped" ? "Unmapped source" : getCalendarSourceFilterLabel(source);
 }
 
 export function buildMyLibraryCalendarHref({

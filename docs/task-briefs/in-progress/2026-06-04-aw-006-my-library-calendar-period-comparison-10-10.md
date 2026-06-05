@@ -3,71 +3,78 @@
 ## Metadata
 
 - `id`: `2026-06-04-aw-006-my-library-calendar-period-comparison-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-04`
-- `updated`: `2026-06-04`
+- `updated`: `2026-06-05`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
+- `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
+- `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
 - `seeded_by`: `docs/task-briefs/done/2026-06-04-aw-006-habits-history-calendar-10-10.md`
-- `branch`: `TBD`
+- `branch`: `aw-006-my-library-calendar-period-comparison`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-04`
-- `base`: `main@6ef89bd`
-- `audit_status`: `planned`
-- `decision`: Keep week/month/year comparison out of Habits Child C and capture it as a future system-calendar slice.
-- `reason`: Child C should make selected-day/week Habits history useful. Comparing weeks, months, and years is analytics/history-dashboard scope and needs a shared My Library calendar contract that can later serve Habits, Micro Sessions, Dryland, Swimming, and All.
+- `last_audited`: `2026-06-05`
+- `base`: `main@ab088c1`
+- `audit_status`: `ready`
+- `decision`: Execute the bounded shared My Library period-comparison slice now.
+- `reason`: `main` is clean/synced after Habits post-merge polish PR `#987` and repo-managed closeout PR `#988`; fresh re-audit found the shared calendar source/date contract already in `lib/my-library/calendar.ts`, Habits as the first source consumer, and the remaining deferred Habits items (`litres`, midnight auto-complete, sound/preferences, Advanced Motivation) requiring separate data or product decisions.
 - `must_refresh_before_execution_if`: Refresh if My Library calendar source filters, Habits history route params, Micro Sessions/Dryland/Swimming event contracts, analytics/dashboard scope, support diagnostics, screenshot rules, or scorecard categories change.
 
 ## Pre-Implementation Owner Explanation
 
-Dette skal ikke bygges i Child C. Senere lager vi en egen kalender/innsikt-slice for aa sammenligne uker, maaneder og aar paa tvers av kilder.
+Vi lager en egen kalender/innsikt-slice for aa sammenligne uker, maaneder og aar paa tvers av My Library-kilder.
 
 Hvorfor det betyr noe: brukeren skal kunne se trender som denne uken mot forrige uke eller denne maaneden mot forrige maaned, uten at Habits bygger sin egen analysemodell som konkurrerer med en felles My Library-kalender.
 
-Utenfor scope for den fremtidige slicen til den blir valgt: nye check-in-regler, global kalenderlagring uten egen dataavklaring, swim/dryland/micro-planlegging, reminders, sound, export, og builder target semantics.
+Utenfor scope naa: nye check-in-regler, global kalenderlagring, swim/dryland/micro-planlegging, reminders, sound/preferences, export, `litres`-migrering, midnight auto-complete, og builder target semantics.
 
 Fremoverkompatibilitet: period comparison skal bruke delte `source`, `period`, `range`, og `compareTo`-konsepter. Nye kilder skal enten fungere via samme mapping eller falle trygt ut som `unmapped` til eier bestemmer hvordan de skal telles.
 
 ## Goal
 
-Define and later implement a shared My Library calendar insight surface that compares weeks, months, and years across supported activity sources without creating a Habits-only analytics model.
+Implement a shared My Library calendar insight surface that compares weeks, months, and years across supported activity sources without creating a Habits-only analytics model.
 
-## Selected Future Scope
+## Selected Active Scope
 
 - Reuse the My Library calendar source filter contract: `All`, `Habits`, `Micro Sessions`, `Dryland`, and `Swimming`.
 - Define a period contract for `week`, `month`, and `year`.
 - Define a comparison contract for `current`, `previous`, and explicit `compareTo` ranges.
 - Show clear period labels including ISO week number/year where week-based.
 - Keep source-specific metrics mapped explicitly:
-  - Habits: check-in completion, perfect days, rest/slip/timed totals.
-  - Micro Sessions: completed/skipped/open units and active plan status.
-  - Dryland: completed saved-session/micro-session training work where canonical.
-  - Swimming: completed saved/session-program work where canonical.
+  - Habits: check-in completion, perfect days, rest/slip/timed totals from existing Habits snapshot helpers.
+  - Micro Sessions: completed/skipped units from saved micro-plan block history.
+  - Dryland: completed saved sessions from existing dryland completion timestamps.
+  - Swimming: safe not-mapped state until saved swim sessions have a canonical completed-on date.
 - Add empty/unmapped source states that explain why a source is absent from comparison.
+- Present the comparison as insight-first, not table-first: strongest trend, key takeaways, and source signals must appear before secondary detailed numbers.
+- Show Habits trust details in the Habits source card: active habit count, included habit names, and tracked days.
 - Add tests for period boundaries, comparison ranges, source mapping, unknown values, and no-data states.
+- Preserve Habits as the first source consumer by keeping its week overview aligned to ISO Monday-Sunday weeks, preventing current-week future-day clicks, and avoiding misleading same-week `Next week` navigation.
 
-## Out Of Scope Until Execution
+## Out Of Scope
 
 - Full external calendar sync.
 - Scheduling swim, dryland, micro, or habit events into a calendar.
-- New persisted global calendar tables unless the execution audit proves they are needed.
-- Habit builder target semantics, reminders, sound, export, or shareable reports.
+- New persisted global calendar tables.
+- Habit builder target semantics, `litres`, midnight auto-complete, reminders, sound/preferences, export, or shareable reports.
 - Revenue, checkout, entitlement, admin content, or public SEO changes.
 
 ## Data Placement And Sync Contract
 
 - Server-canonical data:
-  - source-specific activity tables remain canonical until a future migration explicitly creates shared calendar storage.
+  - existing source-specific tables remain canonical; this slice adds no table and no migration.
+  - Habits comparison reads existing owner-scoped habit definitions/check-ins through the protected Habits loader/server contracts.
 - Local data:
-  - selected period/source/compare state may live in URL params, not localStorage.
+  - selected period/source/compare state lives in URL params, not localStorage.
 - Derived data:
-  - comparison summaries, source labels, ISO week labels, month/year labels, and no-data states are derived view-models.
+  - period ranges, comparison summaries, source labels, ISO week labels, month/year labels, delta labels, and no-data states are derived view-models.
 - Sync policy:
-  - source data refreshes through existing authenticated loaders/API contracts unless a future brief scopes a shared query layer.
+  - authenticated comparison pages are dynamic; source data refreshes through existing owner-scoped server loaders.
+  - no local writes, background mutations, or automatic check-in creation happen in this slice.
 - Unknown values:
-  - unknown source, period, range, or metric values must fail closed to no-data/unmapped states and must not be counted as Habits.
+  - unknown source, period, range, or metric values fail closed to no-data/unmapped states and must not be counted as Habits.
 
 ## Identity And Rename Contract
 
@@ -82,22 +89,37 @@ Define and later implement a shared My Library calendar insight surface that com
 - Future additions should be data-driven through shared source/period/range contracts when they match existing source categories.
 - New source categories, metrics, context filters like work/off-work, and external calendars require explicit owner mapping.
 - Unknown values use an `unmapped` state with support-safe copy and no analytics emission until mapped.
-- Tests must prove that the comparison layer does not hardcode only today's Habits values.
+- Tests must prove that the comparison layer does not hardcode only today's Habits values and that unmapped sources are not silently counted as Habits.
 
 ## Help / Guide Impact
 
-Required at execution:
+Required:
 
 - update `docs/user-flow-map.md` with comparison source/period behavior;
 - update `docs/runbooks/auth-account-support.md` with period/source diagnostics;
-- update active parent/queue docs with selected source and deferred mappings;
-- add screenshot handoff before pre-PR if UI changes.
+- update active parent/queue/design-inventory docs with selected source and deferred mappings;
+- add screenshot handoff before pre-PR because UI changes.
+
+## Route, Label, And Support-Surface Impact Sweep
+
+- Runbook used: `docs/runbooks/route-label-support-surface-impact-sweep.md`.
+- Identifiers searched: `/my-library/calendar`, `source`, `period`, `date`, `compareTo`, `calendar period`, `period comparison`, `Mapped sources`, `Current vs compare`, `Mapped`, `Not mapped`, `Week overview`, `perfect days`, `Week 23`, `Jun 1 - Jun 7`, `ISO Monday`, and `Monday-Sunday`.
+- Directories/surfaces checked: `app/`, `components/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/task-briefs/planned/`, `docs/task-briefs/in-progress/`, `docs/task-briefs/done/`, `scripts/`, and `package.json`.
+- Fallout handled: My Library dashboard entry, `/my-library/calendar` route docs, auth/account support diagnostics, Habits week-copy docs, unit locator expectations, old table-first labels, and `Mapped`/`Not mapped` product copy replaced by `Included`/`Not included` where this surface renders comparison status.
+- Intentional leftovers: generic admin/content test fixtures using `Mapped ...` are unrelated to this calendar status label and were left unchanged.
+
+## Gate Evidence
+
+- Failure-mode evidence: `/my-library/calendar` requires an authenticated user before loading source data; invalid/unknown `source`, `period`, `date`, or `compareTo` values fail closed to an unmapped/not-included model, not Habits counts. Unit tests cover invalid params and the no-user route path; no unexpected 500 is expected for bad comparison params.
+- Screenshot artifact handoff: owner approved the `after/reference` screenshot set in artifact folder `output/my-library-calendar-period-comparison-2026-06-05-072704`.
+- Screenshot comparison naming: artifacts use `after-calendar-desktop.png`, `after-calendar-mobile.png`, `after-habits-week-overview-mobile.png`, and `reference-my-library-dashboard-desktop.png`.
+- Screenshot caveat: deterministic dev-capture route was used only for screenshots because local authenticated data depends on Supabase/login state; the temporary route/script were removed after capture.
 
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for a future `10/10` claim:
+Critical target categories for a `10/10` claim:
 
 - `Product goals and IA`
 - `UX flow clarity`
@@ -111,9 +133,9 @@ Critical target categories for a future `10/10` claim:
 
 | Category                                      | Mapping  | Target Threshold / Scope Rationale                                                                                            | Evidence                                            |
 | --------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Product goals and IA                          | `target` | Comparison is a shared My Library calendar insight surface, not Habits-only analytics.                                        | future brief refresh + IA screenshots               |
-| UX flow clarity                               | `target` | User can choose source, period, range, and compare target without dead ends.                                                  | component/e2e tests + screenshots                   |
-| Visual design quality                         | `target` | Period comparison follows My Library visual tokens and avoids dashboard clutter.                                              | screenshot handoff                                  |
+| Product goals and IA                          | `target` | Comparison is a shared My Library calendar insight surface, not Habits-only analytics.                                        | brief refresh + IA screenshots                      |
+| UX flow clarity                               | `target` | User can choose source, period, range, and compare target without dead ends, and sees the main trend before detailed numbers. | component/e2e tests + screenshots                   |
+| Visual design quality                         | `target` | Period comparison follows My Library visual tokens, avoids dashboard clutter, and does not lead with a spreadsheet table.     | screenshot handoff                                  |
 | Business logic correctness and data integrity | `target` | Week/month/year boundaries, source metrics, and compare ranges are deterministic and tested.                                  | unit tests for period/source mapping                |
 | Admin editor ergonomics                       | `N/A`    | N/A because no admin editor, publish workflow, or operator content editing is planned.                                        | explicit admin scope rationale                      |
 | Accessibility (a11y)                          | `target` | Filters, tabs, summaries, and charts/tables have keyboard and screen-reader semantics.                                        | a11y-focused tests + screenshot QA                  |
@@ -137,7 +159,7 @@ Critical target categories for a future `10/10` claim:
 | Scalability and cost efficiency               | `target` | Comparison queries avoid duplicate event storage and unbounded per-day polling.                                               | query/data review                                   |
 | DevOps and rollback readiness                 | `target` | No migration without rollback plan; feature can revert without corrupting source data.                                        | rollback notes + gates                              |
 
-## Acceptance Criteria For Future Execution
+## Acceptance Criteria
 
 1. Source filters support `All`, `Habits`, `Micro Sessions`, `Dryland`, and `Swimming`.
 2. Period comparison supports week, month, and year ranges with clear labels.
@@ -146,14 +168,24 @@ Critical target categories for a future `10/10` claim:
 5. Empty/no-data states explain what is missing without exposing private labels.
 6. Focused tests cover period boundaries, source mapping, compare ranges, and unknown values.
 7. Screenshot handoff is delivered before `npm run verify:pre-pr`.
+8. Habits week overview starts on Monday, ends on Sunday, and does not make future current-week days clickable.
+9. Calendar comparison leads with a human-readable insight and key takeaways; detailed metric tables are secondary.
+10. Habits comparison shows active habit count, included habit names, and tracked days so the headline metric is explainable.
 
-## Validation Plan For Future Execution
+## Validation Plan
 
 - `npm run lint:briefs`
 - Targeted unit/component tests for period/source contracts
+- Targeted route/component tests for `/my-library/calendar`
+- Targeted Habits week overview tests for ISO Monday-Sunday and future-day disabled behavior
 - Relevant Playwright or screenshot handoff for changed UI
 - `npm run verify:pre-pr` after owner screenshot approval
 
 ## Checkpoint Log
 
 - `2026-06-04 | planned | created from Child C owner clarification: week/month/year comparison belongs in a future shared My Library calendar insight slice, not the Habits selected-day/week implementation | next: keep deferred until owner explicitly selects this brief after Child C closes`
+- `2026-06-05 | in-progress | owner explicitly said "Execute My Library Calendar Period Comparison"; moved brief to in-progress on branch aw-006-my-library-calendar-period-comparison from clean main@ab088c1 after PR #987/#988 and post-merge preflight green | next: audit source loaders/contracts, implement bounded comparison, run targeted validation, then capture screenshot handoff before verify:pre-pr`
+- `2026-06-05 | implemented | added shared period/source/compare helpers, a bounded calendar comparison loader, `/my-library/calendar`, a My Library dashboard entry, and docs/support updates; Habits, Micro Sessions, and Dryland are mapped from existing owner-scoped data while Swimming remains not mapped until a completed-on contract exists | validation: targeted calendar unit/component/page tests PASS 4 files/14 tests | next: run typecheck/lint/brief lint, route-label-support sweep, then screenshot handoff`
+- `2026-06-05 | fallout-fixed | owner reported Habits week overview started on Saturday and day clicks felt like week shifts; fixed shared seven-day calendar windows, Habits week summaries, and Habits snapshot query bounds to use ISO Monday-Sunday weeks while disabling current-week future-day clicks | validation: targeted calendar + Habits Vitest PASS 8 files/83 tests; typecheck PASS | next: refresh route/support sweep and capture screenshot handoff`
+- `2026-06-05 | redesigning | owner challenged the table-first calendar comparison as not good enough for a habit/user insight surface; re-scoped the UI to insight-first while keeping the same data model, routes, source mappings, and Habits fallout fix | validation: CalendarPeriodComparisonHub Vitest PASS 1 file/1 test | next: run targeted calendar/Habits tests, typecheck/lint/brief lint, then regenerate screenshot handoff`
+- `2026-06-05 | trust-details | owner asked whether active/included Habits should be visible; added optional source details to the comparison view-model and renders Habits active habit count, included habit names, and tracked days in the source signal card without adding trend graphs or new storage | validation: calendar comparison + hub Vitest PASS 2 files/4 tests | next: run full targeted calendar/Habits validation, typecheck/lint/brief lint, then regenerate screenshot handoff`

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadHabitSnapshot } from "@/lib/habits/server";
 import type { HabitCheckInRow, HabitDefinitionRow } from "@/lib/habits/shared";
 
@@ -94,7 +94,13 @@ function buildSupabaseMock(definitions: HabitDefinitionRow[], checkIns: HabitChe
 }
 
 describe("habits server loader", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("keeps daily build history available for collapsed streak motivation", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
     const habit = buildHabitRow({ start_date: "2026-04-28" });
     const checkIns = [
       "2026-04-28",
@@ -120,7 +126,36 @@ describe("habits server loader", () => {
     const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
 
     expect(checkInQuery.gte).toHaveBeenCalledWith("check_in_date", "2026-04-28");
+    expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
     expect(snapshot.daySummary.items[0]?.evaluation.valueLabel).toBe("12-day streak");
     expect(snapshot.daySummary.items[0]?.evaluation.supportingLabel).toBe("12/13 days on track");
+  });
+
+  it("loads through the historical ISO week end for midweek selected dates", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+    const habit = buildHabitRow({ start_date: "2026-05-25" });
+    const { supabase, checkInQuery } = buildSupabaseMock(
+      [habit],
+      [
+        buildCheckInRow({
+          check_in_date: "2026-05-31",
+        }),
+      ]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-29");
+
+    expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-31");
+    expect(snapshot.weekSummary.days.map((day) => day.date)).toEqual([
+      "2026-05-25",
+      "2026-05-26",
+      "2026-05-27",
+      "2026-05-28",
+      "2026-05-29",
+      "2026-05-30",
+      "2026-05-31",
+    ]);
+    expect(snapshot.weekSummary.days.at(-1)?.completionPercent).toBe(100);
   });
 });
