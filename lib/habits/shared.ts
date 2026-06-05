@@ -38,6 +38,8 @@ export const HABIT_WEEKDAY_VALUES = [
 ] as const;
 export const HABIT_CADENCE_PERIOD_VALUES = ["daily", "weekly", "monthly"] as const;
 export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
+export const HABIT_TIMER_MAX_SECONDS = 86_400;
+export const HABIT_MANUAL_TIME_MAX_MINUTES = 1_440;
 
 export type HabitType = (typeof HABIT_TYPE_VALUES)[number];
 export type HabitMode = (typeof HABIT_MODE_VALUES)[number];
@@ -114,6 +116,9 @@ export type HabitCheckInView = {
   valueNumeric: number | null;
   valueBoolean: boolean | null;
   valueTime: string | null;
+  timerSeconds: number;
+  manualMinutes: number;
+  legacyTimedSeconds: number;
   note: string | null;
   status: "logged" | "skipped";
   completedAt: string | null;
@@ -199,6 +204,8 @@ export type HabitCheckInRequestBody = {
   valueNumeric?: unknown;
   valueBoolean?: unknown;
   valueTime?: unknown;
+  timerSeconds?: unknown;
+  manualMinutes?: unknown;
   note?: unknown;
   status?: unknown;
   clear?: unknown;
@@ -247,6 +254,29 @@ function normalizePositiveNumber(value: unknown): number | null {
   if (!Number.isFinite(numeric)) return null;
   if (numeric < 0 || numeric > 10000) return null;
   return Math.round(numeric * 100) / 100;
+}
+
+function normalizeIntegerInRange(
+  value: unknown,
+  min: number,
+  max: number,
+  errorMessage: string
+): number {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+        ? Number(value)
+        : Number.NaN;
+  if (!Number.isFinite(numeric) || !Number.isInteger(numeric) || numeric < min || numeric > max) {
+    throw new Error(errorMessage);
+  }
+  return numeric;
+}
+
+export function buildTimedTotalMinutes(timerSeconds: number, manualMinutes: number): number {
+  const totalSeconds = Math.max(0, timerSeconds) + Math.max(0, manualMinutes) * 60;
+  return Math.round((totalSeconds / 60) * 100) / 100;
 }
 
 function normalizeScheduleDays(value: unknown): HabitWeekday[] {
@@ -705,7 +735,28 @@ export function buildHabitCheckInInsert(
   const habitId = normalizeText(body.habitId, 80);
   if (!habitId) throw new Error("Choose a habit.");
 
-  const valueNumeric = normalizePositiveNumber(body.valueNumeric);
+  const hasTimerSeconds = "timerSeconds" in body;
+  const hasManualMinutes = "manualMinutes" in body;
+  const hasTimedSourceValues = hasTimerSeconds || hasManualMinutes;
+  const timerSeconds = hasTimerSeconds
+    ? normalizeIntegerInRange(
+        body.timerSeconds,
+        0,
+        HABIT_TIMER_MAX_SECONDS,
+        "Timer time must be whole seconds between 0 and 86400."
+      )
+    : 0;
+  const manualMinutes = hasManualMinutes
+    ? normalizeIntegerInRange(
+        body.manualMinutes,
+        0,
+        HABIT_MANUAL_TIME_MAX_MINUTES,
+        "Manual time must be whole minutes between 0 and 1440."
+      )
+    : 0;
+  const valueNumeric = hasTimedSourceValues
+    ? buildTimedTotalMinutes(timerSeconds, manualMinutes)
+    : normalizePositiveNumber(body.valueNumeric);
   const valueBoolean = typeof body.valueBoolean === "boolean" ? body.valueBoolean : null;
   const valueTime = normalizeHabitTime(body.valueTime);
   const note = normalizeOptionalText(body.note, 280);
@@ -722,6 +773,8 @@ export function buildHabitCheckInInsert(
     value_numeric: valueNumeric,
     value_boolean: valueBoolean,
     value_time: valueTime,
+    timer_seconds: body.status === "skipped" ? 0 : timerSeconds,
+    manual_minutes: body.status === "skipped" ? 0 : manualMinutes,
     note,
     status: body.status === "skipped" ? "skipped" : "logged",
     completed_at: body.status === "skipped" ? null : now.toISOString(),
@@ -793,14 +846,34 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
 }
 
 export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
+  const timerSeconds =
+    typeof row.timer_seconds === "number" && Number.isFinite(row.timer_seconds)
+      ? Math.max(0, Math.floor(row.timer_seconds))
+      : 0;
+  const manualMinutes =
+    typeof row.manual_minutes === "number" && Number.isFinite(row.manual_minutes)
+      ? Math.max(0, Math.floor(row.manual_minutes))
+      : 0;
+  const valueNumeric = typeof row.value_numeric === "number" ? row.value_numeric : null;
+  const legacyTimedSeconds =
+    timerSeconds === 0 &&
+    manualMinutes === 0 &&
+    typeof valueNumeric === "number" &&
+    valueNumeric > 0
+      ? Math.round(valueNumeric * 60)
+      : 0;
+
   return {
     id: row.id,
     habitId: row.habit_id,
     checkInDate: row.check_in_date,
     timezone: row.timezone,
-    valueNumeric: typeof row.value_numeric === "number" ? row.value_numeric : null,
+    valueNumeric,
     valueBoolean: row.value_boolean,
     valueTime: row.value_time,
+    timerSeconds,
+    manualMinutes,
+    legacyTimedSeconds,
     note: row.note,
     status: row.status === "skipped" ? "skipped" : "logged",
     completedAt: row.completed_at,

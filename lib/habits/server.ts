@@ -50,6 +50,8 @@ export const HABIT_CHECK_IN_SELECT = `
   value_numeric,
   value_boolean,
   value_time,
+  timer_seconds,
+  manual_minutes,
   note,
   status,
   completed_at,

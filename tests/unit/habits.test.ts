@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildHabitCheckInInsert,
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionInsert,
@@ -54,6 +55,8 @@ function buildCheckInRow(overrides: Partial<HabitCheckInRow>): HabitCheckInRow {
     completed_at: "2026-05-10T09:00:00.000Z",
     created_at: "2026-05-10T09:00:00.000Z",
     updated_at: "2026-05-10T09:00:00.000Z",
+    timer_seconds: 0,
+    manual_minutes: 0,
     ...overrides,
   };
 }
@@ -265,6 +268,78 @@ describe("habits domain helpers", () => {
       target_unit: "minutes",
       timer_enabled: true,
       timer_target_seconds: 480,
+    });
+  });
+
+  it("builds timed check-ins from explicit timer and manual sources", () => {
+    const insert = buildHabitCheckInInsert(
+      "user-1",
+      {
+        habitId: "11111111-1111-4111-8111-111111111111",
+        checkInDate: "2026-05-10",
+        timerSeconds: 125,
+        manualMinutes: 5,
+      },
+      new Date("2026-05-10T12:00:00.000Z")
+    );
+
+    expect(insert).toMatchObject({
+      value_numeric: 7.08,
+      timer_seconds: 125,
+      manual_minutes: 5,
+      status: "logged",
+      completed_at: "2026-05-10T12:00:00.000Z",
+    });
+  });
+
+  it("allows zero manual minutes and rejects unsupported manual minute values", () => {
+    expect(
+      buildHabitCheckInInsert("user-1", {
+        habitId: "11111111-1111-4111-8111-111111111111",
+        checkInDate: "2026-05-10",
+        timerSeconds: 120,
+        manualMinutes: 0,
+      })
+    ).toMatchObject({
+      value_numeric: 2,
+      timer_seconds: 120,
+      manual_minutes: 0,
+    });
+
+    expect(() =>
+      buildHabitCheckInInsert("user-1", {
+        habitId: "11111111-1111-4111-8111-111111111111",
+        checkInDate: "2026-05-10",
+        timerSeconds: 120,
+        manualMinutes: 1.5,
+      })
+    ).toThrow("Manual time must be whole minutes between 0 and 1440.");
+
+    expect(() =>
+      buildHabitCheckInInsert("user-1", {
+        habitId: "11111111-1111-4111-8111-111111111111",
+        checkInDate: "2026-05-10",
+        timerSeconds: 120,
+        manualMinutes: 1441,
+      })
+    ).toThrow("Manual time must be whole minutes between 0 and 1440.");
+  });
+
+  it("keeps legacy numeric timed rows readable without inventing a source split", () => {
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        value_boolean: null,
+        value_numeric: 2.5,
+        timer_seconds: 0,
+        manual_minutes: 0,
+      })
+    );
+
+    expect(checkIn).toMatchObject({
+      valueNumeric: 2.5,
+      timerSeconds: 0,
+      manualMinutes: 0,
+      legacyTimedSeconds: 150,
     });
   });
 

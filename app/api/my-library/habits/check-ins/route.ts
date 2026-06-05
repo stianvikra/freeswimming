@@ -113,6 +113,7 @@ export async function POST(request: Request) {
   };
   const habitMode = habit.habit_mode ?? "build";
   const isQuitHabit = habitMode === "quit";
+  const hasTimedSourceValues = "timerSeconds" in body || "manualMinutes" in body;
 
   if (habit.start_date && checkInDate < habit.start_date) {
     return applySupabaseCookies(
@@ -193,6 +194,29 @@ export async function POST(request: Request) {
   if (isQuitHabit && body.valueBoolean !== false) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: "Log a lapse or reset this quit habit." }, { status: 400 })
+    );
+  }
+
+  if (hasTimedSourceValues && habitMode !== "timed") {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Timed source values require a timed habit." },
+        { status: 400 }
+      )
+    );
+  }
+
+  if (
+    hasTimedSourceValues &&
+    ("valueNumeric" in body ||
+      typeof body.valueBoolean === "boolean" ||
+      typeof body.valueTime === "string")
+  ) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Timed source updates cannot include other check-in values." },
+        { status: 400 }
+      )
     );
   }
 
@@ -281,6 +305,16 @@ export async function POST(request: Request) {
       hasNumericValue: upsertPayload.value_numeric !== null,
       hasBooleanValue: upsertPayload.value_boolean !== null,
       hasTimeValue: upsertPayload.value_time !== null,
+      hasTimerSeconds: (upsertPayload.timer_seconds ?? 0) > 0,
+      hasManualMinutes: (upsertPayload.manual_minutes ?? 0) > 0,
+      timedSourceKind:
+        habitMode === "timed" && hasTimedSourceValues
+          ? (upsertPayload.timer_seconds ?? 0) > 0 && (upsertPayload.manual_minutes ?? 0) > 0
+            ? "timer_and_manual"
+            : (upsertPayload.timer_seconds ?? 0) > 0
+              ? "timer"
+              : "manual"
+          : null,
       status: upsertPayload.status,
     },
   });
