@@ -414,7 +414,27 @@ Required before PR/merge if implemented:
 
 ## Completion Record
 
-- `PR`: TBD
-- `merge`: TBD
-- `result`: TBD
-- `10/10 claim`: TBD
+- `completed`: `2026-06-05`
+- `merged_pr`: `#995`
+- `squash_commit`: `6c519e42`
+- `result`: Closed Child J by adding a local, opt-in Habits completion sound with an explicit test action, same-day timed-target sound, fail-soft browser-audio/localStorage behavior, and date/week navigation that keeps the weekly overview in context instead of jumping down to the Habits list.
+- `validation`: `npm run typecheck` passed; `npx vitest run tests/unit/habit-perfect-day-hub.test.tsx` passed with `58/58`; `npm run verify:pre-pr` passed the full lane from `artifacts/test-runs/20260605-172026` with unit suite `1383/1383`, build, perf budgets, and Playwright `106` passed / `530` expected skips; PR `#995` CI passed; `npm run gate:pre-merge` passed with marker `artifacts/verify-pre-merge/20260605-153537.json`.
+- `screenshot_artifacts`: `output/habits-sound-scroll-2026-06-05-170105/`
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the scoped local-only Habits sound and scroll-stability slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                            | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#995`; brief acceptance criteria; parent return status.                                                                                                         | None.        |
+| UX flow clarity                               | `5/5`          | Sound is off by default, explicitly testable, and date navigation keeps week context; screenshot metrics confirmed `scrollY` stayed `0`.                            | None.        |
+| Visual design quality                         | `5/5`          | Screenshot handoff in `output/habits-sound-scroll-2026-06-05-170105/`; owner approved and waived new screenshots after the mobile sound-button grouping correction. | None.        |
+| Business logic correctness and data integrity | `5/5`          | Targeted tests cover success, no-sound negative triggers, failed actions, timed-target once, and browser failure paths.                                             | None.        |
+| Accessibility (a11y)                          | `5/5`          | Button controls keep accessible names and keyboard semantics through existing Habits button patterns.                                                               | None.        |
+| Data placement and sync boundaries            | `5/5`          | Preference is local-only under `freeswimming:habits:v1:sound`; no server writes or schema changes.                                                                  | None.        |
+| Reliability and failure handling              | `5/5`          | Audio and localStorage failures are non-blocking and covered by tests.                                                                                              | None.        |
+| Privacy and compliance                        | `5/5`          | No raw habit data, health-adjacent values, analytics payloads, or server-stored sound state added.                                                                  | None.        |
+| Content governance                            | `5/5`          | User-flow/support docs, parent, AW-006 queue, and design inventory were updated in PR `#995` and this closeout.                                                     | None.        |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` documents local preference, blocked audio troubleshooting, and Micro Sessions non-scope.                                    | None.        |
+| i18n operational readiness                    | `5/5`          | Labels are plain, bounded UI strings; future user-selected sounds/server preferences require explicit mapping.                                                      | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Used native Web Audio and existing Habits component patterns; no dependency, API, migration, or config changes.                                                     | None.        |
+| Testing and QA automation                     | `5/5`          | Focused Vitest, typecheck, full `verify:pre-pr`, CI, and `gate:pre-merge` passed.                                                                                   | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Normal revert rollback; no migrations, env vars, packages, workflows, or provider changes.                                                                          | None.        |
