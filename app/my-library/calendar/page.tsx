@@ -59,7 +59,7 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
                 My Library
               </p>
               <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
-                Calendar
+                Comparison Report
               </h1>
               <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 Compare private activity trends across selected My Library sources.

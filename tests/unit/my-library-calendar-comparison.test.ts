@@ -125,6 +125,48 @@ describe("my library calendar comparison", () => {
     });
   });
 
+  it("formats Habits percent and timed-minute deltas without technical abbreviations or float noise", () => {
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [
+        buildHabit({
+          habitMode: "timed",
+          habitType: "duration",
+          targetValueNumeric: 1,
+          targetUnit: "minutes",
+          targetLabel: "1 minute",
+          timerEnabled: true,
+          timerTargetSeconds: 60,
+        }),
+      ],
+      checkIns: [
+        buildCheckIn({
+          checkInDate: "2026-06-02",
+          valueBoolean: null,
+          valueNumeric: 69.60000000000001,
+        }),
+        buildCheckIn({
+          id: "previous-timed",
+          checkInDate: "2026-05-27",
+          completedAt: "2026-05-27T08:00:00.000Z",
+          valueBoolean: null,
+          valueNumeric: 83.39,
+        }),
+      ],
+      window,
+    });
+
+    expect(source.metrics.find((metric) => metric.id === "habit_completion_average")).toMatchObject(
+      {
+        deltaLabel: "No change",
+      }
+    );
+    expect(source.metrics.find((metric) => metric.id === "habit_timed_minutes")).toMatchObject({
+      currentLabel: "69.6 minutes",
+      comparisonLabel: "83.39 minutes",
+      deltaLabel: "-13.79 minutes",
+    });
+  });
+
   it("builds Dryland metrics from completed session dates", () => {
     const source = buildDrylandCalendarComparisonSource({
       events: [
@@ -165,9 +207,10 @@ describe("my library calendar comparison", () => {
       comparisonLabel: "10 minutes",
       deltaLabel: "+40 minutes",
     });
+    expect(source.supportLabel).toContain("Strength sets/reps/load");
   });
 
-  it("builds Micro Sessions metrics from completed and skipped unit dates", () => {
+  it("builds Micro Sessions metrics from completed and skipped micro block dates", () => {
     const source = buildMicroSessionsCalendarComparisonSource({
       plans: [
         {
@@ -195,15 +238,18 @@ describe("my library calendar comparison", () => {
 
     expect(source.status).toBe("mapped");
     expect(source.metrics.find((metric) => metric.id === "micro_completed_units")).toMatchObject({
-      currentLabel: "1 unit",
-      comparisonLabel: "1 unit",
+      label: "Completed micro blocks",
+      currentLabel: "1 micro block",
+      comparisonLabel: "1 micro block",
       deltaLabel: "No change",
     });
     expect(source.metrics.find((metric) => metric.id === "micro_skipped_units")).toMatchObject({
-      currentLabel: "1 unit",
-      comparisonLabel: "0 units",
-      deltaLabel: "+1 unit",
+      label: "Skipped micro blocks",
+      currentLabel: "1 micro block",
+      comparisonLabel: "0 micro blocks",
+      deltaLabel: "+1 micro block",
       tone: "negative",
     });
+    expect(source.supportLabel).toContain("Queued future blocks are not counted.");
   });
 });

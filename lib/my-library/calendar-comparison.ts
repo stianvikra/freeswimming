@@ -119,8 +119,21 @@ function listDateKeys(range: MyLibraryCalendarPeriodRange): string[] {
   return dates;
 }
 
+const METRIC_NUMBER_FORMATTER = new Intl.NumberFormat("en-GB", {
+  maximumFractionDigits: 2,
+});
+
+function roundMetricNumber(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function formatMetricNumber(value: number): string {
+  return METRIC_NUMBER_FORMATTER.format(roundMetricNumber(value));
+}
+
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
+  const safeCount = roundMetricNumber(count);
+  return `${formatMetricNumber(safeCount)} ${safeCount === 1 ? singular : plural}`;
 }
 
 function formatSignedDelta(
@@ -129,23 +142,23 @@ function formatSignedDelta(
   unit: string,
   options: { higherIsBetter?: boolean; suffix?: string } = {}
 ): { label: string; tone: CalendarMetricTone } {
-  const delta = current - comparison;
+  const delta = roundMetricNumber(current - comparison);
   const higherIsBetter = options.higherIsBetter !== false;
   if (delta === 0) return { label: "No change", tone: "neutral" };
   const absDelta = Math.abs(delta);
   const suffix = options.suffix ?? ` ${absDelta === 1 ? unit : `${unit}s`}`;
   const isPositive = higherIsBetter ? delta > 0 : delta < 0;
   return {
-    label: `${delta > 0 ? "+" : "-"}${absDelta}${suffix}`,
+    label: `${delta > 0 ? "+" : "-"}${formatMetricNumber(absDelta)}${suffix}`,
     tone: isPositive ? "positive" : "negative",
   };
 }
 
 function formatPercentDelta(current: number, comparison: number) {
-  const delta = current - comparison;
+  const delta = roundMetricNumber(current - comparison);
   if (delta === 0) return { label: "No change", tone: "neutral" as const };
   return {
-    label: `${delta > 0 ? "+" : ""}${delta} pp`,
+    label: `${formatMetricNumber(current)}% vs ${formatMetricNumber(comparison)}%`,
     tone: delta > 0 ? ("positive" as const) : ("negative" as const),
   };
 }
@@ -189,7 +202,7 @@ function buildUnmappedSource(
     source,
     label: source === "unmapped" ? "Unmapped source" : getCalendarSourceFilterLabel(source),
     status: "unmapped",
-    summary: "This source is not counted in comparison yet.",
+    summary: "This source needs better history before it can be compared.",
     supportLabel,
     metrics: [],
   };
@@ -304,10 +317,10 @@ export function buildHabitsCalendarComparisonSource({
     label: "Habits",
     status: hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `${current.averageCompletionPercent}% average on target across ${pluralize(
+      ? `Habits were on target ${current.averageCompletionPercent}% across ${pluralize(
           current.daysWithHabits,
-          "day"
-        )} with habits.`
+          "tracked day"
+        )}.`
       : "No Habits data in either compared range.",
     supportLabel:
       "Habits counts existing check-ins only. Rest days and slips are reported separately and are not counted as completed habits.",
@@ -332,7 +345,7 @@ export function buildHabitsCalendarComparisonSource({
     metrics: [
       {
         id: "habit_completion_average",
-        label: "Average on target",
+        label: "Targets hit",
         currentLabel: `${current.averageCompletionPercent}%`,
         comparisonLabel: `${comparison.averageCompletionPercent}%`,
         deltaLabel: completionDelta.label,
@@ -413,10 +426,10 @@ export function buildDrylandCalendarComparisonSource({
     label: "Dryland",
     status: hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `${pluralize(current.completedSessions, "completed session")} in the current range.`
+      ? `${pluralize(current.completedSessions, "completed session")} logged in the current range.`
       : "No completed dryland sessions in either compared range.",
     supportLabel:
-      "Dryland counts saved sessions with a completed date. Draft and in-progress sessions are not counted.",
+      "Dryland currently compares completed saved sessions and training minutes. Strength sets/reps/load and stretching hold time need a separate mapping before they are counted.",
     metrics: [
       buildNumericMetric({
         id: "dryland_completed_sessions",
@@ -473,24 +486,24 @@ export function buildMicroSessionsCalendarComparisonSource({
     label: "Micro Sessions",
     status: hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `${pluralize(current.completedUnits, "completed unit")} in the current range.`
-      : "No completed or skipped Micro Session units in either compared range.",
+      ? `${pluralize(current.completedUnits, "completed micro block")} in the current range.`
+      : "No completed or skipped Micro Session micro blocks in either compared range.",
     supportLabel:
-      "Micro Sessions counts completed and skipped units from saved micro-plan history. Queued future units are not counted.",
+      "Micro Sessions counts completed and skipped micro blocks from saved micro-plan history. Queued future blocks are not counted.",
     metrics: [
       buildNumericMetric({
         id: "micro_completed_units",
-        label: "Completed units",
+        label: "Completed micro blocks",
         current: current.completedUnits,
         comparison: comparison.completedUnits,
-        unit: "unit",
+        unit: "micro block",
       }),
       buildNumericMetric({
         id: "micro_skipped_units",
-        label: "Skipped units",
+        label: "Skipped micro blocks",
         current: current.skippedUnits,
         comparison: comparison.skippedUnits,
-        unit: "unit",
+        unit: "micro block",
         higherIsBetter: false,
       }),
     ],
@@ -547,7 +560,7 @@ function buildSourceComparisons(input: {
       ),
     swimming: buildUnmappedSource(
       "swimming",
-      "Saved swim sessions do not yet have a canonical completed-on date, so Swimming is not counted in period comparison yet."
+      "Swimming will be included after saved swim sessions have a canonical completed-on date."
     ),
     unmapped: buildUnmappedSource(
       "unmapped",
