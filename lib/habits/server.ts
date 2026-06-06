@@ -4,6 +4,7 @@ import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionView,
+  buildHabitMotivationSummary,
   buildHabitWeekSummary,
   normalizeHabitDate,
   type HabitCheckInRow,
@@ -89,17 +90,14 @@ function getMonthStartDate(selectedDate: string) {
 
 function getHabitCheckInStartDate(
   selectedDate: string,
-  activeHabits: ReturnType<typeof buildHabitDefinitionView>[]
+  habits: ReturnType<typeof buildHabitDefinitionView>[]
 ) {
   const weekStart = getWeekStartDate(selectedDate);
   const monthStart = getMonthStartDate(selectedDate);
   let checkInStart = weekStart < monthStart ? weekStart : monthStart;
 
-  for (const habit of activeHabits) {
-    const needsHistoryForMotivation =
-      habit.habitMode === "quit" ||
-      (habit.habitMode === "build" && habit.cadencePeriod === "daily");
-    if (needsHistoryForMotivation && habit.startDate < checkInStart) {
+  for (const habit of habits) {
+    if (habit.startDate < checkInStart) {
       checkInStart = habit.startDate;
     }
   }
@@ -115,6 +113,7 @@ function getHabitCheckInEndDate(selectedDate: string) {
 
 function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   const daySummary = buildHabitDaySummary([], [], selectedDate);
+  const motivationSummary = buildHabitMotivationSummary([], [], selectedDate);
   return {
     schemaReady: false,
     loadError: null,
@@ -123,6 +122,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
     archivedHabits: [],
     daySummary,
     weekSummary: buildHabitWeekSummary([], [], selectedDate),
+    motivationSummary,
   };
 }
 
@@ -146,6 +146,7 @@ export async function loadHabitSnapshot(
   if (habitResult.error) {
     console.error("[Habits] Could not load habit definitions", habitResult.error);
     const daySummary = buildHabitDaySummary([], [], selectedDate);
+    const motivationSummary = buildHabitMotivationSummary([], [], selectedDate);
     return {
       schemaReady: true,
       loadError: "Could not load your habits right now.",
@@ -154,13 +155,14 @@ export async function loadHabitSnapshot(
       archivedHabits: [],
       daySummary,
       weekSummary: buildHabitWeekSummary([], [], selectedDate),
+      motivationSummary,
     };
   }
 
   const habits = ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView);
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const archivedHabits = habits.filter((habit) => habit.status === "archived");
-  const checkInStart = getHabitCheckInStartDate(selectedDate, activeHabits);
+  const checkInStart = getHabitCheckInStartDate(selectedDate, habits);
   const checkInEnd = getHabitCheckInEndDate(selectedDate);
   const checkInResult = await supabase
     .from("habit_check_ins")
@@ -183,6 +185,7 @@ export async function loadHabitSnapshot(
       archivedHabits,
       daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
       weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
+      motivationSummary: buildHabitMotivationSummary(habits, [], selectedDate),
     };
   }
 
@@ -196,5 +199,6 @@ export async function loadHabitSnapshot(
     archivedHabits,
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
+    motivationSummary: buildHabitMotivationSummary(habits, checkIns, selectedDate),
   };
 }

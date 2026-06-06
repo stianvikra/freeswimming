@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-05-aw-006-habits-advanced-motivation-history-depth-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
 - `updated`: `2026-06-06`
@@ -11,20 +11,20 @@
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `plan only until owner explicitly says execute/build/implement`
+- `execution_mode`: `owner approved execution on 2026-06-06`
 - `target_findings`: remaining advanced-motivation/history part of `H-010`
-- `planned_resolved_findings`: `H-010` sub-scope for best streak, habit strength/score, deeper Habits history insight, archived-history trust, and notes/history visibility where existing data can support it.
-- `deferred_findings`: `H-028` midnight auto-complete, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope. Calendar Compare Findings Polish shipped separately in PR `#999` and repo-managed closeout PR `#1000`.
+- `planned_resolved_findings`: `H-010` sub-scope for best streak, habit score, deeper Habits history insight, Past habits trust, and notes/history visibility where existing data can support it.
+- `deferred_findings`: `H-028` midnight auto-complete, `H-040` per-habit Start fresh motivation reset, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope. Calendar Compare Findings Polish shipped separately in PR `#999` and repo-managed closeout PR `#1000`; Start fresh reset is preserved in `docs/task-briefs/planned/2026-06-06-aw-006-habits-start-fresh-motivation-reset-10-10.md`.
 - `return_checkpoint`: update the Habits parent before this child is considered closeout-ready.
 - `next_return_target`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-06`
-- `base`: `main@bba59bfe`
-- `audit_status`: `ready`
-- `decision`: Keep this as a planned Habits child brief; do not execute until the owner explicitly asks for implementation.
-- `reason`: `main` is clean and synced after Calendar Compare Findings Polish PR `#999` and repo-managed closeout PR `#1000`; post-merge preflight is green. Fresh re-audit found no active AW-006/Habits implementation slice, all recent Habits Child A-J work is done, Calendar comparison polish is complete as a separate route slice, and the remaining high-value Habits direction is advanced motivation/history depth rather than another core tracking correctness fix.
+- `base`: `main@5460f188`
+- `audit_status`: `in-progress`
+- `decision`: Execute this as the next Habits child brief after owner approved scope and said `kjor` on 2026-06-06.
+- `reason`: `main` is clean and synced after AW-006 Post-Calendar Habits Lifecycle Refresh PR `#1001` and repo-managed closeout PR `#1002`; post-merge preflight was reported green. Fresh re-audit found no active AW-006/Habits implementation slice, all recent Habits Child A-J work is done, Calendar comparison polish is complete as a separate route slice, and the remaining high-value Habits direction is advanced motivation/history depth rather than another core tracking correctness fix.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, the Habits parent, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, `lib/habits/server.ts`, habits API/storage contracts, My Library Calendar contracts, account export contracts, Help/Guide/support rules, benchmark assumptions about habit apps, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before execution.
 
 ## Goal
@@ -33,7 +33,7 @@ Add a read-only Habits motivation/history layer that helps users understand long
 
 ## Pre-Implementation Owner Explanation
 
-Vi planlegger forst hvordan Habits skal vise mer motivasjon over tid: beste streak, tydeligere historikk, en forsiktig habit strength/score, og bedre trygghet rundt arkivert historikk.
+Vi planlegger forst hvordan Habits skal vise mer motivasjon over tid: beste streak, tydeligere historikk, en forsiktig habit score, og bedre trygghet rundt arkivert historikk.
 
 Hvorfor det betyr noe: Habits skal ikke bare fortelle hva som skjedde i dag. Brukeren maa kunne se at fremgang ikke forsvinner etter en vanskelig dag, og at gamle vaner fortsatt har en historikk som er bevart.
 
@@ -54,8 +54,9 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 
 - Productive Help, `https://support.productiveapp.io/hc/en-us/articles/26920754719633-How-to-read-statistics`: statistics include perfect days, current/best streak style motivation, total habits done, and average per day.
 - Habitify progress, `https://habitify.me/onboarding-instruction/progress`: progress is calculated across day/week/month/year ranges and separates completion, skipped, and time range rules.
-- Loop Habit Tracker on Google Play, `https://play.google.com/store/apps/details?id=org.isoron.uhabits&hl=en_US&gl=US`: emphasizes habit score/strength, detailed charts/statistics, complete history, reminders, privacy, and export.
+- Loop Habit Tracker on Google Play, `https://play.google.com/store/apps/details?id=org.isoron.uhabits&hl=en_US&gl=US`: emphasizes habit score/strength, detailed charts/statistics, complete history, reminders, privacy, and export. Freeswimming user-facing copy uses `Habit score` to avoid confusion with Dryland strength training.
 - Streaks, `https://streaksapp.com/`: emphasizes streak motivation, flexible schedules, and task statistics without forcing every habit into a daily-only model.
+- Active Child E UX decision after owner screenshot review: match the best common pattern across these apps by keeping today's logging primary on mobile, showing a compact collapsed total progress summary under the week calendar before Habits on desktop/tablet, keeping Motivation below Habits on mobile, hiding deeper totals/history behind a disclosure, and putting per-habit progress inside that habit's `Details`. Do not add a heavy graph/dashboard dependency in this read-only slice.
 
 ## Selected Scope For Future Execution
 
@@ -70,24 +71,30 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
   - timed minutes,
   - count totals,
   - last tracked date.
-- Add a habit strength/score only if the formula is documented, deterministic, and tested:
-  - missed days should reduce strength gradually rather than erase all progress;
+- Add a habit score only if the formula is documented, deterministic, and tested:
+  - missed days should reduce the score gradually rather than erase all progress;
   - rest days should not be treated as failures;
   - unknown statuses should not count as success.
 - Add compact history depth inside `/my-library/habits`:
   - keep today's check-in flow primary;
-  - expose deeper motivation in a secondary summary/details area;
+  - expose the top-level Motivation summary as a compact, collapsible section immediately after the week calendar on desktop/tablet;
+  - keep mobile logging primary by placing Motivation below the active list on mobile, including `view=active`;
+  - keep `Add habit` visually primary while the Habits action row uses compact `Week overview`, `Motivation`, and `Sound` icon controls; mobile active view may also keep the existing Habits analysis shortcut;
+  - keep the closed Motivation state to current streak plus consistency; avoid showing `x/y on track` beside consistency in the compact state;
+  - put `On track`, rest/slip/timed/count/past-habit totals behind `More history`;
+  - put per-habit current streak, best streak, habit score, and consistency inside each active habit's `Details`;
   - avoid a competing full dashboard.
-- Clarify archived-history trust:
+- Clarify Past habits trust:
   - archived habits keep history;
   - archived rows are read-only unless a future owner-selected restore/edit policy is defined;
+  - user-facing copy should say `Past habits`, not `Archived history`;
   - rename keeps history attached to stable habit ID.
 - Preserve My Library Calendar ownership:
   - `/my-library/calendar` remains the cross-source comparison route;
   - Habits motivation metrics may feed Calendar later only through explicit mapping;
   - Calendar formatting/polish issues were closed separately by PR `#999/#1000`.
 - Update `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, Habits parent, AW-006 queue, and design inventory if execution changes user-visible labels, support diagnosis, or lifecycle references.
-- Add focused tests for score/streak/consistency math, rest/slip treatment, archived-history behavior, unknown status fail-safe behavior, and UI accessibility.
+- Add focused tests for score/streak/consistency math, rest/slip treatment, Past habits behavior, unknown status fail-safe behavior, and UI accessibility.
 - Capture screenshot handoff before `npm run verify:pre-pr` because future execution changes visible Habits UI.
 
 ## Out Of Scope
@@ -95,6 +102,7 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 - Reopening `/my-library/calendar` Comparison Report polish, source-card layout, source inclusion copy, comparison insight copy, detailed-number table polish, or Calendar metric formatting already closed by PR `#999/#1000`.
 - Reminders, notification APIs, push notifications, scheduled reminders, browser/native notification sounds, or server-stored notification preferences.
 - Midnight auto-complete, background check-in creation, automatic day-boundary writes, or retroactive generated check-ins.
+- Per-habit `Start fresh` / motivation reset writes; this is planned separately in `docs/task-briefs/planned/2026-06-06-aw-006-habits-start-fresh-motivation-reset-10-10.md` because it requires server-canonical reset truth, Calendar marker mapping, support docs, migration/RLS/authz review, and screenshots.
 - New persisted habit event tables, new check-in statuses, new note schema, new export download route, or account export schema changes.
 - User-selected/uploaded sounds, sound library management, micro-session audio, haptics, or device-level audio controls.
 - Broad global Calendar storage, swim/dryland/micro planning, work/off-work filters, month/year heatmap, or broad analytics dashboard.
@@ -114,7 +122,7 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
   - no local-only metric truth;
   - no new local storage key unless a later UI-only preference is explicitly scoped.
 - Derived view-model:
-  - streak, best streak, strength/score, consistency, rest/slip counts, timed minutes, count totals, and last tracked date derive from owner-scoped server data plus typed mapping rules.
+  - streak, best streak, habit score, consistency, rest/slip counts, timed minutes, count totals, and last tracked date derive from owner-scoped server data plus typed mapping rules.
 - Sync policy:
   - this child should be read-only for motivation metrics;
   - failed metric loads must not block ordinary check-ins;
@@ -162,12 +170,18 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 - Test/evidence:
   - future execution must include fixture coverage for unknown/future status values, legacy timed rows, archived habits, rest days, slips, short history, and sufficient-history score/streak cases.
 
+## Failure-Mode Evidence
+
+- No unexpected 500 path is introduced: this slice does not add a new public/API route, mutation endpoint, migration, external service, webhook, or background job.
+- Failure-mode handling is explicit for the changed read path: Habits snapshot load failures keep the existing page-level fallback, missing or insufficient motivation history renders neutral copy, and unknown/future check-in statuses fail closed instead of fabricating streak, score, rest, slip, or success progress.
+- Existing check-in mutations keep their current error handling and still surface user-readable failures without blocking the read-only Motivation summary.
+
 ## Help / Guide Impact
 
 Required for future execution because this changes member-facing interpretation of Habits progress and support diagnosis:
 
 - update `docs/user-flow-map.md` with advanced motivation/history behavior;
-- update `docs/runbooks/auth-account-support.md` with streak/score/history/archived-history diagnosis;
+- update `docs/runbooks/auth-account-support.md` with streak/score/history/Past habits diagnosis;
 - no admin Help Center update is expected unless execution adds admin/operator workflow labels or recovery behavior.
 
 ## Route / Label / Support Surface Sweep
@@ -183,7 +197,6 @@ Required before future broad gates:
 - `best streak`
 - `Current streak`
 - `habit score`
-- `habit strength`
 - `consistency`
 - `rest day`
 - `slip`
@@ -211,6 +224,12 @@ Required surfaces:
 - `docs/runbooks/auth-account-support.md`
 - Habits parent, AW-006 queue, and design inventory.
 
+Execution evidence:
+
+- Identifiers searched: `Progress history`, `Progress summary`, `Motivation`, `More history`, `Past habits`, `Archived history`, `Saved history`, `On-track check-ins`, `On track`, `Habit score`, `Strength`, `Consistency`, `Current streak`, `Best streak`, `Completion sound`, `Test sound`, `Sound off`, `Back to My Library`, `/my-library/habits`, `/my-library/calendar`, `archivedHabits`, `buildHabitMotivationSummary`, `loadHabitSnapshot`, and `AdminContextNotesPanel`.
+- Directories/surfaces checked: `app/`, `components/`, `lib/habits/`, `tests/unit/`, `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, `docs/design/notice-empty-state-pattern-inventory.md`, active/planned AW-006 task briefs, and the Habits parent/canonical queue.
+- Fallout handled: member-facing copy moved from `Archived history` to `Past habits`, score copy moved from `Strength` to `Habit score` to avoid Dryland confusion, `On-track check-ins` moved to `On track`, visible `Test sound`/`Completion sound` controls were removed, mobile `Back to My Library` was removed, and corresponding unit tests/docs were updated.
+
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
@@ -233,10 +252,10 @@ Critical target categories for a `10/10` claim:
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                                  | Evidence                                            | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | `/my-library/habits` must show read-only motivation/history depth without replacing the primary check-in job or duplicating `/my-library/calendar` comparison.                      | brief scope + screenshots + route review            | `5/5`                   |
-| UX flow clarity                               | `target`     | Users can understand best streak, consistency, score/strength, and archived-history trust without mistaking them for editable check-ins or Calendar comparison.                     | component tests + screenshot handoff                | `5/5`                   |
+| Product goals and IA                          | `target`     | `/my-library/habits` must keep mobile logging primary while desktop/tablet shows compact read-only Motivation under the week calendar before Habits without duplicating Calendar.   | brief scope + screenshots + route review            | `5/5`                   |
+| UX flow clarity                               | `target`     | Users can understand best streak, consistency, habit score, and Past habits trust without mistaking them for editable check-ins, Dryland strength work, or Calendar comparison.     | component tests + screenshot handoff                | `5/5`                   |
 | Visual design quality                         | `target`     | New motivation/history UI fits existing Habits tokens, stays scan-first, has no text overflow, and keeps cards/actions stable on mobile and desktop.                                | responsive screenshots + text-fit review            | `5/5`                   |
-| Business logic correctness and data integrity | `target`     | Streak, best streak, score/strength, consistency, rest/slip, timed, count, and archived-history calculations are deterministic and derived only from canonical Habits data.         | unit/component tests + helper review                | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Streak, best streak, habit score, consistency, rest/slip, timed, count, and Past habits calculations are deterministic and derived only from canonical Habits data.                 | unit/component tests + helper review                | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this planned slice changes no admin editor, CRUD, publish workflow, operator queue, or admin action surface.                                                            | explicit admin-editor scope rationale               | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Metric cards, details, disclosure controls, badges, and history summaries have accessible names, keyboard support, focus visibility, and non-color-only status.                     | component tests + screenshot/manual QA              | `5/5`                   |
 | Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same threshold and evidence.                                                                                             | component tests + screenshot/manual QA              | `5/5`                   |
@@ -252,7 +271,7 @@ Critical target categories for a `10/10` claim:
 | AI discoverability                            | `N/A`        | N/A because this child changes no crawl-safe public entity model, public semantic page copy, structured data, or AI-facing public docs surface.                                     | AI-discoverability scope rationale                  | `N/A`                   |
 | Analytics and KPI observability               | `supporting` | Supporting only: preserve existing safe Habits analytics; any future metric event must avoid raw habit names, notes, or sensitive values.                                           | analytics diff review                               | `4/5`                   |
 | Commerce and revenue ops                      | `N/A`        | N/A because this child changes no Stripe, checkout, entitlement, catalog, portal, invoice, refund, payout, or revenue flow.                                                         | commerce scope rationale                            | `N/A`                   |
-| Incident response and support operations      | `target`     | Support docs must explain how to diagnose score/streak/history/archived-history questions with redacted owner-scoped fields.                                                        | support doc diff                                    | `5/5`                   |
+| Incident response and support operations      | `target`     | Support docs must explain how to diagnose score/streak/history/Past habits questions with redacted owner-scoped fields.                                                             | support doc diff                                    | `5/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A: this changes no billing provider data, invoice/refund path, payout, finance report, reconciliation surface, entitlement truth, or revenue operation.                           | explicit finance scope rationale                    | `N/A`                   |
 | i18n operational readiness                    | `target`     | Labels and metric layouts must avoid fixed-width English assumptions and support longer localized strings without overflow.                                                         | responsive screenshots + component assertions       | `5/5`                   |
 | Stack-fit and dependency discipline           | `target`     | Reuse `HabitPerfectDayHub`, Habits domain helpers/server loader, existing My Library tokens, and current test stack; add no dependency unless explicitly justified.                 | code/dependency diff review                         | `5/5`                   |
@@ -283,49 +302,35 @@ Critical target categories for a `10/10` claim:
   - Screenshot handoff type: likely `after/reference` against current Habits route.
 - Testing:
   - Unit tests for motivation helpers.
-  - Component tests for metric rendering, fallback copy, archived-history treatment, and accessibility.
+  - Component tests for metric rendering, fallback copy, Past habits treatment, and accessibility.
   - Route/API tests only if future execution changes protected read/mutation boundaries.
 
 ## Scope
 
-- Create and execute a future Habits child that adds read-only advanced motivation/history depth to `/my-library/habits`.
+- Execute this Habits child by adding read-only advanced motivation/history depth to `/my-library/habits`.
 - Derive metrics from existing Habits data with typed helpers and deterministic fallbacks.
 - Keep completed Calendar Comparison Report polish closed unless a future owner-selected Calendar brief explicitly reopens it.
-- Update support/user-flow docs and lifecycle references when future implementation starts.
-- Add focused tests and screenshot handoff before broad gates when future implementation starts.
+- Update support/user-flow docs and lifecycle references for the changed history interpretation.
+- Add focused tests and screenshot handoff before broad gates.
 
-## Out Of Scope For This Planned-Only Brief Creation
+## Out Of Scope For This Implementation
 
-- Runtime app code, UI, CSS, tests, scripts, configs, workflows, migrations, generated files, assets, external services, package changes, environment settings, screenshots, PR creation, or merge.
-- Choosing exact final visual layout before implementation audit.
+- Calendar Comparison Report changes, reminders, notification APIs, new persisted habit event tables, new check-in statuses, migrations, generated files, external services, package changes, environment settings, export downloads, archived restore/edit behavior, PR merge, or broad analytics/dashboard work.
+- Per-habit `Start fresh` / motivation reset writes; this is planned separately in `docs/task-briefs/planned/2026-06-06-aw-006-habits-start-fresh-motivation-reset-10-10.md`.
 - Reopening `/my-library/calendar` screenshots, Comparison Report copy, or numeric formatting already closed by PR `#999/#1000`.
 
 ## Acceptance Criteria
 
-Planning acceptance for this brief creation:
-
-1. The planned brief exists in `docs/task-briefs/planned/`.
-2. The brief clearly separates Habits advanced motivation/history from Calendar findings polish.
-3. The brief includes parent, queue, design inventory, target/deferred findings, scorecard mapping, data boundary, identity, forward compatibility, Help/Guide impact, route/label/support sweep, validation, and screenshot requirements.
-4. No runtime code or product UI is changed by this planned-only task.
-5. Changed briefs pass `npm run lint:briefs`.
-
-Future execution acceptance:
-
-1. `/my-library/habits` exposes read-only advanced motivation/history without hiding the primary check-in flow.
-2. Best streak, current streak, consistency, score/strength, rest/slip, timed, count, and archived-history metrics are deterministic and tested where included.
+1. `/my-library/habits` keeps today's Habits/check-in flow primary on mobile, then exposes read-only advanced motivation/history below the active list there while desktop/tablet shows Motivation under the week calendar before Habits.
+2. Best streak, current streak, consistency, habit score, rest/slip, timed, count, and Past habits metrics are deterministic and tested where included.
 3. Missing or insufficient history shows neutral fallback copy.
 4. Unknown/future statuses do not count as success or score improvement.
-5. Archived habits are communicated as history-preserving and read-only unless a revised brief defines restore/edit behavior.
-6. `/my-library/calendar` behavior and formatting are not changed unless this brief is explicitly revised.
+5. The total summary is compact and collapsible, the closed state avoids duplicating consistency with `x/y on track`, opened Motivation uses `Show stats` / `Hide stats`, deeper `On track`/rest/slip/timed/count/past-habit totals live behind `More history`, and each active habit's `Details` shows that habit's own progress metrics.
+6. Archived habits are communicated as `Past habits`, history-preserving and read-only unless a revised brief defines restore/edit behavior.
+7. `/my-library/calendar` behavior and formatting are not changed unless this brief is explicitly revised.
+8. Parent, AW-006 queue, design inventory, user-flow docs, and support runbook reflect the active implementation and return contract.
 
 ## Validation
-
-For this planned-only brief creation:
-
-- `npm run lint:briefs`
-
-Before future implementation PR update:
 
 - `npm run lint:briefs`
 - `npm run lint:briefs:all`
@@ -346,15 +351,31 @@ Before future merge:
 
 ## Screenshot Handoff
 
-N/A for this planned-only brief creation because no UI, print, layout, brand, asset, or product-rendering file changes.
+Required because this slice changes visible Habits UI:
 
-Required for future execution because the planned slice changes visible Habits UI:
-
-- capture `after/reference` or `before/after` screenshots for mobile and desktop `/my-library/habits`;
+- capture `after/reference` or `before/after` screenshots for mobile, tablet, and desktop `/my-library/habits`;
 - include the clickable `Screenshot artifacts` folder link;
 - stop for owner visual approval before `npm run verify:pre-pr`.
+- refreshed active implementation artifacts:
+  - `output/aw-006-habits-advanced-motivation-history-10-10-2026-06-06-195703`;
+  - comparison type: `after/reference`;
+  - captured: `2026-06-06 19:57`;
+  - evidence: screenshot metrics show no horizontal overflow; desktop/tablet visual order is summary -> Motivation -> Habits, mobile visual order is summary -> Habits -> Motivation, and `view=active` mobile keeps Habits before Motivation;
+  - evidence: visual pass confirms compact action buttons, Add habit primary, no `Test sound`, no visible `Completion sound` block, no mobile `Back to My Library` hero button, `Show stats`/`Hide stats` copy, `On track` copy, 4-column tablet/desktop stats, and reduced Admin notes spacing;
+  - caveat: the configured dev-login account currently has no active Habits, so per-habit `Details` progress is covered by component tests while screenshots show the active logging area, compact total summary, and `More history`/`Past habits` state.
 
 ## Checkpoint Log
 
 - `2026-06-05 | planned | created planned-only Habits Advanced Motivation And History Depth brief from clean synced main@69bddfc7 after PR #997/#998 closeout and green post-merge preflight; no runtime implementation was active; at creation time Calendar findings and numeric formatting were still separate, later closed by PR #999/#1000 | next: wait for explicit owner execute/build/implement before moving this child to in-progress`
 - `2026-06-06 | planned | refreshed after Calendar Compare Findings Polish PR #999 and repo-managed closeout PR #1000 on clean synced main@bba59bfe; Calendar route polish is now done and not part of this Habits child; no runtime implementation is active | next: wait for owner confirmation of Habits advanced motivation/history implementation scope before moving this child to in-progress`
+- `2026-06-06 | in-progress | owner approved scope and said kjor; moved brief to in-progress on branch aw-006-habits-advanced-motivation-history from clean synced main@5460f188 after PR #1001/#1002 closeout; fresh re-audit confirmed this slice remains read-only Habits motivation/history and must not reopen Calendar, reminders, new statuses, new tables, or export downloads | next: finish local code/test audit, implement view-model/UI/docs/tests, then capture screenshot handoff before verify:pre-pr`
+- `2026-06-06 | in-progress | implemented read-only HabitMotivationSummary helpers, server snapshot wiring, Progress history UI, unsupported-status fail-closed behavior, domain/component tests, user-flow/support docs, Habits parent return status, AW-006 queue state, and design inventory references; targeted validation passed: npm run typecheck, ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habit-perfect-day-hub.test.tsx, npm run lint:briefs:all, and targeted route/label/support sweep | next: run screenshot handoff, stop for owner visual approval, then continue to verify:pre-pr only after approval`
+- `2026-06-06 | owner-review | screenshot handoff captured in output/aw-006-habits-advanced-motivation-history-2026-06-06-100034 as after/reference artifacts for Progress history versus existing active Habits list on desktop and mobile; local capture used SITE_LOCK_ENABLED=0 and command-scoped FS_ALLOW_PROD_SUPABASE=1 because dev-login was blocked by the Supabase egress guard; no Habits data was created or mutated, and the existing habits_viewed analytics route only console-logged during capture | next: wait for owner visual approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | owner-review | owner selected per-habit Start fresh motivation reset as a systemic future scope; created planned Child K at docs/task-briefs/planned/2026-06-06-aw-006-habits-start-fresh-motivation-reset-10-10.md and linked it from the Habits parent/AW-006 queue so it does not disappear from scope memory; no runtime reset implementation is included in Child E | next: wait for owner visual approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | in-progress | owner asked for a 10/10 version measured against other habit apps; active Child E now requires logging-first IA, compact total summary, collapsible More history, per-habit progress inside Details, and Past habits copy while keeping graph/dashboard and Start fresh reset runtime deferred | next: implement the revised UI, refresh tests/docs, capture new screenshot handoff, then stop for owner visual approval before verify:pre-pr`
+- `2026-06-06 | owner-review | revised 10/10 UI implemented: Progress summary now shows only current streak, best streak, habit score, and consistency by default; More history reveals rest/slip/timed/count and Past habits; active habit Details renders per-habit progress; labels/docs use Past habits/Saved history. Targeted validation passed: ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habit-perfect-day-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check. Refreshed after/reference screenshot artifacts captured in output/aw-006-habits-advanced-motivation-history-10-10-2026-06-06-105717 with no horizontal overflow; dev account had no active Habits so per-habit Details progress is component-test evidence only | next: wait for owner screenshot approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | owner-review | owner flagged that Strength could be confused with Dryland Strength/Stretching and that mobile More history used too much vertical space; renamed the Habits contract/UI to Habit score, kept Dryland strength/stretching out of Child E, and compacted mobile summary/history/Past habits density. Targeted validation passed again: ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habit-perfect-day-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check. Refreshed after/reference screenshot artifacts captured in output/aw-006-habits-advanced-motivation-history-10-10-2026-06-06-110645; mobile More history height dropped from about 1408px to 858px and no horizontal overflow was detected | next: wait for owner screenshot approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | owner-review | owner selected responsive IA: desktop/tablet Motivation after week calendar and before Habits, mobile Habits before Motivation. Implemented CSS-order responsive placement plus Habits action-row shortcut, kept compact consistency free of duplicated on-track text, and regenerated after/reference screenshots in output/aw-006-habits-advanced-motivation-history-10-10-2026-06-06-192941. Metrics confirm no horizontal overflow; desktop/tablet visual order is summary -> Motivation -> Habits, mobile and mobile view=active keep Habits before Motivation | next: wait for owner screenshot approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | in-progress | owner flagged remaining visual hierarchy issues before approval: mobile button hierarchy, missing normal-mobile calendar action, overlarge sound controls/Test sound, duplicate open Motivation teaser text, unclear On-track check-ins copy, Hide motivation copy, tablet/desktop stat columns, large Admin notes gap, and heavy mobile Back to My Library button. Implemented scoped polish: compact icon actions, Add habit primary, softer sound preview on enable, Show stats/Hide stats, On track label, 4-column tablet/desktop stats, reduced Habits page bottom spacing, and mobile Back removal | next: run targeted validation, regenerate screenshots, then stop for owner visual approval before verify:pre-pr`
+- `2026-06-06 | owner-review | targeted validation passed after final visual polish: ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habit-perfect-day-hub.test.tsx, npm run typecheck, npm run lint:briefs:all, git diff --check. Refreshed after/reference screenshots captured in output/aw-006-habits-advanced-motivation-history-10-10-2026-06-06-195703 at 2026-06-06 19:57; metrics confirm no horizontal overflow, no removed labels/buttons, no duplicate compact Motivation teaser while stats are open, desktop/tablet 4-column stats, mobile Habits before Motivation, and desktop/tablet Motivation before Habits | next: wait for owner screenshot approval before verify:pre-pr, commit, push, or PR creation`
+- `2026-06-06 | in-progress | owner approved the screenshot handoff and explicitly waived another screenshot round for the final small Admin notes spacing correction. Added Habits-route-specific SiteChrome spacing so the admin notes panel follows the Habits/Motivation content more tightly without changing other routes. Targeted validation passed: ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habit-perfect-day-hub.test.tsx tests/unit/habits-page.test.tsx tests/unit/page-note-context.test.ts and npm run typecheck | next: run npm run verify:pre-pr, then continue PR/merge flow`

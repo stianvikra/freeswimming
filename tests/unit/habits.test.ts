@@ -5,6 +5,7 @@ import {
   buildHabitDaySummary,
   buildHabitDefinitionInsert,
   buildHabitDefinitionView,
+  buildHabitMotivationSummary,
   buildHabitWeekSummary,
   type HabitCheckInRow,
   type HabitDefinitionRow,
@@ -243,6 +244,176 @@ describe("habits domain helpers", () => {
     expect(summary.items[0]?.evaluation.stateLabel).toBe("Open");
     expect(summary.items[0]?.evaluation.valueLabel).toBe("6-day streak");
     expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days on track");
+  });
+
+  it("builds advanced motivation history with best streak, rest days, and gradual habit score", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Read",
+        start_date: "2026-05-01",
+      })
+    );
+    const checkIns = ["2026-05-01", "2026-05-02", "2026-05-03", "2026-05-05", "2026-05-06"].map(
+      (date, index) =>
+        buildHabitCheckInView(
+          buildCheckInRow({
+            id: `history-done-${index}`,
+            habit_id: habit.id,
+            check_in_date: date,
+          })
+        )
+    );
+    checkIns.push(
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "history-rest",
+          habit_id: habit.id,
+          check_in_date: "2026-05-04",
+          value_boolean: null,
+          status: "skipped",
+          completed_at: null,
+        })
+      )
+    );
+
+    const summary = buildHabitMotivationSummary([habit], checkIns, "2026-05-07");
+
+    expect(summary.bestStreakDays).toBe(5);
+    expect(summary.currentStreakDays).toBe(5);
+    expect(summary.restDayCount).toBe(1);
+    expect(summary.consistencyPercent).toBe(83);
+    expect(summary.habitScore).toBeGreaterThan(80);
+    expect(summary.items[0]).toMatchObject({
+      habitId: habit.id,
+      eligibleDayCount: 6,
+      onTrackDayCount: 5,
+      restDayCount: 1,
+      bestStreakDays: 5,
+      currentStreakDays: 5,
+    });
+  });
+
+  it("counts quit slips and archived habit history without active mutations", () => {
+    const activeQuit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "No sweets",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-05-01",
+        last_lapse_date: "2026-05-03",
+      })
+    );
+    const archived = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "Old mobility",
+        start_date: "2026-05-01",
+        status: "archived",
+      })
+    );
+    const checkIns = [
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "quit-slip",
+          habit_id: activeQuit.id,
+          check_in_date: "2026-05-03",
+          value_boolean: false,
+        })
+      ),
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "archived-done",
+          habit_id: archived.id,
+          check_in_date: "2026-05-02",
+          value_boolean: true,
+        })
+      ),
+    ];
+
+    const summary = buildHabitMotivationSummary([activeQuit, archived], checkIns, "2026-05-05");
+
+    expect(summary.activeHabitCount).toBe(1);
+    expect(summary.archivedHabitCount).toBe(1);
+    expect(summary.slipCount).toBe(1);
+    expect(summary.items.find((item) => item.habitId === archived.id)).toMatchObject({
+      status: "archived",
+      onTrackDayCount: 1,
+      bestStreakDays: 1,
+    });
+  });
+
+  it("totals timed and count history from canonical check-ins", () => {
+    const timed = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "Mobility",
+        habit_mode: "timed",
+        habit_type: "duration",
+        target_value_numeric: 10,
+        target_unit: "minutes",
+        timer_enabled: true,
+        timer_target_seconds: 600,
+      })
+    );
+    const count = buildHabitDefinitionView(
+      buildHabitRow({
+        id: "44444444-4444-4444-8444-444444444444",
+        title: "Water",
+        habit_type: "count",
+        target_value_numeric: 2,
+        target_unit: "litres",
+      })
+    );
+    const checkIns = [
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "timed-source",
+          habit_id: timed.id,
+          value_boolean: null,
+          value_numeric: 12,
+          timer_seconds: 420,
+          manual_minutes: 5,
+        })
+      ),
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: "count-source",
+          habit_id: count.id,
+          value_boolean: null,
+          value_numeric: 2.5,
+        })
+      ),
+    ];
+
+    const summary = buildHabitMotivationSummary([timed, count], checkIns, "2026-05-10");
+
+    expect(summary.totalTimedMinutes).toBe(12);
+    expect(summary.totalCount).toBe(2.5);
+  });
+
+  it("fails closed for unsupported future check-in statuses", () => {
+    const habit = buildHabitDefinitionView(buildHabitRow({ title: "Read" }));
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        status: "future-status" as unknown as HabitCheckInRow["status"],
+        value_boolean: true,
+      })
+    );
+
+    const daySummary = buildHabitDaySummary([habit], [checkIn], "2026-05-10");
+    const motivationSummary = buildHabitMotivationSummary([habit], [checkIn], "2026-05-10");
+
+    expect(checkIn.status).toBe("unsupported");
+    expect(daySummary.items[0]?.evaluation).toMatchObject({
+      isSatisfied: false,
+      stateLabel: "Unsupported",
+      valueLabel: "Unsupported check-in",
+    });
+    expect(motivationSummary.onTrackDayCount).toBe(0);
+    expect(motivationSummary.habitScore).toBeLessThan(100);
   });
 
   it("builds timed habits with duration timer metadata", () => {
