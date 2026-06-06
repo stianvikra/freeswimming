@@ -79,6 +79,7 @@ export type HabitDefinitionInsert = Database["public"]["Tables"]["habit_definiti
 export type HabitDefinitionUpdate = Database["public"]["Tables"]["habit_definitions"]["Update"];
 export type HabitCheckInRow = Database["public"]["Tables"]["habit_check_ins"]["Row"];
 export type HabitCheckInInsert = Database["public"]["Tables"]["habit_check_ins"]["Insert"];
+export type HabitCheckInStatus = "logged" | "skipped" | "unsupported";
 
 export type HabitDefinitionView = {
   id: string;
@@ -120,7 +121,7 @@ export type HabitCheckInView = {
   manualMinutes: number;
   legacyTimedSeconds: number;
   note: string | null;
-  status: "logged" | "skipped";
+  status: HabitCheckInStatus;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -163,6 +164,46 @@ export type HabitWeekSummary = {
   totalCount: number;
 };
 
+export type HabitMotivationItem = {
+  habitId: string;
+  title: string;
+  status: HabitStatus;
+  mode: HabitMode;
+  startDate: string;
+  lastTrackedDate: string | null;
+  eligibleDayCount: number;
+  onTrackDayCount: number;
+  restDayCount: number;
+  slipCount: number;
+  noteCount: number;
+  currentStreakDays: number;
+  bestStreakDays: number;
+  consistencyPercent: number | null;
+  habitScore: number | null;
+  totalTimedMinutes: number;
+  totalCount: number;
+};
+
+export type HabitMotivationSummary = {
+  historyStartDate: string;
+  historyEndDate: string;
+  activeHabitCount: number;
+  archivedHabitCount: number;
+  lastTrackedDate: string | null;
+  eligibleDayCount: number;
+  onTrackDayCount: number;
+  restDayCount: number;
+  slipCount: number;
+  noteCount: number;
+  currentStreakDays: number;
+  bestStreakDays: number;
+  consistencyPercent: number | null;
+  habitScore: number | null;
+  totalTimedMinutes: number;
+  totalCount: number;
+  items: HabitMotivationItem[];
+};
+
 export type HabitSnapshot = {
   schemaReady: boolean;
   loadError: string | null;
@@ -171,6 +212,7 @@ export type HabitSnapshot = {
   archivedHabits: HabitDefinitionView[];
   daySummary: HabitDaySummary;
   weekSummary: HabitWeekSummary;
+  motivationSummary?: HabitMotivationSummary;
 };
 
 export type HabitCreateRequestBody = {
@@ -875,7 +917,8 @@ export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
     manualMinutes,
     legacyTimedSeconds,
     note: row.note,
-    status: row.status === "skipped" ? "skipped" : "logged",
+    status:
+      row.status === "logged" || row.status === "skipped" ? row.status : ("unsupported" as const),
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -973,6 +1016,10 @@ function isRestDayCheckIn(checkIn: HabitCheckInView | null | undefined): boolean
   return checkIn?.status === "skipped";
 }
 
+function isUnsupportedCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
+  return checkIn?.status === "unsupported";
+}
+
 function isQuitLapseCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {
   return (
     checkIn?.status === "logged" &&
@@ -995,7 +1042,7 @@ function isBuildCheckInSatisfied(
   habit: HabitDefinitionView,
   checkIn: HabitCheckInView | null | undefined
 ): boolean {
-  if (!checkIn || isRestDayCheckIn(checkIn)) return false;
+  if (!checkIn || isRestDayCheckIn(checkIn) || isUnsupportedCheckIn(checkIn)) return false;
 
   if (habit.habitType === "binary") {
     return checkIn.valueBoolean === true;
@@ -1153,6 +1200,16 @@ export function evaluateHabitForDate(
   date: string,
   checkIns: HabitCheckInView[] = checkIn ? [checkIn] : []
 ): HabitEvaluation {
+  if (isUnsupportedCheckIn(checkIn)) {
+    return {
+      isSatisfied: false,
+      valueLabel: "Unsupported check-in",
+      stateLabel: "Unsupported",
+      supportingLabel: "Not counted",
+      progressRatio: 0,
+    };
+  }
+
   if (habit.habitMode === "quit") {
     return evaluateQuitHabitForDate(habit, checkIn, date, checkIns);
   }
@@ -1445,5 +1502,295 @@ export function buildHabitWeekSummary(
         : 0,
     totalDurationMinutes: days.reduce((total, day) => total + day.completedDurationMinutes, 0),
     totalCount: days.reduce((total, day) => total + day.completedCountTotal, 0),
+  };
+}
+
+function getCheckInsForHabit(
+  habit: HabitDefinitionView,
+  checkIns: HabitCheckInView[],
+  historyEndDate: string
+) {
+  return checkIns
+    .filter(
+      (checkIn) =>
+        checkIn.habitId === habit.id &&
+        checkIn.checkInDate >= habit.startDate &&
+        checkIn.checkInDate <= historyEndDate
+    )
+    .sort((left, right) => left.checkInDate.localeCompare(right.checkInDate));
+}
+
+function getCheckInsByDate(checkIns: HabitCheckInView[]) {
+  const checkInsByDate = new Map<string, HabitCheckInView>();
+  for (const checkIn of checkIns) {
+    const existing = checkInsByDate.get(checkIn.checkInDate);
+    if (!existing || existing.updatedAt < checkIn.updatedAt) {
+      checkInsByDate.set(checkIn.checkInDate, checkIn);
+    }
+  }
+  return checkInsByDate;
+}
+
+function getLoggedTimedMinutes(habit: HabitDefinitionView, checkIn: HabitCheckInView) {
+  if (habit.habitMode !== "timed" || checkIn.status !== "logged") return 0;
+  const totalSeconds =
+    checkIn.timerSeconds + checkIn.manualMinutes * 60 + checkIn.legacyTimedSeconds;
+  return Math.round((totalSeconds / 60) * 100) / 100;
+}
+
+function getLoggedCountTotal(habit: HabitDefinitionView, checkIn: HabitCheckInView) {
+  if (habit.habitType !== "count" || checkIn.status !== "logged") return 0;
+  return Math.max(0, checkIn.valueNumeric ?? 0);
+}
+
+function buildHabitScore(input: {
+  eligibleDayCount: number;
+  onTrackDayCount: number;
+  currentStreakDays: number;
+  bestStreakDays: number;
+}) {
+  if (input.eligibleDayCount < 3) return null;
+  const consistency = input.onTrackDayCount / input.eligibleDayCount;
+  const currentStreakRatio = Math.min(
+    1,
+    input.currentStreakDays / Math.min(14, input.eligibleDayCount)
+  );
+  const bestStreakRatio = Math.min(1, input.bestStreakDays / Math.min(30, input.eligibleDayCount));
+  return Math.max(
+    0,
+    Math.min(100, Math.round(consistency * 70 + currentStreakRatio * 20 + bestStreakRatio * 10))
+  );
+}
+
+function buildNonQuitMotivationItem(
+  habit: HabitDefinitionView,
+  habitCheckIns: HabitCheckInView[],
+  historyEndDate: string
+): HabitMotivationItem {
+  const checkInsByDate = getCheckInsByDate(habitCheckIns);
+  const totalDays = getDayDelta(habit.startDate, historyEndDate);
+  let eligibleDayCount = 0;
+  let onTrackDayCount = 0;
+  let restDayCount = 0;
+  let noteCount = 0;
+  let totalTimedMinutes = 0;
+  let totalCount = 0;
+  let currentStreakDays = 0;
+  let bestStreakDays = 0;
+  let runningStreakDays = 0;
+  let hasCurrentStreakBroken = false;
+
+  for (const checkIn of habitCheckIns) {
+    if (checkIn.note) noteCount += 1;
+    totalTimedMinutes += getLoggedTimedMinutes(habit, checkIn);
+    totalCount += getLoggedCountTotal(habit, checkIn);
+  }
+
+  for (let index = 0; index <= totalDays; index += 1) {
+    const day = addUtcDays(habit.startDate, index);
+    const checkIn = checkInsByDate.get(day) ?? null;
+    const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
+    if (!isScheduled && !checkIn) continue;
+
+    if (isRestDayCheckIn(checkIn)) {
+      restDayCount += 1;
+      continue;
+    }
+
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, habitCheckIns);
+    eligibleDayCount += 1;
+    if (evaluation.isSatisfied) {
+      onTrackDayCount += 1;
+      runningStreakDays += 1;
+      bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+    } else {
+      runningStreakDays = 0;
+    }
+  }
+
+  for (let index = totalDays; index >= 0; index -= 1) {
+    const day = addUtcDays(habit.startDate, index);
+    const checkIn = checkInsByDate.get(day) ?? null;
+    const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
+    if (!isScheduled && !checkIn) continue;
+    if (isRestDayCheckIn(checkIn)) continue;
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, habitCheckIns);
+    if (evaluation.isSatisfied) {
+      currentStreakDays += 1;
+      continue;
+    }
+    if (day === historyEndDate && !checkIn) continue;
+    hasCurrentStreakBroken = true;
+    break;
+  }
+
+  if (!hasCurrentStreakBroken && currentStreakDays === 0 && bestStreakDays > 0) {
+    currentStreakDays = bestStreakDays;
+  }
+
+  const consistencyPercent =
+    eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null;
+  const habitScore = buildHabitScore({
+    eligibleDayCount,
+    onTrackDayCount,
+    currentStreakDays,
+    bestStreakDays,
+  });
+
+  return {
+    habitId: habit.id,
+    title: habit.title,
+    status: habit.status,
+    mode: habit.habitMode,
+    startDate: habit.startDate,
+    lastTrackedDate: habitCheckIns.at(-1)?.checkInDate ?? null,
+    eligibleDayCount,
+    onTrackDayCount,
+    restDayCount,
+    slipCount: 0,
+    noteCount,
+    currentStreakDays,
+    bestStreakDays,
+    consistencyPercent,
+    habitScore,
+    totalTimedMinutes,
+    totalCount,
+  };
+}
+
+function buildQuitMotivationItem(
+  habit: HabitDefinitionView,
+  habitCheckIns: HabitCheckInView[],
+  historyEndDate: string
+): HabitMotivationItem {
+  const totalDays = getDayDelta(habit.startDate, historyEndDate);
+  const lapseDates = new Set(getQuitLapseDates(habit, null, habitCheckIns, historyEndDate));
+  let noteCount = 0;
+  let currentStreakDays = 0;
+  let bestStreakDays = 0;
+  let runningStreakDays = 0;
+
+  for (const checkIn of habitCheckIns) {
+    if (checkIn.note) noteCount += 1;
+  }
+
+  for (let index = 0; index <= totalDays; index += 1) {
+    const day = addUtcDays(habit.startDate, index);
+    if (lapseDates.has(day)) {
+      runningStreakDays = 0;
+      continue;
+    }
+    runningStreakDays += 1;
+    bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+  }
+
+  for (let index = totalDays; index >= 0; index -= 1) {
+    const day = addUtcDays(habit.startDate, index);
+    if (lapseDates.has(day)) break;
+    currentStreakDays += 1;
+  }
+
+  const eligibleDayCount = totalDays + 1;
+  const slipCount = lapseDates.size;
+  const onTrackDayCount = Math.max(0, eligibleDayCount - slipCount);
+  const consistencyPercent =
+    eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null;
+  const habitScore = buildHabitScore({
+    eligibleDayCount,
+    onTrackDayCount,
+    currentStreakDays,
+    bestStreakDays,
+  });
+
+  return {
+    habitId: habit.id,
+    title: habit.title,
+    status: habit.status,
+    mode: habit.habitMode,
+    startDate: habit.startDate,
+    lastTrackedDate: habitCheckIns.at(-1)?.checkInDate ?? habit.lastLapseDate,
+    eligibleDayCount,
+    onTrackDayCount,
+    restDayCount: 0,
+    slipCount,
+    noteCount,
+    currentStreakDays,
+    bestStreakDays,
+    consistencyPercent,
+    habitScore,
+    totalTimedMinutes: 0,
+    totalCount: 0,
+  };
+}
+
+function compareMotivationItems(left: HabitMotivationItem, right: HabitMotivationItem) {
+  if (left.status !== right.status) return left.status === "active" ? -1 : 1;
+  const leftScore = left.habitScore ?? -1;
+  const rightScore = right.habitScore ?? -1;
+  if (leftScore !== rightScore) return rightScore - leftScore;
+  if (left.bestStreakDays !== right.bestStreakDays)
+    return right.bestStreakDays - left.bestStreakDays;
+  return left.title.localeCompare(right.title);
+}
+
+export function buildHabitMotivationSummary(
+  habits: HabitDefinitionView[],
+  checkIns: HabitCheckInView[],
+  selectedDate: string
+): HabitMotivationSummary {
+  const historyEndDate = selectedDate;
+  const historyStartDate =
+    habits.reduce<string | null>(
+      (earliest, habit) =>
+        earliest === null || habit.startDate < earliest ? habit.startDate : earliest,
+      null
+    ) ?? selectedDate;
+  const items = habits
+    .filter((habit) => !isAfterHabitDate(habit.startDate, historyEndDate))
+    .map((habit) => {
+      const habitCheckIns = getCheckInsForHabit(habit, checkIns, historyEndDate);
+      return habit.habitMode === "quit"
+        ? buildQuitMotivationItem(habit, habitCheckIns, historyEndDate)
+        : buildNonQuitMotivationItem(habit, habitCheckIns, historyEndDate);
+    })
+    .sort(compareMotivationItems);
+  const scoredItems = items.filter((item) => item.habitScore !== null);
+  const eligibleDayCount = items.reduce((total, item) => total + item.eligibleDayCount, 0);
+  const onTrackDayCount = items.reduce((total, item) => total + item.onTrackDayCount, 0);
+
+  return {
+    historyStartDate,
+    historyEndDate,
+    activeHabitCount: habits.filter((habit) => habit.status === "active").length,
+    archivedHabitCount: habits.filter((habit) => habit.status === "archived").length,
+    lastTrackedDate:
+      items
+        .map((item) => item.lastTrackedDate)
+        .filter((date): date is string => Boolean(date))
+        .sort()
+        .at(-1) ?? null,
+    eligibleDayCount,
+    onTrackDayCount,
+    restDayCount: items.reduce((total, item) => total + item.restDayCount, 0),
+    slipCount: items.reduce((total, item) => total + item.slipCount, 0),
+    noteCount: items.reduce((total, item) => total + item.noteCount, 0),
+    currentStreakDays: items.reduce(
+      (largest, item) => Math.max(largest, item.currentStreakDays),
+      0
+    ),
+    bestStreakDays: items.reduce((largest, item) => Math.max(largest, item.bestStreakDays), 0),
+    consistencyPercent:
+      eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null,
+    habitScore:
+      scoredItems.length > 0
+        ? Math.round(
+            scoredItems.reduce((total, item) => total + (item.habitScore ?? 0), 0) /
+              scoredItems.length
+          )
+        : null,
+    totalTimedMinutes:
+      Math.round(items.reduce((total, item) => total + item.totalTimedMinutes, 0) * 100) / 100,
+    totalCount: Math.round(items.reduce((total, item) => total + item.totalCount, 0) * 100) / 100,
+    items,
   };
 }

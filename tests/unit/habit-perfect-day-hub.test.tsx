@@ -14,6 +14,7 @@ import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionView,
+  buildHabitMotivationSummary,
   buildHabitWeekSummary,
   type HabitCheckInRow,
   type HabitDefinitionRow,
@@ -440,6 +441,66 @@ function buildQuitSlipSnapshot(): HabitSnapshot {
   };
 }
 
+function buildMotivationHistorySnapshot(): HabitSnapshot {
+  const activeHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Read 10 pages",
+      start_date: "2026-05-01",
+    })
+  );
+  const archivedHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "99999999-9999-4999-8999-999999999999",
+      title: "Old mobility",
+      start_date: "2026-05-01",
+      status: "archived",
+    })
+  );
+  const checkIns = ["2026-05-01", "2026-05-02", "2026-05-03", "2026-05-05", "2026-05-06"].map(
+    (date, index) =>
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: `motivation-done-${index}`,
+          habit_id: activeHabit.id,
+          check_in_date: date,
+        })
+      )
+  );
+  checkIns.push(
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: "motivation-rest",
+        habit_id: activeHabit.id,
+        check_in_date: "2026-05-04",
+        value_boolean: null,
+        status: "skipped",
+        completed_at: null,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: "motivation-archived",
+        habit_id: archivedHabit.id,
+        check_in_date: "2026-05-02",
+      })
+    )
+  );
+  const activeHabits = [activeHabit];
+  const archivedHabits = [archivedHabit];
+  const allHabits = [...activeHabits, ...archivedHabits];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-07",
+    activeHabits,
+    archivedHabits,
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-07"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-07"),
+    motivationSummary: buildHabitMotivationSummary(allHabits, checkIns, "2026-05-07"),
+  };
+}
+
 function openAddHabitForm() {
   const addToggle = screen.getByRole("button", { name: "Add habit" });
   expect(addToggle).toHaveAttribute("aria-expanded", "false");
@@ -563,7 +624,7 @@ describe("HabitPerfectDayHub", () => {
     expect(headingRow).not.toHaveClass("justify-between");
   });
 
-  it("keeps Habits completion sound off by default and stores the opt-in locally", () => {
+  it("keeps Habits completion sound off by default and stores the compact opt-in locally", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     const controls = screen.getByTestId("habits-sound-controls");
@@ -571,7 +632,7 @@ describe("HabitPerfectDayHub", () => {
       "aria-pressed",
       "false"
     );
-    expect(within(controls).getByRole("button", { name: "Test sound" })).toBeVisible();
+    expect(within(controls).queryByRole("button", { name: "Test sound" })).toBeNull();
     expect(window.localStorage.getItem("freeswimming:habits:v1:sound")).toBeNull();
 
     fireEvent.click(within(controls).getByRole("button", { name: "Sound off" }));
@@ -588,15 +649,15 @@ describe("HabitPerfectDayHub", () => {
     );
   });
 
-  it("lets the user test the Habits completion sound without saving a check-in", async () => {
+  it("previews the soft Habits completion sound when the user enables it", async () => {
     const audio = installAudioContextMock();
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Test sound" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
 
     await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
     expect(fetch).not.toHaveBeenCalled();
-    expect(await screen.findByText("Test sound played.")).toHaveAttribute("role", "status");
+    expect(await screen.findByText("Sound on.")).toHaveAttribute("role", "status");
   });
 
   it("plays completion sound only after an enabled successful completion transition", async () => {
@@ -612,10 +673,11 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(2));
   });
 
   it("does not play completion sound while the preference is off", async () => {
@@ -650,6 +712,8 @@ describe("HabitPerfectDayHub", () => {
       <HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />
     );
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    audio.start.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     fireEvent.click(await screen.findByRole("button", { name: "Rest day" }));
 
@@ -1364,6 +1428,11 @@ describe("HabitPerfectDayHub", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(audio.start).toHaveBeenCalledTimes(1);
+    audio.start.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(audio.start).not.toHaveBeenCalled();
 
@@ -1904,6 +1973,93 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("4/5 days done")).toBeVisible();
     expect(screen.queryByText("4-day streak")).toBeNull();
     expect(screen.queryByText("Streak: 4 days")).toBeNull();
+  });
+
+  it("shows read-only motivation history with best streak and archived habits", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildMotivationHistorySnapshot()} />);
+
+    const summary = screen.getByTestId("habit-perfect-day-summary");
+    const history = screen.getByTestId("habits-motivation-history");
+    const activeList = screen.getByTestId("habit-active-list");
+    expect(summary.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(history.compareDocumentPosition(activeList) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(history).toHaveClass("order-3", "sm:order-2");
+    expect(activeList).toHaveClass("order-2", "sm:order-3");
+    expect(within(history).getByText("Progress summary")).toBeVisible();
+    expect(within(history).getByText("Motivation")).toBeVisible();
+    expect(within(history).getByText("Current 5 days · Consistency 46%")).toBeVisible();
+    expect(within(history).getByRole("button", { name: "Show stats" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(within(history).queryByText("Best streak")).toBeNull();
+    expect(within(history).queryByText("On track")).toBeNull();
+
+    fireEvent.click(within(history).getByTestId("habits-motivation-toggle"));
+
+    expect(within(history).getByRole("button", { name: "Hide stats" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(within(history).queryByText("Current 5 days · Consistency 46%")).toBeNull();
+    expect(within(history).getByText("Best streak")).toBeVisible();
+    expect(within(history).getAllByText("5 days").length).toBeGreaterThan(0);
+    expect(within(history).getByText("1 past habits")).toBeVisible();
+    expect(within(history).getByText("More history")).toBeVisible();
+    expect(within(history).queryByText("6/13 on track")).toBeNull();
+    expect(within(history).queryByText("Active history")).toBeNull();
+    expect(within(history).queryByText("Archived history")).toBeNull();
+
+    fireEvent.click(within(history).getByTestId("habits-more-history"));
+
+    expect(within(history).getByText("On track")).toBeVisible();
+    expect(within(history).getByText("6 of 13")).toBeVisible();
+    expect(within(history).getByText("Past habits")).toBeVisible();
+    expect(within(history).getByText("Old mobility")).toBeVisible();
+    expect(within(history).getByText("Saved history")).toBeVisible();
+  });
+
+  it("opens motivation from the Habits action row while mobile logging stays visually first", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildMotivationHistorySnapshot()}
+        preferMobileActiveFocus
+      />
+    );
+
+    const activeList = screen.getByTestId("habit-active-list");
+    const history = screen.getByTestId("habits-motivation-history");
+    expect(activeList).toHaveClass("order-2", "sm:order-3");
+    expect(history).toHaveClass("order-3", "sm:order-2");
+    expect(within(history).queryByText("Best streak")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Motivation" }));
+
+    expect(within(history).getByRole("button", { name: "Hide stats" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
+    expect(within(history).getByText("Best streak")).toBeVisible();
+  });
+
+  it("shows per-habit progress inside habit details", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildMotivationHistorySnapshot()} />);
+
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+
+    const progress = within(card).getByTestId(
+      "habit-progress-details-11111111-1111-4111-8111-111111111111"
+    );
+    expect(within(progress).getByText("Progress")).toBeVisible();
+    expect(within(progress).getByText("Current streak")).toBeVisible();
+    expect(within(progress).getByText("Best streak")).toBeVisible();
+    expect(within(progress).getByText("Habit score")).toBeVisible();
+    expect(within(progress).getByText("Consistency")).toBeVisible();
   });
 
   it("keeps collapsed mobile chips focused on cadence and meaningful day state", () => {

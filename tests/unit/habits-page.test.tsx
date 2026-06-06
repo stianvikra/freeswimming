@@ -102,10 +102,11 @@ describe("MyLibraryHabitsPage", () => {
     );
 
     const actions = screen.getByTestId("habits-route-actions");
-    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
-    const backLink = within(actions).getByRole("link", { name: "Back to My Library" });
+    expect(actions).toHaveClass("hidden", "sm:block");
+    const backLink = within(actions).getByRole("link", { name: "Back" });
     expect(backLink).toHaveAttribute("href", "/my-library");
-    expect(backLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
+    expect(backLink).toHaveClass("fs-cta-secondary");
+    expect(screen.queryByRole("link", { name: "Back to My Library" })).not.toBeInTheDocument();
 
     expect(screen.getByTestId("habit-perfect-day-hub")).toHaveAttribute("data-user-id", "user-123");
     expect(screen.getByTestId("habit-perfect-day-hub")).toHaveAttribute(

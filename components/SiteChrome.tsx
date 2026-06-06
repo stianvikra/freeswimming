@@ -83,9 +83,9 @@ function getDefaultMobileNavItems({
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
+  const isHabitsRoute = pathname === "/my-library/habits";
   const isCheckoutRoute = pathname === "/checkout/success" || pathname.startsWith("/checkout/");
   const isRoutinesRoute = pathname === "/my-library/routines";
-  const isHabitsRoute = pathname === "/my-library/habits";
   const isDrylandRoute = pathname === "/my-library/dryland";
   const isMicroFocusedRoute = isDrylandRoute && ["active", "edit", "setup"].includes(microParam);
   const isWorkoutsRoute = pathname === "/my-library/workouts";
@@ -407,6 +407,7 @@ export default function SiteChrome({
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
+  const isHabitsRoute = pathname === "/my-library/habits";
   const isCheckoutRoute = pathname === "/checkout/success" || pathname.startsWith("/checkout/");
   const isPublicRoute = !isAuthRoute && !isLibraryRoute && !isCheckoutRoute;
   const normalizedPageContextRef = normalizeAdminPageContextRef(pathname ?? "/");
@@ -568,6 +569,7 @@ export default function SiteChrome({
           <div
             className={[
               "mx-auto w-full max-w-[1100px] px-4",
+              isHabitsRoute ? "-mt-10 sm:-mt-12" : "",
               showDefaultMobileNav ? "pb-[calc(96px+env(safe-area-inset-bottom))] sm:pb-8" : "pb-8",
             ].join(" ")}
           >
@@ -576,7 +578,7 @@ export default function SiteChrome({
               contextRef={normalizedPageContextRef}
               contextLabel={pageContextLabel}
               collapsedByDefault
-              className="mt-6"
+              className={isHabitsRoute ? "mt-4" : "mt-6"}
             />
           </div>
         ) : null}

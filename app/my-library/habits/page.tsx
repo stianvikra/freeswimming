@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
-import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadHabitSnapshot } from "@/lib/habits/server";
 import {
   getTodayCalendarDate,
@@ -41,7 +40,7 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
     <SiteChrome>
       <section
         data-testid="habits-workspace"
-        className={`mx-auto min-h-screen w-full max-w-[1040px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28 ${
+        className={`mx-auto w-full max-w-[1040px] px-4 pt-24 pb-8 sm:px-6 sm:pt-28 sm:pb-10 ${
           preferMobileActiveFocus ? "max-sm:max-w-[720px]" : ""
         }`}
       >
@@ -60,9 +59,12 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
+              <Link
+                href="/my-library"
+                className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)] underline-offset-2 transition hover:underline"
+              >
                 My Library
-              </p>
+              </Link>
               <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
                 Habits
               </h1>
@@ -70,9 +72,9 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
                 Private habit check-ins for {selectedDateLabel}.
               </p>
             </div>
-            <div data-testid="habits-route-actions" className={getMobileActionGroupClass(1)}>
-              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
-                Back to My Library
+            <div data-testid="habits-route-actions" className="hidden sm:block">
+              <Link href="/my-library" className={routeActionClass}>
+                Back
               </Link>
             </div>
           </div>
