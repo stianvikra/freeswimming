@@ -226,8 +226,8 @@ After owner screenshot approval and before PR update:
 
 Before merge:
 
-- required CI checks green
-- `npm run verify:pre-merge`
+- required CI checks green - pass for PR `#1005`: `Analyze (javascript-typescript)`, `CodeQL`, `Vercel`, `Vercel Preview Comments`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, `size-check`, and `verify`
+- `npm run verify:pre-merge` - pass; full lane selected and completed lint, quality gates, typecheck, unit, build, perf budgets, and E2E (`106` passed, `530` skipped)
 
 ## Screenshot Requirements
 
@@ -255,3 +255,29 @@ Screenshot handoff evidence:
 - `2026-06-06 | screenshot approval stop | implemented selected-date chip, Motivation range controls, Stats disclosure, What counts definitions, perfect-day top-level Motivation summaries, tests, and docs; targeted Vitest, lint:briefs:all, typecheck, ESLint, and route/label/support sweep passed; screenshot artifacts captured in output/habits-date-motivation-clarity-2026-06-06-222249 | next: owner visual approval, then npm run verify:pre-pr`
 - `2026-06-06 | visual approved | owner approved screenshots, flagged excess mobile active top spacing, approved no new screenshot, and approved merge on good tests; mobile active route padding reduced while desktop route spacing remains unchanged; targeted page/component/domain tests, typecheck, and targeted ESLint passed | next: npm run verify:pre-pr`
 - `2026-06-06 | pre-pr green | npm run verify:pre-pr passed full lane, including E2E 106 passed / 530 skipped | next: commit, push, open PR, monitor CI, then npm run verify:pre-merge`
+- `2026-06-06 | merged | PR #1005 merged as squash commit 7e4062a1 after CI and npm run verify:pre-merge passed | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-06`
+- `merged_pr`: `#1005`
+- `squash_commit`: `7e4062a1`
+- `result`: Closed AW-006 Habits Date And Motivation Clarity. Habits now shows the selected logging date at the Habits heading, defaults Motivation to Month, offers fast range choices, uses `Stats` and `What counts?`, and frames top-level motivation around perfect-day streaks, perfect days, and consistency instead of unclear score or aggregate labels.
+- `validation`: Targeted Vitest, targeted ESLint, typecheck, `npm run lint:briefs:all`, owner-approved screenshot handoff, `npm run verify:pre-pr`, PR #1005 CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | Selected-date chip, Month default, range controls, tests, screenshots, PR `#1005`, and pre-merge pass. | None.        |
+| UX flow clarity                               | `5/5`          | `Stats`, `What counts?`, perfect-day copy, owner screenshot approval, and component tests.             | None.        |
+| Visual design quality                         | `5/5`          | Responsive screenshot handoff and mobile active spacing fix approved by owner.                         | None.        |
+| Business logic correctness and data integrity | `5/5`          | Read-only range summaries, perfect-day calculations, no mutation/schema changes, and unit tests.       | None.        |
+| Accessibility (a11y)                          | `5/5`          | Keyboard/screen-reader named controls covered by Testing Library and full gates.                       | None.        |
+| Data placement and sync boundaries            | `5/5`          | Range stays local presentation state; selected date/check-ins remain existing canonical snapshot data. | None.        |
+| Reliability and failure handling              | `5/5`          | Missing summaries fail closed, range math clamps to available history, and no new unexpected 500 path. | None.        |
+| Privacy and compliance                        | `5/5`          | No new logging/events and only generic metric definition copy added.                                   | None.        |
+| Content governance                            | `5/5`          | User-flow map, support runbook, parent/queue brief, active brief, and closeout updated.                | None.        |
+| Incident response and support operations      | `5/5`          | Support docs explain selected date, ranges, and perfect-day metrics without private habit details.     | None.        |
+| i18n operational readiness                    | `5/5`          | Responsive controls tolerate longer future labels and tests assert visible control names.              | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub` and existing Habits view-models; no dependency added.                      | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit/component tests plus `verify:pre-pr`, CI, and `verify:pre-merge` passed.                 | None.        |
