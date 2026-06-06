@@ -131,7 +131,7 @@ describe("MyLibraryHabitsPage", () => {
     render(await MyLibraryHabitsPage({ searchParams: Promise.resolve({ view: "active" }) }));
 
     const workspace = screen.getByTestId("habits-workspace");
-    expect(workspace).toHaveClass("max-sm:max-w-[720px]");
+    expect(workspace).toHaveClass("pt-[4.5rem]", "max-sm:max-w-[720px]", "sm:pt-28");
     expect(screen.getByTestId("habit-perfect-day-hub")).toHaveAttribute(
       "data-mobile-focus",
       "true"

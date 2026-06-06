@@ -7,6 +7,7 @@ import {
   buildHabitDefinitionView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
+  getHabitMotivationRangeStartDate,
   type HabitCheckInRow,
   type HabitDefinitionRow,
 } from "@/lib/habits/shared";
@@ -153,7 +154,7 @@ describe("habits domain helpers", () => {
 
     expect(summary.satisfiedPerfectDayItemCount).toBe(0);
     expect(summary.items[0]?.evaluation.stateLabel).toBe("Slip logged today");
-    expect(summary.items[0]?.evaluation.valueLabel).toBe("3/4 days on track");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("3/4 days clear");
     expect(summary.items[0]?.evaluation.supportingLabel).toBeNull();
   });
 
@@ -181,8 +182,8 @@ describe("habits domain helpers", () => {
     const summary = buildHabitDaySummary([habit], [earlierSlip], "2026-05-10");
 
     expect(summary.satisfiedPerfectDayItemCount).toBe(1);
-    expect(summary.items[0]?.evaluation.stateLabel).toBe("On track");
-    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days on track");
+    expect(summary.items[0]?.evaluation.stateLabel).toBe("Clear today");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days clear");
     expect(summary.items[0]?.evaluation.supportingLabel).toBeNull();
   });
 
@@ -209,7 +210,7 @@ describe("habits domain helpers", () => {
 
     const summary = buildHabitDaySummary([habit], [earlierSlip], "2026-05-10");
 
-    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days on track");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("9/10 days clear");
     expect(summary.items[0]?.evaluation.supportingLabel).toBe("Current streak 5 days");
   });
 
@@ -243,10 +244,10 @@ describe("habits domain helpers", () => {
 
     expect(summary.items[0]?.evaluation.stateLabel).toBe("Open");
     expect(summary.items[0]?.evaluation.valueLabel).toBe("6-day streak");
-    expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days on track");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days hit");
   });
 
-  it("builds advanced motivation history with best streak, rest days, and gradual habit score", () => {
+  it("builds advanced motivation history with perfect-day streaks and rest days", () => {
     const habit = buildHabitDefinitionView(
       buildHabitRow({
         title: "Read",
@@ -282,7 +283,7 @@ describe("habits domain helpers", () => {
     expect(summary.currentStreakDays).toBe(5);
     expect(summary.restDayCount).toBe(1);
     expect(summary.consistencyPercent).toBe(83);
-    expect(summary.habitScore).toBeGreaterThan(80);
+    expect(summary.habitScore).toBeNull();
     expect(summary.items[0]).toMatchObject({
       habitId: habit.id,
       eligibleDayCount: 6,
@@ -291,6 +292,37 @@ describe("habits domain helpers", () => {
       bestStreakDays: 5,
       currentStreakDays: 5,
     });
+  });
+
+  it("builds motivation history from an explicit period boundary", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Read",
+        start_date: "2026-04-01",
+      })
+    );
+    const checkIns = ["2026-04-01", "2026-04-02", "2026-05-06", "2026-05-07"].map((date, index) =>
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: `period-done-${index}`,
+          habit_id: habit.id,
+          check_in_date: date,
+        })
+      )
+    );
+
+    const allTime = buildHabitMotivationSummary([habit], checkIns, "2026-05-07");
+    const month = buildHabitMotivationSummary([habit], checkIns, "2026-05-07", {
+      historyStartDate: getHabitMotivationRangeStartDate("month", "2026-05-07"),
+    });
+
+    expect(allTime.historyStartDate).toBe("2026-04-01");
+    expect(allTime.eligibleDayCount).toBe(37);
+    expect(allTime.onTrackDayCount).toBe(4);
+    expect(month.historyStartDate).toBe("2026-04-08");
+    expect(month.eligibleDayCount).toBe(30);
+    expect(month.onTrackDayCount).toBe(2);
+    expect(month.currentStreakDays).toBe(2);
   });
 
   it("counts quit slips and archived habit history without active mutations", () => {
@@ -413,7 +445,7 @@ describe("habits domain helpers", () => {
       valueLabel: "Unsupported check-in",
     });
     expect(motivationSummary.onTrackDayCount).toBe(0);
-    expect(motivationSummary.habitScore).toBeLessThan(100);
+    expect(motivationSummary.habitScore).toBeNull();
   });
 
   it("builds timed habits with duration timer metadata", () => {
