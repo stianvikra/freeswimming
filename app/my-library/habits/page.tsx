@@ -40,8 +40,8 @@ export default async function MyLibraryHabitsPage({ searchParams }: MyLibraryHab
     <SiteChrome>
       <section
         data-testid="habits-workspace"
-        className={`mx-auto w-full max-w-[1040px] px-4 pt-24 pb-8 sm:px-6 sm:pt-28 sm:pb-10 ${
-          preferMobileActiveFocus ? "max-sm:max-w-[720px]" : ""
+        className={`mx-auto w-full max-w-[1040px] px-4 pb-8 sm:px-6 sm:pt-28 sm:pb-10 ${
+          preferMobileActiveFocus ? "pt-[4.5rem] max-sm:max-w-[720px]" : "pt-24"
         }`}
       >
         <TrackEventOnMount

@@ -6,9 +6,12 @@ import {
   buildHabitDefinitionView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
+  getHabitMotivationRangeStartDate,
+  HABIT_MOTIVATION_RANGE_VALUES,
   normalizeHabitDate,
   type HabitCheckInRow,
   type HabitDefinitionRow,
+  type HabitMotivationRangeSummaries,
   type HabitSnapshot,
 } from "@/lib/habits/shared";
 import type { Database } from "@/types/database";
@@ -111,9 +114,23 @@ function getHabitCheckInEndDate(selectedDate: string) {
   return weekEnd > todayDate ? todayDate : weekEnd;
 }
 
+function buildHabitMotivationSummaries(
+  habits: ReturnType<typeof buildHabitDefinitionView>[],
+  checkIns: ReturnType<typeof buildHabitCheckInView>[],
+  selectedDate: string
+): HabitMotivationRangeSummaries {
+  return HABIT_MOTIVATION_RANGE_VALUES.reduce<HabitMotivationRangeSummaries>((summaries, range) => {
+    summaries[range] = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
+      historyStartDate: getHabitMotivationRangeStartDate(range, selectedDate),
+    });
+    return summaries;
+  }, {});
+}
+
 function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   const daySummary = buildHabitDaySummary([], [], selectedDate);
   const motivationSummary = buildHabitMotivationSummary([], [], selectedDate);
+  const motivationSummaries = buildHabitMotivationSummaries([], [], selectedDate);
   return {
     schemaReady: false,
     loadError: null,
@@ -123,6 +140,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
     daySummary,
     weekSummary: buildHabitWeekSummary([], [], selectedDate),
     motivationSummary,
+    motivationSummaries,
   };
 }
 
@@ -147,6 +165,7 @@ export async function loadHabitSnapshot(
     console.error("[Habits] Could not load habit definitions", habitResult.error);
     const daySummary = buildHabitDaySummary([], [], selectedDate);
     const motivationSummary = buildHabitMotivationSummary([], [], selectedDate);
+    const motivationSummaries = buildHabitMotivationSummaries([], [], selectedDate);
     return {
       schemaReady: true,
       loadError: "Could not load your habits right now.",
@@ -156,6 +175,7 @@ export async function loadHabitSnapshot(
       daySummary,
       weekSummary: buildHabitWeekSummary([], [], selectedDate),
       motivationSummary,
+      motivationSummaries,
     };
   }
 
@@ -186,10 +206,13 @@ export async function loadHabitSnapshot(
       daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
       weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
       motivationSummary: buildHabitMotivationSummary(habits, [], selectedDate),
+      motivationSummaries: buildHabitMotivationSummaries(habits, [], selectedDate),
     };
   }
 
   const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView);
+  const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate);
+  const motivationSummaries = buildHabitMotivationSummaries(habits, checkIns, selectedDate);
 
   return {
     schemaReady: true,
@@ -199,6 +222,7 @@ export async function loadHabitSnapshot(
     archivedHabits,
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
-    motivationSummary: buildHabitMotivationSummary(habits, checkIns, selectedDate),
+    motivationSummary,
+    motivationSummaries,
   };
 }

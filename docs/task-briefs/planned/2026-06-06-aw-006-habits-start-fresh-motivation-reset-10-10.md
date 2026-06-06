@@ -33,13 +33,13 @@ Add a safe per-habit `Start fresh` workflow so users can restart motivation metr
 
 ## Pre-Implementation Owner Explanation
 
-Vi planlegger en trygg `Start fresh`-funksjon for Habits. Den skal la brukeren starte streak, habit score og consistency paa nytt for en enkelt vane, uten at gamle logger slettes.
+Vi planlegger en trygg `Start fresh`-funksjon for Habits. Den skal la brukeren starte per-habit streak, days hit og consistency paa nytt for en enkelt vane, uten at gamle logger slettes.
 
 Hvorfor det betyr noe: motivasjon kan trenge en ny start etter sykdom, pause eller endret rutine, men brukerens historikk maa fortsatt vaere bevart og forklarbar.
 
 Utenfor scope er hard sletting av historikk, account-wide reset, reminders, midnight auto-complete, eksport, restore/edit av arkiverte vaner og full dashboard-redesign.
 
-Fremoverkompatibilitet: reset maa vaere en egen typed, server-canonical event/kontrakt som Calendar, support og fremtidige metrics kan lese. Nye reset-typer eller ukjente reset-grunner skal ikke endre streak/score uten eksplisitt mapping, tester og dokumentasjon.
+Fremoverkompatibilitet: reset maa vaere en egen typed, server-canonical event/kontrakt som Calendar, support og fremtidige metrics kan lese. Nye reset-typer eller ukjente reset-grunner skal ikke endre streak/days-hit/consistency uten eksplisitt mapping, tester og dokumentasjon.
 
 ## Product Decision
 
@@ -71,7 +71,7 @@ If implementation audit proves a column-based model is safer for the current sch
 - Add a per-habit `Start fresh` workflow inside the habit Details surface.
 - Add a confirmation flow that clearly says old logs stay saved and motivation metrics restart from the selected effective date.
 - Persist reset state in a server-canonical, owner-scoped, typed way.
-- Recompute current streak, best streak, habit score, consistency, and on-track counts from the reset date forward.
+- Recompute per-habit current streak, best streak, days hit, and consistency from the reset date forward.
 - Keep totals and preserved history explainable before and after reset.
 - Add a visible `Since <date>` or equivalent label where reset affects motivation metrics.
 - Add Calendar Comparison reset marker support only through explicit mapping from the reset contract.
@@ -92,7 +92,7 @@ If implementation audit proves a column-based model is safer for the current sch
 1. A user can start fresh for one active habit without affecting other habits.
 2. Reset creates a server-canonical owner-scoped reset record and does not delete or rewrite historical check-ins.
 3. Motivation metrics show a clear reset boundary such as `Since Jun 6, 2026`.
-4. Streak, best streak, habit score, consistency, and on-track counts derive from the reset boundary forward.
+4. Per-habit streak, best streak, days hit, and consistency derive from the reset boundary forward.
 5. Preserved pre-reset history remains readable and is not counted as post-reset progress.
 6. Calendar Comparison shows reset as a marker only, not as a done/rest/slip check-in.
 7. Unauthorized users cannot create, read, or apply resets for another owner.
@@ -157,7 +157,7 @@ If implementation audit proves a column-based model is safer for the current sch
 - Safe fallback:
   - missing reset means use existing full-history motivation behavior;
   - malformed or unauthorized reset means ignore the reset and show neutral/error feedback where appropriate;
-  - unknown reset status must not improve streak/score.
+  - unknown reset status must not improve streak, days hit, or consistency.
 - Test/evidence:
   - fixtures must cover no reset, one reset, multiple resets, reset before first check-in, reset after archived date, unknown reset status, and cross-owner denial.
 
@@ -234,7 +234,7 @@ Critical target categories for a `10/10` claim:
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: reset contract must not add heavy dashboards, polling, or unbounded client payloads.                                                                 | build/perf gate + diff review                                    | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Reset truth is server-canonical; local state is UI-only; failed reset leaves metrics unchanged.                                                                       | data contract + route/API tests                                  | `5/5`                   |
 | Caching and invalidation strategy             | `target`     | Habits and Calendar views refresh deterministically after reset while preserving private no-store boundaries unless explicitly audited.                               | route/server diff review + tests                                 | `5/5`                   |
-| Reliability and failure handling              | `target`     | Missing, malformed, duplicate, unauthorized, or unknown reset rows fail closed and do not improve score/streak.                                                       | negative-path tests + support docs                               | `5/5`                   |
+| Reliability and failure handling              | `target`     | Missing, malformed, duplicate, unauthorized, or unknown reset rows fail closed and do not improve streak, days hit, or consistency.                                   | negative-path tests + support docs                               | `5/5`                   |
 | Security and authz                            | `target`     | Reset APIs fail closed for unauthenticated/cross-owner requests and never expose another user's reset or habit data.                                                  | route/API negative-path tests                                    | `5/5`                   |
 | Privacy and compliance                        | `target`     | Habit names, notes, reasons, and private check-ins are not logged, public, or added to unsafe analytics payloads.                                                     | privacy/analytics diff review                                    | `5/5`                   |
 | Content governance                            | `target`     | Parent, queue, design inventory, user-flow docs, support docs, and child brief record reset behavior and deferred hard-delete/export scope.                           | docs diff + `npm run lint:briefs`                                | `5/5`                   |

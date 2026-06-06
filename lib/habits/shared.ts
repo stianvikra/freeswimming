@@ -204,6 +204,21 @@ export type HabitMotivationSummary = {
   items: HabitMotivationItem[];
 };
 
+export const HABIT_MOTIVATION_RANGE_VALUES = [
+  "week",
+  "month",
+  "three_months",
+  "six_months",
+  "year",
+  "all",
+] as const;
+
+export type HabitMotivationRange = (typeof HABIT_MOTIVATION_RANGE_VALUES)[number];
+
+export type HabitMotivationRangeSummaries = Partial<
+  Record<HabitMotivationRange, HabitMotivationSummary>
+>;
+
 export type HabitSnapshot = {
   schemaReady: boolean;
   loadError: string | null;
@@ -213,6 +228,7 @@ export type HabitSnapshot = {
   daySummary: HabitDaySummary;
   weekSummary: HabitWeekSummary;
   motivationSummary?: HabitMotivationSummary;
+  motivationSummaries?: HabitMotivationRangeSummaries;
 };
 
 export type HabitCreateRequestBody = {
@@ -452,6 +468,27 @@ function addUtcDays(dateKey: string, days: number): string {
   date.setUTCHours(0, 0, 0, 0);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+export function getHabitMotivationRangeStartDate(
+  range: HabitMotivationRange,
+  selectedDate: string
+): string | null {
+  switch (range) {
+    case "week":
+      return addUtcDays(selectedDate, -6);
+    case "month":
+      return addUtcDays(selectedDate, -29);
+    case "three_months":
+      return addUtcDays(selectedDate, -89);
+    case "six_months":
+      return addUtcDays(selectedDate, -179);
+    case "year":
+      return addUtcDays(selectedDate, -364);
+    case "all":
+    default:
+      return null;
+  }
 }
 
 function getCalendarWeekStartDate(dateKey: string): string {
@@ -1116,8 +1153,8 @@ function getDailyBuildMotivation(
     valueLabel:
       currentStreak >= 5
         ? formatStreakCount(currentStreak)
-        : `${onTrackDays}/${trackedDays} days on track`,
-    supportingLabel: currentStreak >= 5 ? `${onTrackDays}/${trackedDays} days on track` : null,
+        : `${onTrackDays}/${trackedDays} days hit`,
+    supportingLabel: currentStreak >= 5 ? `${onTrackDays}/${trackedDays} days hit` : null,
     progressRatio: Math.max(0, Math.min(1, onTrackDays / trackedDays)),
   };
 }
@@ -1178,8 +1215,8 @@ function evaluateQuitHabitForDate(
     const onTrackDays = Math.max(0, totalDays - lapseDates.length);
     return {
       isSatisfied: !lapseLoggedToday,
-      valueLabel: `${onTrackDays}/${totalDays} days on track`,
-      stateLabel: lapseLoggedToday ? "Slip logged today" : "On track",
+      valueLabel: `${onTrackDays}/${totalDays} days clear`,
+      stateLabel: lapseLoggedToday ? "Slip logged today" : "Clear today",
       supportingLabel: daysSince >= 5 ? `Current streak ${formatDayCount(daysSince)}` : null,
       progressRatio: Math.max(0, Math.min(1, onTrackDays / totalDays)),
     };
@@ -1188,7 +1225,7 @@ function evaluateQuitHabitForDate(
   return {
     isSatisfied: true,
     valueLabel: `${formatDayCount(daysSince)} without`,
-    stateLabel: "On track",
+    stateLabel: "Clear today",
     supportingLabel: null,
     progressRatio: 1,
   };
@@ -1508,13 +1545,16 @@ export function buildHabitWeekSummary(
 function getCheckInsForHabit(
   habit: HabitDefinitionView,
   checkIns: HabitCheckInView[],
+  historyStartDate: string,
   historyEndDate: string
 ) {
+  const effectiveStartDate =
+    habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
   return checkIns
     .filter(
       (checkIn) =>
         checkIn.habitId === habit.id &&
-        checkIn.checkInDate >= habit.startDate &&
+        checkIn.checkInDate >= effectiveStartDate &&
         checkIn.checkInDate <= historyEndDate
     )
     .sort((left, right) => left.checkInDate.localeCompare(right.checkInDate));
@@ -1562,13 +1602,85 @@ function buildHabitScore(input: {
   );
 }
 
+function buildPerfectDayMotivationStats(
+  habits: HabitDefinitionView[],
+  checkIns: HabitCheckInView[],
+  historyStartDate: string,
+  historyEndDate: string
+) {
+  const perfectDayHabits = habits.filter(
+    (habit) =>
+      habit.status === "active" &&
+      habit.isPerfectDayItem &&
+      !isAfterHabitDate(habit.startDate, historyEndDate)
+  );
+  let eligibleDayCount = 0;
+  let perfectDayCount = 0;
+  let currentStreakDays = 0;
+  let bestStreakDays = 0;
+  let runningStreakDays = 0;
+
+  if (perfectDayHabits.length === 0) {
+    return {
+      eligibleDayCount,
+      perfectDayCount,
+      currentStreakDays,
+      bestStreakDays,
+      consistencyPercent: null,
+    };
+  }
+
+  const totalDays = getDayDelta(historyStartDate, historyEndDate);
+
+  for (let index = 0; index <= totalDays; index += 1) {
+    const day = addUtcDays(historyStartDate, index);
+    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day);
+    if (daySummary.perfectDayItemCount <= 0) continue;
+
+    eligibleDayCount += 1;
+    if (daySummary.isPerfectDay) {
+      perfectDayCount += 1;
+      runningStreakDays += 1;
+      bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+    } else {
+      runningStreakDays = 0;
+    }
+  }
+
+  for (let index = totalDays; index >= 0; index -= 1) {
+    const day = addUtcDays(historyStartDate, index);
+    const daySummary = buildHabitDaySummary(perfectDayHabits, checkIns, day);
+    if (daySummary.perfectDayItemCount <= 0) continue;
+
+    if (daySummary.isPerfectDay) {
+      currentStreakDays += 1;
+      continue;
+    }
+
+    const hasAnyCheckIn = daySummary.items.some((item) => item.checkIn !== null);
+    if (day === historyEndDate && !hasAnyCheckIn) continue;
+    break;
+  }
+
+  return {
+    eligibleDayCount,
+    perfectDayCount,
+    currentStreakDays,
+    bestStreakDays,
+    consistencyPercent:
+      eligibleDayCount > 0 ? Math.round((perfectDayCount / eligibleDayCount) * 100) : null,
+  };
+}
+
 function buildNonQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
+  historyStartDate: string,
   historyEndDate: string
 ): HabitMotivationItem {
   const checkInsByDate = getCheckInsByDate(habitCheckIns);
-  const totalDays = getDayDelta(habit.startDate, historyEndDate);
+  const metricStartDate = habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
+  const totalDays = getDayDelta(metricStartDate, historyEndDate);
   let eligibleDayCount = 0;
   let onTrackDayCount = 0;
   let restDayCount = 0;
@@ -1587,7 +1699,7 @@ function buildNonQuitMotivationItem(
   }
 
   for (let index = 0; index <= totalDays; index += 1) {
-    const day = addUtcDays(habit.startDate, index);
+    const day = addUtcDays(metricStartDate, index);
     const checkIn = checkInsByDate.get(day) ?? null;
     const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
     if (!isScheduled && !checkIn) continue;
@@ -1609,7 +1721,7 @@ function buildNonQuitMotivationItem(
   }
 
   for (let index = totalDays; index >= 0; index -= 1) {
-    const day = addUtcDays(habit.startDate, index);
+    const day = addUtcDays(metricStartDate, index);
     const checkIn = checkInsByDate.get(day) ?? null;
     const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
     if (!isScheduled && !checkIn) continue;
@@ -1661,10 +1773,16 @@ function buildNonQuitMotivationItem(
 function buildQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
+  historyStartDate: string,
   historyEndDate: string
 ): HabitMotivationItem {
-  const totalDays = getDayDelta(habit.startDate, historyEndDate);
-  const lapseDates = new Set(getQuitLapseDates(habit, null, habitCheckIns, historyEndDate));
+  const metricStartDate = habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
+  const totalDays = getDayDelta(metricStartDate, historyEndDate);
+  const lapseDates = new Set(
+    getQuitLapseDates(habit, null, habitCheckIns, historyEndDate).filter(
+      (date) => date >= metricStartDate
+    )
+  );
   let noteCount = 0;
   let currentStreakDays = 0;
   let bestStreakDays = 0;
@@ -1675,7 +1793,7 @@ function buildQuitMotivationItem(
   }
 
   for (let index = 0; index <= totalDays; index += 1) {
-    const day = addUtcDays(habit.startDate, index);
+    const day = addUtcDays(metricStartDate, index);
     if (lapseDates.has(day)) {
       runningStreakDays = 0;
       continue;
@@ -1685,7 +1803,7 @@ function buildQuitMotivationItem(
   }
 
   for (let index = totalDays; index >= 0; index -= 1) {
-    const day = addUtcDays(habit.startDate, index);
+    const day = addUtcDays(metricStartDate, index);
     if (lapseDates.has(day)) break;
     currentStreakDays += 1;
   }
@@ -1736,27 +1854,38 @@ function compareMotivationItems(left: HabitMotivationItem, right: HabitMotivatio
 export function buildHabitMotivationSummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
-  selectedDate: string
+  selectedDate: string,
+  options?: { historyStartDate?: string | null }
 ): HabitMotivationSummary {
   const historyEndDate = selectedDate;
-  const historyStartDate =
+  const earliestHabitStartDate =
     habits.reduce<string | null>(
       (earliest, habit) =>
         earliest === null || habit.startDate < earliest ? habit.startDate : earliest,
       null
     ) ?? selectedDate;
+  const requestedHistoryStartDate = options?.historyStartDate ?? null;
+  const historyStartDate =
+    requestedHistoryStartDate && requestedHistoryStartDate > earliestHabitStartDate
+      ? requestedHistoryStartDate > historyEndDate
+        ? historyEndDate
+        : requestedHistoryStartDate
+      : earliestHabitStartDate;
   const items = habits
     .filter((habit) => !isAfterHabitDate(habit.startDate, historyEndDate))
     .map((habit) => {
-      const habitCheckIns = getCheckInsForHabit(habit, checkIns, historyEndDate);
+      const habitCheckIns = getCheckInsForHabit(habit, checkIns, historyStartDate, historyEndDate);
       return habit.habitMode === "quit"
-        ? buildQuitMotivationItem(habit, habitCheckIns, historyEndDate)
-        : buildNonQuitMotivationItem(habit, habitCheckIns, historyEndDate);
+        ? buildQuitMotivationItem(habit, habitCheckIns, historyStartDate, historyEndDate)
+        : buildNonQuitMotivationItem(habit, habitCheckIns, historyStartDate, historyEndDate);
     })
     .sort(compareMotivationItems);
-  const scoredItems = items.filter((item) => item.habitScore !== null);
-  const eligibleDayCount = items.reduce((total, item) => total + item.eligibleDayCount, 0);
-  const onTrackDayCount = items.reduce((total, item) => total + item.onTrackDayCount, 0);
+  const perfectDayStats = buildPerfectDayMotivationStats(
+    habits,
+    checkIns,
+    historyStartDate,
+    historyEndDate
+  );
 
   return {
     historyStartDate,
@@ -1769,25 +1898,15 @@ export function buildHabitMotivationSummary(
         .filter((date): date is string => Boolean(date))
         .sort()
         .at(-1) ?? null,
-    eligibleDayCount,
-    onTrackDayCount,
+    eligibleDayCount: perfectDayStats.eligibleDayCount,
+    onTrackDayCount: perfectDayStats.perfectDayCount,
     restDayCount: items.reduce((total, item) => total + item.restDayCount, 0),
     slipCount: items.reduce((total, item) => total + item.slipCount, 0),
     noteCount: items.reduce((total, item) => total + item.noteCount, 0),
-    currentStreakDays: items.reduce(
-      (largest, item) => Math.max(largest, item.currentStreakDays),
-      0
-    ),
-    bestStreakDays: items.reduce((largest, item) => Math.max(largest, item.bestStreakDays), 0),
-    consistencyPercent:
-      eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null,
-    habitScore:
-      scoredItems.length > 0
-        ? Math.round(
-            scoredItems.reduce((total, item) => total + (item.habitScore ?? 0), 0) /
-              scoredItems.length
-          )
-        : null,
+    currentStreakDays: perfectDayStats.currentStreakDays,
+    bestStreakDays: perfectDayStats.bestStreakDays,
+    consistencyPercent: perfectDayStats.consistencyPercent,
+    habitScore: null,
     totalTimedMinutes:
       Math.round(items.reduce((total, item) => total + item.totalTimedMinutes, 0) * 100) / 100,
     totalCount: Math.round(items.reduce((total, item) => total + item.totalCount, 0) * 100) / 100,
