@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
-- `updated`: `2026-06-05`
+- `updated`: `2026-06-06`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
@@ -14,17 +14,17 @@
 - `execution_mode`: `plan only until owner explicitly says execute/build/implement`
 - `target_findings`: remaining advanced-motivation/history part of `H-010`
 - `planned_resolved_findings`: `H-010` sub-scope for best streak, habit strength/score, deeper Habits history insight, archived-history trust, and notes/history visibility where existing data can support it.
-- `deferred_findings`: `H-028` midnight auto-complete, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, broad Calendar findings polish, `/my-library/calendar` metric formatting, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope.
+- `deferred_findings`: `H-028` midnight auto-complete, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope. Calendar Compare Findings Polish shipped separately in PR `#999` and repo-managed closeout PR `#1000`.
 - `return_checkpoint`: update the Habits parent before this child is considered closeout-ready.
 - `next_return_target`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-05`
-- `base`: `main@69bddfc7`
+- `last_audited`: `2026-06-06`
+- `base`: `main@bba59bfe`
 - `audit_status`: `ready`
 - `decision`: Keep this as a planned Habits child brief; do not execute until the owner explicitly asks for implementation.
-- `reason`: `main` is clean and synced after PR `#997` and repo-managed closeout PR `#998`; post-merge preflight was reported green. Fresh re-audit found no active AW-006/Habits implementation slice, all recent Habits Child A-J work is done, and the remaining high-value Habits direction is advanced motivation/history depth rather than another core tracking correctness fix.
+- `reason`: `main` is clean and synced after Calendar Compare Findings Polish PR `#999` and repo-managed closeout PR `#1000`; post-merge preflight is green. Fresh re-audit found no active AW-006/Habits implementation slice, all recent Habits Child A-J work is done, Calendar comparison polish is complete as a separate route slice, and the remaining high-value Habits direction is advanced motivation/history depth rather than another core tracking correctness fix.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, the Habits parent, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, `lib/habits/server.ts`, habits API/storage contracts, My Library Calendar contracts, account export contracts, Help/Guide/support rules, benchmark assumptions about habit apps, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before execution.
 
 ## Goal
@@ -46,7 +46,7 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 - `HabitPerfectDayHub` already renders active Habits rows, details, week overview, selected-day correction, timer/manual source split, local sound controls, and today-only setup management.
 - `lib/habits/shared.ts` already derives selected-day and week summaries, current streak/consistency labels where data proves them, rest-day semantics, slip semantics, weekly/monthly target-met state, and timer/manual totals.
 - `lib/habits/server.ts` already loads active and archived habit definitions, but `archivedHabits` is not exposed as a rich user-facing history surface in `/my-library/habits`.
-- `/my-library/calendar` already owns cross-source week/month/year comparison. Calendar metric formatting and source-card polish are separate Calendar findings, not this Habits child.
+- `/my-library/calendar` already owns cross-source week/month/year comparison. Calendar Compare Findings Polish shipped separately in PR `#999/#1000`, so this Habits child must not reopen that route polish unless the brief is explicitly revised.
 - Account export already includes Habits data at the account level, so this child should not add a new export download unless a later brief explicitly selects it.
 - The current safe next Habits slice is read-only derived insight from existing owner-scoped data, not new writes, background jobs, notification permissions, or data-model expansion.
 
@@ -85,14 +85,14 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 - Preserve My Library Calendar ownership:
   - `/my-library/calendar` remains the cross-source comparison route;
   - Habits motivation metrics may feed Calendar later only through explicit mapping;
-  - Calendar formatting/polish issues remain a separate brief.
+  - Calendar formatting/polish issues were closed separately by PR `#999/#1000`.
 - Update `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, Habits parent, AW-006 queue, and design inventory if execution changes user-visible labels, support diagnosis, or lifecycle references.
 - Add focused tests for score/streak/consistency math, rest/slip treatment, archived-history behavior, unknown status fail-safe behavior, and UI accessibility.
 - Capture screenshot handoff before `npm run verify:pre-pr` because future execution changes visible Habits UI.
 
 ## Out Of Scope
 
-- `/my-library/calendar` findings, Calendar metric formatting, source-card layout, source inclusion copy, comparison insight copy, or detailed-number table polish.
+- Reopening `/my-library/calendar` Comparison Report polish, source-card layout, source inclusion copy, comparison insight copy, detailed-number table polish, or Calendar metric formatting already closed by PR `#999/#1000`.
 - Reminders, notification APIs, push notifications, scheduled reminders, browser/native notification sounds, or server-stored notification preferences.
 - Midnight auto-complete, background check-in creation, automatic day-boundary writes, or retroactive generated check-ins.
 - New persisted habit event tables, new check-in statuses, new note schema, new export download route, or account export schema changes.
@@ -290,7 +290,7 @@ Critical target categories for a `10/10` claim:
 
 - Create and execute a future Habits child that adds read-only advanced motivation/history depth to `/my-library/habits`.
 - Derive metrics from existing Habits data with typed helpers and deterministic fallbacks.
-- Keep Calendar findings and Calendar formatting as a separate future brief.
+- Keep completed Calendar Comparison Report polish closed unless a future owner-selected Calendar brief explicitly reopens it.
 - Update support/user-flow docs and lifecycle references when future implementation starts.
 - Add focused tests and screenshot handoff before broad gates when future implementation starts.
 
@@ -298,7 +298,7 @@ Critical target categories for a `10/10` claim:
 
 - Runtime app code, UI, CSS, tests, scripts, configs, workflows, migrations, generated files, assets, external services, package changes, environment settings, screenshots, PR creation, or merge.
 - Choosing exact final visual layout before implementation audit.
-- Fixing `/my-library/calendar` screenshots or numeric formatting.
+- Reopening `/my-library/calendar` screenshots, Comparison Report copy, or numeric formatting already closed by PR `#999/#1000`.
 
 ## Acceptance Criteria
 
@@ -356,4 +356,5 @@ Required for future execution because the planned slice changes visible Habits U
 
 ## Checkpoint Log
 
-- `2026-06-05 | planned | created planned-only Habits Advanced Motivation And History Depth brief from clean synced main@69bddfc7 after PR #997/#998 closeout and green post-merge preflight; no runtime implementation is active; Calendar findings and numeric formatting remain a separate future brief | next: wait for explicit owner execute/build/implement before moving this child to in-progress, or create a separate Calendar Findings Polish brief if the owner chooses Calendar first`
+- `2026-06-05 | planned | created planned-only Habits Advanced Motivation And History Depth brief from clean synced main@69bddfc7 after PR #997/#998 closeout and green post-merge preflight; no runtime implementation was active; at creation time Calendar findings and numeric formatting were still separate, later closed by PR #999/#1000 | next: wait for explicit owner execute/build/implement before moving this child to in-progress`
+- `2026-06-06 | planned | refreshed after Calendar Compare Findings Polish PR #999 and repo-managed closeout PR #1000 on clean synced main@bba59bfe; Calendar route polish is now done and not part of this Habits child; no runtime implementation is active | next: wait for owner confirmation of Habits advanced motivation/history implementation scope before moving this child to in-progress`
