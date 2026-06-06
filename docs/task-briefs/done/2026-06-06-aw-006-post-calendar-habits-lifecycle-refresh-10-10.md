@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-06-aw-006-post-calendar-habits-lifecycle-refresh-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-06`
 - `updated`: `2026-06-06`
@@ -199,3 +199,22 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 
 - `2026-06-06 | in-progress | started from clean synced main@bba59bfe after Calendar Compare Findings Polish PR #999 and repo-managed closeout PR #1000; post-merge preflight was green; fresh re-audit found stale Calendar-active/pre-closeout wording in the planned Habits advanced brief, AW-006 queue, and design inventory while no product/UI implementation slice is selected | next: repair docs-only lifecycle state, run targeted sweeps and docs-only validation, then open PR without selecting the Habits implementation slice`
 - `2026-06-06 | in-progress | local docs refresh repaired the lifecycle state across the planned Habits brief, AW-006 queue, design inventory, and this active refresh brief; targeted validation passed: npm run lint:briefs, npm run lint:briefs:all, git diff --check, staged whitespace check, and stale Calendar-active sweep; npm run verify:pre-pr passed in docs-only lane with artifact artifacts/test-runs/20260606-092228/verify.log | next: rerun npm run verify:pre-pr on the final docs-only commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge-readiness summary`
+- `2026-06-06 | done | merged PR #1001 as cb699087cef360361d3a7e312a31c3a4b8f6297e; post-merge preflight requested this repo-managed docs-only closeout | next: move brief to done, run closeout gates, open/merge the closeout PR, sync main, and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-06`
+- `merged_pr`: `#1001`
+- `squash_commit`: `cb699087cef360361d3a7e312a31c3a4b8f6297e`
+- `result`: Closed AW-006 Post-Calendar Habits Lifecycle Refresh. The AW-006 queue, planned Habits advanced brief, and design inventory now agree that Calendar Compare is done, no product/UI implementation slice is active, and Habits Advanced Motivation remains planned until explicitly selected.
+- `validation`: `npm run lint:briefs`; `npm run lint:briefs:all`; targeted stale Calendar-active sweep; `git diff --check`; `npm run verify:pre-pr` PASS docs-only with `artifacts/test-runs/20260606-092342/verify.log`; PR #1001 CI PASS; `npm run verify:pre-merge` PASS docs-only with `artifacts/verify-pre-merge/20260606-072636.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                            | Achieved Score | Evidence                                                                                   | Gaps / Notes |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                | `5/5`          | PR #1001 docs diff aligned AW-006 queue, design inventory, and planned Habits brief state. | None.        |
+| Reliability and failure handling    | `5/5`          | Targeted stale Calendar-active sweep and docs-only gates passed.                           | None.        |
+| Content governance                  | `5/5`          | Changed brief lint, all-brief lint, and PR #1001 review-ready docs lifecycle diff passed.  | None.        |
+| Stack-fit and dependency discipline | `5/5`          | Diff stayed Markdown-only with no runtime, script, config, workflow, or dependency change. | None.        |
+| Testing and QA automation           | `5/5`          | `verify:pre-pr`, PR CI, and `verify:pre-merge` passed in docs-only lane.                   | None.        |
+| DevOps and rollback readiness       | `5/5`          | Branch was current with `origin/main`; rollback is a normal docs-only git revert.          | None.        |
