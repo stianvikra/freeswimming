@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-05-aw-006-calendar-compare-findings-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-05`
-- `updated`: `2026-06-05`
+- `updated`: `2026-06-06`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_planned_brief`: `docs/task-briefs/planned/2026-06-05-aw-006-habits-advanced-motivation-history-depth-10-10.md`
 - `route`: `/my-library/calendar`
@@ -185,6 +185,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | No fabricated strength/stretch/swim metrics; deltas are rounded deterministically and source readiness is truthful.                                                      | unit tests + code review                | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes no admin editor, CRUD, publish workflow, operator queue, or admin action surface.                                                               | explicit admin-editor scope rationale   | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Filters, nav actions, detail table, badges, and details disclosure preserve labels, semantics, focus visibility, and non-color-only meaning.                             | component/test review + screenshots     | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same threshold and evidence.                                                                                  | component/test review + screenshots     | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no new dependency, polling, heavy charts, or large client bundle; route remains server-rendered.                                                        | build/diff review                       | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Brief and implementation preserve read-only owner-scoped server data; no local metric truth or new writes.                                                               | data contract + code review             | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: preserve existing dynamic private route behavior and query-param navigation.                                                                            | route diff review                       | `4/5`                   |
@@ -224,9 +225,13 @@ Critical target categories for a `10/10` claim:
   - `npx vitest run tests/unit/my-library-calendar-comparison.test.ts tests/unit/calendar-period-comparison-hub.test.tsx tests/unit/my-library-calendar-page.test.tsx` - pass, 3 files / 8 tests.
   - `npm run lint:briefs:all` - pass.
 - Before PR update after screenshot approval:
-  - `npm run verify:pre-pr`
+  - `npm run verify:pre-pr` - pass at `artifacts/test-runs/20260605-225727/verify.log`, full public lane, 229 unit files / 1384 tests, build, perf budgets, and E2E 106 passed / 530 expected skips.
 - Before merge readiness:
-  - `npm run verify:pre-merge`
+  - `npm run verify:pre-merge` - pass, reused current-HEAD full-public verify artifact and recorded `artifacts/verify-pre-merge/20260606-065144.json`.
+- CI:
+  - PR `#999` - all required checks passed: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL analyze, Vercel, and Vercel Preview Comments.
+- Screenshot handoff:
+  - `output/aw-006-calendar-compare-polish-2026-06-05-223605` - owner approved as acceptable for now before PR gates.
 
 ## Checkpoint Log
 
@@ -234,3 +239,32 @@ Critical target categories for a `10/10` claim:
 - `2026-06-05`: Implemented Comparison Report copy/IA polish, deterministic number formatting, source-readiness language, docs/tests, and screenshot artifacts at `output/aw-006-calendar-compare-polish-2026-06-05-220357`. Stopped before `verify:pre-pr` for required visual approval.
 - `2026-06-05`: Applied owner-requested visual/copy polish: `Comparison view`, normalized control height/min-width, habit-consistency insight wording, and softer source-history copy. Targeted unit tests passed again. Updated screenshot artifacts at `output/aw-006-calendar-compare-polish-2026-06-05-221704`.
 - `2026-06-05`: Applied owner-requested naming and percent-copy correction: title is `Comparison Report`, habit insight drops repeated source/period words, period copy uses `last week/month/year`, and habit percentage changes show direct `current vs comparison` values instead of percentage points. Updated screenshot artifacts at `output/aw-006-calendar-compare-polish-2026-06-05-223605`.
+- `2026-06-06`: PR `#999` merged as squash commit `d7449cdb`; post-merge preflight surfaced this repo-managed docs-only closeout.
+
+## Completion Record
+
+- `completed`: `2026-06-06`
+- `merged_pr`: `#999`
+- `squash_commit`: `d7449cdb`
+- `result`: Closed AW-006 Calendar Compare Findings Polish. `/my-library/calendar` now reads as a private Comparison Report instead of a future calendar grid, puts view context before the insight, uses plain-language habit comparisons instead of `pp`, cleans number formatting, and states source readiness honestly for Habits, Micro Sessions, Dryland, and Swimming.
+- `validation`: Targeted unit tests, `npm run lint:briefs:all`, two full-public `npm run verify:pre-pr` passes, PR `#999` CI success, `npm run verify:pre-merge`, and screenshot handoff at `output/aw-006-calendar-compare-polish-2026-06-05-223605`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting/N/A categories remained within scoped rationale.
+
+| Category                                      | Achieved Score | Evidence                                                                                                        | Gaps / Notes                                           |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Route title/copy, My Library entry copy, docs, screenshots, PR `#999`                                           | No remaining gap in this slice                         |
+| UX flow clarity                               | `5/5`          | View options moved before insight; direct source/period/metric copy; screenshots                                | Future real calendar remains separate                  |
+| Visual design quality                         | `5/5`          | Existing tokens/primitives reused; desktop/mobile screenshots approved                                          | Owner approved current visual state for now            |
+| Business logic correctness and data integrity | `5/5`          | Unit tests cover formatting, source readiness, direct habit comparisons, and source calculations                | No fabricated Dryland strength/stretch or swim metrics |
+| Accessibility (a11y)                          | `5/5`          | Existing semantics preserved for filters, nav, details disclosure, badges, and responsive screenshots           | No new a11y gap found                                  |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical a11y category                                                                | No new a11y gap found                                  |
+| Data placement and sync boundaries            | `5/5`          | Brief and code preserve read-only owner-scoped server data; query params remain local UI state                  | No new writes or sync path                             |
+| Reliability and failure handling              | `5/5`          | Unmapped/not-included source copy and deterministic number formatting covered by tests                          | No remaining gap in this slice                         |
+| Security and authz                            | `5/5`          | Private route/auth boundary unchanged; owner-scoped reads preserved; CI/security checks passed                  | No new public access path                              |
+| Privacy and compliance                        | `5/5`          | No new public logging/analytics/raw private labels; docs keep diagnosis redacted                                | No remaining gap in this slice                         |
+| Content governance                            | `5/5`          | Active queue, support docs, user-flow docs, design inventory, and done brief updated                            | No remaining gap in this slice                         |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` updated with Comparison Report source/range/readiness diagnosis         | No admin support action changed                        |
+| i18n operational readiness                    | `5/5`          | Removed compact `pp` wording; direct comparison copy and button sizing tolerate longer labels                   | Full localization remains future platform work         |
+| Stack-fit and dependency discipline           | `5/5`          | Existing `CalendarPeriodComparisonHub`, typed comparison model, shared My Library primitives; no new dependency | No remaining gap in this slice                         |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, full local gates, CI checks, and screenshot handoff completed                              | No remaining gap in this slice                         |
+| DevOps and rollback readiness                 | `5/5`          | No migration; rollback is reverting squash commit `d7449cdb`; `verify:pre-merge` passed before merge            | No remaining gap in this slice                         |
