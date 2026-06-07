@@ -266,8 +266,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(emptyState).not.toHaveAttribute("aria-live");
     expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass(
       "fs-cta-primary",
-      "w-full",
-      "sm:w-auto"
+      "w-full"
     );
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
@@ -415,6 +414,7 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(await screen.findByText("Micro session cleared.")).toBeVisible();
     expect(screen.getByText("No active micro session")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("w-full");
     expect(onPlanChange).toHaveBeenLastCalledWith(null);
   });
 

@@ -372,12 +372,12 @@ Final refreshed actual-route screenshot evidence after owner screenshot-review c
 - Runtime caveat: dev server was started with `FS_ALLOW_PROD_SUPABASE=1` only for screenshot capture. No env files were changed and no cloud writes were performed.
 - Capture caveat: route screenshots keep the real Habits mobile top/bottom nav; focused Motivation element screenshots hide fixed site chrome and the local Next dev indicator only to avoid Playwright screenshot overlay, not to change product rendering.
 - Data caveat: the current owner cloud data has no active habits and no active Micro Session, so actual-route screenshots prove the Habits polish and Dryland/Micro no-active state only. Micro Sessions sound/action placement remains validated by component tests unless owner explicitly approves creating/clearing a cloud test micro session.
-- Product-rendering files changed after final refreshed capture: none.
+- Product-rendering files changed after final refreshed capture: yes, owner requested the final button-width and archived-habit copy/layout fixes and explicitly waived new screenshots before tests/merge.
 
 Owner screenshot approval stop:
 
-- Owner approved the final screenshot handoff on `2026-06-07` and then explicitly requested no new screenshots for the final button/copy tweaks before continuing to tests/PR.
-- Product-rendering files changed after final capture only for approved button width/copy tweaks; this is an owner-approved screenshot waiver for that final delta.
+- Owner approved the final screenshot handoff on `2026-06-07` and then explicitly requested no new screenshots for the final button/copy/layout tweaks before continuing to tests/PR/merge.
+- Product-rendering files changed after final capture only for approved button width, Admin notes alignment/action width, Motivation disclosure width, and archived-habit copy/chip tweaks; this is an owner-approved screenshot waiver for that final delta.
 
 Manual sound QA:
 
@@ -394,3 +394,4 @@ Manual sound QA:
 - `2026-06-07 | in-progress | refreshed actual-route screenshots at output/habits-micro-polish-actual-routes-2026-06-07-113407 after final UI corrections; Habits route, Motivation disclosures, More history, What counts, Admin notes spacing, and Dryland/Micro no-active state are captured, while active Micro Session sound/action placement remains component-test evidence because cloud data has no active micro plan | next: stop dev server and hand off screenshots for owner approval before npm run verify:pre-pr`
 - `2026-06-07 | in-progress | owner approved screenshots and requested no new screenshots; tightened Micro empty-state CTA width, made What counts/More history equal secondary controls, simplified Early data copy, kept the amber Early data line as supporting emphasis rather than color-only meaning, and passed targeted tests/typecheck/brief lint | next: run npm run verify:pre-pr, commit, push, open/update PR, then monitor CI`
 - `2026-06-07 | in-progress | npm run verify:pre-pr passed full lane after final owner-approved copy/button tweaks, screenshot waiver evidence, and removal of the new HabitPerfectDayHub lint warning | next: commit, push, open/update PR, then monitor CI`
+- `2026-06-07 | in-progress | owner found final width/copy misses after PR #1007 was opened: Micro empty CTA must be full width, Admin notes must align to the Habits container with 50/50 mobile actions, What counts/More history must be equal-width controls, and archived habits must use Past habit plus completed/best/final/consistency copy; implemented those fixes and passed targeted unit tests | next: run npm run verify:pre-pr, amend/push PR #1007, monitor CI, run npm run verify:pre-merge, then merge on green gates per owner approval`

@@ -1888,7 +1888,11 @@ export default function DrylandMicroPlanPanel({
       {schemaReady && !plan ? (
         <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
           {!isCreating ? (
-            <DrylandFeedback tone="empty" testId="dryland-micro-empty">
+            <DrylandFeedback
+              tone="empty"
+              testId="dryland-micro-empty"
+              className="[&>div:first-child]:w-full [&>div:first-child]:max-w-none"
+            >
               <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
               <p className="mt-1 text-sm text-slate-600">
                 Create one weekly Micro Session from saved Dryland Sessions when you want small
@@ -1903,7 +1907,7 @@ export default function DrylandMicroPlanPanel({
                     setError("");
                     setSuccess("");
                   }}
-                  className={cx(MICRO_PRIMARY_ACTION_CLASS, "mt-4 w-full sm:w-auto")}
+                  className={cx(MICRO_PRIMARY_ACTION_CLASS, "mt-4 w-full")}
                 >
                   Create micro session
                 </button>

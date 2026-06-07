@@ -2100,8 +2100,8 @@ describe("HabitPerfectDayHub", () => {
     const moreHistoryButton = within(history).getByTestId("habits-more-history");
     expect(definitionsButton).toHaveAttribute("aria-expanded", "false");
     expect(moreHistoryButton).toHaveAttribute("aria-expanded", "false");
-    expect(definitionsButton).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
-    expect(moreHistoryButton).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
+    expect(definitionsButton).toHaveClass("fs-cta-secondary", "w-full", "h-11");
+    expect(moreHistoryButton).toHaveClass("fs-cta-secondary", "w-full", "h-11");
 
     fireEvent.click(definitionsButton);
     expect(definitionsButton).toHaveAttribute("aria-expanded", "true");
@@ -2136,7 +2136,12 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("Micro Sessions")).toBeNull();
     expect(within(history).getByText("Past habits")).toBeVisible();
     expect(within(history).getByText("Old mobility")).toBeVisible();
-    expect(within(history).getByText("Saved history")).toBeVisible();
+    expect(within(history).getByText("Past habit")).toBeVisible();
+    expect(within(history).getByText(/1\/7 completed/)).toBeVisible();
+    expect(within(history).getByText(/Best streak: 1 day/)).toBeVisible();
+    expect(within(history).getByText(/Final streak: 0 days/)).toBeVisible();
+    expect(within(history).getByText("Consistency: 14%")).toBeVisible();
+    expect(within(history).queryByText("Saved history")).toBeNull();
   });
 
   it("keeps Motivation metrics numeric while explaining early or empty data", () => {

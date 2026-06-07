@@ -2480,21 +2480,24 @@ export default function HabitPerfectDayHub({
 
   function renderMotivationItem(item: HabitMotivationItem) {
     const consistencyLabel = formatMetricPercent(item.consistencyPercent);
-    const trackedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} days hit`;
+    const completedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} completed`;
+    const isArchived = item.status === "archived";
 
     return (
       <li key={item.habitId} className="border-t border-[color:var(--fs-border-soft)] py-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="min-w-0 truncate text-sm font-semibold text-slate-900">{item.title}</p>
-          <span className={item.status === "archived" ? habitWarningChipClass : habitChipClass}>
-            {item.status === "archived" ? "Saved history" : getHabitModeLabel(item.mode)}
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+            {item.title}
+          </p>
+          <span className={isArchived ? habitWarningChipClass : habitChipClass}>
+            {isArchived ? "Past habit" : getHabitModeLabel(item.mode)}
           </span>
         </div>
         <p className="mt-1 text-sm text-slate-600">
-          {trackedLabel} · Best {formatMetricDays(item.bestStreakDays)} · Current{" "}
-          {formatMetricDays(item.currentStreakDays)}
+          {completedLabel} · Best streak: {formatMetricDays(item.bestStreakDays)} ·{" "}
+          {isArchived ? "Final" : "Current"} streak: {formatMetricDays(item.currentStreakDays)}
         </p>
-        <p className="mt-1 text-sm text-slate-500">Consistency {consistencyLabel}</p>
+        <p className="mt-1 text-sm text-slate-500">Consistency: {consistencyLabel}</p>
       </li>
     );
   }
@@ -2670,7 +2673,7 @@ export default function HabitPerfectDayHub({
           ) : null}
 
           <div className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-3">
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 data-testid="habits-motivation-definitions"
@@ -2683,7 +2686,7 @@ export default function HabitPerfectDayHub({
                 }
                 className={cx(
                   habitSecondaryActionClass,
-                  "w-full px-3 sm:w-auto",
+                  "h-11 w-full px-3 text-center",
                   isDefinitionsPanelOpen
                     ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
                     : ""
@@ -2709,7 +2712,7 @@ export default function HabitPerfectDayHub({
                 }
                 className={cx(
                   habitSecondaryActionClass,
-                  "w-full px-3 sm:w-auto",
+                  "h-11 w-full px-3 text-center",
                   isHistoryPanelOpen
                     ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
                     : ""

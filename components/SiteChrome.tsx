@@ -568,7 +568,8 @@ export default function SiteChrome({
         {showAdminPageNotes ? (
           <div
             className={[
-              "mx-auto w-full max-w-[1100px] px-4",
+              "mx-auto w-full px-4",
+              isHabitsRoute ? "max-w-[1040px] sm:px-6" : "max-w-[1100px]",
               isHabitsRoute ? "max-sm:-mt-16 sm:-mt-12" : "",
               showDefaultMobileNav ? "pb-[calc(96px+env(safe-area-inset-bottom))] sm:pb-8" : "pb-8",
             ].join(" ")}
