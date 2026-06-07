@@ -378,3 +378,47 @@ Handoff must include:
 - `2026-06-07 | owner-review-corrections-ready | corrections implemented; targeted validation passed: npm exec vitest -- run tests/unit/habit-perfect-day-hub.test.tsx (1 file/64 tests), npm exec vitest -- run tests/unit/analytics-events.test.ts tests/unit/habits.test.ts tests/unit/habits-server.test.ts tests/unit/habits-routes.test.ts tests/unit/habit-perfect-day-hub.test.tsx tests/unit/my-library-calendar-comparison.test.ts (6 files/117 tests), npm run typecheck, npm run lint:briefs:all, and git diff --check; refreshed screenshot artifacts captured in output/aw-006-habits-start-fresh-reset-2026-06-07-162131 using a temporary fixture route because local dev-login returned 500 earlier, then the fixture route was removed from the diff | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-07 | owner-copy-final | owner requested no new screenshots and final copy change: Details action `Reset these habit stats`, confirmation title `Confirm reset stats?`, confirmation primary `Reset stats`; owner approved executing tests and merging on green gates | next: run targeted validation, verify:pre-pr, PR/CI, verify:pre-merge, merge if green`
 - `2026-06-07 | pre-pr-ready | linked Supabase migration 20260607143000_habits_stats_reset_events.sql was applied after the first pre-PR drift check; targeted validation passed again with 6 files/120 tests, npm run typecheck, npm run lint:briefs:all, git diff --check, and npm run verify:pre-pr full lane passed with quality gate, lint, typecheck, 230 unit files/1408 tests, build, perf budgets, and e2e 106 passed/530 skipped | next: commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green`
+- `2026-06-07 | merged | PR #1009 shipped as squash commit 73f77c50 after CI required checks and npm run verify:pre-merge passed; post-merge preflight requested repo-managed docs-only closeout | next: move this brief to done, add Completion Record, update queue/inventory active references, run closeout gates, and merge closeout if green`
+
+## Completion Record
+
+- `completed`: `2026-06-07`
+- `merged_pr`: `#1009`
+- `squash_commit`: `73f77c50`
+- `result`: Closed AW-006 Habits Reset Stats Motivation Reset. Users can reset motivation stats per habit from a clear date boundary without deleting older check-ins, and the Habits Motivation surface now explains history and status with fewer ambiguous pills/toggles.
+- `validation`: Targeted unit/component/domain/API tests passed, `npm run verify:pre-pr` full lane passed on `c0252254`, PR CI required checks passed, and `npm run verify:pre-merge` passed before merge. Linked Supabase migration `20260607143000_habits_stats_reset_events.sql` was applied and drift-checked.
+- `10/10 claim`: yes - critical target categories are listed below and each reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Business logic correctness and data integrity`
+- `Data placement and sync boundaries`
+- `Security and authz`
+- `Privacy and compliance`
+- `Incident response and support operations`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1009` shipped per-habit reset stats without history deletion, Calendar Comparison preservation, and top-level Motivation cleanup.                                                         | None         |
+| UX flow clarity                               | `5/5`          | User-facing copy changed to `Reset these habit stats`, `Confirm reset stats?`, `Reset stats`, `Last stats restart`, and Calendar Comparison guidance; component tests and screenshots covered. | None         |
+| Visual design quality                         | `5/5`          | Screenshot handoff covered mobile/desktop Habits, Details, confirmation, timed details, Motivation, and full-width history layout; owner explicitly waived refreshed final-copy screenshots.   | None         |
+| Business logic correctness and data integrity | `5/5`          | Domain/server/route tests cover reset boundary selection, old-history preservation, Calendar marker separation, unsupported reset values, and no check-in mutation.                            | None         |
+| Accessibility (a11y)                          | `5/5`          | Component coverage verifies accessible action/dialog labels and no loss of existing Habits semantics.                                                                                          | None         |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence.                                                                                                                      | None         |
+| Data placement and sync boundaries            | `5/5`          | Reset truth is server-canonical through `habit_motivation_resets`; local state remains UI-only and failures do not advance stats.                                                              | None         |
+| Caching and invalidation strategy             | `5/5`          | Route/server diff preserves private no-store behavior and deterministic snapshot refresh after reset mutation.                                                                                 | None         |
+| Reliability and failure handling              | `5/5`          | Route/domain tests cover missing habit, malformed date, cross-owner/unauthenticated denial, unknown reset type/status, and stable JSON failures.                                               | None         |
+| Security and authz                            | `5/5`          | API route uses authenticated owner scope, RLS-backed reset table, and negative-path route tests.                                                                                               | None         |
+| Privacy and compliance                        | `5/5`          | Analytics event avoids habit names/notes/private values; support docs use redacted reset/habit IDs and dates.                                                                                  | None         |
+| Content governance                            | `5/5`          | Parent, AW-006 queue, design inventory, user-flow map, support runbook, and this completion record were updated; brief lint passed before PR.                                                  | None         |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` documents privacy-safe reset diagnosis and preserved history behavior.                                                                                 | None         |
+| i18n operational readiness                    | `5/5`          | Labels moved into responsive button/dialog/card patterns and long-copy risk was covered by screenshot handoff and component assertions.                                                        | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Habits domain/server/component contracts, Supabase migration/types, existing tests, and added no dependency.                                                                            | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, typecheck, brief lint, diff check, `verify:pre-pr`, CI required checks, and `verify:pre-merge` all passed.                                                                     | None         |
+| DevOps and rollback readiness                 | `5/5`          | Migration is explicit, linked drift check passed, rollback is PR revert plus reset table/migration handling; old check-ins remain unchanged.                                                   | None         |
+
+Supporting categories closed without release-gate gaps: `Performance (CWV + payloads)` `4/5`, `Analytics and KPI observability` `4/5`, and `Scalability and cost efficiency` `4/5`.

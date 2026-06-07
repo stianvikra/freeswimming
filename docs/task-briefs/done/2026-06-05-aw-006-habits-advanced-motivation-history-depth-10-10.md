@@ -14,7 +14,7 @@
 - `execution_mode`: `owner approved execution on 2026-06-06`
 - `target_findings`: remaining advanced-motivation/history part of `H-010`
 - `planned_resolved_findings`: `H-010` sub-scope for best streak, habit score, deeper Habits history insight, Past habits trust, and notes/history visibility where existing data can support it.
-- `deferred_findings`: `H-028` midnight auto-complete, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope. Calendar Compare Findings Polish shipped separately in PR `#999` and repo-managed closeout PR `#1000`; `H-040` per-habit Reset stats motivation reset is now handled by `docs/task-briefs/in-progress/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md`.
+- `deferred_findings`: `H-028` midnight auto-complete, reminders, notification APIs, server-stored preferences, user-selected/uploaded sounds, micro-session audio, export downloads, new habit notes schema, global calendar storage, swim/dryland/micro planning, and broad analytics dashboards remain out of scope. Calendar Compare Findings Polish shipped separately in PR `#999` and repo-managed closeout PR `#1000`; `H-040` per-habit Reset stats motivation reset was handled by PR `#1009` in `docs/task-briefs/done/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md`.
 - `return_checkpoint`: update the Habits parent before this child is considered closeout-ready.
 - `next_return_target`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 
@@ -102,7 +102,7 @@ Fremoverkompatibilitet: nye habit-statuser, habit modes, units, historikkverdier
 - Reopening `/my-library/calendar` Comparison Report polish, source-card layout, source inclusion copy, comparison insight copy, detailed-number table polish, or Calendar metric formatting already closed by PR `#999/#1000`.
 - Reminders, notification APIs, push notifications, scheduled reminders, browser/native notification sounds, or server-stored notification preferences.
 - Midnight auto-complete, background check-in creation, automatic day-boundary writes, or retroactive generated check-ins.
-- Per-habit `Reset these habit stats` / motivation reset writes; this is handled separately in `docs/task-briefs/in-progress/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md` because it requires server-canonical reset truth, Calendar marker mapping, support docs, migration/RLS/authz review, and screenshots.
+- Per-habit `Reset these habit stats` / motivation reset writes; this was handled separately in PR `#1009` at `docs/task-briefs/done/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md` because it required server-canonical reset truth, Calendar marker mapping, support docs, migration/RLS/authz review, and screenshots.
 - New persisted habit event tables, new check-in statuses, new note schema, new export download route, or account export schema changes.
 - User-selected/uploaded sounds, sound library management, micro-session audio, haptics, or device-level audio controls.
 - Broad global Calendar storage, swim/dryland/micro planning, work/off-work filters, month/year heatmap, or broad analytics dashboard.
@@ -316,7 +316,7 @@ Critical target categories for a `10/10` claim:
 ## Out Of Scope For This Implementation
 
 - Calendar Comparison Report changes, reminders, notification APIs, new persisted habit event tables, new check-in statuses, migrations, generated files, external services, package changes, environment settings, export downloads, archived restore/edit behavior, PR merge, or broad analytics/dashboard work.
-- Per-habit `Reset these habit stats` / motivation reset writes; this is handled separately in `docs/task-briefs/in-progress/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md`.
+- Per-habit `Reset these habit stats` / motivation reset writes; this was handled separately in PR `#1009` at `docs/task-briefs/done/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md`.
 - Reopening `/my-library/calendar` screenshots, Comparison Report copy, or numeric formatting already closed by PR `#999/#1000`.
 
 ## Acceptance Criteria
