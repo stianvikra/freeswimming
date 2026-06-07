@@ -569,7 +569,7 @@ export default function SiteChrome({
           <div
             className={[
               "mx-auto w-full max-w-[1100px] px-4",
-              isHabitsRoute ? "-mt-10 sm:-mt-12" : "",
+              isHabitsRoute ? "max-sm:-mt-16 sm:-mt-12" : "",
               showDefaultMobileNav ? "pb-[calc(96px+env(safe-area-inset-bottom))] sm:pb-8" : "pb-8",
             ].join(" ")}
           >
