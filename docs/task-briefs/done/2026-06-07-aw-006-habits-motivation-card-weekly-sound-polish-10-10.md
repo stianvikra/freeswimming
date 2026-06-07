@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-07-aw-006-habits-motivation-card-weekly-sound-polish-10-10`
-- `status`: `planned`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-07`
 - `updated`: `2026-06-07`
@@ -11,7 +11,7 @@
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `plan only until owner explicitly says kjør`
+- `execution_mode`: `completed via PR #1011`
 - `screenshot_required`: `yes; UI/copy/layout/sound-control work`
 - `target_findings`: `new owner findings captured 2026-06-07 after PR #1009/#1010`
 
@@ -19,8 +19,8 @@
 
 - `last_audited`: `2026-06-07`
 - `base`: clean synced `main@45908764`
-- `audit_status`: `ready`
-- `decision`: Use this as the next Habits child slice if the owner approves implementation.
+- `audit_status`: `closed`
+- `decision`: Closed by PR #1011.
 - `reason`: PR `#1009` shipped Reset stats and PR `#1010` closed it out. The owner then found a coherent follow-up polish set: clearer Habits stats copy, consistent closed-card motivation, less duplicate weekly/header UI, better What counts text, per-habit saved feedback placement, and a sound regression.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `/my-library/habits`, `HabitPerfectDayHub`, Habits sound/local preference code, Habits summary/domain logic, weekly overview UI, Calendar Comparison, support docs, screenshot handoff rules, route/label/support sweep rules, or verification lanes change before implementation.
 
@@ -329,7 +329,17 @@ Evidence before broad gates:
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for 10/10 claim: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Accessibility (a11y), Reliability and failure handling, Stack-fit and dependency discipline, Testing and QA automation, DevOps and rollback readiness.
+Critical target categories for 10/10 claim:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Accessibility
+- Reliability and failure handling
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
 
 | Category                                      | Mapping      | Threshold                                                                                                                                  | Evidence source                                                                              | Expected score |
 | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------------- |
@@ -339,6 +349,7 @@ Critical target categories for 10/10 claim: Product goals and IA, UX flow clarit
 | Business logic correctness and data integrity | `target`     | Cadence-aware streak/Perfect Day semantics are deterministic and create no fake check-ins or false completion credit.                      | Unit/domain tests for daily/weekly/monthly, missed period end, unknown status/cadence.       | 5              |
 | Admin editor ergonomics                       | `N/A`        | Scope is member Habits and Micro Sessions UI, not admin editor workflows.                                                                  | Diff review confirms no admin editor surface changes.                                        | N/A            |
 | Accessibility (a11y)                          | `target`     | Changed buttons/disclosures/sound toggle keep accessible names, keyboard operation, focus order, and non-audio visual feedback.            | Testing Library assertions, Playwright/accessibility checks where relevant.                  | 5              |
+| Accessibility                                 | `target`     | Closeout parser alias for `Accessibility (a11y)`; same acceptance threshold applies.                                                       | Same evidence as `Accessibility (a11y)`.                                                     | 5              |
 | Performance (CWV + payloads)                  | `supporting` | No new dependency or heavy media payload; sound preview uses existing lightweight implementation.                                          | Bundle/build output and dependency diff.                                                     | 4              |
 | Data placement and sync boundaries            | `target`     | Completion truth remains server-canonical; sound preference and saved flash are local-only; failed saves do not show durable success.      | Brief contract, unit/component tests, implementation review.                                 | 5              |
 | Caching and invalidation strategy             | `target`     | Weekly overview, closed-card stats, and saved feedback refresh from the same selected-date snapshot after mutations.                       | Unit/component tests and route/cache review.                                                 | 5              |
@@ -394,3 +405,43 @@ Capture `before/after` or `after/reference` artifacts for:
 - `2026-06-07 | planned | owner findings captured after PR #1009/#1010: closed-card motivation, copy cleanup, weekly overview/header consolidation, What counts rewrite, per-habit saved feedback, and sound regression/layout | next: owner can review scope and say kjør to implement`
 - `2026-06-07 | in-progress | implementation complete for Habits labels/layout, weekly/monthly any-day Perfect Day semantics, per-habit feedback, Micro Sessions sound row, support docs, and targeted tests | validation: targeted Vitest 121/121, typecheck pass | next: screenshot handoff, pre-PR gate, PR, CI, pre-merge, merge`
 - `2026-06-07 | in-progress | final Details cleanup added: setup pills removed from open Details, start metadata includes year, and Habit stats heading strengthened | validation: pending refreshed targeted tests and screenshots | next: run gates and merge on green per owner approval`
+- `2026-06-07 | done | PR #1011 merged at squash commit 232ab67c after green local gates and green CI | validation: targeted Vitest, typecheck, lint, lint:briefs:all, verify:pre-pr, CI, verify:pre-merge, screenshot handoff artifacts | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-07`
+- `merged_pr`: `#1011`
+- `squash_commit`: `232ab67c`
+- `result`: Closed AW-006 Habits Motivation Card Weekly Sound Polish. Habits now use cleaner closed-card motivation, stronger Details stats, clarified reset/history language, year-bearing Started metadata, improved What counts copy, consolidated Weekly Overview/header layout, per-habit saved feedback, and repaired Micro Sessions sound/toggle layout.
+- `validation`: Targeted Vitest for Habits/Micro sound passed; `npm run typecheck` passed; `npm run lint` passed; `npm run lint:briefs:all` passed; `npm run verify:pre-pr` passed; GitHub CI for PR #1011 passed; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260607-190317.json`.
+- `screenshot_artifacts`: `output/aw-006-habits-motivation-card-weekly-sound-polish-2026-06-07-192200`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories are intentionally `4/5` where the scope did not require new telemetry, heavier perf work, or broader platform expansion.
+
+| Category                                      | Achieved Score | Evidence                                                                                                      | Gaps / Notes                                                                                |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1011, screenshot artifacts, component assertions, `verify:pre-merge` PASS.                                | No scoped gap.                                                                              |
+| UX flow clarity                               | `5/5`          | Updated labels/layout, saved feedback placement, sound toggle behavior, screenshots, unit tests.              | No scoped gap.                                                                              |
+| Visual design quality                         | `5/5`          | Mobile/desktop screenshot handoff artifacts captured after final UI changes.                                  | Archived test-account rows appear only in Past habits screenshots; active surface is clean. |
+| Business logic correctness and data integrity | `5/5`          | Habits domain/unit tests for cadence-aware streak and Perfect Day semantics.                                  | No fake check-ins or false completion credit introduced.                                    |
+| Admin editor ergonomics                       | `N/A`          | Diff review.                                                                                                  | Scope did not touch admin editor workflows.                                                 |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, existing E2E/a11y lane in `verify:pre-merge`.                                     | No scoped gap.                                                                              |
+| Accessibility                                 | `5/5`          | Closeout parser alias for `Accessibility (a11y)` with the same evidence.                                      | No scoped gap.                                                                              |
+| Performance (CWV + payloads)                  | `4/5`          | Build/perf lane passed; no dependency added.                                                                  | Supporting category only; no dedicated perf redesign in scope.                              |
+| Data placement and sync boundaries            | `5/5`          | Brief contract, implementation review, unit/component tests.                                                  | Completion truth remains server-canonical; sound preference/flash stays local.              |
+| Caching and invalidation strategy             | `5/5`          | Mutation/view-model tests and route/cache review in PR #1011.                                                 | No scoped gap.                                                                              |
+| Reliability and failure handling              | `5/5`          | Sound playback failure and mutation failure behavior covered by targeted tests/review.                        | Sound failure does not block saves.                                                         |
+| Security and authz                            | `5/5`          | No auth boundary expansion; full pre-merge security/API lanes passed.                                         | No scoped gap.                                                                              |
+| Privacy and compliance                        | `4/5`          | No private habit diagnostics/logging added; diff review.                                                      | Supporting category only.                                                                   |
+| Content governance                            | `5/5`          | Route/label/support sweep; support runbook and user-flow docs updated.                                        | No scoped gap.                                                                              |
+| Admin workflow and editability                | `N/A`          | Diff review.                                                                                                  | Scope did not change admin workflow/editability.                                            |
+| SEO and crawlability                          | `N/A`          | Diff review.                                                                                                  | Private authenticated Habits UI only.                                                       |
+| AI discoverability                            | `N/A`          | Diff review.                                                                                                  | Private authenticated Habits UI only.                                                       |
+| Analytics and KPI observability               | `4/5`          | Existing analytics untouched; no event taxonomy added.                                                        | Supporting category only; no new KPI contract needed for this polish slice.                 |
+| Commerce and revenue ops                      | `N/A`          | Diff review.                                                                                                  | No commerce, entitlement, refund, payout, or revenue reporting change.                      |
+| Incident response and support operations      | `5/5`          | Support runbook updated for reset stats, sound troubleshooting, History/archive, and Perfect Day definitions. | No scoped gap.                                                                              |
+| Finance and reporting operations              | `N/A`          | Diff review.                                                                                                  | No finance/reporting surfaces changed.                                                      |
+| i18n operational readiness                    | `5/5`          | Concise copy, cadence-aware strings, future locale mapping requirement in brief.                              | No scoped gap.                                                                              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing components/helpers/audio implementation; no new dependency.                                   | No scoped gap.                                                                              |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `verify:pre-pr`, CI, `verify:pre-merge`, screenshots.                                         | No scoped gap.                                                                              |
+| Scalability and cost efficiency               | `4/5`          | No polling loop, large asset, new provider, or expensive recomputation added.                                 | Supporting category only.                                                                   |
+| DevOps and rollback readiness                 | `5/5`          | PR #1011, normal revert path, green pre-merge, screenshot evidence.                                           | No scoped gap.                                                                              |
