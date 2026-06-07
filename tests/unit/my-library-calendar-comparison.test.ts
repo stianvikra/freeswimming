@@ -5,7 +5,11 @@ import {
   buildMicroSessionsCalendarComparisonSource,
 } from "@/lib/my-library/calendar-comparison";
 import { buildMyLibraryCalendarComparisonWindow } from "@/lib/my-library/calendar";
-import type { HabitCheckInView, HabitDefinitionView } from "@/lib/habits/shared";
+import type {
+  HabitCheckInView,
+  HabitDefinitionView,
+  HabitMotivationResetView,
+} from "@/lib/habits/shared";
 
 function buildHabit(overrides: Partial<HabitDefinitionView> = {}): HabitDefinitionView {
   return {
@@ -55,6 +59,19 @@ function buildCheckIn(overrides: Partial<HabitCheckInView> = {}): HabitCheckInVi
     completedAt: "2026-06-02T08:00:00.000Z",
     createdAt: "2026-06-02T08:00:00.000Z",
     updatedAt: "2026-06-02T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildReset(overrides: Partial<HabitMotivationResetView> = {}): HabitMotivationResetView {
+  return {
+    id: `reset-${overrides.effectiveDate ?? "2026-06-04"}`,
+    habitId: "habit-1",
+    resetType: "reset_stats",
+    status: "active",
+    effectiveDate: "2026-06-04",
+    createdAt: "2026-06-04T08:00:00.000Z",
+    createdBy: "user-1",
     ...overrides,
   };
 }
@@ -113,6 +130,13 @@ describe("my library calendar comparison", () => {
         label: "Tracked days",
         value: "4 days",
       },
+      {
+        id: "habit_reset_markers",
+        label: "Habit resets",
+        value: "0 markers",
+        supportLabel:
+          "Reset stats markers restart motivation stats but are not counted as completed habits, rest days, or slips.",
+      },
     ]);
     expect(source.metrics.find((metric) => metric.id === "habit_perfect_days")).toMatchObject({
       currentLabel: "1 day",
@@ -121,6 +145,42 @@ describe("my library calendar comparison", () => {
     });
     expect(source.metrics.find((metric) => metric.id === "habit_rest_slips")).toMatchObject({
       currentLabel: "1 rest / 0 slips",
+      comparisonLabel: "0 rest / 0 slips",
+    });
+  });
+
+  it("reports Habits reset-stats markers without counting them as completions", () => {
+    const source = buildHabitsCalendarComparisonSource({
+      habits: [buildHabit()],
+      checkIns: [buildCheckIn({ checkInDate: "2026-06-02" })],
+      resetEvents: [
+        buildReset({ effectiveDate: "2026-06-04" }),
+        buildReset({
+          id: "previous-reset",
+          effectiveDate: "2026-05-27",
+          createdAt: "2026-05-27T08:00:00.000Z",
+        }),
+      ],
+      window,
+    });
+
+    expect(source.details?.find((detail) => detail.id === "habit_reset_markers")).toMatchObject({
+      label: "Habit resets",
+      value: "1 marker",
+    });
+    expect(
+      source.metrics.find((metric) => metric.id === "habit_reset_markers_metric")
+    ).toMatchObject({
+      currentLabel: "1 marker",
+      comparisonLabel: "1 marker",
+      deltaLabel: "Markers only",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_on_target_slots")).toMatchObject({
+      currentLabel: "1/5",
+      comparisonLabel: "0/5",
+    });
+    expect(source.metrics.find((metric) => metric.id === "habit_rest_slips")).toMatchObject({
+      currentLabel: "0 rest / 0 slips",
       comparisonLabel: "0 rest / 0 slips",
     });
   });

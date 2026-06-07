@@ -4,6 +4,7 @@ import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionView,
+  buildHabitMotivationResetView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
   getHabitMotivationRangeStartDate,
@@ -11,7 +12,9 @@ import {
   normalizeHabitDate,
   type HabitCheckInRow,
   type HabitDefinitionRow,
+  type HabitMotivationResetRow,
   type HabitMotivationRangeSummaries,
+  type HabitMotivationResetView,
   type HabitSnapshot,
 } from "@/lib/habits/shared";
 import type { Database } from "@/types/database";
@@ -61,6 +64,17 @@ export const HABIT_CHECK_IN_SELECT = `
   completed_at,
   created_at,
   updated_at
+`;
+
+export const HABIT_MOTIVATION_RESET_SELECT = `
+  id,
+  user_id,
+  habit_id,
+  reset_type,
+  status,
+  effective_date,
+  created_by,
+  created_at
 `;
 
 function getWeekStartDate(selectedDate: string) {
@@ -117,11 +131,13 @@ function getHabitCheckInEndDate(selectedDate: string) {
 function buildHabitMotivationSummaries(
   habits: ReturnType<typeof buildHabitDefinitionView>[],
   checkIns: ReturnType<typeof buildHabitCheckInView>[],
-  selectedDate: string
+  selectedDate: string,
+  resetEvents: HabitMotivationResetView[] = []
 ): HabitMotivationRangeSummaries {
   return HABIT_MOTIVATION_RANGE_VALUES.reduce<HabitMotivationRangeSummaries>((summaries, range) => {
     summaries[range] = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
       historyStartDate: getHabitMotivationRangeStartDate(range, selectedDate),
+      resetEvents,
     });
     return summaries;
   }, {});
@@ -133,6 +149,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   const motivationSummaries = buildHabitMotivationSummaries([], [], selectedDate);
   return {
     schemaReady: false,
+    resetEventsReady: false,
     loadError: null,
     selectedDate,
     activeHabits: [],
@@ -211,11 +228,34 @@ export async function loadHabitSnapshot(
   }
 
   const checkIns = ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView);
-  const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate);
-  const motivationSummaries = buildHabitMotivationSummaries(habits, checkIns, selectedDate);
+  const resetResult = await supabase
+    .from("habit_motivation_resets")
+    .select(HABIT_MOTIVATION_RESET_SELECT)
+    .eq("user_id", userId)
+    .lte("effective_date", selectedDate);
+  const resetEventsReady = !isHabitsSchemaMissing(resetResult.error);
+  const resetEvents =
+    resetEventsReady && !resetResult.error
+      ? ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(buildHabitMotivationResetView)
+      : [];
+
+  if (resetResult.error && resetEventsReady) {
+    console.error("[Habits] Could not load habit motivation resets", resetResult.error);
+  }
+
+  const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
+    resetEvents,
+  });
+  const motivationSummaries = buildHabitMotivationSummaries(
+    habits,
+    checkIns,
+    selectedDate,
+    resetEvents
+  );
 
   return {
     schemaReady: true,
+    resetEventsReady,
     loadError: null,
     selectedDate,
     activeHabits,

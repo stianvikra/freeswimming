@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase/route-handler", () => ({
 vi.mock("@/lib/habits/server", () => ({
   HABIT_DEFINITION_SELECT: "habit definition select",
   HABIT_CHECK_IN_SELECT: "habit check-in select",
+  HABIT_MOTIVATION_RESET_SELECT: "habit motivation reset select",
   loadHabitSnapshot: loadHabitSnapshotMock,
 }));
 
@@ -22,6 +23,7 @@ vi.mock("@/lib/analytics/events", () => ({
 }));
 
 import { POST as postHabitCheckIn } from "@/app/api/my-library/habits/check-ins/route";
+import { POST as postHabitResetStats } from "@/app/api/my-library/habits/[habitId]/reset-stats/route";
 import { PATCH as patchHabit } from "@/app/api/my-library/habits/[habitId]/route";
 import { POST as postHabit } from "@/app/api/my-library/habits/route";
 
@@ -216,6 +218,100 @@ describe("habits routes", () => {
     expect(createRouteHandlerSupabaseClientMock).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid reset-stats habit ids before auth work", async () => {
+    const response = await postHabitResetStats(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/not-a-habit-id/reset-stats", {
+        method: "POST",
+      }),
+      {
+        params: Promise.resolve({
+          habitId: "not-a-habit-id",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Invalid habit id.");
+    expect(createRouteHandlerSupabaseClientMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for unauthenticated reset-stats requests", async () => {
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+        },
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitResetStats(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ effectiveDate: "2026-05-10" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+
+    expect(response.status).toBe(401);
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for cross-owner reset-stats requests", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const insert = vi.fn();
+    const from = vi.fn(() => ({ select: habitSelect, insert }));
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitResetStats(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ effectiveDate: "2026-05-10" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(404);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Habit not found.");
+    expect(habitEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(insert).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
   it("fails closed for unauthenticated habit updates", async () => {
     createRouteHandlerSupabaseClientMock.mockResolvedValue({
       supabase: {
@@ -364,6 +460,155 @@ describe("habits routes", () => {
     expect(consoleError).toHaveBeenCalledWith(
       "[HabitsApi] Could not update habit",
       expect.objectContaining({ message: "write failed" })
+    );
+  });
+
+  it("creates owner-scoped reset-stats events without deleting check-ins", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+        status: "active",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const resetSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "99999999-9999-4999-8999-999999999999",
+      },
+      error: null,
+    });
+    const resetSelect = vi.fn(() => ({ single: resetSingle }));
+    const insert = vi.fn(() => ({ select: resetSelect }));
+    const upsert = vi.fn();
+    const from = vi.fn((table: string) =>
+      table === "habit_motivation_resets" ? { insert } : { select: habitSelect, upsert }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitResetStats(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            effectiveDate: "2026-05-10",
+            selectedDate: "2026-05-10",
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(habitEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(habitEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        reset_type: "reset_stats",
+        status: "active",
+        effective_date: "2026-05-10",
+        created_by: "user-1",
+      })
+    );
+    expect(upsert).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_stats_reset_created",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "timed",
+          effectiveDate: "2026-05-10",
+        }),
+      })
+    );
+  });
+
+  it("returns a stable failure-mode response when reset-stats storage fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+        status: "active",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const resetSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: "insert failed" },
+    });
+    const resetSelect = vi.fn(() => ({ single: resetSingle }));
+    const insert = vi.fn(() => ({ select: resetSelect }));
+    const from = vi.fn((table: string) =>
+      table === "habit_motivation_resets" ? { insert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitResetStats(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            effectiveDate: "2026-05-10",
+            selectedDate: "2026-05-10",
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(500);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Could not reset habit stats right now.");
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "[HabitsApi] Could not create habit motivation reset",
+      expect.objectContaining({ message: "insert failed" })
     );
   });
 

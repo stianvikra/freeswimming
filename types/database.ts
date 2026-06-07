@@ -988,6 +988,61 @@ export type Database = {
         };
         Relationships: [];
       };
+      habit_motivation_resets: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          effective_date: string;
+          habit_id: string;
+          id: string;
+          reset_type: string;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          effective_date: string;
+          habit_id: string;
+          id?: string;
+          reset_type?: string;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          effective_date?: string;
+          habit_id?: string;
+          id?: string;
+          reset_type?: string;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "habit_motivation_resets_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "habit_motivation_resets_habit_owner_fkey";
+            columns: ["habit_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "habit_definitions";
+            referencedColumns: ["id", "user_id"];
+          },
+          {
+            foreignKeyName: "habit_motivation_resets_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       guide_progress: {
         Row: {
           completed: boolean;

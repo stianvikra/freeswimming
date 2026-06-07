@@ -5,11 +5,14 @@ import {
   buildHabitDaySummary,
   buildHabitDefinitionInsert,
   buildHabitDefinitionView,
+  buildHabitMotivationResetInsert,
+  buildHabitMotivationResetView,
   buildHabitMotivationSummary,
   buildHabitWeekSummary,
   getHabitMotivationRangeStartDate,
   type HabitCheckInRow,
   type HabitDefinitionRow,
+  type HabitMotivationResetRow,
 } from "@/lib/habits/shared";
 
 function buildHabitRow(overrides: Partial<HabitDefinitionRow>): HabitDefinitionRow {
@@ -59,6 +62,20 @@ function buildCheckInRow(overrides: Partial<HabitCheckInRow>): HabitCheckInRow {
     updated_at: "2026-05-10T09:00:00.000Z",
     timer_seconds: 0,
     manual_minutes: 0,
+    ...overrides,
+  };
+}
+
+function buildResetRow(overrides: Partial<HabitMotivationResetRow>): HabitMotivationResetRow {
+  return {
+    id: "99999999-9999-4999-8999-999999999999",
+    user_id: "user-1",
+    habit_id: "11111111-1111-4111-8111-111111111111",
+    reset_type: "reset_stats",
+    status: "active",
+    effective_date: "2026-05-05",
+    created_by: "user-1",
+    created_at: "2026-05-05T08:00:00.000Z",
     ...overrides,
   };
 }
@@ -323,6 +340,123 @@ describe("habits domain helpers", () => {
     expect(month.eligibleDayCount).toBe(30);
     expect(month.onTrackDayCount).toBe(2);
     expect(month.currentStreakDays).toBe(2);
+  });
+
+  it("restarts motivation stats from the latest active reset-stats boundary", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "Read",
+        start_date: "2026-05-01",
+      })
+    );
+    const checkIns = ["2026-05-01", "2026-05-02", "2026-05-03", "2026-05-05", "2026-05-06"].map(
+      (date, index) =>
+        buildHabitCheckInView(
+          buildCheckInRow({
+            id: `reset-done-${index}`,
+            habit_id: habit.id,
+            check_in_date: date,
+          })
+        )
+    );
+    const resetEvents = [
+      buildHabitMotivationResetView(
+        buildResetRow({
+          id: "88888888-8888-4888-8888-888888888888",
+          effective_date: "2026-05-03",
+          created_at: "2026-05-03T08:00:00.000Z",
+        })
+      ),
+      buildHabitMotivationResetView(
+        buildResetRow({
+          effective_date: "2026-05-05",
+          created_at: "2026-05-05T08:00:00.000Z",
+        })
+      ),
+      buildHabitMotivationResetView(
+        buildResetRow({
+          id: "77777777-7777-4777-8777-777777777777",
+          status: "voided",
+          effective_date: "2026-05-06",
+          created_at: "2026-05-06T08:00:00.000Z",
+        })
+      ),
+    ];
+
+    const summary = buildHabitMotivationSummary([habit], checkIns, "2026-05-07", {
+      resetEvents,
+    });
+    const item = summary.items[0];
+
+    expect(summary.eligibleDayCount).toBe(3);
+    expect(summary.onTrackDayCount).toBe(2);
+    expect(summary.currentStreakDays).toBe(2);
+    expect(summary.bestStreakDays).toBe(2);
+    expect(item).toMatchObject({
+      motivationStartDate: "2026-05-05",
+      eligibleDayCount: 3,
+      onTrackDayCount: 2,
+      currentStreakDays: 2,
+      bestStreakDays: 2,
+    });
+    expect(item?.resetBoundary).toMatchObject({
+      effectiveDate: "2026-05-05",
+    });
+    expect(item?.beforeResetSummary).toMatchObject({
+      historyStartDate: "2026-05-01",
+      historyEndDate: "2026-05-04",
+      savedCheckInCount: 3,
+      lastTrackedDate: "2026-05-03",
+    });
+  });
+
+  it("builds owner-bound reset-stats reset inserts with date guards", () => {
+    const habit = buildHabitDefinitionView(
+      buildHabitRow({
+        start_date: "2026-05-04",
+      })
+    );
+
+    expect(
+      buildHabitMotivationResetInsert(
+        "user-1",
+        habit,
+        { effectiveDate: "2026-05-10" },
+        "2026-05-10"
+      )
+    ).toMatchObject({
+      user_id: "user-1",
+      habit_id: habit.id,
+      reset_type: "reset_stats",
+      status: "active",
+      effective_date: "2026-05-10",
+      created_by: "user-1",
+    });
+
+    expect(() =>
+      buildHabitMotivationResetInsert(
+        "user-1",
+        { ...habit, status: "archived" },
+        { effectiveDate: "2026-05-10" },
+        "2026-05-10"
+      )
+    ).toThrow("Reset stats is only available for active habits.");
+    expect(() =>
+      buildHabitMotivationResetInsert(
+        "user-1",
+        habit,
+        { effectiveDate: "2026-05-11" },
+        "2026-05-10"
+      )
+    ).toThrow("Choose today or an earlier reset date.");
+    expect(() =>
+      buildHabitMotivationResetInsert(
+        "user-1",
+        habit,
+        { effectiveDate: "2026-05-03" },
+        "2026-05-10"
+      )
+    ).toThrow("Choose a reset date on or after the habit start date.");
   });
 
   it("counts quit slips and archived habit history without active mutations", () => {

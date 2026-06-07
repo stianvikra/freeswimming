@@ -14,7 +14,7 @@
 - `execution_mode`: `end-to-end after owner said "kjor Habits Micro Sessions polish"; pause after screenshot/sound handoff before pre-PR gate because UI/UX changed`
 - `target_findings`: owner-selected post-Child J correction for Habits sound quality, Micro Sessions bubble completion sound, Habits Motivation `Stats` disclosure removal, screenshot-review polish for Habits date/status/details plus Micro Sessions Bubble actions, and final Motivation disclosure/data-confidence/admin-note spacing corrections.
 - `planned_resolved_findings`: Habits completion sound quality, Micro Sessions bubble completion sound, always-open top-level Habits Motivation stats, `0 days` zero-value streaks, numeric perfect-day/consistency stats with explicit early-data copy, calmer Habits date context, controlled one-open Motivation disclosures, lower-emphasis `What counts?`, direct Bubble-mode `Edit` / `Clear` actions, and tighter Habits contextual Admin notes spacing.
-- `deferred_findings`: Child K `Start fresh`, reset events, database/API changes, Calendar reset markers, reminders, notifications, server-stored preferences, user-selected/uploaded sounds, global app sound settings, graph/dashboard redesign, Micro Sessions Perfect Day linkage, optional `Create habit from micro session`, habit edit/delete CRUD beyond existing Today edit/archive, stats/progress redesign, and Micro Sessions persistent timer telemetry remain out of scope.
+- `deferred_findings`: Child K `Reset these habit stats`, reset events, database/API changes, Calendar reset markers, reminders, notifications, server-stored preferences, user-selected/uploaded sounds, global app sound settings, graph/dashboard redesign, Micro Sessions Perfect Day linkage, optional `Create habit from micro session`, habit edit/delete CRUD beyond existing Today edit/archive, stats/progress redesign, and Micro Sessions persistent timer telemetry remain out of scope.
 - `return_checkpoint`: update Habits parent, AW-006 queue, design inventory, user-flow map, and support runbook before closeout.
 - `next_return_target`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 
@@ -37,7 +37,7 @@ Vi bytter den irriterende Habits-lyden med en rolig, kort mestringslyd, legger t
 
 Hvorfor det betyr noe: lyd skal gi tydelig, premium feedback uten aa irritere, og Motivation skal vaere rask aa lese uten ekstra trykk.
 
-Utenfor scope er `Start fresh`, reset-historikk, database/API-endringer, Calendar reset-markorer, reminders, notifications, globale lydinnstillinger, opplastede lyder og dashboard/graf-redesign.
+Utenfor scope er `Reset these habit stats`, reset-historikk, database/API-endringer, Calendar reset-markorer, reminders, notifications, globale lydinnstillinger, opplastede lyder og dashboard/graf-redesign.
 
 Fremoverkompatibilitet: nye lydhendelser maa mappes eksplisitt til en navngitt lydprofil med tester. Ukjente handlinger, skip/rest/slip/reset/undo, feil, page load og hydration skal ikke spille lyd.
 
@@ -90,7 +90,7 @@ Owner screenshot-review correction: Habits date/status/details should read like 
 
 ## Out Of Scope
 
-- `Start fresh`, per-habit reset events, reset markers, reset history, `Before reset` history UI, multi-reset comparison behavior, or Child K implementation.
+- `Reset these habit stats`, per-habit reset events, reset markers, reset history, `Before reset` history UI, multi-reset comparison behavior, or Child K implementation.
 - Supabase migrations, RLS, generated database types, or new API routes.
 - Calendar Comparison behavior or metrics.
 - Reminder notifications, browser Notification API, push notifications, native app sounds, or haptics.

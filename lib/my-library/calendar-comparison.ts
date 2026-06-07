@@ -1,15 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
-import { HABIT_CHECK_IN_SELECT, HABIT_DEFINITION_SELECT } from "@/lib/habits/server";
+import {
+  HABIT_CHECK_IN_SELECT,
+  HABIT_DEFINITION_SELECT,
+  HABIT_MOTIVATION_RESET_SELECT,
+} from "@/lib/habits/server";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionView,
+  buildHabitMotivationResetView,
   type HabitCheckInRow,
   type HabitCheckInView,
   type HabitDefinitionRow,
   type HabitDefinitionView,
+  type HabitMotivationResetRow,
+  type HabitMotivationResetView,
 } from "@/lib/habits/shared";
 import {
   buildMyLibraryCalendarComparisonWindow,
@@ -239,12 +246,14 @@ type HabitRangeStats = {
   countTotal: number;
   restDays: number;
   slips: number;
+  resetMarkers: number;
   checkInCount: number;
 };
 
 function buildHabitRangeStats(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
+  resetEvents: HabitMotivationResetView[],
   range: MyLibraryCalendarPeriodRange
 ): HabitRangeStats {
   const activeHabits = habits.filter((habit) => habit.status === "active");
@@ -259,6 +268,12 @@ function buildHabitRangeStats(
   );
   const daysWithHabits = daySummaries.filter((day) => day.perfectDayItemCount > 0);
   const rangeCheckIns = checkIns.filter((checkIn) => isDateInRange(checkIn.checkInDate, range));
+  const resetMarkers = resetEvents.filter(
+    (reset) =>
+      reset.resetType === "reset_stats" &&
+      reset.status === "active" &&
+      isDateInRange(reset.effectiveDate, range)
+  ).length;
   const slips = rangeCheckIns.filter((checkIn) => {
     const habit = habitById.get(checkIn.habitId);
     return habit?.habitMode === "quit" && checkIn.valueBoolean === false;
@@ -284,6 +299,7 @@ function buildHabitRangeStats(
     countTotal: daySummaries.reduce((total, day) => total + day.completedCountTotal, 0),
     restDays: rangeCheckIns.filter((checkIn) => checkIn.status === "skipped").length,
     slips,
+    resetMarkers,
     checkInCount: rangeCheckIns.length,
   };
 }
@@ -291,21 +307,25 @@ function buildHabitRangeStats(
 export function buildHabitsCalendarComparisonSource({
   habits,
   checkIns,
+  resetEvents = [],
   window,
 }: {
   habits: HabitDefinitionView[];
   checkIns: HabitCheckInView[];
+  resetEvents?: HabitMotivationResetView[];
   window: MyLibraryCalendarComparisonWindow;
 }): MyLibraryCalendarSourceComparison {
-  const current = buildHabitRangeStats(habits, checkIns, window.current);
-  const comparison = buildHabitRangeStats(habits, checkIns, window.comparison);
+  const current = buildHabitRangeStats(habits, checkIns, resetEvents, window.current);
+  const comparison = buildHabitRangeStats(habits, checkIns, resetEvents, window.comparison);
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const includedHabits = activeHabits.filter((habit) => habit.isPerfectDayItem);
   const hasData =
     current.scheduledHabitSlots +
       comparison.scheduledHabitSlots +
       current.checkInCount +
-      comparison.checkInCount >
+      comparison.checkInCount +
+      current.resetMarkers +
+      comparison.resetMarkers >
     0;
   const completionDelta = formatPercentDelta(
     current.averageCompletionPercent,
@@ -340,6 +360,13 @@ export function buildHabitsCalendarComparisonSource({
         id: "tracked_days",
         label: "Tracked days",
         value: pluralize(current.daysWithHabits, "day"),
+      },
+      {
+        id: "habit_reset_markers",
+        label: "Habit resets",
+        value: pluralize(current.resetMarkers, "marker"),
+        supportLabel:
+          "Reset stats markers restart motivation stats but are not counted as completed habits, rest days, or slips.",
       },
     ],
     metrics: [
@@ -387,6 +414,14 @@ export function buildHabitsCalendarComparisonSource({
         currentLabel: `${current.restDays} rest / ${current.slips} slips`,
         comparisonLabel: `${comparison.restDays} rest / ${comparison.slips} slips`,
         deltaLabel: "Reported only",
+        tone: "neutral",
+      },
+      {
+        id: "habit_reset_markers_metric",
+        label: "Habit resets",
+        currentLabel: pluralize(current.resetMarkers, "marker"),
+        comparisonLabel: pluralize(comparison.resetMarkers, "marker"),
+        deltaLabel: "Markers only",
         tone: "neutral",
       },
     ],
@@ -621,40 +656,49 @@ export async function loadMyLibraryCalendarComparison(
   const loadDryland = shouldLoadSource(options.selectedSource, "dryland");
   const loadMicroSessions = shouldLoadSource(options.selectedSource, "micro_sessions");
 
-  const [habitResult, checkInResult, drylandResult, microPlanResult] = await Promise.all([
-    loadHabits
-      ? supabase
-          .from("habit_definitions")
-          .select(HABIT_DEFINITION_SELECT)
-          .eq("user_id", userId)
-          .order("sort_order", { ascending: true })
-          .order("updated_at", { ascending: false })
-      : Promise.resolve({ data: null, error: null }),
-    loadHabits
-      ? supabase
-          .from("habit_check_ins")
-          .select(HABIT_CHECK_IN_SELECT)
-          .eq("user_id", userId)
-          .gte("check_in_date", rangeStart)
-          .lte("check_in_date", rangeEnd)
-      : Promise.resolve({ data: null, error: null }),
-    loadDryland
-      ? supabase
-          .from("dryland_sessions")
-          .select("status, completed_at, actual_duration_seconds")
-          .eq("user_id", userId)
-          .gte("completed_at", dateToIsoStart(rangeStart))
-          .lte("completed_at", dateToIsoEnd(rangeEnd))
-      : Promise.resolve({ data: null, error: null }),
-    loadMicroSessions
-      ? supabase
-          .from("dryland_micro_plans")
-          .select("blocks, week_starts_at, week_ends_at")
-          .eq("user_id", userId)
-          .lte("week_starts_at", rangeEnd)
-          .gte("week_ends_at", rangeStart)
-      : Promise.resolve({ data: null, error: null }),
-  ]);
+  const [habitResult, checkInResult, resetResult, drylandResult, microPlanResult] =
+    await Promise.all([
+      loadHabits
+        ? supabase
+            .from("habit_definitions")
+            .select(HABIT_DEFINITION_SELECT)
+            .eq("user_id", userId)
+            .order("sort_order", { ascending: true })
+            .order("updated_at", { ascending: false })
+        : Promise.resolve({ data: null, error: null }),
+      loadHabits
+        ? supabase
+            .from("habit_check_ins")
+            .select(HABIT_CHECK_IN_SELECT)
+            .eq("user_id", userId)
+            .gte("check_in_date", rangeStart)
+            .lte("check_in_date", rangeEnd)
+        : Promise.resolve({ data: null, error: null }),
+      loadHabits
+        ? supabase
+            .from("habit_motivation_resets")
+            .select(HABIT_MOTIVATION_RESET_SELECT)
+            .eq("user_id", userId)
+            .gte("effective_date", rangeStart)
+            .lte("effective_date", rangeEnd)
+        : Promise.resolve({ data: null, error: null }),
+      loadDryland
+        ? supabase
+            .from("dryland_sessions")
+            .select("status, completed_at, actual_duration_seconds")
+            .eq("user_id", userId)
+            .gte("completed_at", dateToIsoStart(rangeStart))
+            .lte("completed_at", dateToIsoEnd(rangeEnd))
+        : Promise.resolve({ data: null, error: null }),
+      loadMicroSessions
+        ? supabase
+            .from("dryland_micro_plans")
+            .select("blocks, week_starts_at, week_ends_at")
+            .eq("user_id", userId)
+            .lte("week_starts_at", rangeEnd)
+            .gte("week_ends_at", rangeStart)
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
   let habits: MyLibraryCalendarSourceComparison | null = null;
   if (loadHabits) {
@@ -681,9 +725,20 @@ export async function loadMyLibraryCalendarComparison(
         metrics: [],
       };
     } else {
+      const resetEventsReady = !isHabitsSchemaMissing(resetResult.error);
+      if (resetResult.error && resetEventsReady) {
+        console.error("[MyLibraryCalendar] Could not load Habits reset markers", resetResult.error);
+      }
+
       habits = buildHabitsCalendarComparisonSource({
         habits: ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView),
         checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView),
+        resetEvents:
+          resetEventsReady && !resetResult.error
+            ? ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(
+                buildHabitMotivationResetView
+              )
+            : [],
         window,
       });
     }

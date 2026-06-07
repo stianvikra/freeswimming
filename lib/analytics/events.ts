@@ -32,6 +32,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "habit_updated",
   "habit_check_in_logged",
   "habit_check_in_reset",
+  "habit_stats_reset_created",
   "habit_lapse_logged",
   "habit_rest_day_logged",
   "habit_timer_saved",
