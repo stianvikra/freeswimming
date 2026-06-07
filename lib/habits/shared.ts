@@ -1249,8 +1249,8 @@ function getDailyBuildMotivation(
     valueLabel:
       currentStreak >= 5
         ? formatStreakCount(currentStreak)
-        : `${onTrackDays}/${trackedDays} days hit`,
-    supportingLabel: currentStreak >= 5 ? `${onTrackDays}/${trackedDays} days hit` : null,
+        : `${onTrackDays}/${trackedDays} days completed`,
+    supportingLabel: currentStreak >= 5 ? `${onTrackDays}/${trackedDays} days completed` : null,
     progressRatio: Math.max(0, Math.min(1, onTrackDays / trackedDays)),
   };
 }
@@ -1353,9 +1353,7 @@ export function evaluateHabitForDate(
       : null;
     return {
       isSatisfied: false,
-      valueLabel: isRestDayCheckIn(checkIn)
-        ? "Rest day"
-        : (motivation?.valueLabel ?? "No check-in"),
+      valueLabel: isRestDayCheckIn(checkIn) ? "Rest day" : (motivation?.valueLabel ?? "Open"),
       stateLabel: isRestDayCheckIn(checkIn) ? "Rest day" : "Open",
       supportingLabel: isRestDayCheckIn(checkIn)
         ? "Not counted as done or missed"
@@ -1550,6 +1548,19 @@ function compareHabitDayItems(left: HabitDayItem, right: HabitDayItem): number {
   return left.habit.updatedAt < right.habit.updatedAt ? 1 : -1;
 }
 
+function countsTowardPerfectDay(item: HabitDayItem, date: string): boolean {
+  if (!item.habit.isPerfectDayItem) return false;
+  if (item.checkIn?.status === "skipped") return false;
+
+  if (item.habit.cadenceDayPolicy !== "any" || item.habit.cadencePeriod === "daily") {
+    return item.isScheduledForDate;
+  }
+
+  if (item.checkIn !== null) return true;
+  if (item.cadenceProgress.isTargetMet) return false;
+  return date === item.cadenceProgress.periodEnd;
+}
+
 export function buildHabitDaySummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
@@ -1578,10 +1589,7 @@ export function buildHabitDaySummary(
       };
     })
     .sort(compareHabitDayItems);
-  const perfectDayItems = items.filter(
-    (item) =>
-      item.isScheduledForDate && item.habit.isPerfectDayItem && item.checkIn?.status !== "skipped"
-  );
+  const perfectDayItems = items.filter((item) => countsTowardPerfectDay(item, date));
   const satisfiedPerfectDayItemCount = perfectDayItems.filter(
     (item) => item.evaluation.isSatisfied
   ).length;
@@ -1851,6 +1859,69 @@ function buildPerfectDayMotivationStats(
   };
 }
 
+function buildAnyCadencePeriodMotivationStats(
+  habit: HabitDefinitionView,
+  metricCheckIns: HabitCheckInView[],
+  metricStartDate: string,
+  historyEndDate: string
+) {
+  const periods: Array<{ periodStart: string; periodEnd: string }> = [];
+  let cursor = metricStartDate;
+  let guard = 0;
+
+  while (cursor <= historyEndDate && guard < 500) {
+    const cadenceWindow = getHabitCadenceWindow(habit, cursor);
+    const periodStart =
+      cadenceWindow.periodStart < metricStartDate ? metricStartDate : cadenceWindow.periodStart;
+    periods.push({ periodStart, periodEnd: cadenceWindow.periodEnd });
+    cursor = addUtcDays(cadenceWindow.periodEnd, 1);
+    guard += 1;
+  }
+
+  let eligibleDayCount = 0;
+  let onTrackDayCount = 0;
+  let currentStreakDays = 0;
+  let bestStreakDays = 0;
+  let runningStreakDays = 0;
+  const eligiblePeriods: Array<{ isTargetMet: boolean }> = [];
+
+  for (const period of periods) {
+    const completedCount = countCadenceCompletions(
+      habit,
+      metricCheckIns,
+      period.periodStart,
+      period.periodEnd
+    );
+    const isTargetMet = completedCount >= habit.cadenceTargetCount;
+    const isClosedPeriod = period.periodEnd <= historyEndDate;
+    if (!isTargetMet && !isClosedPeriod) continue;
+
+    eligibleDayCount += 1;
+    eligiblePeriods.push({ isTargetMet });
+    if (isTargetMet) {
+      onTrackDayCount += 1;
+      runningStreakDays += 1;
+      bestStreakDays = Math.max(bestStreakDays, runningStreakDays);
+    } else {
+      runningStreakDays = 0;
+    }
+  }
+
+  for (let index = eligiblePeriods.length - 1; index >= 0; index -= 1) {
+    if (!eligiblePeriods[index]?.isTargetMet) break;
+    currentStreakDays += 1;
+  }
+
+  return {
+    eligibleDayCount,
+    onTrackDayCount,
+    currentStreakDays,
+    bestStreakDays,
+    consistencyPercent:
+      eligibleDayCount > 0 ? Math.round((onTrackDayCount / eligibleDayCount) * 100) : null,
+  };
+}
+
 function buildNonQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
@@ -1879,6 +1950,41 @@ function buildNonQuitMotivationItem(
     if (checkIn.note) noteCount += 1;
     totalTimedMinutes += getLoggedTimedMinutes(habit, checkIn);
     totalCount += getLoggedCountTotal(habit, checkIn);
+  }
+
+  if (habit.cadenceDayPolicy === "any" && habit.cadencePeriod !== "daily") {
+    restDayCount = metricCheckIns.filter(isRestDayCheckIn).length;
+    const periodStats = buildAnyCadencePeriodMotivationStats(
+      habit,
+      metricCheckIns,
+      metricStartDate,
+      historyEndDate
+    );
+    const habitScore = buildHabitScore(periodStats);
+
+    return {
+      habitId: habit.id,
+      title: habit.title,
+      status: habit.status,
+      mode: habit.habitMode,
+      startDate: habit.startDate,
+      motivationStartDate: metricStartDate,
+      resetBoundary,
+      resetBoundaries,
+      beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
+      lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? null,
+      eligibleDayCount: periodStats.eligibleDayCount,
+      onTrackDayCount: periodStats.onTrackDayCount,
+      restDayCount,
+      slipCount: 0,
+      noteCount,
+      currentStreakDays: periodStats.currentStreakDays,
+      bestStreakDays: periodStats.bestStreakDays,
+      consistencyPercent: periodStats.consistencyPercent,
+      habitScore,
+      totalTimedMinutes,
+      totalCount,
+    };
   }
 
   for (let index = 0; index <= totalDays; index += 1) {

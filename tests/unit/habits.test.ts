@@ -261,7 +261,7 @@ describe("habits domain helpers", () => {
 
     expect(summary.items[0]?.evaluation.stateLabel).toBe("Open");
     expect(summary.items[0]?.evaluation.valueLabel).toBe("6-day streak");
-    expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days hit");
+    expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days completed");
   });
 
   it("builds advanced motivation history with perfect-day streaks and rest days", () => {
