@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-07-aw-006-habits-lifecycle-crud-history-safety-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-07`
 - `updated`: `2026-06-07`
@@ -11,7 +11,7 @@
 - `parent_brief`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `owner said kjor; implementation active on branch aw-006-habits-lifecycle-crud-history-safety`
+- `execution_mode`: `merged in PR #1013; closeout moved to done`
 - `target_findings`: `H-047`
 - `planned_resolved_findings`: Broader habit edit/end/history/restore lifecycle rules plus explicit hard-delete deferral.
 - `deferred_findings`: `H-028` midnight auto-complete, `H-046` Micro Sessions/Habits linkage, hard delete/permanent habit deletion, reminders, notification APIs, server/global sound preferences, user-selected sounds, exports, broad graphs/dashboard work, persistent Micro Sessions timer telemetry, and global calendar storage remain out of scope.
@@ -340,3 +340,32 @@ Required for future implementation:
 - `2026-06-07 | in-progress | owner approved screenshot handoff and requested one label correction: use the Past habits wording instead of the old History wording for the End habit action; owner explicitly waived refreshed screenshots for this label-only follow-up | next: update UI/docs/tests label, run targeted validation, then npm run verify:pre-pr`
 - `2026-06-07 | pre-pr-ready | completed owner-requested label correction to End habit and move to Past habits across UI, tests, user-flow, and support docs; route/label sweep confirms no old user-facing History wording remains and no Pause/Resume wording was introduced | validation: ./node_modules/.bin/vitest run tests/unit/habits.test.ts tests/unit/habits-routes.test.ts tests/unit/habit-perfect-day-hub.test.tsx PASS; npm run typecheck PASS; npm run lint:briefs:all PASS; git diff --check PASS | next: run npm run verify:pre-pr`
 - `2026-06-07 | pre-pr-pass | npm run verify:pre-pr PASS full lane on branch current with origin/main; validation included quality gates, eslint with one existing warning in ignored output capture helper, typecheck, 1415 unit tests, production build, performance budgets with hold recommendation, and Playwright 106 passed / 530 skipped where local auth-backed coverage skipped due the known Supabase/dev-login egress stub | evidence: artifacts/test-runs/20260607-223512/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-06-07 | done | PR #1013 merged as squash commit af92ec9a after CI PASS and npm run verify:pre-merge PASS; repo-managed closeout moved this brief to done and updated parent queue/inventory references | next: rerun post-merge preflight after closeout merge`
+
+## Completion Record
+
+- `completed`: `2026-06-07`
+- `merged_pr`: `#1013`
+- `squash_commit`: `af92ec9a`
+- `result`: Closed AW-006 Habits Lifecycle CRUD And History Safety with non-destructive edit/end/history/restore, owner-scoped restore, active-limit guardrails, reset/history preservation, support docs, and hard-delete deferral.
+- `validation`: Targeted Vitest PASS; `npm run verify:pre-pr` PASS full lane; PR `#1013` CI PASS; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260607-205638.json`.
+- `screenshot_handoff`: [Screenshot artifacts](/Users/stianvikra/freeswimming/output/aw-006-habits-lifecycle-crud-history-safety-2026-06-07-220044), captured `2026-06-07 22:15`; owner approved and explicitly waived refreshed screenshots for the later label-only `Past habits` correction.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1013`, route/label/support sweep, user-flow docs                                                           | None         |
+| UX flow clarity                               | `5/5`          | Confirmed End/Restore dialogs, Past habits label, screenshot handoff                                            | None         |
+| Visual design quality                         | `5/5`          | Screenshot handoff approved; no refreshed screenshots after owner-waived label-only change                      | None         |
+| Business logic correctness and data integrity | `5/5`          | Targeted route/domain tests for unsupported status, same-ID restore, active-limit guard, and cross-owner denial | None         |
+| Accessibility (a11y)                          | `5/5`          | Alertdialog semantics, status feedback, targeted component tests, full verification gates                       | None         |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical `habit_definitions.status`; no check-in/reset mutation on archive/restore                      | None         |
+| Caching and invalidation strategy             | `5/5`          | Existing Today/Habits refresh path preserved; no new cache surface                                              | None         |
+| Reliability and failure handling              | `5/5`          | Controlled restore failures, schema-missing safe response, no unexpected success-path `500`                     | None         |
+| Security and authz                            | `5/5`          | Owner-scoped restore pre-check and cross-owner denial tests                                                     | None         |
+| Privacy and compliance                        | `5/5`          | Support docs use privacy-safe lifecycle diagnostics; no new secrets or exports                                  | None         |
+| Incident response and support operations      | `5/5`          | `docs/runbooks/auth-account-support.md` updated for end/restore diagnostics                                     | None         |
+| i18n operational readiness                    | `5/5`          | Labels centralized in scoped UI/docs with explicit future mapping requirement                                   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Existing React/API/Supabase contracts reused; no new dependency                                                 | None         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, CI, and `verify:pre-merge` all PASS                                      | None         |
+| DevOps and rollback readiness                 | `5/5`          | PR `#1013` clean merge, branch current gates, no migration rollback needed                                      | None         |
