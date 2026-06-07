@@ -102,7 +102,7 @@ type TimerState = {
 
 type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
 type HabitFeedbackAnnouncement = "polite" | "assertive" | "none";
-type MotivationPanel = "definitions" | "history";
+type MotivationPanel = "definitions";
 
 type HabitFeedbackProps = {
   tone: HabitFeedbackTone;
@@ -503,10 +503,6 @@ function formatMetricDays(value: number) {
 
 function formatMetricPercent(value: number | null) {
   return `${value ?? 0}%`;
-}
-
-function formatMetricNumber(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
 }
 
 function formatPerfectDayCount(summary: HabitMotivationSummary) {
@@ -1127,6 +1123,7 @@ export default function HabitPerfectDayHub({
   const [isMobileWeekOpen, setIsMobileWeekOpen] = useState(false);
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
   const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
+  const [confirmResetStatsHabitId, setConfirmResetStatsHabitId] = useState<string | null>(null);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -1219,6 +1216,7 @@ export default function HabitPerfectDayHub({
     setIsAddHabitOpen(false);
     setEditingHabitId(null);
     setEditDraft(null);
+    setConfirmResetStatsHabitId(null);
     setRecentlyCreatedHabitId(null);
     setNotice(null);
   }, [initialSnapshot]);
@@ -1576,10 +1574,14 @@ export default function HabitPerfectDayHub({
     setExpandedHabitIds((current) =>
       current.includes(habitId) ? current.filter((id) => id !== habitId) : [...current, habitId]
     );
+    if (expandedHabitIds.includes(habitId)) {
+      setConfirmResetStatsHabitId((current) => (current === habitId ? null : current));
+    }
   }
 
   function collapseHabitDetails(habitId: string) {
     setExpandedHabitIds((current) => current.filter((id) => id !== habitId));
+    setConfirmResetStatsHabitId((current) => (current === habitId ? null : current));
   }
 
   async function applyResponse(response: Response, fallback: string) {
@@ -1943,6 +1945,30 @@ export default function HabitPerfectDayHub({
       setError(
         caught instanceof Error ? caught.message : "Could not reset that check-in right now."
       );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function resetHabitStats(item: HabitDayItem) {
+    const habit = item.habit;
+    setPendingKey(`reset-stats-${habit.id}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/my-library/habits/${habit.id}/reset-stats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          effectiveDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
+        }),
+      });
+      await applyResponse(response, "Could not reset habit stats right now.");
+      setConfirmResetStatsHabitId(null);
+      setNotice("Habit stats reset. Earlier check-ins stayed saved.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not reset habit stats right now.");
     } finally {
       setPendingKey(null);
     }
@@ -2447,8 +2473,6 @@ export default function HabitPerfectDayHub({
   function renderHabitMotivationDetails(item: HabitMotivationItem | undefined) {
     if (!item) return null;
 
-    const trackedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} days hit`;
-
     return (
       <div
         data-testid={`habit-progress-details-${item.habitId}`}
@@ -2456,9 +2480,15 @@ export default function HabitPerfectDayHub({
       >
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
           <p className={habitLabelClass}>Progress</p>
-          <span className={habitChipClass}>{trackedLabel}</span>
+          <div className="flex flex-wrap justify-end gap-2">
+            {item.resetBoundary ? (
+              <span className={habitBrandChipClass}>
+                Since {getLongDateLabel(item.resetBoundary.effectiveDate)}
+              </span>
+            ) : null}
+          </div>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {renderCompactMotivationMetric(
             "Current streak",
             formatMetricDays(item.currentStreakDays)
@@ -2468,7 +2498,24 @@ export default function HabitPerfectDayHub({
             "Consistency",
             formatMetricPercent(item.consistencyPercent)
           )}
+          {renderCompactMotivationMetric(
+            "Days hit",
+            `${item.onTrackDayCount}/${item.eligibleDayCount}`
+          )}
         </div>
+        {item.resetBoundary ? (
+          <p className="mt-3 text-sm text-slate-500">
+            Last stats restart {getLongDateLabel(item.resetBoundary.effectiveDate)}. For complete
+            history, visit{" "}
+            <Link
+              href={analysisHref}
+              className="font-semibold text-[color:var(--fs-color-brand-700)] underline-offset-2 hover:underline"
+            >
+              Calendar Comparison
+            </Link>
+            .
+          </p>
+        ) : null}
         {item.lastTrackedDate ? (
           <p className="mt-3 text-sm text-slate-500">
             Last tracked {getLongDateLabel(item.lastTrackedDate)}
@@ -2582,14 +2629,9 @@ export default function HabitPerfectDayHub({
     const summary = selectedMotivationSummary;
     if (!summary) return null;
 
-    const archivedItems = summary.items.filter((item) => item.status === "archived").slice(0, 2);
-    const hiddenArchivedCount = Math.max(
-      0,
-      summary.items.filter((item) => item.status === "archived").length - archivedItems.length
-    );
+    const archivedItems = summary.items.filter((item) => item.status === "archived");
     const motivationDataQuality = getMotivationDataQuality(summary);
     const isDefinitionsPanelOpen = openMotivationPanel === "definitions";
-    const isHistoryPanelOpen = openMotivationPanel === "history";
 
     return (
       <section
@@ -2672,8 +2714,13 @@ export default function HabitPerfectDayHub({
             </p>
           ) : null}
 
+          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 border-t border-[color:var(--fs-border-soft)] pt-3">
+            {renderHistoryMetric("Rest days", String(summary.restDayCount))}
+            {renderHistoryMetric("Slips", String(summary.slipCount))}
+          </div>
+
           <div className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-3">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
                 data-testid="habits-motivation-definitions"
@@ -2697,32 +2744,6 @@ export default function HabitPerfectDayHub({
                   className={cx(
                     "h-4 w-4 transition-transform",
                     isDefinitionsPanelOpen ? "rotate-180" : ""
-                  )}
-                  aria-hidden="true"
-                />
-              </button>
-
-              <button
-                type="button"
-                data-testid="habits-more-history"
-                aria-expanded={isHistoryPanelOpen}
-                aria-controls="habits-more-history-panel"
-                onClick={() =>
-                  setOpenMotivationPanel((current) => (current === "history" ? null : "history"))
-                }
-                className={cx(
-                  habitSecondaryActionClass,
-                  "h-11 w-full px-3 text-center",
-                  isHistoryPanelOpen
-                    ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
-                    : ""
-                )}
-              >
-                <span>More history</span>
-                <ChevronDown
-                  className={cx(
-                    "h-4 w-4 transition-transform",
-                    isHistoryPanelOpen ? "rotate-180" : ""
                   )}
                   aria-hidden="true"
                 />
@@ -2751,6 +2772,11 @@ export default function HabitPerfectDayHub({
                   percent of days in this range that were perfect days.
                 </p>
                 <p>
+                  <strong className="font-semibold text-slate-800">Reset stats</strong> restarts
+                  motivation stats from a selected date. Earlier check-ins stay saved and can still
+                  be reviewed in Calendar Comparison.
+                </p>
+                <p>
                   <strong className="font-semibold text-slate-800">Early data</strong> means this
                   period has fewer than {MOTIVATION_EARLY_DATA_ELIGIBLE_DAY_THRESHOLD} days that
                   could count toward Perfect Days. The numbers are a first signal.
@@ -2765,6 +2791,11 @@ export default function HabitPerfectDayHub({
                   the day.
                 </p>
                 <p>
+                  <strong className="font-semibold text-slate-800">Slips</strong> are logged misses
+                  for Quit habits. They stay in history and do not delete progress before or after
+                  the slip.
+                </p>
+                <p>
                   <strong className="font-semibold text-slate-800">Micro Sessions</strong> are
                   tracked separately and do not count toward Perfect Days. Make a separate habit to
                   track it as a habit.
@@ -2772,35 +2803,16 @@ export default function HabitPerfectDayHub({
               </div>
             ) : null}
 
-            {isHistoryPanelOpen ? (
-              <div id="habits-more-history-panel" className="mt-4">
-                <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-5">
-                  {renderHistoryMetric("Rest days", String(summary.restDayCount))}
-                  {renderHistoryMetric("Slips", String(summary.slipCount))}
-                  {renderHistoryMetric(
-                    "Timed minutes",
-                    formatMetricNumber(summary.totalTimedMinutes)
-                  )}
-                  {renderHistoryMetric("Count total", formatMetricNumber(summary.totalCount))}
-                </div>
-
-                <div className="mt-5 min-w-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className={habitLabelClass}>Past habits</p>
-                    {hiddenArchivedCount > 0 ? (
-                      <p className="text-sm text-slate-500">+{hiddenArchivedCount} more</p>
-                    ) : null}
-                  </div>
-                  {archivedItems.length > 0 ? (
-                    <ul className="mt-1">{archivedItems.map(renderMotivationItem)}</ul>
-                  ) : (
-                    <p className="mt-3 border-t border-[color:var(--fs-border-soft)] pt-3 text-sm text-slate-500">
-                      No past habits
-                    </p>
-                  )}
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-5 min-w-0 border-t border-[color:var(--fs-border-soft)] pt-4">
+              <p className={habitLabelClass}>Past habits</p>
+              {archivedItems.length > 0 ? (
+                <ul className="mt-1">{archivedItems.map(renderMotivationItem)}</ul>
+              ) : (
+                <p className="mt-3 border-t border-[color:var(--fs-border-soft)] pt-3 text-sm text-slate-500">
+                  No past habits
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -3171,6 +3183,7 @@ export default function HabitPerfectDayHub({
               const legacyTimedSeconds = getLegacyTimedSeconds(item);
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
+              const resetStatsDialogTitleId = `habit-reset-stats-title-${habit.id}`;
               const cadenceLabel = habit.cadenceLabel;
               const timerTargetSeconds = getTimerTargetDisplaySeconds(habit);
               const habitTypeLabel = getHabitTypeLabel(habit.habitType);
@@ -3207,18 +3220,14 @@ export default function HabitPerfectDayHub({
                 !isTimed &&
                 habit.habitType !== "binary" &&
                 !showQuickCheckInEditor;
-              const timedProgressContextLabel = isCompletionGroup
-                ? `${timedTargetContextLabel} · ${getCompletionStatusLabel(item)}`
-                : timedTargetContextLabel;
+              const timedProgressContextLabel = timedTargetContextLabel;
               const quickStatusLabel = isRestDay
                 ? "Rest day today"
                 : isCompletionGroup
                   ? habit.habitType === "count" && typeof item.checkIn?.valueNumeric === "number"
                     ? getCountHabitStatus(item)
                     : isTimed
-                      ? `${getTimedStatusLabel(item, timerSeconds)} · ${getCompletionStatusLabel(
-                          item
-                        )}`
+                      ? getTimedStatusLabel(item, timerSeconds)
                       : getBuildCompletionMotivationLabel(item)
                   : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
                     ? "Not due today"
@@ -3276,7 +3285,11 @@ export default function HabitPerfectDayHub({
                               </span>
                             )}
                             <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
-                            {showTimedProgressModule ? null : (
+                            {showTimedProgressModule && isCompletionGroup ? (
+                              <span className={cx(habitSuccessChipClass, "shrink-0")}>
+                                {getCompletionStatusLabel(item)}
+                              </span>
+                            ) : showTimedProgressModule ? null : (
                               <span
                                 className={cx(
                                   isRestDay || statusLabel === "Slip logged today"
@@ -3321,24 +3334,6 @@ export default function HabitPerfectDayHub({
                                 />
                               </div>
                             ) : null}
-                            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-[color:var(--fs-color-muted)]">
-                              <span className={habitChipClass}>
-                                Timer {formatTimer(savedTimerSeconds)}
-                              </span>
-                              <span className={habitChipClass}>
-                                Manual {savedManualMinutes} min
-                              </span>
-                              {timerSeconds > 0 ? (
-                                <span className={habitBrandChipClass}>
-                                  Active +{formatTimer(timerSeconds)}
-                                </span>
-                              ) : null}
-                              {legacyTimedSeconds > 0 ? (
-                                <span className={habitWarningChipClass}>
-                                  Legacy total {formatTimer(legacyTimedSeconds)}
-                                </span>
-                              ) : null}
-                            </div>
                           </div>
                         ) : quickStatusLabel ? (
                           <p className="mt-1 text-[15px] leading-6 font-medium text-slate-600">
@@ -3368,7 +3363,11 @@ export default function HabitPerfectDayHub({
                             ) : (
                               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                             )}
-                            {item.checkIn ? "Undo" : "Mark done"}
+                            {item.checkIn
+                              ? isRestDay
+                                ? "Undo rest day"
+                                : "Undo complete"
+                              : "Mark done"}
                           </button>
                         ) : null}
 
@@ -3694,6 +3693,78 @@ export default function HabitPerfectDayHub({
 
                         {renderHabitMotivationDetails(motivationItem)}
 
+                        {isTimed ? (
+                          <div className="mt-4 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 py-2 text-sm text-slate-600">
+                            <p className={habitLabelClass}>Time sources</p>
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+                              <span className={habitChipClass}>
+                                Timer {formatTimer(savedTimerSeconds)}
+                              </span>
+                              <span className={habitChipClass}>
+                                Manual time {savedManualMinutes} min
+                              </span>
+                              {timerSeconds > 0 ? (
+                                <span className={habitBrandChipClass}>
+                                  Active timer +{formatTimer(timerSeconds)}
+                                </span>
+                              ) : null}
+                              {legacyTimedSeconds > 0 ? (
+                                <span className={habitWarningChipClass}>
+                                  Legacy total {formatTimer(legacyTimedSeconds)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {confirmResetStatsHabitId === habit.id ? (
+                          <div
+                            role="alertdialog"
+                            aria-labelledby={resetStatsDialogTitleId}
+                            data-testid={`habit-reset-stats-confirm-${habit.id}`}
+                            className={cx(
+                              "mt-4 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900"
+                            )}
+                          >
+                            <p id={resetStatsDialogTitleId} className="font-semibold">
+                              Confirm reset stats?
+                            </p>
+                            <p className="mt-1">
+                              Motivation stats restart from{" "}
+                              {getLongDateLabel(snapshot.selectedDate)}. Earlier check-ins stay
+                              saved and can still be reviewed in{" "}
+                              <Link
+                                href={analysisHref}
+                                className="font-semibold text-amber-950 underline-offset-2 hover:underline"
+                              >
+                                Calendar Comparison
+                              </Link>
+                              .
+                            </p>
+                            <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmResetStatsHabitId(null)}
+                                disabled={disabled}
+                                className={habitMobileSecondaryActionClass}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => resetHabitStats(item)}
+                                disabled={disabled}
+                                className={habitMobilePrimaryActionClass}
+                              >
+                                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                                {pendingKey === `reset-stats-${habit.id}`
+                                  ? "Resetting..."
+                                  : "Reset stats"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
                         <div
                           data-testid={`habit-details-actions-${habit.id}`}
                           className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap"
@@ -3876,6 +3947,23 @@ export default function HabitPerfectDayHub({
                             </button>
                           ) : null}
 
+                          {snapshot.resetEventsReady !== false ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearCreatedHabitNotice();
+                                setConfirmResetStatsHabitId(habit.id);
+                                setNotice(null);
+                                setError(null);
+                              }}
+                              disabled={disabled}
+                              className={habitMobileSecondaryActionClass}
+                            >
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                              Reset these habit stats
+                            </button>
+                          ) : null}
+
                           {canManageHabitSetup ? (
                             <>
                               <button
@@ -3888,7 +3976,7 @@ export default function HabitPerfectDayHub({
                                 className={habitMobileSecondaryActionClass}
                               >
                                 <Pencil className="h-4 w-4" aria-hidden="true" />
-                                Edit
+                                Edit this habit
                               </button>
 
                               <button
@@ -3901,7 +3989,7 @@ export default function HabitPerfectDayHub({
                                 className={habitMobileSecondaryActionClass}
                               >
                                 <Archive className="h-4 w-4" aria-hidden="true" />
-                                Archive
+                                Archive this habit
                               </button>
                             </>
                           ) : null}

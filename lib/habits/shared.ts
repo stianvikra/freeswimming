@@ -38,6 +38,8 @@ export const HABIT_WEEKDAY_VALUES = [
 ] as const;
 export const HABIT_CADENCE_PERIOD_VALUES = ["daily", "weekly", "monthly"] as const;
 export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
+export const HABIT_MOTIVATION_RESET_TYPE_VALUES = ["reset_stats"] as const;
+export const HABIT_MOTIVATION_RESET_STATUS_VALUES = ["active", "voided"] as const;
 export const HABIT_TIMER_MAX_SECONDS = 86_400;
 export const HABIT_MANUAL_TIME_MAX_MINUTES = 1_440;
 
@@ -49,6 +51,10 @@ export type HabitUnit = (typeof HABIT_UNIT_VALUES)[number];
 export type HabitWeekday = (typeof HABIT_WEEKDAY_VALUES)[number];
 export type HabitCadencePeriod = (typeof HABIT_CADENCE_PERIOD_VALUES)[number];
 export type HabitCadenceDayPolicy = (typeof HABIT_CADENCE_DAY_POLICY_VALUES)[number];
+export type HabitMotivationResetType = (typeof HABIT_MOTIVATION_RESET_TYPE_VALUES)[number];
+export type HabitMotivationResetStatus =
+  | (typeof HABIT_MOTIVATION_RESET_STATUS_VALUES)[number]
+  | "unsupported";
 export type HabitStatus = "active" | "archived";
 
 export type HabitCadenceProgress = {
@@ -79,7 +85,34 @@ export type HabitDefinitionInsert = Database["public"]["Tables"]["habit_definiti
 export type HabitDefinitionUpdate = Database["public"]["Tables"]["habit_definitions"]["Update"];
 export type HabitCheckInRow = Database["public"]["Tables"]["habit_check_ins"]["Row"];
 export type HabitCheckInInsert = Database["public"]["Tables"]["habit_check_ins"]["Insert"];
+export type HabitMotivationResetRow =
+  Database["public"]["Tables"]["habit_motivation_resets"]["Row"];
+export type HabitMotivationResetInsert =
+  Database["public"]["Tables"]["habit_motivation_resets"]["Insert"];
 export type HabitCheckInStatus = "logged" | "skipped" | "unsupported";
+
+export type HabitMotivationResetView = {
+  id: string;
+  habitId: string;
+  resetType: HabitMotivationResetType | "unsupported";
+  status: HabitMotivationResetStatus;
+  effectiveDate: string;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type HabitMotivationResetBoundary = {
+  id: string;
+  effectiveDate: string;
+  createdAt: string;
+};
+
+export type HabitMotivationBeforeResetSummary = {
+  historyStartDate: string;
+  historyEndDate: string;
+  savedCheckInCount: number;
+  lastTrackedDate: string | null;
+};
 
 export type HabitDefinitionView = {
   id: string;
@@ -170,6 +203,10 @@ export type HabitMotivationItem = {
   status: HabitStatus;
   mode: HabitMode;
   startDate: string;
+  motivationStartDate: string;
+  resetBoundary: HabitMotivationResetBoundary | null;
+  resetBoundaries: HabitMotivationResetBoundary[];
+  beforeResetSummary: HabitMotivationBeforeResetSummary | null;
   lastTrackedDate: string | null;
   eligibleDayCount: number;
   onTrackDayCount: number;
@@ -221,6 +258,7 @@ export type HabitMotivationRangeSummaries = Partial<
 
 export type HabitSnapshot = {
   schemaReady: boolean;
+  resetEventsReady?: boolean;
   loadError: string | null;
   selectedDate: string;
   activeHabits: HabitDefinitionView[];
@@ -267,6 +305,11 @@ export type HabitCheckInRequestBody = {
   note?: unknown;
   status?: unknown;
   clear?: unknown;
+};
+
+export type HabitMotivationResetRequestBody = {
+  effectiveDate?: unknown;
+  selectedDate?: unknown;
 };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -860,6 +903,38 @@ export function buildHabitCheckInInsert(
   };
 }
 
+export function buildHabitMotivationResetInsert(
+  userId: string,
+  habit: Pick<HabitDefinitionView, "id" | "startDate" | "status">,
+  body: HabitMotivationResetRequestBody,
+  todayDate = normalizeHabitDate(undefined)
+): HabitMotivationResetInsert {
+  if (habit.status !== "active") {
+    throw new Error("Reset stats is only available for active habits.");
+  }
+
+  const effectiveDate = normalizeHabitDate(
+    body.effectiveDate ?? body.selectedDate,
+    buildUtcDate(todayDate)
+  );
+  if (effectiveDate > todayDate) {
+    throw new Error("Choose today or an earlier reset date.");
+  }
+
+  if (effectiveDate < habit.startDate) {
+    throw new Error("Choose a reset date on or after the habit start date.");
+  }
+
+  return {
+    user_id: userId,
+    habit_id: habit.id,
+    reset_type: "reset_stats",
+    status: "active",
+    effective_date: effectiveDate,
+    created_by: userId,
+  };
+}
+
 export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefinitionView {
   const scheduleDays = normalizeScheduleDays(row.schedule_days);
   const cadencePeriod = getCadencePeriod(row.cadence_period, scheduleDays);
@@ -959,6 +1034,27 @@ export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export function buildHabitMotivationResetView(
+  row: HabitMotivationResetRow
+): HabitMotivationResetView {
+  const resetType = isOneOf(HABIT_MOTIVATION_RESET_TYPE_VALUES, row.reset_type)
+    ? row.reset_type
+    : "unsupported";
+  const status = isOneOf(HABIT_MOTIVATION_RESET_STATUS_VALUES, row.status)
+    ? row.status
+    : "unsupported";
+
+  return {
+    id: row.id,
+    habitId: row.habit_id,
+    resetType,
+    status,
+    effectiveDate: normalizeHabitDate(row.effective_date),
+    createdAt: row.created_at,
+    createdBy: row.created_by,
   };
 }
 
@@ -1560,6 +1656,77 @@ function getCheckInsForHabit(
     .sort((left, right) => left.checkInDate.localeCompare(right.checkInDate));
 }
 
+function toResetBoundary(reset: HabitMotivationResetView): HabitMotivationResetBoundary {
+  return {
+    id: reset.id,
+    effectiveDate: reset.effectiveDate,
+    createdAt: reset.createdAt,
+  };
+}
+
+function compareResetBoundaries(
+  left: HabitMotivationResetBoundary,
+  right: HabitMotivationResetBoundary
+) {
+  if (left.effectiveDate !== right.effectiveDate) {
+    return right.effectiveDate.localeCompare(left.effectiveDate);
+  }
+  return right.createdAt.localeCompare(left.createdAt);
+}
+
+function getActiveMotivationResetBoundaries(
+  habit: HabitDefinitionView,
+  resetEvents: HabitMotivationResetView[],
+  historyEndDate: string
+): HabitMotivationResetBoundary[] {
+  return resetEvents
+    .filter(
+      (reset) =>
+        reset.habitId === habit.id &&
+        reset.resetType === "reset_stats" &&
+        reset.status === "active" &&
+        reset.effectiveDate >= habit.startDate &&
+        reset.effectiveDate <= historyEndDate
+    )
+    .map(toResetBoundary)
+    .sort(compareResetBoundaries);
+}
+
+function getMotivationMetricStartDate(
+  habit: HabitDefinitionView,
+  historyStartDate: string,
+  resetBoundary: HabitMotivationResetBoundary | null
+) {
+  let metricStartDate = habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
+  if (resetBoundary && resetBoundary.effectiveDate > metricStartDate) {
+    metricStartDate = resetBoundary.effectiveDate;
+  }
+  return metricStartDate;
+}
+
+function buildBeforeResetSummary(
+  habit: HabitDefinitionView,
+  habitCheckIns: HabitCheckInView[],
+  resetBoundary: HabitMotivationResetBoundary | null
+): HabitMotivationBeforeResetSummary | null {
+  if (!resetBoundary) return null;
+  const historyEndDate = addUtcDays(resetBoundary.effectiveDate, -1);
+  if (historyEndDate < habit.startDate) return null;
+  const beforeResetCheckIns = habitCheckIns.filter(
+    (checkIn) => checkIn.checkInDate < resetBoundary.effectiveDate
+  );
+  return {
+    historyStartDate: habit.startDate,
+    historyEndDate,
+    savedCheckInCount: beforeResetCheckIns.length,
+    lastTrackedDate:
+      beforeResetCheckIns
+        .map((checkIn) => checkIn.checkInDate)
+        .sort()
+        .at(-1) ?? null,
+  };
+}
+
 function getCheckInsByDate(checkIns: HabitCheckInView[]) {
   const checkInsByDate = new Map<string, HabitCheckInView>();
   for (const checkIn of checkIns) {
@@ -1605,15 +1772,27 @@ function buildHabitScore(input: {
 function buildPerfectDayMotivationStats(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
+  resetEvents: HabitMotivationResetView[],
   historyStartDate: string,
   historyEndDate: string
 ) {
-  const perfectDayHabits = habits.filter(
-    (habit) =>
-      habit.status === "active" &&
-      habit.isPerfectDayItem &&
-      !isAfterHabitDate(habit.startDate, historyEndDate)
-  );
+  const perfectDayHabits = habits
+    .filter(
+      (habit) =>
+        habit.status === "active" &&
+        habit.isPerfectDayItem &&
+        !isAfterHabitDate(habit.startDate, historyEndDate)
+    )
+    .map((habit) => {
+      const resetBoundary = getActiveMotivationResetBoundaries(
+        habit,
+        resetEvents,
+        historyEndDate
+      )[0];
+      return resetBoundary && resetBoundary.effectiveDate > habit.startDate
+        ? { ...habit, startDate: resetBoundary.effectiveDate }
+        : habit;
+    });
   let eligibleDayCount = 0;
   let perfectDayCount = 0;
   let currentStreakDays = 0;
@@ -1676,10 +1855,14 @@ function buildNonQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
   historyStartDate: string,
-  historyEndDate: string
+  historyEndDate: string,
+  resetBoundaries: HabitMotivationResetBoundary[],
+  beforeResetCheckIns: HabitCheckInView[]
 ): HabitMotivationItem {
-  const checkInsByDate = getCheckInsByDate(habitCheckIns);
-  const metricStartDate = habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
+  const resetBoundary = resetBoundaries[0] ?? null;
+  const metricStartDate = getMotivationMetricStartDate(habit, historyStartDate, resetBoundary);
+  const metricCheckIns = habitCheckIns.filter((checkIn) => checkIn.checkInDate >= metricStartDate);
+  const checkInsByDate = getCheckInsByDate(metricCheckIns);
   const totalDays = getDayDelta(metricStartDate, historyEndDate);
   let eligibleDayCount = 0;
   let onTrackDayCount = 0;
@@ -1692,7 +1875,7 @@ function buildNonQuitMotivationItem(
   let runningStreakDays = 0;
   let hasCurrentStreakBroken = false;
 
-  for (const checkIn of habitCheckIns) {
+  for (const checkIn of metricCheckIns) {
     if (checkIn.note) noteCount += 1;
     totalTimedMinutes += getLoggedTimedMinutes(habit, checkIn);
     totalCount += getLoggedCountTotal(habit, checkIn);
@@ -1701,7 +1884,7 @@ function buildNonQuitMotivationItem(
   for (let index = 0; index <= totalDays; index += 1) {
     const day = addUtcDays(metricStartDate, index);
     const checkIn = checkInsByDate.get(day) ?? null;
-    const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
+    const isScheduled = isHabitScheduledForDate(habit, day, metricCheckIns);
     if (!isScheduled && !checkIn) continue;
 
     if (isRestDayCheckIn(checkIn)) {
@@ -1709,7 +1892,7 @@ function buildNonQuitMotivationItem(
       continue;
     }
 
-    const evaluation = evaluateHabitForDate(habit, checkIn, day, habitCheckIns);
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns);
     eligibleDayCount += 1;
     if (evaluation.isSatisfied) {
       onTrackDayCount += 1;
@@ -1723,10 +1906,10 @@ function buildNonQuitMotivationItem(
   for (let index = totalDays; index >= 0; index -= 1) {
     const day = addUtcDays(metricStartDate, index);
     const checkIn = checkInsByDate.get(day) ?? null;
-    const isScheduled = isHabitScheduledForDate(habit, day, habitCheckIns);
+    const isScheduled = isHabitScheduledForDate(habit, day, metricCheckIns);
     if (!isScheduled && !checkIn) continue;
     if (isRestDayCheckIn(checkIn)) continue;
-    const evaluation = evaluateHabitForDate(habit, checkIn, day, habitCheckIns);
+    const evaluation = evaluateHabitForDate(habit, checkIn, day, metricCheckIns);
     if (evaluation.isSatisfied) {
       currentStreakDays += 1;
       continue;
@@ -1755,7 +1938,11 @@ function buildNonQuitMotivationItem(
     status: habit.status,
     mode: habit.habitMode,
     startDate: habit.startDate,
-    lastTrackedDate: habitCheckIns.at(-1)?.checkInDate ?? null,
+    motivationStartDate: metricStartDate,
+    resetBoundary,
+    resetBoundaries,
+    beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
+    lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? null,
     eligibleDayCount,
     onTrackDayCount,
     restDayCount,
@@ -1774,12 +1961,22 @@ function buildQuitMotivationItem(
   habit: HabitDefinitionView,
   habitCheckIns: HabitCheckInView[],
   historyStartDate: string,
-  historyEndDate: string
+  historyEndDate: string,
+  resetBoundaries: HabitMotivationResetBoundary[],
+  beforeResetCheckIns: HabitCheckInView[]
 ): HabitMotivationItem {
-  const metricStartDate = habit.startDate > historyStartDate ? habit.startDate : historyStartDate;
+  const resetBoundary = resetBoundaries[0] ?? null;
+  const metricStartDate = getMotivationMetricStartDate(habit, historyStartDate, resetBoundary);
+  const metricCheckIns = habitCheckIns.filter((checkIn) => checkIn.checkInDate >= metricStartDate);
   const totalDays = getDayDelta(metricStartDate, historyEndDate);
+  const latestMetricLapseDate =
+    habit.lastLapseDate &&
+    habit.lastLapseDate >= metricStartDate &&
+    habit.lastLapseDate <= historyEndDate
+      ? habit.lastLapseDate
+      : null;
   const lapseDates = new Set(
-    getQuitLapseDates(habit, null, habitCheckIns, historyEndDate).filter(
+    getQuitLapseDates(habit, null, metricCheckIns, historyEndDate).filter(
       (date) => date >= metricStartDate
     )
   );
@@ -1788,7 +1985,7 @@ function buildQuitMotivationItem(
   let bestStreakDays = 0;
   let runningStreakDays = 0;
 
-  for (const checkIn of habitCheckIns) {
+  for (const checkIn of metricCheckIns) {
     if (checkIn.note) noteCount += 1;
   }
 
@@ -1826,7 +2023,11 @@ function buildQuitMotivationItem(
     status: habit.status,
     mode: habit.habitMode,
     startDate: habit.startDate,
-    lastTrackedDate: habitCheckIns.at(-1)?.checkInDate ?? habit.lastLapseDate,
+    motivationStartDate: metricStartDate,
+    resetBoundary,
+    resetBoundaries,
+    beforeResetSummary: buildBeforeResetSummary(habit, beforeResetCheckIns, resetBoundary),
+    lastTrackedDate: metricCheckIns.at(-1)?.checkInDate ?? latestMetricLapseDate,
     eligibleDayCount,
     onTrackDayCount,
     restDayCount: 0,
@@ -1855,9 +2056,10 @@ export function buildHabitMotivationSummary(
   habits: HabitDefinitionView[],
   checkIns: HabitCheckInView[],
   selectedDate: string,
-  options?: { historyStartDate?: string | null }
+  options?: { historyStartDate?: string | null; resetEvents?: HabitMotivationResetView[] }
 ): HabitMotivationSummary {
   const historyEndDate = selectedDate;
+  const resetEvents = options?.resetEvents ?? [];
   const earliestHabitStartDate =
     habits.reduce<string | null>(
       (earliest, habit) =>
@@ -1874,15 +2076,41 @@ export function buildHabitMotivationSummary(
   const items = habits
     .filter((habit) => !isAfterHabitDate(habit.startDate, historyEndDate))
     .map((habit) => {
+      const resetBoundaries = getActiveMotivationResetBoundaries(
+        habit,
+        resetEvents,
+        historyEndDate
+      );
       const habitCheckIns = getCheckInsForHabit(habit, checkIns, historyStartDate, historyEndDate);
+      const allHabitCheckIns = getCheckInsForHabit(
+        habit,
+        checkIns,
+        habit.startDate,
+        historyEndDate
+      );
       return habit.habitMode === "quit"
-        ? buildQuitMotivationItem(habit, habitCheckIns, historyStartDate, historyEndDate)
-        : buildNonQuitMotivationItem(habit, habitCheckIns, historyStartDate, historyEndDate);
+        ? buildQuitMotivationItem(
+            habit,
+            habitCheckIns,
+            historyStartDate,
+            historyEndDate,
+            resetBoundaries,
+            allHabitCheckIns
+          )
+        : buildNonQuitMotivationItem(
+            habit,
+            habitCheckIns,
+            historyStartDate,
+            historyEndDate,
+            resetBoundaries,
+            allHabitCheckIns
+          );
     })
     .sort(compareMotivationItems);
   const perfectDayStats = buildPerfectDayMotivationStats(
     habits,
     checkIns,
+    resetEvents,
     historyStartDate,
     historyEndDate
   );

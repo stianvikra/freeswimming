@@ -31,7 +31,7 @@ Vi gjør en liten Habits-forbedring som viser hvilken dato du logger på, lar Mo
 
 Hvorfor det betyr noe: på telefon skal du raskt vite om du logger på riktig dag, og Motivation skal føles som nyttig status, ikke tekniske tall.
 
-Utenfor scope: `Start fresh` reset, sletting av historikk, nye databasefelter, reminders, eksport, full dashboard/graf-redesign og Calendar Comparison-endringer.
+Utenfor scope: `Reset these habit stats` reset, sletting av historikk, nye databasefelter, reminders, eksport, full dashboard/graf-redesign og Calendar Comparison-endringer.
 
 Fremoverkompatibilitet: periodefilteret og datoetiketten skal følge eksisterende `selectedDate` og canonical Habits snapshot-data. Nye aktive Perfect Day habits og check-in-rader skal automatisk inngå i perfect-day streak/consistency; nye ukjente metric-typer krever eksplisitt mapping/copy/test.
 
@@ -49,7 +49,7 @@ Fremoverkompatibilitet: periodefilteret og datoetiketten skal følge eksisterend
 
 ## Out Of Scope
 
-- Per-habit `Start fresh` reset implementation.
+- Per-habit `Reset these habit stats` reset implementation.
 - Persisted user preference for Motivation range.
 - Database, Supabase migration, RLS, generated database type, or API contract changes.
 - Calendar Comparison metric/marker changes.

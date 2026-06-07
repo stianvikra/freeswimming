@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadHabitSnapshot } from "@/lib/habits/server";
-import type { HabitCheckInRow, HabitDefinitionRow } from "@/lib/habits/shared";
+import type {
+  HabitCheckInRow,
+  HabitDefinitionRow,
+  HabitMotivationResetRow,
+} from "@/lib/habits/shared";
 
 function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
   return {
@@ -53,7 +57,11 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
   };
 }
 
-function buildSupabaseMock(definitions: HabitDefinitionRow[], checkIns: HabitCheckInRow[]) {
+function buildSupabaseMock(
+  definitions: HabitDefinitionRow[],
+  checkIns: HabitCheckInRow[],
+  resetEvents: HabitMotivationResetRow[] = []
+) {
   const definitionQuery: {
     select: ReturnType<typeof vi.fn>;
     eq: ReturnType<typeof vi.fn>;
@@ -84,15 +92,30 @@ function buildSupabaseMock(definitions: HabitDefinitionRow[], checkIns: HabitChe
   checkInQuery.eq.mockReturnValue(checkInQuery);
   checkInQuery.gte.mockReturnValue(checkInQuery);
   checkInQuery.lte.mockResolvedValue({ data: checkIns, error: null });
+
+  const resetQuery: {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    lte: ReturnType<typeof vi.fn>;
+  } = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    lte: vi.fn(),
+  };
+  resetQuery.select.mockReturnValue(resetQuery);
+  resetQuery.eq.mockReturnValue(resetQuery);
+  resetQuery.lte.mockResolvedValue({ data: resetEvents, error: null });
+
   const supabase = {
     from: vi.fn((table: string) => {
       if (table === "habit_definitions") return definitionQuery;
       if (table === "habit_check_ins") return checkInQuery;
+      if (table === "habit_motivation_resets") return resetQuery;
       throw new Error(`Unexpected table ${table}`);
     }),
   };
 
-  return { supabase, checkInQuery };
+  return { supabase, checkInQuery, resetQuery };
 }
 
 describe("habits server loader", () => {
@@ -123,12 +146,13 @@ describe("habits server loader", () => {
         check_in_date: date,
       })
     );
-    const { supabase, checkInQuery } = buildSupabaseMock([habit], checkIns);
+    const { supabase, checkInQuery, resetQuery } = buildSupabaseMock([habit], checkIns);
 
     const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
 
     expect(checkInQuery.gte).toHaveBeenCalledWith("check_in_date", "2026-04-28");
     expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
+    expect(resetQuery.lte).toHaveBeenCalledWith("effective_date", "2026-05-10");
     expect(snapshot.daySummary.items[0]?.evaluation.valueLabel).toBe("12-day streak");
     expect(snapshot.daySummary.items[0]?.evaluation.supportingLabel).toBe("12/13 days hit");
   });
