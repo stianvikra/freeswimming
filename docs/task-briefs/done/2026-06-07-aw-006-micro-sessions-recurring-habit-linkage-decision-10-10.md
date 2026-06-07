@@ -310,3 +310,28 @@ N/A with rationale: this PR changes no UI, print, layout, brand, asset, product-
 
 - `2026-06-07 | in-progress | started from clean synced main@6a83ba39 after PR #1013 and repo-managed closeout PR #1014; owner agreed H-028 can be dropped as an implementation brief and selected Micro Sessions recurring Habit linkage as a docs-only decision brief; no runtime implementation is in scope | next: update parent/queue/design inventory, run docs-only validation, open PR, monitor CI, and run verify:pre-merge before merge-readiness summary`
 - `2026-06-07 | in-progress | owner clarified that the user-facing Micro Session may be a stable routine containing one or more source Dryland Sessions, and that editing a source session or rebuilding the current micro session must not break a linked Habit or rewrite old counted history | next: update parent/queue/design inventory, rerun docs-only gates, push PR #1015, monitor CI, and rerun verify:pre-merge`
+- `2026-06-08 | done | PR #1015 merged as squash commit 9af31aca; docs-only decision is complete and runtime implementation remains deferred | next: repo-managed closeout updates parent/queue/design inventory and reruns docs-only gates`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1015`
+- `squash_commit`: `9af31aca`
+- `result`: Closed AW-006 Micro Sessions Recurring Habit Linkage Decision. The app contract now says Micro Sessions stay one-off/save by default, recurring Habit linkage requires explicit opt-in, linked Habits point to stable Micro Session routine identity, multi-source Dryland routines are supported, source edits/current-plan rebuilds preserve old history, and unknown or unavailable linkage values fail closed.
+- `validation`: `npm run verify:pre-pr` PASS docs-only; PR CI all green (`verify`, `CodeQL`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, `Vercel`); `npm run verify:pre-merge` PASS docs-only for `95e1cdd0`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; runtime implementation is intentionally out of scope.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                        | Gaps / Notes                                   |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1015 product decision, parent/queue/inventory alignment, docs-only gates, and CI green.                                                     | No gap; runtime implementation deferred.       |
+| UX flow clarity                               | `5/5`          | Explicit opt-in UX rule, no silent habit creation, no backfill, future `Make recurring habit` flow requirements, docs-only gates, and CI green. | No gap; future UI requires screenshot handoff. |
+| Business logic correctness and data integrity | `5/5`          | Stable routine identity, multi-source/source-edit history safety, fail-closed unknowns, docs-only gates, and CI green.                          | No gap; persistence deferred.                  |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical future linkage contract, local-only transient state boundaries, docs-only gates, and CI green.                                 | No gap; future schema/API work deferred.       |
+| Reliability and failure handling              | `5/5`          | Retry-safe future mutation contract, unavailable-link fail-closed state, docs-only gates, and CI green.                                         | No gap.                                        |
+| Privacy and compliance                        | `5/5`          | Private member data/redacted support diagnostics contract, docs-only gates, and CI green.                                                       | No gap.                                        |
+| Content governance                            | `5/5`          | Parent, AW-006 queue, design inventory, route/label/support sweep, docs-only gates, and CI green.                                               | No gap.                                        |
+| Incident response and support operations      | `5/5`          | Redacted routine/source/linkage support diagnostics contract, docs-only gates, and CI green.                                                    | No gap.                                        |
+| i18n operational readiness                    | `5/5`          | Future-copy/localization guardrails for longer labels and names, docs-only gates, and CI green.                                                 | No gap; future UI copy remains deferred.       |
+| Stack-fit and dependency discipline           | `5/5`          | Future reuse contract for Micro Sessions, Dryland snapshots, Habits, My Library, typed domain contracts, docs-only gates, and CI green.         | No gap; no dependency/runtime change.          |
+| Testing and QA automation                     | `5/5`          | `lint:briefs`, `lint:briefs:all`, `verify:pre-pr`, PR CI, and `verify:pre-merge` all passed for the docs-only decision.                         | No gap; future runtime tests are scoped later. |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only diff, normal git revert rollback, current-with-main branch checks, pre-merge PASS, and CI green.                                      | No gap.                                        |
