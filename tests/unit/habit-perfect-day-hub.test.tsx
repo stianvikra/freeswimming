@@ -940,7 +940,11 @@ describe("HabitPerfectDayHub", () => {
 
     const controls = screen.getByTestId("habits-calendar-controls-summary");
     expect(within(controls).getByRole("link", { name: "Today" })).toBeVisible();
-    expect(within(controls).getByText("Week 19, 2026 · May 4 - May 10")).toBeVisible();
+    expect(screen.getAllByText("Weekly Overview").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("habits-week-overview-summary")).toHaveAttribute(
+      "aria-label",
+      "Habits calendar Week 19, 2026 May 4 - May 10"
+    );
     expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
@@ -1016,7 +1020,10 @@ describe("HabitPerfectDayHub", () => {
       "/my-library/calendar?source=habits&period=week&date=2026-05-10"
     );
     expect(analysisLink).toHaveClass("h-11", "w-11");
-    expect(screen.getByRole("button", { name: "Show week overview" })).toHaveClass("h-11", "w-11");
+    expect(screen.getByRole("button", { name: "Show Weekly Overview" })).toHaveClass(
+      "h-11",
+      "w-11"
+    );
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
   });
 
@@ -1029,7 +1036,7 @@ describe("HabitPerfectDayHub", () => {
     );
 
     const controls = screen.getByTestId("habits-calendar-controls-summary");
-    expect(within(controls).getByText("Week 23, 2026 · Jun 1 - Jun 7")).toBeVisible();
+    expect(screen.getByText("Week 23, 2026 · 0/7 perfect days")).toBeVisible();
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-29"
@@ -1062,11 +1069,10 @@ describe("HabitPerfectDayHub", () => {
       />
     );
 
-    expect(
-      within(screen.getByTestId("habits-calendar-controls-summary")).getByText(
-        "Week 19, 2026 · May 4 - May 10"
-      )
-    ).toBeVisible();
+    expect(screen.getByTestId("habits-week-overview-summary")).toHaveAttribute(
+      "aria-label",
+      "Habits calendar Week 19, 2026 May 4 - May 10"
+    );
 
     rerender(
       <HabitPerfectDayHub
@@ -1077,10 +1083,13 @@ describe("HabitPerfectDayHub", () => {
 
     await waitFor(() => {
       const controls = screen.getByTestId("habits-calendar-controls-summary");
-      expect(within(controls).getByText("May 3, 2026")).toBeVisible();
-      expect(within(controls).getByText("History")).toBeVisible();
+      expect(screen.getByText("May 3, 2026")).toBeVisible();
+      expect(screen.getByText("History")).toBeVisible();
       expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sun · May 3");
-      expect(within(controls).getByText("Week 18, 2026 · Apr 27 - May 3")).toBeVisible();
+      expect(screen.getByTestId("habits-week-overview-summary")).toHaveAttribute(
+        "aria-label",
+        "Habits calendar Week 18, 2026 Apr 27 - May 3"
+      );
       expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
         "href",
         "/my-library/habits?date=2026-04-26"
@@ -1139,13 +1148,13 @@ describe("HabitPerfectDayHub", () => {
     );
 
     expect(screen.getByText("History")).toBeVisible();
-    expect(screen.getByText(/correct existing check-ins/i)).toBeVisible();
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sat · May 9");
     expect(screen.queryByRole("button", { name: "Add habit" })).toBeNull();
     expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.queryByRole("button", { name: "Edit this habit" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Archive this habit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
@@ -1435,7 +1444,10 @@ describe("HabitPerfectDayHub", () => {
       .map((button) => button.textContent?.replace(/\s+/g, " ").trim());
     expect(actionNames.indexOf("Finish")).toBeLessThan(actionNames.indexOf("Rest day"));
     expect(within(detailsActions).queryByRole("button", { name: "Reset timer" })).toBeNull();
-    expect(await screen.findByText("Daily target 8:00")).toBeVisible();
+    const details = document.getElementById("habit-details-33333333-3333-4333-8333-333333333333");
+    expect(details).not.toBeNull();
+    expect(within(details as HTMLElement).getByText("Daily · Started May 4, 2026")).toBeVisible();
+    expect(within(details as HTMLElement).queryByText("Daily target 8:00")).toBeNull();
     expect(await screen.findByText("Manual time")).toBeVisible();
     expect(await screen.findByRole("button", { name: "Save manual time" })).toBeEnabled();
     expect(await within(card).findByText("Time sources")).toBeVisible();
@@ -1444,7 +1456,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.queryByText("Manual min")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save manual" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add manual time" })).toBeNull();
-    expect(await screen.findByText("No check-in")).toBeVisible();
+    expect(screen.queryByText("No check-in")).toBeNull();
   });
 
   it("keeps historical timed corrections manual instead of starting a past timer", async () => {
@@ -1805,7 +1817,7 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: "Archive this habit" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
     });
     expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Edit this habit" })).toBeNull();
@@ -1813,16 +1825,22 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getByRole("button", { name: "Edit this habit" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Archive this habit" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "End habit and move to History" })).toBeVisible();
   });
 
-  it("shows a binary Do habit with only one Done only detail label", () => {
+  it("keeps setup labels out of open details while showing dated metadata", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     expect(screen.getByText("Do")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
-    expect(screen.getAllByText("Done only")).toHaveLength(1);
+    const details = document.getElementById("habit-details-11111111-1111-4111-8111-111111111111");
+    expect(details).not.toBeNull();
+    expect(within(details as HTMLElement).getByText("Daily · Started May 4, 2026")).toBeVisible();
+    expect(within(details as HTMLElement).queryByText("Do")).toBeNull();
+    expect(within(details as HTMLElement).queryByText("Open")).toBeNull();
+    expect(within(details as HTMLElement).queryByText("Other")).toBeNull();
+    expect(within(details as HTMLElement).queryByText("Done only")).toBeNull();
   });
 
   it("renders saved litres count targets with readable unit labels", () => {
@@ -1860,7 +1878,10 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByText("Today: 2 litres · Goal: 2 litres")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
-    expect(screen.getByText("At least 2 litres")).toBeVisible();
+    const details = document.getElementById("habit-details-77777777-7777-4777-8777-777777777777");
+    expect(details).not.toBeNull();
+    expect(within(details as HTMLElement).getByText("Daily · Started May 4, 2026")).toBeVisible();
+    expect(within(details as HTMLElement).queryByText("At least 2 litres")).toBeNull();
   });
 
   it("marks a binary habit done through the check-in API", async () => {
@@ -1885,7 +1906,9 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
-    const success = await screen.findByTestId("habits-action-success");
+    const success = await screen.findByTestId(
+      "habit-action-success-11111111-1111-4111-8111-111111111111"
+    );
     expect(success).toHaveAttribute("role", "status");
     expect(success).toHaveAttribute("aria-live", "polite");
     expect(success).toHaveTextContent("Check-in saved.");
@@ -1950,7 +1973,10 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
-    expect(screen.getByText("At least 1 glass")).toBeVisible();
+    const details = document.getElementById("habit-details-44444444-4444-4444-8444-444444444444");
+    expect(details).not.toBeNull();
+    expect(within(details as HTMLElement).getByText("Daily · Started May 4, 2026")).toBeVisible();
+    expect(within(details as HTMLElement).queryByText("At least 1 glass")).toBeNull();
   });
 
   it("keeps open count habit input bounded and avoids duplicate Details save controls", async () => {
@@ -2154,7 +2180,7 @@ describe("HabitPerfectDayHub", () => {
   it("uses consistency instead of streak before five-day build streaks", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildShortStreakSnapshot()} />);
 
-    expect(screen.getByText("4/5 days hit")).toBeVisible();
+    expect(screen.getByText("4/5 days completed")).toBeVisible();
     expect(screen.queryByText("4-day streak")).toBeNull();
     expect(screen.queryByText("Streak: 4 days")).toBeNull();
   });
@@ -2173,7 +2199,7 @@ describe("HabitPerfectDayHub", () => {
     );
     expect(history).toHaveClass("order-3", "sm:order-2");
     expect(activeList).toHaveClass("order-2", "sm:order-3");
-    expect(within(history).getByText("Progress summary")).toBeVisible();
+    expect(within(history).getByText("Habit stats")).toBeVisible();
     expect(within(history).getByText("Motivation")).toBeVisible();
     expect(within(history).getByText("Last 30 days · May 1, 2026 - May 7, 2026")).toBeVisible();
     const rangeControls = within(history).getByRole("group", { name: "Motivation range" });
@@ -2197,6 +2223,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("More history")).toBeNull();
     expect(within(history).queryByText("6/13 on track")).toBeNull();
     expect(within(history).queryByText("6/13 days hit")).toBeNull();
+    expect(within(history).queryByText("6/13 days completed")).toBeNull();
     expect(within(history).queryByText("Active history")).toBeNull();
     expect(within(history).queryByText("Archived history")).toBeNull();
     expect(within(history).getByText("Rest days")).toBeVisible();
@@ -2218,11 +2245,11 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(definitionsButton);
     expect(definitionsButton).toHaveAttribute("aria-expanded", "true");
     expect(within(history).getByText("What counts?")).toBeVisible();
-    expect(within(history).getAllByText(/every scheduled habit/i).length).toBeGreaterThan(0);
+    expect(within(history).getAllByText(/every habit scheduled/i).length).toBeGreaterThan(0);
     expect(
-      within(history).getByText("Reset stats", { selector: "strong" }).closest("p")
+      within(history).getByText("Reset habit stats", { selector: "strong" }).closest("p")
     ).toHaveTextContent(
-      "Reset stats restarts motivation stats from a selected date. Earlier check-ins stay saved and can still be reviewed in Calendar Comparison."
+      "Reset habit stats restarts motivation stats from the selected reset date. Earlier check-ins stay saved and can be reviewed in Calendar Comparison."
     );
     expect(
       within(history).getByText("Rest days", { selector: "strong" }).closest("p")
@@ -2230,15 +2257,11 @@ describe("HabitPerfectDayHub", () => {
     expect(
       within(history).getByText("Slips", { selector: "strong" }).closest("p")
     ).toHaveTextContent("Slips are logged misses for Quit habits.");
-    expect(within(history).getByText("Early data").closest("p")).toHaveTextContent(
-      "Early data means this period has fewer than 7 days that could count toward Perfect Days. The numbers are a first signal."
-    );
     expect(within(history).getByText("0/0").closest("p")).toHaveTextContent(
       "0/0 means there were no scheduled Perfect Day habits in the selected period."
     );
-    expect(within(history).getByText("Micro Sessions").closest("p")).toHaveTextContent(
-      "Micro Sessions are tracked separately and do not count toward Perfect Days. Make a separate habit to track it as a habit."
-    );
+    expect(within(history).queryByText("Early data")).toBeNull();
+    expect(within(history).queryByText("Micro Sessions")).toBeNull();
     expect(within(history).queryByText(/Habit score/i)).toBeNull();
     expect(within(history).queryByText(/On track/i)).toBeNull();
 
@@ -2280,9 +2303,7 @@ describe("HabitPerfectDayHub", () => {
     const detailsActions = screen.getByTestId(
       "habit-details-actions-11111111-1111-4111-8111-111111111111"
     );
-    fireEvent.click(
-      within(detailsActions).getByRole("button", { name: "Reset these habit stats" })
-    );
+    fireEvent.click(within(detailsActions).getByRole("button", { name: "Reset habit stats" }));
 
     const confirm = screen.getByTestId(
       "habit-reset-stats-confirm-11111111-1111-4111-8111-111111111111"
@@ -2312,7 +2333,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("Habit stats reset. Earlier check-ins stayed saved.")).toBeVisible();
   });
 
-  it("keeps Motivation metrics numeric while explaining early or empty data", () => {
+  it("keeps Motivation metrics numeric while explaining empty data", () => {
     const { rerender } = render(
       <HabitPerfectDayHub initialSnapshot={buildEarlyMotivationSnapshot()} />
     );
@@ -2320,10 +2341,9 @@ describe("HabitPerfectDayHub", () => {
     const earlyHistory = screen.getByTestId("habits-motivation-history");
     expect(within(earlyHistory).getByText("0/3")).toBeVisible();
     expect(within(earlyHistory).getByText("0%")).toBeVisible();
-    expect(within(earlyHistory).getByTestId("habits-motivation-data-quality")).toHaveTextContent(
-      "Early data: 3/7 days measured."
-    );
+    expect(within(earlyHistory).queryByTestId("habits-motivation-data-quality")).toBeNull();
     expect(within(earlyHistory).queryByText("Not enough history")).toBeNull();
+    expect(within(earlyHistory).queryByText("Early data")).toBeNull();
 
     rerender(<HabitPerfectDayHub initialSnapshot={buildArchivedOnlyMotivationSnapshot()} />);
 
@@ -2365,11 +2385,11 @@ describe("HabitPerfectDayHub", () => {
     const progress = within(card).getByTestId(
       "habit-progress-details-11111111-1111-4111-8111-111111111111"
     );
-    expect(within(progress).getByText("Progress")).toBeVisible();
+    expect(within(progress).getByText("Habit stats")).toBeVisible();
     expect(within(progress).getByText("Current streak")).toBeVisible();
     expect(within(progress).getByText("Best streak")).toBeVisible();
     expect(within(progress).getByText("Consistency")).toBeVisible();
-    expect(within(progress).getByText("Days hit")).toBeVisible();
+    expect(within(progress).getByText("Days completed")).toBeVisible();
     expect(within(progress).getByText("5/6")).toBeVisible();
     expect(within(progress).queryByText("5/6 days hit")).toBeNull();
   });
@@ -2399,9 +2419,9 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getAllByText("Streak: 6 days")).toHaveLength(1);
-    expect(
-      screen.getAllByText("Open").some((element) => !element.className.includes("max-sm:hidden"))
-    ).toBe(true);
+    const details = document.getElementById("habit-details-11111111-1111-4111-8111-111111111111");
+    expect(details).not.toBeNull();
+    expect(within(details as HTMLElement).queryByText("Open")).toBeNull();
   });
 
   it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
@@ -2414,19 +2434,23 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
     expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
-    const showWeekButton = screen.getByRole("button", { name: "Show week overview" });
+    const showWeekButton = screen.getByRole("button", { name: "Show Weekly Overview" });
     expect(showWeekButton).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(showWeekButton);
-    expect(screen.getByTestId("habits-week-overview-mobile")).toBeVisible();
-    expect(screen.getByText("Week 19, 2026 · 1/7 perfect days")).toBeVisible();
+    const mobileWeek = screen.getByTestId("habits-week-overview-mobile");
+    expect(mobileWeek).toBeVisible();
+    expect(mobileWeek).toHaveAttribute(
+      "aria-label",
+      "Habits calendar Week 19, 2026 May 4 - May 10"
+    );
     expect(screen.queryByText("Week 19, 2026 · May 4 - May 10 · 1/7 perfect days")).toBeNull();
-    expect(screen.getByRole("button", { name: "Hide week overview" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Hide Weekly Overview" })).toHaveAttribute(
       "aria-expanded",
       "true"
     );
     expect(screen.queryByLabelText("Water value")).toBeNull();
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: "Archive this habit" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
     });
   });
 

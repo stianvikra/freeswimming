@@ -1192,7 +1192,7 @@ export default function DrylandMicroPlanPanel({
   function renderClearPlanControls(options: { compact?: boolean } = {}) {
     if (!plan) return null;
     const actionClass = options.compact
-      ? MICRO_COMPACT_DANGER_ACTION_CLASS
+      ? cx(MICRO_COMPACT_DANGER_ACTION_CLASS, "min-w-0 flex-1")
       : MICRO_DANGER_ACTION_CLASS;
 
     if (!isClearConfirmOpen) {
@@ -1268,7 +1268,7 @@ export default function DrylandMicroPlanPanel({
   function renderPlanActionButtons(options: { compact?: boolean } = {}) {
     if (!plan || shouldCollapsePlan) return null;
     const secondaryClass = options.compact
-      ? MICRO_COMPACT_SECONDARY_ACTION_CLASS
+      ? cx(MICRO_COMPACT_SECONDARY_ACTION_CLASS, "min-w-0 flex-1")
       : MICRO_SECONDARY_ACTION_CLASS;
 
     return (
@@ -1974,16 +1974,22 @@ export default function DrylandMicroPlanPanel({
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
-                {executionMode === "bubbles" ? null : renderPlanActionButtons()}
+                {executionMode === "bubbles" ? null : (
+                  <>
+                    {renderPlanActionButtons()}
+                    {renderSoundToggle()}
+                  </>
+                )}
               </div>
             </div>
 
             {executionMode === "bubbles" && !shouldCollapsePlan && !isEditing ? (
               <div
                 data-testid="dryland-micro-manage-actions"
-                className="mt-3 flex flex-wrap items-center gap-2"
+                className="mt-3 flex w-full items-center gap-2"
               >
                 {renderPlanActionButtons({ compact: true })}
+                {renderSoundToggle()}
               </div>
             ) : null}
 
@@ -1993,7 +1999,6 @@ export default function DrylandMicroPlanPanel({
                   Progress
                 </p>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  {renderSoundToggle()}
                   {latestUndoableCompletedUnit ? (
                     <button
                       type="button"
