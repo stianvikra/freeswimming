@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
+import { APP_SOUND_PROFILES } from "@/lib/audio/client-sound";
 import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
 import type { DrylandSessionSummary } from "@/lib/dryland/shared";
 
@@ -130,10 +131,64 @@ function getBubbleBackgroundClass(element: HTMLElement) {
   return Array.from(element.classList).find((className) => /^bg-\w+-50$/.test(className));
 }
 
+const MICRO_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:micro-sessions:v1:sound";
+
+function installAudioContextMock(options?: { resumeRejects?: boolean }) {
+  const audio = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    resume: vi.fn(() =>
+      options?.resumeRejects ? Promise.reject(new Error("blocked")) : Promise.resolve()
+    ),
+    close: vi.fn(() => Promise.resolve()),
+    oscillatorConnect: vi.fn(),
+    gainConnect: vi.fn(),
+    setFrequency: vi.fn(),
+    setGain: vi.fn(),
+    rampGain: vi.fn(),
+    addEndedListener: vi.fn(),
+  };
+
+  class MockAudioContext {
+    state = options?.resumeRejects ? "suspended" : "running";
+    currentTime = 0;
+    destination = {};
+    resume = audio.resume;
+    close = audio.close;
+
+    createOscillator() {
+      return {
+        type: "sine",
+        frequency: {
+          setValueAtTime: audio.setFrequency,
+        },
+        connect: audio.oscillatorConnect,
+        start: audio.start,
+        stop: audio.stop,
+        addEventListener: audio.addEndedListener,
+      };
+    }
+
+    createGain() {
+      return {
+        gain: {
+          setValueAtTime: audio.setGain,
+          exponentialRampToValueAtTime: audio.rampGain,
+        },
+        connect: audio.gainConnect,
+      };
+    }
+  }
+
+  vi.stubGlobal("AudioContext", MockAudioContext);
+  return audio;
+}
+
 describe("DrylandMicroPlanPanel", () => {
   beforeEach(() => {
     vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-12T10:00:00.000Z").getTime());
     vi.stubGlobal("fetch", vi.fn());
+    window.localStorage.clear();
   });
 
   afterEach(() => {
@@ -209,7 +264,10 @@ describe("DrylandMicroPlanPanel", () => {
     expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
-    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass(
+      "fs-cta-primary",
+      "w-full"
+    );
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).not.toBeInTheDocument();
@@ -276,6 +334,44 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByTestId("dryland-micro-clear-open")).toBeVisible();
   });
 
+  it("stores micro session sound as an icon-only local preference", async () => {
+    const audio = installAudioContextMock();
+    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    const toggle = screen.getByTestId("dryland-micro-sound-toggle");
+    expect(toggle).toHaveAccessibleName("Sound off");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(window.localStorage.getItem(MICRO_SOUND_PREFERENCE_STORAGE_KEY)).toBeNull();
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-micro-sound-toggle")).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
+      expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount);
+    });
+    expect(screen.getByTestId("dryland-micro-sound-toggle")).toHaveAccessibleName("Sound on");
+    expect(
+      JSON.parse(window.localStorage.getItem(MICRO_SOUND_PREFERENCE_STORAGE_KEY) ?? "")
+    ).toEqual({
+      version: 1,
+      enabled: true,
+    });
+    expect(screen.queryByText("Sound on.")).toBeNull();
+    expect(screen.queryByText("Sound off.")).toBeNull();
+  });
+
   it("clears an active micro session without deleting saved dryland sessions", async () => {
     const onPlanChange = vi.fn();
     vi.mocked(fetch).mockResolvedValue({
@@ -318,6 +414,7 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(await screen.findByText("Micro session cleared.")).toBeVisible();
     expect(screen.getByText("No active micro session")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("w-full");
     expect(onPlanChange).toHaveBeenLastCalledWith(null);
   });
 
@@ -654,10 +751,15 @@ describe("DrylandMicroPlanPanel", () => {
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
     expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("dryland-micro-mode-ordered")).not.toHaveClass("fs-cta-primary");
-    const manageSummary = screen.getByTestId("dryland-micro-manage-summary");
-    expect(manageSummary).toHaveTextContent("Manage micro session");
-    expect(manageSummary).toHaveClass("list-none", "[&::-webkit-details-marker]:hidden");
-    expect(manageSummary.querySelector("svg")).toHaveClass("h-4", "w-4");
+    const manageActions = screen.getByTestId("dryland-micro-manage-actions");
+    expect(
+      within(manageActions).getByRole("button", { name: "Edit micro session" })
+    ).toHaveTextContent("Edit");
+    expect(
+      within(manageActions).getByRole("button", { name: "Clear micro session" })
+    ).toHaveTextContent("Clear");
+    expect(screen.queryByText("Manage micro session")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
 
     const board = screen.getByTestId("dryland-micro-bubble-board");
     expect(board).toHaveClass("flex", "flex-wrap", "gap-x-2", "gap-y-2");
@@ -909,6 +1011,9 @@ describe("DrylandMicroPlanPanel", () => {
 
   it("auto-completes timed bubbles when the countdown reaches zero", async () => {
     vi.useFakeTimers({ now: new Date("2026-05-11T10:00:00.000Z") });
+    const audio = installAudioContextMock();
+    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
+    const timerVoiceCount = APP_SOUND_PROFILES.timerComplete.voices.length;
     const basePlan = buildPlan();
     const blocks: DrylandMicroBlockSnapshot[] = [
       {
@@ -958,6 +1063,13 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount);
+    audio.start.mockClear();
+
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
@@ -974,9 +1086,20 @@ describe("DrylandMicroPlanPanel", () => {
         body: expect.stringContaining('"blockId":"unit-plank"'),
       })
     );
+    expect(audio.start).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(320);
+      await Promise.resolve();
+    });
+
+    expect(audio.start).toHaveBeenCalledTimes(timerVoiceCount);
   });
 
   it("double taps a bubble through the existing server-confirmed completion mutation", async () => {
+    const audio = installAudioContextMock();
+    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
     const completedPlan = buildPlan({
       blocks: buildPlan().blocks.map((block, index) =>
         index === 0
@@ -1012,6 +1135,10 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
+    audio.start.mockClear();
+
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
@@ -1026,6 +1153,7 @@ describe("DrylandMicroPlanPanel", () => {
       );
     });
     expect(screen.queryByText("Bubble completed.")).not.toBeInTheDocument();
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
     expect(await screen.findByTestId("dryland-micro-global-undo")).toHaveTextContent("Undo");
     expect(screen.getByTestId("dryland-micro-global-undo")).toHaveAccessibleName(
       "Undo last completed micro unit: Single-leg squat"
@@ -1162,6 +1290,8 @@ describe("DrylandMicroPlanPanel", () => {
   });
 
   it("keeps a bubble visible when server completion fails", async () => {
+    const audio = installAudioContextMock();
+    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
       json: async () => ({
@@ -1179,6 +1309,10 @@ describe("DrylandMicroPlanPanel", () => {
       />
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
+    audio.start.mockClear();
+
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
     fireEvent.click(screen.getByTestId("dryland-micro-bubble-0"));
@@ -1193,6 +1327,7 @@ describe("DrylandMicroPlanPanel", () => {
       "aria-valuenow",
       "0"
     );
+    expect(audio.start).not.toHaveBeenCalled();
   });
 
   it("disables bubble completion while a micro session is paused", () => {

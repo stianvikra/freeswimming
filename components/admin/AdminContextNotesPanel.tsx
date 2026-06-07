@@ -843,14 +843,18 @@ export default function AdminContextNotesPanel({
             {inheritedModuleCount > 0 ? ` · ${inheritedModuleCount} inherited from module` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div
+          className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end"
+          data-testid="admin-context-notes-actions"
+        >
           <AdminNoteQuickCaptureLauncher
             adminRole={adminRole}
             contextType={contextType}
             contextRef={normalizedContextRef}
             contextLabel={contextLabel}
             triggerLabel="Quick note"
-            triggerClassName={primaryActionClass}
+            className="min-w-0"
+            triggerClassName={cx(primaryActionClass, "w-full")}
             onSaved={(item) => {
               setItems((prev) => [item, ...prev.filter((entry) => entry.id !== item.id)]);
               setActionError(null);
@@ -861,7 +865,7 @@ export default function AdminContextNotesPanel({
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className={secondaryActionClass}
+            className={cx(secondaryActionClass, "w-full")}
             data-testid="admin-context-notes-toggle"
           >
             {expanded ? "Collapse notes" : "Show notes"}

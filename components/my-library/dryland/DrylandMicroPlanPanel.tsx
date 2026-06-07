@@ -14,14 +14,21 @@ import {
 import {
   Bubbles,
   CheckCircle2,
-  ChevronDown,
   ListChecks,
+  Pencil,
   RefreshCcw,
   Trash2,
   Undo2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import { cx } from "@/components/ui/cx";
+import {
+  playAppSoundProfile,
+  type AppSoundPlaybackResult,
+  type AppSoundProfileName,
+} from "@/lib/audio/client-sound";
 import {
   getDrylandMicroBlockReleaseDate,
   getDrylandMicroWeekdayLabel,
@@ -92,6 +99,8 @@ const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; 
 const WEEKDAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
 const BUBBLE_POP_ANIMATION_MS = 320;
 const BUBBLE_EARLY_COMPLETE_CONFIRM_MS = 1000;
+const MICRO_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:micro-sessions:v1:sound";
+const MICRO_SOUND_PREFERENCE_STORAGE_VERSION = 1;
 const BUBBLE_TONE_CLASSES = [
   "border-amber-200 bg-amber-50 text-amber-950 shadow-amber-900/10",
   "border-emerald-200 bg-emerald-50 text-emerald-950 shadow-emerald-900/10",
@@ -123,6 +132,15 @@ const MICRO_SECONDARY_ACTION_CLASS = cx(
 );
 const MICRO_COMPACT_SECONDARY_ACTION_CLASS = cx(
   "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-1.5 px-3 text-xs font-semibold transition-colors hover:bg-white sm:min-h-10 sm:gap-2 sm:px-4 sm:text-sm",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_COMPACT_DANGER_ACTION_CLASS = cx(
+  MICRO_COMPACT_SECONDARY_ACTION_CLASS,
+  "border-rose-200 text-rose-700 hover:bg-rose-50"
+);
+const MICRO_ICON_ACTION_CLASS = cx(
+  "fs-cta-secondary inline-flex h-10 w-10 shrink-0 items-center justify-center p-0 transition-colors hover:bg-white",
   MICRO_ACTION_FOCUS_CLASS,
   MICRO_ACTION_DISABLED_CLASS
 );
@@ -247,6 +265,40 @@ function wait(ms: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function readMicroSoundPreference() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const raw = window.localStorage.getItem(MICRO_SOUND_PREFERENCE_STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { version?: unknown; enabled?: unknown } | null;
+    return (
+      !!parsed &&
+      parsed.version === MICRO_SOUND_PREFERENCE_STORAGE_VERSION &&
+      parsed.enabled === true
+    );
+  } catch {
+    return false;
+  }
+}
+
+function writeMicroSoundPreference(enabled: boolean) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    window.localStorage.setItem(
+      MICRO_SOUND_PREFERENCE_STORAGE_KEY,
+      JSON.stringify({
+        version: MICRO_SOUND_PREFERENCE_STORAGE_VERSION,
+        enabled,
+      })
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function hashBubbleSeed(value: string) {
@@ -478,6 +530,8 @@ export default function DrylandMicroPlanPanel({
   const [bubbleNowMs, setBubbleNowMs] = useState(() => Date.now());
   const [poppingBubbleId, setPoppingBubbleId] = useState<string | null>(null);
   const [completedUndoStack, setCompletedUndoStack] = useState<CompletedUndoItem[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundNotice, setSoundNotice] = useState<string | null>(null);
   const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -506,7 +560,12 @@ export default function DrylandMicroPlanPanel({
     setBubbleNowMs(Date.now());
     setPoppingBubbleId(null);
     setCompletedUndoStack([]);
+    setSoundNotice(null);
   }, [initialEditorOpen, initialPlan]);
+
+  useEffect(() => {
+    setSoundEnabled(readMicroSoundPreference());
+  }, []);
 
   useEffect(() => {
     setExecutionMode(getPreferredClientExecutionMode(preferMobileBubbles));
@@ -708,6 +767,51 @@ export default function DrylandMicroPlanPanel({
     setBubbleTimer(null);
   }
 
+  async function playMicroSound(profileName: AppSoundProfileName) {
+    const result: AppSoundPlaybackResult = await playAppSoundProfile(profileName);
+    if (result === "played") {
+      setSoundNotice(null);
+      return;
+    }
+
+    setSoundNotice(
+      result === "unsupported"
+        ? "Sound is not available in this browser."
+        : "Sound was blocked. Your micro session was still saved."
+    );
+  }
+
+  function playEnabledMicroSound(profileName: AppSoundProfileName) {
+    if (!soundEnabled) return;
+    void playMicroSound(profileName);
+  }
+
+  function getCompletedBlockSoundProfile(
+    block: DrylandMicroBlockSnapshot | null,
+    options: UpdateBlockOptions
+  ): AppSoundProfileName {
+    return options.visualOrigin === "bubbles" && block?.targetType === "duration"
+      ? "timerComplete"
+      : "tapComplete";
+  }
+
+  function toggleMicroSoundPreference() {
+    const nextEnabled = !soundEnabled;
+    setSoundEnabled(nextEnabled);
+    const didPersist = writeMicroSoundPreference(nextEnabled);
+    if (!didPersist) {
+      setSoundNotice("Sound preference cannot be saved in this browser.");
+      return;
+    }
+
+    if (nextEnabled) {
+      void playMicroSound("tapComplete");
+      return;
+    }
+
+    setSoundNotice(null);
+  }
+
   async function createPlan() {
     if (selectedSessionIds.length === 0) {
       setError("Select at least one saved Dryland Session.");
@@ -828,6 +932,7 @@ export default function DrylandMicroPlanPanel({
     options: UpdateBlockOptions = {}
   ) {
     const targetBlock = plan?.blocks.find((block) => block.id === blockId) ?? null;
+    const completionSoundProfile = getCompletedBlockSoundProfile(targetBlock, options);
     setPendingBlockId(blockId);
     setError("");
     setSuccess("");
@@ -852,6 +957,7 @@ export default function DrylandMicroPlanPanel({
         setSuccess(
           nextPlan.status === "completed" ? "All micro units are complete for this week." : ""
         );
+        playEnabledMicroSound(completionSoundProfile);
         return;
       }
 
@@ -870,6 +976,9 @@ export default function DrylandMicroPlanPanel({
             ? "Micro unit restored."
             : "Micro unit updated."
       );
+      if (blockStatus === "completed") {
+        playEnabledMicroSound(completionSoundProfile);
+      }
     } catch (updateError) {
       setError(
         updateError instanceof Error ? updateError.message : "Could not update micro session."
@@ -1080,13 +1189,17 @@ export default function DrylandMicroPlanPanel({
     };
   }
 
-  function renderClearPlanControls() {
+  function renderClearPlanControls(options: { compact?: boolean } = {}) {
     if (!plan) return null;
+    const actionClass = options.compact
+      ? MICRO_COMPACT_DANGER_ACTION_CLASS
+      : MICRO_DANGER_ACTION_CLASS;
 
     if (!isClearConfirmOpen) {
       return (
         <button
           type="button"
+          aria-label="Clear micro session"
           data-testid="dryland-micro-clear-open"
           onClick={() => {
             setIsClearConfirmOpen(true);
@@ -1094,10 +1207,10 @@ export default function DrylandMicroPlanPanel({
             setSuccess("");
           }}
           disabled={isClearingPlan || isSavingPlan}
-          className={MICRO_DANGER_ACTION_CLASS}
+          className={actionClass}
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
-          Clear micro session
+          Clear
         </button>
       );
     }
@@ -1132,35 +1245,60 @@ export default function DrylandMicroPlanPanel({
     );
   }
 
-  function renderPlanActionButtons() {
+  function renderSoundToggle() {
+    return (
+      <button
+        type="button"
+        data-testid="dryland-micro-sound-toggle"
+        aria-pressed={soundEnabled}
+        onClick={toggleMicroSoundPreference}
+        title={soundEnabled ? "Sound on" : "Sound off"}
+        className={MICRO_ICON_ACTION_CLASS}
+      >
+        {soundEnabled ? (
+          <Volume2 className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <VolumeX className="h-4 w-4" aria-hidden="true" />
+        )}
+        <span className="sr-only">{soundEnabled ? "Sound on" : "Sound off"}</span>
+      </button>
+    );
+  }
+
+  function renderPlanActionButtons(options: { compact?: boolean } = {}) {
     if (!plan || shouldCollapsePlan) return null;
+    const secondaryClass = options.compact
+      ? MICRO_COMPACT_SECONDARY_ACTION_CLASS
+      : MICRO_SECONDARY_ACTION_CLASS;
 
     return (
       <>
         <button
           type="button"
+          aria-label={isEditing ? "Close micro session edit" : "Edit micro session"}
           data-testid="dryland-micro-edit-plan"
           onClick={() => {
             setIsEditing((current) => !current);
             setError("");
             setSuccess("");
           }}
-          className={MICRO_SECONDARY_ACTION_CLASS}
+          className={secondaryClass}
         >
-          {isEditing ? "Close edit" : "Edit micro session"}
+          <Pencil className="h-4 w-4" aria-hidden="true" />
+          {isEditing ? "Close" : "Edit"}
         </button>
-        {plan.status !== "completed" ? (
+        {plan.status === "paused" ? (
           <button
             type="button"
-            data-testid="dryland-micro-toggle-plan-status"
-            onClick={() => void updatePlanStatus(plan.status === "paused" ? "active" : "paused")}
+            data-testid="dryland-micro-resume-plan-status"
+            onClick={() => void updatePlanStatus("active")}
             disabled={isPlanStatusSaving}
-            className={MICRO_SECONDARY_ACTION_CLASS}
+            className={MICRO_PRIMARY_ACTION_CLASS}
           >
-            {isPlanStatusSaving ? "Saving..." : plan.status === "paused" ? "Resume" : "Pause"}
+            {isPlanStatusSaving ? "Saving..." : "Resume"}
           </button>
         ) : null}
-        {renderClearPlanControls()}
+        {renderClearPlanControls({ compact: options.compact })}
       </>
     );
   }
@@ -1645,6 +1783,7 @@ export default function DrylandMicroPlanPanel({
               }}
               className={MICRO_SECONDARY_ACTION_CLASS}
             >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
               Edit micro session
             </button>
             {renderClearPlanControls()}
@@ -1740,34 +1879,39 @@ export default function DrylandMicroPlanPanel({
         </DrylandFeedback>
       ) : null}
 
+      {soundNotice ? (
+        <p role="status" className="mt-3 text-sm font-medium text-slate-600">
+          {soundNotice}
+        </p>
+      ) : null}
+
       {schemaReady && !plan ? (
         <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
           {!isCreating ? (
             <DrylandFeedback
               tone="empty"
               testId="dryland-micro-empty"
-              action={
-                sessions.length > 0 ? (
-                  <button
-                    type="button"
-                    data-testid="dryland-micro-start-create"
-                    onClick={() => {
-                      setIsCreating(true);
-                      setError("");
-                      setSuccess("");
-                    }}
-                    className={MICRO_PRIMARY_ACTION_CLASS}
-                  >
-                    Create micro session
-                  </button>
-                ) : null
-              }
+              className="[&>div:first-child]:w-full [&>div:first-child]:max-w-none"
             >
               <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
               <p className="mt-1 text-sm text-slate-600">
                 Create one weekly Micro Session from saved Dryland Sessions when you want small
                 set-by-set work.
               </p>
+              {sessions.length > 0 ? (
+                <button
+                  type="button"
+                  data-testid="dryland-micro-start-create"
+                  onClick={() => {
+                    setIsCreating(true);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className={cx(MICRO_PRIMARY_ACTION_CLASS, "mt-4 w-full")}
+                >
+                  Create micro session
+                </button>
+              ) : null}
             </DrylandFeedback>
           ) : (
             <div className="space-y-4">
@@ -1834,20 +1978,13 @@ export default function DrylandMicroPlanPanel({
               </div>
             </div>
 
-            {executionMode === "bubbles" && !shouldCollapsePlan ? (
-              <details className="group mt-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                <summary
-                  data-testid="dryland-micro-manage-summary"
-                  className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-700 [&::-webkit-details-marker]:hidden"
-                >
-                  <span>Manage micro session</span>
-                  <ChevronDown
-                    className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180"
-                    aria-hidden="true"
-                  />
-                </summary>
-                <div className="mt-3 flex flex-wrap gap-2">{renderPlanActionButtons()}</div>
-              </details>
+            {executionMode === "bubbles" && !shouldCollapsePlan && !isEditing ? (
+              <div
+                data-testid="dryland-micro-manage-actions"
+                className="mt-3 flex flex-wrap items-center gap-2"
+              >
+                {renderPlanActionButtons({ compact: true })}
+              </div>
             ) : null}
 
             <div className={isBubbleFocus ? "mt-3" : "mt-5"}>
@@ -1856,6 +1993,7 @@ export default function DrylandMicroPlanPanel({
                   Progress
                 </p>
                 <div className="flex flex-wrap items-center justify-end gap-2">
+                  {renderSoundToggle()}
                   {latestUndoableCompletedUnit ? (
                     <button
                       type="button"

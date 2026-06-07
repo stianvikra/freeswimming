@@ -47,7 +47,8 @@ Fremoverkompatibilitet: reset maa vaere en egen typed, server-canonical event/ko
 - The action is per habit, not global.
 - Old `habit_check_ins` stay intact.
 - Motivation metrics use the latest valid reset effective date as the lower bound.
-- History before the reset remains available as preserved history, for example `Before reset`.
+- Default Motivation view shows current post-reset metrics; history before the latest reset remains available as preserved history, for example `Before reset`.
+- Multiple resets must be deterministic: latest valid reset drives current metrics, older reset periods remain explainable by dated boundaries, and none of them delete check-ins.
 - Calendar Comparison may show a `Habit reset` marker, but must not treat reset as a completed check-in.
 - Reset must be auditable and reversible enough for support; it must not be a silent overwrite of old metric truth.
 
@@ -73,6 +74,7 @@ If implementation audit proves a column-based model is safer for the current sch
 - Persist reset state in a server-canonical, owner-scoped, typed way.
 - Recompute per-habit current streak, best streak, days hit, and consistency from the reset date forward.
 - Keep totals and preserved history explainable before and after reset.
+- Support repeated `Start fresh` use by preserving each reset boundary as dated history instead of overwriting the prior event.
 - Add a visible `Since <date>` or equivalent label where reset affects motivation metrics.
 - Add Calendar Comparison reset marker support only through explicit mapping from the reset contract.
 - Update support docs/runbooks so operators can diagnose reset questions without private habit names or raw notes.
@@ -93,11 +95,12 @@ If implementation audit proves a column-based model is safer for the current sch
 2. Reset creates a server-canonical owner-scoped reset record and does not delete or rewrite historical check-ins.
 3. Motivation metrics show a clear reset boundary such as `Since Jun 6, 2026`.
 4. Per-habit streak, best streak, days hit, and consistency derive from the reset boundary forward.
-5. Preserved pre-reset history remains readable and is not counted as post-reset progress.
-6. Calendar Comparison shows reset as a marker only, not as a done/rest/slip check-in.
-7. Unauthorized users cannot create, read, or apply resets for another owner.
-8. Support docs explain how to diagnose reset state using redacted owner-scoped IDs and dates.
-9. Screenshot handoff proves Details workflow, confirmation copy, post-reset summary, and mobile layout.
+5. Preserved pre-reset history remains readable as `Before reset` and is not counted as post-reset progress.
+6. Multiple resets keep deterministic dated boundaries; the latest valid reset drives current Motivation metrics and earlier periods remain explainable.
+7. Calendar Comparison shows reset as a marker only, not as a done/rest/slip check-in.
+8. Unauthorized users cannot create, read, or apply resets for another owner.
+9. Support docs explain how to diagnose reset state using redacted owner-scoped IDs and dates.
+10. Screenshot handoff proves Details workflow, confirmation copy, post-reset summary, repeated-reset state, and mobile layout.
 
 ## Data Placement And Sync Contract
 

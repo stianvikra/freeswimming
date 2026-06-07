@@ -64,6 +64,7 @@ import {
   getMyLibraryCalendarPeriodStartDate,
 } from "@/lib/my-library/calendar";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
+import { playAppSoundProfile, type AppSoundPlaybackResult } from "@/lib/audio/client-sound";
 
 type Props = {
   initialSnapshot: HabitSnapshot;
@@ -99,10 +100,9 @@ type TimerState = {
   startedAtMs: number | null;
 };
 
-type HabitSoundPlaybackResult = "played" | "blocked" | "unsupported";
-
 type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
 type HabitFeedbackAnnouncement = "polite" | "assertive" | "none";
+type MotivationPanel = "definitions" | "history";
 
 type HabitFeedbackProps = {
   tone: HabitFeedbackTone;
@@ -133,6 +133,7 @@ const HABIT_TIMER_STORAGE_PREFIX = "freeswimming:habits:v3:timers";
 const HABIT_TIMER_STORAGE_VERSION = 1;
 const HABIT_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:habits:v1:sound";
 const HABIT_SOUND_PREFERENCE_STORAGE_VERSION = 1;
+const MOTIVATION_EARLY_DATA_ELIGIBLE_DAY_THRESHOLD = 7;
 const HABIT_WEEK_SWIPE_THRESHOLD_PX = 48;
 const HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX = 40;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
@@ -489,19 +490,19 @@ function getSelectedDateDisplayLabel(selectedDate: string, todayDate: string) {
   return selectedDate === todayDate ? "Today" : getFullDateLabel(selectedDate);
 }
 
-function getSelectedDateChipLabel(selectedDate: string, todayDate: string) {
+function getSelectedDateContextLabel(selectedDate: string, todayDate: string) {
   return selectedDate === todayDate
     ? `Today · ${getLongDateLabel(selectedDate)}`
     : `${getWeekdayLabel(selectedDate)} · ${getLongDateLabel(selectedDate)}`;
 }
 
 function formatMetricDays(value: number) {
-  if (value <= 0) return "None yet";
+  if (value <= 0) return "0 days";
   return `${value} ${value === 1 ? "day" : "days"}`;
 }
 
 function formatMetricPercent(value: number | null) {
-  return value === null ? "Not enough history" : `${value}%`;
+  return `${value ?? 0}%`;
 }
 
 function formatMetricNumber(value: number) {
@@ -509,9 +510,28 @@ function formatMetricNumber(value: number) {
 }
 
 function formatPerfectDayCount(summary: HabitMotivationSummary) {
-  return summary.eligibleDayCount > 0
-    ? `${summary.onTrackDayCount}/${summary.eligibleDayCount}`
-    : "Not enough history";
+  return `${summary.onTrackDayCount}/${summary.eligibleDayCount}`;
+}
+
+function getMotivationDataQuality(summary: HabitMotivationSummary): {
+  label: string;
+  tone: "muted" | "warning";
+} | null {
+  if (summary.eligibleDayCount <= 0) {
+    return {
+      label: "No scheduled Perfect Day days in this period.",
+      tone: "muted",
+    };
+  }
+
+  if (summary.eligibleDayCount < MOTIVATION_EARLY_DATA_ELIGIBLE_DAY_THRESHOLD) {
+    return {
+      label: `Early data: ${summary.eligibleDayCount}/${MOTIVATION_EARLY_DATA_ELIGIBLE_DAY_THRESHOLD} days measured.`,
+      tone: "warning",
+    };
+  }
+
+  return null;
 }
 
 function formatHistoryRange(summary: HabitMotivationSummary) {
@@ -1085,53 +1105,6 @@ function getTimedTargetSoundKey(selectedDate: string, habitId: string, targetSec
   return `${selectedDate}:${habitId}:${targetSeconds}`;
 }
 
-async function playHabitCompletionTone(): Promise<HabitSoundPlaybackResult> {
-  if (typeof window === "undefined") return "unsupported";
-
-  const audioWindow = window as Window &
-    typeof globalThis & {
-      webkitAudioContext?: typeof AudioContext;
-    };
-  const AudioContextConstructor = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
-  if (!AudioContextConstructor) return "unsupported";
-
-  try {
-    const context = new AudioContextConstructor();
-    if (context.state === "suspended") {
-      await context.resume();
-    }
-
-    const now = context.currentTime;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(432, now);
-    oscillator.frequency.exponentialRampToValueAtTime(528, now + 0.28);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.06);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.44);
-
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start(now);
-    oscillator.stop(now + 0.46);
-    oscillator.addEventListener(
-      "ended",
-      () => {
-        void context.close().catch(() => {
-          // Audio feedback is optional; failed cleanup should not affect Habits tracking.
-        });
-      },
-      { once: true }
-    );
-
-    return "played";
-  } catch {
-    return "blocked";
-  }
-}
-
 export default function HabitPerfectDayHub({
   initialSnapshot,
   preferMobileActiveFocus = false,
@@ -1152,8 +1125,8 @@ export default function HabitPerfectDayHub({
   const [expandedHabitIds, setExpandedHabitIds] = useState<string[]>([]);
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
   const [isMobileWeekOpen, setIsMobileWeekOpen] = useState(false);
-  const [isMotivationOpen, setIsMotivationOpen] = useState(false);
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
+  const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -1203,7 +1176,10 @@ export default function HabitPerfectDayHub({
     view: calendarViewParam,
   });
   const selectedDateLabel = getSelectedDateDisplayLabel(snapshot.selectedDate, safeTodayDate);
-  const selectedDateChipLabel = getSelectedDateChipLabel(snapshot.selectedDate, safeTodayDate);
+  const selectedDateContextLabel = getSelectedDateContextLabel(
+    snapshot.selectedDate,
+    safeTodayDate
+  );
   const weekLabel = calendarWindow.weekLabel;
   const weekRangeLabel = getWeekRangeLabel(calendarWindow.startDate, calendarWindow.endDate);
   const editRuleLabel = isHistoricalDate
@@ -1386,10 +1362,10 @@ export default function HabitPerfectDayHub({
     return () => window.clearTimeout(timeout);
   }, [recentlyCreatedHabitId, snapshot.daySummary.items]);
 
-  const playHabitSound = useCallback(async (reason: "completion" | "target" | "preview") => {
-    const result = await playHabitCompletionTone();
+  const playHabitSound = useCallback(async () => {
+    const result: AppSoundPlaybackResult = await playAppSoundProfile("softSuccessChime");
     if (result === "played") {
-      setSoundNotice(reason === "preview" ? "Sound on." : null);
+      setSoundNotice(null);
       return;
     }
 
@@ -1400,13 +1376,10 @@ export default function HabitPerfectDayHub({
     );
   }, []);
 
-  const playEnabledHabitSound = useCallback(
-    (reason: "completion" | "target") => {
-      if (!soundEnabled) return;
-      void playHabitSound(reason);
-    },
-    [playHabitSound, soundEnabled]
-  );
+  const playEnabledHabitSound = useCallback(() => {
+    if (!soundEnabled) return;
+    void playHabitSound();
+  }, [playHabitSound, soundEnabled]);
 
   const getTimerSeconds = useCallback(
     (habitId: string) => {
@@ -1442,7 +1415,7 @@ export default function HabitPerfectDayHub({
         !timedTargetSoundKeysRef.current.has(soundKey)
       ) {
         timedTargetSoundKeysRef.current.add(soundKey);
-        playEnabledHabitSound("target");
+        playEnabledHabitSound();
       }
 
       if (progressSeconds < targetSeconds) {
@@ -1495,7 +1468,6 @@ export default function HabitPerfectDayHub({
   }
 
   function openMotivationSummary() {
-    setIsMotivationOpen(true);
     window.setTimeout(() => {
       motivationSectionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
     }, 0);
@@ -1529,11 +1501,11 @@ export default function HabitPerfectDayHub({
     }
 
     if (nextEnabled) {
-      void playHabitSound("preview");
+      void playHabitSound();
       return;
     }
 
-    setSoundNotice("Sound off.");
+    setSoundNotice(null);
   }
 
   function startTimer(habitId: string) {
@@ -1801,7 +1773,7 @@ export default function HabitPerfectDayHub({
       collapseHabitDetails(habit.id);
       clearTimer(habit.id);
       if (shouldPlaySuccessfulCompletionSound(item, nextSnapshot)) {
-        playEnabledHabitSound("completion");
+        playEnabledHabitSound();
       }
       setNotice("Check-in saved.");
     } catch (caught) {
@@ -1842,7 +1814,7 @@ export default function HabitPerfectDayHub({
       collapseHabitDetails(habit.id);
       if (input.clearLocalTimerOnSuccess) clearTimer(habit.id);
       if (shouldPlaySuccessfulCompletionSound(item, nextSnapshot)) {
-        playEnabledHabitSound("completion");
+        playEnabledHabitSound();
       }
       setNotice(input.successNotice);
     } catch (caught) {
@@ -2429,12 +2401,26 @@ export default function HabitPerfectDayHub({
     return `Today: ${todayLabel}`;
   }
 
-  function renderMotivationMetric(label: string, value: string, detail?: string) {
+  function renderMotivationMetric(
+    label: string,
+    value: string,
+    detail?: string,
+    detailTone: "muted" | "warning" = "muted"
+  ) {
     return (
       <div className="min-w-0 border-t border-[color:var(--fs-border-soft)] pt-3">
         <p className={habitLabelClass}>{label}</p>
         <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
-        {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
+        {detail ? (
+          <p
+            className={cx(
+              "mt-1 text-sm",
+              detailTone === "warning" ? "font-semibold text-amber-700" : "text-slate-500"
+            )}
+          >
+            {detail}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -2461,10 +2447,7 @@ export default function HabitPerfectDayHub({
   function renderHabitMotivationDetails(item: HabitMotivationItem | undefined) {
     if (!item) return null;
 
-    const trackedLabel =
-      item.eligibleDayCount > 0
-        ? `${item.onTrackDayCount}/${item.eligibleDayCount} days hit`
-        : "Not enough history";
+    const trackedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} days hit`;
 
     return (
       <div
@@ -2497,24 +2480,24 @@ export default function HabitPerfectDayHub({
 
   function renderMotivationItem(item: HabitMotivationItem) {
     const consistencyLabel = formatMetricPercent(item.consistencyPercent);
-    const trackedLabel =
-      item.eligibleDayCount > 0
-        ? `${item.onTrackDayCount}/${item.eligibleDayCount} days hit`
-        : "Not enough history";
+    const completedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} completed`;
+    const isArchived = item.status === "archived";
 
     return (
       <li key={item.habitId} className="border-t border-[color:var(--fs-border-soft)] py-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <p className="min-w-0 truncate text-sm font-semibold text-slate-900">{item.title}</p>
-          <span className={item.status === "archived" ? habitWarningChipClass : habitChipClass}>
-            {item.status === "archived" ? "Saved history" : getHabitModeLabel(item.mode)}
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+            {item.title}
+          </p>
+          <span className={isArchived ? habitWarningChipClass : habitChipClass}>
+            {isArchived ? "Past habit" : getHabitModeLabel(item.mode)}
           </span>
         </div>
         <p className="mt-1 text-sm text-slate-600">
-          {trackedLabel} · Best {formatMetricDays(item.bestStreakDays)} · Current{" "}
-          {formatMetricDays(item.currentStreakDays)}
+          {completedLabel} · Best streak: {formatMetricDays(item.bestStreakDays)} ·{" "}
+          {isArchived ? "Final" : "Current"} streak: {formatMetricDays(item.currentStreakDays)}
         </p>
-        <p className="mt-1 text-sm text-slate-500">Consistency {consistencyLabel}</p>
+        <p className="mt-1 text-sm text-slate-500">Consistency: {consistencyLabel}</p>
       </li>
     );
   }
@@ -2604,6 +2587,9 @@ export default function HabitPerfectDayHub({
       0,
       summary.items.filter((item) => item.status === "archived").length - archivedItems.length
     );
+    const motivationDataQuality = getMotivationDataQuality(summary);
+    const isDefinitionsPanelOpen = openMotivationPanel === "definitions";
+    const isHistoryPanelOpen = openMotivationPanel === "history";
 
     return (
       <section
@@ -2612,43 +2598,25 @@ export default function HabitPerfectDayHub({
         data-testid="habits-motivation-history"
         className={cx("scroll-mt-28", habitPanelClass, className)}
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
               Progress summary
             </p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900">Motivation</h2>
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
+              <h2 className="min-w-0 text-xl font-bold text-slate-900">Motivation</h2>
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <span className={habitBrandChipClass}>{summary.activeHabitCount} active</span>
+                {summary.archivedHabitCount > 0 ? (
+                  <span className={habitWarningChipClass}>
+                    {summary.archivedHabitCount} past habits
+                  </span>
+                ) : null}
+              </div>
+            </div>
             <p className="mt-2 text-sm text-slate-600">
               {formatMotivationRangeLabel(summary, motivationRange)}
             </p>
-            {!isMotivationOpen ? (
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                Perfect-day streak {formatMetricDays(summary.currentStreakDays)} · Consistency{" "}
-                {formatMetricPercent(summary.consistencyPercent)}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            <button
-              type="button"
-              aria-expanded={isMotivationOpen}
-              aria-controls="habits-motivation-details"
-              data-testid="habits-motivation-toggle"
-              onClick={() => setIsMotivationOpen((current) => !current)}
-              className={cx(habitSecondaryActionClass, "px-3 max-sm:w-full")}
-            >
-              <span>Stats</span>
-              <ChevronDown
-                className={cx("h-4 w-4 transition-transform", isMotivationOpen ? "rotate-180" : "")}
-                aria-hidden="true"
-              />
-            </button>
-            <span className={habitBrandChipClass}>{summary.activeHabitCount} active</span>
-            {summary.archivedHabitCount > 0 ? (
-              <span className={habitWarningChipClass}>
-                {summary.archivedHabitCount} past habits
-              </span>
-            ) : null}
           </div>
         </div>
 
@@ -2674,110 +2642,167 @@ export default function HabitPerfectDayHub({
           })}
         </div>
 
-        {isMotivationOpen ? (
-          <div id="habits-motivation-details">
-            <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-              {renderMotivationMetric(
-                "Current perfect-day streak",
-                formatMetricDays(summary.currentStreakDays),
-                summary.lastTrackedDate
-                  ? `Last tracked ${getLongDateLabel(summary.lastTrackedDate)}`
-                  : undefined
+        <div id="habits-motivation-details">
+          <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+            {renderMotivationMetric(
+              "Current perfect-day streak",
+              formatMetricDays(summary.currentStreakDays),
+              summary.lastTrackedDate
+                ? `Last tracked ${getLongDateLabel(summary.lastTrackedDate)}`
+                : undefined
+            )}
+            {renderMotivationMetric(
+              "Best perfect-day streak",
+              formatMetricDays(summary.bestStreakDays)
+            )}
+            {renderMotivationMetric("Perfect days", formatPerfectDayCount(summary))}
+            {renderMotivationMetric("Consistency", formatMetricPercent(summary.consistencyPercent))}
+          </div>
+          {motivationDataQuality ? (
+            <p
+              data-testid="habits-motivation-data-quality"
+              className={cx(
+                "mt-3 text-sm",
+                motivationDataQuality.tone === "warning"
+                  ? "font-semibold text-amber-700"
+                  : "text-slate-500"
               )}
-              {renderMotivationMetric(
-                "Best perfect-day streak",
-                formatMetricDays(summary.bestStreakDays)
-              )}
-              {renderMotivationMetric("Perfect days", formatPerfectDayCount(summary))}
-              {renderMotivationMetric(
-                "Consistency",
-                formatMetricPercent(summary.consistencyPercent)
-              )}
-            </div>
+            >
+              {motivationDataQuality.label}
+            </p>
+          ) : null}
 
-            <details className="group mt-5">
-              <summary
+          <div className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
                 data-testid="habits-motivation-definitions"
+                aria-expanded={isDefinitionsPanelOpen}
+                aria-controls="habits-motivation-definitions-panel"
+                onClick={() =>
+                  setOpenMotivationPanel((current) =>
+                    current === "definitions" ? null : "definitions"
+                  )
+                }
                 className={cx(
                   habitSecondaryActionClass,
-                  "w-full cursor-pointer list-none justify-between px-3 sm:w-auto [&::-webkit-details-marker]:hidden"
+                  "h-11 w-full px-3 text-center",
+                  isDefinitionsPanelOpen
+                    ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
+                    : ""
                 )}
               >
                 <span>What counts?</span>
                 <ChevronDown
-                  className="h-4 w-4 transition-transform group-open:rotate-180"
+                  className={cx(
+                    "h-4 w-4 transition-transform",
+                    isDefinitionsPanelOpen ? "rotate-180" : ""
+                  )}
                   aria-hidden="true"
                 />
-              </summary>
+              </button>
 
-              <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+              <button
+                type="button"
+                data-testid="habits-more-history"
+                aria-expanded={isHistoryPanelOpen}
+                aria-controls="habits-more-history-panel"
+                onClick={() =>
+                  setOpenMotivationPanel((current) => (current === "history" ? null : "history"))
+                }
+                className={cx(
+                  habitSecondaryActionClass,
+                  "h-11 w-full px-3 text-center",
+                  isHistoryPanelOpen
+                    ? "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]"
+                    : ""
+                )}
+              >
+                <span>More history</span>
+                <ChevronDown
+                  className={cx(
+                    "h-4 w-4 transition-transform",
+                    isHistoryPanelOpen ? "rotate-180" : ""
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+
+            {isDefinitionsPanelOpen ? (
+              <div
+                id="habits-motivation-definitions-panel"
+                className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2"
+              >
                 <p>
                   <strong className="font-semibold text-slate-800">Perfect-day streak</strong> is
-                  days in a row where every scheduled Perfect Day habit was completed.
+                  days in a row where every scheduled habit was completed.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Best perfect-day streak</strong>{" "}
-                  is the longest perfect-day streak in this range.
+                  is the longest perfect-day streak in the selected period.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Perfect days</strong> are days
-                  where every scheduled Perfect Day habit was completed.
+                  where every scheduled habit was completed.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Consistency</strong> is the
                   percent of days in this range that were perfect days.
                 </p>
                 <p>
+                  <strong className="font-semibold text-slate-800">Early data</strong> means this
+                  period has fewer than {MOTIVATION_EARLY_DATA_ELIGIBLE_DAY_THRESHOLD} days that
+                  could count toward Perfect Days. The numbers are a first signal.
+                </p>
+                <p>
+                  <strong className="font-semibold text-slate-800">0/0</strong> means there were no
+                  scheduled Perfect Day habits in the selected period.
+                </p>
+                <p>
                   <strong className="font-semibold text-slate-800">Rest days</strong> are
                   intentional skips. They stay in history and are excluded from the habit target for
                   the day.
                 </p>
+                <p>
+                  <strong className="font-semibold text-slate-800">Micro Sessions</strong> are
+                  tracked separately and do not count toward Perfect Days. Make a separate habit to
+                  track it as a habit.
+                </p>
               </div>
-            </details>
+            ) : null}
 
-            <details className="group mt-5">
-              <summary
-                data-testid="habits-more-history"
-                className={cx(
-                  habitSecondaryActionClass,
-                  "w-full cursor-pointer list-none justify-between px-3 sm:w-auto [&::-webkit-details-marker]:hidden"
-                )}
-              >
-                <span>More history</span>
-                <ChevronDown
-                  className="h-4 w-4 transition-transform group-open:rotate-180"
-                  aria-hidden="true"
-                />
-              </summary>
-
-              <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-5">
-                {renderHistoryMetric("Rest days", String(summary.restDayCount))}
-                {renderHistoryMetric("Slips", String(summary.slipCount))}
-                {renderHistoryMetric(
-                  "Timed minutes",
-                  formatMetricNumber(summary.totalTimedMinutes)
-                )}
-                {renderHistoryMetric("Count total", formatMetricNumber(summary.totalCount))}
-              </div>
-
-              <div className="mt-5 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className={habitLabelClass}>Past habits</p>
-                  {hiddenArchivedCount > 0 ? (
-                    <p className="text-sm text-slate-500">+{hiddenArchivedCount} more</p>
-                  ) : null}
+            {isHistoryPanelOpen ? (
+              <div id="habits-more-history-panel" className="mt-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-5">
+                  {renderHistoryMetric("Rest days", String(summary.restDayCount))}
+                  {renderHistoryMetric("Slips", String(summary.slipCount))}
+                  {renderHistoryMetric(
+                    "Timed minutes",
+                    formatMetricNumber(summary.totalTimedMinutes)
+                  )}
+                  {renderHistoryMetric("Count total", formatMetricNumber(summary.totalCount))}
                 </div>
-                {archivedItems.length > 0 ? (
-                  <ul className="mt-1">{archivedItems.map(renderMotivationItem)}</ul>
-                ) : (
-                  <p className="mt-3 border-t border-[color:var(--fs-border-soft)] pt-3 text-sm text-slate-500">
-                    No past habits
-                  </p>
-                )}
+
+                <div className="mt-5 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={habitLabelClass}>Past habits</p>
+                    {hiddenArchivedCount > 0 ? (
+                      <p className="text-sm text-slate-500">+{hiddenArchivedCount} more</p>
+                    ) : null}
+                  </div>
+                  {archivedItems.length > 0 ? (
+                    <ul className="mt-1">{archivedItems.map(renderMotivationItem)}</ul>
+                  ) : (
+                    <p className="mt-3 border-t border-[color:var(--fs-border-soft)] pt-3 text-sm text-slate-500">
+                      No past habits
+                    </p>
+                  )}
+                </div>
               </div>
-            </details>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </section>
     );
   }
@@ -2869,19 +2894,14 @@ export default function HabitPerfectDayHub({
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
-              <span
-                data-testid="habits-selected-date-chip"
-                className={isSelectedToday ? habitBrandChipClass : habitWarningChipClass}
-              >
-                {selectedDateChipLabel}
-              </span>
-            </div>
+            <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
             <p className="mt-1 text-sm text-slate-600">
               {preferMobileActiveFocus
                 ? `${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount} on target`
                 : `${weekLabel} · ${weekRangeLabel}`}
+            </p>
+            <p data-testid="habits-selected-date-context" className="mt-1 text-sm text-slate-500">
+              {selectedDateContextLabel}
             </p>
           </div>
           <div

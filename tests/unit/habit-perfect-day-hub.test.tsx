@@ -10,6 +10,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
+import { APP_SOUND_PROFILES } from "@/lib/audio/client-sound";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
@@ -519,6 +520,60 @@ function buildMotivationHistorySnapshot(): HabitSnapshot {
   };
 }
 
+function buildEarlyMotivationSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      start_date: "2026-05-08",
+    })
+  );
+  const activeHabits = [habit];
+  const checkIns: ReturnType<typeof buildHabitCheckInView>[] = [];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
+    motivationSummaries: buildMotivationRangeSummaries(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildArchivedOnlyMotivationSnapshot(): HabitSnapshot {
+  const archivedHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "99999999-9999-4999-8999-999999999999",
+      title: "Old mobility",
+      start_date: "2026-05-01",
+      status: "archived",
+    })
+  );
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        id: "archived-history-check-in",
+        habit_id: archivedHabit.id,
+        check_in_date: "2026-05-02",
+      })
+    ),
+  ];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits: [],
+    archivedHabits: [archivedHabit],
+    daySummary: buildHabitDaySummary([], checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary([], checkIns, "2026-05-10"),
+    motivationSummary: buildHabitMotivationSummary([archivedHabit], checkIns, "2026-05-10"),
+    motivationSummaries: buildMotivationRangeSummaries([archivedHabit], checkIns, "2026-05-10"),
+  };
+}
+
 function openAddHabitForm() {
   const addToggle = screen.getByRole("button", { name: "Add habit" });
   expect(addToggle).toHaveAttribute("aria-expanded", "false");
@@ -669,17 +724,20 @@ describe("HabitPerfectDayHub", () => {
 
   it("previews the soft Habits completion sound when the user enables it", async () => {
     const audio = installAudioContextMock();
+    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
 
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
     expect(fetch).not.toHaveBeenCalled();
-    expect(await screen.findByText("Sound on.")).toHaveAttribute("role", "status");
+    expect(screen.queryByText("Sound on.")).toBeNull();
+    expect(screen.queryByText("Sound off.")).toBeNull();
   });
 
   it("plays completion sound only after an enabled successful completion transition", async () => {
     const audio = installAudioContextMock();
+    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -691,11 +749,11 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount * 2));
   });
 
   it("does not play completion sound while the preference is off", async () => {
@@ -718,6 +776,7 @@ describe("HabitPerfectDayHub", () => {
 
   it("does not play completion sound for rest day, reset, or failed check-in actions", async () => {
     const audio = installAudioContextMock();
+    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -730,7 +789,7 @@ describe("HabitPerfectDayHub", () => {
       <HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />
     );
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
     audio.start.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     fireEvent.click(await screen.findByRole("button", { name: "Rest day" }));
@@ -828,7 +887,7 @@ describe("HabitPerfectDayHub", () => {
     const controls = screen.getByTestId("habits-calendar-controls-summary");
     expect(within(controls).getByRole("link", { name: "Today" })).toBeVisible();
     expect(within(controls).getByText("Week 19, 2026 · May 4 - May 10")).toBeVisible();
-    expect(screen.getByTestId("habits-selected-date-chip")).toHaveTextContent("Today · May 10");
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-03"
@@ -966,7 +1025,7 @@ describe("HabitPerfectDayHub", () => {
       const controls = screen.getByTestId("habits-calendar-controls-summary");
       expect(within(controls).getByText("May 3, 2026")).toBeVisible();
       expect(within(controls).getByText("History")).toBeVisible();
-      expect(screen.getByTestId("habits-selected-date-chip")).toHaveTextContent("Sun · May 3");
+      expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sun · May 3");
       expect(within(controls).getByText("Week 18, 2026 · Apr 27 - May 3")).toBeVisible();
       expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
         "href",
@@ -1451,7 +1510,8 @@ describe("HabitPerfectDayHub", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(audio.start).toHaveBeenCalledTimes(1);
+    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
+    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
     audio.start.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(audio.start).not.toHaveBeenCalled();
@@ -1460,13 +1520,13 @@ describe("HabitPerfectDayHub", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(audio.start).toHaveBeenCalledTimes(1);
+    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(audio.start).toHaveBeenCalledTimes(1);
+    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
   });
 
   it("pauses the current timed habit when another timer starts", async () => {
@@ -2021,25 +2081,14 @@ describe("HabitPerfectDayHub", () => {
       "aria-pressed",
       "false"
     );
-    expect(within(history).getByText("Perfect-day streak 5 days · Consistency 83%")).toBeVisible();
-    expect(within(history).getByRole("button", { name: "Stats" })).toHaveAttribute(
-      "aria-expanded",
-      "false"
-    );
-    expect(within(history).queryByText("Best perfect-day streak")).toBeNull();
-    expect(within(history).queryByText("On track")).toBeNull();
-    expect(within(history).queryByText("Habit score")).toBeNull();
-
-    fireEvent.click(within(history).getByTestId("habits-motivation-toggle"));
-
-    expect(within(history).getByRole("button", { name: "Stats" })).toHaveAttribute(
-      "aria-expanded",
-      "true"
-    );
     expect(within(history).queryByText("Perfect-day streak 5 days · Consistency 83%")).toBeNull();
+    expect(within(history).queryByRole("button", { name: "Stats" })).toBeNull();
+    expect(within(history).queryByTestId("habits-motivation-toggle")).toBeNull();
     expect(within(history).getAllByText("Best perfect-day streak").length).toBeGreaterThan(0);
     expect(within(history).getAllByText("Perfect days").length).toBeGreaterThan(0);
     expect(within(history).getAllByText("5 days").length).toBeGreaterThan(0);
+    expect(within(history).queryByText("On track")).toBeNull();
+    expect(within(history).queryByText("Habit score")).toBeNull();
     expect(within(history).getByText("1 past habits")).toBeVisible();
     expect(within(history).getByText("More history")).toBeVisible();
     expect(within(history).queryByText("6/13 on track")).toBeNull();
@@ -2047,11 +2096,27 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("Active history")).toBeNull();
     expect(within(history).queryByText("Archived history")).toBeNull();
 
-    fireEvent.click(within(history).getByTestId("habits-motivation-definitions"));
+    const definitionsButton = within(history).getByTestId("habits-motivation-definitions");
+    const moreHistoryButton = within(history).getByTestId("habits-more-history");
+    expect(definitionsButton).toHaveAttribute("aria-expanded", "false");
+    expect(moreHistoryButton).toHaveAttribute("aria-expanded", "false");
+    expect(definitionsButton).toHaveClass("fs-cta-secondary", "w-full", "h-11");
+    expect(moreHistoryButton).toHaveClass("fs-cta-secondary", "w-full", "h-11");
+
+    fireEvent.click(definitionsButton);
+    expect(definitionsButton).toHaveAttribute("aria-expanded", "true");
+    expect(moreHistoryButton).toHaveAttribute("aria-expanded", "false");
     expect(within(history).getByText("What counts?")).toBeVisible();
-    expect(
-      within(history).getAllByText(/every scheduled Perfect Day habit/i).length
-    ).toBeGreaterThan(0);
+    expect(within(history).getAllByText(/every scheduled habit/i).length).toBeGreaterThan(0);
+    expect(within(history).getByText("Early data").closest("p")).toHaveTextContent(
+      "Early data means this period has fewer than 7 days that could count toward Perfect Days. The numbers are a first signal."
+    );
+    expect(within(history).getByText("0/0").closest("p")).toHaveTextContent(
+      "0/0 means there were no scheduled Perfect Day habits in the selected period."
+    );
+    expect(within(history).getByText("Micro Sessions").closest("p")).toHaveTextContent(
+      "Micro Sessions are tracked separately and do not count toward Perfect Days. Make a separate habit to track it as a habit."
+    );
     expect(within(history).queryByText(/Habit score/i)).toBeNull();
     expect(within(history).queryByText(/On track/i)).toBeNull();
 
@@ -2062,13 +2127,45 @@ describe("HabitPerfectDayHub", () => {
     );
     expect(within(history).getByText("All time · May 1, 2026 - May 7, 2026")).toBeVisible();
 
-    fireEvent.click(within(history).getByTestId("habits-more-history"));
+    fireEvent.click(moreHistoryButton);
+    expect(definitionsButton).toHaveAttribute("aria-expanded", "false");
+    expect(moreHistoryButton).toHaveAttribute("aria-expanded", "true");
 
     expect(within(history).queryByText("On track")).toBeNull();
     expect(within(history).queryByText("6 of 13")).toBeNull();
+    expect(within(history).queryByText("Micro Sessions")).toBeNull();
     expect(within(history).getByText("Past habits")).toBeVisible();
     expect(within(history).getByText("Old mobility")).toBeVisible();
-    expect(within(history).getByText("Saved history")).toBeVisible();
+    expect(within(history).getByText("Past habit")).toBeVisible();
+    expect(within(history).getByText(/1\/7 completed/)).toBeVisible();
+    expect(within(history).getByText(/Best streak: 1 day/)).toBeVisible();
+    expect(within(history).getByText(/Final streak: 0 days/)).toBeVisible();
+    expect(within(history).getByText("Consistency: 14%")).toBeVisible();
+    expect(within(history).queryByText("Saved history")).toBeNull();
+  });
+
+  it("keeps Motivation metrics numeric while explaining early or empty data", () => {
+    const { rerender } = render(
+      <HabitPerfectDayHub initialSnapshot={buildEarlyMotivationSnapshot()} />
+    );
+
+    const earlyHistory = screen.getByTestId("habits-motivation-history");
+    expect(within(earlyHistory).getByText("0/3")).toBeVisible();
+    expect(within(earlyHistory).getByText("0%")).toBeVisible();
+    expect(within(earlyHistory).getByTestId("habits-motivation-data-quality")).toHaveTextContent(
+      "Early data: 3/7 days measured."
+    );
+    expect(within(earlyHistory).queryByText("Not enough history")).toBeNull();
+
+    rerender(<HabitPerfectDayHub initialSnapshot={buildArchivedOnlyMotivationSnapshot()} />);
+
+    const emptyHistory = screen.getByTestId("habits-motivation-history");
+    expect(within(emptyHistory).getByText("0/0")).toBeVisible();
+    expect(within(emptyHistory).getByText("0%")).toBeVisible();
+    expect(within(emptyHistory).getByTestId("habits-motivation-data-quality")).toHaveTextContent(
+      "No scheduled Perfect Day days in this period."
+    );
+    expect(within(emptyHistory).queryByText("Not enough history")).toBeNull();
   });
 
   it("opens motivation from the Habits action row while mobile logging stays visually first", () => {
@@ -2083,14 +2180,11 @@ describe("HabitPerfectDayHub", () => {
     const history = screen.getByTestId("habits-motivation-history");
     expect(activeList).toHaveClass("order-2", "sm:order-3");
     expect(history).toHaveClass("order-3", "sm:order-2");
-    expect(within(history).queryByText("Best perfect-day streak")).toBeNull();
+    expect(within(history).getAllByText("Best perfect-day streak").length).toBeGreaterThan(0);
+    expect(within(history).queryByRole("button", { name: "Stats" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Motivation" }));
 
-    expect(within(history).getByRole("button", { name: "Stats" })).toHaveAttribute(
-      "aria-expanded",
-      "true"
-    );
     expect(within(history).getAllByText("Best perfect-day streak").length).toBeGreaterThan(0);
   });
 
@@ -2145,7 +2239,7 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
-    expect(screen.getByTestId("habits-selected-date-chip")).toHaveTextContent("Today · May 10");
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
     expect(screen.getByText("1/1 on target")).toBeVisible();
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");

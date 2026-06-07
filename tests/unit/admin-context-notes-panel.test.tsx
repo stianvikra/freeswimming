@@ -284,10 +284,18 @@ describe("AdminContextNotesPanel", () => {
 
     const panel = await screen.findByTestId("admin-context-notes-panel");
     expect(panel).toHaveClass("fs-library-card", "fs-library-card-accent");
-    expect(await screen.findByTestId("admin-note-quick-capture-trigger")).toHaveClass(
-      "fs-cta-primary"
+    expect(await screen.findByTestId("admin-context-notes-actions")).toHaveClass(
+      "grid-cols-2",
+      "sm:flex"
     );
-    expect(screen.getByTestId("admin-context-notes-toggle")).toHaveClass("fs-cta-secondary");
+    expect(await screen.findByTestId("admin-note-quick-capture-trigger")).toHaveClass(
+      "fs-cta-primary",
+      "w-full"
+    );
+    expect(screen.getByTestId("admin-context-notes-toggle")).toHaveClass(
+      "fs-cta-secondary",
+      "w-full"
+    );
 
     const createPanel = await screen.findByTestId("admin-context-note-create-panel");
     expect(createPanel).toHaveClass("fs-library-card", "fs-library-card-muted");
