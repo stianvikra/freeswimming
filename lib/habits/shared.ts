@@ -40,6 +40,7 @@ export const HABIT_CADENCE_PERIOD_VALUES = ["daily", "weekly", "monthly"] as con
 export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
 export const HABIT_MOTIVATION_RESET_TYPE_VALUES = ["reset_stats"] as const;
 export const HABIT_MOTIVATION_RESET_STATUS_VALUES = ["active", "voided"] as const;
+export const HABIT_STATUS_VALUES = ["active", "archived"] as const;
 export const HABIT_TIMER_MAX_SECONDS = 86_400;
 export const HABIT_MANUAL_TIME_MAX_MINUTES = 1_440;
 
@@ -55,7 +56,7 @@ export type HabitMotivationResetType = (typeof HABIT_MOTIVATION_RESET_TYPE_VALUE
 export type HabitMotivationResetStatus =
   | (typeof HABIT_MOTIVATION_RESET_STATUS_VALUES)[number]
   | "unsupported";
-export type HabitStatus = "active" | "archived";
+export type HabitStatus = (typeof HABIT_STATUS_VALUES)[number];
 
 export type HabitCadenceProgress = {
   periodStart: string;
@@ -803,7 +804,10 @@ export function buildHabitDefinitionUpdate(body: HabitUpdateRequestBody): HabitD
   }
 
   if ("status" in body) {
-    update.status = body.status === "archived" ? "archived" : "active";
+    if (!isOneOf(HABIT_STATUS_VALUES, body.status)) {
+      throw new Error("Unsupported habit status.");
+    }
+    update.status = body.status;
   }
 
   if (

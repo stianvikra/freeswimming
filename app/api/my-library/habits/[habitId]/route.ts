@@ -8,6 +8,7 @@ import {
   type HabitUpdateRequestBody,
 } from "@/lib/habits/shared";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
+import type { Database } from "@/types/database";
 
 type Props = {
   params: Promise<{
@@ -15,7 +16,10 @@ type Props = {
   }>;
 };
 
+type HabitDefinitionRow = Database["public"]["Tables"]["habit_definitions"]["Row"];
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_ACTIVE_HABITS = 12;
 
 function noStoreJson(body: Record<string, unknown>, init?: { status?: number }) {
   return NextResponse.json(body, {
@@ -65,6 +69,80 @@ export async function PATCH(request: Request, { params }: Props) {
         { status: 400 }
       )
     );
+  }
+
+  if (updatePayload.status === "active") {
+    const currentHabitResult = await supabase
+      .from("habit_definitions")
+      .select("id, status")
+      .eq("user_id", user.id)
+      .eq("id", habitId)
+      .maybeSingle();
+
+    if (isHabitsSchemaMissing(currentHabitResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Habits are still syncing in this environment." },
+          { status: 503 }
+        )
+      );
+    }
+
+    if (currentHabitResult.error) {
+      console.error("[HabitsApi] Could not load habit before restore", currentHabitResult.error);
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not restore that habit right now." },
+          { status: 500 }
+        )
+      );
+    }
+
+    if (!currentHabitResult.data) {
+      return applySupabaseCookies(
+        noStoreJson({ ok: false, error: "Habit not found." }, { status: 404 })
+      );
+    }
+
+    const currentHabit = currentHabitResult.data as Pick<HabitDefinitionRow, "id" | "status">;
+    if (currentHabit.status === "archived") {
+      const activeCountResult = await supabase
+        .from("habit_definitions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (isHabitsSchemaMissing(activeCountResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Habits are still syncing in this environment." },
+            { status: 503 }
+          )
+        );
+      }
+
+      if (activeCountResult.error) {
+        console.error(
+          "[HabitsApi] Could not count active habits before restore",
+          activeCountResult.error
+        );
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Could not restore that habit right now." },
+            { status: 500 }
+          )
+        );
+      }
+
+      if ((activeCountResult.count ?? 0) >= MAX_ACTIVE_HABITS) {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Archive one active habit before restoring another." },
+            { status: 400 }
+          )
+        );
+      }
+    }
   }
 
   const updateResult = await supabase

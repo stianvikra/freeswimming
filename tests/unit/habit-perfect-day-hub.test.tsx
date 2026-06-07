@@ -1154,7 +1154,7 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(screen.queryByRole("button", { name: "Edit this habit" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "End habit and move to Past habits" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
@@ -1817,7 +1817,9 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "End habit and move to Past habits" })
+      ).toBeNull();
     });
     expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Edit this habit" })).toBeNull();
@@ -1825,7 +1827,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     expect(screen.getByRole("button", { name: "Edit this habit" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "End habit and move to History" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "End habit and move to Past habits" })).toBeVisible();
   });
 
   it("keeps setup labels out of open details while showing dated metadata", () => {
@@ -2277,6 +2279,90 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("Saved history")).toBeNull();
   });
 
+  it("confirms ending a habit before moving it to Past habits", async () => {
+    const snapshot = buildMotivationHistorySnapshot();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot,
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+    fireEvent.click(
+      within(card).getByRole("button", { name: "End habit and move to Past habits" })
+    );
+
+    expect(fetch).not.toHaveBeenCalled();
+    const confirm = within(card).getByTestId(
+      "habit-end-confirm-11111111-1111-4111-8111-111111111111"
+    );
+    expect(confirm).toHaveAttribute("role", "alertdialog");
+    expect(within(confirm).getByText("End this habit?")).toBeVisible();
+    expect(within(confirm).getByText(/Check-ins, reset boundaries/)).toBeVisible();
+
+    fireEvent.click(within(confirm).getByRole("button", { name: "End habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        expect.objectContaining({ method: "PATCH" })
+      );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      status: "archived",
+      selectedDate: "2026-05-07",
+    });
+    expect(
+      await screen.findByText("Habit ended. Check-ins and reset history stayed saved.")
+    ).toBeVisible();
+  });
+
+  it("restores a past habit with explicit same-history confirmation", async () => {
+    const snapshot = buildMotivationHistorySnapshot();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot,
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+
+    const history = screen.getByTestId("habits-motivation-history");
+    fireEvent.click(within(history).getByRole("button", { name: "Restore habit" }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    const confirm = within(history).getByTestId(
+      "habit-restore-confirm-99999999-9999-4999-8999-999999999999"
+    );
+    expect(confirm).toHaveAttribute("role", "alertdialog");
+    expect(within(confirm).getByText("Restore this habit?")).toBeVisible();
+    expect(within(confirm).getByText(/same history, reset boundaries/)).toBeVisible();
+    expect(within(history).queryByRole("button", { name: /delete/i })).toBeNull();
+
+    fireEvent.click(within(confirm).getByRole("button", { name: "Restore habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/99999999-9999-4999-8999-999999999999",
+        expect.objectContaining({ method: "PATCH" })
+      );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      status: "active",
+      selectedDate: "2026-05-07",
+    });
+    expect(
+      await screen.findByText("Habit restored. Check-ins and reset history were kept.")
+    ).toBeVisible();
+  });
+
   it("confirms habit stat reset and links complete history after a stats restart", async () => {
     const snapshot = buildResetStatsMotivationSnapshot();
     vi.mocked(fetch).mockResolvedValue({
@@ -2450,7 +2536,9 @@ describe("HabitPerfectDayHub", () => {
     );
     expect(screen.queryByLabelText("Water value")).toBeNull();
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: "End habit and move to History" })).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "End habit and move to Past habits" })
+      ).toBeNull();
     });
   });
 
