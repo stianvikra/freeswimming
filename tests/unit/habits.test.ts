@@ -4,6 +4,7 @@ import {
   buildHabitCheckInView,
   buildHabitDaySummary,
   buildHabitDefinitionInsert,
+  buildHabitDefinitionUpdate,
   buildHabitDefinitionView,
   buildHabitMotivationResetInsert,
   buildHabitMotivationResetView,
@@ -105,6 +106,18 @@ describe("habits domain helpers", () => {
       is_perfect_day_item: true,
       sort_order: 2,
     });
+  });
+
+  it("fails closed for unsupported habit lifecycle statuses", () => {
+    expect(buildHabitDefinitionUpdate({ status: "archived" })).toMatchObject({
+      status: "archived",
+    });
+    expect(buildHabitDefinitionUpdate({ status: "active" })).toMatchObject({
+      status: "active",
+    });
+    expect(() => buildHabitDefinitionUpdate({ status: "deleted" })).toThrow(
+      "Unsupported habit status."
+    );
   });
 
   it("builds quit habits with start dates and days-since evaluation", () => {

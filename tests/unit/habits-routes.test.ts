@@ -414,6 +414,228 @@ describe("habits routes", () => {
     expect(updateEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
   });
 
+  it("rejects unsupported habit lifecycle status before writes", async () => {
+    const from = vi.fn();
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchHabit(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "deleted" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Unsupported habit status.");
+    expect(from).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("restores archived habits without touching check-ins", async () => {
+    const currentMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "archived",
+      },
+      error: null,
+    });
+    const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
+    const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
+    const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
+    const activeEqStatus = vi.fn().mockResolvedValue({ count: 3, error: null });
+    const activeEqUser = vi.fn(() => ({ eq: activeEqStatus }));
+    const activeSelect = vi.fn(() => ({ eq: activeEqUser }));
+    const updateMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "build",
+        status: "active",
+        cadence_period: "daily",
+        cadence_day_policy: "fixed",
+        cadence_target_count: 1,
+      },
+      error: null,
+    });
+    const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+    const updateEqId = vi.fn(() => ({ select: updateSelect }));
+    const updateEqUser = vi.fn(() => ({ eq: updateEqId }));
+    const update = vi.fn(() => ({ eq: updateEqUser }));
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ select: currentSelect })
+      .mockReturnValueOnce({ select: activeSelect })
+      .mockReturnValueOnce({ update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchHabit(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active", selectedDate: "2026-05-10" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(currentEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(currentEqId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+    expect(activeSelect).toHaveBeenCalledWith("id", { count: "exact", head: true });
+    expect(activeEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(activeEqStatus).toHaveBeenCalledWith("status", "active");
+    expect(update).toHaveBeenCalledWith({ status: "active" });
+    expect(from).toHaveBeenCalledWith("habit_definitions");
+    expect(from).not.toHaveBeenCalledWith("habit_check_ins");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_updated",
+        payload: expect.objectContaining({
+          status: "active",
+          archived: false,
+          changedStatus: true,
+        }),
+      })
+    );
+  });
+
+  it("fails closed for cross-owner habit restore requests", async () => {
+    const currentMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
+    const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
+    const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
+    const update = vi.fn();
+    const from = vi.fn().mockReturnValueOnce({ select: currentSelect }).mockReturnValue({ update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchHabit(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(404);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Habit not found.");
+    expect(update).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks restore when the active habit limit is already reached", async () => {
+    const currentMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "archived",
+      },
+      error: null,
+    });
+    const currentEqId = vi.fn(() => ({ maybeSingle: currentMaybeSingle }));
+    const currentEqUser = vi.fn(() => ({ eq: currentEqId }));
+    const currentSelect = vi.fn(() => ({ eq: currentEqUser }));
+    const activeEqStatus = vi.fn().mockResolvedValue({ count: 12, error: null });
+    const activeEqUser = vi.fn(() => ({ eq: activeEqStatus }));
+    const activeSelect = vi.fn(() => ({ eq: activeEqUser }));
+    const update = vi.fn();
+    const from = vi
+      .fn()
+      .mockReturnValueOnce({ select: currentSelect })
+      .mockReturnValueOnce({ select: activeSelect })
+      .mockReturnValue({ update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchHabit(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "active" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          habitId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Archive one active habit before restoring another.");
+    expect(update).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
   it("returns a stable failure-mode response when habit update storage fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     const updateMaybeSingle = vi.fn().mockResolvedValue({

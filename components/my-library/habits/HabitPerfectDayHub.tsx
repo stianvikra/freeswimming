@@ -1133,6 +1133,8 @@ export default function HabitPerfectDayHub({
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
   const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
   const [confirmResetStatsHabitId, setConfirmResetStatsHabitId] = useState<string | null>(null);
+  const [confirmEndHabitId, setConfirmEndHabitId] = useState<string | null>(null);
+  const [confirmRestoreHabitId, setConfirmRestoreHabitId] = useState<string | null>(null);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -1224,6 +1226,8 @@ export default function HabitPerfectDayHub({
     setEditingHabitId(null);
     setEditDraft(null);
     setConfirmResetStatsHabitId(null);
+    setConfirmEndHabitId(null);
+    setConfirmRestoreHabitId(null);
     setRecentlyCreatedHabitId(null);
     setHabitNotices({});
     setNotice(null);
@@ -1603,6 +1607,7 @@ export default function HabitPerfectDayHub({
   function collapseHabitDetails(habitId: string) {
     setExpandedHabitIds((current) => current.filter((id) => id !== habitId));
     setConfirmResetStatsHabitId((current) => (current === habitId ? null : current));
+    setConfirmEndHabitId((current) => (current === habitId ? null : current));
   }
 
   async function applyResponse(response: Response, fallback: string) {
@@ -1728,6 +1733,7 @@ export default function HabitPerfectDayHub({
       await applyResponse(response, "Could not update that habit right now.");
       setEditingHabitId(null);
       setEditDraft(null);
+      setConfirmEndHabitId(null);
       setNotice("Habit updated. Check-ins and history were kept.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not update that habit right now.");
@@ -1754,12 +1760,41 @@ export default function HabitPerfectDayHub({
           selectedDate: snapshot.selectedDate,
         }),
       });
-      await applyResponse(response, "Could not archive that habit right now.");
+      await applyResponse(response, "Could not end that habit right now.");
       clearTimer(habitId);
-      setNotice("Habit archived.");
+      setConfirmEndHabitId(null);
+      setNotice("Habit ended. Check-ins and reset history stayed saved.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not end that habit right now.");
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function restoreHabit(habitId: string) {
+    if (!canManageHabitSetup) {
+      setNotice("Return to Today to restore habit setup.");
+      setError(null);
+      return;
+    }
+    setPendingKey(`restore-${habitId}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch(`/api/my-library/habits/${habitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "active",
+          selectedDate: snapshot.selectedDate,
+        }),
+      });
+      await applyResponse(response, "Could not restore that habit right now.");
+      setConfirmRestoreHabitId(null);
+      setNotice("Habit restored. Check-ins and reset history were kept.");
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Could not archive that habit right now."
+        caught instanceof Error ? caught.message : "Could not restore that habit right now."
       );
     } finally {
       setPendingKey(null);
@@ -2555,6 +2590,7 @@ export default function HabitPerfectDayHub({
     const consistencyLabel = formatMetricPercent(item.consistencyPercent);
     const completedLabel = `${item.onTrackDayCount}/${item.eligibleDayCount} completed`;
     const isArchived = item.status === "archived";
+    const restoreDialogTitleId = `habit-restore-title-${item.habitId}`;
 
     return (
       <li key={item.habitId} className="border-t border-[color:var(--fs-border-soft)] py-3">
@@ -2571,6 +2607,57 @@ export default function HabitPerfectDayHub({
           {isArchived ? "Final" : "Current"} streak: {formatMetricDays(item.currentStreakDays)}
         </p>
         <p className="mt-1 text-sm text-slate-500">Consistency: {consistencyLabel}</p>
+        {isArchived && canManageHabitSetup ? (
+          confirmRestoreHabitId === item.habitId ? (
+            <div
+              role="alertdialog"
+              aria-labelledby={restoreDialogTitleId}
+              data-testid={`habit-restore-confirm-${item.habitId}`}
+              className="mt-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] p-3 text-sm text-[color:var(--fs-color-brand-900)]"
+            >
+              <p id={restoreDialogTitleId} className="font-semibold">
+                Restore this habit?
+              </p>
+              <p className="mt-1">
+                This moves it back to active habits with the same history, reset boundaries, and
+                Calendar Comparison records.
+              </p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setConfirmRestoreHabitId(null)}
+                  disabled={pendingKey === `restore-${item.habitId}`}
+                  className={habitMobileSecondaryActionClass}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => restoreHabit(item.habitId)}
+                  disabled={pendingKey !== null}
+                  className={habitMobilePrimaryActionClass}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  {pendingKey === `restore-${item.habitId}` ? "Restoring..." : "Restore habit"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmRestoreHabitId(item.habitId);
+                setNotice(null);
+                setError(null);
+              }}
+              disabled={pendingKey !== null}
+              className={cx(habitMobileSecondaryActionClass, "mt-3")}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Restore habit
+            </button>
+          )
+        ) : null}
       </li>
     );
   }
@@ -3196,6 +3283,7 @@ export default function HabitPerfectDayHub({
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
               const resetStatsDialogTitleId = `habit-reset-stats-title-${habit.id}`;
+              const endHabitDialogTitleId = `habit-end-title-${habit.id}`;
               const cadenceLabel = habit.cadenceLabel;
               const isNewlyCreated = recentlyCreatedHabitId === habit.id;
               const canEditSelectedCheckIn = item.isScheduledForDate || item.checkIn !== null;
@@ -3776,6 +3864,42 @@ export default function HabitPerfectDayHub({
                           </div>
                         ) : null}
 
+                        {confirmEndHabitId === habit.id ? (
+                          <div
+                            role="alertdialog"
+                            aria-labelledby={endHabitDialogTitleId}
+                            data-testid={`habit-end-confirm-${habit.id}`}
+                            className="mt-4 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900"
+                          >
+                            <p id={endHabitDialogTitleId} className="font-semibold">
+                              End this habit?
+                            </p>
+                            <p className="mt-1">
+                              This moves it to Past habits. Check-ins, reset boundaries, and
+                              Calendar Comparison records stay saved.
+                            </p>
+                            <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmEndHabitId(null)}
+                                disabled={pendingKey === `archive-${habit.id}`}
+                                className={habitMobileSecondaryActionClass}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => archiveHabit(habit.id)}
+                                disabled={disabled}
+                                className={habitMobilePrimaryActionClass}
+                              >
+                                <Archive className="h-4 w-4" aria-hidden="true" />
+                                {pendingKey === `archive-${habit.id}` ? "Ending..." : "End habit"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
                         <div
                           data-testid={`habit-details-actions-${habit.id}`}
                           className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap"
@@ -3990,18 +4114,22 @@ export default function HabitPerfectDayHub({
                                 Edit this habit
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  clearCreatedHabitNotice();
-                                  return archiveHabit(habit.id);
-                                }}
-                                disabled={disabled}
-                                className={habitMobileSecondaryActionClass}
-                              >
-                                <Archive className="h-4 w-4" aria-hidden="true" />
-                                End habit and move to History
-                              </button>
+                              {confirmEndHabitId !== habit.id ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    clearCreatedHabitNotice();
+                                    setConfirmEndHabitId(habit.id);
+                                    setNotice(null);
+                                    setError(null);
+                                  }}
+                                  disabled={disabled}
+                                  className={habitMobileSecondaryActionClass}
+                                >
+                                  <Archive className="h-4 w-4" aria-hidden="true" />
+                                  End habit and move to Past habits
+                                </button>
+                              ) : null}
                             </>
                           ) : null}
                         </div>
