@@ -353,10 +353,21 @@ describe("habits domain helpers", () => {
     expect(allTime.historyStartDate).toBe("2026-04-01");
     expect(allTime.eligibleDayCount).toBe(37);
     expect(allTime.onTrackDayCount).toBe(4);
-    expect(month.historyStartDate).toBe("2026-04-08");
-    expect(month.eligibleDayCount).toBe(30);
+    expect(month.historyStartDate).toBe("2026-05-01");
+    expect(month.eligibleDayCount).toBe(7);
     expect(month.onTrackDayCount).toBe(2);
     expect(month.currentStreakDays).toBe(2);
+  });
+
+  it("uses fixed fresh-start boundaries for motivation ranges", () => {
+    expect(getHabitMotivationRangeStartDate("week", "2026-05-07")).toBe("2026-05-04");
+    expect(getHabitMotivationRangeStartDate("month", "2026-05-07")).toBe("2026-05-01");
+    expect(getHabitMotivationRangeStartDate("three_months", "2026-05-07")).toBe("2026-04-01");
+    expect(getHabitMotivationRangeStartDate("three_months", "2026-08-03")).toBe("2026-07-01");
+    expect(getHabitMotivationRangeStartDate("six_months", "2026-05-07")).toBe("2026-01-01");
+    expect(getHabitMotivationRangeStartDate("six_months", "2026-08-03")).toBe("2026-07-01");
+    expect(getHabitMotivationRangeStartDate("year", "2026-08-03")).toBe("2026-01-01");
+    expect(getHabitMotivationRangeStartDate("all", "2026-08-03")).toBeNull();
   });
 
   it("restarts motivation stats from the latest active reset-stats boundary", () => {
@@ -526,6 +537,44 @@ describe("habits domain helpers", () => {
       onTrackDayCount: 1,
       bestStreakDays: 1,
     });
+  });
+
+  it("counts quit slips only inside the selected fixed period through the selected date", () => {
+    const quitHabit = buildHabitDefinitionView(
+      buildHabitRow({
+        title: "No sweets",
+        habit_mode: "quit",
+        habit_type: "avoidance",
+        target_operator: "at_most",
+        target_value_numeric: 0,
+        target_unit: "times",
+        start_date: "2026-04-01",
+        last_lapse_date: "2026-05-20",
+      })
+    );
+    const checkIns = ["2026-04-28", "2026-05-03", "2026-05-20"].map((date, index) =>
+      buildHabitCheckInView(
+        buildCheckInRow({
+          id: `quit-period-slip-${index}`,
+          habit_id: quitHabit.id,
+          check_in_date: date,
+          value_boolean: false,
+        })
+      )
+    );
+
+    const month = buildHabitMotivationSummary([quitHabit], checkIns, "2026-05-07", {
+      historyStartDate: getHabitMotivationRangeStartDate("month", "2026-05-07"),
+    });
+    const quarter = buildHabitMotivationSummary([quitHabit], checkIns, "2026-05-07", {
+      historyStartDate: getHabitMotivationRangeStartDate("three_months", "2026-05-07"),
+    });
+
+    expect(month.historyStartDate).toBe("2026-05-01");
+    expect(month.historyEndDate).toBe("2026-05-07");
+    expect(month.slipCount).toBe(1);
+    expect(quarter.historyStartDate).toBe("2026-04-01");
+    expect(quarter.slipCount).toBe(2);
   });
 
   it("totals timed and count history from canonical check-ins", () => {

@@ -71,6 +71,21 @@ describe("client sound profiles", () => {
     expect(profile.voices.every((voice) => voice.oscillatorType === "sine")).toBe(true);
   });
 
+  it("keeps the Habits positive ding short, clear, and louder than the old soft chime", () => {
+    const profile = APP_SOUND_PROFILES.positiveDing;
+    const softChime = APP_SOUND_PROFILES.softSuccessChime;
+
+    expect(profile.totalDurationMs).toBeGreaterThanOrEqual(280);
+    expect(profile.totalDurationMs).toBeLessThanOrEqual(450);
+    expect(profile.voices).toHaveLength(2);
+    expect(profile.voices.map((voice) => voice.frequencyHz)).toEqual([659.25, 987.77]);
+    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeGreaterThan(
+      Math.max(...softChime.voices.map((voice) => voice.peakGain))
+    );
+    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeLessThanOrEqual(0.045);
+    expect(profile.voices.every((voice) => voice.oscillatorType === "sine")).toBe(true);
+  });
+
   it("uses distinct completion profiles for tapped and timed micro-session bubbles", () => {
     const tapProfile = APP_SOUND_PROFILES.tapComplete;
     const timerProfile = APP_SOUND_PROFILES.timerComplete;
@@ -85,16 +100,15 @@ describe("client sound profiles", () => {
 
   it("schedules every voice in the requested profile", async () => {
     const audio = installAudioContextMock();
-    const profile = APP_SOUND_PROFILES.softSuccessChime;
+    const profile = APP_SOUND_PROFILES.positiveDing;
 
-    await expect(playAppSoundProfile("softSuccessChime")).resolves.toBe("played");
+    await expect(playAppSoundProfile("positiveDing")).resolves.toBe("played");
 
     expect(audio.start).toHaveBeenCalledTimes(profile.voices.length);
     expect(audio.stop).toHaveBeenCalledTimes(profile.voices.length);
-    expect(audio.setFrequency).toHaveBeenCalledWith(432, expect.any(Number));
-    expect(audio.setFrequency).toHaveBeenCalledWith(540, expect.any(Number));
-    expect(audio.setFrequency).toHaveBeenCalledWith(648, expect.any(Number));
-    expect(audio.rampGain).toHaveBeenCalledWith(0.014, expect.any(Number));
+    expect(audio.setFrequency).toHaveBeenCalledWith(659.25, expect.any(Number));
+    expect(audio.setFrequency).toHaveBeenCalledWith(987.77, expect.any(Number));
+    expect(audio.rampGain).toHaveBeenCalledWith(0.04, expect.any(Number));
     expect(audio.addEndedListener).toHaveBeenCalledWith("ended", expect.any(Function), {
       once: true,
     });

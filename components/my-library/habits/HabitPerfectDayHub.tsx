@@ -170,17 +170,17 @@ const BUILD_TARGET_TYPE_OPTIONS: HabitType[] = [
 const HABIT_MOTIVATION_RANGE_LABELS: Record<HabitMotivationRange, string> = {
   week: "Week",
   month: "Month",
-  three_months: "3 months",
-  six_months: "6 months",
+  three_months: "Quarter",
+  six_months: "Half-year",
   year: "Year",
   all: "All",
 };
 const HABIT_MOTIVATION_RANGE_CONTEXT: Record<HabitMotivationRange, string> = {
-  week: "Last 7 days",
-  month: "Last 30 days",
-  three_months: "Last 90 days",
-  six_months: "Last 180 days",
-  year: "Last 365 days",
+  week: "This week",
+  month: "This month",
+  three_months: "This quarter",
+  six_months: "This half-year",
+  year: "This year",
   all: "All time",
 };
 
@@ -541,6 +541,33 @@ function formatHistoryRange(summary: HabitMotivationSummary) {
 function formatMotivationRangeLabel(summary: HabitMotivationSummary, range: HabitMotivationRange) {
   const context = HABIT_MOTIVATION_RANGE_CONTEXT[range];
   return `${context} · ${formatHistoryRange(summary)}`;
+}
+
+function getHabitPeriodStatusFragment(
+  items: HabitDayItem[],
+  cadencePeriod: Extract<HabitCadencePeriod, "weekly" | "monthly">,
+  label: string
+) {
+  const periodItems = items.filter(
+    (item) =>
+      item.habit.status === "active" &&
+      item.habit.cadencePeriod === cadencePeriod &&
+      item.habit.startDate <= item.cadenceProgress.periodEnd
+  );
+  if (periodItems.length === 0) return null;
+
+  const satisfiedCount = periodItems.filter((item) => item.cadenceProgress.isTargetMet).length;
+  return `${label}: ${satisfiedCount}/${periodItems.length}`;
+}
+
+function getHabitsStatusLabel(snapshot: HabitSnapshot) {
+  const fragments = [
+    `Today: ${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount}`,
+    getHabitPeriodStatusFragment(snapshot.daySummary.items, "weekly", "Week"),
+    getHabitPeriodStatusFragment(snapshot.daySummary.items, "monthly", "Month"),
+  ].filter((fragment): fragment is string => Boolean(fragment));
+
+  return fragments.join(" · ");
 }
 
 function getBuildTargetChoiceLabel(type: HabitType) {
@@ -1192,7 +1219,7 @@ export default function HabitPerfectDayHub({
   const hasLoadedRowPreferencesRef = useRef(false);
   const hasHydratedTimersRef = useRef(false);
   const timedTargetProgressRef = useRef<Record<string, number>>({});
-  const timedTargetAutoSaveKeysRef = useRef<Set<string>>(new Set());
+  const timedTargetSignalKeysRef = useRef<Set<string>>(new Set());
   const saveTimedSourcesRef = useRef<
     ((item: HabitDayItem, input: SaveTimedSourcesInput) => Promise<void>) | null
   >(null);
@@ -1427,24 +1454,28 @@ export default function HabitPerfectDayHub({
     return () => window.clearTimeout(timeout);
   }, [recentlyCreatedHabitId, snapshot.daySummary.items]);
 
-  const playHabitSound = useCallback(async () => {
-    const result: AppSoundPlaybackResult = await playAppSoundProfile("softSuccessChime");
-    if (result === "played") {
-      setSoundNotice(null);
-      return;
-    }
+  const playHabitSound = useCallback(
+    async (blockedMessage = "Sound was blocked. Your habit was still saved.") => {
+      const result: AppSoundPlaybackResult = await playAppSoundProfile("positiveDing");
+      if (result === "played") {
+        setSoundNotice(null);
+        return;
+      }
 
-    setSoundNotice(
-      result === "unsupported"
-        ? "Sound is not available in this browser."
-        : "Sound was blocked. Your habit was still saved."
-    );
-  }, []);
+      setSoundNotice(
+        result === "unsupported" ? "Sound is not available in this browser." : blockedMessage
+      );
+    },
+    []
+  );
 
-  const playEnabledHabitSound = useCallback(() => {
-    if (!soundEnabled) return;
-    void playHabitSound();
-  }, [playHabitSound, soundEnabled]);
+  const playEnabledHabitSound = useCallback(
+    (blockedMessage?: string) => {
+      if (!soundEnabled) return;
+      void playHabitSound(blockedMessage);
+    },
+    [playHabitSound, soundEnabled]
+  );
 
   const getTimerSeconds = useCallback(
     (habitId: string) => {
@@ -1464,6 +1495,7 @@ export default function HabitPerfectDayHub({
       : activeCount < 3
         ? `${activeCount} active · add a few more when ready`
         : `${activeCount} active`;
+  const habitsStatusLabel = getHabitsStatusLabel(snapshot);
 
   const draftHabitType = getResolvedDraftHabitType(draft);
   const draftUnitOptions = useMemo(() => getUnitOptions(draftHabitType), [draftHabitType]);
@@ -2038,7 +2070,7 @@ export default function HabitPerfectDayHub({
       nextProgress[targetKey] = progressSeconds;
 
       if (progressSeconds < targetSeconds) {
-        timedTargetAutoSaveKeysRef.current.delete(targetKey);
+        timedTargetSignalKeysRef.current.delete(targetKey);
       }
 
       if (
@@ -2048,34 +2080,25 @@ export default function HabitPerfectDayHub({
         timer?.startedAtMs == null ||
         previousProgress >= targetSeconds ||
         progressSeconds < targetSeconds ||
-        timedTargetAutoSaveKeysRef.current.has(targetKey)
+        timedTargetSignalKeysRef.current.has(targetKey)
       ) {
         continue;
       }
 
-      const savedTimedSeconds = getSavedTimedSeconds(item);
-      const neededLocalSeconds = Math.max(0, targetSeconds - savedTimedSeconds);
-      const localSecondsToSave = Math.min(Math.max(0, timerSeconds), neededLocalSeconds);
-      if (localSecondsToSave <= 0) continue;
-
-      timedTargetAutoSaveKeysRef.current.add(targetKey);
+      timedTargetSignalKeysRef.current.add(targetKey);
       setTimers((current) => {
         const currentTimer = current[item.habit.id];
         if (!currentTimer) return current;
         return {
           ...current,
           [item.habit.id]: {
-            elapsedSeconds: localSecondsToSave,
+            elapsedSeconds: timerSeconds,
             startedAtMs: null,
           },
         };
       });
-      void saveTimedSourcesRef.current?.(item, {
-        timerSeconds: getSavedTimerSeconds(item) + getLegacyTimedSeconds(item) + localSecondsToSave,
-        manualMinutes: getSavedManualMinutes(item),
-        successNotice: "Completion saved.",
-        clearLocalTimerOnSuccess: true,
-      });
+      playEnabledHabitSound("Sound was blocked. Your timer target was still reached.");
+      setHabitNotice(item.habit.id, "Target reached. Timer paused.");
     }
 
     timedTargetProgressRef.current = nextProgress;
@@ -2083,6 +2106,7 @@ export default function HabitPerfectDayHub({
     getTimerSeconds,
     isSelectedToday,
     pendingKey,
+    playEnabledHabitSound,
     snapshot.daySummary.items,
     snapshot.selectedDate,
     timers,
@@ -3057,8 +3081,7 @@ export default function HabitPerfectDayHub({
               {snapshot.daySummary.isPerfectDay ? "Perfect day logged" : selectedDateLabel}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              {snapshot.daySummary.satisfiedPerfectDayItemCount}/
-              {snapshot.daySummary.perfectDayItemCount} habits on target · {preferredCountLabel}
+              {habitsStatusLabel} · {preferredCountLabel}
             </p>
           </div>
           <div
@@ -3114,11 +3137,7 @@ export default function HabitPerfectDayHub({
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-semibold text-slate-900">Habits</h2>
             <div className="mt-1 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
-              <p className="text-slate-600">
-                {preferMobileActiveFocus
-                  ? `${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount} on target`
-                  : `${weekLabel} · ${weekRangeLabel}`}
-              </p>
+              <p className="text-slate-600">{habitsStatusLabel}</p>
               <p
                 data-testid="habits-selected-date-context"
                 className="text-right whitespace-nowrap text-slate-500"

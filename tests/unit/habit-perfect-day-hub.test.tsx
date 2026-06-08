@@ -466,6 +466,74 @@ function buildWeeklyDonePeriodSnapshot(): HabitSnapshot {
   };
 }
 
+function buildPeriodStatusSnapshot(): HabitSnapshot {
+  const daily = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "11111111-1111-4111-8111-111111111111",
+      title: "Daily mobility",
+    })
+  );
+  const weekly = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Weekly mobility",
+      cadence_period: "weekly",
+      cadence_target_count: 2,
+      cadence_day_policy: "any",
+    })
+  );
+  const monthly = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "88888888-8888-4888-8888-888888888888",
+      title: "Monthly review",
+      cadence_period: "monthly",
+      cadence_target_count: 2,
+      cadence_day_policy: "any",
+    })
+  );
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: daily.id,
+        check_in_date: "2026-05-10",
+        value_boolean: true,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: weekly.id,
+        check_in_date: "2026-05-05",
+        value_boolean: true,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: weekly.id,
+        check_in_date: "2026-05-07",
+        value_boolean: true,
+      })
+    ),
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: monthly.id,
+        check_in_date: "2026-05-02",
+        value_boolean: true,
+      })
+    ),
+  ];
+  const activeHabits = [daily, weekly, monthly];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
 function buildQuitSlipSnapshot(): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
@@ -839,9 +907,9 @@ describe("HabitPerfectDayHub", () => {
     );
   });
 
-  it("previews the soft Habits completion sound when the user enables it", async () => {
+  it("previews the positive Habits ding when the user enables sound", async () => {
     const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
+    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
@@ -854,7 +922,7 @@ describe("HabitPerfectDayHub", () => {
 
   it("plays completion sound only after an enabled successful completion transition", async () => {
     const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
+    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -893,7 +961,7 @@ describe("HabitPerfectDayHub", () => {
 
   it("does not play completion sound for rest day, reset, or failed check-in actions", async () => {
     const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
+    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1618,22 +1686,15 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).queryByText("Total 3:05 / 8:00 today")).toBeNull();
   });
 
-  it("auto-saves and plays the timed target sound after a same-day running timer crosses target", async () => {
+  it("pauses and signals without auto-saving when a same-day running timer crosses target", async () => {
     vi.useFakeTimers();
     const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
     vi.setSystemTime(nowMs);
     const audio = installAudioContextMock();
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        snapshot: buildCompletedTimedSnapshot(),
-      }),
-    } as Response);
 
     render(
       <HabitPerfectDayHub
-        initialSnapshot={buildTimedSnapshot({ savedMinutes: 7.98 })}
+        initialSnapshot={buildTimedSnapshot()}
         todayDate="2026-05-10"
         userId="user-1"
       />
@@ -1643,36 +1704,30 @@ describe("HabitPerfectDayHub", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    const voiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
+    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
     expect(audio.start).toHaveBeenCalledTimes(voiceCount);
     audio.start.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(audio.start).not.toHaveBeenCalled();
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(480_000);
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/my-library/habits/check-ins",
-      expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining('"timerSeconds":480'),
-      })
-    );
-    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
-      timerSeconds: 480,
-      manualMinutes: 0,
-    });
+    expect(fetch).not.toHaveBeenCalled();
     expect(audio.start).toHaveBeenCalledTimes(voiceCount);
+    expect(screen.getByText("Target reached. Timer paused.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Finish" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Undo complete" })).toBeNull();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalled();
     expect(audio.start).toHaveBeenCalledTimes(voiceCount);
   });
 
@@ -2241,6 +2296,13 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
   });
 
+  it("summarizes Today, Week, and Month status without implying every habit is daily", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildPeriodStatusSnapshot()} />);
+
+    expect(screen.getAllByText("Today: 1/1 · Week: 1/1 · Month: 0/1").length).toBeGreaterThan(0);
+    expect(screen.queryByText("1/1 on target")).toBeNull();
+  });
+
   it("keeps weekly timed done status in the pill instead of inline progress text", () => {
     const habit = buildHabitDefinitionView(
       buildHabitRow({
@@ -2328,12 +2390,14 @@ describe("HabitPerfectDayHub", () => {
     expect(activeList).toHaveClass("order-2", "sm:order-3");
     expect(within(history).getByText("Habit stats")).toBeVisible();
     expect(within(history).getByText("Motivation")).toBeVisible();
-    expect(within(history).getByText("Last 30 days · May 1, 2026 - May 7, 2026")).toBeVisible();
+    expect(within(history).getByText("This month · May 1, 2026 - May 7, 2026")).toBeVisible();
     const rangeControls = within(history).getByRole("group", { name: "Motivation range" });
     expect(within(rangeControls).getByRole("button", { name: "Month" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
+    expect(within(rangeControls).getByRole("button", { name: "Quarter" })).toBeVisible();
+    expect(within(rangeControls).getByRole("button", { name: "Half-year" })).toBeVisible();
     expect(within(rangeControls).getByRole("button", { name: "All" })).toHaveAttribute(
       "aria-pressed",
       "false"
@@ -2641,7 +2705,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
     expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
-    expect(screen.getByText("1/1 on target")).toBeVisible();
+    expect(screen.getByText("Today: 1/1")).toBeVisible();
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
     expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
