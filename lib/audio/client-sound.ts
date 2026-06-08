@@ -1,7 +1,11 @@
 "use client";
 
 export type AppSoundPlaybackResult = "played" | "blocked" | "unsupported";
-export type AppSoundProfileName = "softSuccessChime" | "tapComplete" | "timerComplete";
+export type AppSoundProfileName =
+  | "softSuccessChime"
+  | "positiveDing"
+  | "tapComplete"
+  | "timerComplete";
 
 type AudioContextConstructor = typeof AudioContext;
 
@@ -54,6 +58,30 @@ export const APP_SOUND_PROFILES: Record<AppSoundProfileName, AppSoundProfile> = 
         attackMs: 120,
         releaseMs: 540,
         peakGain: 0.009,
+      },
+    ],
+  },
+  positiveDing: {
+    name: "positiveDing",
+    totalDurationMs: 360,
+    voices: [
+      {
+        oscillatorType: "sine",
+        frequencyHz: 659.25,
+        startsAtMs: 0,
+        durationMs: 170,
+        attackMs: 12,
+        releaseMs: 132,
+        peakGain: 0.04,
+      },
+      {
+        oscillatorType: "sine",
+        frequencyHz: 987.77,
+        startsAtMs: 96,
+        durationMs: 210,
+        attackMs: 14,
+        releaseMs: 168,
+        peakGain: 0.032,
       },
     ],
   },

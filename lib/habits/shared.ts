@@ -546,15 +546,15 @@ export function getHabitMotivationRangeStartDate(
 ): string | null {
   switch (range) {
     case "week":
-      return addUtcDays(selectedDate, -6);
+      return getCalendarWeekStartDate(selectedDate);
     case "month":
-      return addUtcDays(selectedDate, -29);
+      return getCalendarMonthStartDate(selectedDate);
     case "three_months":
-      return addUtcDays(selectedDate, -89);
+      return getCalendarQuarterStartDate(selectedDate);
     case "six_months":
-      return addUtcDays(selectedDate, -179);
+      return getCalendarHalfYearStartDate(selectedDate);
     case "year":
-      return addUtcDays(selectedDate, -364);
+      return getCalendarYearStartDate(selectedDate);
     case "all":
     default:
       return null;
@@ -579,6 +579,28 @@ function getCalendarMonthStartDate(dateKey: string): string {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
     .toISOString()
     .slice(0, 10);
+}
+
+function getCalendarQuarterStartDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  const quarterStartMonth = Math.floor(date.getUTCMonth() / 3) * 3;
+  return new Date(Date.UTC(date.getUTCFullYear(), quarterStartMonth, 1)).toISOString().slice(0, 10);
+}
+
+function getCalendarHalfYearStartDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  const halfYearStartMonth = date.getUTCMonth() < 6 ? 0 : 6;
+  return new Date(Date.UTC(date.getUTCFullYear(), halfYearStartMonth, 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function getCalendarYearStartDate(dateKey: string): string {
+  const parsed = Date.parse(`${dateKey}T00:00:00.000Z`);
+  const date = Number.isNaN(parsed) ? new Date() : new Date(parsed);
+  return new Date(Date.UTC(date.getUTCFullYear(), 0, 1)).toISOString().slice(0, 10);
 }
 
 function getCalendarMonthEndDate(dateKey: string): string {
