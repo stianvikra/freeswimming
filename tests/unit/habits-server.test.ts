@@ -5,6 +5,10 @@ import type {
   HabitDefinitionRow,
   HabitMotivationResetRow,
 } from "@/lib/habits/shared";
+import type { Database } from "@/types/database";
+
+type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
+type MicroSessionHabitLinkRow = Database["public"]["Tables"]["micro_session_habit_links"]["Row"];
 
 function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
   return {
@@ -64,7 +68,11 @@ function buildCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow 
 function buildSupabaseMock(
   definitions: HabitDefinitionRow[],
   checkIns: HabitCheckInRow[],
-  resetEvents: HabitMotivationResetRow[] = []
+  resetEvents: HabitMotivationResetRow[] = [],
+  microSessionLinks: Array<
+    Pick<MicroSessionHabitLinkRow, "habit_id" | "dryland_micro_plan_id" | "status" | "updated_at">
+  > = [],
+  microPlans: Array<Pick<DrylandMicroPlanRow, "id" | "blocks">> = []
 ) {
   const definitionQuery: {
     select: ReturnType<typeof vi.fn>;
@@ -110,21 +118,193 @@ function buildSupabaseMock(
   resetQuery.eq.mockReturnValue(resetQuery);
   resetQuery.lte.mockResolvedValue({ data: resetEvents, error: null });
 
+  const microLinkQuery: {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+    order: ReturnType<typeof vi.fn>;
+  } = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
+    order: vi.fn(),
+  };
+  microLinkQuery.select.mockReturnValue(microLinkQuery);
+  microLinkQuery.eq.mockReturnValue(microLinkQuery);
+  microLinkQuery.in.mockReturnValue(microLinkQuery);
+  microLinkQuery.order.mockResolvedValue({ data: microSessionLinks, error: null });
+
+  const microPlanQuery: {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+  } = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
+  };
+  microPlanQuery.select.mockReturnValue(microPlanQuery);
+  microPlanQuery.eq.mockReturnValue(microPlanQuery);
+  microPlanQuery.in.mockResolvedValue({ data: microPlans, error: null });
+
   const supabase = {
     from: vi.fn((table: string) => {
       if (table === "habit_definitions") return definitionQuery;
+      if (table === "micro_session_habit_links") return microLinkQuery;
+      if (table === "dryland_micro_plans") return microPlanQuery;
       if (table === "habit_check_ins") return checkInQuery;
       if (table === "habit_motivation_resets") return resetQuery;
       throw new Error(`Unexpected table ${table}`);
     }),
   };
 
-  return { supabase, checkInQuery, resetQuery };
+  return { supabase, checkInQuery, resetQuery, microLinkQuery, microPlanQuery };
 }
 
 describe("habits server loader", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
+  });
+
+  it("adds linked Micro Session progress to habit definitions", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+    const habit = buildHabitRow({
+      cadence_period: "weekly",
+      cadence_day_policy: "any",
+    });
+    const microBlocks = [
+      {
+        id: "unit-1",
+        sourceDrylandSessionId: "dryland-1",
+        sourceSessionTitle: "Weekly strength",
+        sourceSessionKind: "strength",
+        sourceSessionIndex: 0,
+        sourceExerciseId: "exercise-1",
+        sourceExerciseIndex: 0,
+        sourceSetId: "set-1",
+        setIndex: 0,
+        title: "Push ups",
+        summary: "Upper body",
+        targetLabel: "12 reps",
+        targetType: "reps",
+        targetValue: 12,
+        targetUnit: "reps",
+        loadKg: null,
+        restSeconds: null,
+        coachCue: "",
+        releaseMode: "available_now",
+        releaseOffsetDays: null,
+        releaseTime: "06:00",
+        releasedAt: "1970-01-01T00:00:00.000Z",
+        isArchived: false,
+        status: "completed",
+        completedAt: "2026-05-10T09:00:00.000Z",
+        skippedAt: null,
+      },
+      {
+        id: "unit-2",
+        sourceDrylandSessionId: "dryland-1",
+        sourceSessionTitle: "Weekly strength",
+        sourceSessionKind: "strength",
+        sourceSessionIndex: 0,
+        sourceExerciseId: "exercise-1",
+        sourceExerciseIndex: 0,
+        sourceSetId: "set-2",
+        setIndex: 1,
+        title: "Push ups",
+        summary: "Upper body",
+        targetLabel: "12 reps",
+        targetType: "reps",
+        targetValue: 12,
+        targetUnit: "reps",
+        loadKg: null,
+        restSeconds: null,
+        coachCue: "",
+        releaseMode: "available_now",
+        releaseOffsetDays: null,
+        releaseTime: "06:00",
+        releasedAt: "1970-01-01T00:00:00.000Z",
+        isArchived: false,
+        status: "queued",
+        completedAt: null,
+        skippedAt: null,
+      },
+    ];
+    const { supabase, microLinkQuery, microPlanQuery } = buildSupabaseMock(
+      [habit],
+      [],
+      [],
+      [
+        {
+          habit_id: habit.id,
+          dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+          status: "active",
+          updated_at: "2026-05-10T09:00:00.000Z",
+        },
+      ],
+      [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          blocks: microBlocks,
+        },
+      ]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+
+    expect(microLinkQuery.in).toHaveBeenCalledWith("habit_id", [habit.id]);
+    expect(microPlanQuery.in).toHaveBeenCalledWith("id", ["22222222-2222-4222-8222-222222222222"]);
+    expect(snapshot.activeHabits[0]?.microSessionLink).toMatchObject({
+      planId: "22222222-2222-4222-8222-222222222222",
+      status: "active",
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+  });
+
+  it("keeps habit snapshots available when linked Micro Session progress cannot load", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const habit = buildHabitRow({
+      cadence_period: "weekly",
+      cadence_day_policy: "any",
+    });
+    const { supabase, microPlanQuery } = buildSupabaseMock(
+      [habit],
+      [],
+      [],
+      [
+        {
+          habit_id: habit.id,
+          dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+          status: "active",
+          updated_at: "2026-05-10T09:00:00.000Z",
+        },
+      ]
+    );
+    microPlanQuery.in.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Dryland progress unavailable" },
+    });
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+
+    expect(snapshot.activeHabits[0]?.microSessionLink).toMatchObject({
+      planId: "22222222-2222-4222-8222-222222222222",
+      status: "active",
+      progress: null,
+    });
+    expect(snapshot.daySummary.items).toHaveLength(1);
+    expect(consoleError).toHaveBeenCalledWith(
+      "[Habits] Could not load linked micro session progress",
+      { message: "Dryland progress unavailable" }
+    );
   });
 
   it("keeps daily build history available for collapsed streak motivation", async () => {

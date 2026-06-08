@@ -35,6 +35,7 @@ function buildHabit(overrides: Partial<HabitDefinitionView> = {}): HabitDefiniti
     scheduleDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     isPerfectDayItem: true,
     status: "active",
+    microSessionLink: null,
     sortOrder: 0,
     createdAt: "2026-05-01T00:00:00.000Z",
     updatedAt: "2026-05-01T00:00:00.000Z",

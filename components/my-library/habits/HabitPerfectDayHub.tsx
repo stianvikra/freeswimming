@@ -690,6 +690,42 @@ function getClosedCardMotivationLabel(
   return getStartStreakPrompt(habit.cadencePeriod);
 }
 
+function isMicroSessionBackedHabit(item: HabitDayItem) {
+  return Boolean(item.habit.microSessionLink) || item.checkIn?.sourceKind === "micro_session";
+}
+
+function getMicroSessionProgress(item: HabitDayItem) {
+  const progress = item.habit.microSessionLink?.progress ?? null;
+  if (progress) return progress;
+
+  if (item.checkIn?.sourceKind === "micro_session" && item.evaluation.isSatisfied) {
+    return {
+      totalBlockCount: 1,
+      completedBlockCount: 1,
+      skippedBlockCount: 0,
+      remainingBlockCount: 0,
+      progressPercent: 100,
+    };
+  }
+
+  return null;
+}
+
+function getMicroSessionProgressLabel(item: HabitDayItem) {
+  const progress = getMicroSessionProgress(item);
+  if (!progress) return "Go to Micro Sessions";
+
+  return `${progress.completedBlockCount}/${progress.totalBlockCount} units · ${progress.progressPercent}%`;
+}
+
+function getMicroSessionHabitCardLabel(item: HabitDayItem) {
+  if (item.evaluation.isSatisfied) return "Auto-completed from Micro Sessions.";
+  if (item.habit.microSessionLink?.status === "paused") {
+    return "Micro Sessions are linked, but Habit counting is paused.";
+  }
+  return "Auto-completes when every Micro Session unit is done.";
+}
+
 function getPriorityGroupLabel(item: HabitDayItem) {
   switch (item.priorityGroup) {
     case "due_build":
@@ -3321,7 +3357,6 @@ export default function HabitPerfectDayHub({
             {snapshot.daySummary.items.map((item, index) => {
               const habit = item.habit;
               const motivationItem = motivationItemsByHabitId.get(habit.id);
-              const closedCardMotivationLabel = getClosedCardMotivationLabel(habit, motivationItem);
               const disabled = pendingKey !== null;
               const isSatisfied = item.evaluation.isSatisfied;
               const isQuit = habit.habitMode === "quit";
@@ -3329,6 +3364,11 @@ export default function HabitPerfectDayHub({
               const isCompletionGroup =
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const isRestDay = item.checkIn?.status === "skipped";
+              const isMicroSessionBacked = isMicroSessionBackedHabit(item);
+              const microSessionProgress = getMicroSessionProgress(item);
+              const closedCardMotivationLabel = isMicroSessionBacked
+                ? getMicroSessionHabitCardLabel(item)
+                : getClosedCardMotivationLabel(habit, motivationItem);
               const timerSeconds = getTimerSeconds(habit.id);
               const timedProgressSeconds = getTimedProgressSeconds(item, timerSeconds);
               const timedProgressLabel = formatTimer(timedProgressSeconds);
@@ -3485,7 +3525,34 @@ export default function HabitPerfectDayHub({
                         >
                           {closedCardMotivationLabel}
                         </p>
-                        {showTimedProgressModule ? (
+                        {isMicroSessionBacked ? (
+                          <div
+                            data-testid={`habit-micro-session-progress-${habit.id}`}
+                            className="mt-2 max-w-sm rounded-[var(--fs-radius-control)] border border-emerald-100 bg-white/80 px-3 py-2 text-sm font-medium text-slate-600"
+                          >
+                            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                              <span className="font-semibold text-emerald-800">Micro Sessions</span>
+                              <span className="text-slate-700">
+                                {getMicroSessionProgressLabel(item)}
+                              </span>
+                            </div>
+                            {microSessionProgress ? (
+                              <div
+                                className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200/80"
+                                role="progressbar"
+                                aria-label={`${habit.title} Micro Sessions progress`}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={microSessionProgress.progressPercent}
+                              >
+                                <div
+                                  className="h-full rounded-full bg-emerald-500"
+                                  style={{ width: `${microSessionProgress.progressPercent}%` }}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : showTimedProgressModule ? (
                           <div
                             className="mt-2 max-w-sm rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 py-2 text-sm font-medium text-slate-600"
                             aria-label={`Total timed progress ${timedProgressLabel} ${timedProgressContextLabel}`}
@@ -3522,7 +3589,10 @@ export default function HabitPerfectDayHub({
                       </div>
 
                       <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">
-                        {canEditSelectedCheckIn && habit.habitType === "binary" && !isQuit ? (
+                        {canEditSelectedCheckIn &&
+                        habit.habitType === "binary" &&
+                        !isQuit &&
+                        !isMicroSessionBacked ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -3548,6 +3618,19 @@ export default function HabitPerfectDayHub({
                                 : "Undo complete"
                               : "Mark done"}
                           </button>
+                        ) : null}
+
+                        {isMicroSessionBacked ? (
+                          <Link
+                            href="/my-library/dryland?micro=active&view=auto#micro-sessions"
+                            className={cx(
+                              habitMobilePrimaryActionClass,
+                              "h-11 min-h-11 min-w-[12rem] px-4 sm:!w-48"
+                            )}
+                          >
+                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                            Go to Micro Sessions
+                          </Link>
                         ) : null}
 
                         {canRunTimerForSelectedDate &&

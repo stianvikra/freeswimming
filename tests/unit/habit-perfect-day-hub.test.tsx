@@ -123,6 +123,42 @@ function buildSnapshot(options?: {
   };
 }
 
+function buildMicroSessionHabitSnapshot(): HabitSnapshot {
+  const selectedDate = "2026-05-10";
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Weekly Micro Sessions",
+      cadence_period: "weekly",
+      cadence_day_policy: "any",
+      cadence_target_count: 1,
+    }),
+    {
+      microSessionLink: {
+        planId: "22222222-2222-4222-8222-222222222222",
+        status: "active",
+        progress: {
+          totalBlockCount: 4,
+          completedBlockCount: 2,
+          skippedBlockCount: 0,
+          remainingBlockCount: 2,
+          progressPercent: 50,
+        },
+      },
+    }
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, [], selectedDate),
+    weekSummary: buildHabitWeekSummary(activeHabits, [], selectedDate),
+  };
+}
+
 function buildOpenBuildStreakSnapshot(): HabitSnapshot {
   const habit = buildHabitDefinitionView(
     buildHabitRow({
@@ -753,6 +789,29 @@ describe("HabitPerfectDayHub", () => {
     expect(headingRow).toHaveClass("justify-start");
     expect(headingRow).toHaveClass("flex-wrap");
     expect(headingRow).not.toHaveClass("justify-between");
+  });
+
+  it("routes micro-backed Habits to Micro Sessions instead of manual completion", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildMicroSessionHabitSnapshot()} />);
+
+    expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
+    expect(screen.getByText("Auto-completes when every Micro Session unit is done.")).toBeVisible();
+
+    const progress = screen.getByTestId(
+      "habit-micro-session-progress-11111111-1111-4111-8111-111111111111"
+    );
+    expect(within(progress).getByText("2/4 units · 50%")).toBeVisible();
+    expect(
+      screen.getByRole("progressbar", {
+        name: "Weekly Micro Sessions Micro Sessions progress",
+      })
+    ).toHaveAttribute("aria-valuenow", "50");
+
+    expect(screen.getByRole("link", { name: "Go to Micro Sessions" })).toHaveAttribute(
+      "href",
+      "/my-library/dryland?micro=active&view=auto#micro-sessions"
+    );
+    expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
   });
 
   it("keeps Habits completion sound off by default and stores the compact opt-in locally", () => {

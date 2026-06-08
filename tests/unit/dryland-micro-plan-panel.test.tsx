@@ -321,7 +321,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByText("New Weekly Habit")).toBeVisible();
     expect(
       screen.getByText(
-        "The Habit completes when every unit in this week's Micro Session is completed."
+        "The Habit auto-completes when every unit in this week's Micro Session is done."
       )
     ).toBeVisible();
 
@@ -341,6 +341,64 @@ describe("DrylandMicroPlanPanel", () => {
     expect(linkStatus).toHaveTextContent("Linked Habit");
     expect(linkStatus).toHaveTextContent("Mobility habit");
     expect(navigationState.refresh).toHaveBeenCalled();
+  });
+
+  it("keeps linked Habit status below mobile bubbles and above completed history", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    );
+    const basePlan = buildPlan();
+    const blocks = basePlan.blocks.map((block, index) =>
+      index === 0
+        ? {
+            ...block,
+            status: "completed" as const,
+            completedAt: "2026-05-12T09:00:00.000Z",
+          }
+        : block
+    );
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          habitLink: buildHabitLink(),
+          blocks,
+          progress: {
+            totalBlockCount: 2,
+            completedBlockCount: 1,
+            skippedBlockCount: 0,
+            remainingBlockCount: 1,
+            progressPercent: 50,
+          },
+        })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+        preferMobileBubbles
+      />
+    );
+
+    const board = screen.getByTestId("dryland-micro-bubble-board");
+    const linkStatus = screen.getByTestId("dryland-micro-habit-link-status");
+    const historyHeading = screen.getByText("Completed and skipped");
+
+    expect(board.compareDocumentPosition(linkStatus)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(linkStatus.compareDocumentPosition(historyHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(linkStatus).toHaveTextContent(
+      "Auto-completes the Habit when every unit in this week's Micro Session is done."
+    );
   });
 
   it("pauses Habit counting without disabling micro session bubbles", async () => {

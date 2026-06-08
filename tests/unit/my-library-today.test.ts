@@ -111,6 +111,7 @@ function buildHabit(id: string): HabitDefinitionView {
     scheduleDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
     isPerfectDayItem: true,
     status: "active",
+    microSessionLink: null,
     sortOrder: 0,
     createdAt: "2026-05-10T08:00:00.000Z",
     updatedAt: "2026-05-10T08:00:00.000Z",

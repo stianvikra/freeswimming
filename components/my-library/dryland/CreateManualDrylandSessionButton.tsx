@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
@@ -9,22 +10,26 @@ import type { DrylandSaveApiResponse, DrylandSessionKind } from "@/lib/dryland/s
 type Props = {
   sessionKind: DrylandSessionKind;
   label: string;
+  ariaLabel?: string;
   pendingLabel?: string;
   className?: string;
   testId?: string;
   describedById?: string;
   hideInlineError?: boolean;
+  icon?: ReactNode;
   onErrorChange?: (message: string) => void;
 };
 
 export default function CreateManualDrylandSessionButton({
   sessionKind,
   label,
+  ariaLabel,
   pendingLabel = "Creating session...",
   className = "",
   testId = "create-manual-dryland-session",
   describedById,
   hideInlineError = false,
+  icon,
   onErrorChange,
 }: Props) {
   const router = useRouter();
@@ -87,10 +92,18 @@ export default function CreateManualDrylandSessionButton({
         data-client-ready={clientReady ? "true" : "false"}
         onClick={() => void handleCreateSession()}
         disabled={!clientReady || isCreating}
+        aria-label={ariaLabel}
         aria-describedby={error ? (describedById ?? errorId) : undefined}
         className={className}
       >
-        {isCreating ? pendingLabel : label}
+        {isCreating ? (
+          pendingLabel
+        ) : (
+          <>
+            {icon}
+            {label}
+          </>
+        )}
       </button>
       {error && !hideInlineError ? (
         <DrylandFeedback id={errorId} tone="error" density="compact" testId={errorId}>

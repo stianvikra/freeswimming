@@ -62,6 +62,22 @@ export type HabitCheckInSourceKind =
   | (typeof HABIT_CHECK_IN_SOURCE_KIND_VALUES)[number]
   | "unsupported";
 
+export type HabitMicroSessionLinkStatus = "active" | "paused" | "unsupported";
+
+export type HabitMicroSessionProgressView = {
+  totalBlockCount: number;
+  completedBlockCount: number;
+  skippedBlockCount: number;
+  remainingBlockCount: number;
+  progressPercent: number;
+};
+
+export type HabitMicroSessionLinkView = {
+  planId: string;
+  status: HabitMicroSessionLinkStatus;
+  progress: HabitMicroSessionProgressView | null;
+};
+
 export type HabitCadenceProgress = {
   periodStart: string;
   periodEnd: string;
@@ -142,6 +158,7 @@ export type HabitDefinitionView = {
   scheduleDays: HabitWeekday[];
   isPerfectDayItem: boolean;
   status: HabitStatus;
+  microSessionLink: HabitMicroSessionLinkView | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -954,7 +971,11 @@ export function buildHabitMotivationResetInsert(
   };
 }
 
-export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefinitionView {
+export function buildHabitDefinitionView(
+  row: HabitDefinitionRow,
+  options: { microSessionLink?: HabitMicroSessionLinkView | null } | number = {}
+): HabitDefinitionView {
+  const viewOptions = typeof options === "object" && options !== null ? options : {};
   const scheduleDays = normalizeScheduleDays(row.schedule_days);
   const cadencePeriod = getCadencePeriod(row.cadence_period, scheduleDays);
   const cadenceDayPolicy = getCadenceDayPolicy(row.cadence_day_policy, cadencePeriod, scheduleDays);
@@ -1012,6 +1033,7 @@ export function buildHabitDefinitionView(row: HabitDefinitionRow): HabitDefiniti
     scheduleDays,
     isPerfectDayItem: row.is_perfect_day_item,
     status: row.status === "archived" ? "archived" : "active",
+    microSessionLink: viewOptions.microSessionLink ?? null,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
