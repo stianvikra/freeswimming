@@ -1,0 +1,92 @@
+{
+  "softSuccessChime": {
+    "name": "softSuccessChime",
+    "totalDurationMs": 1480,
+    "voices": [
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 432,
+        "startsAtMs": 0,
+        "durationMs": 980,
+        "attackMs": 110,
+        "releaseMs": 680,
+        "peakGain": 0.014
+      },
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 540,
+        "startsAtMs": 260,
+        "durationMs": 960,
+        "attackMs": 120,
+        "releaseMs": 700,
+        "peakGain": 0.012
+      },
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 648,
+        "startsAtMs": 620,
+        "durationMs": 720,
+        "attackMs": 120,
+        "releaseMs": 540,
+        "peakGain": 0.009
+      }
+    ]
+  },
+  "tapComplete": {
+    "name": "tapComplete",
+    "totalDurationMs": 260,
+    "voices": [
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 587.33,
+        "startsAtMs": 0,
+        "durationMs": 110,
+        "attackMs": 10,
+        "releaseMs": 88,
+        "peakGain": 0.028
+      },
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 783.99,
+        "startsAtMs": 82,
+        "durationMs": 135,
+        "attackMs": 12,
+        "releaseMs": 108,
+        "peakGain": 0.022
+      }
+    ]
+  },
+  "timerComplete": {
+    "name": "timerComplete",
+    "totalDurationMs": 380,
+    "voices": [
+      {
+        "oscillatorType": "triangle",
+        "frequencyHz": 440,
+        "startsAtMs": 0,
+        "durationMs": 135,
+        "attackMs": 16,
+        "releaseMs": 102,
+        "peakGain": 0.03
+      },
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 659.25,
+        "startsAtMs": 108,
+        "durationMs": 185,
+        "attackMs": 18,
+        "releaseMs": 145,
+        "peakGain": 0.026
+      },
+      {
+        "oscillatorType": "sine",
+        "frequencyHz": 880,
+        "startsAtMs": 232,
+        "durationMs": 96,
+        "attackMs": 12,
+        "releaseMs": 76,
+        "peakGain": 0.018
+      }
+    ]
+  }
+}

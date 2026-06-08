@@ -229,6 +229,7 @@ export type HabitMotivationItem = {
   status: HabitStatus;
   mode: HabitMode;
   startDate: string;
+  updatedAt: string;
   motivationStartDate: string;
   resetBoundary: HabitMotivationResetBoundary | null;
   resetBoundaries: HabitMotivationResetBoundary[];
@@ -2037,6 +2038,7 @@ function buildNonQuitMotivationItem(
       status: habit.status,
       mode: habit.habitMode,
       startDate: habit.startDate,
+      updatedAt: habit.updatedAt,
       motivationStartDate: metricStartDate,
       resetBoundary,
       resetBoundaries,
@@ -2113,6 +2115,7 @@ function buildNonQuitMotivationItem(
     status: habit.status,
     mode: habit.habitMode,
     startDate: habit.startDate,
+    updatedAt: habit.updatedAt,
     motivationStartDate: metricStartDate,
     resetBoundary,
     resetBoundaries,
@@ -2198,6 +2201,7 @@ function buildQuitMotivationItem(
     status: habit.status,
     mode: habit.habitMode,
     startDate: habit.startDate,
+    updatedAt: habit.updatedAt,
     motivationStartDate: metricStartDate,
     resetBoundary,
     resetBoundaries,

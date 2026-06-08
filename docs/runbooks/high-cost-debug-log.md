@@ -18,6 +18,16 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Evidence:
 ```
 
+## 2026-06-08 - Habits Sound: merged ding still sounded like the old/wrong sound
+
+- Surface: `/my-library/habits`, `lib/audio/client-sound.ts`, Habits local opt-in completion/target sound.
+- Symptom: after multiple sound-fix attempts and PR `#1023`, owner still heard the same wrong Habits sound instead of a short iPhone-message-like ding.
+- Root cause: the implementation validated profile selection and oscillator scheduling, but not the actual audible output. The #1023 `positiveDing` profile was only another synthetic oscillator profile, and no listenable artifact was generated from the same source the app used.
+- Fix pattern: treat audio as artifact-bearing UX. Keep app playback tied to the same listenable source the owner approves, whether that is a static MP3 asset or a generated preview, and stop for owner approval before PR/merge.
+- Detection/probe: inspect whether the changed sound has a listenable artifact and whether that artifact is the same source as app playback; tests that only count oscillator starts are insufficient.
+- Prevention: future audio changes require a listenable artifact handoff plus owner approval when the requested outcome is subjective sound quality.
+- Evidence: active hotfix brief `docs/task-briefs/in-progress/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md`; owner-provided MP3 asset evidence pending owner review.
+
 ## 2026-05-29 - Session Generator Unit CI: metadata panel collapsed after save transition
 
 - Surface: `tests/unit/session-generator-panel.test.tsx`, shared saved-session editor metadata panel.
