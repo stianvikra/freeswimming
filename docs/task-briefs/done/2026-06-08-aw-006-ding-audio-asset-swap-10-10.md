@@ -63,7 +63,8 @@ Critical target categories for a `10/10` claim:
 - `Product goals and IA`
 - `UX flow clarity`
 - `Business logic correctness and data integrity`
-- `Performance (CWV + payloads)`
+- `Reliability and failure handling`
+- `Privacy and compliance`
 - `Content governance`
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
@@ -265,6 +266,7 @@ N/A with rationale: this changes no UI, print, layout, brand image, visible prod
 - `2026-06-08 | in-progress | execution started on branch aw-006-ding-audio-asset-swap; MP3 metadata verified as MPG3, 2 ch, 48000 Hz, 1.680000 sec, 53760 bytes, 256000 bps; public/sounds/ding/README.md updated to record owner-confirmed free-use/license status for the replacement asset | next: route/support sweep, targeted tests, brief lint, full pre-PR gate`
 - `2026-06-08 | in-progress | route/label/support sweep confirmed the shared positiveDing path remains /sounds/ding/ding.mp3, shared app volume remains 0.15 in lib/audio/client-sound.ts, Habits and Micro Sessions keep local sound preference keys and accessible Sound on/off names, and no UI/API/data fallout was found; targeted Vitest passed for tests/unit/client-sound.test.ts, tests/unit/habit-perfect-day-hub.test.tsx, and tests/unit/dryland-micro-plan-panel.test.tsx with 108/108 tests passing; npm run lint:briefs:all passed | next: stage only audio-scope files and run npm run verify:pre-pr`
 - `2026-06-08 | done | PR #1029 merged at squash commit 3cf49d64 after full local pre-PR, green CI, and pre-merge validation; post-merge preflight requested this repo-managed docs-only closeout | next: closeout PR validation`
+- `2026-06-08 | done | closeout pre-merge lint surfaced that the critical-category list should avoid parenthesized category aliases; updated the critical list to non-parenthesized relevant targets while keeping Performance (CWV + payloads) as a 5/5 target category | next: rerun closeout gates and update PR #1030`
 
 ## Completion Record
 
