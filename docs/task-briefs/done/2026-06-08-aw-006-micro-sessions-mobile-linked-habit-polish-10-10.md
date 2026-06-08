@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-micro-sessions-mobile-linked-habit-polish-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
 - `updated`: `2026-06-08`
@@ -183,7 +183,10 @@ Critical target categories for a `10/10` claim: Product goals and IA, UX flow cl
 - `npm run lint:briefs:all` - PASS.
 - `git diff --check` - PASS.
 - First screenshot handoff at `output/micro-sessions-mobile-polish-2026-06-08-152045` was rejected during visual review because the build-surface capture was too isolated, the mobile actions still read too heavy/old-form-like, the bottom nav was shown in the wrong capture position, and the harness added non-representative top spacing. Revised screenshot handoff captured at `output/micro-sessions-mobile-polish-correction-2026-06-08-153722`; owner approval is required before `npm run verify:pre-pr`.
-- After owner screenshot approval: `npm run verify:pre-pr`, PR/CI, `npm run verify:pre-merge`.
+- Revised screenshot handoff at `output/micro-sessions-mobile-polish-correction-2026-06-08-153722` was owner-approved in chat on `2026-06-08`.
+- `npm run verify:pre-pr` - PASS full lane on branch `aw-006-micro-sessions-mobile-polish`.
+- PR `#1021` CI - PASS: `verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, `deploy-preview`, `Vercel`, `CodeQL`, and `Analyze (javascript-typescript)`.
+- `npm run verify:pre-merge` - first run hit an unrelated Poolside Preview unit-test teardown flake (`window is not defined` after teardown). Targeted `./node_modules/.bin/vitest run tests/unit/poolside-preview-page-client.test.tsx` and full `npm run test:unit` reruns passed, then `npm run verify:pre-merge` rerun passed.
 
 ## Route / Label / Support Sweep
 
@@ -212,3 +215,46 @@ Surfaces: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, ac
 - `2026-06-08 | in-progress | created active child from owner findings H-048 through H-052 after recovery on clean main@235c753d; branch aw-006-micro-sessions-mobile-polish; stats fixed-period work is split to planned Child Q | next: implement UI polish, targeted tests, then screenshot handoff before verify:pre-pr`
 - `2026-06-08 | screenshot-review | implemented Child P UI/view-model/docs/tests; targeted Vitest/typecheck/eslint/brief-lint/diff-check pass; screenshot handoff captured at output/micro-sessions-mobile-polish-2026-06-08-152045 using production components with a temporary local screenshot route that was removed after capture | next: owner visual approval, then npm run verify:pre-pr`
 - `2026-06-08 | visual-correction | owner rejected build-surface screenshot quality; tightened micro-focused create panel, removed empty-state card-in-card, made saved-session actions compact, preserved accessible create labels, corrected screenshot harness bottom-nav/top-spacing issues, and recaptured full mobile shell plus saved-card evidence at output/micro-sessions-mobile-polish-correction-2026-06-08-153722 | next: owner visual approval, then npm run verify:pre-pr`
+- `2026-06-08 | done | owner approved corrected screenshot handoff, npm run verify:pre-pr passed full lane, PR #1021 CI passed, npm run verify:pre-merge rerun passed after one unrelated Poolside Preview unit-test teardown flake was confirmed clean by targeted/full unit reruns, and PR #1021 merged as squash commit 6bd154a2 | next: complete repo-managed docs-only closeout and return to Child Q when selected`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1021`
+- `squash_commit`: `6bd154a2`
+- `result`: Closed AW-006 Micro Sessions Mobile Linked-Habit Polish. Micro Session-backed Habits now read as derived progress, Micro Sessions bubbles stay primary on mobile, linked-Habit context sits below bubbles and above completed history, and the build/create actions use the current token/action rhythm.
+- `validation`: targeted Vitest/eslint/typecheck/brief-lint/diff-check, corrected owner-approved screenshot handoff, `npm run verify:pre-pr` full lane, PR `#1021` CI, and `npm run verify:pre-merge` rerun all passed.
+- `10/10 claim`: yes - listed below and each reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Data placement and sync boundaries`
+- `Reliability and failure handling`
+- `Privacy and compliance`
+- `Content governance`
+- `Incident response and support operations`
+- `i18n operational readiness`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+| Category                                      | Achieved Score | Evidence                                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Micro Sessions are the completion surface; Habits shows derived progress/CTA; screenshots and tests covered the loop. | None.        |
+| UX flow clarity                               | `5/5`          | Bubbles render before linked-Habit context; manual Habit completion is hidden for micro-backed Habits.                | None.        |
+| Visual design quality                         | `5/5`          | Corrected screenshot handoff was owner-approved; build/create actions use current token/action styling.               | None.        |
+| Business logic correctness and data integrity | `5/5`          | No write semantics changed; source/linkage provenance gates UI only; server negative-path test covers fail-open view. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Buttons keep accessible names; progress semantics and component tests cover changed controls.                         | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical Micro Session/Habit data remains unchanged; local state remains presentation only.                   | None.        |
+| Reliability and failure handling              | `5/5`          | Missing linked Micro Session progress preserves Habit snapshot with `progress: null`.                                 | None.        |
+| Privacy and compliance                        | `5/5`          | No new analytics, logs, secrets, or external assets.                                                                  | None.        |
+| Content governance                            | `5/5`          | Parent, queue, design inventory, user-flow map, and support runbook were updated.                                     | None.        |
+| Incident response and support operations      | `5/5`          | Support/user-flow docs explain Micro-backed Habits auto-complete from Micro Sessions and route users to bubbles.      | None.        |
+| i18n operational readiness                    | `5/5`          | Mobile controls use responsive widths and accessible labels rather than narrow fixed text assumptions.                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Dryland/Habits components, typed helpers, route boundaries, and UI tokens; no dependencies added.     | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, full pre-PR, PR CI, and pre-merge gates passed.                                                  | None.        |
+| DevOps and rollback readiness                 | `5/5`          | UI/runtime-only rollback is a normal revert; no migration or external service rollback needed.                        | None.        |
