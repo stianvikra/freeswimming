@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  buildDrylandMicroPlanProgress,
+  normalizeDrylandMicroBlocks,
+} from "@/lib/dryland/micro-plans";
+import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import {
   buildHabitCheckInView,
@@ -12,6 +17,9 @@ import {
   normalizeHabitDate,
   type HabitCheckInRow,
   type HabitDefinitionRow,
+  type HabitMicroSessionLinkStatus,
+  type HabitMicroSessionLinkView,
+  type HabitMicroSessionProgressView,
   type HabitMotivationResetRow,
   type HabitMotivationRangeSummaries,
   type HabitMotivationResetView,
@@ -20,6 +28,8 @@ import {
 import type { Database } from "@/types/database";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
+type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
+type MicroSessionHabitLinkRow = Database["public"]["Tables"]["micro_session_habit_links"]["Row"];
 
 export const HABIT_DEFINITION_SELECT = `
   id,
@@ -80,6 +90,106 @@ export const HABIT_MOTIVATION_RESET_SELECT = `
   created_by,
   created_at
 `;
+
+const HABIT_MICRO_SESSION_LINK_SELECT = `
+  habit_id,
+  dryland_micro_plan_id,
+  status,
+  updated_at
+`;
+
+const HABIT_MICRO_SESSION_PLAN_SELECT = `
+  id,
+  blocks
+`;
+
+function getHabitMicroSessionLinkStatus(value: string): HabitMicroSessionLinkStatus {
+  if (value === "active" || value === "paused") return value;
+  return "unsupported";
+}
+
+function buildHabitMicroSessionProgress(
+  plan: Pick<DrylandMicroPlanRow, "id" | "blocks">
+): HabitMicroSessionProgressView | null {
+  const blocks = normalizeDrylandMicroBlocks(plan.blocks);
+  if (!blocks.ok) {
+    console.error("[Habits] Could not normalize linked micro session plan", {
+      planId: plan.id,
+      error: blocks.error,
+    });
+    return null;
+  }
+
+  return buildDrylandMicroPlanProgress(blocks.value);
+}
+
+async function loadHabitMicroSessionLinksByHabitId(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  habitIds: string[]
+): Promise<Map<string, HabitMicroSessionLinkView>> {
+  if (habitIds.length === 0) return new Map();
+
+  const linkResult = await supabase
+    .from("micro_session_habit_links")
+    .select(HABIT_MICRO_SESSION_LINK_SELECT)
+    .eq("user_id", userId)
+    .in("habit_id", habitIds)
+    .in("status", ["active", "paused"])
+    .order("updated_at", { ascending: false });
+
+  if (isDrylandSchemaMissing(linkResult.error)) {
+    return new Map();
+  }
+
+  if (linkResult.error) {
+    console.error("[Habits] Could not load linked micro session habits", linkResult.error);
+    return new Map();
+  }
+
+  const linksByHabitId = new Map<string, HabitMicroSessionLinkView>();
+  const planIds = new Set<string>();
+
+  for (const link of (linkResult.data ?? []) as MicroSessionHabitLinkRow[]) {
+    if (linksByHabitId.has(link.habit_id)) continue;
+
+    linksByHabitId.set(link.habit_id, {
+      planId: link.dryland_micro_plan_id,
+      status: getHabitMicroSessionLinkStatus(link.status),
+      progress: null,
+    });
+    planIds.add(link.dryland_micro_plan_id);
+  }
+
+  if (planIds.size === 0) return linksByHabitId;
+
+  const planResult = await supabase
+    .from("dryland_micro_plans")
+    .select(HABIT_MICRO_SESSION_PLAN_SELECT)
+    .eq("user_id", userId)
+    .in("id", Array.from(planIds));
+
+  if (isDrylandSchemaMissing(planResult.error)) {
+    return linksByHabitId;
+  }
+
+  if (planResult.error) {
+    console.error("[Habits] Could not load linked micro session progress", planResult.error);
+    return linksByHabitId;
+  }
+
+  const progressByPlanId = new Map<string, HabitMicroSessionProgressView>();
+  for (const plan of (planResult.data ?? []) as Pick<DrylandMicroPlanRow, "id" | "blocks">[]) {
+    const progress = buildHabitMicroSessionProgress(plan);
+    if (progress) progressByPlanId.set(plan.id, progress);
+  }
+
+  for (const link of linksByHabitId.values()) {
+    link.progress = progressByPlanId.get(link.planId) ?? null;
+  }
+
+  return linksByHabitId;
+}
 
 function getWeekStartDate(selectedDate: string) {
   const parsed = Date.parse(`${selectedDate}T00:00:00.000Z`);
@@ -200,7 +310,17 @@ export async function loadHabitSnapshot(
     };
   }
 
-  const habits = ((habitResult.data ?? []) as HabitDefinitionRow[]).map(buildHabitDefinitionView);
+  const habitRows = (habitResult.data ?? []) as HabitDefinitionRow[];
+  const microSessionLinksByHabitId = await loadHabitMicroSessionLinksByHabitId(
+    supabase,
+    userId,
+    habitRows.map((row) => row.id)
+  );
+  const habits = habitRows.map((row) =>
+    buildHabitDefinitionView(row, {
+      microSessionLink: microSessionLinksByHabitId.get(row.id) ?? null,
+    })
+  );
   const activeHabits = habits.filter((habit) => habit.status === "active");
   const archivedHabits = habits.filter((habit) => habit.status === "archived");
   const checkInStart = getHabitCheckInStartDate(selectedDate, habits);

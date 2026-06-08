@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { RefreshCcw } from "lucide-react";
+import type { ReactNode } from "react";
+import { Dumbbell, ExternalLink, Pencil, PersonStanding, RefreshCcw, Trash2 } from "lucide-react";
 import CreateManualDrylandSessionButton from "@/components/my-library/dryland/CreateManualDrylandSessionButton";
 import DrylandFeedback from "@/components/my-library/dryland/DrylandFeedback";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
@@ -40,21 +41,43 @@ type PostSaveCta = {
 };
 
 const actionBaseClass =
-  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const primaryActionClass = cx("fs-cta-primary", actionBaseClass);
 const secondaryActionClass = cx("fs-cta-secondary", actionBaseClass, "hover:bg-white");
+const microCreateChoiceActionClass = cx(
+  "fs-cta-secondary inline-flex !min-h-12 w-full items-center !justify-start gap-3 !px-3.5 text-sm font-semibold !shadow-sm transition-colors hover:bg-white",
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+);
 const dangerActionClass = cx(
   actionBaseClass,
   "border border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-50 focus-visible:ring-rose-400"
+);
+const savedSessionActionClass = cx(
+  "fs-cta-secondary inline-flex !min-h-9 items-center justify-center gap-1.5 !px-3 text-sm font-semibold !shadow-sm transition-colors hover:bg-white",
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+);
+const savedSessionDangerActionClass = cx(
+  "fs-cta-danger inline-flex !min-h-9 items-center justify-center gap-1.5 !px-3 text-sm font-semibold text-rose-700 !shadow-sm transition-colors hover:bg-rose-50",
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
 );
 const dangerPrimaryActionClass = cx(
   actionBaseClass,
   "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 focus-visible:ring-rose-400"
 );
 const drylandCreatePanelClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
+const drylandMicroCreatePanelClass =
+  "fs-library-card border-[color:var(--fs-border-soft)] bg-white/90 p-4 shadow-sm sm:p-5";
 const drylandSessionCardClass = "fs-library-card p-4 sm:p-5";
 const warningPanelClass =
   "mt-4 rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-4";
+
+function microCreateIcon(icon: ReactNode) {
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]">
+      {icon}
+    </span>
+  );
+}
 
 function upsertRecentSessionSummary(current: DrylandSessionSummary[], next: DrylandSessionSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
@@ -381,7 +404,12 @@ export default function DrylandBuilderHub({
       className="space-y-6"
     >
       {(browseOnly || !savedSession) && !shouldPrioritizeMicroPlan ? (
-        <div className={drylandCreatePanelClass} data-testid="dryland-create-panel">
+        <div
+          className={
+            browseOnly && isMicroFocused ? drylandMicroCreatePanelClass : drylandCreatePanelClass
+          }
+          data-testid="dryland-create-panel"
+        >
           <div>
             <h2 className="text-lg font-semibold text-[color:var(--fs-color-ink-strong)]">
               {browseOnly && isMicroFocused
@@ -402,26 +430,60 @@ export default function DrylandBuilderHub({
           </div>
           {drylandLibrary.schemaReady ? (
             <div className="mt-4 space-y-2">
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <div
+                className={
+                  browseOnly && isMicroFocused
+                    ? "grid gap-2 sm:grid-cols-2"
+                    : "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+                }
+              >
                 <CreateManualDrylandSessionButton
                   sessionKind="strength"
-                  label="Create strength session"
+                  label={
+                    browseOnly && isMicroFocused ? "Strength session" : "Create strength session"
+                  }
+                  ariaLabel="Create strength session"
                   testId={browseOnly ? "dryland-browse-create-strength" : "dryland-create-strength"}
                   describedById={createErrorId}
                   hideInlineError
                   onErrorChange={setCreateError}
-                  className={primaryActionClass}
+                  icon={
+                    browseOnly && isMicroFocused ? (
+                      microCreateIcon(<Dumbbell className="h-4 w-4" aria-hidden="true" />)
+                    ) : (
+                      <Dumbbell className="h-4 w-4" aria-hidden="true" />
+                    )
+                  }
+                  className={
+                    browseOnly && isMicroFocused ? microCreateChoiceActionClass : primaryActionClass
+                  }
                 />
                 <CreateManualDrylandSessionButton
                   sessionKind="stretching"
-                  label="Create stretching session"
+                  label={
+                    browseOnly && isMicroFocused
+                      ? "Stretching session"
+                      : "Create stretching session"
+                  }
+                  ariaLabel="Create stretching session"
                   testId={
                     browseOnly ? "dryland-browse-create-stretching" : "dryland-create-stretching"
                   }
                   describedById={createErrorId}
                   hideInlineError
                   onErrorChange={setCreateError}
-                  className={secondaryActionClass}
+                  icon={
+                    browseOnly && isMicroFocused ? (
+                      microCreateIcon(<PersonStanding className="h-4 w-4" aria-hidden="true" />)
+                    ) : (
+                      <PersonStanding className="h-4 w-4" aria-hidden="true" />
+                    )
+                  }
+                  className={
+                    browseOnly && isMicroFocused
+                      ? microCreateChoiceActionClass
+                      : secondaryActionClass
+                  }
                 />
               </div>
               {createError ? (
@@ -565,17 +627,19 @@ export default function DrylandBuilderHub({
                             {buildDrylandSessionSummarySubtitle(session)}
                           </p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap">
                           <Link
                             href={`/my-library/dryland/${session.id}`}
-                            className={secondaryActionClass}
+                            className={savedSessionActionClass}
                           >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                             Edit
                           </Link>
                           <Link
                             href={`/my-library/dryland/${session.id}`}
-                            className={secondaryActionClass}
+                            className={savedSessionActionClass}
                           >
+                            <ExternalLink className="h-4 w-4" aria-hidden="true" />
                             Open
                           </Link>
                           <button
@@ -589,8 +653,9 @@ export default function DrylandBuilderHub({
                               setSuccess("");
                             }}
                             disabled={deletingSessionId === session.id}
-                            className={dangerActionClass}
+                            className={savedSessionDangerActionClass}
                           >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
                             {deletingSessionId === session.id ? "Deleting..." : "Delete"}
                           </button>
                         </div>

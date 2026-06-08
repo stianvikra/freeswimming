@@ -6,17 +6,17 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-05-17`
-- `updated`: `2026-06-07`
+- `updated`: `2026-06-08`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `related_parent_brief`: `docs/task-briefs/planned/2026-03-10-aw-006-cross-platform-ux-design-hardening-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-07`
-- `base`: `main@6a83ba39`
-- `audit_status`: `current-after-pr-1014`
+- `last_audited`: `2026-06-08`
+- `base`: `main@235c753d`
+- `audit_status`: `current-after-pr-1020`
 - `decision`: Keep this brief as the canonical repo capture for the 2026-05-16 full UX/UI design review and PR-sized AW-006 follow-up queue.
-- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#1005/#1006/#1007/#1009/#1011/#1012/#1013/#1014` are recorded below. Child N Habits Lifecycle CRUD And History Safety is done in PR `#1013`, and closeout PR `#1014` is done. Micro Sessions recurring Habit linkage is now selected as a docs-only decision slice without product/UI implementation.
+- `reason`: The original review lived only in chat after `main@be554e9`; shipped AW-006 follow-ups through PR `#1005/#1006/#1007/#1009/#1011/#1012/#1013/#1014/#1015/#1017/#1018/#1019/#1020` are recorded below. Child N Habits Lifecycle CRUD And History Safety is done in PR `#1013`; Micro Sessions recurring Habit linkage decision/runtime plus Habits timer completion polish and repo-managed closeouts are done through PR `#1020`. This branch works on Child P Micro Sessions Mobile Linked-Habit Polish, with fixed-period motivation stats split into planned Child Q.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, mobile nav, auth sign-in, course/player, plans/payment copy, `/about`, design tokens, admin state primitives, admin message manager/status/source/action contracts, dryland routes/micro-session state contracts, `/my-library/goals`, goals API/storage contracts, `/my-library/habits`, habit API/storage contracts, `/my-library/generator`, generator-intake/session-draft/workout-save contracts, task-brief closeout rules, forward compatibility rules, screenshot handoff rules, phase-plan wording, or verification lanes change before selecting or executing a future AW-006 slice.
 
 ## Goal
@@ -207,17 +207,17 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 AW-006 latest completed Habits slice shipped in PR `#1013`: `docs/task-briefs/done/2026-06-07-aw-006-habits-lifecycle-crud-history-safety-10-10.md`. The owner-provided Habits product/UI findings remain captured in the planned parent/intake `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`. Historical Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, and Child N outcomes are recorded in the completed-slice table below.
 
-AW-006 latest product/UI implementation: PR `#1013` closed `docs/task-briefs/done/2026-06-07-aw-006-habits-lifecycle-crud-history-safety-10-10.md`.
+AW-006 latest product/UI implementation: PR `#1019` closed `docs/task-briefs/done/2026-06-08-aw-006-habits-timer-completion-polish-10-10.md`; active Child P is `docs/task-briefs/in-progress/2026-06-08-aw-006-micro-sessions-mobile-linked-habit-polish-10-10.md`.
 
 AW-006 latest audit implementation: PR `#961` closed `Admin Console Accessibility Audit + Bounded Fixes`.
 
 AW-006 previous lifecycle repair: PR `#997` closed `docs/task-briefs/done/2026-06-05-aw-006-habits-post-closeout-lifecycle-repair-10-10.md`, clearing stale top-level lifecycle text after PR `#996`.
 
-AW-006 latest lifecycle repair: PR `#1014` closed the repo-managed Habits lifecycle CRUD closeout after PR `#1013`.
+AW-006 latest lifecycle repair: PR `#1020` closed the repo-managed Habits timer completion closeout after PR `#1019`.
 
 AW-006 completed Habits/calendar state: Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, Child N, My Library Calendar Period Comparison, and Calendar Compare Findings Polish are done.
 
-AW-006 shipped product/UI state: Child N Habits Lifecycle CRUD And History Safety shipped in PR `#1013` at `docs/task-briefs/done/2026-06-07-aw-006-habits-lifecycle-crud-history-safety-10-10.md`. Further AW-006 product/UI runtime work waits for explicit owner execution.
+AW-006 active product/UI state: Child P Micro Sessions Mobile Linked-Habit Polish is in progress at `docs/task-briefs/in-progress/2026-06-08-aw-006-micro-sessions-mobile-linked-habit-polish-10-10.md`, scoped to micro-backed Habits CTA/progress/manual-completion removal, Linked Habit mobile placement, Micro Sessions spacing, and Build a micro session mobile action polish. Child Q fixed-period Motivation stats is planned at `docs/task-briefs/planned/2026-06-08-aw-006-habits-fixed-period-motivation-stats-10-10.md` and remains out of Child P.
 
 AW-006 latest docs-only Habits decision after Child N: PR `#1015` shipped `docs/task-briefs/done/2026-06-07-aw-006-micro-sessions-recurring-habit-linkage-decision-10-10.md`, recording no midnight auto-write for H-028 and explicit opt-in only for H-046 Micro Sessions recurring Habit linkage. It also defines the user-facing Micro Session as a stable routine that can contain one or more source Dryland Sessions/blocks, so source edits and queued-plan rebuilds do not break Habit linkage or rewrite old counted history. Runtime implementation remains unselected.
 
@@ -775,3 +775,6 @@ Required only as a documentation-link sweep for this capture.
 - `2026-06-07 | done | owner selected Micro Sessions Recurring Habit Linkage Decision as a docs-only AW-006/Habits decision slice after PR #1013 and closeout #1014; PR #1015 shipped docs/task-briefs/done/2026-06-07-aw-006-micro-sessions-recurring-habit-linkage-decision-10-10.md and no product/UI implementation is selected | next: complete repo-managed closeout, rerun post-merge preflight, and return to the Habits parent before any runtime implementation slice`
 - `2026-06-07 | in-progress | owner clarified before PR #1015 merge-readiness that Micro Session should be treated as a stable routine that may contain multiple source Dryland Sessions/blocks; Child O now records source-edit/current-plan rebuild rules so linked Habits stay attached without rewriting old history | next: rerun docs-only validation, push PR #1015, monitor CI, and verify:pre-merge`
 - `2026-06-08 | done | PR #1015 merged the Micro Sessions recurring Habit linkage decision as a docs-only closeout-ready brief with stable routine identity, multi-source Dryland support, source-edit/current-plan rebuild history safety, and no runtime implementation | next: finish repo-managed closeout PR, rerun post-merge preflight, and leave no active AW-006 implementation slice selected`
+- `2026-06-08 | done | PR #1017 shipped Micro Sessions recurring Habit runtime as the first bounded implementation of the linkage decision, with repo-managed closeout PR #1018 | next: return to the Habits parent before selecting another child`
+- `2026-06-08 | done | PR #1019 shipped Habits timer completion polish and repo-managed closeout PR #1020 closed the workstream on clean synced main@235c753d | next: recover, fresh-audit owner findings, and explain scope before any new implementation`
+- `2026-06-08 | in-progress | owner executed Child P Micro Sessions Mobile Linked-Habit Polish on branch aw-006-micro-sessions-mobile-polish; Child Q fixed-period Motivation stats is planned separately | next: finish Child P UI/tests/docs, capture screenshot handoff, and stop for owner visual approval before npm run verify:pre-pr`

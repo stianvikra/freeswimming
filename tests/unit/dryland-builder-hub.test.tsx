@@ -260,6 +260,31 @@ describe("DrylandBuilderHub", () => {
     ).toHaveClass("bg-rose-600");
   });
 
+  it("uses balanced source-session actions on the micro-focused create panel", async () => {
+    render(
+      <DrylandBuilderHub
+        drylandLibrary={buildLibrary({ selectedSession: null })}
+        browseOnly
+        isMicroFocused
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dryland-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByRole("heading", { name: "Build a micro session" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create strength session" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(screen.getByRole("button", { name: "Create stretching session" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+  });
+
   it("loads a dryland session, lets the owner update it, and saves the canonical session", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {

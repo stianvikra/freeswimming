@@ -250,7 +250,7 @@ function getHabitLinkStatusCopy(link: DrylandMicroHabitLinkRecord | null) {
 
   return {
     title,
-    body: "Completes when every unit in this week's Micro Session is done.",
+    body: "Auto-completes the Habit when every unit in this week's Micro Session is done.",
     chip: "Linked Habit",
   };
 }
@@ -1693,7 +1693,7 @@ export default function DrylandMicroPlanPanel({
           </label>
         </div>
         <p className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-100">
-          {"The Habit completes when every unit in this week's Micro Session is completed."}
+          {"The Habit auto-completes when every unit in this week's Micro Session is done."}
         </p>
 
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
@@ -2440,12 +2440,12 @@ export default function DrylandMicroPlanPanel({
       ) : null}
 
       {schemaReady && !plan ? (
-        <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
+        <>
           {!isCreating ? (
             <DrylandFeedback
               tone="empty"
               testId="dryland-micro-empty"
-              className="[&>div:first-child]:w-full [&>div:first-child]:max-w-none"
+              className="mt-5 !border-0 !bg-transparent !p-0 !shadow-none [&>div:first-child]:w-full [&>div:first-child]:max-w-none"
             >
               <h4 className="text-base font-semibold text-slate-950">
                 {archivedRepeatPlan ? "Start this week" : "No active micro session"}
@@ -2484,13 +2484,14 @@ export default function DrylandMicroPlanPanel({
                       "min-w-0 flex-1"
                     )}
                   >
+                    {archivedRepeatPlan ? null : <Bubbles className="h-4 w-4" aria-hidden="true" />}
                     {archivedRepeatPlan ? "Choose sessions" : "Create micro session"}
                   </button>
                 </div>
               ) : null}
             </DrylandFeedback>
           ) : (
-            <div className="space-y-4">
+            <div className="mt-5 space-y-4 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-slate-50/70 p-4">
               {renderSessionSelector()}
               <label className="grid gap-1 text-sm font-medium text-slate-700">
                 <span>Title</span>
@@ -2533,7 +2534,7 @@ export default function DrylandMicroPlanPanel({
               </div>
             </div>
           )}
-        </div>
+        </>
       ) : null}
 
       {schemaReady && plan ? (
@@ -2613,8 +2614,6 @@ export default function DrylandMicroPlanPanel({
               </div>
             </div>
           </div>
-
-          {renderHabitLinkPanel()}
 
           {isEditing ? (
             <div
@@ -2696,6 +2695,8 @@ export default function DrylandMicroPlanPanel({
 
                   {executionMode === "ordered" ? renderOrderedUnits() : renderBubbleBoard()}
                 </div>
+
+                {renderHabitLinkPanel()}
 
                 {upcomingUnits.length > 0 ? (
                   <div className="rounded-2xl bg-slate-50/70 p-4">
