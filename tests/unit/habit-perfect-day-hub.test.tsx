@@ -273,7 +273,7 @@ function buildTimedSnapshot(options?: {
 }
 
 function buildCompletedTimedSnapshot(): HabitSnapshot {
-  return buildTimedSnapshot({ savedMinutes: 2.08 });
+  return buildTimedSnapshot({ savedMinutes: 8 });
 }
 
 function buildCountSnapshot(): HabitSnapshot {
@@ -901,7 +901,7 @@ describe("HabitPerfectDayHub", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     expect(audio.start).not.toHaveBeenCalled();
-    expect(await screen.findByText("Check-in saved.")).toBeVisible();
+    expect(await screen.findByText("Completion saved.")).toBeVisible();
     expect(
       await screen.findByText("Sound was blocked. Your habit was still saved.")
     ).toHaveAttribute("role", "status");
@@ -1425,7 +1425,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).queryByText("Timed")).toBeNull();
     expect(within(card).queryByText("Logged")).toBeNull();
     expect(within(card).getByText("0:00")).toBeVisible();
-    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("/ 8:00 today")).toBeVisible();
     expect(within(card).queryByText("Timer 0:00")).toBeNull();
     expect(within(card).queryByText("Manual time 0 min")).toBeNull();
     expect(
@@ -1436,17 +1436,10 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
-    const finishButton = await screen.findByRole("button", { name: "Finish" });
-    expect(finishButton).toBeDisabled();
-    expect(finishButton).toHaveClass("fs-cta-primary");
-    expect(finishButton).toHaveClass("min-w-36");
     const detailsActions = screen.getByTestId(
       "habit-details-actions-33333333-3333-4333-8333-333333333333"
     );
-    const actionNames = within(detailsActions)
-      .getAllByRole("button")
-      .map((button) => button.textContent?.replace(/\s+/g, " ").trim());
-    expect(actionNames.indexOf("Finish")).toBeLessThan(actionNames.indexOf("Rest day"));
+    expect(within(detailsActions).queryByRole("button", { name: "Finish" })).toBeNull();
     expect(within(detailsActions).queryByRole("button", { name: "Reset timer" })).toBeNull();
     const details = document.getElementById("habit-details-33333333-3333-4333-8333-333333333333");
     expect(details).not.toBeNull();
@@ -1454,9 +1447,9 @@ describe("HabitPerfectDayHub", () => {
     expect(within(details as HTMLElement).queryByText("Daily target 8:00")).toBeNull();
     expect(await screen.findByText("Manual time")).toBeVisible();
     expect(await screen.findByRole("button", { name: "Save manual time" })).toBeEnabled();
-    expect(await within(card).findByText("Time sources")).toBeVisible();
-    expect(within(card).getByText("Timer 0:00")).toBeVisible();
-    expect(within(card).getByText("Manual time 0 min")).toBeVisible();
+    expect(within(card).queryByText("Time sources")).toBeNull();
+    expect(within(card).queryByText("Timer 0:00")).toBeNull();
+    expect(within(card).queryByText("Manual time 0 min")).toBeNull();
     expect(screen.queryByText("Manual min")).toBeNull();
     expect(screen.queryByRole("button", { name: "Save manual" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add manual time" })).toBeNull();
@@ -1497,8 +1490,9 @@ describe("HabitPerfectDayHub", () => {
 
     const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
     expect(await within(card).findByText("2:05")).toBeVisible();
-    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("/ 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Finish" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     expect(await screen.findByRole("button", { name: "Reset timer" })).toBeEnabled();
   });
@@ -1523,7 +1517,7 @@ describe("HabitPerfectDayHub", () => {
 
     const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
     expect(await within(card).findByText("1:05")).toBeVisible();
-    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("/ 8:00 today")).toBeVisible();
     expect(screen.getByRole("button", { name: "Pause" })).toBeVisible();
   });
 
@@ -1552,7 +1546,7 @@ describe("HabitPerfectDayHub", () => {
 
     const card = screen.getByTestId("habit-card-33333333-3333-4333-8333-333333333333");
     expect(await within(card).findByText("3:05")).toBeVisible();
-    expect(within(card).getByText("of 8:00 today")).toBeVisible();
+    expect(within(card).getByText("/ 8:00 today")).toBeVisible();
     expect(within(card).queryByText("Timer 2:00")).toBeNull();
     expect(within(card).queryByText("Active timer +1:05")).toBeNull();
     expect(within(card).queryByText("Timed")).toBeNull();
@@ -1565,11 +1559,18 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).queryByText("Total 3:05 / 8:00 today")).toBeNull();
   });
 
-  it("plays timed target sound once when a same-day running timer crosses target", async () => {
+  it("auto-saves and plays the timed target sound after a same-day running timer crosses target", async () => {
     vi.useFakeTimers();
     const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
     vi.setSystemTime(nowMs);
     const audio = installAudioContextMock();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildCompletedTimedSnapshot(),
+      }),
+    } as Response);
 
     render(
       <HabitPerfectDayHub
@@ -1591,14 +1592,28 @@ describe("HabitPerfectDayHub", () => {
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/habits/check-ins",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"timerSeconds":480'),
+      })
+    );
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      timerSeconds: 480,
+      manualMinutes: 0,
+    });
     expect(audio.start).toHaveBeenCalledTimes(voiceCount);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(audio.start).toHaveBeenCalledTimes(voiceCount);
   });
 
@@ -1617,7 +1632,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(within(breathingCard).getByRole("button", { name: "Start" }));
 
     expect(within(mobilityCard).getByText("0:10")).toBeVisible();
-    expect(within(mobilityCard).getByText("of 8:00 today")).toBeVisible();
+    expect(within(mobilityCard).getByText("/ 8:00 today")).toBeVisible();
     expect(within(mobilityCard).getByRole("button", { name: "Resume" })).toBeVisible();
     expect(within(breathingCard).getByRole("button", { name: "Pause" })).toBeVisible();
   });
@@ -1748,7 +1763,6 @@ describe("HabitPerfectDayHub", () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
     fireEvent.click(await screen.findByRole("button", { name: "Finish" }));
 
     await waitFor(() => {
@@ -1789,7 +1803,6 @@ describe("HabitPerfectDayHub", () => {
 
     render(<HabitPerfectDayHub initialSnapshot={buildTimedSnapshot()} userId="user-1" />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Details" }));
     fireEvent.click(await screen.findByRole("button", { name: "Finish" }));
 
     await waitFor(() => {
@@ -1810,6 +1823,44 @@ describe("HabitPerfectDayHub", () => {
         window.localStorage.getItem("freeswimming:habits:v3:timers:user-1:2026-05-10")
       ).toBeNull();
     });
+  });
+
+  it("undoes only the latest timed completion source while preserving manual time", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildTimedSnapshot({ manualMinutes: 5 }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildTimedSnapshot({ savedMinutes: 8, manualMinutes: 5 })}
+        userId="user-1"
+      />
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Undo complete" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/check-ins",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"clearTimedCompletion":true'),
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      clear?: boolean;
+      clearTimedCompletion?: boolean;
+    };
+    expect(body).toMatchObject({
+      clearTimedCompletion: true,
+    });
+    expect(body.clear).toBeUndefined();
+    expect(await screen.findByText("Completion undone.")).toBeVisible();
   });
 
   it("collapses rows by default and keeps details available", async () => {
@@ -1891,6 +1942,7 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("marks a binary habit done through the check-in API", async () => {
+    vi.useFakeTimers();
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -1903,25 +1955,35 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        "/api/my-library/habits/check-ins",
-        expect.objectContaining({
-          method: "POST",
-          body: expect.stringContaining('"valueBoolean":true'),
-        })
-      );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
-    const success = await screen.findByTestId(
-      "habit-action-success-11111111-1111-4111-8111-111111111111"
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/habits/check-ins",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"valueBoolean":true'),
+      })
     );
+    const success = screen.getByTestId("habit-action-success-11111111-1111-4111-8111-111111111111");
     expect(success).toHaveAttribute("role", "status");
     expect(success).toHaveAttribute("aria-live", "polite");
-    expect(success).toHaveTextContent("Check-in saved.");
+    expect(success).toHaveTextContent("Completion saved.");
     expect(screen.getByRole("progressbar", { name: "My Perfect Day completion" })).toHaveAttribute(
       "aria-valuenow",
       "100"
     );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    expect(
+      screen.queryByTestId("habit-action-success-11111111-1111-4111-8111-111111111111")
+    ).toBeNull();
   });
 
   it("announces failed habit creation as an assertive action error", async () => {
@@ -2178,7 +2240,7 @@ describe("HabitPerfectDayHub", () => {
   it("shows build streak motivation on collapsed open rows", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
 
-    expect(screen.getByText("Streak: 6 days")).toBeVisible();
+    expect(screen.getByText("Streak: 6 days.")).toBeVisible();
     expect(screen.queryByText("6/7 days on track")).toBeNull();
     expect(screen.queryByText("No check-in")).toBeNull();
   });
@@ -2188,7 +2250,7 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByText("4/5 days completed")).toBeVisible();
     expect(screen.queryByText("4-day streak")).toBeNull();
-    expect(screen.queryByText("Streak: 4 days")).toBeNull();
+    expect(screen.queryByText("Streak: 4 days.")).toBeNull();
   });
 
   it("shows read-only motivation history with best streak and archived habits", () => {
@@ -2508,7 +2570,7 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
-    expect(screen.getAllByText("Streak: 6 days")).toHaveLength(1);
+    expect(screen.getAllByText("Streak: 6 days.")).toHaveLength(1);
     const details = document.getElementById("habit-details-11111111-1111-4111-8111-111111111111");
     expect(details).not.toBeNull();
     expect(within(details as HTMLElement).queryByText("Open")).toBeNull();

@@ -314,6 +314,7 @@ export type HabitCheckInRequestBody = {
   note?: unknown;
   status?: unknown;
   clear?: unknown;
+  clearTimedCompletion?: unknown;
 };
 
 export type HabitMotivationResetRequestBody = {
@@ -1166,7 +1167,7 @@ function formatDayCount(value: number) {
 }
 
 function formatStreakCount(value: number) {
-  return `${value}-day streak`;
+  return `Streak: ${formatDayCount(value)}.`;
 }
 
 function isRestDayCheckIn(checkIn: HabitCheckInView | null | undefined): boolean {

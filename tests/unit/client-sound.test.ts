@@ -61,10 +61,13 @@ describe("client sound profiles", () => {
   it("keeps the shared success chime calm, soft, and away from the old harsh glide", () => {
     const profile = APP_SOUND_PROFILES.softSuccessChime;
 
-    expect(profile.totalDurationMs).toBeLessThanOrEqual(660);
-    expect(profile.voices.map((voice) => voice.frequencyHz)).toEqual([432, 576, 648]);
+    expect(profile.totalDurationMs).toBeGreaterThanOrEqual(1200);
+    expect(profile.totalDurationMs).toBeLessThanOrEqual(1600);
+    expect(profile.voices.map((voice) => voice.frequencyHz)).toEqual([432, 540, 648]);
     expect(profile.voices.map((voice) => voice.frequencyHz)).not.toContain(528);
-    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeLessThanOrEqual(0.024);
+    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeLessThanOrEqual(0.014);
+    expect(Math.min(...profile.voices.map((voice) => voice.attackMs))).toBeGreaterThanOrEqual(80);
+    expect(Math.min(...profile.voices.map((voice) => voice.releaseMs))).toBeGreaterThanOrEqual(500);
     expect(profile.voices.every((voice) => voice.oscillatorType === "sine")).toBe(true);
   });
 
@@ -89,9 +92,9 @@ describe("client sound profiles", () => {
     expect(audio.start).toHaveBeenCalledTimes(profile.voices.length);
     expect(audio.stop).toHaveBeenCalledTimes(profile.voices.length);
     expect(audio.setFrequency).toHaveBeenCalledWith(432, expect.any(Number));
-    expect(audio.setFrequency).toHaveBeenCalledWith(576, expect.any(Number));
+    expect(audio.setFrequency).toHaveBeenCalledWith(540, expect.any(Number));
     expect(audio.setFrequency).toHaveBeenCalledWith(648, expect.any(Number));
-    expect(audio.rampGain).toHaveBeenCalledWith(0.024, expect.any(Number));
+    expect(audio.rampGain).toHaveBeenCalledWith(0.014, expect.any(Number));
     expect(audio.addEndedListener).toHaveBeenCalledWith("ended", expect.any(Function), {
       once: true,
     });

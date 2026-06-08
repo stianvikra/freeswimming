@@ -277,7 +277,7 @@ describe("habits domain helpers", () => {
     const summary = buildHabitDaySummary([habit], checkIns, "2026-05-10");
 
     expect(summary.items[0]?.evaluation.stateLabel).toBe("Open");
-    expect(summary.items[0]?.evaluation.valueLabel).toBe("6-day streak");
+    expect(summary.items[0]?.evaluation.valueLabel).toBe("Streak: 6 days.");
     expect(summary.items[0]?.evaluation.supportingLabel).toBe("6/7 days completed");
   });
 

@@ -3,6 +3,7 @@ import { trackAnalyticsEvent } from "@/lib/analytics/events";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import { HABIT_CHECK_IN_SELECT, loadHabitSnapshot } from "@/lib/habits/server";
 import {
+  buildTimedTotalMinutes,
   buildHabitCheckInInsert,
   normalizeHabitDate,
   type HabitCheckInRequestBody,
@@ -114,11 +115,29 @@ export async function POST(request: Request) {
   const habitMode = habit.habit_mode ?? "build";
   const isQuitHabit = habitMode === "quit";
   const hasTimedSourceValues = "timerSeconds" in body || "manualMinutes" in body;
+  const clearsTimedCompletion = body.clearTimedCompletion === true;
 
   if (habit.start_date && checkInDate < habit.start_date) {
     return applySupabaseCookies(
       noStoreJson(
         { ok: false, error: "Choose a check-in date on or after the habit start date." },
+        { status: 400 }
+      )
+    );
+  }
+
+  if (
+    clearsTimedCompletion &&
+    (body.clear === true ||
+      hasTimedSourceValues ||
+      "valueNumeric" in body ||
+      typeof body.valueBoolean === "boolean" ||
+      typeof body.valueTime === "string" ||
+      typeof body.status === "string")
+  ) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Timed completion undo cannot include other check-in values." },
         { status: 400 }
       )
     );
@@ -186,6 +205,141 @@ export async function POST(request: Request) {
       payload: {
         habitMode,
         checkInDate,
+      },
+    });
+    return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
+  }
+
+  if (clearsTimedCompletion) {
+    if (habitMode !== "timed") {
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Timed completion undo requires a timed habit." },
+          { status: 400 }
+        )
+      );
+    }
+
+    const checkInResult = await supabase
+      .from("habit_check_ins")
+      .select(HABIT_CHECK_IN_SELECT)
+      .eq("user_id", user.id)
+      .eq("habit_id", body.habitId)
+      .eq("check_in_date", checkInDate)
+      .maybeSingle();
+
+    if (isHabitsSchemaMissing(checkInResult.error)) {
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Habits are still syncing in this environment." },
+          { status: 503 }
+        )
+      );
+    }
+
+    if (checkInResult.error) {
+      console.error("[HabitsApi] Could not load timed completion before undo", checkInResult.error);
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not undo that completion right now." },
+          { status: 500 }
+        )
+      );
+    }
+
+    const checkIn = checkInResult.data as {
+      timer_seconds?: number | null;
+      manual_minutes?: number | null;
+      status?: string | null;
+    } | null;
+    const timerSeconds =
+      typeof checkIn?.timer_seconds === "number" && Number.isFinite(checkIn.timer_seconds)
+        ? Math.max(0, Math.floor(checkIn.timer_seconds))
+        : 0;
+    const manualMinutes =
+      typeof checkIn?.manual_minutes === "number" && Number.isFinite(checkIn.manual_minutes)
+        ? Math.max(0, Math.floor(checkIn.manual_minutes))
+        : 0;
+
+    if (!checkIn || checkIn.status === "skipped" || timerSeconds <= 0) {
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "No timed completion is available to undo." },
+          { status: 400 }
+        )
+      );
+    }
+
+    if (manualMinutes > 0) {
+      const updateResult = await supabase
+        .from("habit_check_ins")
+        .update({
+          value_numeric: buildTimedTotalMinutes(0, manualMinutes),
+          timer_seconds: 0,
+          manual_minutes: manualMinutes,
+          source_kind: "manual",
+        })
+        .eq("user_id", user.id)
+        .eq("habit_id", body.habitId)
+        .eq("check_in_date", checkInDate);
+
+      if (isHabitsSchemaMissing(updateResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Habits are still syncing in this environment." },
+            { status: 503 }
+          )
+        );
+      }
+
+      if (updateResult.error) {
+        console.error("[HabitsApi] Could not undo timed completion", updateResult.error);
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Could not undo that completion right now." },
+            { status: 500 }
+          )
+        );
+      }
+    } else {
+      const deleteResult = await supabase
+        .from("habit_check_ins")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("habit_id", body.habitId)
+        .eq("check_in_date", checkInDate);
+
+      if (isHabitsSchemaMissing(deleteResult.error)) {
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Habits are still syncing in this environment." },
+            { status: 503 }
+          )
+        );
+      }
+
+      if (deleteResult.error) {
+        console.error("[HabitsApi] Could not delete timed completion", deleteResult.error);
+        return applySupabaseCookies(
+          noStoreJson(
+            { ok: false, error: "Could not undo that completion right now." },
+            { status: 500 }
+          )
+        );
+      }
+    }
+
+    const snapshot = await loadHabitSnapshot(supabase, user.id, checkInDate);
+    trackAnalyticsEvent({
+      eventName: "habit_check_in_reset",
+      channel: "server",
+      userId: user.id,
+      payload: {
+        habitMode,
+        checkInDate,
+        resetKind: "timed_completion_source",
+        hadManualMinutes: manualMinutes > 0,
+        timedSourceKind: "timer",
       },
     });
     return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
