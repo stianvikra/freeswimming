@@ -122,6 +122,10 @@ const compactFieldClass =
   "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
 const textAreaClass =
   "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const readOnlyValueClass =
+  "min-h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)]";
+const compactCheckboxClass =
+  "h-4 w-4 rounded border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
 const secondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const compactPrimaryActionClass =
@@ -3473,28 +3477,37 @@ export default function AdminContentManager() {
                   key={item.id}
                   id={`admin-content-item-${item.id}`}
                   data-testid="admin-content-item"
-                  className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
+                  className={rowCardClass}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-[280px] flex-1">
-                      <p className="font-semibold text-slate-900">{item.title}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                        {item.title}
+                      </p>
+                      <p className={["mt-1", metadataClass].join(" ")}>
                         {rowTypeLabel} · {item.category} · {item.status} · /{item.slug}
                       </p>
-                      {rowHint ? <p className="mt-1 text-xs text-slate-500">{rowHint}</p> : null}
+                      {rowHint ? (
+                        <p className={["mt-1", metadataClass].join(" ")}>{rowHint}</p>
+                      ) : null}
 
                       {isEditingRow && editFormState ? (
                         <div
-                          className="mt-3 rounded-lg border border-blue-200 bg-white p-3"
+                          className={["mt-3", nestedPanelClass].join(" ")}
                           data-testid="admin-content-edit-form"
                         >
                           {courseWorkspaceScopeId && courseWorkspaceScopeLabel ? (
-                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                            <div
+                              className={[
+                                "mb-3 flex flex-wrap items-center justify-between gap-2",
+                                activePanelClass,
+                              ].join(" ")}
+                            >
                               <div>
-                                <p className="text-xs font-semibold text-slate-700">
+                                <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                   Course workspace context
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className={metadataClass}>
                                   Return to {courseWorkspaceScopeLabel} to continue module-scoped
                                   editing.
                                 </p>
@@ -3502,7 +3515,7 @@ export default function AdminContentManager() {
                               <button
                                 type="button"
                                 onClick={() => focusCourseWorkspaceScope(courseWorkspaceScopeId)}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                className={compactSecondaryActionClass}
                               >
                                 {courseWorkspaceScopeId === WORKSPACE_UNLINKED_MODULE_ID
                                   ? "Back to unlinked lessons"
@@ -3511,7 +3524,7 @@ export default function AdminContentManager() {
                             </div>
                           ) : null}
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                            <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                               <span>Title</span>
                               <input
                                 type="text"
@@ -3521,11 +3534,11 @@ export default function AdminContentManager() {
                                     prev ? { ...prev, title: event.target.value } : prev
                                   )
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                className={compactFieldClass}
                               />
                             </label>
 
-                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                            <label className={compactLabelClass}>
                               <span>Slug</span>
                               <input
                                 type="text"
@@ -3535,18 +3548,18 @@ export default function AdminContentManager() {
                                     prev ? { ...prev, slug: event.target.value } : prev
                                   )
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                className={compactFieldClass}
                               />
                               {item.content_type === "course_module" ||
                               item.content_type === "course_lesson" ? (
-                                <p className="text-[11px] font-normal text-slate-500">
+                                <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                                   Slug is the human-readable content key. It can be renamed
                                   carefully; internal runtime IDs stay locked after creation.
                                 </p>
                               ) : null}
                             </label>
 
-                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                            <label className={compactLabelClass}>
                               <span>Category</span>
                               <input
                                 type="text"
@@ -3556,11 +3569,11 @@ export default function AdminContentManager() {
                                     prev ? { ...prev, category: event.target.value } : prev
                                   )
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                className={compactFieldClass}
                               />
                             </label>
 
-                            <label className="space-y-1 text-xs font-medium text-slate-700">
+                            <label className={compactLabelClass}>
                               <span>Sort order</span>
                               <input
                                 type="number"
@@ -3570,12 +3583,12 @@ export default function AdminContentManager() {
                                     prev ? { ...prev, sortOrder: event.target.value } : prev
                                   )
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                className={compactFieldClass}
                               />
                             </label>
 
                             {item.content_type === "course_lesson" ? (
-                              <label className="space-y-1 text-xs font-medium text-slate-700">
+                              <label className={compactLabelClass}>
                                 <span>Parent module</span>
                                 <select
                                   value={editFormState.parentId}
@@ -3584,7 +3597,7 @@ export default function AdminContentManager() {
                                       prev ? { ...prev, parentId: event.target.value } : prev
                                     )
                                   }
-                                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                  className={compactFieldClass}
                                 >
                                   <option value="">Select module</option>
                                   {moduleOptions.map((option) => (
@@ -3596,7 +3609,7 @@ export default function AdminContentManager() {
                               </label>
                             ) : null}
 
-                            <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                            <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                               <span>Summary</span>
                               <textarea
                                 rows={3}
@@ -3606,27 +3619,25 @@ export default function AdminContentManager() {
                                     prev ? { ...prev, summary: event.target.value } : prev
                                   )
                                 }
-                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                className={textAreaClass}
                               />
                             </label>
 
                             {item.content_type === "course_lesson" && editFormState.lessonBody ? (
-                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                                <h4 className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
-                                  Lesson body editor
-                                </h4>
-                                <p className="mt-1 text-xs text-slate-500">
+                              <div className={["sm:col-span-2", mutedPanelClass].join(" ")}>
+                                <h4 className={metadataLabelClass}>Lesson body editor</h4>
+                                <p className={["mt-1", metadataClass].join(" ")}>
                                   This controls what appears in the lesson page (goal, cues, drill,
                                   checkpoint criteria, next step, support card, and section label).
                                 </p>
 
                                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  <div className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <div className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Lesson runtime ID</span>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900">
+                                    <div className={readOnlyValueClass}>
                                       <code>{editFormState.lessonBody.lessonId}</code>
                                     </div>
-                                    <p className="text-[11px] font-normal text-slate-500">
+                                    <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                                       Internal ID used by open lesson links, progress, notes, and
                                       previews. It is locked after creation. Rename in place only
                                       when this is still the same learning object; if the lesson is
@@ -3635,7 +3646,7 @@ export default function AdminContentManager() {
                                     </p>
                                   </div>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                  <label className={compactLabelClass}>
                                     <span>Lesson type</span>
                                     <select
                                       value={editFormState.lessonBody.lessonType}
@@ -3653,7 +3664,7 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      className={compactFieldClass}
                                     >
                                       {LESSON_TYPE_OPTIONS.map((option) => (
                                         <option key={option.value || "empty"} value={option.value}>
@@ -3663,7 +3674,7 @@ export default function AdminContentManager() {
                                     </select>
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Section badge label (optional)</span>
                                     <input
                                       type="text"
@@ -3681,12 +3692,12 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      className={compactFieldClass}
                                       placeholder="Defaults to Learn / Drill / Swim"
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Extra help start lesson number in module (optional)</span>
                                     <input
                                       type="number"
@@ -3707,25 +3718,29 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      className={compactFieldClass}
                                       placeholder="Example: 4"
                                     />
-                                    <p className="text-[11px] font-medium text-slate-500">
+                                    <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                                       Leave empty to show extra help on all lessons where it is
                                       enabled.
                                     </p>
                                   </label>
 
-                                  <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
-                                    <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                                  <fieldset
+                                    className={["space-y-2 sm:col-span-2", nestedPanelClass].join(
+                                      " "
+                                    )}
+                                  >
+                                    <legend className={metadataLabelClass}>
                                       Extra help actions
                                     </legend>
-                                    <p className="text-xs text-slate-500">
+                                    <p className={metadataClass}>
                                       Choose which actions appear inside the extra help card and
                                       which one (if any) should be highlighted.
                                     </p>
                                     <div className="grid gap-2 sm:grid-cols-2">
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={
@@ -3745,11 +3760,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show Video Analysis</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={
@@ -3769,11 +3784,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show Poolside guide</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={
@@ -3793,11 +3808,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show 0-1000 guide</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.supportActionContact}
@@ -3814,13 +3829,13 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show Contact</span>
                                       </label>
                                     </div>
 
-                                    <label className="space-y-1 text-xs font-medium text-slate-700">
+                                    <label className={compactLabelClass}>
                                       <span>Primary highlighted action (optional)</span>
                                       <select
                                         value={editFormState.lessonBody.supportPrimaryAction}
@@ -3838,7 +3853,7 @@ export default function AdminContentManager() {
                                               : prev
                                           )
                                         }
-                                        className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                        className={compactFieldClass}
                                       >
                                         <option value="">None (all neutral)</option>
                                         {SUPPORT_ACTION_OPTIONS.map((option) => (
@@ -3850,7 +3865,7 @@ export default function AdminContentManager() {
                                     </label>
                                   </fieldset>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Lesson goal</span>
                                     <textarea
                                       rows={3}
@@ -3868,19 +3883,23 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                     />
                                   </label>
 
-                                  <fieldset className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 sm:col-span-2">
-                                    <legend className="px-1 text-xs font-semibold tracking-wide text-slate-600 uppercase">
+                                  <fieldset
+                                    className={["space-y-2 sm:col-span-2", nestedPanelClass].join(
+                                      " "
+                                    )}
+                                  >
+                                    <legend className={metadataLabelClass}>
                                       Section visibility
                                     </legend>
-                                    <p className="text-xs text-slate-500">
+                                    <p className={metadataClass}>
                                       Use these toggles to show or hide sections on the lesson page.
                                     </p>
                                     <div className="grid gap-2 sm:grid-cols-2">
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayGoal}
@@ -3897,11 +3916,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show goal section</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayCues}
@@ -3918,11 +3937,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show cues section</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayCommonMistakes}
@@ -3939,11 +3958,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show common mistakes</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayDrill}
@@ -3960,11 +3979,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show drill section</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayCheckpoint}
@@ -3981,11 +4000,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show pass criteria</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displayNextStep}
@@ -4002,11 +4021,11 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show next step</span>
                                       </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-700">
+                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
                                         <input
                                           type="checkbox"
                                           checked={editFormState.lessonBody.displaySupport}
@@ -4023,14 +4042,14 @@ export default function AdminContentManager() {
                                                 : prev
                                             )
                                           }
-                                          className="h-4 w-4 rounded border border-slate-300"
+                                          className={compactCheckboxClass}
                                         />
                                         <span>Show extra help card</span>
                                       </label>
                                     </div>
                                   </fieldset>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                  <label className={compactLabelClass}>
                                     <span>Cues (one per line)</span>
                                     <textarea
                                       rows={4}
@@ -4048,12 +4067,12 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                       placeholder="One focus at a time"
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                  <label className={compactLabelClass}>
                                     <span>Common mistakes (one per line)</span>
                                     <textarea
                                       rows={4}
@@ -4071,11 +4090,11 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700">
+                                  <label className={compactLabelClass}>
                                     <span>Drill title</span>
                                     <input
                                       type="text"
@@ -4093,11 +4112,11 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                                      className={compactFieldClass}
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Drill steps (one per line)</span>
                                     <textarea
                                       rows={4}
@@ -4115,11 +4134,11 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Checkpoint criteria (one per line)</span>
                                     <textarea
                                       rows={3}
@@ -4137,12 +4156,12 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                       placeholder="Do not mark done before you can swim 12.5m relaxed."
                                     />
                                   </label>
 
-                                  <label className="space-y-1 text-xs font-medium text-slate-700 sm:col-span-2">
+                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                                     <span>Next step</span>
                                     <textarea
                                       rows={3}
@@ -4160,7 +4179,7 @@ export default function AdminContentManager() {
                                             : prev
                                         )
                                       }
-                                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                                      className={textAreaClass}
                                     />
                                   </label>
                                 </div>
@@ -4221,7 +4240,7 @@ export default function AdminContentManager() {
                               type="button"
                               onClick={() => void handleSaveEdit(item)}
                               disabled={Boolean(rowBusy)}
-                              className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={compactPrimaryActionClass}
                             >
                               {savingEditId === item.id ? "Saving…" : "Save changes"}
                             </button>
@@ -4231,7 +4250,7 @@ export default function AdminContentManager() {
                                 closeEditMode();
                               }}
                               disabled={Boolean(rowBusy)}
-                              className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className={compactSecondaryActionClass}
                             >
                               Cancel
                             </button>
@@ -4241,14 +4260,14 @@ export default function AdminContentManager() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <span className="text-xs text-slate-500">Order: {item.sort_order}</span>
+                      <span className={metadataClass}>Order: {item.sort_order}</span>
                       <button
                         type="button"
                         onClick={() => {
                           handleStartEdit(item);
                         }}
                         disabled={Boolean(rowBusy) || (Boolean(editingItemId) && !isEditingRow)}
-                        className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={compactPrimaryActionClass}
                       >
                         {isEditingRow ? "Editing" : isInlineEditable ? "Edit" : "Edit (soon)"}
                       </button>
@@ -4260,7 +4279,7 @@ export default function AdminContentManager() {
                                 type="button"
                                 onClick={() => void handleMoveModule(item.id, "up")}
                                 disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveUp}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={compactSecondaryActionClass}
                               >
                                 Move up
                               </button>
@@ -4268,7 +4287,7 @@ export default function AdminContentManager() {
                                 type="button"
                                 onClick={() => void handleMoveModule(item.id, "down")}
                                 disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveDown}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={compactSecondaryActionClass}
                               >
                                 Move down
                               </button>
@@ -4280,7 +4299,7 @@ export default function AdminContentManager() {
                                 type="button"
                                 onClick={() => void handleMoveLesson(item.id, "up")}
                                 disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveUp}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={compactSecondaryActionClass}
                               >
                                 Move up
                               </button>
@@ -4288,7 +4307,7 @@ export default function AdminContentManager() {
                                 type="button"
                                 onClick={() => void handleMoveLesson(item.id, "down")}
                                 disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveDown}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={compactSecondaryActionClass}
                               >
                                 Move down
                               </button>
@@ -4301,12 +4320,12 @@ export default function AdminContentManager() {
                                 href={rowPreviewHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                                className={compactWarningActionClass}
                               >
                                 Open preview
                               </a>
                             ) : (
-                              <span className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-medium text-slate-500">
+                              <span className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)]">
                                 Open preview (no lessons)
                               </span>
                             )
@@ -4314,7 +4333,7 @@ export default function AdminContentManager() {
                           {item.content_type === "course_lesson" ? (
                             <a
                               href={lessonQrPrefillHref(item)}
-                              className="inline-flex h-8 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-3 text-xs font-medium text-teal-800 transition hover:bg-teal-100"
+                              className={compactSuccessActionClass}
                             >
                               Create QR link
                             </a>
@@ -4324,7 +4343,7 @@ export default function AdminContentManager() {
                               href={lessonOpenHref(item)}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                              className={compactSecondaryActionClass}
                             >
                               Open lesson
                             </a>
@@ -4333,7 +4352,7 @@ export default function AdminContentManager() {
                             type="button"
                             onClick={() => void handleToggleRevisions(item.id)}
                             disabled={Boolean(rowBusy)}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactSecondaryActionClass}
                           >
                             {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
                           </button>
@@ -4344,7 +4363,7 @@ export default function AdminContentManager() {
                                 type="button"
                                 onClick={() => void handleSetStatus(item, option.value)}
                                 disabled={Boolean(rowBusy)}
-                                className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={compactSecondaryActionClass}
                               >
                                 {updatingId === item.id
                                   ? "Saving…"
@@ -4356,7 +4375,7 @@ export default function AdminContentManager() {
                             type="button"
                             onClick={() => void handleDelete(item)}
                             disabled={Boolean(rowBusy)}
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-rose-200 bg-white px-3 text-xs font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className={compactDangerActionClass}
                           >
                             {deletingId === item.id ? "Deleting…" : "Delete"}
                           </button>
@@ -4366,13 +4385,11 @@ export default function AdminContentManager() {
                   </div>
                   {openRevisionsItemId === item.id ? (
                     <div
-                      className="mt-3 rounded-lg border border-slate-200 bg-white p-3"
+                      className={["mt-3", nestedPanelClass].join(" ")}
                       data-testid="admin-content-revision-history-panel"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                          Revision history
-                        </h4>
+                        <h4 className={metadataLabelClass}>Revision history</h4>
                       </div>
                       {isRevisionLoading ? (
                         <AdminManagerState tone="loading" density="compact" className="!mt-2">
@@ -4389,7 +4406,7 @@ export default function AdminContentManager() {
                             <button
                               type="button"
                               onClick={() => void loadRevisionsForItem(item.id, true)}
-                              className="inline-flex h-7 items-center justify-center rounded-lg border border-rose-200 bg-white px-2 text-xs font-medium text-rose-700 transition hover:bg-rose-50"
+                              className={compactSecondaryActionClass}
                             >
                               Retry
                             </button>
@@ -4409,17 +4426,17 @@ export default function AdminContentManager() {
                             <li
                               key={revision.id}
                               data-testid="admin-content-revision-item"
-                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2"
                             >
                               <div>
-                                <p className="text-xs font-semibold text-slate-700">
+                                <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
                                   Rev {revision.revisionNumber} · {revision.action}
                                 </p>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className={["mt-1", metadataClass].join(" ")}>
                                   {revision.snapshotTitle} · {revision.snapshotStatus} ·{" "}
                                   {formatRevisionDate(revision.createdAt)}
                                 </p>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className={["mt-1", metadataClass].join(" ")}>
                                   {revision.changedByEmail ?? "Unknown actor"}
                                 </p>
                               </div>
@@ -4435,7 +4452,7 @@ export default function AdminContentManager() {
                                       savingEditId
                                     ) || revision.action === "delete"
                                   }
-                                  className="inline-flex h-8 items-center justify-center rounded-lg border border-blue-200 bg-white px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                  className={compactPrimaryActionClass}
                                 >
                                   {restoringRevisionId === revision.id ? "Restoring…" : "Restore"}
                                 </button>
@@ -4601,9 +4618,9 @@ export default function AdminContentManager() {
         : null}
 
       {isAllContentView ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Create content item</h2>
-          <p className="mt-2 text-sm text-slate-600">
+        <section className={rowCardClass}>
+          <h2 className={headingClass}>Create content item</h2>
+          <p className={["mt-2", mutedTextClass].join(" ")}>
             Create and stage content records for modules, lessons, guides, pages, and product copy.
           </p>
           {!schemaReady ? (
@@ -4616,7 +4633,7 @@ export default function AdminContentManager() {
             </AdminManagerState>
           ) : null}
           <form
-            className="mt-5 grid gap-4 sm:grid-cols-2"
+            className="mt-5 grid gap-3 sm:grid-cols-2"
             onSubmit={handleCreate}
             data-testid="admin-content-create-form"
           >
@@ -4624,7 +4641,7 @@ export default function AdminContentManager() {
               disabled={!schemaReady || submitting}
               className="contents disabled:cursor-not-allowed disabled:opacity-70"
             >
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={compactLabelClass}>
                 <span>Type</span>
                 <select
                   value={formState.contentType}
@@ -4634,7 +4651,7 @@ export default function AdminContentManager() {
                       contentType: e.target.value as AdminContentType,
                     }))
                   }
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={compactFieldClass}
                 >
                   {CONTENT_TYPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -4644,7 +4661,7 @@ export default function AdminContentManager() {
                 </select>
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700">
+              <label className={compactLabelClass}>
                 <span>Status</span>
                 <select
                   value={formState.status}
@@ -4654,7 +4671,7 @@ export default function AdminContentManager() {
                       status: e.target.value as AdminContentStatus,
                     }))
                   }
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={compactFieldClass}
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -4665,7 +4682,7 @@ export default function AdminContentManager() {
               </label>
 
               {formState.contentType === "course_lesson" ? (
-                <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+                <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                   <span>Parent module</span>
                   <select
                     value={formState.parentId}
@@ -4675,7 +4692,7 @@ export default function AdminContentManager() {
                         parentId: e.target.value,
                       }))
                     }
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                    className={compactFieldClass}
                   >
                     <option value="">Select module</option>
                     {moduleOptions.map((option) => (
@@ -4684,14 +4701,14 @@ export default function AdminContentManager() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs font-normal text-slate-500">
+                  <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                     Lessons are now created with locked module context from the start. If you want a
                     different module, choose it here before saving.
                   </p>
                 </label>
               ) : null}
 
-              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                 <span>Title</span>
                 <input
                   type="text"
@@ -4703,12 +4720,12 @@ export default function AdminContentManager() {
                       title: e.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={compactFieldClass}
                   placeholder="Module 1 foundations"
                 />
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                 <span>Slug (optional)</span>
                 <input
                   type="text"
@@ -4719,19 +4736,19 @@ export default function AdminContentManager() {
                       slug: e.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={compactFieldClass}
                   placeholder="module-1-foundations"
                 />
                 {formState.contentType === "course_module" ||
                 formState.contentType === "course_lesson" ? (
-                  <p className="text-xs font-normal text-slate-500">
+                  <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                     Slug is the human-readable key and can be renamed later. Internal runtime IDs
                     are assigned separately and stay fixed after creation.
                   </p>
                 ) : null}
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                 <span>Summary</span>
                 <textarea
                   rows={3}
@@ -4742,12 +4759,12 @@ export default function AdminContentManager() {
                       summary: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+                  className={textAreaClass}
                   placeholder="Short purpose or editor note."
                 />
               </label>
 
-              <label className="space-y-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
                 <span>Category</span>
                 <input
                   type="text"
@@ -4759,7 +4776,7 @@ export default function AdminContentManager() {
                       category: e.target.value,
                     }))
                   }
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  className={compactFieldClass}
                   placeholder="General"
                 />
                 <datalist id="admin-content-category-options">
@@ -4785,7 +4802,7 @@ export default function AdminContentManager() {
                 <button
                   type="submit"
                   disabled={!schemaReady || submitting}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-blue-300"
+                  className={compactPrimaryActionClass}
                 >
                   {submitting ? "Saving…" : "Save content item"}
                 </button>
