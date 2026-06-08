@@ -14,7 +14,7 @@
 - `execution_mode`: `end-to-end implementation until screenshot approval stop`
 - `branch`: `aw-006-micro-sessions-mobile-polish`
 - `resolved_findings`: `H-048`, `H-049`, `H-050`, `H-051`, `H-052`
-- `deferred_findings`: `H-053`, `H-054`, `H-055` deferred to `docs/task-briefs/planned/2026-06-08-aw-006-habits-fixed-period-motivation-stats-10-10.md`
+- `deferred_findings`: `H-053`, `H-054`, `H-055` later resolved by `docs/task-briefs/done/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`
 - `return_checkpoint`: update the parent before this child is closeout-ready.
 - `next_return_target`: return to the Habits parent, then execute fixed-period Motivation stats only after Child P is merged/closed.
 
