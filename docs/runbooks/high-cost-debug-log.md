@@ -26,7 +26,7 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Fix pattern: treat audio as artifact-bearing UX. Keep app playback tied to the same listenable source the owner approves, whether that is a static MP3 asset or a generated preview, sweep sibling call sites that use positive completion feedback, and stop for owner approval before PR/merge.
 - Detection/probe: inspect whether the changed sound has a listenable artifact, whether that artifact is the same source as app playback, and whether sibling completion surfaces still call an old profile; tests that only count oscillator starts are insufficient.
 - Prevention: future audio changes require a listenable artifact handoff plus owner approval when the requested outcome is subjective sound quality, and must prove all scoped sibling surfaces use the same source/volume mapping.
-- Evidence: active hotfix brief `docs/task-briefs/in-progress/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md`; owner-provided MP3 asset evidence pending owner review.
+- Evidence: PR `#1027`, done brief `docs/task-briefs/done/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md`, owner-approved MP3 asset path `/sounds/ding/ding.mp3`, and shared `0.15` app playback volume tests.
 
 ## 2026-05-29 - Session Generator Unit CI: metadata panel collapsed after save transition
 

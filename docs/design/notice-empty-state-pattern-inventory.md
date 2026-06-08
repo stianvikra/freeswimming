@@ -36,7 +36,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 
 2026-06-08 shipped Habits child note: PR `#1023` closed `docs/task-briefs/done/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`, covering fixed-period Motivation stats/slips, truthful Habits Today/Week/Month status, ding-style local opt-in sound, and timed target signal/no-auto-complete.
 
-2026-06-08 active hotfix note: owner reported the #1023 Habits ding still sounds like the same wrong sound, then caught after PR #1025 that Micro Sessions bubbles still used the old separate sound path. Child R `docs/task-briefs/in-progress/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md` is active and must make Habits plus Micro Sessions positive feedback use the owner-selected MP3 asset at the shared lower app volume before PR gates.
+2026-06-08 shipped hotfix note: PR `#1027` closed Child R `docs/task-briefs/done/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md` after owner reported the #1023 Habits ding still sounded like the same wrong sound, then caught after PR #1025 that Micro Sessions bubbles still used the old separate sound path. Habits plus Micro Sessions positive feedback now use the owner-selected MP3 asset at the shared lower app volume.
 
 ## Representative Inventory
 
