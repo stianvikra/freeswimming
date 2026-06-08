@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   APP_SOUND_ASSETS,
+  APP_SOUND_ASSET_VOLUMES,
   APP_SOUND_PROFILES,
   playAppSoundProfile,
 } from "@/lib/audio/client-sound";
@@ -8,6 +9,7 @@ import {
 type MockAudioElement = {
   src?: string;
   preload: string;
+  volume: number;
   currentTime: number;
   play: () => Promise<void>;
 };
@@ -23,6 +25,7 @@ function installAudioElementMock(options?: { playRejects?: boolean }) {
   class MockAudio implements MockAudioElement {
     src?: string;
     preload = "";
+    volume = -1;
     currentTime = -1;
     play = audio.play;
 
@@ -108,9 +111,10 @@ describe("client sound profiles", () => {
 
   it("keeps the Habits positive ding bound to the approved bundled mp3 asset", () => {
     expect(APP_SOUND_ASSETS.positiveDing).toBe("/sounds/ding/ding.mp3");
+    expect(APP_SOUND_ASSET_VOLUMES.positiveDing).toBe(0.15);
   });
 
-  it("uses distinct completion profiles for tapped and timed micro-session bubbles", () => {
+  it("keeps generated oscillator profiles distinct for non-asset sounds", () => {
     const tapProfile = APP_SOUND_PROFILES.tapComplete;
     const timerProfile = APP_SOUND_PROFILES.timerComplete;
 
@@ -148,6 +152,7 @@ describe("client sound profiles", () => {
     expect(elementAudio.instances[0]).toMatchObject({
       src: APP_SOUND_ASSETS.positiveDing,
       preload: "auto",
+      volume: APP_SOUND_ASSET_VOLUMES.positiveDing,
       currentTime: 0,
     });
     expect(elementAudio.play).toHaveBeenCalledTimes(1);

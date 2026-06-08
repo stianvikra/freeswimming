@@ -7,6 +7,10 @@ export const APP_SOUND_ASSETS = {
   positiveDing: "/sounds/ding/ding.mp3",
 } as const;
 
+export const APP_SOUND_ASSET_VOLUMES = {
+  positiveDing: 0.15,
+} as const;
+
 type AppSoundAssetName = keyof typeof APP_SOUND_ASSETS;
 type AppSoundOscillatorProfileName = keyof typeof appSoundProfiles;
 export type AppSoundProfileName = AppSoundAssetName | AppSoundOscillatorProfileName;
@@ -86,13 +90,18 @@ function isAssetProfileName(profileName: AppSoundProfileName): profileName is Ap
   return profileName in APP_SOUND_ASSETS;
 }
 
-async function playAppSoundAsset(src: string): Promise<AppSoundPlaybackResult> {
+function clampAudioVolume(volume: number) {
+  return Math.min(1, Math.max(0, volume));
+}
+
+async function playAppSoundAsset(src: string, volume: number): Promise<AppSoundPlaybackResult> {
   const AudioElementConstructor = resolveAudioElementConstructor();
   if (!AudioElementConstructor) return "unsupported";
 
   try {
     const audio = new AudioElementConstructor(src);
     audio.preload = "auto";
+    audio.volume = clampAudioVolume(volume);
     audio.currentTime = 0;
     await audio.play();
     return "played";
@@ -105,7 +114,7 @@ export async function playAppSoundProfile(
   profileName: AppSoundProfileName
 ): Promise<AppSoundPlaybackResult> {
   if (isAssetProfileName(profileName)) {
-    return playAppSoundAsset(APP_SOUND_ASSETS[profileName]);
+    return playAppSoundAsset(APP_SOUND_ASSETS[profileName], APP_SOUND_ASSET_VOLUMES[profileName]);
   }
 
   if (!isOscillatorProfileName(profileName)) return "unsupported";
