@@ -99,6 +99,13 @@ type TimerState = {
   startedAtMs: number | null;
 };
 
+type SaveTimedSourcesInput = {
+  timerSeconds: number;
+  manualMinutes: number;
+  successNotice: string;
+  clearLocalTimerOnSuccess: boolean;
+};
+
 type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
 type HabitFeedbackAnnouncement = "polite" | "assertive" | "none";
 type MotivationPanel = "definitions";
@@ -132,6 +139,7 @@ const HABIT_TIMER_STORAGE_PREFIX = "freeswimming:habits:v3:timers";
 const HABIT_TIMER_STORAGE_VERSION = 1;
 const HABIT_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:habits:v1:sound";
 const HABIT_SOUND_PREFERENCE_STORAGE_VERSION = 1;
+const HABIT_SUCCESS_NOTICE_AUTO_DISMISS_MS = 3000;
 const HABIT_WEEK_SWIPE_THRESHOLD_PX = 48;
 const HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX = 40;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
@@ -443,7 +451,7 @@ function getTimedStatusLabel(item: HabitDayItem, timerSeconds: number) {
 function getTimedTargetContextLabel(habit: HabitDefinitionView) {
   const targetSeconds = getTimerTargetDisplaySeconds(habit);
   if (!targetSeconds) return "today";
-  return `of ${formatTimer(targetSeconds)} today`;
+  return `/ ${formatTimer(targetSeconds)} today`;
 }
 
 function getWeekdayLabel(date: string) {
@@ -582,7 +590,7 @@ function getHabitModeLabel(mode: HabitMode) {
 function formatMotivationLabel(label: string) {
   const streakMatch = label.match(/^(\d+)-day streak$/);
   if (streakMatch?.[1]) {
-    return `Streak: ${streakMatch[1]} days`;
+    return `Streak: ${streakMatch[1]} days.`;
   }
   const doneDaysMatch = label.match(/^(\d+)\/(\d+) days (?:hit|completed)$/);
   if (doneDaysMatch?.[1] && doneDaysMatch[2]) {
@@ -658,7 +666,7 @@ function getCadenceStreakUnit(period: HabitCadencePeriod) {
 
 function formatCadenceStreak(value: number, period: HabitCadencePeriod) {
   const unit = getCadenceStreakUnit(period);
-  return `${value} ${unit}${value === 1 ? "" : "s"} streak`;
+  return `Streak: ${value} ${unit}${value === 1 ? "" : "s"}.`;
 }
 
 function getStartStreakPrompt(period: HabitCadencePeriod) {
@@ -1148,7 +1156,10 @@ export default function HabitPerfectDayHub({
   const hasLoadedRowPreferencesRef = useRef(false);
   const hasHydratedTimersRef = useRef(false);
   const timedTargetProgressRef = useRef<Record<string, number>>({});
-  const timedTargetSoundKeysRef = useRef<Set<string>>(new Set());
+  const timedTargetAutoSaveKeysRef = useRef<Set<string>>(new Set());
+  const saveTimedSourcesRef = useRef<
+    ((item: HabitDayItem, input: SaveTimedSourcesInput) => Promise<void>) | null
+  >(null);
   const confirmedSelectedDateRef = useRef<string | null>(
     initialSnapshot.loadError ? null : initialSnapshot.selectedDate
   );
@@ -1236,6 +1247,14 @@ export default function HabitPerfectDayHub({
   useEffect(() => {
     setCheckInInputs(buildInputState(snapshot));
   }, [snapshot]);
+
+  useEffect(() => {
+    if (Object.keys(habitNotices).length === 0) return;
+    const timeout = window.setTimeout(() => {
+      setHabitNotices({});
+    }, HABIT_SUCCESS_NOTICE_AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timeout);
+  }, [habitNotices]);
 
   useEffect(() => {
     hasHydratedTimersRef.current = false;
@@ -1401,49 +1420,6 @@ export default function HabitPerfectDayHub({
     },
     [nowMs, timers]
   );
-
-  useEffect(() => {
-    const nextProgress: Record<string, number> = {};
-
-    for (const item of snapshot.daySummary.items) {
-      if (item.habit.habitMode !== "timed" || item.habit.status !== "active") continue;
-      const targetSeconds = getTimerTargetDisplaySeconds(item.habit);
-      if (!targetSeconds) continue;
-
-      const timer = timers[item.habit.id];
-      const timerSeconds = getTimerSeconds(item.habit.id);
-      const progressSeconds = getTimedProgressSeconds(item, timerSeconds);
-      const soundKey = getTimedTargetSoundKey(snapshot.selectedDate, item.habit.id, targetSeconds);
-      const previousProgress = timedTargetProgressRef.current[soundKey];
-
-      if (
-        previousProgress !== undefined &&
-        isSelectedToday &&
-        timer?.startedAtMs != null &&
-        previousProgress < targetSeconds &&
-        progressSeconds >= targetSeconds &&
-        !timedTargetSoundKeysRef.current.has(soundKey)
-      ) {
-        timedTargetSoundKeysRef.current.add(soundKey);
-        playEnabledHabitSound();
-      }
-
-      if (progressSeconds < targetSeconds) {
-        timedTargetSoundKeysRef.current.delete(soundKey);
-      }
-      nextProgress[soundKey] = progressSeconds;
-    }
-
-    timedTargetProgressRef.current = nextProgress;
-  }, [
-    isSelectedToday,
-    getTimerSeconds,
-    nowMs,
-    playEnabledHabitSound,
-    snapshot.daySummary.items,
-    snapshot.selectedDate,
-    timers,
-  ]);
 
   const activeCount = snapshot.activeHabits.length;
   const preferredCountLabel =
@@ -1834,7 +1810,7 @@ export default function HabitPerfectDayHub({
       if (shouldPlaySuccessfulCompletionSound(item, nextSnapshot)) {
         playEnabledHabitSound();
       }
-      setHabitNotice(habit.id, "Check-in saved.");
+      setHabitNotice(habit.id, "Completion saved.");
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not save that check-in right now."
@@ -1844,15 +1820,7 @@ export default function HabitPerfectDayHub({
     }
   }
 
-  async function saveTimedSources(
-    item: HabitDayItem,
-    input: {
-      timerSeconds: number;
-      manualMinutes: number;
-      successNotice: string;
-      clearLocalTimerOnSuccess: boolean;
-    }
-  ) {
+  async function saveTimedSources(item: HabitDayItem, input: SaveTimedSourcesInput) {
     const habit = item.habit;
     setPendingKey(`check-${habit.id}`);
     clearHabitNotice(habit.id);
@@ -1885,6 +1853,10 @@ export default function HabitPerfectDayHub({
       setPendingKey(null);
     }
   }
+
+  useEffect(() => {
+    saveTimedSourcesRef.current = saveTimedSources;
+  });
 
   async function logLapse(item: HabitDayItem) {
     setPendingKey(`lapse-${item.habit.id}`);
@@ -1960,7 +1932,7 @@ export default function HabitPerfectDayHub({
     await saveTimedSources(item, {
       timerSeconds,
       manualMinutes,
-      successNotice: "Timer time saved.",
+      successNotice: "Completion saved.",
       clearLocalTimerOnSuccess: true,
     });
   }
@@ -1978,10 +1950,107 @@ export default function HabitPerfectDayHub({
     await saveTimedSources(item, {
       timerSeconds,
       manualMinutes,
-      successNotice: "Manual time saved.",
+      successNotice: "Completion saved.",
       clearLocalTimerOnSuccess: false,
     });
   }
+
+  async function undoTimedCompletion(item: HabitDayItem) {
+    const habit = item.habit;
+    setPendingKey(`undo-timed-${habit.id}`);
+    clearHabitNotice(habit.id);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: habit.id,
+          checkInDate: snapshot.selectedDate,
+          clearTimedCompletion: true,
+        }),
+      });
+      await applyResponse(response, "Could not undo that completion right now.");
+      collapseHabitDetails(habit.id);
+      clearTimer(habit.id);
+      setHabitNotice(habit.id, "Completion undone.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Could not undo that completion right now."
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  useEffect(() => {
+    const nextProgress: Record<string, number> = {};
+
+    for (const item of snapshot.daySummary.items) {
+      if (item.habit.habitMode !== "timed" || item.habit.status !== "active") continue;
+      if (item.checkIn?.status === "skipped") continue;
+      if (item.priorityGroup === "done_today" || item.priorityGroup === "done_period") continue;
+      const targetSeconds = getTimerTargetDisplaySeconds(item.habit);
+      if (!targetSeconds) continue;
+
+      const timer = timers[item.habit.id];
+      const timerSeconds = getTimerSeconds(item.habit.id);
+      const progressSeconds = getTimedProgressSeconds(item, timerSeconds);
+      const targetKey = getTimedTargetSoundKey(snapshot.selectedDate, item.habit.id, targetSeconds);
+      const previousProgress = timedTargetProgressRef.current[targetKey];
+      nextProgress[targetKey] = progressSeconds;
+
+      if (progressSeconds < targetSeconds) {
+        timedTargetAutoSaveKeysRef.current.delete(targetKey);
+      }
+
+      if (
+        previousProgress === undefined ||
+        !isSelectedToday ||
+        pendingKey !== null ||
+        timer?.startedAtMs == null ||
+        previousProgress >= targetSeconds ||
+        progressSeconds < targetSeconds ||
+        timedTargetAutoSaveKeysRef.current.has(targetKey)
+      ) {
+        continue;
+      }
+
+      const savedTimedSeconds = getSavedTimedSeconds(item);
+      const neededLocalSeconds = Math.max(0, targetSeconds - savedTimedSeconds);
+      const localSecondsToSave = Math.min(Math.max(0, timerSeconds), neededLocalSeconds);
+      if (localSecondsToSave <= 0) continue;
+
+      timedTargetAutoSaveKeysRef.current.add(targetKey);
+      setTimers((current) => {
+        const currentTimer = current[item.habit.id];
+        if (!currentTimer) return current;
+        return {
+          ...current,
+          [item.habit.id]: {
+            elapsedSeconds: localSecondsToSave,
+            startedAtMs: null,
+          },
+        };
+      });
+      void saveTimedSourcesRef.current?.(item, {
+        timerSeconds: getSavedTimerSeconds(item) + getLegacyTimedSeconds(item) + localSecondsToSave,
+        manualMinutes: getSavedManualMinutes(item),
+        successNotice: "Completion saved.",
+        clearLocalTimerOnSuccess: true,
+      });
+    }
+
+    timedTargetProgressRef.current = nextProgress;
+  }, [
+    getTimerSeconds,
+    isSelectedToday,
+    pendingKey,
+    snapshot.daySummary.items,
+    snapshot.selectedDate,
+    timers,
+  ]);
 
   async function resetCheckIn(item: HabitDayItem) {
     setPendingKey(`reset-${item.habit.id}`);
@@ -3277,9 +3346,6 @@ export default function HabitPerfectDayHub({
                   : "Start";
               const manualTimeInput = checkInInputs[habit.id]?.trim() ?? "";
               const canSaveManualTime = manualTimeInput !== "";
-              const savedTimerSeconds = getSavedTimerSeconds(item);
-              const savedManualMinutes = getSavedManualMinutes(item);
-              const legacyTimedSeconds = getLegacyTimedSeconds(item);
               const isExpanded = expandedHabitIds.includes(habit.id);
               const detailsId = `habit-details-${habit.id}`;
               const resetStatsDialogTitleId = `habit-reset-stats-title-${habit.id}`;
@@ -3288,6 +3354,17 @@ export default function HabitPerfectDayHub({
               const isNewlyCreated = recentlyCreatedHabitId === habit.id;
               const canEditSelectedCheckIn = item.isScheduledForDate || item.checkIn !== null;
               const canRunTimerForSelectedDate = canEditSelectedCheckIn && isSelectedToday;
+              const canUndoTimedCompletion =
+                canEditSelectedCheckIn &&
+                isTimed &&
+                !isRestDay &&
+                (item.checkIn?.timerSeconds ?? 0) > 0;
+              const canShowTimedFinishAction =
+                canRunTimerForSelectedDate &&
+                !isCompletionGroup &&
+                !isRestDay &&
+                isTimed &&
+                timerSeconds > 0;
               const statusLabel = isRestDay
                 ? "Rest day"
                 : isCompletionGroup
@@ -3356,7 +3433,7 @@ export default function HabitPerfectDayHub({
                         : "fs-library-card fs-library-card-muted"
                     }`}
                   >
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                       <div className="min-w-0">
                         {isNewlyCreated ? (
                           <p
@@ -3496,6 +3573,39 @@ export default function HabitPerfectDayHub({
                               <Play className="h-4 w-4" aria-hidden="true" />
                             )}
                             {timerActionLabel}
+                          </button>
+                        ) : null}
+
+                        {canShowTimedFinishAction ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              return finishTimer(item);
+                            }}
+                            disabled={disabled}
+                            className={cx(habitMobilePrimaryActionClass, habitPeerActionWidthClass)}
+                          >
+                            <Save className="h-4 w-4" aria-hidden="true" />
+                            Finish
+                          </button>
+                        ) : null}
+
+                        {canUndoTimedCompletion ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              return undoTimedCompletion(item);
+                            }}
+                            disabled={disabled}
+                            className={cx(
+                              habitMobileSecondaryActionClass,
+                              habitPeerActionWidthClass
+                            )}
+                          >
+                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                            Undo complete
                           </button>
                         ) : null}
 
@@ -3792,30 +3902,6 @@ export default function HabitPerfectDayHub({
 
                         {renderHabitMotivationDetails(motivationItem)}
 
-                        {isTimed ? (
-                          <div className="mt-4 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/80 px-3 py-2 text-sm text-slate-600">
-                            <p className={habitLabelClass}>Time sources</p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-                              <span className={habitChipClass}>
-                                Timer {formatTimer(savedTimerSeconds)}
-                              </span>
-                              <span className={habitChipClass}>
-                                Manual time {savedManualMinutes} min
-                              </span>
-                              {timerSeconds > 0 ? (
-                                <span className={habitBrandChipClass}>
-                                  Active timer +{formatTimer(timerSeconds)}
-                                </span>
-                              ) : null}
-                              {legacyTimedSeconds > 0 ? (
-                                <span className={habitWarningChipClass}>
-                                  Legacy total {formatTimer(legacyTimedSeconds)}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        ) : null}
-
                         {confirmResetStatsHabitId === habit.id ? (
                           <div
                             role="alertdialog"
@@ -3916,24 +4002,6 @@ export default function HabitPerfectDayHub({
                             >
                               <Flag className="h-4 w-4" aria-hidden="true" />
                               Log slip
-                            </button>
-                          ) : null}
-
-                          {canRunTimerForSelectedDate && !isRestDay && isTimed ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                clearCreatedHabitNotice();
-                                return finishTimer(item);
-                              }}
-                              disabled={disabled || timerSeconds <= 0}
-                              className={cx(
-                                habitMobilePrimaryActionClass,
-                                habitPeerActionWidthClass
-                              )}
-                            >
-                              <Save className="h-4 w-4" aria-hidden="true" />
-                              Finish
                             </button>
                           ) : null}
 
@@ -4072,13 +4140,21 @@ export default function HabitPerfectDayHub({
                               type="button"
                               onClick={() => {
                                 clearCreatedHabitNotice();
-                                return resetCheckIn(item);
+                                return canUndoTimedCompletion
+                                  ? undoTimedCompletion(item)
+                                  : resetCheckIn(item);
                               }}
                               disabled={disabled}
                               className={habitMobileSecondaryActionClass}
                             >
                               <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                              {isQuit ? "Undo slip" : isRestDay ? "Undo rest day" : "Reset"}
+                              {isQuit
+                                ? "Undo slip"
+                                : isRestDay
+                                  ? "Undo rest day"
+                                  : canUndoTimedCompletion
+                                    ? "Undo complete"
+                                    : "Reset"}
                             </button>
                           ) : null}
 

@@ -157,7 +157,7 @@ describe("habits server loader", () => {
     expect(checkInQuery.gte).toHaveBeenCalledWith("check_in_date", "2026-04-28");
     expect(checkInQuery.lte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
     expect(resetQuery.lte).toHaveBeenCalledWith("effective_date", "2026-05-10");
-    expect(snapshot.daySummary.items[0]?.evaluation.valueLabel).toBe("12-day streak");
+    expect(snapshot.daySummary.items[0]?.evaluation.valueLabel).toBe("Streak: 12 days.");
     expect(snapshot.daySummary.items[0]?.evaluation.supportingLabel).toBe("12/13 days completed");
   });
 

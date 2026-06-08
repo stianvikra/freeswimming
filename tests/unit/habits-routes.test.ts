@@ -973,6 +973,159 @@ describe("habits routes", () => {
     );
   });
 
+  it("undoes timed completion sources while preserving manual minutes", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const checkInMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "22222222-2222-4222-8222-222222222222",
+        timer_seconds: 480,
+        manual_minutes: 5,
+        status: "logged",
+      },
+      error: null,
+    });
+    const checkInEqDate = vi.fn(() => ({ maybeSingle: checkInMaybeSingle }));
+    const checkInEqHabit = vi.fn(() => ({ eq: checkInEqDate }));
+    const checkInEqUser = vi.fn(() => ({ eq: checkInEqHabit }));
+    const checkInSelect = vi.fn(() => ({ eq: checkInEqUser }));
+    const updateEqDate = vi.fn().mockResolvedValue({ error: null });
+    const updateEqHabit = vi.fn(() => ({ eq: updateEqDate }));
+    const updateEqUser = vi.fn(() => ({ eq: updateEqHabit }));
+    const update = vi.fn(() => ({ eq: updateEqUser }));
+    const deleteRows = vi.fn();
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins"
+        ? { select: checkInSelect, update, delete: deleteRows }
+        : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          clearTimedCompletion: true,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value_numeric: 5,
+        timer_seconds: 0,
+        manual_minutes: 5,
+        source_kind: "manual",
+      })
+    );
+    expect(deleteRows).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_check_in_reset",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          habitMode: "timed",
+          checkInDate: "2026-05-10",
+          resetKind: "timed_completion_source",
+          hadManualMinutes: true,
+          timedSourceKind: "timer",
+        }),
+      })
+    );
+  });
+
+  it("deletes timer-only rows when undoing a timed completion", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "timed",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const checkInMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "22222222-2222-4222-8222-222222222222",
+        timer_seconds: 480,
+        manual_minutes: 0,
+        status: "logged",
+      },
+      error: null,
+    });
+    const checkInEqDate = vi.fn(() => ({ maybeSingle: checkInMaybeSingle }));
+    const checkInEqHabit = vi.fn(() => ({ eq: checkInEqDate }));
+    const checkInEqUser = vi.fn(() => ({ eq: checkInEqHabit }));
+    const checkInSelect = vi.fn(() => ({ eq: checkInEqUser }));
+    const deleteEqDate = vi.fn().mockResolvedValue({ error: null });
+    const deleteEqHabit = vi.fn(() => ({ eq: deleteEqDate }));
+    const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
+    const deleteRows = vi.fn(() => ({ eq: deleteEqUser }));
+    const update = vi.fn();
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins"
+        ? { select: checkInSelect, update, delete: deleteRows }
+        : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-10",
+          clearTimedCompletion: true,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(update).not.toHaveBeenCalled();
+    expect(deleteRows).toHaveBeenCalledTimes(1);
+    expect(deleteEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(deleteEqHabit).toHaveBeenCalledWith("habit_id", "11111111-1111-4111-8111-111111111111");
+    expect(deleteEqDate).toHaveBeenCalledWith("check_in_date", "2026-05-10");
+  });
+
   it("rejects mixed timed source and legacy numeric payloads before writes", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: {
