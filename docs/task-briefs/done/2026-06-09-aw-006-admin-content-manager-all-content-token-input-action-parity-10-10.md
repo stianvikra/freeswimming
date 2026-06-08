@@ -3,21 +3,21 @@
 ## Metadata
 
 - `id`: `2026-06-09-aw-006-admin-content-manager-all-content-token-input-action-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-09`
 - `updated`: `2026-06-09`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `active implementation; screenshot approved with caveat; continue through gates and merge on green tests`
+- `execution_mode`: `closed; implementation merged; repo-managed docs-only closeout`
 - `branch`: `aw-006-admin-content-manager-all-content-parity`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-09`
 - `base`: `main@c03aa8fb`
-- `audit_status`: `active`
+- `audit_status`: `closed`
 - `decision`: Owner explicitly selected this bounded AW-006 design-parity implementation slice on `2026-06-09`; screenshot handoff was approved with caveat and owner authorized merge when local gates and CI are green.
 - `reason`: Main is clean and synced after PR `#1031` and repo-managed closeout PR `#1032`; post-merge preflight was reported green with no pending closeout. The closed design-parity reaudit identified one remaining bounded design-parity candidate in `components/admin/AdminContentManager.tsx`: All Content create form fields/actions, All Content row action/edit controls, and revision restore controls still use older route-local rounded/slate/blue styling after Course Workspace parity shipped in PR `#928`.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 scope, `components/admin/AdminContentManager.tsx`, `tests/unit/admin-content-manager-state.test.tsx`, `tests/e2e/admin-foundation.spec.ts`, `AdminManagerState`, admin content API/authz/course-structure behavior, Context Notes/QR placement, Help/Guide assertions, screenshot handoff rules, forward compatibility rules, route/label/support sweep rules, or verification lanes change before implementation or PR handoff.
@@ -247,7 +247,7 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 
 ## Completion Mode
 
-Active implementation. This brief has moved to `in-progress` on branch `aw-006-admin-content-manager-all-content-parity`; scoped changes and screenshot handoff are complete. Owner approved the screenshot handoff with caveat and authorized merge when `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` are green.
+Done. PR `#1033` shipped the scoped `AdminContentManager` All Content token/input/action parity as squash commit `a63c75f7`; repo-managed closeout moves this brief to `done`, updates the AW-006 queue/design inventory, and records the owner's visual caveat as intentionally deferred polish outside this parity slice.
 
 ## Checkpoint Log
 
@@ -257,3 +257,32 @@ Active implementation. This brief has moved to `in-progress` on branch `aw-006-a
 - `2026-06-09 | screenshot-approved | owner approved the screenshot handoff with caveat: accepted as token/action parity for the current design direction, while button stacking, visual weight, and later polish will be handled when the surfaces are used further; owner authorized merge when tests/gates are green | next: run npm run verify:pre-pr`
 - `2026-06-09 | pre-pr-green | npm run verify:pre-pr passed full lane on branch aw-006-admin-content-manager-all-content-parity: branch-current, quality gates, lint, typecheck, unit tests, build, perf budgets, and Playwright e2e; local dev-login-dependent e2e cases were skipped by existing environment guards while open/security coverage passed | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-09 | screenshot-refresh | regenerated final after/reference screenshot artifacts at output/admin-content-all-content-parity-2026-06-09-012824 after pre-commit formatting touched the rendering file; artifacts include desktop overview, desktop edit/revisions, mobile overview, and Course Workspace reference; temporary fixture/script were removed and no scoped product-rendering files changed after this final capture | next: amend commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-09 | pre-merge-green | npm run verify:pre-merge passed full lane after PR CI was green: branch-current, quality gates, lint, typecheck, unit tests, build, perf budgets, and Playwright e2e; marker artifacts/verify-pre-merge/20260608-234506.json was written | next: merge PR #1033`
+- `2026-06-09 | merged | PR #1033 merged as squash commit a63c75f7 after green local gates and CI; post-merge preflight identified this single repo-managed docs-only closeout | next: move brief to done, update queue/design inventory, run closeout gates, and merge the closeout if green`
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1033`
+- `squash_commit`: `a63c75f7`
+- `result`: Closed AW-006 Admin Content Manager All Content Token/Input/Action Parity. All Content create fields, row actions, inline edit actions, and revision actions now follow the current admin token/input/action direction while preserving content APIs, authz, course structure, Context Notes/QR, labels, revision restore behavior, Help/Guide, and support procedures.
+- `validation`: `./node_modules/.bin/vitest run tests/unit/admin-content-manager-state.test.tsx` passed; `npm run lint:briefs:all` passed; `git diff --check` passed; screenshot handoff captured at `output/admin-content-all-content-parity-2026-06-09-012824` and owner approved with caveat; `npm run verify:pre-pr` passed full lane; PR CI passed; `npm run verify:pre-merge` passed full lane with marker `artifacts/verify-pre-merge/20260608-234506.json`.
+- `10/10 claim`: yes for the scoped token/input/action parity slice; the owner-approved caveat about later button stacking, visual weight, and polish is intentionally outside this slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                   | Gaps / Notes                                                                                              |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1033`, queue/design inventory updates, and this closeout record.                                                      | No scoped gap.                                                                                            |
+| UX flow clarity                               | `5/5`          | Screenshot handoff, focused unit coverage, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge`.                    | Owner accepted current stacking as parity; later polish deferred.                                         |
+| Visual design quality                         | `5/5`          | Final after/reference artifacts in `output/admin-content-all-content-parity-2026-06-09-012824` plus owner approval caveat. | Caveat: button stacking, visual weight, and fine polish remain future usage-driven work.                  |
+| Business logic correctness and data integrity | `5/5`          | Targeted unit tests, full unit suite, e2e gate, and unchanged API/data diff.                                               | No scoped gap.                                                                                            |
+| Admin editor ergonomics                       | `5/5`          | Unit tests cover create/edit/revision actions; screenshots cover desktop/mobile All Content states.                        | No scoped gap beyond accepted visual caveat.                                                              |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, preserved labels/semantics, and full gates.                                                    | No scoped gap.                                                                                            |
+| Data placement and sync boundaries            | `5/5`          | Diff review and full gates confirm no server/local boundary changes.                                                       | No scoped gap.                                                                                            |
+| Caching and invalidation strategy             | `5/5`          | No fetch/cache/invalidation behavior changed; `verify:pre-pr` and `verify:pre-merge` passed.                               | No scoped gap.                                                                                            |
+| Reliability and failure handling              | `5/5`          | Existing loading/error/dirty/revision paths preserved and covered by targeted tests/full gates.                            | No scoped gap.                                                                                            |
+| Security and authz                            | `5/5`          | No protected route, API authz, credential, cookie, or preview authorization change.                                        | No scoped gap.                                                                                            |
+| Content governance                            | `5/5`          | Labels, Help/Guide scope, support behavior, and brief/queue evidence preserved.                                            | No scoped gap.                                                                                            |
+| Admin workflow and editability                | `5/5`          | Same create/edit/status/move/open/QR/revision/delete workflows with tokenized controls.                                    | No scoped gap.                                                                                            |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing admin-local classes and `fs-*` direction; no package/config changes.                                       | No scoped gap.                                                                                            |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, green PR CI, and full `verify:pre-merge`.                                           | Local dev-login-dependent e2e cases skipped by existing environment guard; open/security coverage passed. |
+| DevOps and rollback readiness                 | `5/5`          | Normal squash merge `a63c75f7`, no migrations/config/workflow/package changes, full gates green.                           | No scoped gap.                                                                                            |
