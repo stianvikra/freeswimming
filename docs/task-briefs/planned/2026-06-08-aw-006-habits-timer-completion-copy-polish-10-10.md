@@ -12,7 +12,7 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-08`
-- `base`: current branch `aw-006-micro-sessions-recurring-habit-runtime`
+- `base`: `main@619039c9` after Micro Sessions recurring Habit runtime PR `#1017`
 - `audit_status`: `planned-direct-next-child`
 - `decision`: Use this as the direct next Habits child after the Micro Sessions recurring Habit runtime workstream.
 - `reason`: Owner confirmed the timer/copy findings are valuable, but they should not be mixed into the current Micro/Habit runtime PR.
