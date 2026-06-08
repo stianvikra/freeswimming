@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
 - `updated`: `2026-06-08`
@@ -17,9 +17,9 @@
 
 - `last_audited`: `2026-06-08`
 - `base`: clean synced `main@776e1254`
-- `audit_status`: `ready`
-- `decision`: Execute a narrow Habits hotfix before any new feature slice.
-- `reason`: Owner reports the merged #1023 "ding" still sounds like the prior wrong sound after multiple attempts; owner also flagged adjacent Habits polish issues: `Slip logged.` appears as a global notice above Admin notes, Motivation Stats week context shows only one date, and long `Past habits` history overwhelms the Motivation Stats panel.
+- `audit_status`: `closed`
+- `decision`: Closed as a narrow Habits hotfix before any new feature slice.
+- `reason`: PR `#1025` replaced the rejected synthetic Habits ding with the owner-selected bundled MP3 asset, moved `Slip logged.` into the local habit notice surface, expanded Motivation Stats week context, and collapsed long `Past habits` history behind `See all`.
 - `must_refresh_before_execution_if`: Refresh if `lib/audio/client-sound.ts`, `lib/audio/app-sound-profiles.json`, `HabitPerfectDayHub`, audio tests, browser-audio behavior, or the owner-requested target sound changes before approval.
 
 ## Goal
@@ -207,10 +207,48 @@ After owner audio approval:
 ## Checkpoint Log
 
 - `2026-06-08 | in-progress | owner explicitly said "kjor lyd-hotfix" after reporting #1023 still plays the same/wrong sound; branch hotfix/habits-ding-listenable-artifact started from clean main@776e1254; active scope is only Habits positiveDing quality plus listenable asset gate | next: wire imported MP3, run targeted tests, and stop for owner audio approval before broad gates`
-- `2026-06-08 | in-progress | owner added public/sounds/ding/ding.mp3 and confirmed it was Pixabay free commercial; implementation pivoted from synthetic WAV candidates to explicit MP3 asset playback with license note pending exact source URL | next: targeted validation and owner approval of the exact MP3 asset`
+- `2026-06-08 | in-progress | owner added public/sounds/ding/ding.mp3 and confirmed it was Pixabay free commercial; implementation pivoted from synthetic WAV candidates to explicit MP3 asset playback with owner-confirmed provenance and no exact source URL retained | next: targeted validation and owner approval of the exact MP3 asset`
 - `2026-06-08 | in-progress | owner added two adjacent Habits fixes to the same hotfix: move Slip logged. into the local habit container and show Week range label as week number plus Jun 8-14, 2026 style range | next: implement UI fixes, run targeted tests, capture screenshot handoff, and stop for owner approval before verify:pre-pr`
-- `2026-06-08 | screenshot handoff ready | targeted Vitest, typecheck, lint:briefs:all, and diff check passed; screenshot/audio artifacts captured in output/habits-ding-ui-hotfix-2026-06-08-185503; temporary AW screenshot habits used for visual proof were archived after capture | next: owner reviews screenshots plus public/sounds/ding/ding.mp3 and provides exact Pixabay source URL before verify:pre-pr`
+- `2026-06-08 | screenshot handoff ready | targeted Vitest, typecheck, lint:briefs:all, and diff check passed; screenshot/audio artifacts captured in output/habits-ding-ui-hotfix-2026-06-08-185503; temporary AW screenshot habits used for visual proof were archived after capture | next: owner reviews screenshots plus public/sounds/ding/ding.mp3 before verify:pre-pr`
 - `2026-06-08 | in-progress | owner approved adding a Past habits density fix to the same hotfix: show three newest archived habits first, expand via See all, and scroll the full list when open | next: targeted validation, refreshed screenshot handoff, and owner approval before verify:pre-pr`
-- `2026-06-08 | screenshot handoff refreshed | targeted Vitest, typecheck, lint:briefs:all, and diff check passed after Past habits change; refreshed screenshot/audio artifacts captured in output/habits-ding-ui-hotfix-2026-06-08-191747; temporary AW screenshot habit used for visual proof was archived after capture | next: owner reviews refreshed screenshots plus public/sounds/ding/ding.mp3 and provides exact Pixabay source URL before verify:pre-pr`
+- `2026-06-08 | screenshot handoff refreshed | targeted Vitest, typecheck, lint:briefs:all, and diff check passed after Past habits change; refreshed screenshot/audio artifacts captured in output/habits-ding-ui-hotfix-2026-06-08-191747; temporary AW screenshot habit used for visual proof was archived after capture | next: owner reviews refreshed screenshots plus public/sounds/ding/ding.mp3 before verify:pre-pr`
 - `2026-06-08 | owner approval to proceed | owner approved screenshots/audio and explicitly said exact Pixabay URL is not required because it was no longer available after leaving Pixabay; provenance remains owner-confirmed Pixabay/free-commercial in public/sounds/ding/README.md | next: run verify:pre-pr, commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green checks per owner instruction`
 - `2026-06-08 | pre-pr gate passed | npm run verify:pre-pr passed full lane, including quality gates, lint, typecheck, unit tests, build, perf budgets, and Playwright E2E | next: commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green checks per owner instruction`
+- `2026-06-08 | done | PR #1025 merged as squash commit 5b27d823 after owner audio/screenshot approval, local verify:pre-pr, GitHub CI, and local verify:pre-merge passed | next: complete repo-managed docs-only closeout, rerun post-merge preflight, then make the mandatory chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1025`
+- `squash_commit`: `5b27d823`
+- `result`: Closed AW-006 Habits Ding Listenable Hotfix. Habits `positiveDing` now plays the owner-selected bundled MP3, `Slip logged.` renders inside the relevant habit card, Motivation Stats Week context shows week number plus full week date range, and `Past habits` defaults to the three newest archived habits with `See all`/`Show less` plus scroll when expanded.
+- `validation`: Targeted sound/Habits tests, `npm run lint:briefs:all`, `npm run typecheck`, `git diff --check`, owner-approved screenshot/audio handoff at `output/habits-ding-ui-hotfix-2026-06-08-191747`, `npm run verify:pre-pr` full lane with artifacts at `artifacts/test-runs/20260608-194032`, GitHub CI for PR `#1025`, and `npm run verify:pre-merge` with evidence at `artifacts/verify-pre-merge/20260608-175549.json` passed.
+- `10/10 claim`: yes - critical target categories are listed below and each reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Reliability and failure handling`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                  | Gaps / Notes                                                  |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | The app playback source is the owner-selected MP3 and the adjacent Habits feedback/date/list-density fixes landed in the expected Habits surfaces.                                                        | None.                                                         |
+| UX flow clarity                               | `5/5`          | `Slip logged.` uses local habit notices, Week context shows week number and date range, and `Past habits` exposes newest-first collapsed/expanded behavior.                                               | None.                                                         |
+| Visual design quality                         | `5/5`          | Owner-approved screenshot handoff covered slip notice placement, Week range copy, and Past habits collapsed/expanded states.                                                                              | None.                                                         |
+| Business logic correctness and data integrity | `5/5`          | Component/tests prove the changes are presentational/audio-only and do not create, update, complete, or migrate Habit data.                                                                               | None.                                                         |
+| Accessibility (a11y)                          | `5/5`          | Optional sound behavior remains default-off/fail-soft, local status copy stays visible, and `See all`/`Show less` uses expandable control semantics.                                                      | None.                                                         |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same optional sound, readable status/date context, and expandable list contract.                                                               | None.                                                         |
+| Data placement and sync boundaries            | `5/5`          | MP3/profile data is static, sound preference remains browser-local, and Past habits expansion state is component-local only.                                                                              | None.                                                         |
+| Reliability and failure handling              | `5/5`          | Browser audio remains fail-soft and Habits no longer falls back to the rejected synthetic oscillator ding for `positiveDing`.                                                                             | None.                                                         |
+| Privacy and compliance                        | `5/5`          | The bundled audio asset and UI state add no user data logging, analytics payloads, secrets, or exported habit information.                                                                                | None.                                                         |
+| Content governance                            | `5/5`          | Parent, queue, done brief, high-cost debug log, and asset README record the same-source listenable-artifact rule and owner-confirmed Pixabay/free-commercial provenance without requiring a retained URL. | None.                                                         |
+| Incident response and support operations      | `5/5`          | High-cost debug log records symptom, root cause, fix pattern, detection, and prevention for repeated audio-regression work.                                                                               | None.                                                         |
+| i18n operational readiness                    | `4/5`          | Date formatting uses existing `Intl.DateTimeFormat` behavior and labels fit the changed mobile surfaces, but the static English labels are not routed through a translation workflow.                     | Future locale expansion should add explicit localized labels. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Habits component state, audio helper, asset mapping, and tests; no dependency, route, API, schema, or server change was introduced.                                                       | None.                                                         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full local pre-pr lane, GitHub CI, and local pre-merge gate passed for the merged PR.                                                                                                     | None.                                                         |
+| DevOps and rollback readiness                 | `5/5`          | Isolated asset/UI/runtime hotfix with no migration; rollback is normal git revert of squash commit `5b27d823`.                                                                                            | None.                                                         |
