@@ -57,9 +57,11 @@ import {
 import { cx } from "@/components/ui/cx";
 import { mobileActionItemClass, mobilePrimaryActionItemClass } from "@/components/ui/actionLayout";
 import {
+  addCalendarDays,
   buildMyLibraryCalendarHref,
   buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarWindow,
+  getMyLibraryCalendarIsoWeek,
   getMyLibraryCalendarPeriodStartDate,
 } from "@/lib/my-library/calendar";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
@@ -140,6 +142,7 @@ const HABIT_TIMER_STORAGE_VERSION = 1;
 const HABIT_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:habits:v1:sound";
 const HABIT_SOUND_PREFERENCE_STORAGE_VERSION = 1;
 const HABIT_SUCCESS_NOTICE_AUTO_DISMISS_MS = 3000;
+const PAST_HABIT_PREVIEW_COUNT = 3;
 const HABIT_WEEK_SWIPE_THRESHOLD_PX = 48;
 const HABIT_WEEK_SWIPE_VERTICAL_TOLERANCE_PX = 40;
 const WEEKDAY_LABELS: Record<HabitWeekday, string> = {
@@ -492,6 +495,50 @@ function getWeekRangeLabel(startDate: string, endDate: string) {
   return `${getMonthDayLabel(startDate)} - ${getMonthDayLabel(endDate)}`;
 }
 
+function getCompactFullDateRangeLabel(startDate: string, endDate: string) {
+  const startParsed = Date.parse(`${startDate}T00:00:00.000Z`);
+  const endParsed = Date.parse(`${endDate}T00:00:00.000Z`);
+  if (Number.isNaN(startParsed) || Number.isNaN(endParsed)) {
+    return `${getFullDateLabel(startDate)} - ${getFullDateLabel(endDate)}`;
+  }
+
+  const start = new Date(startParsed);
+  const end = new Date(endParsed);
+  const startMonth = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  }).format(start);
+  const endMonth = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  }).format(end);
+  const startDay = start.getUTCDate();
+  const endDay = end.getUTCDate();
+  const startYear = start.getUTCFullYear();
+  const endYear = end.getUTCFullYear();
+
+  if (startYear === endYear && startMonth === endMonth) {
+    return `${startMonth} ${startDay}-${endDay}, ${startYear}`;
+  }
+
+  if (startYear === endYear) {
+    return `${startMonth} ${startDay}-${endMonth} ${endDay}, ${startYear}`;
+  }
+
+  return `${getFullDateLabel(startDate)} - ${getFullDateLabel(endDate)}`;
+}
+
+function getSortableTimestamp(value: string) {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function compareArchivedMotivationItems(left: HabitMotivationItem, right: HabitMotivationItem) {
+  const updatedDelta = getSortableTimestamp(right.updatedAt) - getSortableTimestamp(left.updatedAt);
+  if (updatedDelta !== 0) return updatedDelta;
+  return left.title.localeCompare(right.title);
+}
+
 function getSelectedDateDisplayLabel(selectedDate: string, todayDate: string) {
   return selectedDate === todayDate ? "Today" : getFullDateLabel(selectedDate);
 }
@@ -540,6 +587,14 @@ function formatHistoryRange(summary: HabitMotivationSummary) {
 
 function formatMotivationRangeLabel(summary: HabitMotivationSummary, range: HabitMotivationRange) {
   const context = HABIT_MOTIVATION_RANGE_CONTEXT[range];
+  if (range === "week") {
+    const { weekNumber } = getMyLibraryCalendarIsoWeek(summary.historyStartDate);
+    const weekEndDate = addCalendarDays(summary.historyStartDate, 6);
+    return `${context} · Week ${weekNumber} · ${getCompactFullDateRangeLabel(
+      summary.historyStartDate,
+      weekEndDate
+    )}`;
+  }
   return `${context} · ${formatHistoryRange(summary)}`;
 }
 
@@ -1201,6 +1256,7 @@ export default function HabitPerfectDayHub({
   const [expandedHabitIds, setExpandedHabitIds] = useState<string[]>([]);
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
   const [isMobileWeekOpen, setIsMobileWeekOpen] = useState(false);
+  const [isPastHabitsExpanded, setIsPastHabitsExpanded] = useState(false);
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
   const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
   const [confirmResetStatsHabitId, setConfirmResetStatsHabitId] = useState<string | null>(null);
@@ -1303,6 +1359,7 @@ export default function HabitPerfectDayHub({
     setConfirmEndHabitId(null);
     setConfirmRestoreHabitId(null);
     setRecentlyCreatedHabitId(null);
+    setIsPastHabitsExpanded(false);
     setHabitNotices({});
     setNotice(null);
   }, [initialSnapshot]);
@@ -1944,7 +2001,7 @@ export default function HabitPerfectDayHub({
       });
       await applyResponse(response, "Could not log that slip right now.");
       collapseHabitDetails(item.habit.id);
-      setNotice("Slip logged.");
+      setHabitNotice(item.habit.id, "Slip logged.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not log that slip right now.");
     } finally {
@@ -2871,7 +2928,14 @@ export default function HabitPerfectDayHub({
     const summary = selectedMotivationSummary;
     if (!summary) return null;
 
-    const archivedItems = summary.items.filter((item) => item.status === "archived");
+    const archivedItems = summary.items
+      .filter((item) => item.status === "archived")
+      .sort(compareArchivedMotivationItems);
+    const hasPastHabitOverflow = archivedItems.length > PAST_HABIT_PREVIEW_COUNT;
+    const visibleArchivedItems =
+      isPastHabitsExpanded || !hasPastHabitOverflow
+        ? archivedItems
+        : archivedItems.slice(0, PAST_HABIT_PREVIEW_COUNT);
     const motivationDataQuality = getMotivationDataQuality(summary);
     const isDefinitionsPanelOpen = openMotivationPanel === "definitions";
 
@@ -3035,7 +3099,31 @@ export default function HabitPerfectDayHub({
             <div className="mt-5 min-w-0 border-t border-[color:var(--fs-border-soft)] pt-4">
               <p className={habitLabelClass}>Past habits</p>
               {archivedItems.length > 0 ? (
-                <ul className="mt-1">{archivedItems.map(renderMotivationItem)}</ul>
+                <>
+                  <ul
+                    id="habits-past-habits-list"
+                    data-testid="habits-past-habits-list"
+                    className={cx(
+                      "mt-1",
+                      isPastHabitsExpanded && hasPastHabitOverflow
+                        ? "max-h-[28rem] overflow-y-auto pr-1"
+                        : ""
+                    )}
+                  >
+                    {visibleArchivedItems.map(renderMotivationItem)}
+                  </ul>
+                  {hasPastHabitOverflow ? (
+                    <button
+                      type="button"
+                      aria-expanded={isPastHabitsExpanded}
+                      aria-controls="habits-past-habits-list"
+                      onClick={() => setIsPastHabitsExpanded((current) => !current)}
+                      className={cx(habitMobileSecondaryActionClass, "mt-3 w-full")}
+                    >
+                      {isPastHabitsExpanded ? "Show less" : "See all"}
+                    </button>
+                  ) : null}
+                </>
               ) : (
                 <p className="mt-3 border-t border-[color:var(--fs-border-soft)] pt-3 text-sm text-slate-500">
                   No past habits

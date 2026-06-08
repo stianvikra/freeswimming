@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
-import { APP_SOUND_PROFILES } from "@/lib/audio/client-sound";
+import { APP_SOUND_ASSETS } from "@/lib/audio/client-sound";
 import {
   buildHabitCheckInView,
   buildHabitDaySummary,
@@ -569,6 +569,32 @@ function buildQuitSlipSnapshot(): HabitSnapshot {
   };
 }
 
+function buildQuitOpenSnapshot(): HabitSnapshot {
+  const habit = buildHabitDefinitionView(
+    buildHabitRow({
+      id: "88888888-8888-4888-8888-888888888888",
+      title: "No sweets",
+      habit_mode: "quit",
+      habit_type: "avoidance",
+      target_operator: "at_most",
+      target_value_numeric: 0,
+      target_unit: "times",
+      start_date: "2026-05-01",
+    })
+  );
+  const activeHabits = [habit];
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, [], "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, [], "2026-05-10"),
+  };
+}
+
 function buildMotivationHistorySnapshot(): HabitSnapshot {
   const activeHabit = buildHabitDefinitionView(
     buildHabitRow({
@@ -628,6 +654,42 @@ function buildMotivationHistorySnapshot(): HabitSnapshot {
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-07"),
     motivationSummary,
     motivationSummaries: buildMotivationRangeSummaries(allHabits, checkIns, "2026-05-07"),
+  };
+}
+
+function buildPastHabitsOverflowSnapshot(): HabitSnapshot {
+  const archivedHabits = [
+    ["aaaaaaaa-1111-4111-8111-111111111111", "Newest archived", "2026-05-12T08:00:00.000Z"],
+    ["bbbbbbbb-1111-4111-8111-111111111111", "Second newest archived", "2026-05-11T08:00:00.000Z"],
+    ["cccccccc-1111-4111-8111-111111111111", "Third newest archived", "2026-05-10T08:00:00.000Z"],
+    ["dddddddd-1111-4111-8111-111111111111", "Fourth oldest archived", "2026-05-09T08:00:00.000Z"],
+    ["eeeeeeee-1111-4111-8111-111111111111", "Oldest archived", "2026-05-08T08:00:00.000Z"],
+  ].map(([id, title, updatedAt], index) =>
+    buildHabitDefinitionView(
+      buildHabitRow({
+        id,
+        title,
+        start_date: "2026-05-01",
+        status: "archived",
+        sort_order: index + 1,
+        created_at: "2026-05-01T08:00:00.000Z",
+        updated_at: updatedAt,
+      })
+    )
+  );
+  const checkIns: ReturnType<typeof buildHabitCheckInView>[] = [];
+  const selectedDate = "2026-05-12";
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate,
+    activeHabits: [],
+    archivedHabits,
+    daySummary: buildHabitDaySummary([], checkIns, selectedDate),
+    weekSummary: buildHabitWeekSummary([], checkIns, selectedDate),
+    motivationSummary: buildHabitMotivationSummary(archivedHabits, checkIns, selectedDate),
+    motivationSummaries: buildMotivationRangeSummaries(archivedHabits, checkIns, selectedDate),
   };
 }
 
@@ -744,56 +806,34 @@ function openAddHabitForm() {
   expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
 }
 
-function installAudioContextMock(options?: { resumeRejects?: boolean }) {
+type MockAudioElement = {
+  src?: string;
+  preload: string;
+  currentTime: number;
+  play: () => Promise<void>;
+};
+
+function installAudioElementMock(options?: { playRejects?: boolean }) {
   const audio = {
-    start: vi.fn(),
-    stop: vi.fn(),
-    resume: vi.fn(() =>
-      options?.resumeRejects ? Promise.reject(new Error("blocked")) : Promise.resolve()
+    instances: [] as MockAudioElement[],
+    play: vi.fn<() => Promise<void>>(() =>
+      options?.playRejects ? Promise.reject(new Error("blocked")) : Promise.resolve()
     ),
-    close: vi.fn(() => Promise.resolve()),
-    oscillatorConnect: vi.fn(),
-    gainConnect: vi.fn(),
-    setFrequency: vi.fn(),
-    rampFrequency: vi.fn(),
-    setGain: vi.fn(),
-    rampGain: vi.fn(),
-    addEndedListener: vi.fn(),
   };
 
-  class MockAudioContext {
-    state = options?.resumeRejects ? "suspended" : "running";
-    currentTime = 0;
-    destination = {};
-    resume = audio.resume;
-    close = audio.close;
+  class MockAudio implements MockAudioElement {
+    src?: string;
+    preload = "";
+    currentTime = -1;
+    play = audio.play;
 
-    createOscillator() {
-      return {
-        type: "sine",
-        frequency: {
-          setValueAtTime: audio.setFrequency,
-          exponentialRampToValueAtTime: audio.rampFrequency,
-        },
-        connect: audio.oscillatorConnect,
-        start: audio.start,
-        stop: audio.stop,
-        addEventListener: audio.addEndedListener,
-      };
-    }
-
-    createGain() {
-      return {
-        gain: {
-          setValueAtTime: audio.setGain,
-          exponentialRampToValueAtTime: audio.rampGain,
-        },
-        connect: audio.gainConnect,
-      };
+    constructor(src?: string) {
+      this.src = src;
+      audio.instances.push(this);
     }
   }
 
-  vi.stubGlobal("AudioContext", MockAudioContext);
+  vi.stubGlobal("Audio", MockAudio);
   return audio;
 }
 
@@ -882,7 +922,8 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Details" })).toBeVisible();
   });
 
-  it("keeps Habits completion sound off by default and stores the compact opt-in locally", () => {
+  it("keeps Habits completion sound off by default and stores the compact opt-in locally", async () => {
+    const audio = installAudioElementMock();
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     const controls = screen.getByTestId("habits-sound-controls");
@@ -895,6 +936,7 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(within(controls).getByRole("button", { name: "Sound off" }));
 
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
     expect(within(controls).getByRole("button", { name: "Sound on" })).toHaveAttribute(
       "aria-pressed",
       "true"
@@ -908,21 +950,24 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("previews the positive Habits ding when the user enables sound", async () => {
-    const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
+    const audio = installAudioElementMock();
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
 
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
+    expect(audio.instances[0]).toMatchObject({
+      src: APP_SOUND_ASSETS.positiveDing,
+      preload: "auto",
+      currentTime: 0,
+    });
     expect(fetch).not.toHaveBeenCalled();
     expect(screen.queryByText("Sound on.")).toBeNull();
     expect(screen.queryByText("Sound off.")).toBeNull();
   });
 
   it("plays completion sound only after an enabled successful completion transition", async () => {
-    const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
+    const audio = installAudioElementMock();
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -934,15 +979,15 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount * 2));
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(2));
   });
 
   it("does not play completion sound while the preference is off", async () => {
-    const audio = installAudioContextMock();
+    const audio = installAudioElementMock();
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -956,12 +1001,11 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(audio.start).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
   });
 
   it("does not play completion sound for rest day, reset, or failed check-in actions", async () => {
-    const audio = installAudioContextMock();
-    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
+    const audio = installAudioElementMock();
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -974,13 +1018,13 @@ describe("HabitPerfectDayHub", () => {
       <HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />
     );
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(voiceCount));
-    audio.start.mockClear();
+    await waitFor(() => expect(audio.play).toHaveBeenCalledTimes(1));
+    audio.play.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
     fireEvent.click(await screen.findByRole("button", { name: "Rest day" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(audio.start).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
 
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
@@ -995,7 +1039,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Undo complete" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    expect(audio.start).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
 
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
@@ -1008,11 +1052,11 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
-    expect(audio.start).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
   });
 
   it("keeps completion saves non-blocking when browser audio is rejected", async () => {
-    const audio = installAudioContextMock({ resumeRejects: true });
+    const audio = installAudioElementMock({ playRejects: true });
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -1027,7 +1071,7 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mark done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(audio.start).not.toHaveBeenCalled();
+    await waitFor(() => expect(audio.play).toHaveBeenCalled());
     expect(await screen.findByText("Completion saved.")).toBeVisible();
     expect(
       await screen.findByText("Sound was blocked. Your habit was still saved.")
@@ -1035,6 +1079,7 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("keeps the session sound toggle usable if localStorage cannot persist", () => {
+    installAudioElementMock();
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
       this: Storage,
@@ -1690,7 +1735,7 @@ describe("HabitPerfectDayHub", () => {
     vi.useFakeTimers();
     const nowMs = Date.parse("2026-05-10T12:00:00.000Z");
     vi.setSystemTime(nowMs);
-    const audio = installAudioContextMock();
+    const audio = installAudioElementMock();
 
     render(
       <HabitPerfectDayHub
@@ -1704,11 +1749,10 @@ describe("HabitPerfectDayHub", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    const voiceCount = APP_SOUND_PROFILES.positiveDing.voices.length;
-    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
-    audio.start.mockClear();
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    audio.play.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
-    expect(audio.start).not.toHaveBeenCalled();
+    expect(audio.play).not.toHaveBeenCalled();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(480_000);
@@ -1717,7 +1761,7 @@ describe("HabitPerfectDayHub", () => {
     });
 
     expect(fetch).not.toHaveBeenCalled();
-    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
+    expect(audio.play).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Target reached. Timer paused.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Resume" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Finish" })).toBeVisible();
@@ -1728,7 +1772,7 @@ describe("HabitPerfectDayHub", () => {
     });
 
     expect(fetch).not.toHaveBeenCalled();
-    expect(audio.start).toHaveBeenCalledTimes(voiceCount);
+    expect(audio.play).toHaveBeenCalledTimes(1);
   });
 
   it("pauses the current timed habit when another timer starts", async () => {
@@ -2100,6 +2144,31 @@ describe("HabitPerfectDayHub", () => {
     ).toBeNull();
   });
 
+  it("keeps the slip logged success message inside the habit card", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildQuitSlipSnapshot(),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildQuitOpenSnapshot()} />);
+
+    const card = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
+    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Log slip" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const updatedCard = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
+    const success = within(updatedCard).getByTestId(
+      "habit-action-success-88888888-8888-4888-8888-888888888888"
+    );
+    expect(success).toHaveAttribute("role", "status");
+    expect(success).toHaveTextContent("Slip logged.");
+    expect(screen.queryByTestId("habits-action-success")).toBeNull();
+  });
+
   it("announces failed habit creation as an assertive action error", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
@@ -2466,6 +2535,57 @@ describe("HabitPerfectDayHub", () => {
     expect(within(history).queryByText("On track")).toBeNull();
     expect(within(history).queryByText("6 of 13")).toBeNull();
     expect(within(history).queryByText("Saved history")).toBeNull();
+  });
+
+  it("shows week number and the full week range in Motivation Stats week view", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildMotivationHistorySnapshot()} />);
+
+    const history = screen.getByTestId("habits-motivation-history");
+    const rangeControls = within(history).getByRole("group", { name: "Motivation range" });
+
+    fireEvent.click(within(rangeControls).getByRole("button", { name: "Week" }));
+
+    expect(within(history).getByText("This week · Week 19 · May 4-10, 2026")).toBeVisible();
+    expect(within(history).queryByText("This week · May 7, 2026")).toBeNull();
+  });
+
+  it("shows the three newest past habits before expanding the scrollable list", () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildPastHabitsOverflowSnapshot()} />);
+
+    const history = screen.getByTestId("habits-motivation-history");
+    const list = within(history).getByTestId("habits-past-habits-list");
+    const newest = within(list).getByText("Newest archived").closest("li");
+    const secondNewest = within(list).getByText("Second newest archived").closest("li");
+    const thirdNewest = within(list).getByText("Third newest archived").closest("li");
+
+    expect(within(history).getByText("5 past habits")).toBeVisible();
+    expect(newest).not.toBeNull();
+    expect(secondNewest).not.toBeNull();
+    expect(thirdNewest).not.toBeNull();
+    expect(newest!.compareDocumentPosition(secondNewest!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(
+      secondNewest!.compareDocumentPosition(thirdNewest!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(within(list).queryByText("Fourth oldest archived")).toBeNull();
+    expect(within(list).queryByText("Oldest archived")).toBeNull();
+    expect(list).not.toHaveClass("overflow-y-auto");
+
+    const seeAll = within(history).getByRole("button", { name: "See all" });
+    expect(seeAll).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(seeAll);
+
+    expect(list).toHaveClass("max-h-[28rem]", "overflow-y-auto");
+    expect(within(list).getByText("Fourth oldest archived")).toBeVisible();
+    expect(within(list).getByText("Oldest archived")).toBeVisible();
+    const showLess = within(history).getByRole("button", { name: "Show less" });
+    expect(showLess).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(showLess);
+    expect(list).not.toHaveClass("overflow-y-auto");
+    expect(within(list).queryByText("Fourth oldest archived")).toBeNull();
+    expect(within(list).queryByText("Oldest archived")).toBeNull();
   });
 
   it("confirms ending a habit before moving it to Past habits", async () => {

@@ -1,5 +1,40 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { APP_SOUND_PROFILES, playAppSoundProfile } from "@/lib/audio/client-sound";
+import {
+  APP_SOUND_ASSETS,
+  APP_SOUND_PROFILES,
+  playAppSoundProfile,
+} from "@/lib/audio/client-sound";
+
+type MockAudioElement = {
+  src?: string;
+  preload: string;
+  currentTime: number;
+  play: () => Promise<void>;
+};
+
+function installAudioElementMock(options?: { playRejects?: boolean }) {
+  const audio = {
+    instances: [] as MockAudioElement[],
+    play: vi.fn<() => Promise<void>>(() =>
+      options?.playRejects ? Promise.reject(new Error("blocked")) : Promise.resolve()
+    ),
+  };
+
+  class MockAudio implements MockAudioElement {
+    src?: string;
+    preload = "";
+    currentTime = -1;
+    play = audio.play;
+
+    constructor(src?: string) {
+      this.src = src;
+      audio.instances.push(this);
+    }
+  }
+
+  vi.stubGlobal("Audio", MockAudio);
+  return audio;
+}
 
 function installAudioContextMock(options?: { state?: AudioContextState; resumeRejects?: boolean }) {
   const audio = {
@@ -71,19 +106,8 @@ describe("client sound profiles", () => {
     expect(profile.voices.every((voice) => voice.oscillatorType === "sine")).toBe(true);
   });
 
-  it("keeps the Habits positive ding short, clear, and louder than the old soft chime", () => {
-    const profile = APP_SOUND_PROFILES.positiveDing;
-    const softChime = APP_SOUND_PROFILES.softSuccessChime;
-
-    expect(profile.totalDurationMs).toBeGreaterThanOrEqual(280);
-    expect(profile.totalDurationMs).toBeLessThanOrEqual(450);
-    expect(profile.voices).toHaveLength(2);
-    expect(profile.voices.map((voice) => voice.frequencyHz)).toEqual([659.25, 987.77]);
-    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeGreaterThan(
-      Math.max(...softChime.voices.map((voice) => voice.peakGain))
-    );
-    expect(Math.max(...profile.voices.map((voice) => voice.peakGain))).toBeLessThanOrEqual(0.045);
-    expect(profile.voices.every((voice) => voice.oscillatorType === "sine")).toBe(true);
+  it("keeps the Habits positive ding bound to the approved bundled mp3 asset", () => {
+    expect(APP_SOUND_ASSETS.positiveDing).toBe("/sounds/ding/ding.mp3");
   });
 
   it("uses distinct completion profiles for tapped and timed micro-session bubbles", () => {
@@ -100,18 +124,42 @@ describe("client sound profiles", () => {
 
   it("schedules every voice in the requested profile", async () => {
     const audio = installAudioContextMock();
-    const profile = APP_SOUND_PROFILES.positiveDing;
+    const profile = APP_SOUND_PROFILES.tapComplete;
 
-    await expect(playAppSoundProfile("positiveDing")).resolves.toBe("played");
+    await expect(playAppSoundProfile("tapComplete")).resolves.toBe("played");
 
     expect(audio.start).toHaveBeenCalledTimes(profile.voices.length);
     expect(audio.stop).toHaveBeenCalledTimes(profile.voices.length);
-    expect(audio.setFrequency).toHaveBeenCalledWith(659.25, expect.any(Number));
-    expect(audio.setFrequency).toHaveBeenCalledWith(987.77, expect.any(Number));
-    expect(audio.rampGain).toHaveBeenCalledWith(0.04, expect.any(Number));
+    expect(audio.setFrequency).toHaveBeenCalledWith(587.33, expect.any(Number));
+    expect(audio.setFrequency).toHaveBeenCalledWith(783.99, expect.any(Number));
+    expect(audio.rampGain).toHaveBeenCalledWith(0.028, expect.any(Number));
     expect(audio.addEndedListener).toHaveBeenCalledWith("ended", expect.any(Function), {
       once: true,
     });
+  });
+
+  it("plays the Habits positive ding from the bundled mp3 asset", async () => {
+    const elementAudio = installAudioElementMock();
+    const contextAudio = installAudioContextMock();
+
+    await expect(playAppSoundProfile("positiveDing")).resolves.toBe("played");
+
+    expect(elementAudio.instances).toHaveLength(1);
+    expect(elementAudio.instances[0]).toMatchObject({
+      src: APP_SOUND_ASSETS.positiveDing,
+      preload: "auto",
+      currentTime: 0,
+    });
+    expect(elementAudio.play).toHaveBeenCalledTimes(1);
+    expect(contextAudio.start).not.toHaveBeenCalled();
+  });
+
+  it("reports blocked playback when the bundled positive ding asset cannot play", async () => {
+    const audio = installAudioElementMock({ playRejects: true });
+
+    await expect(playAppSoundProfile("positiveDing")).resolves.toBe("blocked");
+
+    expect(audio.play).toHaveBeenCalledTimes(1);
   });
 
   it("reports blocked playback without scheduling sound when resume fails", async () => {
