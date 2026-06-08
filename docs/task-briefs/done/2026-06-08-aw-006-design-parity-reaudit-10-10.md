@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-design-parity-reaudit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
-- `updated`: `2026-06-08`
+- `updated`: `2026-06-09`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
@@ -16,7 +16,7 @@
 
 - `last_audited`: `2026-06-08`
 - `base`: clean synced `main@6c78ab6e`
-- `audit_status`: `ready`
+- `audit_status`: `closed`
 - `decision`: Execute this docs-only AW-006 design-parity re-audit before selecting another product feature or Habits child slice.
 - `reason`: PR `#1029` swapped the shared ding audio asset to the owner-approved/free-use MP3 and PR `#1030` closed that docs-only workstream; post-merge preflight was reported green with no pending closeout. Habits and Micro Sessions still intentionally use `/sounds/ding/ding.mp3` through the shared app playback path at volume `0.15`, so the next useful AW-006 step is to check whether any visible design-parity surfaces still use older route-local styling instead of treating completed audio/product work as active design debt.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, AW-006 queue format, `docs/design/notice-empty-state-pattern-inventory.md`, screenshot handoff rules, mobile action layout contract, task-brief lint rules, major route ownership, or verification lanes change before executing the audit.
@@ -368,6 +368,25 @@ Not required for this planned brief creation:
 
 N/A with rationale: this planned brief changes no UI, print, layout, brand, asset, product-rendering file, or browser-visible behavior. No screenshot handoff is required unless a later implementation slice changes rendered UI.
 
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1031`
+- `squash_commit`: `7a54a98f`
+- `result`: Closed the AW-006 design-parity reaudit as a docs-only audit. The audit found one bounded design-parity follow-up candidate, `Admin Content Manager All Content Token/Input/Action Parity`, and kept remaining Habits/Micro Sessions work classified as product-feature backlog rather than active parity debt.
+- `validation`: `npm run verify:docs-only` PASS; `npm run verify:pre-pr` PASS; PR `#1031` CI PASS (`Analyze (javascript-typescript)`, `CodeQL`, `size-check`, `deploy-preview`, `Vercel`, `Vercel Preview Comments`, `e2e-smoke`, `site-lock-smoke`, `verify`); `npm run verify:pre-merge` PASS before merge.
+- `10/10 claim`: yes - all critical target categories for the docs-only audit scope reached `5/5`; this does not claim `10/10` for the future UI implementation slice.
+
+| Category                            | Achieved Score | Evidence                                                                                    | Gaps / Notes                                                   |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Product goals and IA                | `5/5`          | Audit matrix and recommendation in this brief; PR `#1031` merged at `7a54a98f`.             | No remaining audit-scope gap.                                  |
+| UX flow clarity                     | `5/5`          | Reaudit separates parity follow-up from Habits/Micro product backlog.                       | Future UI slice still needs screenshot handoff.                |
+| Visual design quality               | `5/5`          | Targeted code/design evidence identified one visible old-token candidate surface.           | No runtime visual changes were made in this docs-only PR.      |
+| Content governance                  | `5/5`          | Queue, Habits parent, and design inventory were refreshed; changed briefs passed lint.      | Closeout moves this brief from `in-progress` to `done`.        |
+| Stack-fit and dependency discipline | `5/5`          | Recommendation reuses existing AW-006 token/input/action primitives; no dependencies added. | Future UI slice must continue using existing reference tokens. |
+| Testing and QA automation           | `5/5`          | `verify:docs-only`, `verify:pre-pr`, PR CI, and `verify:pre-merge` all passed.              | No runtime test expansion needed for docs-only audit.          |
+| DevOps and rollback readiness       | `5/5`          | Docs-only lane confirmed four governance/doc files before merge; PR `#1031` merged cleanly. | Revert is limited to docs if needed.                           |
+
 ## Checkpoint Log
 
 - `2026-06-08 | planned | created from clean synced main@595c7084 after PR #1027 and docs-only closeout PR #1028; owner asked to plan an AW-006 design-parity reaudit before choosing more Habits feature work | next: refresh after ding audio asset swap closeout and keep this planned until owner explicitly asks to execute the audit`
@@ -375,3 +394,4 @@ N/A with rationale: this planned brief changes no UI, print, layout, brand, asse
 - `2026-06-08 | planned | refreshed on clean synced main@6c78ab6e after PR #1029 swapped the shared ding asset and PR #1030 closed the workstream; recorded that Habits/Micro Sessions still use /sounds/ding/ding.mp3 at shared volume 0.15, added stricter audit decision rules, and made audit execution steps explicit so product-feature backlog cannot be mistaken for active design-parity debt | next: validate with lint:briefs:all and keep this planned until owner explicitly asks to execute the audit`
 - `2026-06-08 | in-progress | owner explicitly said "kjor AW-006 reauditten"; moved this brief from planned to in-progress on branch aw-006-design-parity-reaudit with no runtime code in scope | next: collect queue/inventory/code evidence, write the audit matrix, validate docs-only, commit, push, and open PR`
 - `2026-06-08 | in-progress | executed queue/inventory/code re-audit; current evidence leaves one recommended design-parity candidate, Admin Content Manager All Content Token/Input/Action Parity, while Habits/Micro remaining work is product-feature backlog under the Habits parent/intake | next: update stale queue/inventory/parent notes, run docs-only validation, commit, push, and open PR`
+- `2026-06-09 | done | PR #1031 merged at 7a54a98f after docs-only verification, CI, and pre-merge gate passed; closeout recorded the audit result and kept the next implementation candidate bounded to Admin Content Manager All Content Token/Input/Action Parity | next: merge this repo-managed docs-only closeout PR, sync main, and rerun post-merge preflight`

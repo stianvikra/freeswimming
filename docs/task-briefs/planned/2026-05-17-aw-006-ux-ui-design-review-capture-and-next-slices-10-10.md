@@ -211,7 +211,7 @@ AW-006 latest product/UI implementation: PR `#1027` closed `docs/task-briefs/don
 
 AW-006 latest completed audio asset swap: PR `#1029` closed `docs/task-briefs/done/2026-06-08-aw-006-ding-audio-asset-swap-10-10.md` after owner replaced `public/sounds/ding/ding.mp3` with a free-use/owner-approved MP3. Habits and Micro Sessions still use `/sounds/ding/ding.mp3` at shared app playback volume `0.15`.
 
-AW-006 active design-parity audit: `docs/task-briefs/in-progress/2026-06-08-aw-006-design-parity-reaudit-10-10.md` recommends `Admin Content Manager All Content Token/Input/Action Parity` as the next bounded design-parity candidate, while Habits/Micro Sessions reminders, uploaded/user-selected sounds, exports, hard delete, dashboards/graphs, global sound settings, and persistent telemetry remain product-feature backlog under the Habits parent/intake.
+AW-006 closed design-parity audit: PR `#1031` closed `docs/task-briefs/done/2026-06-08-aw-006-design-parity-reaudit-10-10.md` and identified `Admin Content Manager All Content Token/Input/Action Parity` as the recommended future bounded design-parity slice, while Habits/Micro Sessions reminders, uploaded/user-selected sounds, exports, hard delete, dashboards/graphs, global sound settings, and persistent telemetry remain product-feature backlog under the Habits parent/intake.
 
 AW-006 latest audit implementation: PR `#961` closed `Admin Console Accessibility Audit + Bounded Fixes`.
 
