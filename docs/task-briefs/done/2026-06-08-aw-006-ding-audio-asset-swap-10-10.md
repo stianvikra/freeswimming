@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-ding-audio-asset-swap-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
 - `updated`: `2026-06-08`
@@ -63,7 +63,8 @@ Critical target categories for a `10/10` claim:
 - `Product goals and IA`
 - `UX flow clarity`
 - `Business logic correctness and data integrity`
-- `Performance (CWV + payloads)`
+- `Reliability and failure handling`
+- `Privacy and compliance`
 - `Content governance`
 - `Stack-fit and dependency discipline`
 - `Testing and QA automation`
@@ -264,3 +265,29 @@ N/A with rationale: this changes no UI, print, layout, brand image, visible prod
 - `2026-06-08 | planned | owner confirmed the replacement asset has free-use/license status; brief audit status updated to ready-for-execution | next: execute only after explicit execute/build/implement instruction; during execution, confirm whether public/sounds/ding/README.md still accurately describes the replacement source/license basis`
 - `2026-06-08 | in-progress | execution started on branch aw-006-ding-audio-asset-swap; MP3 metadata verified as MPG3, 2 ch, 48000 Hz, 1.680000 sec, 53760 bytes, 256000 bps; public/sounds/ding/README.md updated to record owner-confirmed free-use/license status for the replacement asset | next: route/support sweep, targeted tests, brief lint, full pre-PR gate`
 - `2026-06-08 | in-progress | route/label/support sweep confirmed the shared positiveDing path remains /sounds/ding/ding.mp3, shared app volume remains 0.15 in lib/audio/client-sound.ts, Habits and Micro Sessions keep local sound preference keys and accessible Sound on/off names, and no UI/API/data fallout was found; targeted Vitest passed for tests/unit/client-sound.test.ts, tests/unit/habit-perfect-day-hub.test.tsx, and tests/unit/dryland-micro-plan-panel.test.tsx with 108/108 tests passing; npm run lint:briefs:all passed | next: stage only audio-scope files and run npm run verify:pre-pr`
+- `2026-06-08 | done | PR #1029 merged at squash commit 3cf49d64 after full local pre-PR, green CI, and pre-merge validation; post-merge preflight requested this repo-managed docs-only closeout | next: closeout PR validation`
+- `2026-06-08 | done | closeout pre-merge lint surfaced that the critical-category list should avoid parenthesized category aliases; updated the critical list to non-parenthesized relevant targets while keeping Performance (CWV + payloads) as a 5/5 target category | next: rerun closeout gates and update PR #1030`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1029`
+- `squash_commit`: `3cf49d64`
+- `result`: Closed AW-006 Ding Audio Asset Swap by shipping the owner-approved replacement MP3 at the existing shared positive feedback path for Habits and Micro Sessions, while preserving app playback volume `0.15`, local opt-in preferences, and fail-soft playback behavior.
+- `validation`: `afinfo public/sounds/ding/ding.mp3`; targeted Vitest for `tests/unit/client-sound.test.ts`, `tests/unit/habit-perfect-day-hub.test.tsx`, and `tests/unit/dryland-micro-plan-panel.test.tsx` with 108/108 tests passing; route/label/support sweep; `npm run lint:briefs:all`; `npm run verify:pre-pr` full lane PASS before PR; PR #1029 CI PASS including `verify`, `e2e-smoke`, `site-lock-smoke`, Vercel, CodeQL, and size-check; `npm run verify:pre-merge` PASS before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining gaps.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Owner-approved replacement sound shipped at the same shared Habits/Micro Sessions path in PR `#1029`.                                       | None.        |
+| UX flow clarity                               | `5/5`          | Route/support sweep and targeted tests confirmed shared path, local opt-in behavior, no failed-save sounds, and no completion ambiguity.    | None.        |
+| Business logic correctness and data integrity | `5/5`          | Only the MP3 asset, README provenance note, and brief lifecycle changed; completion/preference logic stayed unchanged.                      | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing Habits/Micro tests preserved accessible `Sound on` / `Sound off` names and sound remained optional, not required feedback.         | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | `afinfo` confirmed a small on-demand MP3 asset; full perf budgets passed in `npm run verify:pre-pr`.                                        | None.        |
+| Data placement and sync boundaries            | `5/5`          | LocalStorage sound preference keys stayed local-only; static asset stayed under `public/sounds/ding/ding.mp3`; no server data changed.      | None.        |
+| Reliability and failure handling              | `5/5`          | `client-sound` targeted tests and full verification preserved profile guard, asset volume, playback fail-soft behavior, and blocked result. | None.        |
+| Privacy and compliance                        | `5/5`          | Owner confirmed free-use/license status; README records owner-provided replacement asset and no user data or secrets were added.            | None.        |
+| Content governance                            | `5/5`          | `public/sounds/ding/README.md` now accurately records replacement source/license basis and product use.                                     | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js public asset path and `client-sound` contract reused; no dependency, codec, profile, or playback abstraction was added.    | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `lint:briefs:all`, full `verify:pre-pr`, green CI, and `verify:pre-merge` all passed.                                      | None.        |
+| DevOps and rollback readiness                 | `5/5`          | PR `#1029` is a normal git-revertable MP3/README/brief diff with no migration, env, secret, package, workflow, or runtime code rollback.    | None.        |
