@@ -34,7 +34,7 @@ primitive-consolidation slice before attempting any broader design-system rewrit
 
 2026-06-08 shipped child note: PR `#1021` closed `docs/task-briefs/done/2026-06-08-aw-006-micro-sessions-mobile-linked-habit-polish-10-10.md`, covering micro-backed Habit CTA/progress/manual-completion removal, Linked Habit placement below mobile bubbles, Micro Sessions spacing, and `Build a micro session` action polish after repo-managed closeout PR `#1022`.
 
-2026-06-08 active Habits child: `docs/task-briefs/in-progress/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`, covering fixed-period Motivation stats/slips, truthful Habits Today/Week/Month status, ding-style sound, and timed target signal/no-auto-complete.
+2026-06-08 shipped Habits child note: PR `#1023` closed `docs/task-briefs/done/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`, covering fixed-period Motivation stats/slips, truthful Habits Today/Week/Month status, ding-style local opt-in sound, and timed target signal/no-auto-complete.
 
 ## Representative Inventory
 

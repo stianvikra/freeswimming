@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
 - `updated`: `2026-06-08`
@@ -184,3 +184,39 @@ Owner screenshot approval stop completed on 2026-06-08 after artifacts were capt
 - `2026-06-08 | in-progress | owner asked to combine fixed Motivation periods, Habits header status, sound profile, and timed target signal behavior into one recommended slice; branch aw-006-habits-status-sound-motivation started from clean main@605a28ca; fresh code audit found rolling range starts/labels, ambiguous x/y on target copy, ambient softSuccessChime, and timed target auto-save/full completion | next: update parent/queue, implement scoped runtime/tests/docs, then screenshot handoff before broad gates`
 - `2026-06-08 | in-progress | scoped runtime/tests/docs implemented; targeted Vitest, typecheck, diff check, and full brief lint passed; screenshot artifacts captured at output/aw006-habits-status-sound-motivation-2026-06-08-170538 and owner approved visual handoff | next: run npm run verify:pre-pr, then commit/push/open PR and continue merge gates`
 - `2026-06-08 | in-progress | npm run verify:pre-pr passed full lane: quality gates, lint, typecheck, 1441 unit tests, build, performance budgets, and 106 E2E passed with 530 skipped in safe public env | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-08 | done | PR #1023 merged as squash commit 2130a0ec after owner screenshot approval, local verify:pre-pr, GitHub CI, and local verify:pre-merge passed | next: complete repo-managed docs-only closeout, rerun post-merge preflight, then make the mandatory chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1023`
+- `squash_commit`: `2130a0ec`
+- `result`: Closed AW-006 Habits Status, Sound, And Fixed Motivation. Habits now uses fixed fresh-start Motivation periods, truthful Today/Week/Month header status, a short positive ding-style sound profile, and timed target signal/pause behavior without auto-completing the habit.
+- `validation`: Targeted Vitest for sound, Habits domain, and HabitPerfectDayHub passed; `npm run lint:briefs:all`, `npm run typecheck`, `git diff --check`, `npm run verify:pre-pr`, GitHub CI for PR `#1023`, and `npm run verify:pre-merge` passed. Screenshot artifacts were owner-approved at `output/aw006-habits-status-sound-motivation-2026-06-08-170538`.
+- `10/10 claim`: yes - critical target categories are listed below and each reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Business logic correctness and data integrity`
+- `Data placement and sync boundaries`
+- `Reliability and failure handling`
+- `Testing and QA automation`
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | UI/header labels and component tests prove fixed fresh-start Motivation semantics plus truthful Today/Week/Month status.                                       | None.        |
+| UX flow clarity                               | `5/5`          | Component tests prove timed target crossing signals/pauses without completion; screenshot handoff covered the changed Habits status/range surface.             | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved desktop/mobile screenshot artifacts show the revised header status and Motivation controls fitting the existing Habits layout.                  | None.        |
+| Business logic correctness and data integrity | `5/5`          | Domain/component tests cover week/month/quarter/half-year boundaries, slips inside the same period, reset clamp behavior, and no check-in write at target hit. | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing semantic controls were preserved; component tests cover visible labels and status output.                                                             | None.        |
+| Data placement and sync boundaries            | `5/5`          | Tests and code review confirm Motivation/header status are derived state, check-ins stay server-canonical, and timer/sound state remains local until save.     | None.        |
+| Reliability and failure handling              | `5/5`          | Audio stays fail-soft, target signal is one-shot local behavior, and unknown/future values remain mapped through existing typed helpers.                       | None.        |
+| Privacy and compliance                        | `5/5`          | No new private habit data is logged or exported; sound and timer signal state remain local-only.                                                               | None.        |
+| Content governance                            | `5/5`          | Parent, queue, inventory, user-flow map, support runbook, tests, and done brief agree on fixed-period and no-auto-complete semantics.                          | None.        |
+| Incident response and support operations      | `5/5`          | Support/user-flow docs explain fixed Motivation boundaries, ding-style local sound, and why timed target signal is not completion.                             | None.        |
+| i18n operational readiness                    | `5/5`          | Labels are short period/status fragments and are covered by component tests instead of hardcoded rolling-window English assumptions.                           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Habits domain helpers, HabitPerfectDayHub, and local audio module; no new dependency was added.                                                | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full local pre-pr lane, GitHub CI, and local pre-merge gate passed for the merged PR.                                                         | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Runtime-only change with no migration; rollback is normal git revert of squash commit `2130a0ec`.                                                              | None.        |
