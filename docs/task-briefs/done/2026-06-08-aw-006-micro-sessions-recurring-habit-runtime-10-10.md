@@ -334,3 +334,31 @@ Required before broad gates because this adds user-facing labels/actions and rec
 - `2026-06-08`: Owner approved copy refinement for Habit create and paused-final prompt. Updated the New Weekly Habit submit action from `Link Habit` to `Create Habit`; changed the paused-final prompt to `This completes this week's Micro Session. Habit tracking is paused. Resume tracking to complete the Habit too.` and the primary action to `Resume tracking + complete Habit`. Validation passed: `npm run typecheck`; `./node_modules/.bin/vitest run tests/unit/dryland-micro-plan-panel.test.tsx tests/unit/client-sound.test.ts` (`2` files, `32` tests). Refreshed screenshot artifacts in `output/micro-sessions-recurring-habit-runtime-2026-06-08-110942`; temporary fixture route removed and local dev server stopped. Next: owner screenshot approval before `npm run verify:pre-pr`.
 - `2026-06-08`: Owner approved screenshot handoff and merge on good tests. First `npm run verify:pre-pr` stopped on expected Supabase migration drift: linked project `freeswimming-org-prod` had not yet received `20260608103000_micro_sessions_recurring_habit_links.sql`. Applied exactly that migration with `npx supabase db push --linked`; post-apply dry-run reported `Remote database is up to date`; sequential `npx supabase migration list --linked` showed local/remote parity. Ran linked typegen, then scoped `types/database.ts` back to only the migration-owned additions (`habit_check_ins` provenance fields and `micro_session_habit_links`) to avoid unrelated remote schema/order churn. Next: rerun `npm run verify:pre-pr`.
 - `2026-06-08`: `npm run verify:pre-pr` passed after the Supabase migration apply and brief evidence updates. Full lane covered branch-current, linked Supabase dry-run, quality gates, lint, typecheck, `230` unit-test files (`1429` tests), build, perf budgets (`PASS`, tighten recommendation `hold`), and Playwright (`106 passed`, `530 skipped` in public/dev-login-unavailable paths). Next: commit, push, open/update PR, monitor CI, then run `npm run verify:pre-merge`.
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1017`
+- `squash_commit`: `619039c9`
+- `result`: Shipped explicit Micro Sessions to weekly Habit linkage. Users can keep Micro Sessions as one-off work, opt into a weekly Habit, pause/resume Habit counting, complete the final unit with a paused-Habit choice, and get current-week renewal without backfilling paused or stale history.
+- `validation`: `npm run verify:pre-pr` PASS on commit `00f46726` (`230` unit files, `1429` tests, build, perf PASS, Playwright `106 passed`/`530 skipped`); CI green for PR `#1017` including `verify` PASS (`5m43s`), `size-check`, `deploy-preview`, `e2e-smoke`, `site-lock-smoke`, CodeQL, Analyze, and Vercel; `npm run verify:pre-merge` PASS before merge.
+- `screenshot_artifacts`: `output/micro-sessions-recurring-habit-runtime-2026-06-08-110942`
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | explicit opt-in UI, weekly-program Habit rule, component/API tests, PR `#1017`                        | none         |
+| UX flow clarity                               | `5/5`          | pause/resume, stale-week, final paused-completion choice tests and screenshot handoff                 | none         |
+| Visual design quality                         | `5/5`          | owner-approved screenshot artifacts `output/micro-sessions-recurring-habit-runtime-2026-06-08-110942` | none         |
+| Business logic correctness and data integrity | `5/5`          | migration constraints, idempotent provenance, stale/date/duplicate/cross-owner tests                  | none         |
+| Accessibility (a11y)                          | `5/5`          | labeled controls, focus/status behavior covered by component tests and screenshot review              | none         |
+| Data placement and sync boundaries            | `5/5`          | server-canonical linkage/check-in writes, local-only dialogs/sound, no-store route responses          | none         |
+| Reliability and failure handling              | `5/5`          | negative-path API tests for schema, stale, archived, missing source, unsupported states               | none         |
+| Security and authz                            | `5/5`          | owner-scoped route tests for unauthenticated/cross-owner writes                                       | none         |
+| Privacy and compliance                        | `5/5`          | title-free analytics/provenance, no secrets, export provenance scoped to existing export              | none         |
+| Content governance                            | `5/5`          | API/user-flow/design docs plus follow-up brief updated; brief lint and quality gates passed           | none         |
+| Incident response and support operations      | `5/5`          | redacted plan/habit/week/error diagnostics in brief/API failure coverage                              | none         |
+| i18n operational readiness                    | `5/5`          | responsive copy/button tests and screenshots avoid fixed-width assumptions                            | none         |
+| Stack-fit and dependency discipline           | `5/5`          | existing Next routes, Supabase migration/RLS, typed helpers, UI tokens; no dependency added           | none         |
+| Testing and QA automation                     | `5/5`          | targeted tests, full `verify:pre-pr`, CI `verify`, and `verify:pre-merge` passed                      | none         |
+| DevOps and rollback readiness                 | `5/5`          | additive migration, remote dry-run parity, rollback by disabling UI/API path                          | none         |
