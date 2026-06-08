@@ -618,6 +618,137 @@ describe("AdminContentManager state rendering", () => {
     ).toBe(true);
   });
 
+  it("renders All Content create and edit controls with current admin token classes", async () => {
+    useAllContentView();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [buildContentItem()] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      return okJson({ ok: true, items: [] });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const contentItem = await screen.findByTestId("admin-content-item");
+    expect(contentItem).toHaveClass("fs-library-card");
+    expect(within(contentItem).getByRole("button", { name: "Edit" })).toHaveClass("fs-cta-primary");
+
+    const createForm = screen.getByTestId("admin-content-create-form");
+    expect(createForm.closest("section")).toHaveClass("fs-library-card");
+    expect(within(createForm).getByLabelText("Type")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(createForm).getByLabelText("Title")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(createForm).getByLabelText("Summary")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(createForm).getByRole("button", { name: "Save content item" })).toHaveClass(
+      "fs-cta-primary"
+    );
+
+    fireEvent.click(within(contentItem).getByRole("button", { name: "Edit" }));
+
+    const editForm = await within(contentItem).findByTestId("admin-content-edit-form");
+    expect(editForm).toHaveClass("rounded-[var(--fs-radius-control)]");
+    expect(within(editForm).getByLabelText("Title")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(editForm).getByLabelText("Summary")).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(editForm).getByRole("button", { name: "Save changes" })).toHaveClass(
+      "fs-cta-primary"
+    );
+    expect(within(editForm).getByRole("button", { name: "Cancel" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+  });
+
+  it("renders course lesson row and revision actions with current admin token classes", async () => {
+    useAllContentView("course_lesson");
+    const moduleItem = buildContentItem({
+      id: "module-1",
+      content_type: "course_module",
+      slug: "module-1",
+      title: "Module 1",
+      category: "Course",
+      body: { moduleId: "module-1" },
+    });
+    const lessonItem = buildContentItem({
+      id: "lesson-1",
+      content_type: "course_lesson",
+      slug: "lesson-1",
+      title: "Lesson 1",
+      category: "Course",
+      parent_id: "module-1",
+      body: { lessonId: "lesson-1" },
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem, lessonItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      if (url === "/api/admin/content/lesson-1/revisions") {
+        return okJson(
+          buildRevisionsPayload({
+            items: [buildRevision({ id: "revision-lesson-1", snapshotTitle: "Lesson 1" })],
+          })
+        );
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    await screen.findByText("Lesson 1");
+    const lessonRow = screen.getByTestId("admin-content-item");
+    expect(within(lessonRow).getByRole("button", { name: "Move up" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(lessonRow).getByRole("link", { name: "Open preview" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(lessonRow).getByRole("link", { name: "Create QR link" })).toHaveClass(
+      "rounded-[var(--fs-radius-control)]"
+    );
+    expect(within(lessonRow).getByRole("link", { name: "Open lesson" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(lessonRow).getByRole("button", { name: "Revisions" })).toHaveClass(
+      "fs-cta-secondary"
+    );
+    expect(within(lessonRow).getByRole("button", { name: "Delete" })).toHaveClass("text-rose-700");
+
+    fireEvent.click(within(lessonRow).getByRole("button", { name: "Revisions" }));
+
+    const revisionPanel = await within(lessonRow).findByTestId(
+      "admin-content-revision-history-panel"
+    );
+    expect(revisionPanel).toHaveClass("rounded-[var(--fs-radius-control)]");
+    const restoreButton = await within(revisionPanel).findByRole("button", { name: "Restore" });
+    expect(restoreButton).toHaveClass("fs-cta-primary");
+  });
+
   it("renders create action errors through polite admin state feedback", async () => {
     useAllContentView();
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -876,7 +1007,9 @@ describe("AdminContentManager state rendering", () => {
     const revisionError = await within(revisionPanel).findByRole("alert");
     expect(revisionError).toHaveTextContent("Could not load revision history.");
 
-    fireEvent.click(within(revisionPanel).getByRole("button", { name: "Retry" }));
+    const retryButton = within(revisionPanel).getByRole("button", { name: "Retry" });
+    expect(retryButton).toHaveClass("fs-cta-secondary");
+    fireEvent.click(retryButton);
 
     await within(revisionPanel).findByText("No revisions yet.");
     expect(
@@ -933,6 +1066,7 @@ describe("AdminContentManager state rendering", () => {
     expect(revisionItem).toHaveTextContent("Rev 2 · update");
 
     const restoreButton = within(revisionItem).getByRole("button", { name: "Restore" });
+    expect(restoreButton).toHaveClass("fs-cta-primary");
     expect(restoreButton).not.toBeDisabled();
 
     fireEvent.click(restoreButton);
