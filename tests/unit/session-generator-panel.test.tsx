@@ -14,13 +14,16 @@ vi.mock("@/lib/analytics/client", () => ({
 }));
 
 async function openWorkoutEditorMetadata() {
-  await waitFor(() => {
-    const metadataToggle = screen.getByTestId("workout-editor-metadata-toggle");
-    if (metadataToggle.getAttribute("aria-expanded") !== "true") {
-      fireEvent.click(metadataToggle);
-    }
+  const metadataToggle = await screen.findByTestId("workout-editor-metadata-toggle");
+  if (metadataToggle.getAttribute("aria-expanded") !== "true") {
+    fireEvent.click(metadataToggle);
+  }
 
-    expect(metadataToggle).toHaveAttribute("aria-expanded", "true");
+  await waitFor(() => {
+    expect(screen.getByTestId("workout-editor-metadata-toggle")).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
     expect(screen.getByTestId("session-draft-title")).toBeInTheDocument();
   });
 }

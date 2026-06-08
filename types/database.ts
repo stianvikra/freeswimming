@@ -854,6 +854,10 @@ export type Database = {
           id: string;
           manual_minutes: number;
           note: string | null;
+          source_completed_at: string | null;
+          source_dryland_micro_plan_id: string | null;
+          source_kind: string;
+          source_micro_block_id: string | null;
           status: string;
           timezone: string;
           timer_seconds: number;
@@ -871,6 +875,10 @@ export type Database = {
           id?: string;
           manual_minutes?: number;
           note?: string | null;
+          source_completed_at?: string | null;
+          source_dryland_micro_plan_id?: string | null;
+          source_kind?: string;
+          source_micro_block_id?: string | null;
           status?: string;
           timezone?: string;
           timer_seconds?: number;
@@ -888,6 +896,10 @@ export type Database = {
           id?: string;
           manual_minutes?: number;
           note?: string | null;
+          source_completed_at?: string | null;
+          source_dryland_micro_plan_id?: string | null;
+          source_kind?: string;
+          source_micro_block_id?: string | null;
           status?: string;
           timezone?: string;
           timer_seconds?: number;
@@ -1040,6 +1052,63 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      micro_session_habit_links: {
+        Row: {
+          created_at: string;
+          dryland_micro_plan_id: string;
+          ended_at: string | null;
+          habit_id: string;
+          id: string;
+          paused_at: string | null;
+          resumed_at: string | null;
+          starts_on: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          dryland_micro_plan_id: string;
+          ended_at?: string | null;
+          habit_id: string;
+          id?: string;
+          paused_at?: string | null;
+          resumed_at?: string | null;
+          starts_on: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          dryland_micro_plan_id?: string;
+          ended_at?: string | null;
+          habit_id?: string;
+          id?: string;
+          paused_at?: string | null;
+          resumed_at?: string | null;
+          starts_on?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "micro_session_habit_links_habit_owner_fkey";
+            columns: ["habit_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "habit_definitions";
+            referencedColumns: ["id", "user_id"];
+          },
+          {
+            foreignKeyName: "micro_session_habit_links_plan_owner_fkey";
+            columns: ["dryland_micro_plan_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "dryland_micro_plans";
+            referencedColumns: ["id", "user_id"];
           },
         ];
       };

@@ -58,6 +58,10 @@ function buildCheckInRow(overrides: Partial<HabitCheckInRow>): HabitCheckInRow {
     value_time: null,
     note: null,
     status: "logged",
+    source_kind: "manual",
+    source_dryland_micro_plan_id: null,
+    source_micro_block_id: null,
+    source_completed_at: null,
     completed_at: "2026-05-10T09:00:00.000Z",
     created_at: "2026-05-10T09:00:00.000Z",
     updated_at: "2026-05-10T09:00:00.000Z",
@@ -637,6 +641,7 @@ describe("habits domain helpers", () => {
       value_numeric: 7.08,
       timer_seconds: 125,
       manual_minutes: 5,
+      source_kind: "timer",
       status: "logged",
       completed_at: "2026-05-10T12:00:00.000Z",
     });
@@ -654,6 +659,7 @@ describe("habits domain helpers", () => {
       value_numeric: 2,
       timer_seconds: 120,
       manual_minutes: 0,
+      source_kind: "timer",
     });
 
     expect(() =>
@@ -690,6 +696,24 @@ describe("habits domain helpers", () => {
       timerSeconds: 0,
       manualMinutes: 0,
       legacyTimedSeconds: 150,
+    });
+  });
+
+  it("keeps micro-session check-in provenance readable", () => {
+    const checkIn = buildHabitCheckInView(
+      buildCheckInRow({
+        source_kind: "micro_session",
+        source_dryland_micro_plan_id: "33333333-3333-4333-8333-333333333333",
+        source_micro_block_id: "unit-1",
+        source_completed_at: "2026-05-10T10:00:00.000Z",
+      })
+    );
+
+    expect(checkIn).toMatchObject({
+      sourceKind: "micro_session",
+      sourceDrylandMicroPlanId: "33333333-3333-4333-8333-333333333333",
+      sourceMicroBlockId: "unit-1",
+      sourceCompletedAt: "2026-05-10T10:00:00.000Z",
     });
   });
 

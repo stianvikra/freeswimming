@@ -29,6 +29,7 @@ export function isDrylandSchemaMissing(error: PostgrestLikeError | null | undefi
   return isSchemaMissing(error, [
     "dryland_sessions",
     "dryland_micro_plans",
+    "micro_session_habit_links",
     "session_kind",
     "source_dryland_session_id",
     "week_starts_at",
@@ -38,5 +39,6 @@ export function isDrylandSchemaMissing(error: PostgrestLikeError | null | undefi
     "started_at",
     "completed_at",
     "exercises",
+    "source_dryland_micro_plan_id",
   ]);
 }

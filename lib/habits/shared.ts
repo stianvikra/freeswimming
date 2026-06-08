@@ -41,6 +41,7 @@ export const HABIT_CADENCE_DAY_POLICY_VALUES = ["any", "fixed"] as const;
 export const HABIT_MOTIVATION_RESET_TYPE_VALUES = ["reset_stats"] as const;
 export const HABIT_MOTIVATION_RESET_STATUS_VALUES = ["active", "voided"] as const;
 export const HABIT_STATUS_VALUES = ["active", "archived"] as const;
+export const HABIT_CHECK_IN_SOURCE_KIND_VALUES = ["manual", "timer", "micro_session"] as const;
 export const HABIT_TIMER_MAX_SECONDS = 86_400;
 export const HABIT_MANUAL_TIME_MAX_MINUTES = 1_440;
 
@@ -57,6 +58,9 @@ export type HabitMotivationResetStatus =
   | (typeof HABIT_MOTIVATION_RESET_STATUS_VALUES)[number]
   | "unsupported";
 export type HabitStatus = (typeof HABIT_STATUS_VALUES)[number];
+export type HabitCheckInSourceKind =
+  | (typeof HABIT_CHECK_IN_SOURCE_KIND_VALUES)[number]
+  | "unsupported";
 
 export type HabitCadenceProgress = {
   periodStart: string;
@@ -156,6 +160,10 @@ export type HabitCheckInView = {
   legacyTimedSeconds: number;
   note: string | null;
   status: HabitCheckInStatus;
+  sourceKind: HabitCheckInSourceKind;
+  sourceDrylandMicroPlanId: string | null;
+  sourceMicroBlockId: string | null;
+  sourceCompletedAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -886,6 +894,8 @@ export function buildHabitCheckInInsert(
   const valueBoolean = typeof body.valueBoolean === "boolean" ? body.valueBoolean : null;
   const valueTime = normalizeHabitTime(body.valueTime);
   const note = normalizeOptionalText(body.note, 280);
+  const sourceKind =
+    body.status === "skipped" ? "manual" : hasTimedSourceValues ? "timer" : "manual";
 
   if (body.status !== "skipped" && valueNumeric === null && valueBoolean === null && !valueTime) {
     throw new Error("Add a check-in value.");
@@ -902,6 +912,10 @@ export function buildHabitCheckInInsert(
     timer_seconds: body.status === "skipped" ? 0 : timerSeconds,
     manual_minutes: body.status === "skipped" ? 0 : manualMinutes,
     note,
+    source_kind: sourceKind,
+    source_dryland_micro_plan_id: null,
+    source_micro_block_id: null,
+    source_completed_at: null,
     status: body.status === "skipped" ? "skipped" : "logged",
     completed_at: body.status === "skipped" ? null : now.toISOString(),
   };
@@ -1035,6 +1049,12 @@ export function buildHabitCheckInView(row: HabitCheckInRow): HabitCheckInView {
     note: row.note,
     status:
       row.status === "logged" || row.status === "skipped" ? row.status : ("unsupported" as const),
+    sourceKind: isOneOf(HABIT_CHECK_IN_SOURCE_KIND_VALUES, row.source_kind)
+      ? row.source_kind
+      : "unsupported",
+    sourceDrylandMicroPlanId: row.source_dryland_micro_plan_id,
+    sourceMicroBlockId: row.source_micro_block_id,
+    sourceCompletedAt: row.source_completed_at,
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

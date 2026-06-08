@@ -343,7 +343,7 @@ export function buildHabitsCalendarComparisonSource({
         )}.`
       : "No Habits data in either compared range.",
     supportLabel:
-      "Habits counts existing check-ins only. Rest days and slips are reported separately and are not counted as completed habits.",
+      "Habits counts existing check-ins only, including explicit Micro Session Habit credits. Rest days and slips are reported separately; Micro Sessions still report completed micro blocks in their own source.",
     details: [
       {
         id: "active_habits",

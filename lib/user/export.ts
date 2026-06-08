@@ -179,6 +179,10 @@ type HabitCheckInRow = Pick<
   | "value_time"
   | "note"
   | "status"
+  | "source_kind"
+  | "source_dryland_micro_plan_id"
+  | "source_micro_block_id"
+  | "source_completed_at"
   | "completed_at"
   | "created_at"
   | "updated_at"
@@ -430,6 +434,10 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       valueTime: row.value_time,
       note: row.note,
       status: row.status,
+      sourceKind: row.source_kind,
+      sourceDrylandMicroPlanId: row.source_dryland_micro_plan_id,
+      sourceMicroBlockId: row.source_micro_block_id,
+      sourceCompletedAt: row.source_completed_at,
       completedAt: row.completed_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

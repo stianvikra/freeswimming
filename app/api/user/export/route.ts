@@ -161,7 +161,7 @@ export async function GET() {
     supabase
       .from("habit_check_ins")
       .select(
-        "id, habit_id, check_in_date, timezone, value_numeric, value_boolean, value_time, note, status, completed_at, created_at, updated_at"
+        "id, habit_id, check_in_date, timezone, value_numeric, value_boolean, value_time, note, status, source_kind, source_dryland_micro_plan_id, source_micro_block_id, source_completed_at, completed_at, created_at, updated_at"
       )
       .eq("user_id", userId)
       .order("check_in_date", { ascending: false }),

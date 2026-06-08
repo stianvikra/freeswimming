@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyDrylandMicroBlockStatus,
   buildDrylandMicroBlocksFromDraft,
@@ -6,12 +6,39 @@ import {
   buildDrylandMicroPlanProgress,
   buildDrylandMicroPlanWeekWindow,
   deriveDrylandMicroPlanStatus,
+  getDrylandMicroWeeklyProgramCreditBlockId,
   getDrylandMicroBlockReleaseDate,
+  isDrylandMicroWeeklyProgramComplete,
   isDrylandMicroBlockAvailable,
   mergeDrylandMicroBlocksForPlanEdit,
+  type DrylandMicroHabitLinkRecord,
   type DrylandMicroBlockSnapshot,
 } from "@/lib/dryland/micro-plans";
+import {
+  recordMicroSessionHabitCredit,
+  removeMicroSessionHabitCredit,
+} from "@/lib/dryland/micro-habit-linkage";
 import type { DrylandSessionDraft } from "@/lib/dryland/shared";
+
+function buildHabitLink(
+  overrides?: Partial<DrylandMicroHabitLinkRecord>
+): DrylandMicroHabitLinkRecord {
+  return {
+    id: "link-1",
+    habitId: "11111111-1111-4111-8111-111111111111",
+    status: "active",
+    startsOn: "2026-05-10",
+    pausedAt: null,
+    resumedAt: "2026-05-10T08:00:00.000Z",
+    endedAt: null,
+    habitTitle: "Mobility habit",
+    habitStatus: "active",
+    habitMode: "build",
+    habitCadenceLabel: "Weekly - any day",
+    canCount: true,
+    ...overrides,
+  };
+}
 
 function buildDraft(): DrylandSessionDraft {
   return {
@@ -470,5 +497,149 @@ describe("dryland micro plans", () => {
       releaseOffsetDays: 0,
       releasedAt: null,
     });
+  });
+
+  it("treats a weekly Micro Session program as complete only when every active block is completed", () => {
+    const blocks = buildBlocks();
+    const completed = blocks.map((block) => ({
+      ...block,
+      status: "completed" as const,
+      completedAt: "2026-05-10T10:00:00.000Z",
+    }));
+    const skipped = completed.map((block, index) =>
+      index === 1
+        ? { ...block, status: "skipped" as const, skippedAt: "2026-05-10T10:05:00.000Z" }
+        : block
+    );
+
+    expect(isDrylandMicroWeeklyProgramComplete(blocks)).toBe(false);
+    expect(isDrylandMicroWeeklyProgramComplete(completed)).toBe(true);
+    expect(isDrylandMicroWeeklyProgramComplete(skipped)).toBe(false);
+    expect(getDrylandMicroWeeklyProgramCreditBlockId(completed)).toBe(completed.at(-1)?.id);
+  });
+
+  it("does not create Habit credit while the Micro Session Habit link is paused", async () => {
+    const from = vi.fn();
+
+    const result = await recordMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      blockId: "unit-1",
+      link: buildHabitLink({ status: "paused", pausedAt: "2026-05-10T09:00:00.000Z" }),
+      selectedDate: "2026-05-10",
+      timezone: "Europe/Oslo",
+      completedAt: "2026-05-10T10:00:00.000Z",
+    });
+
+    expect(result).toEqual({
+      status: "paused",
+      message: "Habit paused - weekly program did not count.",
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("creates one weekly Habit check-in with Micro Session provenance for an active link", async () => {
+    const existingDateMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const existingDateEqDate = vi.fn(() => ({ maybeSingle: existingDateMaybeSingle }));
+    const existingDateEqHabit = vi.fn(() => ({ eq: existingDateEqDate }));
+    const existingDateEqUser = vi.fn(() => ({ eq: existingDateEqHabit }));
+    const existingWeekMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const existingWeekLimit = vi.fn(() => ({ maybeSingle: existingWeekMaybeSingle }));
+    const existingWeekLte = vi.fn(() => ({ limit: existingWeekLimit }));
+    const existingWeekGte = vi.fn(() => ({ lte: existingWeekLte }));
+    const existingWeekEqHabit = vi.fn(() => ({ gte: existingWeekGte }));
+    const existingWeekEqUser = vi.fn(() => ({ eq: existingWeekEqHabit }));
+    const select = vi
+      .fn()
+      .mockReturnValueOnce({ eq: existingDateEqUser })
+      .mockReturnValueOnce({ eq: existingWeekEqUser });
+    const insertSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "check-1",
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        check_in_date: "2026-05-10",
+        timezone: "Europe/Oslo",
+        value_numeric: null,
+        value_boolean: true,
+        value_time: null,
+        timer_seconds: 0,
+        manual_minutes: 0,
+        note: null,
+        status: "logged",
+        source_kind: "micro_session",
+        source_dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+        source_micro_block_id: "unit-1",
+        source_completed_at: "2026-05-10T10:00:00.000Z",
+        completed_at: "2026-05-10T10:00:00.000Z",
+        created_at: "2026-05-10T10:00:00.000Z",
+        updated_at: "2026-05-10T10:00:00.000Z",
+      },
+      error: null,
+    });
+    const insertSelect = vi.fn(() => ({ single: insertSingle }));
+    const insert = vi.fn(() => ({ select: insertSelect }));
+    const from = vi.fn(() => ({ select, insert }));
+
+    const result = await recordMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      blockId: "unit-1",
+      link: buildHabitLink(),
+      selectedDate: "2026-05-10",
+      timezone: "Europe/Oslo",
+      completedAt: "2026-05-10T10:00:00.000Z",
+    });
+
+    expect(result).toEqual({
+      status: "counted",
+      message: "Habit completed for this week: Mobility habit",
+    });
+    expect(existingWeekGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
+    expect(existingWeekLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        habit_id: "11111111-1111-4111-8111-111111111111",
+        check_in_date: "2026-05-10",
+        value_boolean: true,
+        source_kind: "micro_session",
+        source_dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+        source_micro_block_id: "unit-1",
+        source_completed_at: "2026-05-10T10:00:00.000Z",
+      })
+    );
+  });
+
+  it("removes the auto weekly Habit check-in when the Micro Session program is no longer complete", async () => {
+    const deleteLte = vi.fn().mockResolvedValue({ error: null });
+    const deleteGte = vi.fn(() => ({ lte: deleteLte }));
+    const deleteEqPlan = vi.fn(() => ({ gte: deleteGte }));
+    const deleteEqSource = vi.fn(() => ({ eq: deleteEqPlan }));
+    const deleteEqHabit = vi.fn(() => ({ eq: deleteEqSource }));
+    const deleteEqUser = vi.fn(() => ({ eq: deleteEqHabit }));
+    const deleteMock = vi.fn(() => ({ eq: deleteEqUser }));
+    const from = vi.fn(() => ({ delete: deleteMock }));
+
+    const result = await removeMicroSessionHabitCredit({ from } as never, {
+      userId: "user-1",
+      planId: "22222222-2222-4222-8222-222222222222",
+      link: buildHabitLink(),
+      selectedDate: "2026-05-10",
+    });
+
+    expect(result).toEqual({
+      status: "removed",
+      message: "Habit credit removed for this week.",
+    });
+    expect(deleteEqUser).toHaveBeenCalledWith("user_id", "user-1");
+    expect(deleteEqHabit).toHaveBeenCalledWith("habit_id", "11111111-1111-4111-8111-111111111111");
+    expect(deleteEqSource).toHaveBeenCalledWith("source_kind", "micro_session");
+    expect(deleteEqPlan).toHaveBeenCalledWith(
+      "source_dryland_micro_plan_id",
+      "22222222-2222-4222-8222-222222222222"
+    );
+    expect(deleteGte).toHaveBeenCalledWith("check_in_date", "2026-05-04");
+    expect(deleteLte).toHaveBeenCalledWith("check_in_date", "2026-05-10");
   });
 });

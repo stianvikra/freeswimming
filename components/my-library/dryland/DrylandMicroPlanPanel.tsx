@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -15,8 +16,11 @@ import {
   Bubbles,
   CheckCircle2,
   ListChecks,
+  Pause,
   Pencil,
+  Play,
   RefreshCcw,
+  Repeat,
   Trash2,
   Undo2,
   Volume2,
@@ -35,6 +39,7 @@ import {
   isDrylandMicroBlockAvailable,
   type DrylandMicroBlockSnapshot,
   type DrylandMicroBlockStatus,
+  type DrylandMicroHabitLinkRecord,
   type DrylandMicroPlanApiResponse,
   type DrylandMicroPlanRecord,
   type DrylandMicroReleaseMode,
@@ -73,7 +78,11 @@ type ExecutionMode = "ordered" | "bubbles";
 type PatchPlanOptions = {
   applyResponse?: boolean;
 };
-type UpdateBlockOptions = { visualOrigin?: ExecutionMode };
+type UpdateBlockOptions = {
+  visualOrigin?: ExecutionMode;
+  completePausedHabitLink?: boolean;
+  skipPausedHabitPrompt?: boolean;
+};
 type UpdateBlockFn = (
   blockId: string,
   blockStatus: DrylandMicroBlockStatus,
@@ -90,6 +99,16 @@ type BubbleTimerState = {
   startedAtMs: number | null;
   isConfirmingDone: boolean;
 };
+type PendingPausedCompletion = {
+  blockId: string;
+  title: string;
+  visualOrigin: ExecutionMode;
+};
+type ArchivedRepeatPlan = {
+  sourceIds: string[];
+  releaseDayAssignments: Record<string, number>;
+  title: string;
+};
 
 const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; label: string }> = [
   { value: "available_now", label: "Available now" },
@@ -99,6 +118,8 @@ const RELEASE_MODES: Array<{ value: Exclude<DrylandMicroReleaseMode, "manual">; 
 const WEEKDAY_OPTIONS = [0, 1, 2, 3, 4, 5, 6] as const;
 const BUBBLE_POP_ANIMATION_MS = 320;
 const BUBBLE_EARLY_COMPLETE_CONFIRM_MS = 1000;
+const DEFAULT_MICRO_HABIT_TITLE = "Weekly Micro Sessions";
+const SHARED_COMPLETION_SOUND_PROFILE: AppSoundProfileName = "softSuccessChime";
 const MICRO_SOUND_PREFERENCE_STORAGE_KEY = "freeswimming:micro-sessions:v1:sound";
 const MICRO_SOUND_PREFERENCE_STORAGE_VERSION = 1;
 const BUBBLE_TONE_CLASSES = [
@@ -127,6 +148,11 @@ const MICRO_PRIMARY_ACTION_CLASS = cx(
 );
 const MICRO_SECONDARY_ACTION_CLASS = cx(
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_UNIT_COMPLETE_ACTION_CLASS = cx(
+  "fs-cta-secondary inline-flex min-h-10 w-full min-w-0 items-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white",
   MICRO_ACTION_FOCUS_CLASS,
   MICRO_ACTION_DISABLED_CLASS
 );
@@ -163,6 +189,17 @@ const MICRO_COMPLETED_ACTION_CLASS = cx(
   MICRO_ACTION_FOCUS_CLASS,
   MICRO_ACTION_DISABLED_CLASS
 );
+const MICRO_STATUS_ACTION_CLASS = cx(
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-emerald-200 bg-white px-4 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-50",
+  MICRO_ACTION_FOCUS_CLASS,
+  MICRO_ACTION_DISABLED_CLASS
+);
+const MICRO_SEGMENT_CLASS =
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border px-3 text-sm font-semibold transition-colors";
+const MICRO_SEGMENT_ACTIVE_CLASS =
+  "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]";
+const MICRO_SEGMENT_IDLE_CLASS =
+  "border-transparent text-slate-600 hover:bg-white hover:text-[color:var(--fs-color-brand-700)]";
 
 function formatDateLabel(value: string) {
   const parsed = new Date(value);
@@ -173,10 +210,49 @@ function formatDateLabel(value: string) {
   });
 }
 
+function getLocalDateKey(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 function getPlanStatusLabel(plan: DrylandMicroPlanRecord) {
   if (plan.status === "completed") return "Week complete";
   if (plan.status === "paused") return "Paused";
   return "Active this week";
+}
+
+function getHabitLinkTitle(link: DrylandMicroHabitLinkRecord | null) {
+  return link?.habitTitle?.trim() || DEFAULT_MICRO_HABIT_TITLE;
+}
+
+function getHabitLinkStatusCopy(link: DrylandMicroHabitLinkRecord | null) {
+  if (!link) return null;
+  const title = getHabitLinkTitle(link);
+
+  if (link.status === "paused") {
+    return {
+      title: "Habit counting paused",
+      body: "Micro Sessions still work. Resume counting when this weekly program should count again.",
+      chip: `Paused: ${title}`,
+    };
+  }
+
+  if (!link.canCount) {
+    return {
+      title: "Linked Habit unavailable",
+      body: "This Micro Session still works, but the weekly program cannot complete this Habit right now.",
+      chip: `Not counting: ${title}`,
+    };
+  }
+
+  return {
+    title,
+    body: "Completes when every unit in this week's Micro Session is done.",
+    chip: "Linked Habit",
+  };
 }
 
 function getDefaultReleaseDayAssignments(
@@ -219,6 +295,16 @@ function buildInitialReleaseDayAssignments(plan: DrylandMicroPlanRecord | null) 
       return assignments;
     }, {}) ?? {}
   );
+}
+
+function buildArchivedRepeatPlan(plan: DrylandMicroPlanRecord): ArchivedRepeatPlan | null {
+  const sourceIds = buildInitialSelectedSessionIds(plan);
+  if (sourceIds.length === 0) return null;
+  return {
+    sourceIds,
+    releaseDayAssignments: buildInitialReleaseDayAssignments(plan),
+    title: plan.title,
+  };
 }
 
 function getPreferredClientExecutionMode(preferMobileBubbles: boolean): ExecutionMode {
@@ -350,6 +436,23 @@ function getBubbleTargetLabel(block: DrylandMicroBlockSnapshot) {
   return block.targetLabel.split("·")[0]?.trim() || block.targetLabel;
 }
 
+function formatLoadKg(value: number) {
+  return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
+}
+
+function getMicroActionTargetLabel(block: DrylandMicroBlockSnapshot) {
+  const parts = [getBubbleTargetLabel(block)];
+  if (block.loadKg !== null) {
+    parts.push(`${formatLoadKg(block.loadKg)}\u00a0kg`);
+  }
+  return parts.filter(Boolean).join(" · ");
+}
+
+function getCompleteNextLabel(block: DrylandMicroBlockSnapshot) {
+  const parts = [`Set ${block.setIndex + 1}`, ...getMicroActionTargetLabel(block).split(" · ")];
+  return `Complete next: ${parts.filter(Boolean).join(" - ")}`;
+}
+
 function getBubbleDurationSeconds(block: DrylandMicroBlockSnapshot) {
   if (block.targetType !== "duration" || block.targetValue === null || block.targetValue <= 0) {
     return null;
@@ -422,6 +525,20 @@ function buildHistorySeriesLabel(units: UnitView[]) {
   }
 
   return `Targets: ${units.map((unit) => getBubbleTargetLabel(unit.block)).join(" + ")}`;
+}
+
+function willCompleteWeeklyProgramAfterUpdate(
+  plan: DrylandMicroPlanRecord,
+  blockId: string,
+  blockStatus: DrylandMicroBlockStatus
+) {
+  const activeBlocks = plan.blocks.filter((block) => !block.isArchived);
+  return (
+    activeBlocks.length > 0 &&
+    activeBlocks.every((block) =>
+      block.id === blockId ? blockStatus === "completed" : block.status === "completed"
+    )
+  );
 }
 
 function groupHistoryUnits(units: UnitView[]) {
@@ -523,6 +640,10 @@ export default function DrylandMicroPlanPanel({
   const [isPlanStatusSaving, setIsPlanStatusSaving] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [isClearingPlan, setIsClearingPlan] = useState(false);
+  const [isHabitLinkFormOpen, setIsHabitLinkFormOpen] = useState(false);
+  const [isHabitLinkSaving, setIsHabitLinkSaving] = useState(false);
+  const [habitLinkTitle, setHabitLinkTitle] = useState(DEFAULT_MICRO_HABIT_TITLE);
+  const [habitStartDate, setHabitStartDate] = useState(getLocalDateKey());
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("ordered");
   const [armedBubbleId, setArmedBubbleId] = useState<string | null>(null);
@@ -533,10 +654,15 @@ export default function DrylandMicroPlanPanel({
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundNotice, setSoundNotice] = useState<string | null>(null);
   const [isRouteRefreshing, setIsRouteRefreshing] = useState(false);
+  const [archivedRepeatPlan, setArchivedRepeatPlan] = useState<ArchivedRepeatPlan | null>(null);
+  const [pendingPausedCompletion, setPendingPausedCompletion] =
+    useState<PendingPausedCompletion | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const progressLabelId = useId();
   const updateBlockRef = useRef<UpdateBlockFn | null>(null);
+  const autoArchivedPlanIdRef = useRef<string | null>(null);
+  const autoRenewedPlanIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     setPlan(initialPlan);
@@ -553,6 +679,10 @@ export default function DrylandMicroPlanPanel({
     setIsPlanStatusSaving(false);
     setIsSavingPlan(false);
     setIsClearingPlan(false);
+    setIsHabitLinkFormOpen(false);
+    setIsHabitLinkSaving(false);
+    setHabitLinkTitle(DEFAULT_MICRO_HABIT_TITLE);
+    setHabitStartDate(getLocalDateKey());
     setIsClearConfirmOpen(false);
     setExecutionMode("ordered");
     setArmedBubbleId(null);
@@ -561,6 +691,8 @@ export default function DrylandMicroPlanPanel({
     setPoppingBubbleId(null);
     setCompletedUndoStack([]);
     setSoundNotice(null);
+    setArchivedRepeatPlan(null);
+    setPendingPausedCompletion(null);
   }, [initialEditorOpen, initialPlan]);
 
   useEffect(() => {
@@ -664,7 +796,7 @@ export default function DrylandMicroPlanPanel({
   const hasMissingSourceSessions =
     sourceSessionIds.length > 0 && sourceSessionIds.every((sourceId) => !sessionIds.has(sourceId));
   const weekEndsAtTime = plan ? Date.parse(plan.weekEndsAt) : Number.NaN;
-  const isPastWeek = Number.isFinite(weekEndsAtTime) && weekEndsAtTime < Date.now();
+  const isPastWeek = Number.isFinite(weekEndsAtTime) && weekEndsAtTime <= Date.now();
   const isCompletePlan =
     Boolean(plan) &&
     (plan?.status === "completed" ||
@@ -691,6 +823,15 @@ export default function DrylandMicroPlanPanel({
     undoableCompletedUnits.length > 0
       ? (undoableCompletedUnits[undoableCompletedUnits.length - 1] ?? null)
       : null;
+  const habitLink = plan?.habitLink ?? null;
+  const habitLinkCopy = getHabitLinkStatusCopy(habitLink);
+  const canCreateHabitLink =
+    Boolean(plan) &&
+    !habitLink &&
+    !isEditing &&
+    !isPastWeek &&
+    !isEmptyPlan &&
+    !hasMissingSourceSessions;
   const bubbleToneByExerciseKey = buildBubbleToneClassByExerciseKey(
     unitViews
       .filter((unit) => !unit.block.isArchived)
@@ -723,41 +864,47 @@ export default function DrylandMicroPlanPanel({
     });
   }
 
-  function applyPlanState(nextPlan: DrylandMicroPlanRecord) {
-    setPlan(nextPlan);
-    onPlanChange?.(nextPlan);
-    setPlanTitle(nextPlan.title);
-    setSelectedSessionIds(buildInitialSelectedSessionIds(nextPlan));
-    setReleaseDayAssignments(buildInitialReleaseDayAssignments(nextPlan));
-    setReleaseMode(nextPlan.releaseMode);
-    setReleaseTime(nextPlan.releaseTime);
-    setIsClearConfirmOpen(false);
-    setArmedBubbleId((current) => {
-      if (!current) return null;
-      return nextPlan.blocks.some(
-        (block) => block.id === current && block.status === "queued" && !block.isArchived
-      )
-        ? current
-        : null;
-    });
-    setBubbleTimer((current) => {
-      if (!current) return null;
-      return nextPlan.blocks.some(
-        (block) => block.id === current.blockId && block.status === "queued" && !block.isArchived
-      )
-        ? current
-        : null;
-    });
-    setCompletedUndoStack((current) =>
-      current.filter(
-        (item) =>
-          nextPlan.blocks.some(
-            (block) =>
-              block.id === item.blockId && block.status === "completed" && !block.isArchived
-          ) === true
-      )
-    );
-  }
+  const applyPlanState = useCallback(
+    (nextPlan: DrylandMicroPlanRecord) => {
+      setPlan(nextPlan);
+      onPlanChange?.(nextPlan);
+      setPlanTitle(nextPlan.title);
+      setSelectedSessionIds(buildInitialSelectedSessionIds(nextPlan));
+      setReleaseDayAssignments(buildInitialReleaseDayAssignments(nextPlan));
+      setReleaseMode(nextPlan.releaseMode);
+      setReleaseTime(nextPlan.releaseTime);
+      if (nextPlan.habitLink) {
+        setIsHabitLinkFormOpen(false);
+      }
+      setIsClearConfirmOpen(false);
+      setArmedBubbleId((current) => {
+        if (!current) return null;
+        return nextPlan.blocks.some(
+          (block) => block.id === current && block.status === "queued" && !block.isArchived
+        )
+          ? current
+          : null;
+      });
+      setBubbleTimer((current) => {
+        if (!current) return null;
+        return nextPlan.blocks.some(
+          (block) => block.id === current.blockId && block.status === "queued" && !block.isArchived
+        )
+          ? current
+          : null;
+      });
+      setCompletedUndoStack((current) =>
+        current.filter(
+          (item) =>
+            nextPlan.blocks.some(
+              (block) =>
+                block.id === item.blockId && block.status === "completed" && !block.isArchived
+            ) === true
+        )
+      );
+    },
+    [onPlanChange]
+  );
 
   function switchExecutionMode(mode: ExecutionMode) {
     setExecutionMode(mode);
@@ -786,13 +933,8 @@ export default function DrylandMicroPlanPanel({
     void playMicroSound(profileName);
   }
 
-  function getCompletedBlockSoundProfile(
-    block: DrylandMicroBlockSnapshot | null,
-    options: UpdateBlockOptions
-  ): AppSoundProfileName {
-    return options.visualOrigin === "bubbles" && block?.targetType === "duration"
-      ? "timerComplete"
-      : "tapComplete";
+  function getCompletedBlockSoundProfile(): AppSoundProfileName {
+    return SHARED_COMPLETION_SOUND_PROFILE;
   }
 
   function toggleMicroSoundPreference() {
@@ -805,15 +947,21 @@ export default function DrylandMicroPlanPanel({
     }
 
     if (nextEnabled) {
-      void playMicroSound("tapComplete");
+      void playMicroSound(SHARED_COMPLETION_SOUND_PROFILE);
       return;
     }
 
     setSoundNotice(null);
   }
 
-  async function createPlan() {
-    if (selectedSessionIds.length === 0) {
+  async function createPlan(config: Partial<ArchivedRepeatPlan> = {}) {
+    const sourceIds = config.sourceIds ?? selectedSessionIds;
+    const nextTitle = config.title ?? (planTitle.trim() || buildDefaultTitle(sourceIds, sessions));
+    const nextReleaseDayAssignments =
+      config.releaseDayAssignments ??
+      getDefaultReleaseDayAssignments(sourceIds, releaseDayAssignments);
+
+    if (sourceIds.length === 0) {
       setError("Select at least one saved Dryland Session.");
       return;
     }
@@ -830,11 +978,11 @@ export default function DrylandMicroPlanPanel({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sourceDrylandSessionIds: selectedSessionIds,
-          title: planTitle.trim() || buildDefaultTitle(selectedSessionIds, sessions),
+          sourceDrylandSessionIds: sourceIds,
+          title: nextTitle,
           releaseMode,
           releaseTime,
-          sourceReleaseOffsetDays: releaseDayAssignments,
+          sourceReleaseOffsetDays: nextReleaseDayAssignments,
           timezone,
         }),
       });
@@ -852,6 +1000,7 @@ export default function DrylandMicroPlanPanel({
       }
 
       applyPlanState(responseBody.plan);
+      setArchivedRepeatPlan(null);
       setSuccess(
         responseBody.reusedExisting
           ? "You already have an active micro session. Continue that one first."
@@ -864,33 +1013,42 @@ export default function DrylandMicroPlanPanel({
     }
   }
 
-  async function patchPlan(body: Record<string, unknown>, options: PatchPlanOptions = {}) {
-    if (!plan) return null;
+  const patchPlan = useCallback(
+    async (body: Record<string, unknown>, options: PatchPlanOptions = {}) => {
+      if (!plan) return null;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const requestBody = {
+        selectedDate: getLocalDateKey(),
+        timezone,
+        ...body,
+      };
 
-    const response = await fetch(`/api/my-library/dryland/micro-plans/${plan.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    const responseBody = (await response
-      .json()
-      .catch(() => null)) as DrylandMicroPlanApiResponse | null;
+      const response = await fetch(`/api/my-library/dryland/micro-plans/${plan.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+      const responseBody = (await response
+        .json()
+        .catch(() => null)) as DrylandMicroPlanApiResponse | null;
 
-    if (!response.ok || !responseBody?.ok) {
-      throw new Error(
-        responseBody && !responseBody.ok
-          ? responseBody.error
-          : "Could not update micro session right now."
-      );
-    }
+      if (!response.ok || !responseBody?.ok) {
+        throw new Error(
+          responseBody && !responseBody.ok
+            ? responseBody.error
+            : "Could not update micro session right now."
+        );
+      }
 
-    if (options.applyResponse !== false) {
-      applyPlanState(responseBody.plan);
-    }
-    return responseBody.plan;
-  }
+      if (options.applyResponse !== false) {
+        applyPlanState(responseBody.plan);
+      }
+      return responseBody;
+    },
+    [applyPlanState, plan]
+  );
 
   async function savePlanEdit() {
     if (selectedSessionIds.length === 0) {
@@ -932,17 +1090,41 @@ export default function DrylandMicroPlanPanel({
     options: UpdateBlockOptions = {}
   ) {
     const targetBlock = plan?.blocks.find((block) => block.id === blockId) ?? null;
-    const completionSoundProfile = getCompletedBlockSoundProfile(targetBlock, options);
+    const completionSoundProfile = getCompletedBlockSoundProfile();
+    if (
+      plan &&
+      habitLink?.status === "paused" &&
+      blockStatus === "completed" &&
+      !options.skipPausedHabitPrompt &&
+      plan.progress.remainingBlockCount > 0 &&
+      willCompleteWeeklyProgramAfterUpdate(plan, blockId, blockStatus)
+    ) {
+      setPendingPausedCompletion({
+        blockId,
+        title: targetBlock?.title ?? "Micro unit",
+        visualOrigin: options.visualOrigin ?? "ordered",
+      });
+      setError("");
+      setSuccess("");
+      return;
+    }
+
     setPendingBlockId(blockId);
     setError("");
     setSuccess("");
 
     try {
       const shouldPopBubble = options.visualOrigin === "bubbles" && blockStatus === "completed";
-      const nextPlan = await patchPlan(
-        { blockId, blockStatus },
+      const patchResponse = await patchPlan(
+        {
+          blockId,
+          blockStatus,
+          ...(options.completePausedHabitLink ? { completePausedHabitLink: true } : {}),
+        },
         { applyResponse: !shouldPopBubble }
       );
+      const nextPlan = patchResponse?.plan ?? null;
+      const habitCredit = patchResponse?.habitCredit ?? null;
 
       if (shouldPopBubble && nextPlan) {
         setPoppingBubbleId(blockId);
@@ -955,7 +1137,8 @@ export default function DrylandMicroPlanPanel({
         ]);
         setPoppingBubbleId(null);
         setSuccess(
-          nextPlan.status === "completed" ? "All micro units are complete for this week." : ""
+          habitCredit?.message ??
+            (nextPlan.status === "completed" ? "All micro units are complete for this week." : "")
         );
         playEnabledMicroSound(completionSoundProfile);
         return;
@@ -970,11 +1153,12 @@ export default function DrylandMicroPlanPanel({
         setCompletedUndoStack((current) => current.filter((item) => item.blockId !== blockId));
       }
       setSuccess(
-        nextPlan?.status === "completed"
-          ? "All micro units are complete for this week."
-          : blockStatus === "queued"
-            ? "Micro unit restored."
-            : "Micro unit updated."
+        habitCredit?.message ??
+          (nextPlan?.status === "completed"
+            ? "All micro units are complete for this week."
+            : blockStatus === "queued"
+              ? "Micro unit restored."
+              : "Micro unit updated.")
       );
       if (blockStatus === "completed") {
         playEnabledMicroSound(completionSoundProfile);
@@ -990,6 +1174,17 @@ export default function DrylandMicroPlanPanel({
   }
 
   updateBlockRef.current = updateBlock;
+
+  function completePendingPausedUnit(completeHabit: boolean) {
+    if (!pendingPausedCompletion) return;
+    const nextCompletion = pendingPausedCompletion;
+    setPendingPausedCompletion(null);
+    void updateBlock(nextCompletion.blockId, "completed", {
+      visualOrigin: nextCompletion.visualOrigin,
+      skipPausedHabitPrompt: true,
+      completePausedHabitLink: completeHabit,
+    });
+  }
 
   function handleBubbleClick(unit: UnitView) {
     setError("");
@@ -1121,6 +1316,125 @@ export default function DrylandMicroPlanPanel({
     }
   }
 
+  async function createHabitLink() {
+    if (!plan) return;
+    const title = habitLinkTitle.trim() || DEFAULT_MICRO_HABIT_TITLE;
+
+    setIsHabitLinkSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await patchPlan({
+        createRecurringHabit: true,
+        habitTitle: title,
+        habitStartDate,
+      });
+      setSuccess(response?.habitCredit?.message ?? "Recurring Habit linked.");
+      setIsHabitLinkFormOpen(false);
+      router.refresh();
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error ? updateError.message : "Could not link recurring Habit."
+      );
+    } finally {
+      setIsHabitLinkSaving(false);
+    }
+  }
+
+  const updateHabitLinkStatus = useCallback(
+    async (status: "active" | "paused") => {
+      setIsHabitLinkSaving(true);
+      setError("");
+      setSuccess("");
+
+      try {
+        const response = await patchPlan({ habitLinkStatus: status });
+        const planChanged = response?.plan.id !== plan?.id;
+        setSuccess(
+          status === "paused"
+            ? "Habit counting paused."
+            : planChanged
+              ? "This week's Micro Session is ready."
+              : "Habit counting resumed."
+        );
+        router.refresh();
+      } catch (updateError) {
+        setError(
+          updateError instanceof Error ? updateError.message : "Could not update linked Habit."
+        );
+      } finally {
+        setIsHabitLinkSaving(false);
+      }
+    },
+    [patchPlan, plan?.id, router]
+  );
+
+  const archiveStaleManualPlan = useCallback(async () => {
+    if (!plan) return;
+    const repeatPlan = buildArchivedRepeatPlan(plan);
+
+    setIsClearingPlan(true);
+    setError("");
+    setSuccess("");
+    setCompletedUndoStack([]);
+
+    try {
+      await patchPlan({ clearPlan: true }, { applyResponse: false });
+      setPlan(null);
+      onPlanChange?.(null);
+      setPlanTitle(repeatPlan?.title ?? "");
+      setSelectedSessionIds(repeatPlan?.sourceIds ?? []);
+      setReleaseDayAssignments(repeatPlan?.releaseDayAssignments ?? {});
+      setArchivedRepeatPlan(repeatPlan);
+      setIsEditing(false);
+      setIsCreating(false);
+      setIsClearConfirmOpen(false);
+      setArmedBubbleId(null);
+      setBubbleTimer(null);
+      setPoppingBubbleId(null);
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error ? updateError.message : "Could not archive last week's plan."
+      );
+    } finally {
+      setIsClearingPlan(false);
+    }
+  }, [onPlanChange, patchPlan, plan]);
+
+  useEffect(() => {
+    if (!plan || !isPastWeek || isEditing || isCreating || isSavingPlan || isClearingPlan) return;
+    if (habitLink || plan.status !== "active") return;
+    if (autoArchivedPlanIdRef.current === plan.id) return;
+    autoArchivedPlanIdRef.current = plan.id;
+    void archiveStaleManualPlan();
+  }, [
+    archiveStaleManualPlan,
+    habitLink,
+    isClearingPlan,
+    isCreating,
+    isEditing,
+    isPastWeek,
+    isSavingPlan,
+    plan,
+  ]);
+
+  useEffect(() => {
+    if (!plan || !isPastWeek || isEditing || isSavingPlan || isHabitLinkSaving) return;
+    if (habitLink?.status !== "active" || !habitLink.canCount) return;
+    if (autoRenewedPlanIdRef.current === plan.id) return;
+    autoRenewedPlanIdRef.current = plan.id;
+    void updateHabitLinkStatus("active");
+  }, [
+    habitLink,
+    isEditing,
+    isHabitLinkSaving,
+    isPastWeek,
+    isSavingPlan,
+    plan,
+    updateHabitLinkStatus,
+  ]);
+
   async function clearPlan() {
     if (!plan) return;
 
@@ -1136,6 +1450,7 @@ export default function DrylandMicroPlanPanel({
       setPlanTitle("");
       setSelectedSessionIds([]);
       setReleaseDayAssignments({});
+      setArchivedRepeatPlan(null);
       setIsEditing(false);
       setIsCreating(false);
       setIsClearConfirmOpen(false);
@@ -1153,16 +1468,22 @@ export default function DrylandMicroPlanPanel({
   }
 
   function getCollapsedPlanCopy() {
+    if (isPastWeek && habitLink?.status === "paused") {
+      return {
+        title: "Habit counting paused",
+        body: "Resume counting to create this week's Micro Session. Missed weeks will not count.",
+      };
+    }
     if (isCompletePlan) {
       return {
         title: "Week complete",
-        body: "All available work for this Micro Session is done. Clear it when you want the Dryland page back to an empty weekly surface.",
+        body: "This week's Micro Session is saved.",
       };
     }
     if (isPastWeek) {
       return {
-        title: "Micro session is from an earlier week",
-        body: "Saved Dryland Sessions are unchanged. Clear this stale Micro Session before starting a fresh weekly plan.",
+        title: "Last week saved",
+        body: "Repeat it this week or choose sessions for a fresh plan.",
       };
     }
     if (hasMissingSourceSessions) {
@@ -1180,20 +1501,20 @@ export default function DrylandMicroPlanPanel({
     if (isBlockedPlan) {
       return {
         title: "Micro session paused",
-        body: "Resume it when you want the units back on the active surface, or clear it if this plan is no longer relevant.",
+        body: "Resume when you want the units back on the active surface.",
       };
     }
     return {
       title: "No units are ready today",
-      body: "Keep the plan for its next release, move an upcoming unit to today, or clear it if it is no longer relevant.",
+      body: "Keep the plan for its next release or move an upcoming unit to today.",
     };
   }
 
-  function renderClearPlanControls(options: { compact?: boolean } = {}) {
+  function renderClearPlanControls(options: { compact?: boolean; fillRow?: boolean } = {}) {
     if (!plan) return null;
     const actionClass = options.compact
       ? cx(MICRO_COMPACT_DANGER_ACTION_CLASS, "min-w-0 flex-1")
-      : MICRO_DANGER_ACTION_CLASS;
+      : cx(MICRO_DANGER_ACTION_CLASS, options.fillRow ? "min-w-0 flex-1 sm:flex-none" : "");
 
     if (!isClearConfirmOpen) {
       return (
@@ -1265,11 +1586,145 @@ export default function DrylandMicroPlanPanel({
     );
   }
 
+  function renderHabitLinkPanel() {
+    if (!plan || isEditing) return null;
+    if (pendingPausedCompletion) return null;
+
+    if (habitLinkCopy && habitLink) {
+      return (
+        <div
+          data-testid="dryland-micro-habit-link-status"
+          className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3 sm:p-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <span className="inline-flex min-h-7 items-center rounded-full border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-800">
+                {habitLinkCopy.chip}
+              </span>
+              <h4 className="mt-2 text-base font-semibold text-slate-950">{habitLinkCopy.title}</h4>
+              <p className="mt-1 max-w-[64ch] text-sm text-slate-700">{habitLinkCopy.body}</p>
+            </div>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+              {habitLink.status === "paused" ? (
+                <button
+                  type="button"
+                  data-testid="dryland-micro-resume-habit-link"
+                  onClick={() => void updateHabitLinkStatus("active")}
+                  disabled={isHabitLinkSaving}
+                  className={cx(MICRO_STATUS_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+                >
+                  <Play className="h-4 w-4" aria-hidden="true" />
+                  {isHabitLinkSaving ? "Saving..." : "Resume counting"}
+                </button>
+              ) : habitLink.canCount ? (
+                <button
+                  type="button"
+                  data-testid="dryland-micro-pause-habit-link"
+                  onClick={() => void updateHabitLinkStatus("paused")}
+                  disabled={isHabitLinkSaving}
+                  className={cx(MICRO_STATUS_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+                >
+                  <Pause className="h-4 w-4" aria-hidden="true" />
+                  {isHabitLinkSaving ? "Saving..." : "Pause counting"}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!canCreateHabitLink) return null;
+
+    if (!isHabitLinkFormOpen) {
+      return (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 sm:p-4">
+          <div className="min-w-0">
+            <h4 className="text-base font-semibold text-slate-950">Recurring Habit</h4>
+            <p className="mt-1 text-sm text-slate-700">
+              Complete this weekly Micro Session program as a repeatable Habit.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="dryland-micro-open-habit-link"
+            onClick={() => {
+              setHabitLinkTitle(DEFAULT_MICRO_HABIT_TITLE);
+              setHabitStartDate(getLocalDateKey());
+              setIsHabitLinkFormOpen(true);
+              setError("");
+              setSuccess("");
+            }}
+            className={MICRO_PRIMARY_ACTION_CLASS}
+          >
+            <Repeat className="h-4 w-4" aria-hidden="true" />
+            Make recurring habit
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        data-testid="dryland-micro-habit-link-form"
+        className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 sm:p-4"
+      >
+        <div>
+          <h4 className="text-base font-semibold text-slate-950">New Weekly Habit</h4>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Habit name</span>
+            <input
+              type="text"
+              value={habitLinkTitle}
+              onChange={(event) => setHabitLinkTitle(event.target.value)}
+              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <span>Start date</span>
+            <input
+              type="date"
+              value={habitStartDate}
+              onChange={(event) => setHabitStartDate(event.target.value)}
+              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            />
+          </label>
+        </div>
+        <p className="rounded-xl bg-white px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-100">
+          {"The Habit completes when every unit in this week's Micro Session is completed."}
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setIsHabitLinkFormOpen(false)}
+            disabled={isHabitLinkSaving}
+            className={cx(MICRO_SECONDARY_ACTION_CLASS, "min-w-0")}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            data-testid="dryland-micro-create-habit-link"
+            onClick={() => void createHabitLink()}
+            disabled={isHabitLinkSaving || habitLinkTitle.trim().length < 2}
+            className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0")}
+          >
+            <Repeat className="h-4 w-4" aria-hidden="true" />
+            {isHabitLinkSaving ? "Saving..." : "Create Habit"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   function renderPlanActionButtons(options: { compact?: boolean } = {}) {
     if (!plan || shouldCollapsePlan) return null;
     const secondaryClass = options.compact
       ? cx(MICRO_COMPACT_SECONDARY_ACTION_CLASS, "min-w-0 flex-1")
-      : MICRO_SECONDARY_ACTION_CLASS;
+      : cx(MICRO_SECONDARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none");
 
     return (
       <>
@@ -1293,12 +1748,12 @@ export default function DrylandMicroPlanPanel({
             data-testid="dryland-micro-resume-plan-status"
             onClick={() => void updatePlanStatus("active")}
             disabled={isPlanStatusSaving}
-            className={MICRO_PRIMARY_ACTION_CLASS}
+            className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
           >
             {isPlanStatusSaving ? "Saving..." : "Resume"}
           </button>
         ) : null}
-        {renderClearPlanControls({ compact: options.compact })}
+        {renderClearPlanControls({ compact: options.compact, fillRow: true })}
       </>
     );
   }
@@ -1447,20 +1902,42 @@ export default function DrylandMicroPlanPanel({
     const isPaused = plan?.status === "paused";
     const completeDisabled = isPending || isPaused || !unit.isAvailable;
     const targetLabel = actionLabel ?? getBubbleTargetLabel(unit.block);
+    const completeNextPrefix = "Complete next: ";
+    const completeNextTarget = targetLabel.startsWith(completeNextPrefix)
+      ? targetLabel.slice(completeNextPrefix.length)
+      : null;
+    const isDetailedCompleteAction = completeNextTarget !== null;
+    const completeAriaLabel = targetLabel.toLowerCase().startsWith("complete")
+      ? targetLabel
+      : `Complete ${targetLabel}`;
 
     return (
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full flex-wrap items-center gap-2">
         {unit.block.status === "queued" ? (
           <button
             type="button"
             data-testid={`dryland-micro-complete-${unit.index}`}
             aria-pressed="false"
-            aria-label={`Complete ${targetLabel}`}
+            aria-label={completeAriaLabel}
             onClick={() => void updateBlock(unit.block.id, "completed", { visualOrigin })}
             disabled={completeDisabled}
-            className={MICRO_SECONDARY_ACTION_CLASS}
+            className={cx(
+              MICRO_UNIT_COMPLETE_ACTION_CLASS,
+              isDetailedCompleteAction ? "justify-start text-left" : "justify-center text-center"
+            )}
           >
-            {isPending ? "Saving..." : targetLabel}
+            {isPending ? (
+              "Saving..."
+            ) : completeNextTarget ? (
+              <span className="min-w-0 text-left leading-tight">
+                <span className="block sm:inline">
+                  Complete next:<span className="hidden sm:inline"> </span>
+                </span>
+                <span className="block sm:inline">{completeNextTarget}</span>
+              </span>
+            ) : (
+              targetLabel
+            )}
           </button>
         ) : unit.block.status === "completed" ? (
           <button
@@ -1470,7 +1947,7 @@ export default function DrylandMicroPlanPanel({
             aria-label={`Completed ${targetLabel}. Undo completion`}
             onClick={() => void updateBlock(unit.block.id, "queued", { visualOrigin })}
             disabled={isPending || isPaused}
-            className={MICRO_COMPLETED_ACTION_CLASS}
+            className={cx(MICRO_COMPLETED_ACTION_CLASS, "w-full")}
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
             {isPending ? "Saving..." : "Completed"}
@@ -1481,7 +1958,7 @@ export default function DrylandMicroPlanPanel({
             data-testid={`dryland-micro-undo-${unit.index}`}
             onClick={() => void updateBlock(unit.block.id, "queued", { visualOrigin })}
             disabled={isPending || isPaused}
-            className={MICRO_SECONDARY_ACTION_CLASS}
+            className={cx(MICRO_SECONDARY_ACTION_CLASS, "w-full")}
           >
             <Undo2 className="h-4 w-4" aria-hidden="true" />
             {isPending ? "Saving..." : "Undo"}
@@ -1556,10 +2033,8 @@ export default function DrylandMicroPlanPanel({
               aria-pressed={isActive}
               onClick={() => switchExecutionMode(mode.value)}
               className={cx(
-                "inline-flex min-h-9 items-center justify-center gap-2 px-3 text-sm font-semibold transition-colors",
-                isActive
-                  ? "fs-cta-primary"
-                  : "rounded-[var(--fs-radius-control)] text-slate-600 hover:bg-slate-50 hover:text-[color:var(--fs-color-brand-700)]",
+                MICRO_SEGMENT_CLASS,
+                isActive ? MICRO_SEGMENT_ACTIVE_CLASS : MICRO_SEGMENT_IDLE_CLASS,
                 MICRO_ACTION_FOCUS_CLASS
               )}
             >
@@ -1590,13 +2065,14 @@ export default function DrylandMicroPlanPanel({
           const firstUnit = group[0];
           if (!firstUnit) return null;
           const summaryParts = getUnitSummaryParts(group);
+          const actionLabel = getCompleteNextLabel(firstUnit.block);
           return (
             <article
               key={`${firstUnit.block.id}-group`}
               data-testid={`dryland-micro-unit-group-${firstUnit.index}`}
               className="rounded-xl bg-white p-3 ring-1 ring-slate-100"
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
                 <div className="min-w-0">
                   <h5 className="text-base font-semibold text-slate-950">
                     {firstUnit.block.title}
@@ -1604,19 +2080,9 @@ export default function DrylandMicroPlanPanel({
                   <p className="mt-1 text-sm text-slate-600">{summaryParts.join(" · ")}</p>
                   <p className="mt-2 text-sm text-slate-700">{firstUnit.block.coachCue}</p>
                 </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {group.map((unit, setIndex) => (
-                  <div key={unit.block.id} className="flex flex-wrap gap-2">
-                    {renderUnitControls(
-                      unit,
-                      "ordered",
-                      group.length > 1
-                        ? `Set ${setIndex + 1} · ${getBubbleTargetLabel(unit.block)}`
-                        : getBubbleTargetLabel(unit.block)
-                    )}
-                  </div>
-                ))}
+                <div className="min-w-0 sm:w-80 sm:self-center">
+                  {renderUnitControls(firstUnit, "ordered", actionLabel)}
+                </div>
               </div>
             </article>
           );
@@ -1739,6 +2205,9 @@ export default function DrylandMicroPlanPanel({
   function renderCollapsedPlan() {
     const copy = getCollapsedPlanCopy();
     const nextUpcomingUnit = upcomingUnits[0] ?? null;
+    const repeatPlan = plan ? buildArchivedRepeatPlan(plan) : null;
+    const isPausedLinkedPastWeek = isPastWeek && habitLink?.status === "paused";
+    const isManualPastWeek = isPastWeek && !habitLink;
     return (
       <div data-testid="dryland-micro-collapsed-state" className="rounded-2xl bg-slate-50/70 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1750,14 +2219,54 @@ export default function DrylandMicroPlanPanel({
               completed or skipped
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {isBlockedPlan ? (
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+            {isPausedLinkedPastWeek ? (
+              <button
+                type="button"
+                data-testid="dryland-micro-resume-habit-link-collapsed"
+                onClick={() => void updateHabitLinkStatus("active")}
+                disabled={isHabitLinkSaving}
+                className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+              >
+                <Play className="h-4 w-4" aria-hidden="true" />
+                {isHabitLinkSaving ? "Saving..." : "Resume counting"}
+              </button>
+            ) : null}
+            {isManualPastWeek ? (
+              <>
+                {repeatPlan ? (
+                  <button
+                    type="button"
+                    data-testid="dryland-micro-repeat-this-week"
+                    onClick={() => void createPlan(repeatPlan)}
+                    disabled={isSavingPlan}
+                    className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+                  >
+                    <Repeat className="h-4 w-4" aria-hidden="true" />
+                    {isSavingPlan ? "Creating..." : "Repeat this week"}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  data-testid="dryland-micro-choose-sessions-from-stale"
+                  onClick={() => {
+                    setIsCreating(true);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className={cx(MICRO_SECONDARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+                >
+                  Choose sessions
+                </button>
+              </>
+            ) : null}
+            {isBlockedPlan && !isPausedLinkedPastWeek && !isManualPastWeek ? (
               <button
                 type="button"
                 data-testid="dryland-micro-resume-collapsed"
                 onClick={() => void updatePlanStatus("active")}
                 disabled={isPlanStatusSaving}
-                className={MICRO_PRIMARY_ACTION_CLASS}
+                className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
               >
                 {isPlanStatusSaving ? "Saving..." : "Resume"}
               </button>
@@ -1768,25 +2277,29 @@ export default function DrylandMicroPlanPanel({
                 data-testid={`dryland-micro-release-now-${nextUpcomingUnit.index}`}
                 onClick={() => void releaseBlockNow(nextUpcomingUnit.block.id)}
                 disabled={pendingBlockId === nextUpcomingUnit.block.id || plan?.status === "paused"}
-                className={MICRO_SECONDARY_ACTION_CLASS}
+                className={cx(MICRO_SECONDARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
               >
                 {pendingBlockId === nextUpcomingUnit.block.id ? "Saving..." : "Move next to today"}
               </button>
             ) : null}
-            <button
-              type="button"
-              data-testid="dryland-micro-edit-from-collapsed"
-              onClick={() => {
-                setIsEditing(true);
-                setError("");
-                setSuccess("");
-              }}
-              className={MICRO_SECONDARY_ACTION_CLASS}
-            >
-              <Pencil className="h-4 w-4" aria-hidden="true" />
-              Edit micro session
-            </button>
-            {renderClearPlanControls()}
+            {!isManualPastWeek && !isPausedLinkedPastWeek && !isCompletePlan ? (
+              <button
+                type="button"
+                data-testid="dryland-micro-edit-from-collapsed"
+                onClick={() => {
+                  setIsEditing(true);
+                  setError("");
+                  setSuccess("");
+                }}
+                className={cx(MICRO_SECONDARY_ACTION_CLASS, "min-w-0 flex-1 sm:flex-none")}
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                Edit micro session
+              </button>
+            ) : null}
+            {!isManualPastWeek && !isPausedLinkedPastWeek && !isCompletePlan
+              ? renderClearPlanControls({ fillRow: true })
+              : null}
           </div>
         </div>
       </div>
@@ -1798,7 +2311,7 @@ export default function DrylandMicroPlanPanel({
       id="micro-sessions"
       data-testid="dryland-micro-plan-panel"
       className={`rounded-2xl border border-slate-200 bg-white ${
-        isBubbleFocus ? "p-3 sm:p-5" : "p-4 sm:p-5"
+        isBubbleFocus ? "p-3 sm:p-5" : "p-3 sm:p-5"
       }`}
     >
       <div
@@ -1885,6 +2398,47 @@ export default function DrylandMicroPlanPanel({
         </p>
       ) : null}
 
+      {pendingPausedCompletion ? (
+        <DrylandFeedback
+          tone="warning"
+          className="mt-4"
+          testId="dryland-micro-paused-final-prompt"
+          action={
+            <div className="grid max-w-full gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <button
+                type="button"
+                data-testid="dryland-micro-complete-paused-count"
+                onClick={() => completePendingPausedUnit(true)}
+                className={MICRO_WARNING_PRIMARY_ACTION_CLASS}
+              >
+                Resume tracking + complete Habit
+              </button>
+              <button
+                type="button"
+                data-testid="dryland-micro-complete-paused-micro-only"
+                onClick={() => completePendingPausedUnit(false)}
+                className={MICRO_WARNING_ACTION_CLASS}
+              >
+                Complete Micro Session only
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingPausedCompletion(null)}
+                className={MICRO_WARNING_ACTION_CLASS}
+              >
+                Cancel
+              </button>
+            </div>
+          }
+        >
+          <p>
+            {
+              "This completes this week's Micro Session. Habit tracking is paused. Resume tracking to complete the Habit too."
+            }
+          </p>
+        </DrylandFeedback>
+      ) : null}
+
       {schemaReady && !plan ? (
         <div className="mt-5 space-y-4 rounded-2xl bg-slate-50/70 p-4">
           {!isCreating ? (
@@ -1893,24 +2447,46 @@ export default function DrylandMicroPlanPanel({
               testId="dryland-micro-empty"
               className="[&>div:first-child]:w-full [&>div:first-child]:max-w-none"
             >
-              <h4 className="text-base font-semibold text-slate-950">No active micro session</h4>
+              <h4 className="text-base font-semibold text-slate-950">
+                {archivedRepeatPlan ? "Start this week" : "No active micro session"}
+              </h4>
               <p className="mt-1 text-sm text-slate-600">
-                Create one weekly Micro Session from saved Dryland Sessions when you want small
-                set-by-set work.
+                {archivedRepeatPlan
+                  ? "Last week's Micro Session is saved. Repeat it or choose sessions."
+                  : "Create one weekly Micro Session from saved Dryland Sessions when you want small set-by-set work."}
               </p>
               {sessions.length > 0 ? (
-                <button
-                  type="button"
-                  data-testid="dryland-micro-start-create"
-                  onClick={() => {
-                    setIsCreating(true);
-                    setError("");
-                    setSuccess("");
-                  }}
-                  className={cx(MICRO_PRIMARY_ACTION_CLASS, "mt-4 w-full")}
-                >
-                  Create micro session
-                </button>
+                <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
+                  {archivedRepeatPlan ? (
+                    <button
+                      type="button"
+                      data-testid="dryland-micro-repeat-this-week-empty"
+                      onClick={() => void createPlan(archivedRepeatPlan)}
+                      disabled={isSavingPlan}
+                      className={cx(MICRO_PRIMARY_ACTION_CLASS, "min-w-0 flex-1")}
+                    >
+                      <Repeat className="h-4 w-4" aria-hidden="true" />
+                      {isSavingPlan ? "Creating..." : "Repeat this week"}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    data-testid="dryland-micro-start-create"
+                    onClick={() => {
+                      setIsCreating(true);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className={cx(
+                      archivedRepeatPlan
+                        ? MICRO_SECONDARY_ACTION_CLASS
+                        : MICRO_PRIMARY_ACTION_CLASS,
+                      "min-w-0 flex-1"
+                    )}
+                  >
+                    {archivedRepeatPlan ? "Choose sessions" : "Create micro session"}
+                  </button>
+                </div>
               ) : null}
             </DrylandFeedback>
           ) : (
@@ -1962,7 +2538,9 @@ export default function DrylandMicroPlanPanel({
 
       {schemaReady && plan ? (
         <div className={isBubbleFocus ? "mt-0 space-y-2 sm:mt-5 sm:space-y-4" : "mt-5 space-y-4"}>
-          <div className={`rounded-2xl bg-slate-50/70 ${isBubbleFocus ? "p-3 sm:p-4" : "p-4"}`}>
+          <div
+            className={`rounded-2xl bg-slate-50/70 ${isBubbleFocus ? "p-3 sm:p-4" : "p-3 sm:p-4"}`}
+          >
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <h4 className="text-xl font-semibold text-slate-950">{plan.title}</h4>
@@ -1973,7 +2551,7 @@ export default function DrylandMicroPlanPanel({
                   {isEditing ? "" : ` · ${executionMode} mode`}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 lg:justify-end">
+              <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
                 {executionMode === "bubbles" ? null : (
                   <>
                     {renderPlanActionButtons()}
@@ -2036,6 +2614,8 @@ export default function DrylandMicroPlanPanel({
             </div>
           </div>
 
+          {renderHabitLinkPanel()}
+
           {isEditing ? (
             <div
               data-testid="dryland-micro-edit-form"
@@ -2083,7 +2663,7 @@ export default function DrylandMicroPlanPanel({
               <>
                 <div
                   className={`rounded-2xl bg-slate-50/70 ${
-                    executionMode === "bubbles" ? "p-1.5 sm:p-4" : "p-4"
+                    executionMode === "bubbles" ? "p-1.5 sm:p-4" : "p-3 sm:p-4"
                   }`}
                 >
                   <div

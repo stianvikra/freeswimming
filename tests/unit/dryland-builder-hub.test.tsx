@@ -157,6 +157,7 @@ function buildMicroPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMic
       progressPercent: 0,
     },
     ...overrides,
+    habitLink: overrides?.habitLink ?? null,
   };
 }
 
