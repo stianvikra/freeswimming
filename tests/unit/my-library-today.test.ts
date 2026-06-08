@@ -83,6 +83,7 @@ function buildMicroPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMic
       progressPercent: Math.round((completedBlockCount / Math.max(1, totalBlockCount)) * 100),
     },
     ...overrides,
+    habitLink: overrides?.habitLink ?? null,
   };
 }
 

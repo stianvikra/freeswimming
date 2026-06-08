@@ -2,7 +2,11 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DrylandMicroPlanPanel from "@/components/my-library/dryland/DrylandMicroPlanPanel";
 import { APP_SOUND_PROFILES } from "@/lib/audio/client-sound";
-import type { DrylandMicroBlockSnapshot, DrylandMicroPlanRecord } from "@/lib/dryland/micro-plans";
+import type {
+  DrylandMicroBlockSnapshot,
+  DrylandMicroHabitLinkRecord,
+  DrylandMicroPlanRecord,
+} from "@/lib/dryland/micro-plans";
 import type { DrylandSessionSummary } from "@/lib/dryland/shared";
 
 const navigationState = vi.hoisted(() => ({
@@ -124,6 +128,27 @@ function buildPlan(overrides?: Partial<DrylandMicroPlanRecord>): DrylandMicroPla
       progressPercent: 0,
     },
     ...overrides,
+    habitLink: overrides?.habitLink ?? null,
+  };
+}
+
+function buildHabitLink(
+  overrides?: Partial<DrylandMicroHabitLinkRecord>
+): DrylandMicroHabitLinkRecord {
+  return {
+    id: "44444444-4444-4444-8444-444444444444",
+    habitId: "55555555-5555-4555-8555-555555555555",
+    status: "active",
+    startsOn: "2026-05-12",
+    pausedAt: null,
+    resumedAt: "2026-05-12T08:00:00.000Z",
+    endedAt: null,
+    habitTitle: "Mobility habit",
+    habitStatus: "active",
+    habitMode: "build",
+    habitCadenceLabel: "Weekly - any day",
+    canCount: true,
+    ...overrides,
   };
 }
 
@@ -186,6 +211,7 @@ function installAudioContextMock(options?: { resumeRejects?: boolean }) {
 
 describe("DrylandMicroPlanPanel", () => {
   beforeEach(() => {
+    navigationState.refresh.mockReset();
     vi.spyOn(Date, "now").mockReturnValue(new Date("2026-05-12T10:00:00.000Z").getTime());
     vi.stubGlobal("fetch", vi.fn());
     window.localStorage.clear();
@@ -249,6 +275,272 @@ describe("DrylandMicroPlanPanel", () => {
     expect(screen.getByTestId("dryland-micro-unit-group-0")).toHaveTextContent("Single-leg squat");
   });
 
+  it("creates a recurring Habit link from the active micro session", async () => {
+    const linkedPlan = buildPlan({ habitLink: buildHabitLink() });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: linkedPlan,
+        habitCredit: {
+          status: "counted",
+          message: "Habit completed for this week: Mobility habit",
+        },
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({
+          blocks: buildPlan().blocks.map((block, index) =>
+            index === 0
+              ? {
+                  ...block,
+                  status: "completed",
+                  completedAt: "2026-05-12T09:00:00.000Z",
+                }
+              : block
+          ),
+          progress: {
+            totalBlockCount: 2,
+            completedBlockCount: 1,
+            skippedBlockCount: 0,
+            remainingBlockCount: 1,
+            progressPercent: 50,
+          },
+        })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-open-habit-link"));
+    expect(screen.getByTestId("dryland-micro-habit-link-form")).toBeVisible();
+    expect(screen.getByLabelText("Habit name")).toHaveValue("Weekly Micro Sessions");
+    expect(screen.getByText("New Weekly Habit")).toBeVisible();
+    expect(
+      screen.getByText(
+        "The Habit completes when every unit in this week's Micro Session is completed."
+      )
+    ).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-create-habit-link"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"createRecurringHabit":true'),
+        })
+      );
+    });
+
+    const linkStatus = await screen.findByTestId("dryland-micro-habit-link-status");
+    expect(linkStatus).toHaveTextContent("Linked Habit");
+    expect(linkStatus).toHaveTextContent("Mobility habit");
+    expect(navigationState.refresh).toHaveBeenCalled();
+  });
+
+  it("pauses Habit counting without disabling micro session bubbles", async () => {
+    const pausedPlan = buildPlan({
+      habitLink: buildHabitLink({
+        status: "paused",
+        pausedAt: "2026-05-12T10:00:00.000Z",
+        canCount: false,
+      }),
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: pausedPlan,
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({ habitLink: buildHabitLink() })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-pause-habit-link"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"habitLinkStatus":"paused"'),
+        })
+      );
+    });
+
+    expect(await screen.findByText("Habit counting paused")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-complete-0")).not.toBeDisabled();
+  });
+
+  it("asks before counting a paused Habit when the final micro unit completes", async () => {
+    const basePlan = buildPlan();
+    const pausedPlan = buildPlan({
+      habitLink: buildHabitLink({
+        status: "paused",
+        pausedAt: "2026-05-12T10:00:00.000Z",
+        canCount: false,
+      }),
+      blocks: basePlan.blocks.map((block, index) =>
+        index === 0
+          ? {
+              ...block,
+              status: "completed",
+              completedAt: "2026-05-12T09:00:00.000Z",
+            }
+          : block
+      ),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 1,
+        skippedBlockCount: 0,
+        remainingBlockCount: 1,
+        progressPercent: 50,
+      },
+    });
+    const completedPlan = buildPlan({
+      habitLink: buildHabitLink({ status: "active", canCount: true }),
+      blocks: pausedPlan.blocks.map((block) => ({
+        ...block,
+        status: "completed",
+        completedAt: block.completedAt ?? "2026-05-12T10:30:00.000Z",
+      })),
+      progress: {
+        totalBlockCount: 2,
+        completedBlockCount: 2,
+        skippedBlockCount: 0,
+        remainingBlockCount: 0,
+        progressPercent: 100,
+      },
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: completedPlan,
+        habitCredit: {
+          status: "counted",
+          message: "Habit completed for this week: Mobility habit",
+        },
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={pausedPlan}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("dryland-micro-complete-1"));
+
+    expect(screen.getByTestId("dryland-micro-paused-final-prompt")).toHaveTextContent(
+      "Habit tracking is paused"
+    );
+    expect(screen.getByRole("button", { name: "Resume tracking + complete Habit" })).toBeVisible();
+    expect(fetch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId("dryland-micro-complete-paused-count"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"completePausedHabitLink":true'),
+        })
+      );
+    });
+    expect(await screen.findByText("Habit completed for this week: Mobility habit")).toBeVisible();
+  });
+
+  it("archives stale manual weeks and offers repeat this week", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-06-08T10:00:00.000Z").getTime());
+    const onPlanChange = vi.fn();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: buildPlan({ status: "completed" }),
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan()}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+        onPlanChange={onPlanChange}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"clearPlan":true'),
+        })
+      );
+    });
+    expect(await screen.findByText("Start this week")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-repeat-this-week-empty")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveTextContent("Choose sessions");
+    expect(onPlanChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("renews stale active linked weeks when the user returns", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(new Date("2026-06-08T10:00:00.000Z").getTime());
+    const renewedPlan = buildPlan({
+      id: "99999999-9999-4999-8999-999999999999",
+      weekStartsAt: "2026-06-08T00:00:00.000Z",
+      weekEndsAt: "2026-06-15T00:00:00.000Z",
+      habitLink: buildHabitLink({ status: "active", canCount: true }),
+    });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        plan: renewedPlan,
+      }),
+    } as Response);
+
+    render(
+      <DrylandMicroPlanPanel
+        initialPlan={buildPlan({ habitLink: buildHabitLink({ status: "active", canCount: true }) })}
+        sessions={[buildSummary()]}
+        schemaReady
+        loadError={null}
+      />
+    );
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        expect.objectContaining<Record<string, unknown>>({
+          method: "PATCH",
+          body: expect.stringContaining('"habitLinkStatus":"active"'),
+        })
+      );
+    });
+    expect(await screen.findByText("This week's Micro Session is ready.")).toBeVisible();
+    expect(navigationState.refresh).toHaveBeenCalled();
+  });
+
   it("shows start choices instead of sync warning when the micro schema is ready", () => {
     render(
       <DrylandMicroPlanPanel
@@ -264,10 +556,7 @@ describe("DrylandMicroPlanPanel", () => {
     expect(emptyState).toHaveAttribute("data-feedback-tone", "empty");
     expect(emptyState).not.toHaveAttribute("role");
     expect(emptyState).not.toHaveAttribute("aria-live");
-    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass(
-      "fs-cta-primary",
-      "w-full"
-    );
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("fs-cta-primary");
     expect(
       screen.queryByTestId("dryland-micro-select-11111111-1111-4111-8111-111111111111")
     ).not.toBeInTheDocument();
@@ -331,12 +620,15 @@ describe("DrylandMicroPlanPanel", () => {
       "100"
     );
     expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent("Week complete");
-    expect(screen.getByTestId("dryland-micro-clear-open")).toBeVisible();
+    expect(screen.getByTestId("dryland-micro-collapsed-state")).toHaveTextContent(
+      "This week's Micro Session is saved."
+    );
+    expect(screen.queryByTestId("dryland-micro-clear-open")).not.toBeInTheDocument();
   });
 
   it("stores micro session sound as an icon-only local preference", async () => {
     const audio = installAudioContextMock();
-    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
+    const chimeVoiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
 
     render(
       <DrylandMicroPlanPanel
@@ -359,7 +651,7 @@ describe("DrylandMicroPlanPanel", () => {
         "aria-pressed",
         "true"
       );
-      expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount);
+      expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount);
     });
     expect(screen.getByTestId("dryland-micro-sound-toggle")).toHaveAccessibleName("Sound on");
     expect(
@@ -414,7 +706,7 @@ describe("DrylandMicroPlanPanel", () => {
 
     expect(await screen.findByText("Micro session cleared.")).toBeVisible();
     expect(screen.getByText("No active micro session")).toBeVisible();
-    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("w-full");
+    expect(screen.getByTestId("dryland-micro-start-create")).toHaveClass("fs-cta-primary");
     expect(onPlanChange).toHaveBeenLastCalledWith(null);
   });
 
@@ -542,9 +834,12 @@ describe("DrylandMicroPlanPanel", () => {
     expect(within(group).getByText("Push ups")).toBeVisible();
     expect(within(group).getByText("3 sets · 12 reps · Rest 30 sec")).toBeVisible();
     expect(within(group).queryByText(/Weekly strength/)).toBeNull();
-    expect(within(group).getByRole("button", { name: "Complete Set 1 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Complete Set 2 · 12 reps" })).toBeVisible();
-    expect(within(group).getByRole("button", { name: "Complete Set 3 · 12 reps" })).toBeVisible();
+    const completeNextButton = within(group).getByRole("button", {
+      name: "Complete next: Set 1 - 12 reps",
+    });
+    expect(completeNextButton).toBeVisible();
+    expect(completeNextButton).toHaveClass("text-left");
+    expect(within(group).queryByRole("button", { name: /Complete Set/ })).toBeNull();
     expect(within(group).queryByRole("button", { name: "Skip today" })).toBeNull();
   });
 
@@ -703,8 +998,12 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("fs-cta-primary");
+      expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
     });
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("dryland-micro-bubble-board")).toBeVisible();
   });
 
@@ -749,7 +1048,11 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
-    expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveClass("fs-cta-primary");
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByTestId("dryland-micro-mode-bubbles")).not.toHaveClass("fs-cta-primary");
     expect(screen.getByTestId("dryland-micro-mode-ordered")).not.toHaveClass("fs-cta-primary");
     const manageActions = screen.getByTestId("dryland-micro-manage-actions");
     expect(
@@ -1012,8 +1315,7 @@ describe("DrylandMicroPlanPanel", () => {
   it("auto-completes timed bubbles when the countdown reaches zero", async () => {
     vi.useFakeTimers({ now: new Date("2026-05-11T10:00:00.000Z") });
     const audio = installAudioContextMock();
-    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
-    const timerVoiceCount = APP_SOUND_PROFILES.timerComplete.voices.length;
+    const chimeVoiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     const basePlan = buildPlan();
     const blocks: DrylandMicroBlockSnapshot[] = [
       {
@@ -1067,7 +1369,7 @@ describe("DrylandMicroPlanPanel", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount);
+    expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount);
     audio.start.mockClear();
 
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
@@ -1094,12 +1396,12 @@ describe("DrylandMicroPlanPanel", () => {
       await Promise.resolve();
     });
 
-    expect(audio.start).toHaveBeenCalledTimes(timerVoiceCount);
+    expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount);
   });
 
   it("double taps a bubble through the existing server-confirmed completion mutation", async () => {
     const audio = installAudioContextMock();
-    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
+    const chimeVoiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     const completedPlan = buildPlan({
       blocks: buildPlan().blocks.map((block, index) =>
         index === 0
@@ -1136,7 +1438,7 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount));
     audio.start.mockClear();
 
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));
@@ -1153,7 +1455,7 @@ describe("DrylandMicroPlanPanel", () => {
       );
     });
     expect(screen.queryByText("Bubble completed.")).not.toBeInTheDocument();
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount));
     expect(await screen.findByTestId("dryland-micro-global-undo")).toHaveTextContent("Undo");
     expect(screen.getByTestId("dryland-micro-global-undo")).toHaveAccessibleName(
       "Undo last completed micro unit: Single-leg squat"
@@ -1291,7 +1593,7 @@ describe("DrylandMicroPlanPanel", () => {
 
   it("keeps a bubble visible when server completion fails", async () => {
     const audio = installAudioContextMock();
-    const tapVoiceCount = APP_SOUND_PROFILES.tapComplete.voices.length;
+    const chimeVoiceCount = APP_SOUND_PROFILES.softSuccessChime.voices.length;
     vi.mocked(fetch).mockResolvedValue({
       ok: false,
       json: async () => ({
@@ -1310,7 +1612,7 @@ describe("DrylandMicroPlanPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Sound off" }));
-    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(tapVoiceCount));
+    await waitFor(() => expect(audio.start).toHaveBeenCalledTimes(chimeVoiceCount));
     audio.start.mockClear();
 
     fireEvent.click(screen.getByTestId("dryland-micro-mode-bubbles"));

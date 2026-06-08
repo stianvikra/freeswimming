@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
+import { loadDrylandMicroHabitLinkRecord } from "@/lib/dryland/micro-habit-linkage";
 import {
   buildDrylandMicroBlocksFromSources,
   buildDrylandMicroPlanRecord,
@@ -261,6 +262,14 @@ export async function loadDrylandLibrarySnapshot(
   }
 
   try {
+    const microPlanRow =
+      microPlanResult.data && !microPlanLoadError
+        ? (microPlanResult.data as DrylandMicroPlanRow)
+        : null;
+    const microPlanHabitLink = microPlanRow
+      ? await loadDrylandMicroHabitLinkRecord(supabase, userId, microPlanRow.id)
+      : null;
+
     return {
       schemaReady: true,
       microPlanSchemaReady,
@@ -273,10 +282,9 @@ export async function loadDrylandLibrarySnapshot(
       recentSessions: (recentResult.data ?? []).map((row) =>
         buildDrylandSessionSummary(row as DrylandRow)
       ),
-      microPlan:
-        microPlanResult.data && !microPlanLoadError
-          ? buildDrylandMicroPlanRecord(microPlanResult.data as DrylandMicroPlanRow)
-          : null,
+      microPlan: microPlanRow
+        ? buildDrylandMicroPlanRecord(microPlanRow, microPlanHabitLink)
+        : null,
     };
   } catch (error) {
     console.error("[Dryland] Could not normalize saved dryland session", error);

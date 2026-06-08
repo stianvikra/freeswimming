@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRouteHandlerSupabaseClientMock } = vi.hoisted(() => ({
+const { createRouteHandlerSupabaseClientMock, trackAnalyticsEventMock } = vi.hoisted(() => ({
   createRouteHandlerSupabaseClientMock: vi.fn(),
+  trackAnalyticsEventMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
+}));
+
+vi.mock("@/lib/analytics/events", () => ({
+  trackAnalyticsEvent: trackAnalyticsEventMock,
 }));
 
 import { PATCH as patchDrylandMicroPlan } from "@/app/api/my-library/dryland/micro-plans/[planId]/route";
@@ -14,6 +19,8 @@ import type { Database } from "@/types/database";
 
 type DrylandRow = Database["public"]["Tables"]["dryland_sessions"]["Row"];
 type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
+type HabitDefinitionRow = Database["public"]["Tables"]["habit_definitions"]["Row"];
+type MicroSessionHabitLinkRow = Database["public"]["Tables"]["micro_session_habit_links"]["Row"];
 
 function applyResponseCookiesIdentity<T>(response: T): T {
   return response;
@@ -76,8 +83,8 @@ function buildMicroPlanRow(overrides?: Partial<DrylandMicroPlanRow>): DrylandMic
     source_session_title: "Weekly strength",
     title: "MS: Weekly strength",
     timezone: "UTC",
-    week_starts_at: "2026-05-04T00:00:00.000Z",
-    week_ends_at: "2026-05-11T00:00:00.000Z",
+    week_starts_at: "2026-06-08T00:00:00.000Z",
+    week_ends_at: "2026-06-15T00:00:00.000Z",
     blocks: [
       {
         id: "block-1-exercise-1",
@@ -97,9 +104,59 @@ function buildMicroPlanRow(overrides?: Partial<DrylandMicroPlanRow>): DrylandMic
   };
 }
 
+function buildHabitRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
+  return {
+    id: "33333333-3333-4333-8333-333333333333",
+    user_id: "user-1",
+    title: "Weekly strength",
+    notes: null,
+    habit_mode: "build",
+    habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-06-08",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: false,
+    status: "active",
+    sort_order: 1,
+    created_at: "2026-06-08T09:00:00.000Z",
+    updated_at: "2026-06-08T09:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildHabitLinkRow(
+  overrides?: Partial<MicroSessionHabitLinkRow>
+): MicroSessionHabitLinkRow {
+  return {
+    id: "44444444-4444-4444-8444-444444444444",
+    user_id: "user-1",
+    dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+    habit_id: "33333333-3333-4333-8333-333333333333",
+    status: "active",
+    starts_on: "2026-06-08",
+    paused_at: null,
+    resumed_at: "2026-06-08T09:00:00.000Z",
+    ended_at: null,
+    created_at: "2026-06-08T09:00:00.000Z",
+    updated_at: "2026-06-08T09:00:00.000Z",
+    ...overrides,
+  };
+}
+
 describe("dryland micro plan routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
+    trackAnalyticsEventMock.mockReset();
   });
 
   afterEach(() => {
@@ -331,6 +388,59 @@ describe("dryland micro plan routes", () => {
     expect(payload.plan.progress.progressPercent).toBe(100);
   });
 
+  it("rejects stale micro unit updates instead of counting an earlier week", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({
+        week_starts_at: "2026-05-04T00:00:00.000Z",
+        week_ends_at: "2026-05-11T00:00:00.000Z",
+      }),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const select = vi.fn(() => ({ eq: planEqUser }));
+    const update = vi.fn();
+    const from = vi.fn().mockReturnValue({ select, update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blockId: "block-1-exercise-1",
+            blockStatus: "completed",
+            selectedDate: "2026-06-08",
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload).toEqual({
+      ok: false,
+      error: "Start this week's Micro Session before updating old units.",
+    });
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("clears an active micro plan for the authenticated owner without deleting blocks", async () => {
     const existingBlocks = buildMicroPlanRow().blocks;
     const planMaybeSingle = vi.fn().mockResolvedValue({
@@ -467,6 +577,321 @@ describe("dryland micro plan routes", () => {
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
         blocks: [expect.objectContaining({ releasedAt: expect.any(String) })],
+      })
+    );
+  });
+
+  it("creates an explicit recurring Habit link for the authenticated owner", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow(),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const planSelect = vi.fn(() => ({ eq: planEqUser }));
+
+    const linkMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const linkLimit = vi.fn(() => ({ maybeSingle: linkMaybeSingle }));
+    const linkOrder = vi.fn(() => ({ limit: linkLimit }));
+    const linkIn = vi.fn(() => ({ order: linkOrder }));
+    const linkEqPlan = vi.fn(() => ({ in: linkIn }));
+    const linkEqUser = vi.fn(() => ({ eq: linkEqPlan }));
+    const linkSelect = vi.fn(() => ({ eq: linkEqUser }));
+
+    const activeHabitEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+    const activeHabitEqUser = vi.fn(() => ({ eq: activeHabitEqStatus }));
+    const habitSelect = vi.fn(() => ({ eq: activeHabitEqUser }));
+    const habitRow = buildHabitRow({
+      title: "Mobility reset",
+      start_date: "2026-06-08",
+      cadence_period: "weekly",
+      cadence_target_count: 3,
+      cadence_day_policy: "any",
+    });
+    const habitInsertSingle = vi.fn().mockResolvedValue({ data: habitRow, error: null });
+    const habitInsertSelect = vi.fn(() => ({ single: habitInsertSingle }));
+    const habitInsert = vi.fn(() => ({ select: habitInsertSelect }));
+
+    const linkRow = buildHabitLinkRow({ starts_on: "2026-06-08" });
+    const linkInsertSingle = vi.fn().mockResolvedValue({ data: linkRow, error: null });
+    const linkInsertSelect = vi.fn(() => ({ single: linkInsertSingle }));
+    const linkInsert = vi.fn(() => ({ select: linkInsertSelect }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "dryland_micro_plans") return { select: planSelect };
+      if (table === "habit_definitions") return { select: habitSelect, insert: habitInsert };
+      if (table === "micro_session_habit_links") {
+        return { select: linkSelect, insert: linkInsert };
+      }
+      return {};
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            createRecurringHabit: true,
+            habitTitle: "Mobility reset",
+            habitStartDate: "2026-06-08",
+            selectedDate: "2026-06-08",
+            timezone: "Europe/Oslo",
+          }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      plan: { habitLink: { status: string; habitTitle: string | null } | null };
+    };
+
+    expect(response.status).toBe(200);
+    expect(habitInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        title: "Mobility reset",
+        habit_mode: "build",
+        habit_type: "binary",
+        category: "movement",
+        start_date: "2026-06-08",
+        cadence_period: "weekly",
+        cadence_target_count: 1,
+        cadence_day_policy: "any",
+        is_perfect_day_item: false,
+      })
+    );
+    expect(linkInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-1",
+        dryland_micro_plan_id: "22222222-2222-4222-8222-222222222222",
+        habit_id: "33333333-3333-4333-8333-333333333333",
+        status: "active",
+        starts_on: "2026-06-08",
+      })
+    );
+    expect(payload.ok).toBe(true);
+    expect(payload.plan.habitLink).toMatchObject({
+      status: "active",
+      habitTitle: "Mobility reset",
+    });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "micro_session_habit_link_created",
+        payload: expect.objectContaining({
+          cadencePeriod: "weekly",
+          cadenceTargetCount: 1,
+          countPolicy: "weekly_program_complete",
+        }),
+      })
+    );
+  });
+
+  it("pauses a linked Habit without disabling the Micro Session plan", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({ status: "active" }),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const planSelect = vi.fn(() => ({ eq: planEqUser }));
+
+    const activeLink = buildHabitLinkRow({ status: "active" });
+    const pausedLink = buildHabitLinkRow({
+      status: "paused",
+      paused_at: "2026-05-10T10:00:00.000Z",
+    });
+    const linkMaybeSingle = vi
+      .fn()
+      .mockResolvedValueOnce({ data: activeLink, error: null })
+      .mockResolvedValueOnce({ data: pausedLink, error: null });
+    const linkLimit = vi.fn(() => ({ maybeSingle: linkMaybeSingle }));
+    const linkOrder = vi.fn(() => ({ limit: linkLimit }));
+    const linkIn = vi.fn(() => ({ order: linkOrder }));
+    const linkEqPlan = vi.fn(() => ({ in: linkIn }));
+    const linkEqUser = vi.fn(() => ({ eq: linkEqPlan }));
+    const linkSelect = vi.fn(() => ({ eq: linkEqUser }));
+
+    const habitMaybeSingle = vi.fn().mockResolvedValue({ data: buildHabitRow(), error: null });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+
+    const linkUpdateMaybeSingle = vi.fn().mockResolvedValue({ data: pausedLink, error: null });
+    const linkUpdateSelect = vi.fn(() => ({ maybeSingle: linkUpdateMaybeSingle }));
+    const linkUpdateEqId = vi.fn(() => ({ select: linkUpdateSelect }));
+    const linkUpdateEqUser = vi.fn(() => ({ eq: linkUpdateEqId }));
+    const linkUpdate = vi.fn(() => ({ eq: linkUpdateEqUser }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "dryland_micro_plans") return { select: planSelect };
+      if (table === "habit_definitions") return { select: habitSelect };
+      if (table === "micro_session_habit_links") {
+        return { select: linkSelect, update: linkUpdate };
+      }
+      return {};
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ habitLinkStatus: "paused" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      plan: { status: string; habitLink: { status: string } | null };
+    };
+
+    expect(response.status).toBe(200);
+    expect(linkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "paused",
+        paused_at: expect.any(String),
+        ended_at: null,
+      })
+    );
+    expect(payload.plan.status).toBe("active");
+    expect(payload.plan.habitLink).toMatchObject({ status: "paused" });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "micro_session_habit_link_status_updated",
+        payload: expect.objectContaining({ status: "paused" }),
+      })
+    );
+  });
+
+  it("resumes a current-week linked Habit without backfilling missed weeks", async () => {
+    const planMaybeSingle = vi.fn().mockResolvedValue({
+      data: buildMicroPlanRow({
+        status: "active",
+        week_ends_at: "2099-05-11T00:00:00.000Z",
+      }),
+      error: null,
+    });
+    const planEqId = vi.fn(() => ({ maybeSingle: planMaybeSingle }));
+    const planEqUser = vi.fn(() => ({ eq: planEqId }));
+    const planSelect = vi.fn(() => ({ eq: planEqUser }));
+
+    const pausedLink = buildHabitLinkRow({
+      status: "paused",
+      paused_at: "2026-05-10T10:00:00.000Z",
+    });
+    const activeLink = buildHabitLinkRow({
+      status: "active",
+      resumed_at: "2026-05-10T11:00:00.000Z",
+    });
+    const linkMaybeSingle = vi
+      .fn()
+      .mockResolvedValueOnce({ data: pausedLink, error: null })
+      .mockResolvedValueOnce({ data: activeLink, error: null });
+    const linkLimit = vi.fn(() => ({ maybeSingle: linkMaybeSingle }));
+    const linkOrder = vi.fn(() => ({ limit: linkLimit }));
+    const linkIn = vi.fn(() => ({ order: linkOrder }));
+    const linkEqPlan = vi.fn(() => ({ in: linkIn }));
+    const linkEqUser = vi.fn(() => ({ eq: linkEqPlan }));
+    const linkSelect = vi.fn(() => ({ eq: linkEqUser }));
+
+    const habitMaybeSingle = vi.fn().mockResolvedValue({ data: buildHabitRow(), error: null });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+
+    const linkUpdateMaybeSingle = vi.fn().mockResolvedValue({ data: activeLink, error: null });
+    const linkUpdateSelect = vi.fn(() => ({ maybeSingle: linkUpdateMaybeSingle }));
+    const linkUpdateEqId = vi.fn(() => ({ select: linkUpdateSelect }));
+    const linkUpdateEqUser = vi.fn(() => ({ eq: linkUpdateEqId }));
+    const linkUpdate = vi.fn(() => ({ eq: linkUpdateEqUser }));
+    const planUpdate = vi.fn();
+
+    const from = vi.fn((table: string) => {
+      if (table === "dryland_micro_plans") return { select: planSelect, update: planUpdate };
+      if (table === "habit_definitions") return { select: habitSelect };
+      if (table === "micro_session_habit_links") {
+        return { select: linkSelect, update: linkUpdate };
+      }
+      return {};
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchDrylandMicroPlan(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/dryland/micro-plans/22222222-2222-4222-8222-222222222222",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ habitLinkStatus: "active" }),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          planId: "22222222-2222-4222-8222-222222222222",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      plan: { habitLink: { status: string } | null };
+    };
+
+    expect(response.status).toBe(200);
+    expect(planUpdate).not.toHaveBeenCalled();
+    expect(linkUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "active",
+        resumed_at: expect.any(String),
+        ended_at: null,
+      })
+    );
+    expect(payload.plan.habitLink).toMatchObject({ status: "active" });
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "micro_session_habit_link_status_updated",
+        payload: expect.objectContaining({ status: "active" }),
       })
     );
   });

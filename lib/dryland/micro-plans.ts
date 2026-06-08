@@ -12,6 +12,15 @@ export const DRYLAND_MICRO_PLAN_STATUSES = ["active", "paused", "completed"] as 
 export const DRYLAND_MICRO_BLOCK_STATUSES = ["queued", "completed", "skipped"] as const;
 export const DRYLAND_MICRO_RELEASE_MODES = ["available_now", "weekday", "manual"] as const;
 export const DRYLAND_MICRO_TARGET_TYPES = ["reps", "duration"] as const;
+export const DRYLAND_MICRO_HABIT_LINK_STATUSES = ["active", "paused", "ended"] as const;
+export const DRYLAND_MICRO_HABIT_CREDIT_STATUSES = [
+  "not_linked",
+  "counted",
+  "already_counted",
+  "removed",
+  "paused",
+  "blocked",
+] as const;
 export const DRYLAND_MICRO_MAX_SOURCE_SESSIONS = 6;
 export const DRYLAND_MICRO_MAX_UNITS = 80;
 
@@ -20,6 +29,8 @@ export type DrylandMicroBlockStatus = (typeof DRYLAND_MICRO_BLOCK_STATUSES)[numb
 export type DrylandMicroReleaseMode = (typeof DRYLAND_MICRO_RELEASE_MODES)[number];
 export type DrylandMicroTargetType = (typeof DRYLAND_MICRO_TARGET_TYPES)[number];
 export type DrylandMicroTargetUnit = "reps" | "sec";
+export type DrylandMicroHabitLinkStatus = (typeof DRYLAND_MICRO_HABIT_LINK_STATUSES)[number];
+export type DrylandMicroHabitCreditStatus = (typeof DRYLAND_MICRO_HABIT_CREDIT_STATUSES)[number];
 
 export type DrylandMicroBlockSnapshot = {
   id: string;
@@ -69,6 +80,7 @@ export type DrylandMicroPlanRecord = {
   createdAt: string;
   updatedAt: string;
   progress: DrylandMicroPlanProgress;
+  habitLink: DrylandMicroHabitLinkRecord | null;
 };
 
 export type DrylandMicroPlanProgress = {
@@ -91,6 +103,26 @@ export type DrylandMicroSourceSnapshot = {
   skippedUnitCount: number;
 };
 
+export type DrylandMicroHabitLinkRecord = {
+  id: string;
+  habitId: string;
+  status: DrylandMicroHabitLinkStatus | "unsupported";
+  startsOn: string;
+  pausedAt: string | null;
+  resumedAt: string | null;
+  endedAt: string | null;
+  habitTitle: string | null;
+  habitStatus: "active" | "archived" | "unsupported";
+  habitMode: "build" | "quit" | "timed" | "unsupported";
+  habitCadenceLabel: string | null;
+  canCount: boolean;
+};
+
+export type DrylandMicroHabitCreditResult = {
+  status: DrylandMicroHabitCreditStatus;
+  message: string;
+};
+
 export type DrylandMicroPlanCreateRequestBody = {
   sourceDrylandSessionId?: unknown;
   sourceDrylandSessionIds?: unknown;
@@ -106,18 +138,26 @@ export type DrylandMicroPlanPatchRequestBody = {
   blockStatus?: unknown;
   releaseNow?: unknown;
   clearPlan?: unknown;
+  completePausedHabitLink?: unknown;
   planStatus?: unknown;
   title?: unknown;
   sourceDrylandSessionIds?: unknown;
   releaseMode?: unknown;
   releaseTime?: unknown;
   sourceReleaseOffsetDays?: unknown;
+  createRecurringHabit?: unknown;
+  habitTitle?: unknown;
+  habitStartDate?: unknown;
+  habitLinkStatus?: unknown;
+  selectedDate?: unknown;
+  timezone?: unknown;
 };
 
 export type DrylandMicroPlanApiSuccess = {
   ok: true;
   plan: DrylandMicroPlanRecord;
   reusedExisting?: boolean;
+  habitCredit?: DrylandMicroHabitCreditResult;
 };
 
 export type DrylandMicroPlanApiError = {
@@ -168,6 +208,29 @@ function isMicroPlanStatus(value: unknown): value is DrylandMicroPlanStatus {
   return (
     typeof value === "string" &&
     DRYLAND_MICRO_PLAN_STATUSES.includes(value as DrylandMicroPlanStatus)
+  );
+}
+
+export function isMicroHabitLinkStatus(value: unknown): value is DrylandMicroHabitLinkStatus {
+  return (
+    typeof value === "string" &&
+    DRYLAND_MICRO_HABIT_LINK_STATUSES.includes(value as DrylandMicroHabitLinkStatus)
+  );
+}
+
+export function isDrylandMicroWeeklyProgramComplete(blocks: DrylandMicroBlockSnapshot[]): boolean {
+  const activeBlocks = blocks.filter((block) => !block.isArchived);
+  return activeBlocks.length > 0 && activeBlocks.every((block) => block.status === "completed");
+}
+
+export function getDrylandMicroWeeklyProgramCreditBlockId(
+  blocks: DrylandMicroBlockSnapshot[]
+): string | null {
+  return (
+    blocks
+      .slice()
+      .reverse()
+      .find((block) => !block.isArchived && block.status === "completed")?.id ?? null
   );
 }
 
@@ -924,7 +987,10 @@ export function isDrylandMicroBlockAvailable(
   return releaseDate !== null && releaseDate.getTime() <= now.getTime();
 }
 
-export function buildDrylandMicroPlanRecord(row: DrylandMicroPlanRow): DrylandMicroPlanRecord {
+export function buildDrylandMicroPlanRecord(
+  row: DrylandMicroPlanRow,
+  habitLink: DrylandMicroHabitLinkRecord | null = null
+): DrylandMicroPlanRecord {
   const blocks = normalizeDrylandMicroBlocks(row.blocks);
   if (!blocks.ok) {
     throw new Error(`Stored dryland micro plan ${row.id} is invalid: ${blocks.error}`);
@@ -955,5 +1021,6 @@ export function buildDrylandMicroPlanRecord(row: DrylandMicroPlanRow): DrylandMi
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     progress: buildDrylandMicroPlanProgress(blocks.value),
+    habitLink,
   };
 }

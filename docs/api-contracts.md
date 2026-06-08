@@ -347,11 +347,14 @@
 ```json
 {
   "blockId": "block-1-exercise-1",
-  "blockStatus": "completed"
+  "blockStatus": "completed",
+  "selectedDate": "2026-06-08",
+  "timezone": "Europe/Oslo"
 }
 ```
 
 - `blockStatus`: `queued`, `completed`, or `skipped`
+- `selectedDate` + `timezone`: optional for legacy Micro Session updates, required by the current client when a linked Habit may receive credit.
 - Body for plan pause/resume:
 
 ```json
@@ -359,6 +362,34 @@
   "planStatus": "paused"
 }
 ```
+
+- Body for explicitly linking the current Micro Session to a new recurring build Habit:
+
+```json
+{
+  "createRecurringHabit": true,
+  "habitTitle": "Evening mobility",
+  "habitStartDate": "2026-06-08",
+  "selectedDate": "2026-06-08",
+  "timezone": "Europe/Oslo"
+}
+```
+
+- The server creates one active weekly build/binary Habit with `isPerfectDayItem: false`, then creates one owner-scoped Micro Session/Habit link.
+- The linked Habit receives one weekly credit automatically when every non-archived unit in the current Micro Session is completed. `skipped` units do not count as completed.
+- If the user undoes a completed unit while the active weekly program is no longer complete, the server removes only the auto-generated Micro Session Habit credit for that plan/week. Manual Habit check-ins are not removed.
+- Body for pausing/resuming Habit counting without pausing the Micro Session:
+
+```json
+{
+  "habitLinkStatus": "paused",
+  "selectedDate": "2026-06-08",
+  "timezone": "Europe/Oslo"
+}
+```
+
+- `habitLinkStatus`: `active` or `paused`
+- Resuming a paused linked Habit after the Micro Session week is stale may replace the old open plan with a current-week Micro Session from the same source sessions. Old completed/skipped blocks stay in the completed plan history; paused weeks are not backfilled.
 
 - Body for clearing the active weekly surface without deleting saved Dryland Sessions:
 
@@ -392,18 +423,28 @@
       "completedBlockCount": 1,
       "totalBlockCount": 2,
       "progressPercent": 50
+    },
+    "habitLink": {
+      "status": "active",
+      "habitId": "55555555-5555-4555-8555-555555555555",
+      "habitTitle": "Evening mobility",
+      "canCount": true
     }
+  },
+  "habitCredit": {
+    "status": "counted",
+    "message": "Habit completed for this week: Evening mobility"
   }
 }
 ```
 
 ### Status Codes
 
-- `200`: plan updated or active weekly surface cleared
-- `400`: invalid JSON, plan id, block id, block status, plan status, or source dryland session id
+- `200`: plan updated, active weekly surface cleared, linked Habit created, or Habit linkage paused/resumed
+- `400`: invalid JSON, plan id, block id, block status, plan status, Habit linkage status, recurring Habit input, or source dryland session id
 - `401`: unauthenticated
-- `404`: micro plan not found for this user
-- `503`: micro-plan schema not live in the environment
+- `404`: micro plan, linked Habit, or linked source session not found for this user
+- `503`: micro-plan, linkage, or Habit schema not live in the environment
 
 ## `GET|POST /api/progress/guide`
 

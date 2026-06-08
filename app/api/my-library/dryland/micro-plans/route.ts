@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
+import { loadDrylandMicroHabitLinkRecord } from "@/lib/dryland/micro-habit-linkage";
 import {
   buildDrylandMicroPlanInsert,
   DRYLAND_MICRO_PLAN_SELECT,
@@ -29,6 +30,11 @@ function noStoreJson(
       "Cache-Control": "no-store",
     },
   });
+}
+
+function isStaleMicroPlan(plan: ReturnType<typeof buildDrylandMicroPlanRecord>, now: Date) {
+  const weekEndsAtMs = Date.parse(plan.weekEndsAt);
+  return Number.isFinite(weekEndsAtMs) && weekEndsAtMs <= now.getTime();
 }
 
 export async function POST(request: Request) {
@@ -103,13 +109,37 @@ export async function POST(request: Request) {
   }
 
   if (existingPlanResult.data) {
-    return applySupabaseCookies(
-      noStoreJson({
-        ok: true,
-        plan: buildDrylandMicroPlanRecord(existingPlanResult.data as DrylandMicroPlanRow),
-        reusedExisting: true,
-      })
-    );
+    const existingPlanRow = existingPlanResult.data as DrylandMicroPlanRow;
+    const habitLink = await loadDrylandMicroHabitLinkRecord(supabase, user.id, existingPlanRow.id);
+    const existingPlan = buildDrylandMicroPlanRecord(existingPlanRow, habitLink);
+    if (!isStaleMicroPlan(existingPlan, new Date()) || habitLink) {
+      return applySupabaseCookies(
+        noStoreJson({
+          ok: true,
+          plan: existingPlan,
+          reusedExisting: true,
+        })
+      );
+    }
+
+    const archiveResult = await supabase
+      .from("dryland_micro_plans")
+      .update({ status: "completed" })
+      .eq("user_id", user.id)
+      .eq("id", existingPlanRow.id);
+
+    if (archiveResult.error) {
+      console.error("[DrylandMicroPlanApi] Could not archive stale micro plan", {
+        planId: existingPlanRow.id,
+        error: archiveResult.error,
+      });
+      return applySupabaseCookies(
+        noStoreJson(
+          { ok: false, error: "Could not start this week's Micro Session right now." },
+          { status: 500 }
+        )
+      );
+    }
   }
 
   const sourceResult = await supabase
@@ -210,7 +240,7 @@ export async function POST(request: Request) {
   return applySupabaseCookies(
     noStoreJson({
       ok: true,
-      plan: buildDrylandMicroPlanRecord(insertResult.data as DrylandMicroPlanRow),
+      plan: buildDrylandMicroPlanRecord(insertResult.data as DrylandMicroPlanRow, null),
     })
   );
 }
