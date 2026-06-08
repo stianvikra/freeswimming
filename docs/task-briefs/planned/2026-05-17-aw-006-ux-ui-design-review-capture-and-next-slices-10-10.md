@@ -205,11 +205,11 @@ The app has a strong technical foundation, clear mobile-first intent, good acces
 
 ## Remaining PR-Sized UX/UI Slices
 
-AW-006 latest completed Habits slice shipped in PR `#1023`: `docs/task-briefs/done/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`. The owner-provided Habits product/UI findings remain captured in the planned parent/intake `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`. Historical Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, Child N, Child P, and Child Q outcomes are recorded in the completed-slice table below.
+AW-006 latest completed Habits hotfix shipped in PR `#1027`: `docs/task-briefs/done/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md`. The owner-provided Habits product/UI findings remain captured in the planned parent/intake `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`. Historical Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, Child N, Child P, Child Q, and Child R outcomes are recorded in the completed-slice table below.
 
-AW-006 latest product/UI implementation: PR `#1023` closed `docs/task-briefs/done/2026-06-08-aw-006-habits-status-sound-and-fixed-motivation-10-10.md`.
+AW-006 latest product/UI implementation: PR `#1027` closed `docs/task-briefs/done/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md`.
 
-AW-006 active hotfix: `docs/task-briefs/in-progress/2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10.md` owns H-059 after owner reported the #1023 Habits ding still sounds like the same wrong sound and then caught after #1025 that Micro Sessions bubbles still used the old separate sound. The hotfix must make Habits and Micro Sessions positive feedback use the owner-selected MP3 asset at about 15% app playback volume and stop for owner audio approval before PR gates.
+AW-006 latest completed hotfix: PR `#1027` closed H-059 after owner reported the #1023 Habits ding still sounded like the same wrong sound and then caught after #1025 that Micro Sessions bubbles still used the old separate sound. Habits and Micro Sessions positive feedback now use the owner-selected MP3 asset at about 15% app playback volume.
 
 AW-006 latest audit implementation: PR `#961` closed `Admin Console Accessibility Audit + Bounded Fixes`.
 
@@ -217,9 +217,9 @@ AW-006 previous lifecycle repair: PR `#997` closed `docs/task-briefs/done/2026-0
 
 AW-006 latest lifecycle repair: PR `#1020` closed the repo-managed Habits timer completion closeout after PR `#1019`.
 
-AW-006 completed Habits/calendar state: Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, Child N, Child P, Child Q, My Library Calendar Period Comparison, and Calendar Compare Findings Polish are done.
+AW-006 completed Habits/calendar state: Child A, Child B, Child C, Child D, Child F, Child G, Child H, Child I, Child J, Child K, Child L, Child M, Child N, Child P, Child Q, Child R, My Library Calendar Period Comparison, and Calendar Compare Findings Polish are done.
 
-AW-006 active product/UI state: Child R Habits Ding Listenable Hotfix is still active after PR `#1025` because the shared Micro Sessions bubble sound requirement was incomplete; return to the Habits parent/intake after owner audio approval, PR, merge, and closeout before selecting another child.
+AW-006 latest completed product/UI state: Child R Habits Ding Listenable Hotfix closed in PR `#1027` after the shared Micro Sessions bubble sound requirement was incomplete in PR `#1025`; return to the Habits parent/intake before selecting another child.
 
 AW-006 latest docs-only Habits decision after Child N: PR `#1015` shipped `docs/task-briefs/done/2026-06-07-aw-006-micro-sessions-recurring-habit-linkage-decision-10-10.md`, recording no midnight auto-write for H-028 and explicit opt-in only for H-046 Micro Sessions recurring Habit linkage. It also defines the user-facing Micro Session as a stable routine that can contain one or more source Dryland Sessions/blocks, so source edits and queued-plan rebuilds do not break Habit linkage or rewrite old counted history. Runtime implementation remains unselected.
 

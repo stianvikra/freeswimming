@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-08-aw-006-habits-ding-listenable-hotfix-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-08`
 - `updated`: `2026-06-08`
@@ -228,3 +228,31 @@ After owner audio approval:
 - `2026-06-08 | pre-pr gate passed | npm run verify:pre-pr passed full lane, including quality gates, lint, typecheck, unit tests, build, perf budgets, and Playwright E2E | next: commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green checks per owner instruction`
 - `2026-06-08 | corrective-follow-up | after PR #1025 merge and invalid closeout PR #1026 creation, owner caught that Micro Sessions bubbles still used the old separate sound and asked whether the shared ding could play around 15% volume; closeout PR #1026 was closed and branch hotfix/habits-micro-shared-ding-volume started from clean main@5b27d823 | next: wire Micro Sessions to the same positiveDing MP3, set shared asset volume to 0.15, update tests/docs, then stop for owner audio approval before verify:pre-pr`
 - `2026-06-08 | owner approval to proceed | owner confirmed keep shared MP3 playback at 0.15 app volume and instructed "merge pa gode tester"; targeted sound/Habits/Micro tests, typecheck, diff check, and full brief lint passed before approval | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green checks`
+- `2026-06-08 | merged | PR #1027 merged as squash commit 9575c751 after CI and local pre-merge passed | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-08`
+- `merged_pr`: `#1027`
+- `squash_commit`: `9575c751`
+- `result`: Closed the Habits/Micro shared ding hotfix. Habits and Micro Sessions now use the owner-selected MP3 source for positive feedback at `0.15` app playback volume, with tests proving the shared asset, volume, and failed-playback behavior.
+- `validation`: Targeted Vitest for `client-sound`, `dryland-micro-plan-panel`, and `habit-perfect-day-hub` passed; `npm run lint:briefs:all`, `npm run typecheck`, and `git diff --check` passed; `npm run verify:pre-pr` passed full lane twice, with the final artifact at `artifacts/test-runs/20260608-202805/verify.log`; PR `#1027` CI passed `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `Vercel`, `CodeQL`, and `size-check`; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260608-184224.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; `i18n operational readiness` remains `4/5` by scoped rationale because no translation workflow was introduced.
+
+| Category                                      | Achieved Score | Evidence                                                                                           | Gaps / Notes                                                                          |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1027`, owner approval, shared `positiveDing` MP3 at `0.15`                                    | None.                                                                                 |
+| UX flow clarity                               | `5/5`          | Habits/Micro tests, audio approval artifact, `verify:pre-pr`                                       | None.                                                                                 |
+| Visual design quality                         | `5/5`          | Owner-approved screenshot/audio handoff from the implementation PR and no visual docs-only changes | No new screenshots needed for closeout docs-only PR.                                  |
+| Business logic correctness and data integrity | `5/5`          | Component tests prove no failed completion sound and no extra completion writes                    | None.                                                                                 |
+| Accessibility (a11y)                          | `5/5`          | Sound remains opt-in/local; `See all`/status semantics covered by component tests                  | None.                                                                                 |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical a11y row                                                        | None.                                                                                 |
+| Data placement and sync boundaries            | `5/5`          | Static asset/volume mapping; no persistence changes                                                | None.                                                                                 |
+| Reliability and failure handling              | `5/5`          | Browser audio fail-soft tests and no oscillator fallback for scoped positive feedback              | None.                                                                                 |
+| Privacy and compliance                        | `5/5`          | Static MP3 path only; no user data, analytics, or logs added                                       | None.                                                                                 |
+| Content governance                            | `5/5`          | Parent/queue/design inventory/high-cost debug log updated                                          | Closeout PR records lifecycle completion.                                             |
+| Incident response and support operations      | `5/5`          | High-cost debug log captures symptom, root cause, fix pattern, detection, and prevention           | None.                                                                                 |
+| i18n operational readiness                    | `4/5`          | Week/date text uses existing formatting and labels were screenshot-reviewed                        | Translation workflow remains out of scope; future locale work needs explicit mapping. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing sound helper and component surfaces; no dependency added                           | None.                                                                                 |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, two full local `verify:pre-pr` runs, PR CI, and `verify:pre-merge`                | None.                                                                                 |
+| DevOps and rollback readiness                 | `5/5`          | Isolated hotfix with no migration; squash commit `9575c751`                                        | Revert is a normal code/docs revert if the selected MP3 or volume must change later.  |
