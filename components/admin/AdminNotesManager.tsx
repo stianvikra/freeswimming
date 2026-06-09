@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ImageIcon, Link2, RefreshCcw, Save, Search, Trash2, Upload } from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import type { AdminNoteContextType } from "@/lib/admin/note-context";
 import {
@@ -1720,9 +1721,8 @@ export default function AdminNotesManager() {
                               image from clipboard directly.
                             </p>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
                             <AdminNoteClipboardPasteButton
-                              className={compactSecondaryActionClass}
                               onPasteReady={async (file) => {
                                 setActionError(null);
                                 setActionNotice(null);
@@ -1737,7 +1737,11 @@ export default function AdminNotesManager() {
                               )}
                             />
                             <label
-                              className={cx(compactSecondaryActionClass, "cursor-pointer py-2")}
+                              className={cx(
+                                compactSecondaryActionClass,
+                                mobileActionItemClass,
+                                "cursor-pointer py-2"
+                              )}
                             >
                               <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                               <span>{isUploading ? "Uploading…" : "Upload images"}</span>
@@ -2136,9 +2140,8 @@ export default function AdminNotesManager() {
                   {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files before save.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
                 <AdminNoteClipboardPasteButton
-                  className={compactSecondaryActionClass}
                   onPasteReady={async (file) => {
                     setActionError(null);
                     appendCreatePendingScreenshots([file]);
@@ -2149,7 +2152,13 @@ export default function AdminNotesManager() {
                   }}
                   disabled={Boolean(submitting)}
                 />
-                <label className={cx(compactSecondaryActionClass, "cursor-pointer py-2")}>
+                <label
+                  className={cx(
+                    compactSecondaryActionClass,
+                    mobileActionItemClass,
+                    "cursor-pointer py-2"
+                  )}
+                >
                   <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Upload images</span>
                   <input

@@ -124,7 +124,7 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     expect(imagesPanel).toHaveClass("fs-library-card-muted");
     expect(screen.getByRole("button", { name: "Save" })).toHaveClass("fs-cta-primary");
     const uploadAction = screen.getByLabelText("Upload images").closest("label");
-    expect(uploadAction).toHaveClass("fs-cta-secondary");
+    expect(uploadAction).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
 
     await user.type(screen.getByLabelText("Title"), "Tighten copy");
     const discardActions = screen.getAllByRole("button", { name: "Discard" });

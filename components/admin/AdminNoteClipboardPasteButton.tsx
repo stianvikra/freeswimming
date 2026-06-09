@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { mobileActionItemClass } from "@/components/ui/actionLayout";
+import { cx } from "@/components/ui/cx";
 import { readAdminNoteClipboardImageFromNavigator } from "@/lib/admin/note-compose";
 
 type Props = {
@@ -13,6 +15,9 @@ type Props = {
   className?: string;
   buttonTestId?: string;
 };
+
+const defaultButtonClassName =
+  "fs-cta-secondary inline-flex min-h-9 items-center justify-center gap-2 px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function AdminNoteClipboardPasteButton({
   onPasteReady,
@@ -62,12 +67,7 @@ export default function AdminNoteClipboardPasteButton({
       onClick={() => {
         void handleClick();
       }}
-      className={[
-        "inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={cx(defaultButtonClassName, mobileActionItemClass, className)}
     >
       {loading ? loadingLabel : buttonLabel}
     </button>

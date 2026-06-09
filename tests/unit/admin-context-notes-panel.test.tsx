@@ -308,7 +308,9 @@ describe("AdminContextNotesPanel", () => {
       within(createForm).getByRole("button", { name: "Paste image from clipboard" })
     ).toHaveClass("fs-cta-secondary");
     expect(within(createForm).getByText("Upload images").closest("label")).toHaveClass(
-      "fs-cta-secondary"
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
     );
 
     const item = await screen.findByTestId("admin-context-note-item");
@@ -329,7 +331,9 @@ describe("AdminContextNotesPanel", () => {
       "fs-cta-secondary"
     );
     expect(within(editForm).getByText("Upload images").closest("label")).toHaveClass(
-      "fs-cta-secondary"
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
     );
   });
 

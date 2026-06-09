@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Plus, RefreshCcw, Save, Trash2, Upload, X } from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import type { AdminRole } from "@/lib/admin/access";
 import { hasRequiredAdminRole } from "@/lib/admin/access";
@@ -751,7 +752,7 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                           Images
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
                         <AdminNoteClipboardPasteButton
                           onPasteReady={async (file) => {
                             setError(null);
@@ -761,9 +762,14 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                             setError(message);
                           }}
                           disabled={submitting}
-                          className={compactSecondaryActionClass}
                         />
-                        <label className={cx(compactSecondaryActionClass, "cursor-pointer")}>
+                        <label
+                          className={cx(
+                            compactSecondaryActionClass,
+                            mobileActionItemClass,
+                            "cursor-pointer"
+                          )}
+                        >
                           <Upload className="h-4 w-4" aria-hidden="true" />
                           <span>Upload images</span>
                           <input

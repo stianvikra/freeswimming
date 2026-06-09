@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { cx } from "@/components/ui/cx";
 import { hasRequiredAdminRole, type AdminRole } from "@/lib/admin/access";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
@@ -1016,7 +1017,7 @@ export default function AdminContextNotesPanel({
                           images before save.
                         </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
                         <AdminNoteClipboardPasteButton
                           buttonTestId="admin-context-note-paste-image"
                           onPasteReady={async (file) => {
@@ -1027,9 +1028,14 @@ export default function AdminContextNotesPanel({
                             setActionError(message);
                           }}
                           disabled={submitting}
-                          className={secondaryActionClass}
                         />
-                        <label className={cx(secondaryActionClass, "cursor-pointer")}>
+                        <label
+                          className={cx(
+                            secondaryActionClass,
+                            mobileActionItemClass,
+                            "cursor-pointer"
+                          )}
+                        >
                           <span>Upload images</span>
                           <input
                             type="file"
@@ -1383,7 +1389,7 @@ export default function AdminContextNotesPanel({
                                 Add or remove image evidence on this saved note.
                               </p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
                               <AdminNoteClipboardPasteButton
                                 buttonTestId="admin-context-note-edit-paste-image"
                                 onPasteReady={async (file) => {
@@ -1398,9 +1404,14 @@ export default function AdminContextNotesPanel({
                                 disabled={Boolean(
                                   isUploading || deletingAttachmentId || updatingId || deletingId
                                 )}
-                                className={secondaryActionClass}
                               />
-                              <label className={cx(secondaryActionClass, "cursor-pointer")}>
+                              <label
+                                className={cx(
+                                  secondaryActionClass,
+                                  mobileActionItemClass,
+                                  "cursor-pointer"
+                                )}
+                              >
                                 <span>{isUploading ? "Uploading…" : "Upload images"}</span>
                                 <input
                                   type="file"

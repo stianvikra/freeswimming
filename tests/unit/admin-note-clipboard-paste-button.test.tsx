@@ -9,6 +9,30 @@ describe("AdminNoteClipboardPasteButton", () => {
     vi.unstubAllGlobals();
   });
 
+  it("uses the shared secondary action fallback while preserving caller class composition", () => {
+    const onPasteReady = vi.fn();
+
+    render(
+      <AdminNoteClipboardPasteButton
+        onPasteReady={onPasteReady}
+        className="w-full justify-start"
+        buttonTestId="paste-image"
+      />
+    );
+
+    const button = screen.getByTestId("paste-image");
+    expect(button).toHaveClass("fs-cta-secondary");
+    expect(button).toHaveClass("min-h-9");
+    expect(button).toHaveClass("min-w-0");
+    expect(button).toHaveClass("focus-visible:ring-blue-700");
+    expect(button).toHaveClass("w-full");
+    expect(button).toHaveClass("sm:w-auto");
+    expect(button).toHaveClass("justify-start");
+    expect(button).not.toHaveClass("rounded-lg");
+    expect(button).not.toHaveClass("border-slate-200");
+    expect(button).not.toHaveClass("text-slate-700");
+  });
+
   it("reads an image from the clipboard and forwards it to the caller", async () => {
     const user = userEvent.setup();
     const onPasteReady = vi.fn().mockResolvedValue(undefined);
