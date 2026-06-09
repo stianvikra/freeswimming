@@ -12,10 +12,10 @@
 
 - Done child: `docs/task-briefs/done/2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10.md`
 - Done child: `docs/task-briefs/done/2026-06-09-admin-analytics-dashboard-read-only-v1-10-10.md`
-- Active child: `docs/task-briefs/in-progress/2026-06-09-analytics-retention-and-rollup-lifecycle-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-09-analytics-retention-and-rollup-lifecycle-v1-10-10.md`
 - Completed V1 scope: additive `analytics_events` persistence, fail-soft event writes, and admin-only JSON insights.
 - Completed read-only dashboard scope: visible admin dashboard over the existing insights contract, without new persistence, vendors, cookies, visitor IDs, CSV export, rollups, retention cleanup, or finance-grade reporting.
-- Active lifecycle scope: additive daily rollups, service-role-only rollup refresh/prune functions, lifecycle diagnostics, docs, and tests without automatic scheduled deletion.
+- Completed lifecycle scope: additive daily rollups, service-role-only rollup refresh/prune functions, lifecycle diagnostics, docs, and tests without automatic scheduled deletion.
 - Still deferred here: CSV export, scheduled retention automation, broader product/auth/library reliability modules, and finance-grade reporting.
 
 ## Goal

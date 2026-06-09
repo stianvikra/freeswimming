@@ -294,3 +294,30 @@ Use the repo-standard Safari PR flow, preferably `npm run pr:create:safari`, unl
 - `2026-06-09 | implemented + targeted validation | added additive analytics daily rollup/run-history migration, service-role-only refresh/prune SQL functions, generated DB type contract, lifecycle status helper, admin insights lifecycle metadata, API/architecture/privacy/parent docs, and targeted tests; validation passed: targeted Vitest 5 files / 21 tests and npm run typecheck; route/label/support sweep for analytics_event_daily_rollups, analytics_event_rollup_runs, /api/admin/analytics/insights, retention, rollup, CSV export, finance reconciliation, Plausible, GA4, Meta, Hotjar, and Clarity found expected analytics/docs/privacy/legacy-brief references only with no extra vendor, cookie, finance, export, or UI scope required | next: run lint:briefs:all, lint:quality-gates, git diff --check, apply migration remotely if drift gate requires it, then run npm run verify:pre-pr`
 - `2026-06-09 | remote migration applied | npx supabase db push --linked applied 20260609223000_analytics_rollup_retention_lifecycle.sql successfully with expected first-run drop-policy notices for new rollup policies; targeted validation remains green and npm run lint passed with only pre-existing output/ artifact warnings | next: run npm run verify:pre-pr`
 - `2026-06-09 22:44 CEST | verify:pre-pr passed | final full pre-PR gate passed after checkpoint update on branch analytics-retention-rollup-lifecycle-v1 with branch-current, Supabase migration drift, quality gates, admin audit lint, env parity lint, PR body lint, eslint, typecheck, unit tests, build, performance budgets, and Playwright open checks green; E2E summary was 106 passed / 530 skipped, performance trend recommendation was hold, and evidence is in artifacts/test-runs/20260609-223835/verify.log | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1047`
+- `squash_commit`: `0b5e3217`
+- `result`: Closed Analytics Retention And Rollup Lifecycle V1 by adding privacy-safe daily rollups, service-role-only refresh/prune functions, lifecycle diagnostics, API/docs coverage, and tests while keeping scheduled deletion, finance reporting, exports, vendors, and UI changes out of scope.
+- `validation`: `npx supabase db push --linked` applied the additive migration; targeted Vitest and typecheck passed; `npm run verify:pre-pr` passed full lane on HEAD `b56d94a7` with E2E `106 passed / 530 skipped`; PR #1047 CI passed `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, and Vercel; `npm run verify:pre-merge` passed and recorded `artifacts/verify-pre-merge/20260609-210010.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                        | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Parent brief and PR #1047 now show persistence, dashboard, and lifecycle child status distinctly.               | None.        |
+| Business logic correctness and data integrity | `5/5`          | Migration and tests validate deterministic aggregate dimensions and prune safety by rollup coverage.            | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | Full `verify:pre-pr` performance budgets passed on unchanged public route budgets.                              | None.        |
+| Data placement and sync boundaries            | `5/5`          | Raw events and daily rollups are server-canonical; no local/browser state boundary changed.                     | None.        |
+| Caching and invalidation strategy             | `5/5`          | Admin lifecycle diagnostics remain `no-store`; refresh/prune remain explicit service-role ops.                  | None.        |
+| Reliability and failure handling              | `5/5`          | Tests cover missing raw schema, missing rollup schema, stale/missing rollups, and query failures.               | None.        |
+| Security and authz                            | `5/5`          | SQL functions are service-role-only; admin insights stay viewer+ and fail closed for `401`/`403`.               | None.        |
+| Privacy and compliance                        | `5/5`          | Rollups store sanitized dimensions/counts only, with no cookies, visitor IDs, raw URLs, or bridge.              | None.        |
+| Content governance                            | `5/5`          | API contract, architecture registry, service matrix, privacy runbook, and parent brief were updated.            | None.        |
+| Analytics and KPI observability               | `5/5`          | Admin insights expose lifecycle readiness metadata with tests proving raw payloads are not shown.               | None.        |
+| Incident response and support operations      | `5/5`          | API metadata and docs identify schema-missing, stale, and prune-safety states for operators.                    | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js route, TypeScript helper, Supabase migration/RLS, and Vitest patterns were reused.             | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                                     | None.        |
+| Scalability and cost efficiency               | `5/5`          | Daily rollups and prune guards bound long-term storage/query growth without deleting unrolled data.             | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Migration is additive; automatic deletion was not shipped; operation and rollback boundaries remain documented. | None.        |
