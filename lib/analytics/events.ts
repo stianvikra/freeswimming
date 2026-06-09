@@ -1,4 +1,7 @@
 export const ANALYTICS_EVENT_NAMES = [
+  "public_page_viewed",
+  "public_cta_clicked",
+  "product_viewed",
   "plans_viewed",
   "checkout_started",
   "checkout_completed",
@@ -91,7 +94,12 @@ export type AnalyticsEventRecord = {
 };
 
 const EVENT_NAME_SET = new Set<string>(ANALYTICS_EVENT_NAMES);
-const SENSITIVE_KEY_PATTERN = /(email|token|secret|password|cookie|authorization)/i;
+const SENSITIVE_KEY_PATTERN =
+  /(email|token|secret|password|cookie|authorization|session|customer|payment|card|phone|address|shipping)/i;
+const DISALLOWED_KEY_PATTERN =
+  /(free.?text|message|note|goal|raw.?url|full.?url|url.?with|raw.?referrer|\breferrer\b|query|user.?agent|ip.?address|\bip\b|fingerprint|clipboard|cart.?note|personalization)/i;
+const SENSITIVE_VALUE_PATTERN =
+  /(@|https?:\/\/.+\?|(?:^|\b)(?:\d{1,3}\.){3}\d{1,3}(?:\b|$)|bearer\s+|eyJ[a-zA-Z0-9_-]+\.)/i;
 const MAX_STRING_LENGTH = 200;
 
 function truncateString(value: string): string {
@@ -101,7 +109,10 @@ function truncateString(value: string): string {
 
 function toScalar(value: unknown): AnalyticsEventPayloadScalar | undefined {
   if (value === null) return null;
-  if (typeof value === "string") return truncateString(value);
+  if (typeof value === "string") {
+    if (SENSITIVE_VALUE_PATTERN.test(value)) return "[redacted]";
+    return truncateString(value);
+  }
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "boolean") return value;
   return undefined;
@@ -119,6 +130,10 @@ export function sanitizeAnalyticsPayload(
   const sanitized: Record<string, AnalyticsEventPayloadScalar> = {};
 
   for (const [key, value] of Object.entries(payload)) {
+    if (DISALLOWED_KEY_PATTERN.test(key)) {
+      continue;
+    }
+
     if (SENSITIVE_KEY_PATTERN.test(key)) {
       sanitized[key] = "[redacted]";
       continue;

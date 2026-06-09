@@ -248,18 +248,29 @@
 
 - Headers:
   - `Content-Type: application/json`
-- Auth: optional (event is accepted for signed-in and signed-out users)
+- Auth: optional (event is accepted for signed-in and signed-out users).
+- Public client events stay public aggregate: route-template/product events such as
+  `public_page_viewed`, `plans_viewed`, and `product_viewed` are recorded without attaching the
+  signed-in `user_id`, even when an auth cookie exists.
 - `eventName` must match the allowed analytics event contract list (see My Library task brief section `Analytics and KPI Contract (V1)`).
+- Payload is sanitized. Free text, raw URLs/referrers, raw User-Agent, raw IP, email, payment,
+  shipping, cart notes, and nested objects are stripped or redacted.
 - Body:
 
 ```json
 {
   "eventName": "plans_viewed",
   "payload": {
+    "source": "plans",
+    "routeTemplate": "/plans",
+    "routeCategory": "pricing",
+    "routeStatus": "active",
+    "routeCountable": true,
     "productCount": 3,
     "availableCount": 3,
     "activeCount": 3,
     "productIds": "guide_0_1000m,guide_poolside,analysis_video",
+    "productTypes": "course_addon,analysis",
     "availableProductIds": "guide_0_1000m,guide_poolside,analysis_video",
     "unavailableProductIds": null
   }

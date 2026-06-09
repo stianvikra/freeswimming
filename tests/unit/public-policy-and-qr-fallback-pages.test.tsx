@@ -41,7 +41,7 @@ describe("public policy and QR fallback pages", () => {
 
     const page = screen.getByTestId("privacy-policy-page");
     expect(within(page).getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
-    expect(within(page).getByText("Last updated: February 17, 2026")).toBeVisible();
+    expect(within(page).getByText("Last updated: June 9, 2026")).toBeVisible();
 
     const controllerCard = screen.getByTestId("privacy-controller-card");
     expect(controllerCard).toHaveClass("fs-library-card", "fs-library-card-accent");
@@ -52,6 +52,20 @@ describe("public policy and QR fallback pages", () => {
     expect(screen.getByText("Supabase")).toBeVisible();
     expect(screen.getByText("Stripe")).toBeVisible();
     expect(screen.getByText("Payment records")).toBeVisible();
+    const publicAnalyticsCard = screen.getByTestId("privacy-public-analytics-card");
+    expect(
+      within(publicAnalyticsCard).getByRole("heading", { name: "Public website analytics" })
+    ).toBeVisible();
+    expect(
+      within(publicAnalyticsCard).getByText(
+        "No Meta Pixel, GA4, Google Tag Manager, Hotjar, Clarity, heatmaps, or replay."
+      )
+    ).toBeVisible();
+    expect(
+      within(publicAnalyticsCard).getByText(
+        "No public anonymous browsing trail is joined to your account profile."
+      )
+    ).toBeVisible();
 
     const contactLink = screen.getByRole("link", { name: "Contact" });
     expect(contactLink).toHaveAttribute("href", "/contact");
@@ -67,12 +81,22 @@ describe("public policy and QR fallback pages", () => {
 
     const page = screen.getByTestId("cookie-policy-page");
     expect(within(page).getByRole("heading", { name: "Cookie Policy" })).toBeVisible();
-    expect(within(page).getByText("Last updated: February 17, 2026")).toBeVisible();
+    expect(within(page).getByText("Last updated: June 9, 2026")).toBeVisible();
 
     const essentialStorageCard = screen.getByTestId("cookie-essential-storage-card");
     expect(essentialStorageCard).toHaveClass("fs-library-card", "fs-library-card-accent");
     expect(screen.getByText("Session cookies used by Supabase authentication.")).toBeVisible();
     expect(screen.getByText("Consent boundary")).toBeVisible();
+    expect(
+      screen.getByText(
+        "No analytics visitor ID, fingerprint, raw IP, raw User-Agent, or ad click ID."
+      )
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Anonymous public traffic is not joined to a logged-in user profile without a new privacy review, retention rule, deletion/anonymization handling, and tests."
+      )
+    ).toBeVisible();
 
     expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "/contact");
     expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
