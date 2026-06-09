@@ -3,7 +3,7 @@ import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 
-const LAST_UPDATED = "February 17, 2026";
+const LAST_UPDATED = "June 9, 2026";
 
 const pageShellClass = "space-y-6 sm:space-y-7";
 const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
@@ -60,19 +60,34 @@ export default function CookiesPage() {
             </ul>
           </section>
 
-          <section className={sectionClass}>
+          <section className={sectionClass} data-testid="cookie-analytics-card">
             <h2 className={sectionHeadingClass}>Analytics and tracking</h2>
             <p className={`mt-2 ${bodyTextClass}`}>
-              We do not use advertising trackers in this product flow. Product analytics events are
-              limited to service telemetry and do not activate third-party ad cookies.
+              We do not use advertising trackers in this product flow. Public analytics events are
+              limited to aggregate route, source, product, and checkout-funnel signals and do not
+              activate third-party ad cookies.
             </p>
+            <ul className={`mt-3 list-disc space-y-2 pl-5 ${bodyTextClass}`}>
+              <li>No Meta Pixel, GA4, Google Tag Manager, Hotjar, Clarity, heatmaps, or replay.</li>
+              <li>No analytics visitor ID, fingerprint, raw IP, raw User-Agent, or ad click ID.</li>
+              <li>
+                Plausible is the first public analytics vendor candidate, but no Plausible script is
+                active until owner approval, processor/privacy review, and policy evidence are
+                complete.
+              </li>
+            </ul>
           </section>
 
-          <section className={sectionClass}>
+          <section className={sectionClass} data-testid="cookie-consent-boundary-card">
             <h2 className={sectionHeadingClass}>Consent boundary</h2>
             <p className={`mt-2 ${bodyTextClass}`}>
-              If non-essential cookies or trackers are added later, they will be consent-gated
-              before activation in GDPR regions and this policy will be updated.
+              If non-essential cookies, localStorage visitor IDs, pixels, tag managers, replay,
+              heatmaps, or similar tracking technologies are added later, they will be reviewed and
+              consent-gated before activation where required, and this policy will be updated.
+            </p>
+            <p className={`mt-3 ${bodyTextClass}`}>
+              Anonymous public traffic is not joined to a logged-in user profile without a new
+              privacy review, retention rule, deletion/anonymization handling, and tests.
             </p>
           </section>
 

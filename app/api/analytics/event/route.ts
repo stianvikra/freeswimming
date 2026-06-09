@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAnalyticsEventName, trackAnalyticsEvent } from "@/lib/analytics/events";
+import { shouldAttachUserIdToClientAnalyticsEvent } from "@/lib/analytics/public";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
 type AnalyticsEventBody = {
@@ -43,11 +44,14 @@ export async function POST(request: Request) {
       : undefined;
 
   const { user } = await getServerSupabaseUserIfAuthCookiePresent();
+  const userId = shouldAttachUserIdToClientAnalyticsEvent(eventName, payload)
+    ? (user?.id ?? null)
+    : null;
 
   trackAnalyticsEvent({
     eventName,
     channel: "client",
-    userId: user?.id ?? null,
+    userId,
     payload,
   });
 

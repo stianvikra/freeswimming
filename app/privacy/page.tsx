@@ -3,7 +3,7 @@ import Link from "next/link";
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
 
-const LAST_UPDATED = "February 17, 2026";
+const LAST_UPDATED = "June 9, 2026";
 
 const PROCESSORS = [
   {
@@ -119,6 +119,25 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
+          <section className={sectionClass} data-testid="privacy-public-analytics-card">
+            <h2 className={sectionHeadingClass}>Public website analytics</h2>
+            <p className={`mt-2 ${bodyTextClass}`}>
+              We use a privacy-first public analytics foundation to understand aggregate page,
+              source, product, and checkout-funnel health. Public events use route templates, route
+              categories, coarse device/source dimensions, and canonical product IDs where
+              applicable.
+            </p>
+            <ul className={`mt-3 list-disc space-y-2 pl-5 ${bodyTextClass}`}>
+              <li>No Meta Pixel, GA4, Google Tag Manager, Hotjar, Clarity, heatmaps, or replay.</li>
+              <li>No raw IP, raw User-Agent, fingerprint, ad click ID, or full clickstream.</li>
+              <li>No public anonymous browsing trail is joined to your account profile.</li>
+              <li>
+                Plausible is the first vendor candidate, but no public analytics vendor is active
+                until a processor/privacy review and policy update are complete.
+              </li>
+            </ul>
+          </section>
+
           <section className={sectionClass}>
             <h2 className={sectionHeadingClass}>Processors</h2>
             <ul className={`mt-3 space-y-2 ${bodyTextClass}`}>
@@ -174,7 +193,9 @@ export default function PrivacyPage() {
           <section className={sectionMutedClass}>
             <h2 className={sectionHeadingClass}>Cookies and local storage</h2>
             <p className={`mt-2 ${bodyTextClass}`}>
-              We use essential storage for authentication and core product function. See the{" "}
+              We use essential storage for authentication and core product function. Public
+              analytics does not add tracking cookies or a browser visitor ID in this foundation.
+              See the{" "}
               <Link href="/cookies" className={linkClass}>
                 Cookie Policy
               </Link>{" "}

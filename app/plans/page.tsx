@@ -7,6 +7,7 @@ import PageTemplate from "@/components/PageTemplate";
 import PageIntro from "@/components/PageIntro";
 import CheckoutButton from "@/components/my-library/CheckoutButton";
 import { cx } from "@/components/ui/cx";
+import { buildPublicRoutePayload } from "@/lib/analytics/public";
 import { loadPublicCatalogOverridesCached } from "@/lib/commerce/catalog-server";
 import {
   getCatalogProductsWithAvailability,
@@ -140,6 +141,11 @@ function toAnalyticsProductIdList(products: CatalogProductAvailability[]) {
   return products.length > 0 ? products.map((product) => product.id).join(",") : null;
 }
 
+function toAnalyticsProductTypeList(products: CatalogProductAvailability[]) {
+  const productTypes = Array.from(new Set(products.map((product) => product.kind)));
+  return productTypes.length > 0 ? productTypes.join(",") : null;
+}
+
 export default async function PlansPage() {
   let catalogOverrides: CatalogProductOverridesById = {};
   try {
@@ -155,11 +161,15 @@ export default async function PlansPage() {
   const hasUnavailableProducts = unavailableProducts.length > 0;
   const availableCount = availableProducts.length;
   const activeCount = products.filter((product) => product.active).length;
+  const publicRoutePayload = buildPublicRoutePayload("/plans");
   const plansAnalyticsPayload = {
+    source: "plans",
+    ...publicRoutePayload,
     productCount: products.length,
     availableCount,
     activeCount,
     productIds: toAnalyticsProductIdList(products),
+    productTypes: toAnalyticsProductTypeList(products),
     availableProductIds: toAnalyticsProductIdList(availableProducts),
     unavailableProductIds: toAnalyticsProductIdList(unavailableProducts),
   };
@@ -167,6 +177,7 @@ export default async function PlansPage() {
   return (
     <SiteChrome>
       <PageTemplate size="wide" topInset="flush">
+        <TrackEventOnMount eventName="public_page_viewed" payload={publicRoutePayload} />
         <TrackEventOnMount eventName="plans_viewed" payload={plansAnalyticsPayload} />
         {hasAvailableProducts ? (
           <TrackEventOnMount

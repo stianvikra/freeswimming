@@ -7,6 +7,9 @@ import {
 
 describe("analytics events", () => {
   it("validates known event names", () => {
+    expect(isAnalyticsEventName("public_page_viewed")).toBe(true);
+    expect(isAnalyticsEventName("public_cta_clicked")).toBe(true);
+    expect(isAnalyticsEventName("product_viewed")).toBe(true);
     expect(isAnalyticsEventName("checkout_started")).toBe(true);
     expect(isAnalyticsEventName("entitlement_granted")).toBe(true);
     expect(isAnalyticsEventName("qr_redirect_hit")).toBe(true);
@@ -34,6 +37,11 @@ describe("analytics events", () => {
     const payload = sanitizeAnalyticsPayload({
       productId: "guide_0_1000m",
       email: "swimmer@example.com",
+      freeText: "I need help with my shoulder",
+      rawUrl: "https://freeswimming.org/plans?email=swimmer@example.com",
+      referrer: "https://example.com/?token=secret",
+      userAgent: "Mozilla/5.0",
+      ipAddress: "127.0.0.1",
       rowCount: 4,
       ok: true,
       nested: { ignored: true },
@@ -50,6 +58,11 @@ describe("analytics events", () => {
     });
     expect(typeof payload.longText).toBe("string");
     expect(String(payload.longText).length).toBeLessThanOrEqual(201);
+    expect(payload.freeText).toBeUndefined();
+    expect(payload.rawUrl).toBeUndefined();
+    expect(payload.referrer).toBeUndefined();
+    expect(payload.userAgent).toBeUndefined();
+    expect(payload.ipAddress).toBeUndefined();
     expect(payload.nested).toBeUndefined();
   });
 
