@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { getServerSupabaseUserIfAuthCookiePresentMock, trackAnalyticsEventMock } = vi.hoisted(
-  () => ({
+const { getServerSupabaseUserIfAuthCookiePresentMock, trackAndPersistAnalyticsEventMock } =
+  vi.hoisted(() => ({
     getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
-    trackAnalyticsEventMock: vi.fn(),
-  })
-);
+    trackAndPersistAnalyticsEventMock: vi.fn(),
+  }));
 
 vi.mock("@/lib/supabase/server", () => ({
   getServerSupabaseUserIfAuthCookiePresent: getServerSupabaseUserIfAuthCookiePresentMock,
@@ -13,7 +12,10 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/analytics/events", () => ({
   isAnalyticsEventName: (value: string) => value === "plans_viewed" || value === "library_viewed",
-  trackAnalyticsEvent: trackAnalyticsEventMock,
+}));
+
+vi.mock("@/lib/analytics/persistence", () => ({
+  trackAndPersistAnalyticsEvent: trackAndPersistAnalyticsEventMock,
 }));
 
 import { POST } from "@/app/api/analytics/event/route";
@@ -21,7 +23,7 @@ import { POST } from "@/app/api/analytics/event/route";
 describe("/api/analytics/event route", () => {
   afterEach(() => {
     getServerSupabaseUserIfAuthCookiePresentMock.mockReset();
-    trackAnalyticsEventMock.mockReset();
+    trackAndPersistAnalyticsEventMock.mockReset();
   });
 
   it("records anonymous client events without requiring a Supabase user lookup", async () => {
@@ -50,7 +52,7 @@ describe("/api/analytics/event route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true });
     expect(getServerSupabaseUserIfAuthCookiePresentMock).toHaveBeenCalledTimes(1);
-    expect(trackAnalyticsEventMock).toHaveBeenCalledWith({
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
       eventName: "plans_viewed",
       channel: "client",
       userId: null,
@@ -86,7 +88,7 @@ describe("/api/analytics/event route", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(trackAnalyticsEventMock).toHaveBeenCalledWith({
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
       eventName: "plans_viewed",
       channel: "client",
       userId: null,
@@ -122,7 +124,7 @@ describe("/api/analytics/event route", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(trackAnalyticsEventMock).toHaveBeenCalledWith({
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
       eventName: "library_viewed",
       channel: "client",
       userId: "user-123",

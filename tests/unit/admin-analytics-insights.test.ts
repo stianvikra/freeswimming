@@ -1,0 +1,203 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  buildAnalyticsInsights,
+  parseAnalyticsInsightsRangeDays,
+  type AnalyticsEventInsightRow,
+} from "@/lib/analytics/admin-insights";
+
+const { createRouteHandlerSupabaseClientMock, requireAdminRoleFromSupabaseMock } = vi.hoisted(
+  () => ({
+    createRouteHandlerSupabaseClientMock: vi.fn(),
+    requireAdminRoleFromSupabaseMock: vi.fn(),
+  })
+);
+
+vi.mock("@/lib/supabase/route-handler", () => ({
+  createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
+}));
+
+vi.mock("@/lib/admin/server", () => ({
+  requireAdminRoleFromSupabase: requireAdminRoleFromSupabaseMock,
+}));
+
+import { GET as getAdminAnalyticsInsights } from "@/app/api/admin/analytics/insights/route";
+
+function applyResponseCookiesIdentity<T>(response: T): T {
+  return response;
+}
+
+function buildQueryChain(result: unknown) {
+  const chain = {
+    select: vi.fn(),
+    gte: vi.fn(),
+    order: vi.fn(),
+    limit: vi.fn(),
+  };
+
+  chain.select.mockReturnValue(chain);
+  chain.gte.mockReturnValue(chain);
+  chain.order.mockReturnValue(chain);
+  chain.limit.mockResolvedValue(result);
+
+  return chain;
+}
+
+const baseRow: AnalyticsEventInsightRow = {
+  event_name: "plans_viewed",
+  channel: "client",
+  user_id: null,
+  public_aggregate: true,
+  source: "plans",
+  route_template: "/plans",
+  route_category: "pricing",
+  product_id: "guide_poolside",
+  product_type: "course_addon",
+  occurred_at: "2026-06-09T10:00:00.000Z",
+};
+
+describe("admin analytics insights", () => {
+  beforeEach(() => {
+    requireAdminRoleFromSupabaseMock.mockResolvedValue({
+      ok: true,
+      user: { id: "admin-user-id" },
+      role: "viewer",
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("bounds requested ranges", () => {
+    expect(parseAnalyticsInsightsRangeDays(null)).toBe(30);
+    expect(parseAnalyticsInsightsRangeDays("-1")).toBe(30);
+    expect(parseAnalyticsInsightsRangeDays("7")).toBe(7);
+    expect(parseAnalyticsInsightsRangeDays("120")).toBe(90);
+  });
+
+  it("builds a privacy-safe aggregate response", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        baseRow,
+        {
+          ...baseRow,
+          event_name: "checkout_started",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:05:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "checkout_completed",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:06:00.000Z",
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+      rowCap: 5000,
+    });
+
+    expect(insights).toMatchObject({
+      ok: true,
+      schemaReady: true,
+      totalEvents: 3,
+      publicAggregateEvents: 1,
+      clientEvents: 1,
+      serverEvents: 2,
+      uniqueKnownUsers: 1,
+      lastEventAt: "2026-06-09T10:06:00.000Z",
+      funnel: {
+        plansViewed: 1,
+        checkoutStarted: 1,
+        checkoutCompleted: 1,
+        checkoutCompletionRate: 1,
+      },
+    });
+    expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
+    expect(insights.productCounts[0]).toMatchObject({
+      key: "guide_poolside",
+      productType: "course_addon",
+    });
+  });
+
+  it("fails closed for unauthenticated admin insights access", async () => {
+    requireAdminRoleFromSupabaseMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized.",
+    });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from: vi.fn() },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getAdminAnalyticsInsights(
+      new Request("https://freeswimming.test/api/admin/analytics/insights")
+    );
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({ ok: false, error: "Unauthorized." });
+  });
+
+  it("returns setup guidance when the analytics schema is missing", async () => {
+    const chain = buildQueryChain({
+      data: null,
+      error: {
+        code: "42P01",
+        message: 'relation "analytics_events" does not exist',
+      },
+    });
+    const from = vi.fn().mockReturnValue({ select: chain.select });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getAdminAnalyticsInsights(
+      new Request("https://freeswimming.test/api/admin/analytics/insights?rangeDays=7")
+    );
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      warning?: string;
+      rangeDays?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: false,
+      rangeDays: 7,
+    });
+    expect(payload.warning).toContain("Analytics persistence is not ready");
+  });
+
+  it("queries bounded rows for viewer+ admins", async () => {
+    const chain = buildQueryChain({
+      data: [baseRow],
+      error: null,
+    });
+    const from = vi.fn().mockReturnValue({ select: chain.select });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getAdminAnalyticsInsights(
+      new Request("https://freeswimming.test/api/admin/analytics/insights?rangeDays=120")
+    );
+    const payload = (await response.json()) as { ok?: boolean; rangeDays?: number };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({ ok: true, rangeDays: 90 });
+    expect(from).toHaveBeenCalledWith("analytics_events");
+    expect(chain.gte).toHaveBeenCalledWith("occurred_at", expect.any(String));
+    expect(chain.order).toHaveBeenCalledWith("occurred_at", { ascending: false });
+    expect(chain.limit).toHaveBeenCalledWith(5001);
+  });
+});

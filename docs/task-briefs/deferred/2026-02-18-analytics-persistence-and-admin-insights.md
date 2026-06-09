@@ -6,7 +6,13 @@
 - `status`: `deferred`
 - `owner`: `stianvikra`
 - `created`: `2026-02-18`
-- `updated`: `2026-02-19`
+- `updated`: `2026-06-09`
+
+## V1 Child Slice
+
+- Active child: `docs/task-briefs/in-progress/2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10.md`
+- V1 scope: additive `analytics_events` persistence, fail-soft event writes, and admin-only JSON insights.
+- Still deferred here: visible admin dashboard, charts, CSV export, retention cleanup, materialized rollups, broader product/auth/library reliability modules, and finance-grade reporting.
 
 ## Goal
 

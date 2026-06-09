@@ -65,6 +65,9 @@ This foundation therefore does not add non-essential cookies, localStorage visit
 - Logged-in product/admin events stay first-party and account-scoped where needed.
 - Public anonymous events are not linked to `user_id`, email, auth session, or profile state.
 - Checkout completion and entitlement metrics come from Stripe/entitlement truth, not browser-only claims.
+- First-party persistence stores only sanitized `analytics_events` rows through server-owned writes.
+  It does not add a public visitor ID, tracking cookie, localStorage key, vendor script, full URL,
+  raw referrer, raw IP, raw User-Agent, or anonymous-public-to-profile bridge.
 
 ## Future Compatibility
 

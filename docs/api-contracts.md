@@ -255,6 +255,8 @@
 - `eventName` must match the allowed analytics event contract list (see My Library task brief section `Analytics and KPI Contract (V1)`).
 - Payload is sanitized. Free text, raw URLs/referrers, raw User-Agent, raw IP, email, payment,
   shipping, cart notes, and nested objects are stripped or redacted.
+- Accepted events are persisted best-effort to `analytics_events` after sanitization. Persistence
+  failures log server diagnostics but must not block the client event response.
 - Body:
 
 ```json
@@ -301,6 +303,58 @@
 - `200`: event accepted
 - `400`: invalid JSON or invalid event name
 - `415`: unsupported content type
+
+## `GET /api/admin/analytics/insights`
+
+### Request
+
+- Auth: admin viewer, editor, or admin session required.
+- Query:
+  - `rangeDays`: optional integer. Defaults to `30`; max is `90`.
+- Data source: sanitized `analytics_events` rows only.
+- Cache: `no-store`.
+
+### Response
+
+```json
+{
+  "ok": true,
+  "schemaReady": true,
+  "generatedAt": "2026-06-09T18:30:00.000Z",
+  "rangeDays": 30,
+  "rowCap": 5000,
+  "capped": false,
+  "totalEvents": 12,
+  "lastEventAt": "2026-06-09T18:20:00.000Z",
+  "uniqueKnownUsers": 2,
+  "publicAggregateEvents": 6,
+  "clientEvents": 7,
+  "serverEvents": 5,
+  "eventCounts": [{ "key": "plans_viewed", "count": 4 }],
+  "routeCounts": [{ "key": "/plans", "category": "pricing", "count": 4 }],
+  "productCounts": [{ "key": "guide_poolside", "productType": "course_addon", "count": 3 }],
+  "funnel": {
+    "publicPageViewed": 4,
+    "plansViewed": 4,
+    "productViewed": 1,
+    "checkoutStarted": 2,
+    "checkoutCompleted": 1,
+    "entitlementGranted": 1,
+    "checkoutCompletionRate": 0.5,
+    "entitlementGrantRate": 1
+  }
+}
+```
+
+When the migration is not applied yet, the route returns `200` with `schemaReady: false` and setup
+guidance instead of throwing. Unauthenticated or non-admin callers receive `401`/`403`.
+
+### Status Codes
+
+- `200`: insights loaded or schema setup guidance returned
+- `401`: unauthenticated
+- `403`: forbidden
+- `500`: analytics insights could not be loaded
 
 ## `POST /api/my-library/dryland/micro-plans`
 

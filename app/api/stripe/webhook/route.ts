@@ -13,7 +13,7 @@ import {
   getCatalogProducts,
   type CatalogProduct,
 } from "@/lib/commerce/catalog";
-import { trackAnalyticsEvent } from "@/lib/analytics/events";
+import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
 import { getDiscountRedeemedPayload } from "@/lib/stripe/webhook-discount";
 import { createStripeClient, getStripeWebhookSecret } from "@/lib/stripe/server";
 
@@ -94,7 +94,7 @@ async function fulfillCheckoutSession(stripe: Stripe, session: Stripe.Checkout.S
   });
 
   const grantedLatencyMs = Math.max(0, Date.now() - session.created * 1000);
-  trackAnalyticsEvent({
+  await trackAndPersistAnalyticsEvent({
     eventName: "entitlement_granted",
     channel: "server",
     userId,
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, deferred: true });
     }
 
-    trackAnalyticsEvent({
+    await trackAndPersistAnalyticsEvent({
       eventName: "checkout_completed",
       channel: "server",
       userId: getValidUserId(session),
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
 
     const discountPayload = getDiscountRedeemedPayload(session);
     if (discountPayload) {
-      trackAnalyticsEvent({
+      await trackAndPersistAnalyticsEvent({
         eventName: "discount_redeemed",
         channel: "server",
         userId: getValidUserId(session),

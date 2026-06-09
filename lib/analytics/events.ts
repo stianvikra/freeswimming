@@ -148,7 +148,7 @@ export function sanitizeAnalyticsPayload(
   return sanitized;
 }
 
-type TrackAnalyticsEventInput = {
+export type TrackAnalyticsEventInput = {
   eventName: AnalyticsEventName;
   channel: "server" | "client";
   userId?: string | null;

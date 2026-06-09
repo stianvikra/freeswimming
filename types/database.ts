@@ -8,6 +8,62 @@ export type Database = {
   };
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          channel: string;
+          created_at: string;
+          event_name: string;
+          id: string;
+          occurred_at: string;
+          payload: Json;
+          product_id: string | null;
+          product_type: string | null;
+          public_aggregate: boolean;
+          route_category: string | null;
+          route_template: string | null;
+          source: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          channel: string;
+          created_at?: string;
+          event_name: string;
+          id?: string;
+          occurred_at?: string;
+          payload?: Json;
+          product_id?: string | null;
+          product_type?: string | null;
+          public_aggregate?: boolean;
+          route_category?: string | null;
+          route_template?: string | null;
+          source?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          channel?: string;
+          created_at?: string;
+          event_name?: string;
+          id?: string;
+          occurred_at?: string;
+          payload?: Json;
+          product_id?: string | null;
+          product_type?: string | null;
+          public_aggregate?: boolean;
+          route_category?: string | null;
+          route_template?: string | null;
+          source?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       admin_audit_logs: {
         Row: {
           action: string;

@@ -29,6 +29,12 @@ function isSafeSupabaseHost(hostname: string): boolean {
   return SAFE_EXAMPLE_HOSTS.has(hostname) || SAFE_LOCAL_HOSTS.has(hostname);
 }
 
+export function isExampleSupabaseUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  const hostname = parseHostname(value);
+  return Boolean(hostname && SAFE_EXAMPLE_HOSTS.has(hostname));
+}
+
 function isRemoteSupabaseCloudHost(hostname: string): boolean {
   return hostname.endsWith(REMOTE_SUPABASE_SUFFIX) && !isSafeSupabaseHost(hostname);
 }
