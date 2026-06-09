@@ -42,6 +42,22 @@ function buildQueryChain(result: unknown) {
   return chain;
 }
 
+function buildSupabaseQueries(input: { eventsResult: unknown; rollupsResult?: unknown }) {
+  const eventsChain = buildQueryChain(input.eventsResult);
+  const rollupsChain = buildQueryChain(input.rollupsResult ?? { data: [], error: null });
+  const from = vi.fn((table: string) => {
+    if (table === "analytics_events") return { select: eventsChain.select };
+    if (table === "analytics_event_daily_rollups") return { select: rollupsChain.select };
+    return { select: vi.fn() };
+  });
+
+  return {
+    from,
+    eventsChain,
+    rollupsChain,
+  };
+}
+
 const baseRow: AnalyticsEventInsightRow = {
   event_name: "plans_viewed",
   channel: "client",
@@ -98,6 +114,13 @@ describe("admin analytics insights", () => {
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
+      rollupRows: [
+        {
+          rollup_day: "2026-06-09",
+          event_count: 3,
+          refreshed_at: "2026-06-09T10:30:00.000Z",
+        },
+      ],
       rowCap: 5000,
     });
 
@@ -115,6 +138,13 @@ describe("admin analytics insights", () => {
         checkoutStarted: 1,
         checkoutCompleted: 1,
         checkoutCompletionRate: 1,
+      },
+      lifecycle: {
+        rollup: {
+          status: "ready",
+          latestDay: "2026-06-09",
+          totalRolledUpEvents: 3,
+        },
       },
     });
     expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
@@ -178,11 +208,22 @@ describe("admin analytics insights", () => {
   });
 
   it("queries bounded rows for viewer+ admins", async () => {
-    const chain = buildQueryChain({
-      data: [baseRow],
-      error: null,
+    const { from, eventsChain, rollupsChain } = buildSupabaseQueries({
+      eventsResult: {
+        data: [baseRow],
+        error: null,
+      },
+      rollupsResult: {
+        data: [
+          {
+            rollup_day: "2026-06-09",
+            event_count: 1,
+            refreshed_at: "2026-06-09T10:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
     });
-    const from = vi.fn().mockReturnValue({ select: chain.select });
     createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
       supabase: { from },
       applySupabaseCookies: applyResponseCookiesIdentity,
@@ -194,10 +235,68 @@ describe("admin analytics insights", () => {
     const payload = (await response.json()) as { ok?: boolean; rangeDays?: number };
 
     expect(response.status).toBe(200);
-    expect(payload).toMatchObject({ ok: true, rangeDays: 90 });
+    expect(payload).toMatchObject({
+      ok: true,
+      rangeDays: 90,
+      lifecycle: {
+        rollup: {
+          status: "ready",
+          schemaReady: true,
+          latestDay: "2026-06-09",
+        },
+      },
+    });
     expect(from).toHaveBeenCalledWith("analytics_events");
-    expect(chain.gte).toHaveBeenCalledWith("occurred_at", expect.any(String));
-    expect(chain.order).toHaveBeenCalledWith("occurred_at", { ascending: false });
-    expect(chain.limit).toHaveBeenCalledWith(5001);
+    expect(from).toHaveBeenCalledWith("analytics_event_daily_rollups");
+    expect(eventsChain.gte).toHaveBeenCalledWith("occurred_at", expect.any(String));
+    expect(eventsChain.order).toHaveBeenCalledWith("occurred_at", { ascending: false });
+    expect(eventsChain.limit).toHaveBeenCalledWith(5001);
+    expect(rollupsChain.gte).toHaveBeenCalledWith("rollup_day", expect.any(String));
+    expect(rollupsChain.order).toHaveBeenCalledWith("rollup_day", { ascending: false });
+    expect(rollupsChain.limit).toHaveBeenCalledWith(97);
+  });
+
+  it("keeps raw insights available when rollup schema is missing", async () => {
+    const { from } = buildSupabaseQueries({
+      eventsResult: {
+        data: [baseRow],
+        error: null,
+      },
+      rollupsResult: {
+        data: null,
+        error: {
+          code: "42P01",
+          message: 'relation "analytics_event_daily_rollups" does not exist',
+        },
+      },
+    });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getAdminAnalyticsInsights(
+      new Request("https://freeswimming.test/api/admin/analytics/insights?rangeDays=7")
+    );
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      lifecycle?: {
+        rollup?: {
+          status?: string;
+          schemaReady?: boolean;
+        };
+      };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      lifecycle: {
+        rollup: {
+          status: "schema-missing",
+          schemaReady: false,
+        },
+      },
+    });
   });
 });

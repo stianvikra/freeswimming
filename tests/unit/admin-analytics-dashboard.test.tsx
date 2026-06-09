@@ -22,6 +22,23 @@ const basePayload: AnalyticsInsightsResponse = {
   eventCounts: [{ key: "plans_viewed", count: 2 }],
   routeCounts: [{ key: "/plans", category: "pricing", count: 2 }],
   productCounts: [{ key: "guide_poolside", productType: "course_addon", count: 2 }],
+  lifecycle: {
+    rawRetentionDays: 180,
+    rollupWindowDays: 400,
+    rawPruneBefore: "2025-12-11T12:00:00.000Z",
+    rollup: {
+      status: "ready",
+      schemaReady: true,
+      queryOk: true,
+      latestDay: "2026-06-09",
+      oldestDay: "2026-06-09",
+      latestRefreshAt: "2026-06-09T11:30:00.000Z",
+      daysWithRollups: 1,
+      totalRolledUpEvents: 4,
+      staleAfterDays: 2,
+      message: "Analytics daily rollups are ready for the reported window.",
+    },
+  },
   funnel: {
     publicPageViewed: 2,
     plansViewed: 2,
