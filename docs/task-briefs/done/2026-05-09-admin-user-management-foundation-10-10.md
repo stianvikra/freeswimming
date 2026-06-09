@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-05-09-admin-user-management-foundation-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-05-09`
 - `updated`: `2026-06-09`
@@ -34,6 +34,58 @@
   - owner screenshot approval was received after handoff for `output/public-analytics-foundation-2026-06-09-170348`;
   - mobile context screenshots were added after owner review found the tight mobile card crop too white;
   - `data-testid` hooks were added before the refreshed mobile context screenshots, and no product-rendering files changed after the final owner approval.
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1041`
+- `merge_url`: `https://github.com/stianvikra/freeswimming/pull/1041`
+- `squash_commit`: `a4a3582e`
+- `implementation_commit`: `d14a47b8`
+- `10/10 claim`: no - the active public analytics foundation slice is release-ready for its bounded scope, but the full admin `Users` module, persisted Supabase telemetry tables/rollups, and admin dashboards remain out of scope for later dedicated briefs.
+
+Plain-language done summary:
+
+- Freeswimming now has a privacy-first public website/sales analytics foundation: public routes, route categories, products, content references, and funnel events are typed and sanitized before any future provider/dashboard work.
+- Public anonymous traffic is not joined to user profiles; public client events intentionally keep `userId: null`, even when an auth cookie exists.
+- The foundation documents Plausible-first vendor evaluation without activating Plausible or adding Meta/GA4/GTM/Hotjar/Clarity/session replay; privacy and cookie pages now explain the current no-non-essential-tracking state and future-consent boundary.
+- Forward compatibility is explicit for future public pages, `/shop/[productSlug]`, `swim_mug`-style products, courses, lessons, and unknown/unmapped values.
+
+Validation evidence:
+
+- `npm run verify:pre-pr` passed on the implementation branch before PR update after the final approved screenshot checkpoint; artifact folder: `artifacts/test-runs/20260609-172206`.
+- PR `#1041` CI passed before merge.
+- `npm run verify:pre-merge` passed before merge; marker: `artifacts/verify-pre-merge/20260609-153858.json`.
+- Screenshot handoff was captured at `2026-06-09 17:18` in `output/public-analytics-foundation-2026-06-09-171837` and approved by the owner; no product-rendering files changed after that capture before merge.
+- Squash merge completed on `main` at `a4a3582e`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                | Remaining Gaps / Notes                                                                            |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `4/5`          | Bounded public analytics foundation shipped with clear public-vs-product boundary, vendor decision, route/product/content contract, and policy updates. | Full admin Users IA and dashboard views remain out of scope.                                      |
+| UX flow clarity                               | `4/5`          | Privacy/cookie pages remain readable on desktop and mobile; screenshot handoff was approved.                                                            | No analytics dashboard UX shipped in this slice.                                                  |
+| Visual design quality                         | `4/5`          | Approved policy-page screenshots verify the changed public surfaces are not blank/white and remain aligned with current visual language.                | No new admin visual surface shipped.                                                              |
+| Business logic correctness and data integrity | `5/5`          | Typed event contracts, sanitizer tests, public `userId: null` guard, route-template payloads, and unknown fallback fixtures passed.                     | None for active slice.                                                                            |
+| Admin editor ergonomics                       | `4/5`          | Admin surfaces were not regressed; admin Users UI is explicitly excluded.                                                                               | Future admin Users detail/list ergonomics need their own implementation brief.                    |
+| Accessibility (a11y)                          | `4/5`          | Changed policy surfaces kept semantic content and passed the full local/CI gate set.                                                                    | No new interactive admin control shipped.                                                         |
+| Performance (CWV + payloads)                  | `5/5`          | Pre-PR verification covered build and performance budgets; no third-party analytics scripts were loaded.                                                | None for active slice.                                                                            |
+| Data placement and sync boundaries            | `5/5`          | Public analytics remains anonymous/minimized and separate from authenticated profile data unless a future privacy review approves a bridge.             | None for active slice.                                                                            |
+| Caching and invalidation strategy             | `4/5`          | No cache-changing runtime dashboard or persisted rollup path shipped; existing route behavior remains stable.                                           | Future persisted telemetry/rollups need explicit cache and invalidation decisions.                |
+| Reliability and failure handling              | `5/5`          | Invalid content type, invalid JSON, invalid event names, and sanitizer failure paths remain deterministic non-500 behavior.                             | None for active slice.                                                                            |
+| Security and authz                            | `5/5`          | Public events do not bridge to signed-in profiles; product/admin client user attribution remains scoped to existing authenticated contexts.             | None for active slice.                                                                            |
+| Privacy and compliance                        | `5/5`          | No Meta/GA4/GTM/Hotjar/Clarity/session replay; Plausible not activated; privacy/cookie copy and API/runbook docs define future consent boundary.        | None for active slice.                                                                            |
+| Content governance                            | `5/5`          | API contract, privacy/cookie policy copy, runbook assessment, active brief evidence, and route/product fixtures were updated together.                  | None for active slice.                                                                            |
+| Admin workflow and editability                | `4/5`          | No admin workflow was changed or made less editable; public analytics contracts are ready for a later admin surface.                                    | Actual admin dashboard/list/detail workflow remains future scope.                                 |
+| SEO and crawlability                          | `4/5`          | Public policy content remained crawlable and no metadata/site-lock behavior was changed.                                                                | No SEO-specific analytics reporting shipped.                                                      |
+| AI discoverability                            | `4/5`          | Public policy language stays explicit about tracking boundaries and future vendor consent.                                                              | No structured data or AI-facing analytics entity output shipped.                                  |
+| Analytics and KPI observability               | `5/5`          | Safe public page/CTA/product/content/funnel event contracts and future shop/product/course fixtures are in place.                                       | Dashboards and persisted rollups are deferred.                                                    |
+| Commerce and revenue ops                      | `4/5`          | Future shop/product identifiers and `swim_mug` fixture rules are documented/tested without touching checkout, invoices, or finance flows.               | Product-specific shop/cart and revenue reporting require later mapping/privacy review.            |
+| Incident response and support operations      | `4/5`          | Runbook/API docs make allowed vendors, fallback behavior, and public/user data boundary explicit for operators.                                         | No live alerting or support dashboard shipped.                                                    |
+| Finance and reporting operations              | `N/A`          | N/A for active slice because no billing, payout, refund, invoice, reconciliation, or revenue-recognition data changed.                                  | Future revenue analytics needs a finance/reporting brief.                                         |
+| i18n operational readiness                    | `4/5`          | Stable route/product/content identifiers avoid translated titles/slugs as analytics identity.                                                           | Future locale-specific route/content additions need mapping tests or explicit fallback rationale. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js API/client analytics surfaces, route registry patterns, TypeScript contracts, and tests; no dependency added.                   | None for active slice.                                                                            |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, brief lint, typecheck, route/support sweep, `verify:pre-pr`, CI, screenshots, and `verify:pre-merge` all passed.                   | None for active slice.                                                                            |
+| Scalability and cost efficiency               | `4/5`          | Generic route/product/content contracts avoid today-only hardcoding and keep future instrumentation low-cost.                                           | Persisted aggregation/storage cost controls remain future scope.                                  |
+| DevOps and rollback readiness                 | `5/5`          | PR `#1041` merged as `a4a3582e`; rollback is `git revert a4a3582e`; no migrations, secrets, or provider activation shipped.                             | None for active slice.                                                                            |
 
 ## Brief Audit Record
 
@@ -668,3 +720,4 @@ For future implementation:
 - `2026-06-09 | screenshot-superseded | owner approved the initial screenshot handoff in output/public-analytics-foundation-2026-06-09-170348, but pre-commit formatting later touched a policy rendering file, so that visual evidence was superseded by a fresh capture | next: use the refreshed screenshot handoff as canonical visual approval`
 - `2026-06-09 | pre-pr-green | npm run verify:pre-pr passed locally after the initial screenshot checkpoint: branch-current, quality gates, admin audit, env parity, eslint, typecheck, unit, build, performance budgets, and Playwright e2e (106 passed / 530 skipped); rerun is required after the final screenshot checkpoint and amended commit | next: record final screenshot approval, amend commit, rerun npm run verify:pre-pr, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-09 | final-screenshot-approved | owner approved refreshed screenshot handoff in output/public-analytics-foundation-2026-06-09-171837 after hook formatting touched app/privacy/page.tsx; mobile context screenshots confirm the policy pages are not blank/white, and no product-rendering files changed after this approved capture | next: amend commit, rerun npm run verify:pre-pr, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-09 | done | PR #1041 merged to main as a4a3582e after local verify:pre-pr, green CI, owner-approved screenshots, and verify:pre-merge; this closeout records the bounded public-analytics-foundation result and explicitly leaves full admin Users UI, persisted telemetry/rollups, and dashboards to later dedicated briefs | next: run docs-only closeout validation and post-merge preflight`
