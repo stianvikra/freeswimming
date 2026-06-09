@@ -311,7 +311,10 @@
 - Auth: admin viewer, editor, or admin session required.
 - Query:
   - `rangeDays`: optional integer. Defaults to `30`; max is `90`.
-- Data source: sanitized `analytics_events` rows only.
+- Data source:
+  - metric counts come from bounded sanitized `analytics_events` rows,
+  - lifecycle readiness metadata comes from `analytics_event_daily_rollups` when the rollup
+    migration is applied.
 - Cache: `no-store`.
 - Admin UI: the read-only Analytics tab in `/admin?tab=analytics` renders this response. The
   `/admin/analytics` route is an alias into the same admin workspace tab.
@@ -340,6 +343,23 @@
   "eventCounts": [{ "key": "plans_viewed", "count": 4 }],
   "routeCounts": [{ "key": "/plans", "category": "pricing", "count": 4 }],
   "productCounts": [{ "key": "guide_poolside", "productType": "course_addon", "count": 3 }],
+  "lifecycle": {
+    "rawRetentionDays": 180,
+    "rollupWindowDays": 400,
+    "rawPruneBefore": "2025-12-11T18:30:00.000Z",
+    "rollup": {
+      "status": "ready",
+      "schemaReady": true,
+      "queryOk": true,
+      "latestDay": "2026-06-09",
+      "oldestDay": "2026-06-01",
+      "latestRefreshAt": "2026-06-09T18:25:00.000Z",
+      "daysWithRollups": 9,
+      "totalRolledUpEvents": 120,
+      "staleAfterDays": 2,
+      "message": "Analytics daily rollups are ready for the reported window."
+    }
+  },
   "funnel": {
     "publicPageViewed": 4,
     "plansViewed": 4,
@@ -353,8 +373,16 @@
 }
 ```
 
-When the migration is not applied yet, the route returns `200` with `schemaReady: false` and setup
-guidance instead of throwing. Unauthenticated or non-admin callers receive `401`/`403`.
+When the raw analytics migration is not applied yet, the route returns `200` with `schemaReady:
+false` and setup guidance instead of throwing. When the rollup migration is not applied yet, the
+route keeps returning raw bounded insights and sets `lifecycle.rollup.status` to `schema-missing`.
+Unexpected rollup status query failures are fail-soft and surface as
+`lifecycle.rollup.status = "query-failed"` without raw payload or SQL details.
+
+Lifecycle caveat: `rawRetentionDays` is the target raw-event retention window and
+`rawPruneBefore` is the computed cutoff. No automatic deletion job ships in V1. Raw pruning must
+only be run through the service-role `prune_analytics_events` function after the relevant UTC days
+have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`403`.
 
 ### Status Codes
 

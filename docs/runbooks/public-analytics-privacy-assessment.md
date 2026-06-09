@@ -68,6 +68,12 @@ This foundation therefore does not add non-essential cookies, localStorage visit
 - First-party persistence stores only sanitized `analytics_events` rows through server-owned writes.
   It does not add a public visitor ID, tracking cookie, localStorage key, vendor script, full URL,
   raw referrer, raw IP, raw User-Agent, or anonymous-public-to-profile bridge.
+- Daily rollups store only aggregate counts and already-sanitized dimensions in
+  `analytics_event_daily_rollups`. They do not store payload JSON, `user_id`, email, raw URL, IP,
+  User-Agent, visitor ID, or private training/user content.
+- Raw-event retention target is `180` days and daily rollup window target is `400` days. V1 adds
+  service-role-only refresh/prune functions, but no automatic deletion job. Raw pruning must only
+  happen after daily rollups cover the UTC days being deleted.
 
 ## Future Compatibility
 

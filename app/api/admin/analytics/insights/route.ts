@@ -8,6 +8,11 @@ import {
   selectAnalyticsInsightFields,
   type AnalyticsEventInsightRow,
 } from "@/lib/analytics/admin-insights";
+import {
+  isAnalyticsRollupSchemaMissing,
+  selectAnalyticsLifecycleRollupFields,
+  type AnalyticsDailyRollupStatusRow,
+} from "@/lib/analytics/lifecycle";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 
@@ -44,7 +49,9 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const rangeDays = parseAnalyticsInsightsRangeDays(requestUrl.searchParams.get("rangeDays"));
   const generatedAt = new Date();
-  const since = new Date(generatedAt.getTime() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
+  const sinceDate = new Date(generatedAt.getTime() - rangeDays * 24 * 60 * 60 * 1000);
+  const since = sinceDate.toISOString();
+  const sinceDay = since.slice(0, 10);
 
   const result = await supabase
     .from("analytics_events")
@@ -80,6 +87,29 @@ export async function GET(request: Request) {
     0,
     ANALYTICS_INSIGHTS_ROW_CAP
   );
+  const rollupResult = await supabase
+    .from("analytics_event_daily_rollups")
+    .select(selectAnalyticsLifecycleRollupFields())
+    .gte("rollup_day", sinceDay)
+    .order("rollup_day", { ascending: false })
+    .limit(rangeDays + 7);
+
+  let rollupRows: AnalyticsDailyRollupStatusRow[] = [];
+  let rollupSchemaReady = true;
+  let rollupQueryOk = true;
+
+  if (rollupResult.error) {
+    if (isAnalyticsRollupSchemaMissing(rollupResult.error)) {
+      rollupSchemaReady = false;
+    } else {
+      rollupQueryOk = false;
+      console.error("[AdminAnalyticsInsights] Could not load analytics rollup status", {
+        message: rollupResult.error.message,
+      });
+    }
+  } else {
+    rollupRows = (rollupResult.data ?? []) as unknown as AnalyticsDailyRollupStatusRow[];
+  }
 
   return applySupabaseCookies(
     noStoreJson(
@@ -87,6 +117,9 @@ export async function GET(request: Request) {
         rows,
         generatedAt,
         rangeDays,
+        rollupRows,
+        rollupSchemaReady,
+        rollupQueryOk,
         rowCap: ANALYTICS_INSIGHTS_ROW_CAP,
         capped: (result.data ?? []).length > ANALYTICS_INSIGHTS_ROW_CAP,
       })

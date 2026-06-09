@@ -8,6 +8,90 @@ export type Database = {
   };
   public: {
     Tables: {
+      analytics_event_daily_rollups: {
+        Row: {
+          channel: string;
+          event_count: number;
+          event_name: string;
+          first_event_at: string;
+          known_user_count: number;
+          last_event_at: string;
+          product_id: string;
+          product_type: string;
+          public_aggregate: boolean;
+          refreshed_at: string;
+          rollup_day: string;
+          route_category: string;
+          route_template: string;
+          source: string;
+        };
+        Insert: {
+          channel: string;
+          event_count?: number;
+          event_name: string;
+          first_event_at: string;
+          known_user_count?: number;
+          last_event_at: string;
+          product_id?: string;
+          product_type?: string;
+          public_aggregate: boolean;
+          refreshed_at?: string;
+          rollup_day: string;
+          route_category?: string;
+          route_template?: string;
+          source?: string;
+        };
+        Update: {
+          channel?: string;
+          event_count?: number;
+          event_name?: string;
+          first_event_at?: string;
+          known_user_count?: number;
+          last_event_at?: string;
+          product_id?: string;
+          product_type?: string;
+          public_aggregate?: boolean;
+          refreshed_at?: string;
+          rollup_day?: string;
+          route_category?: string;
+          route_template?: string;
+          source?: string;
+        };
+        Relationships: [];
+      };
+      analytics_event_rollup_runs: {
+        Row: {
+          created_at: string;
+          id: string;
+          operation: string;
+          range_end: string | null;
+          range_start: string | null;
+          raw_retention_days: number | null;
+          rollup_window_days: number | null;
+          rows_affected: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          operation: string;
+          range_end?: string | null;
+          range_start?: string | null;
+          raw_retention_days?: number | null;
+          rollup_window_days?: number | null;
+          rows_affected?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          operation?: string;
+          range_end?: string | null;
+          range_start?: string | null;
+          raw_retention_days?: number | null;
+          rollup_window_days?: number | null;
+          rows_affected?: number;
+        };
+        Relationships: [];
+      };
       analytics_events: {
         Row: {
           channel: string;
@@ -1782,9 +1866,17 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      prune_analytics_events: {
+        Args: { p_before?: string };
+        Returns: number;
+      };
       replace_swim_capability_limits: {
         Args: { p_limits: Json };
         Returns: undefined;
+      };
+      refresh_analytics_event_daily_rollups: {
+        Args: { p_end_day?: string; p_start_day?: string };
+        Returns: number;
       };
       training_focus_set_primary: {
         Args: { p_focus_id: string };

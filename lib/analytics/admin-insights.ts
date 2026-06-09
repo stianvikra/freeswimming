@@ -1,4 +1,9 @@
 import type { Database } from "@/types/database";
+import {
+  buildAnalyticsLifecycleStatus,
+  type AnalyticsDailyRollupStatusRow,
+  type AnalyticsLifecycleStatus,
+} from "@/lib/analytics/lifecycle";
 
 export type AnalyticsEventInsightRow = Pick<
   Database["public"]["Tables"]["analytics_events"]["Row"],
@@ -37,6 +42,7 @@ export type AnalyticsInsightsResponse = {
   eventCounts: AnalyticsInsightCount[];
   routeCounts: Array<AnalyticsInsightCount & { category: string | null }>;
   productCounts: Array<AnalyticsInsightCount & { productType: string | null }>;
+  lifecycle: AnalyticsLifecycleStatus;
   funnel: {
     publicPageViewed: number;
     plansViewed: number;
@@ -95,6 +101,9 @@ export function buildAnalyticsInsights(input: {
   rows: AnalyticsEventInsightRow[];
   generatedAt: Date;
   rangeDays: number;
+  rollupRows?: AnalyticsDailyRollupStatusRow[];
+  rollupSchemaReady?: boolean;
+  rollupQueryOk?: boolean;
   rowCap?: number;
   capped?: boolean;
 }): AnalyticsInsightsResponse {
@@ -161,6 +170,12 @@ export function buildAnalyticsInsights(input: {
       ...item,
       productType: productTypes.get(item.key) ?? null,
     })),
+    lifecycle: buildAnalyticsLifecycleStatus({
+      generatedAt: input.generatedAt,
+      rollupRows: input.rollupRows,
+      rollupSchemaReady: input.rollupSchemaReady,
+      rollupQueryOk: input.rollupQueryOk,
+    }),
     funnel: {
       publicPageViewed: eventCounts.get("public_page_viewed") ?? 0,
       plansViewed: eventCounts.get("plans_viewed") ?? 0,
