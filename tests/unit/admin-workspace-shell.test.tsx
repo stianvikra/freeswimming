@@ -36,6 +36,7 @@ function mockManager(testId: string) {
   };
 }
 
+vi.mock("@/components/admin/AdminAnalyticsDashboard", () => mockManager("admin-manager-analytics"));
 vi.mock("@/components/admin/AdminCommerceManager", () => mockManager("admin-manager-commerce"));
 vi.mock("@/components/admin/AdminContentManager", () => mockManager("admin-manager-content"));
 vi.mock("@/components/admin/AdminCategoriesManager", () => mockManager("admin-manager-categories"));
@@ -117,12 +118,13 @@ describe("AdminWorkspace shell", () => {
 
     const adminSections = screen.getByRole("navigation", { name: "Admin sections" });
     const sectionButtons = within(adminSections).getAllByRole("button");
-    expect(sectionButtons).toHaveLength(9);
+    expect(sectionButtons).toHaveLength(10);
     expect(sectionButtons.map((button) => button.textContent)).toEqual([
       "ContentLessons, guides, and publish state",
       "QR LinksStable redirect registry and ownership",
       "CommerceProducts, titles, and active sales status",
       "OperationsRuntime flags and private-access status",
+      "AnalyticsSafe event dashboard, funnel, and data health",
       "Email templatesDraft, review, publish, and rollback-safe message copy",
       "MessagesStored intake, triage status, and notification diagnostics",
       "NotesInternal tasks, categories, and completion status",
@@ -140,7 +142,17 @@ describe("AdminWorkspace shell", () => {
     ).toHaveLength(1);
     expect(
       sectionButtons.filter((button) => button.getAttribute("aria-pressed") === "false")
-    ).toHaveLength(8);
+    ).toHaveLength(9);
+  });
+
+  it("renders the Analytics workspace from typed tab state", () => {
+    searchParamsValue.current = "tab=analytics";
+
+    render(<AdminWorkspace role="viewer" />);
+
+    expect(screen.getByTestId("admin-tab-analytics")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Analytics");
+    expect(screen.getByTestId("admin-manager-analytics")).toBeVisible();
   });
 
   it("shows Help/Guide section links in the active desktop rail", () => {

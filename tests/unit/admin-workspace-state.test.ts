@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_ANALYTICS_WORKSPACE_BOUNDARY,
   ADMIN_MESSAGES_WORKSPACE_BOUNDARY,
   applyAdminTabToSearchParams,
   buildAdminWorkspaceModuleHref,
@@ -13,6 +14,7 @@ describe("admin workspace tab URL state", () => {
     expect(parseAdminTab("notes")).toBe("notes");
     expect(parseAdminTab("content")).toBe("content");
     expect(parseAdminTab("messages")).toBe("messages");
+    expect(parseAdminTab("analytics")).toBe("analytics");
     expect(parseAdminTab("unknown")).toBeNull();
     expect(parseAdminTab(null)).toBeNull();
   });
@@ -27,6 +29,19 @@ describe("admin workspace tab URL state", () => {
       id: "messages",
       label: "Messages",
       viewBoundary: expect.stringContaining("dedicated admin messages component boundary"),
+    });
+  });
+
+  it("keeps admin analytics behind a typed read-only module boundary", () => {
+    expect(parseAdminWorkspaceModuleId("analytics")).toBe("analytics");
+    expect(ADMIN_ANALYTICS_WORKSPACE_BOUNDARY.status).toBe("active");
+    expect(buildAdminWorkspaceModuleHref(ADMIN_ANALYTICS_WORKSPACE_BOUNDARY)).toBe(
+      "/admin?tab=analytics"
+    );
+    expect(getAdminWorkspaceModuleBoundary("analytics")).toMatchObject({
+      id: "analytics",
+      label: "Analytics",
+      mutationBoundary: expect.stringContaining("does not mutate analytics rows"),
     });
   });
 

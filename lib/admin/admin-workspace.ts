@@ -3,6 +3,7 @@ export const ADMIN_TAB_VALUES = [
   "qr-links",
   "commerce",
   "operations",
+  "analytics",
   "email-templates",
   "messages",
   "notes",
@@ -56,7 +57,26 @@ export const ADMIN_MESSAGES_WORKSPACE_BOUNDARY = {
   activationBrief: "docs/task-briefs/in-progress/2026-05-06-admin-message-inbox-10-10.md",
 } as const satisfies AdminWorkspaceModuleBoundary;
 
+export const ADMIN_ANALYTICS_WORKSPACE_BOUNDARY = {
+  id: "analytics",
+  status: "active",
+  label: "Analytics",
+  routePath: "/admin",
+  tabQueryValue: "analytics",
+  orchestrationBoundary:
+    "Admin Analytics owns read-only range selection, retry, and dashboard state over the existing admin insights endpoint.",
+  mutationBoundary:
+    "Admin Analytics does not mutate analytics rows; it reads /api/admin/analytics/insights through the existing admin viewer+ route boundary.",
+  viewBoundary:
+    "Admin analytics metrics, funnel, top lists, caveats, and trust states live under a dedicated dashboard component boundary.",
+  serverCanonicalData: ["sanitized analytics_events rows", "admin analytics insights response"],
+  localOnlyState: ["selected range", "loading/error/retry state"],
+  activationBrief:
+    "docs/task-briefs/in-progress/2026-06-09-admin-analytics-dashboard-read-only-v1-10-10.md",
+} as const satisfies AdminWorkspaceModuleBoundary;
+
 export const ADMIN_WORKSPACE_MODULE_BOUNDARIES = [
+  ADMIN_ANALYTICS_WORKSPACE_BOUNDARY,
   ADMIN_MESSAGES_WORKSPACE_BOUNDARY,
 ] as const satisfies readonly AdminWorkspaceModuleBoundary[];
 

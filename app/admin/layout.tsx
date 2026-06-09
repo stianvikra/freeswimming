@@ -42,7 +42,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!gate.ok) {
     return (
-      <SiteChrome>
+      <SiteChrome mobileNavMode="hidden">
         <section className={adminWorkspaceClass}>
           <div className={adminShellCardClass}>
             <p className={adminEyebrowClass}>Admin access required</p>
@@ -65,7 +65,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   const { role } = gate;
 
   return (
-    <SiteChrome>
+    <SiteChrome mobileNavMode="hidden">
       <section className={`${adminWorkspaceClass} ${adminWorkspaceGridClass}`}>
         <header
           className={`${adminShellCardClass} lg:col-start-2`}
