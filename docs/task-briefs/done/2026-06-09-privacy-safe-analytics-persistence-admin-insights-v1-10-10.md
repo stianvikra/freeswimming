@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-09`
 - `updated`: `2026-06-09`
@@ -215,3 +215,38 @@ Required because analytics API contracts and admin support diagnostics change. S
 - `2026-06-09 | remote migration applied | initial npm run verify:pre-pr correctly failed on pending Supabase migration drift for 20260609183000_analytics_events_persistence.sql; applied the additive linked Supabase migration with npx supabase db push --linked, which completed successfully with only the expected first-run drop-policy notice | next: rerun npm run verify:pre-pr`
 - `2026-06-09 | pre-pr pass + noise hardening | npm run verify:pre-pr passed after remote migration sync, including full lane unit/build/perf/E2E with expected local dummy Supabase auth skips; observed analytics persistence fail-soft noise against example.com during E2E and added an example Supabase URL skip so dummy backend runs stay quiet while localhost/real Supabase still persists; validation passed: npm exec vitest run tests/unit/analytics-persistence.test.ts tests/unit/analytics-event-route.test.ts tests/unit/admin-analytics-insights.test.ts tests/unit/supabase-env.test.ts (4 files / 25 tests) | next: rerun npm run verify:pre-pr after the final guard change`
 - `2026-06-09 | final pre-pr gate green | npm run verify:pre-pr passed on full lane after the example Supabase URL guard; evidence artifact: artifacts/test-runs/20260609-181720/verify.log; covered migration drift, quality gates, lint, typecheck, 233 unit files / 1466 tests, build, perf budgets (PASS, hold recommendation), and Playwright E2E 106 passed / 530 expected local dummy-auth skips | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge recommendation`
+- `2026-06-09 | done | PR #1043 merged to main as ad9af980 after green CI and npm run verify:pre-merge; post-merge preflight surfaced this single repo-managed docs-only lifecycle closeout | next: docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1043`
+- `squash_commit`: `ad9af980`
+- `result`: Closed Privacy-Safe Analytics Persistence And Admin Insights V1 by adding privacy-safe first-party analytics persistence, bounded admin-only JSON insights, and the supporting migration/contracts/tests without third-party analytics vendors, cookies, visitor IDs, or public-to-user profile joins.
+- `validation`: Targeted Vitest passed for analytics event, persistence, admin insights, Supabase env, and migration drift coverage; `npm run typecheck`, `npm run lint:briefs:all`, `npm run lint:quality-gates`, `git diff --check`, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed. Evidence includes `artifacts/test-runs/20260609-181720/verify.log` and `artifacts/verify-pre-merge/20260609-163949.json`.
+- `10/10 claim`: no for the full target set because V1 intentionally deferred the rendered dashboard, retention cleanup/materialized rollups, CSV/export, and finance reporting; yes for the critical target categories listed below, all of which reached `5/5`.
+
+Critical target categories for the 10/10 claim gate:
+
+- Business logic correctness and data integrity
+- Security and authz
+- Privacy and compliance
+- Reliability and failure handling
+- Analytics and KPI observability
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                              | Gaps / Notes                                                                 |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Product goals and IA                          | `4/5`          | API contract, admin insights route tests, PR #1043 CI, `npm run verify:pre-merge`                     | JSON insights foundation only; visible dashboard is deferred.                |
+| Business logic correctness and data integrity | `5/5`          | Analytics persistence/admin insights tests, additive migration/RLS review, `npm run verify:pre-merge` | No scoped gap.                                                               |
+| Performance (CWV + payloads)                  | `4/5`          | Indexed migration, bounded admin read tests, full perf gate in `npm run verify:pre-pr` and pre-merge  | Materialized rollups/retention cleanup deferred.                             |
+| Data placement and sync boundaries            | `5/5`          | Data-boundary contract, public aggregate `user_id = null` tests, privacy assessment update            | No scoped gap.                                                               |
+| Caching and invalidation strategy             | `4/5`          | Dynamic/no-store route implementation and route tests                                                 | No cached dashboard/rollup invalidation yet because UI/rollups are deferred. |
+| Reliability and failure handling              | `5/5`          | Fail-soft persistence tests, admin auth/missing-schema/error tests, CI green                          | No scoped gap.                                                               |
+| Security and authz                            | `5/5`          | Admin viewer+ route tests, RLS migration, service-role-only insert path                               | No scoped gap.                                                               |
+| Privacy and compliance                        | `5/5`          | Unsafe payload stripping tests, public analytics privacy sweep, no vendor/storage additions           | No scoped gap.                                                               |
+| Analytics and KPI observability               | `5/5`          | Client/server event persistence tests, funnel/route/product aggregation tests, API contract docs      | No scoped gap.                                                               |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js/Supabase/admin auth/test patterns reused; no new dependency                          | No scoped gap.                                                               |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, PR CI, and `verify:pre-merge`                                  | No scoped gap.                                                               |
+| Scalability and cost efficiency               | `4/5`          | Append-only table indexes and capped-read tests                                                       | Longer-term rollups/retention cleanup deferred.                              |
+| DevOps and rollback readiness                 | `4/5`          | Additive migration, fail-soft runtime behavior, green local/CI gates                                  | Migration rollback is additive/manual; no blocking gap.                      |
