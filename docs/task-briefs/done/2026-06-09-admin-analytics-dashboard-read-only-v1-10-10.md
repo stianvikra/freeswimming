@@ -3,11 +3,13 @@
 ## Metadata
 
 - `id`: `2026-06-09-admin-analytics-dashboard-read-only-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-09`
 - `updated`: `2026-06-09`
 - `branch`: `admin-analytics-dashboard-read-only-v1`
+- `merged_pr`: `#1045`
+- `squash_commit`: `52c19ceb`
 - `parent_brief`: `docs/task-briefs/deferred/2026-02-18-analytics-persistence-and-admin-insights.md`
 - `depends_on`: `docs/task-briefs/done/2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10.md`
 - `execution_mode`: `owner explicitly said implement on 2026-06-09`
@@ -42,7 +44,6 @@ Critical target categories for a `10/10` claim:
 - Visual design quality
 - Business logic correctness and data integrity
 - Admin workflow and editability
-- Accessibility (a11y)
 - Reliability and failure handling
 - Security and authz
 - Privacy and compliance
@@ -463,3 +464,36 @@ Use the repo-standard Safari PR flow, preferably `npm run pr:create:safari`, unl
 - `2026-06-09 | implemented + screenshot stop | added read-only Analytics tab, /admin/analytics alias, dashboard view-model/component, admin mobile chrome polish, Help/Guide/API/parent brief updates, route-label-support sweep evidence, and targeted tests; local validation passed: targeted Vitest 6 files / 25 tests, npm run typecheck, npm run lint, npm run lint:briefs:all, npm run lint:quality-gates, slicewise Prettier check, git diff --check; screenshot handoff captured after/reference desktop/mobile/schema-missing artifacts in output/admin-analytics-dashboard-read-only-v1-2026-06-09-210601 using a temporary visual harness that was removed after capture | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-09 | screenshot approved | owner approved the after/reference screenshot handoff; no product-rendering files changed after capture | next: run npm run verify:pre-pr before commit/push/PR`
 - `2026-06-09 | pre-pr gate passed | npm run verify:pre-pr passed full lane after rerunning an unrelated habit-perfect-day unit flake that passed in targeted isolation; branch remained current with origin/main c4da03ba | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-09 | PR ready | committed 3436e337, pushed branch admin-analytics-dashboard-read-only-v1, opened PR #1045, CI passed, and npm run verify:pre-merge passed with marker artifacts/verify-pre-merge/20260609-194710.json | next: wait for explicit owner merge approval`
+- `2026-06-09 | merged | owner explicitly approved merge; PR #1045 merged to main as squash commit 52c19ceb and remote feature ref was pruned | next: complete repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1045`
+- `squash_commit`: `52c19ceb`
+- `result`: Closed Admin Analytics Dashboard Read-Only V1. Admin can now inspect privacy-safe first-party analytics in a read-only dashboard instead of raw JSON/SQL, with clear data health, KPI, funnel, top-list, caveat, empty, capped, schema-missing, and retry states.
+- `validation`: Targeted Vitest/Testing Library coverage passed for dashboard view-model, dashboard UI states, admin workspace wiring, workspace state, Help/Guide content, and insights contract. Screenshot handoff was owner-approved from `output/admin-analytics-dashboard-read-only-v1-2026-06-09-210601`. `npm run verify:pre-pr` passed full lane with artifact `artifacts/test-runs/20260609-213306/verify.log`. PR #1045 CI passed: verify, e2e-smoke, site-lock-smoke, deploy-preview, size-check, CodeQL, Vercel, and Vercel Preview Comments. `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260609-194710.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Analytics tab and `/admin/analytics` alias shipped in PR #1045; screenshots and tests cover the admin route contract.                                                                          | None.        |
+| UX flow clarity                               | `5/5`          | Range controls, loading, error/retry, capped, quiet, no-data, and schema-missing states are covered by component/view-model tests and approved screenshots.                                    | None.        |
+| Visual design quality                         | `5/5`          | Owner approved after/reference desktop, mobile, and schema-missing screenshots in `output/admin-analytics-dashboard-read-only-v1-2026-06-09-210601`; no rendering files changed after capture. | None.        |
+| Business logic correctness and data integrity | `5/5`          | View-model tests prove metrics derive from the existing insights response and keep unknown/unsafe values sanitized.                                                                            | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions cover labeled range controls, retry, tables/lists, and status messaging; full verify lane passed.                                                                   | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No chart/vendor dependency was added; bounded existing insights endpoint and full verify/perf checks passed.                                                                                   | None.        |
+| Data placement and sync boundaries            | `5/5`          | Dashboard only reads server-canonical aggregate insights; range state stays local and writes no analytics rows or preferences.                                                                 | None.        |
+| Caching and invalidation strategy             | `5/5`          | Dashboard fetches no-store aggregate data and surfaces generated time, last event, row cap, capped, and schema readiness caveats.                                                              | None.        |
+| Reliability and failure handling              | `5/5`          | Tests cover deterministic empty, schema-missing, capped, quiet/fresh, fetch-failed, and retry states without raw payload display.                                                              | None.        |
+| Security and authz                            | `5/5`          | UI remains behind the existing admin workspace and reads through the admin-only insights API; CI site-lock smoke passed.                                                                       | None.        |
+| Privacy and compliance                        | `5/5`          | Tests and docs verify no third-party analytics, cookies, visitor ID, public-to-user bridge, raw URLs, emails, or raw payload fields are shown.                                                 | None.        |
+| Content governance                            | `5/5`          | Admin Help/Guide and API contracts explain dashboard limits, revenue proxy caveats, capped data, schema readiness, and privacy boundaries.                                                     | None.        |
+| Admin workflow and editability                | `5/5`          | Admin workspace includes Analytics tab, Help quick action, service/runbook guidance, and no edit/export/raw-event affordances.                                                                 | None.        |
+| Analytics and KPI observability               | `5/5`          | KPI, funnel, top event, route, product, freshness, cap, and schema views shipped over the existing insights contract.                                                                          | None.        |
+| Incident response and support operations      | `5/5`          | Help/Guide troubleshooting plus dashboard trust states distinguish schema missing, no events, stale/quiet traffic, capped reads, and fetch failures.                                           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Next.js App Router/admin workspace patterns, TypeScript view-models, existing insights API, and local UI classes; no dependency added.                                                  | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full `verify:pre-pr`, green PR CI, and `verify:pre-merge` all passed.                                                                                                          | None.        |
+| Scalability and cost efficiency               | `5/5`          | V1 uses bounded aggregate reads and avoids materialized rollups, exports, BI, and chart-library cost.                                                                                          | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migrations, env vars, workflows, jobs, cookies, or third-party providers were added; the route can be reverted with PR #1045.                                                               | None.        |
