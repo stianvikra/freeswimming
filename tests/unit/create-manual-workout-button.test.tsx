@@ -6,9 +6,15 @@ const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
   refresh: vi.fn(),
 }));
+const { sendClientAnalyticsEventMock } = vi.hoisted(() => ({
+  sendClientAnalyticsEventMock: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationState,
+}));
+vi.mock("@/lib/analytics/client", () => ({
+  sendClientAnalyticsEvent: sendClientAnalyticsEventMock,
 }));
 
 describe("CreateManualWorkoutButton", () => {
@@ -29,6 +35,13 @@ describe("CreateManualWorkoutButton", () => {
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
+    expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("workout_builder_started", {
+      source: "workout_builder",
+      surface: "my_library_workouts",
+      builderMode: "pool",
+      builderEntry: "manual-pool",
+      hasCssPaceDefault: false,
+    });
   });
 
   it("supports a custom href builder for manual draft entry", async () => {
@@ -48,6 +61,13 @@ describe("CreateManualWorkoutButton", () => {
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
+    expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("workout_builder_started", {
+      source: "workout_builder",
+      surface: "my_library_workouts",
+      builderMode: "pool",
+      builderEntry: "manual-pool",
+      hasCssPaceDefault: false,
+    });
   });
 
   it("routes an open-water entry into the local-draft builder flow", async () => {
@@ -61,6 +81,29 @@ describe("CreateManualWorkoutButton", () => {
       );
     });
     expect(navigationState.refresh).toHaveBeenCalled();
+    expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("workout_builder_started", {
+      source: "workout_builder",
+      surface: "my_library_workouts",
+      builderMode: "open_water",
+      builderEntry: "manual-open-water",
+      hasCssPaceDefault: false,
+    });
+  });
+
+  it("marks pool CSS defaults in the manual builder start event", async () => {
+    render(<CreateManualWorkoutButton manualPoolCssMetricSecondsPer100m={118} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Build pool session" }));
+
+    await waitFor(() => {
+      expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("workout_builder_started", {
+        source: "workout_builder",
+        surface: "my_library_workouts",
+        builderMode: "pool",
+        builderEntry: "manual-pool",
+        hasCssPaceDefault: true,
+      });
+    });
   });
 
   it("announces manual builder open failures as recoverable alerts", async () => {
@@ -84,5 +127,6 @@ describe("CreateManualWorkoutButton", () => {
       "create-manual-workout-error"
     );
     expect(navigationState.push).not.toHaveBeenCalled();
+    expect(sendClientAnalyticsEventMock).not.toHaveBeenCalled();
   });
 });

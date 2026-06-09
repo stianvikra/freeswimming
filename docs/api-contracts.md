@@ -252,9 +252,16 @@
 - Public client events stay public aggregate: route-template/product events such as
   `public_page_viewed`, `plans_viewed`, and `product_viewed` are recorded without attaching the
   signed-in `user_id`, even when an auth cookie exists.
-- `eventName` must match the allowed analytics event contract list (see My Library task brief section `Analytics and KPI Contract (V1)`).
+- `eventName` must match the allowed analytics event contract list (see `ANALYTICS_EVENT_NAMES`
+  in `lib/analytics/events.ts`). Workout-builder funnel V1 adds
+  `workout_builder_started` and `workout_builder_saved` as signed-in product events.
 - Payload is sanitized. Free text, raw URLs/referrers, raw User-Agent, raw IP, email, payment,
   shipping, cart notes, and nested objects are stripped or redacted.
+- Workout-builder funnel payloads may include only low-cardinality workflow dimensions such as
+  `source`, `surface`, `builderMode`, `builderEntry`, `sourceKind`, `saveKind`, `environment`,
+  `sessionType`, `sizeMode`, `stepCount`, `totalDistanceM`, and `estimatedDurationMin`. They must
+  not include workout title, notes, raw route URL, email, IP, user agent, payment/cart data, or raw
+  workout text. V1 intentionally does not copy the private workout row ID into analytics payloads.
 - Accepted events are persisted best-effort to `analytics_events` after sanitization. Persistence
   failures log server diagnostics but must not block the client event response.
 - Body:

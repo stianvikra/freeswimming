@@ -41,6 +41,8 @@ export const ANALYTICS_EVENT_NAMES = [
   "habit_timer_saved",
   "micro_session_habit_link_created",
   "micro_session_habit_link_status_updated",
+  "workout_builder_started",
+  "workout_builder_saved",
   "generator_intake_viewed",
   "generator_intake_refreshed",
   "generator_intake_block_toggled",

@@ -6,12 +6,18 @@ const { createRouteHandlerSupabaseClientMock } = vi.hoisted(() => ({
 const { loadTrainingContextSnapshotMock } = vi.hoisted(() => ({
   loadTrainingContextSnapshotMock: vi.fn(),
 }));
+const { trackAndPersistAnalyticsEventMock } = vi.hoisted(() => ({
+  trackAndPersistAnalyticsEventMock: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
 }));
 vi.mock("@/lib/training-context/server", () => ({
   loadTrainingContextSnapshot: loadTrainingContextSnapshotMock,
+}));
+vi.mock("@/lib/analytics/persistence", () => ({
+  trackAndPersistAnalyticsEvent: trackAndPersistAnalyticsEventMock,
 }));
 
 import {
@@ -135,6 +141,8 @@ describe("workouts routes", () => {
   beforeEach(() => {
     createRouteHandlerSupabaseClientMock.mockReset();
     loadTrainingContextSnapshotMock.mockReset();
+    trackAndPersistAnalyticsEventMock.mockReset();
+    trackAndPersistAnalyticsEventMock.mockResolvedValue({});
     loadTrainingContextSnapshotMock.mockResolvedValue({
       schemaReady: true,
       loadError: null,
@@ -175,6 +183,7 @@ describe("workouts routes", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("fails closed for unauthenticated workout pdf export", async () => {
@@ -248,6 +257,24 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(true);
     expect(payload.workout.id).toBe("11111111-1111-4111-8111-111111111111");
     expect(payload.summary.title).toBe("Threshold / CSS 25m Pool draft");
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
+      eventName: "workout_builder_saved",
+      channel: "server",
+      userId: "user-1",
+      payload: {
+        source: "workout_builder",
+        surface: "my_library_workouts",
+        sourceKind: "ai_session_v1",
+        saveKind: "first_canonical_save",
+        builderMode: "pool",
+        environment: "pool",
+        sessionType: "threshold_css",
+        sizeMode: "distance",
+        stepCount: 1,
+        totalDistanceM: 400,
+        estimatedDurationMin: 10,
+      },
+    });
   });
 
   it("returns printable canonical workout pdf html for the authenticated owner", async () => {
@@ -851,6 +878,7 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("needs a target pace");
     expect(insert).not.toHaveBeenCalled();
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("rejects CSS send-off steps that are missing CSS offset metadata", async () => {
@@ -899,6 +927,7 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("CSS-Based Send-Off Time offset");
     expect(insert).not.toHaveBeenCalled();
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("rejects non-contiguous repeat blocks before mutating canonical workouts", async () => {
@@ -974,6 +1003,85 @@ describe("workouts routes", () => {
     expect(payload.ok).toBe(false);
     expect(payload.error).toContain("must stay contiguous");
     expect(insert).not.toHaveBeenCalled();
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("updates canonical workouts for the authenticated owner and emits save analytics", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: buildWorkoutRow({
+        source_kind: "manual",
+        title: "Updated manual workout",
+      }),
+      error: null,
+    });
+    const select = vi.fn(() => ({ maybeSingle }));
+    const eqWorkoutId = vi.fn(() => ({ select }));
+    const eqUserId = vi.fn(() => ({ eq: eqWorkoutId }));
+    const update = vi.fn(() => ({ eq: eqUserId }));
+    const from = vi.fn().mockReturnValue({ update });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await patchWorkout(
+      new Request(
+        "http://127.0.0.1:3000/api/my-library/workouts/11111111-1111-4111-8111-111111111111",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(buildDraftBody({ sourceKind: "manual" })),
+        }
+      ),
+      {
+        params: Promise.resolve({
+          workoutId: "11111111-1111-4111-8111-111111111111",
+        }),
+      }
+    );
+    const payload = (await response.json()) as {
+      ok: boolean;
+      workout: { id: string };
+      summary: { title: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(from).toHaveBeenCalledWith("workouts");
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Threshold / CSS 25m Pool draft",
+      })
+    );
+    expect(eqUserId).toHaveBeenCalledWith("user_id", "user-1");
+    expect(eqWorkoutId).toHaveBeenCalledWith("id", "11111111-1111-4111-8111-111111111111");
+    expect(payload.ok).toBe(true);
+    expect(payload.summary.title).toBe("Updated manual workout");
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
+      eventName: "workout_builder_saved",
+      channel: "server",
+      userId: "user-1",
+      payload: {
+        source: "workout_builder",
+        surface: "my_library_workouts",
+        sourceKind: "manual",
+        saveKind: "existing_workout_update",
+        builderMode: "pool",
+        environment: "pool",
+        sessionType: "threshold_css",
+        sizeMode: "distance",
+        stepCount: 1,
+        totalDistanceM: 400,
+        estimatedDurationMin: 10,
+      },
+    });
   });
 
   it("rejects invalid workout ids before attempting update", async () => {
@@ -1002,6 +1110,7 @@ describe("workouts routes", () => {
 
     expect(response.status).toBe(400);
     expect(from).not.toHaveBeenCalled();
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the owner does not have that canonical workout", async () => {
@@ -1045,6 +1154,7 @@ describe("workouts routes", () => {
 
     expect(response.status).toBe(404);
     expect(from).toHaveBeenCalledWith("workouts");
+    expect(trackAndPersistAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("fails closed for unauthenticated workout delete", async () => {

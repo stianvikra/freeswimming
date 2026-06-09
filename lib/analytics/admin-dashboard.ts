@@ -84,6 +84,8 @@ const EVENT_LABELS: Record<string, string> = {
   product_viewed: "Product viewed",
   public_cta_clicked: "Public CTA clicked",
   public_page_viewed: "Public page viewed",
+  workout_builder_saved: "Workout builder saved",
+  workout_builder_started: "Workout builder started",
 };
 
 export function normalizeAnalyticsDashboardRangeDays(value: number): AnalyticsDashboardRangeDays {

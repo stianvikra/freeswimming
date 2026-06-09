@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
+import { buildWorkoutBuilderSavedPayload } from "@/lib/analytics/workout-builder";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
@@ -110,6 +112,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const workout = buildWorkoutEditorRecord(result.data);
+  await trackAndPersistAnalyticsEvent({
+    eventName: "workout_builder_saved",
+    channel: "server",
+    userId: user.id,
+    payload: buildWorkoutBuilderSavedPayload({
+      draft: workout.draft,
+      sourceKind: workout.sourceKind,
+      saveKind: "existing_workout_update",
+    }),
+  });
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,

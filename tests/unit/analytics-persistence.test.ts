@@ -71,6 +71,27 @@ describe("analytics persistence", () => {
     });
   });
 
+  it("preserves known user identity for workout builder funnel events", () => {
+    const record = trackAnalyticsEvent({
+      eventName: "workout_builder_started",
+      channel: "client",
+      userId: "user-123",
+      payload: {
+        source: "workout_builder",
+        surface: "my_library_workouts",
+        builderMode: "pool",
+      },
+    });
+
+    expect(isPublicAggregateAnalyticsRecord(record)).toBe(false);
+    expect(buildAnalyticsEventInsert(record)).toMatchObject({
+      event_name: "workout_builder_started",
+      user_id: "user-123",
+      public_aggregate: false,
+      source: "workout_builder",
+    });
+  });
+
   it("persists through the analytics_events table", async () => {
     const record = trackAnalyticsEvent({
       eventName: "checkout_started",

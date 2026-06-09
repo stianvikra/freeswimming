@@ -19,6 +19,8 @@ It approves:
 - route-template/category dimensions;
 - canonical public product/catalog dimensions;
 - aggregate/cohort public funnel metrics.
+- signed-in first-party product workflow events such as workout-builder start/save signals, only
+  when they use safe low-cardinality dimensions and avoid private workout text.
 
 It does not approve:
 
@@ -68,6 +70,10 @@ This foundation therefore does not add non-essential cookies, localStorage visit
 - First-party persistence stores only sanitized `analytics_events` rows through server-owned writes.
   It does not add a public visitor ID, tracking cookie, localStorage key, vendor script, full URL,
   raw referrer, raw IP, raw User-Agent, or anonymous-public-to-profile bridge.
+- Workout-builder funnel V1 may store `workout_builder_started` and `workout_builder_saved` with
+  safe dimensions such as builder mode, source kind, save kind, session type, size mode, step count,
+  distance, and duration. It must not store workout titles, notes, route URLs, private workout row
+  IDs, or raw workout text in the analytics payload.
 - Daily rollups store only aggregate counts and already-sanitized dimensions in
   `analytics_event_daily_rollups`. They do not store payload JSON, `user_id`, email, raw URL, IP,
   User-Agent, visitor ID, or private training/user content.

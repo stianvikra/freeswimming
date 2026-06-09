@@ -193,4 +193,19 @@ describe("admin analytics dashboard view model", () => {
       secondary: null,
     });
   });
+
+  it("labels workout-builder funnel events while preserving fallback labels", () => {
+    expect(formatAnalyticsIdentifierLabel("workout_builder_started", "event")).toMatchObject({
+      label: "Workout builder started",
+      secondary: "workout_builder_started",
+    });
+    expect(formatAnalyticsIdentifierLabel("workout_builder_saved", "event")).toMatchObject({
+      label: "Workout builder saved",
+      secondary: "workout_builder_saved",
+    });
+    expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({
+      label: "Future Safe Event",
+      secondary: "future_safe_event",
+    });
+  });
 });
