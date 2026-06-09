@@ -49,6 +49,7 @@ describe("AdminHelpCenter", () => {
       screen.getByRole("heading", { name: "Dashboard tabs and when to use them" })
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "How Analytics works" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Troubleshoot fast" })).toBeVisible();
 
     expect(screen.getByTestId("admin-help-quick-action-learning-path")).toHaveAttribute(
@@ -59,15 +60,25 @@ describe("AdminHelpCenter", () => {
       "href",
       "#change-log"
     );
+    expect(screen.getByTestId("admin-help-quick-action-analytics")).toHaveAttribute(
+      "href",
+      "#analytics"
+    );
 
     expect(screen.getByText("Course Workspace / All Content tabs:")).toBeVisible();
+    expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();
+    expect(
+      screen.getByText(/not finance reconciliation or user-level public traffic/i)
+    ).toBeVisible();
+    expect(screen.getByText(/Do not infer missing revenue, user attribution/i)).toBeVisible();
     expect(
       screen.getByText(
         "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."
       )
     ).toBeVisible();
+    expect(screen.getByText("docs/runbooks/public-analytics-privacy-assessment.md")).toBeVisible();
     expect(screen.getByText("docs/runbooks/admin-email-template-governance.md")).toBeVisible();
   });
 });

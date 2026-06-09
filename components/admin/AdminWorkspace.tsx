@@ -3,6 +3,7 @@
 import { startTransition, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import AdminAnalyticsDashboard from "@/components/admin/AdminAnalyticsDashboard";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
 import AdminCategoriesManager from "@/components/admin/AdminCategoriesManager";
@@ -40,6 +41,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     id: "operations",
     label: "Operations",
     subtitle: "Runtime flags and private-access status",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    subtitle: "Safe event dashboard, funnel, and data health",
   },
   {
     id: "email-templates",
@@ -208,6 +214,7 @@ export default function AdminWorkspace({ role }: Props) {
           {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
           {activeTab === "commerce" ? <AdminCommerceManager /> : null}
           {activeTab === "operations" ? <AdminOperationsManager /> : null}
+          {activeTab === "analytics" ? <AdminAnalyticsDashboard /> : null}
           {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
           {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
           {activeTab === "notes" ? <AdminNotesManager /> : null}

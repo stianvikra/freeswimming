@@ -19,7 +19,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-05-07";
+const LAST_UPDATED = "2026-06-09";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -29,6 +29,7 @@ export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "qr-links", label: "QR workflow" },
   { id: "email-templates", label: "Email templates" },
   { id: "messages", label: "Messages" },
+  { id: "analytics", label: "Analytics" },
   { id: "buttons", label: "Buttons explained" },
   { id: "quality-matrix", label: "10/10 matrix" },
   { id: "controls", label: "Doc controls" },
@@ -58,6 +59,13 @@ const DASHBOARD_TABS: TabGuide[] = [
     name: "Operations",
     primaryJob: "Control runtime flags and private-access lock behavior.",
     commonRisk: "Flag changes without verification can hide or expose routes unexpectedly.",
+  },
+  {
+    name: "Analytics",
+    primaryJob:
+      "Inspect privacy-safe event health, funnel counts, route/product activity, and dashboard caveats.",
+    commonRisk:
+      "Treating bounded revenue-proxy counts as finance reconciliation or linking public aggregate traffic to users.",
   },
   {
     name: "Email templates",
@@ -250,6 +258,34 @@ const MESSAGE_WORKFLOW = [
     title: "Diagnose notification issues",
     detail:
       "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed. A failed notification never means the stored request is lost.",
+  },
+];
+
+const ANALYTICS_WORKFLOW = [
+  {
+    title: "Start with data health",
+    detail:
+      "Check range, generated time, last event, schema state, and row cap before reading any KPI. Capped or schema-missing data must be treated as incomplete.",
+  },
+  {
+    title: "Use the KPI strip for a quick pulse",
+    detail:
+      "Total events, public aggregate, known users, client/server split, and checkout rate answer whether safe instrumentation is active in the selected range.",
+  },
+  {
+    title: "Read funnel as product signal only",
+    detail:
+      "Plans, product, checkout, and entitlement counts are useful for product review. They do not replace Stripe, accounting, finance reconciliation, refunds, invoices, payouts, or revenue recognition.",
+  },
+  {
+    title: "Use top lists for direction, not raw investigation",
+    detail:
+      "Top events, routes, and products use stable event names, route templates, and product IDs. The dashboard intentionally does not show raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details, or payment/shipping data.",
+  },
+  {
+    title: "Respect the public privacy boundary",
+    detail:
+      "Public aggregate traffic is not linked to signed-in user profiles, even when the same browser may later authenticate. Unknown or unmapped values should be treated as not counted or generic until explicitly mapped.",
   },
 ];
 
@@ -458,6 +494,26 @@ const BUTTON_GUIDE: ActionGroup[] = [
     ],
   },
   {
+    section: "Analytics tab",
+    actions: [
+      {
+        label: "7 days / 30 days / 90 days",
+        meaning:
+          "Switches the bounded read range only. It does not write analytics rows, browser tracking state, cookies, visitor IDs, or admin preferences.",
+      },
+      {
+        label: "Refresh / Retry",
+        meaning:
+          "Reloads the same selected range from the admin insights endpoint. Use it after deploys, migrations, or quiet periods to confirm freshness.",
+      },
+      {
+        label: "Data health states",
+        meaning:
+          "Fresh means recent safe events exist. Quiet means no recent event is visible. Capped means totals may be incomplete. Schema missing means the migration/setup is not ready. No data yet means the selected range has no matching rows.",
+      },
+    ],
+  },
+  {
     section: "Notes, Categories, and Commerce",
     actions: [
       {
@@ -611,6 +667,13 @@ const CONNECTED_SERVICES = [
     caution:
       "A disabled or failed notification does not mean the platform lost the request; check Messages first.",
   },
+  {
+    name: "First-party analytics",
+    purpose:
+      "Stores sanitized aggregate/product/funnel events and renders read-only admin insights without third-party scripts.",
+    caution:
+      "Do not treat dashboard counts as finance truth, user-level attribution, or approval for cookies/vendor tracking.",
+  },
 ];
 
 const DAILY_PLAYBOOKS: Playbook[] = [
@@ -687,6 +750,7 @@ const RUNBOOK_LINKS = [
   "docs/runbooks/admin-message-inbox.md",
   "docs/checklists/admin-message-v1-pre-live-smoke.md",
   "docs/runbooks/admin-email-template-governance.md",
+  "docs/runbooks/public-analytics-privacy-assessment.md",
   "docs/runbooks/private-access-gate.md",
   "docs/runbooks/post-merge-local-sync.md",
   "docs/runbooks/ci-unblock.md",
@@ -837,6 +901,23 @@ export default function AdminHelpCenter() {
         </div>
       </section>
 
+      <section id="analytics" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How Analytics works</h3>
+        <p className={helpBodyClass}>
+          Analytics is a read-only operational dashboard over sanitized first-party events. Use it
+          for product and support direction, not finance reconciliation or user-level public traffic
+          attribution.
+        </p>
+        <div className="mt-3 space-y-3">
+          {ANALYTICS_WORKFLOW.map((item) => (
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section id="buttons" className={helpSectionClass}>
         <h3 className={helpHeadingClass}>Buttons and what they do</h3>
         <p className={helpBodyClass}>
@@ -877,6 +958,7 @@ export default function AdminHelpCenter() {
                 required for publish/revert).
               </li>
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
+              <li>Inspect privacy-safe analytics event health and read-only funnel signals.</li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
             </ul>
@@ -1005,6 +1087,17 @@ export default function AdminHelpCenter() {
               Treat the message row as received. Check delivery attempts for disabled config,
               retryable provider failure, or final provider rejection before escalating. If a
               response is needed, reply from the normal email inbox and mark the row replied.
+            </p>
+          </article>
+          <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
+            <p className="text-sm font-semibold text-amber-900">
+              Analytics is empty, quiet, capped, or schema-missing
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              Check Data health first. Empty can mean no traffic in range, Quiet can mean no recent
+              event, Capped means totals are bounded, and Schema missing means the analytics_events
+              migration/setup is not ready. Do not infer missing revenue, user attribution, or
+              finance truth from this dashboard alone.
             </p>
           </article>
           <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>

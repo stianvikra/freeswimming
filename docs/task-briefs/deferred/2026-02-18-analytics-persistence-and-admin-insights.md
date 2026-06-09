@@ -8,11 +8,13 @@
 - `created`: `2026-02-18`
 - `updated`: `2026-06-09`
 
-## V1 Child Slice
+## Child Slices
 
-- Active child: `docs/task-briefs/in-progress/2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10.md`
-- V1 scope: additive `analytics_events` persistence, fail-soft event writes, and admin-only JSON insights.
-- Still deferred here: visible admin dashboard, charts, CSV export, retention cleanup, materialized rollups, broader product/auth/library reliability modules, and finance-grade reporting.
+- Done child: `docs/task-briefs/done/2026-06-09-privacy-safe-analytics-persistence-admin-insights-v1-10-10.md`
+- Active child: `docs/task-briefs/in-progress/2026-06-09-admin-analytics-dashboard-read-only-v1-10-10.md`
+- Completed V1 scope: additive `analytics_events` persistence, fail-soft event writes, and admin-only JSON insights.
+- Planned read-only dashboard scope: visible admin dashboard over the existing insights contract, without new persistence, vendors, cookies, visitor IDs, CSV export, rollups, retention cleanup, or finance-grade reporting.
+- Still deferred here: CSV export, retention cleanup, materialized rollups, broader product/auth/library reliability modules, and finance-grade reporting.
 
 ## Goal
 

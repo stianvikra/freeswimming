@@ -313,6 +313,13 @@
   - `rangeDays`: optional integer. Defaults to `30`; max is `90`.
 - Data source: sanitized `analytics_events` rows only.
 - Cache: `no-store`.
+- Admin UI: the read-only Analytics tab in `/admin?tab=analytics` renders this response. The
+  `/admin/analytics` route is an alias into the same admin workspace tab.
+- Caveat: checkout and entitlement counts are product/revenue-proxy signals only. They are not
+  Stripe reconciliation, accounting, refunds, payouts, invoices, or revenue recognition.
+- Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
+  not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
+  shipping, or payment data.
 
 ### Response
 

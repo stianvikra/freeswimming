@@ -1,0 +1,188 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import AdminAnalyticsDashboard from "@/components/admin/AdminAnalyticsDashboard";
+import type { AnalyticsDashboardPayload } from "@/lib/analytics/admin-dashboard";
+import type { AnalyticsInsightsResponse } from "@/lib/analytics/admin-insights";
+
+const basePayload: AnalyticsInsightsResponse = {
+  ok: true,
+  schemaReady: true,
+  generatedAt: "2026-06-09T12:00:00.000Z",
+  rangeDays: 30,
+  since: "2026-05-10T12:00:00.000Z",
+  until: "2026-06-09T12:00:00.000Z",
+  rowCap: 5000,
+  capped: false,
+  totalEvents: 4,
+  lastEventAt: "2026-06-09T10:15:00.000Z",
+  uniqueKnownUsers: 1,
+  publicAggregateEvents: 2,
+  clientEvents: 2,
+  serverEvents: 2,
+  eventCounts: [{ key: "plans_viewed", count: 2 }],
+  routeCounts: [{ key: "/plans", category: "pricing", count: 2 }],
+  productCounts: [{ key: "guide_poolside", productType: "course_addon", count: 2 }],
+  funnel: {
+    publicPageViewed: 2,
+    plansViewed: 2,
+    productViewed: 1,
+    checkoutStarted: 1,
+    checkoutCompleted: 1,
+    entitlementGranted: 1,
+    checkoutCompletionRate: 1,
+    entitlementGrantRate: 1,
+  },
+};
+
+function okResponse(payload: AnalyticsDashboardPayload = basePayload) {
+  return {
+    ok: true,
+    json: async () => payload,
+  };
+}
+
+function errorResponse(error = "Could not load analytics insights right now.") {
+  return {
+    ok: false,
+    json: async () => ({
+      ok: false,
+      error,
+    }),
+  };
+}
+
+describe("AdminAnalyticsDashboard", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("renders the read-only dashboard in the required scan order", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnalyticsDashboard />);
+
+    expect(screen.getByTestId("admin-analytics-dashboard-header")).toHaveClass(
+      "fs-library-card",
+      "fs-library-card-accent"
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Loading analytics dashboard...");
+
+    await screen.findByTestId("admin-analytics-health");
+    expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
+
+    expect(screen.getByText("Fresh")).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-funnel")).getByText("Checkout completed")
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-top-routes")).getByText("/plans")
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-top-products")).getByText("Guide Poolside")
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-caveats")).getByText(/not Stripe reconciliation/i)
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-caveats")).getByText(
+        /not linked to user profiles/i
+      )
+    ).toBeVisible();
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/analytics/insights?rangeDays=30", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  });
+
+  it("switches bounded ranges without writing analytics state", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(okResponse())
+      .mockResolvedValueOnce(okResponse({ ...basePayload, rangeDays: 7 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnalyticsDashboard />);
+
+    await screen.findByTestId("admin-analytics-health");
+    fireEvent.click(screen.getByRole("button", { name: "7 days" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith("/api/admin/analytics/insights?rangeDays=7", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+    });
+    expect(screen.getByRole("button", { name: "7 days" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows schema-missing, capped, and no-data caveats without raw payloads", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      okResponse({
+        ok: true,
+        schemaReady: false,
+        warning: "Analytics persistence is not ready yet.",
+        generatedAt: "2026-06-09T12:00:00.000Z",
+        rangeDays: 30,
+        items: [],
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnalyticsDashboard />);
+
+    expect(await screen.findByText("Schema missing")).toBeVisible();
+    expect(screen.getByText("Not ready")).toBeVisible();
+    expect(screen.getByText(/database errors/i)).toBeVisible();
+    expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
+  });
+
+  it("keeps unsafe identifiers out of rendered labels and supports retry", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(errorResponse())
+      .mockResolvedValueOnce(
+        okResponse({
+          ...basePayload,
+          eventCounts: [{ key: "email=user@example.com", count: 1 }],
+          routeCounts: [
+            { key: "https://example.com/?email=user@example.com", category: null, count: 1 },
+          ],
+          productCounts: [{ key: "customer@example.com", productType: null, count: 1 }],
+        })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnalyticsDashboard />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Could not load analytics insights right now.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await screen.findByText("Unknown event");
+    expect(screen.getByText("Unknown route")).toBeVisible();
+    expect(screen.getByText("Unknown product")).toBeVisible();
+    expect(document.body).not.toHaveTextContent("user@example.com");
+  });
+
+  it("renders top lists as compact list rows instead of horizontal tables", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminAnalyticsDashboard />);
+
+    const topLists = await screen.findByTestId("admin-analytics-top-lists");
+    expect(within(topLists).queryByRole("table")).not.toBeInTheDocument();
+    expect(within(topLists).getAllByRole("list")).toHaveLength(3);
+    expect(topLists).toHaveClass("grid", "lg:grid-cols-3");
+  });
+});
