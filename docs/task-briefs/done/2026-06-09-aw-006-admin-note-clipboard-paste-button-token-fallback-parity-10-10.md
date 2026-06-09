@@ -3,14 +3,14 @@
 ## Metadata
 
 - `id`: `2026-06-09-aw-006-admin-note-clipboard-paste-button-token-fallback-parity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-09`
 - `updated`: `2026-06-09`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `canonical_queue`: `docs/task-briefs/planned/2026-05-17-aw-006-ux-ui-design-review-capture-and-next-slices-10-10.md`
 - `design_inventory`: `docs/design/notice-empty-state-pattern-inventory.md`
-- `execution_mode`: `end-to-end implementation requested; screenshot approval stop before verify:pre-pr`
+- `execution_mode`: `completed via PR #1037; repo-managed closeout`
 - `branch`: `aw-006-admin-note-clipboard-button-parity`
 
 ## Brief Audit Record
@@ -45,7 +45,6 @@ Critical target categories for a `10/10` claim:
 - `Visual design quality`
 - `Business logic correctness and data integrity`
 - `Admin editor ergonomics`
-- `Accessibility (a11y)`
 - `Reliability and failure handling`
 - `Security and authz`
 - `Content governance`
@@ -235,7 +234,7 @@ Required as a targeted admin/operator sweep because this slice changes operator-
 
 ## Completion Mode
 
-In progress. Owner approved screenshot handoff after the mobile action width correction. Continue through PR creation, required CI checks, and `npm run verify:pre-merge`; do not merge without explicit owner approval.
+Completed. PR `#1037` shipped the scoped implementation, and this repo-managed closeout records the final lifecycle evidence.
 
 ## Checkpoint Log
 
@@ -245,3 +244,31 @@ In progress. Owner approved screenshot handoff after the mobile action width cor
 - `2026-06-09 | screenshot-approved | owner approved the screenshot handoff after the mobile action width correction; no scoped product-rendering files changed after final capture, only this checkpoint note | next: run npm run verify:pre-pr`
 - `2026-06-09 | pre-pr-green | npm run verify:pre-pr passed full lane on branch aw-006-admin-note-clipboard-button-parity: branch-current, quality gates, lint, typecheck, unit tests, build, perf budgets, and Playwright e2e; local dev-login-dependent e2e cases were skipped by existing environment guards while open/security coverage passed | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-09 | visual-evidence-refreshed | after commit/lint-staged formatting, regenerated after/reference screenshot artifacts at output/admin-note-clipboard-button-parity-2026-06-09-085353 and recorded DOM class evidence for the shared mobile action width/token classes; no scoped product-rendering files changed after this capture, only temporary screenshot fixture cleanup and this docs checkpoint | next: amend checkpoint into the implementation commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-09 | done | PR #1037 shipped the scoped Admin Note Clipboard Paste Button Token Fallback Parity implementation as squash commit ada59607; required CI and npm run verify:pre-merge passed on current head; this repo-managed closeout moves the brief to done and clears stale active queue/inventory references | next: rerun post-merge preflight after closeout merge`
+
+## Completion Record
+
+- `completed`: `2026-06-09`
+- `merged_pr`: `#1037`
+- `squash_commit`: `ada5960747c46e871f1fae65ad7eb27fc4ca64c7`
+- `result`: Closed the admin note paste-image button parity gap. Admin note image-intake Paste/Upload actions now use the shared secondary action tokens and shared mobile width contract while preserving clipboard reading, upload/staging, attachment, recovery copy, Help/Guide, support procedures, API, auth, and Habits/Micro Sessions backlog deferrals.
+- `validation`: Targeted unit tests, `npm run lint:briefs`, `npm run lint:briefs:all`, route/label/support sweep, stale local-style sweep, `git diff --check`, owner-approved screenshot handoff at `output/admin-note-clipboard-button-parity-2026-06-09-085353`, `npm run verify:pre-pr`, required PR CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained at or above release threshold.
+
+| Category                                      | Achieved Score | Evidence                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1037`, active brief scope, queue/inventory closeout                                                   | None         |
+| UX flow clarity                               | `5/5`          | Owner-approved after/reference screenshots, targeted tests, shared mobile action width evidence            | None         |
+| Visual design quality                         | `5/5`          | `fs-cta-secondary` token fallback, DOM class evidence, screenshot artifacts                                | None         |
+| Business logic correctness and data integrity | `5/5`          | Focused unit tests and diff review; clipboard/upload/data paths unchanged                                  | None         |
+| Admin editor ergonomics                       | `5/5`          | Admin Notes, Context Notes, and Quick Capture Paste/Upload paths covered by tests and screenshots          | None         |
+| Accessibility (a11y)                          | `5/5`          | Semantic button preserved, accessible name/disabled/loading tests, full-lane e2e coverage                  | None         |
+| Data placement and sync boundaries            | `5/5`          | Brief contract and diff review confirm server/local boundaries unchanged                                   | None         |
+| Caching and invalidation strategy             | `5/5`          | Existing fetch/upload refresh behavior unchanged; full verification passed                                 | None         |
+| Reliability and failure handling              | `5/5`          | Clipboard success/error unit coverage and existing blocked-clipboard e2e coverage                          | None         |
+| Security and authz                            | `5/5`          | No API/auth/storage changes; required CI and pre-merge passed                                              | None         |
+| Content governance                            | `5/5`          | Help/Guide and support behavior explicitly preserved; route/label/support sweep passed                     | None         |
+| Admin workflow and editability                | `5/5`          | Same admin note workflows preserved, with shared action layout applied                                     | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `fs-cta-secondary`, `getMobileActionGroupClass`, and `mobileActionItemClass`; no dependencies added | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `verify:pre-pr`, PR CI, and `verify:pre-merge` all passed                                  | None         |
+| DevOps and rollback readiness                 | `5/5`          | Single squash commit `ada59607`; normal git revert rollback                                                | None         |
