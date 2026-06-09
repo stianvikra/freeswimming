@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isAnalyticsEventName, trackAnalyticsEvent } from "@/lib/analytics/events";
+import { isAnalyticsEventName } from "@/lib/analytics/events";
+import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
 import { shouldAttachUserIdToClientAnalyticsEvent } from "@/lib/analytics/public";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     ? (user?.id ?? null)
     : null;
 
-  trackAnalyticsEvent({
+  await trackAndPersistAnalyticsEvent({
     eventName,
     channel: "client",
     userId,

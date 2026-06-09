@@ -5,7 +5,7 @@ import { getAppUrl } from "@/lib/supabase/env";
 import { getCatalogProductById, getCatalogProducts } from "@/lib/commerce/catalog";
 import { buildCheckoutSessionPayload } from "@/lib/commerce/checkout";
 import { upsertCatalogProducts } from "@/lib/commerce/entitlements";
-import { trackAnalyticsEvent } from "@/lib/analytics/events";
+import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
 import { createStripeClient } from "@/lib/stripe/server";
 
 type CheckoutBody = {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       );
     }
 
-    trackAnalyticsEvent({
+    await trackAndPersistAnalyticsEvent({
       eventName: "checkout_started",
       channel: "server",
       userId: user?.id ?? null,
