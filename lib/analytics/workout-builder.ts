@@ -1,11 +1,22 @@
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 import type { WorkoutSourceKind } from "@/lib/workouts/shared";
+import {
+  getActiveWorkoutTemplateByKey,
+  parseWorkoutTemplateKey,
+  type WorkoutBuilderTemplate,
+} from "@/lib/workouts/templates";
 
 export const WORKOUT_BUILDER_ANALYTICS_SOURCE = "workout_builder";
 export const WORKOUT_BUILDER_ANALYTICS_SURFACE = "my_library_workouts";
+export const WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE = "workout_builder_v1";
 
 export type WorkoutBuilderSaveKind = "first_canonical_save" | "existing_workout_update";
+
+type WorkoutBuilderTemplateAnalyticsTemplate = Pick<
+  WorkoutBuilderTemplate,
+  "templateKey" | "status" | "environment" | "sessionType" | "sizeMode"
+>;
 
 function toFiniteNumberOrNull(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -50,4 +61,30 @@ export function buildWorkoutBuilderSavedPayload(input: {
     totalDistanceM: toFiniteNumberOrNull(input.draft.totalDistanceM),
     estimatedDurationMin: toFiniteNumberOrNull(input.draft.estimatedDurationMin),
   };
+}
+
+export function buildWorkoutBuilderTemplateSelectedPayloadForTemplate(
+  template: WorkoutBuilderTemplateAnalyticsTemplate | null | undefined
+) {
+  if (!template || template.status !== "active") return null;
+
+  const templateKey = parseWorkoutTemplateKey(template.templateKey);
+  if (!templateKey || templateKey !== template.templateKey) return null;
+
+  return {
+    source: WORKOUT_BUILDER_ANALYTICS_SOURCE,
+    surface: WORKOUT_BUILDER_ANALYTICS_SURFACE,
+    templateKey,
+    templateSource: WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE,
+    builderMode: getWorkoutBuilderMode(template.environment),
+    environment: template.environment,
+    sessionType: template.sessionType,
+    sizeMode: template.sizeMode,
+  };
+}
+
+export function buildWorkoutBuilderTemplateSelectedPayload(input: { templateKey: unknown }) {
+  return buildWorkoutBuilderTemplateSelectedPayloadForTemplate(
+    getActiveWorkoutTemplateByKey(input.templateKey)
+  );
 }

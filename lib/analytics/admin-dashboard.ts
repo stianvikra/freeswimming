@@ -112,6 +112,7 @@ const EVENT_LABELS: Record<string, string> = {
   session_draft_generated: "Session draft generated",
   workout_builder_saved: "Workout builder saved",
   workout_builder_started: "Workout builder started",
+  workout_builder_template_selected: "Workout builder template selected",
 };
 
 export function normalizeAnalyticsDashboardRangeDays(value: number): AnalyticsDashboardRangeDays {
@@ -546,15 +547,15 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
         id: "template-usage",
         label: "Template usage",
         value: templateUsageValue,
-        detail: "No explicit template event",
+        detail: "No dashboard mapping",
       },
     ],
     detail:
       "Read-only generated-session completion signal with template usage kept separate from unsupported inference.",
     caveat:
       generatedDrafts === 0
-        ? "Completion rate is not counted until a generated draft exists in this range; template usage is not instrumented yet."
-        : "Template usage is not counted yet because V1 telemetry has no explicit template-selection event.",
+        ? "Completion rate is not counted until a generated draft exists in this range; template usage is not dashboard-mapped yet."
+        : "Template usage is not counted yet because the template-selection event is not mapped into this dashboard module.",
   };
 }
 
@@ -583,7 +584,7 @@ function buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(): Analytic
         id: "template-usage",
         label: "Template usage",
         value: "Not instrumented",
-        detail: "No explicit template event",
+        detail: "No dashboard mapping",
       },
     ],
     detail:
@@ -726,7 +727,7 @@ export function buildAnalyticsDashboardViewModel(
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
-      "Template usage is not instrumented yet; do not infer it from session type, generator block toggles, draft creation, visible Use template actions, or adjacent activity.",
+      "Template usage is not dashboard-mapped yet; do not infer it from session type, generator block toggles, draft creation, visible Use template actions, or adjacent activity.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],

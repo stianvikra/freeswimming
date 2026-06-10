@@ -285,7 +285,7 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Read generated completion without inferring template usage",
     detail:
-      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage is shown as Not instrumented until the dedicated template-selection event exists; do not infer it from session type, generator block toggles, draft creation, source kind, visible Use template actions, or adjacent activity.",
+      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage is shown as Not instrumented until a dedicated dashboard mapping exists for workout_builder_template_selected; do not infer it from session type, generator block toggles, draft creation, source kind, visible Use template actions, or adjacent activity.",
   },
   {
     title: "Read funnel as product signal only",
@@ -534,7 +534,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Generated completion / Template usage",
         meaning:
-          "Shows generated drafts and generated saves only from supported events. Template usage is Not instrumented until the dedicated template-selection event exists.",
+          "Shows generated drafts and generated saves only from supported events. Template usage is Not instrumented until a dedicated dashboard mapping exists for workout_builder_template_selected.",
       },
     ],
   },

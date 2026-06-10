@@ -6,14 +6,14 @@ Last updated: 2026-06-10
 
 This contract defines what must be true before FreeSwimming can count `Template usage` for Workout Builder in Admin Analytics.
 
-The current product decision is conservative: Workout Builder may expose a runtime template source and explicit `Use template` action before analytics is instrumented. Template usage must therefore remain `not_instrumented` until a later instrumentation child adds a typed `workout_builder_template_selected` event from that real selection action.
+The current product decision is conservative: Workout Builder exposes a V1 runtime template source, an explicit `Use template` action, and a typed `workout_builder_template_selected` event for that action. Admin Analytics `Template usage` must remain `not_instrumented` until a later dashboard mapping child decides aggregation, labels, Help/Guide copy, and tests for that event.
 
 ## Current Product Decision
 
 - Current runtime support: V1 typed in-repo registry and explicit `Use template` selection surface.
 - Current Admin Analytics behavior: keep `Template usage` as `not_instrumented`.
-- Current instrumentation behavior: do not add `workout_builder_template_selected`.
-- Instrumentation unblock condition: a future child must add the typed, privacy-safe template-selection event from the canonical selection action before Admin Analytics can count template usage.
+- Current instrumentation behavior: emit the typed, privacy-safe `workout_builder_template_selected` event only from the canonical `Use template` action.
+- Dashboard unblock condition: a future child must map the event into Admin Analytics before Admin Analytics can count template usage.
 
 ## Template Definition
 
@@ -145,7 +145,7 @@ Forbidden analytics payload values:
 - Stripe IDs,
 - raw payload JSON in Admin UI.
 
-Analytics failure must fail soft and must not block template use. Missing, unknown, deprecated, or invalid template identity must emit no trusted template-selection event until explicitly mapped. The visible `Use template` workflow alone is not Admin Analytics truth until the dedicated event exists.
+Analytics failure must fail soft and must not block template use. Missing, unknown, deprecated, or invalid template identity must emit no trusted template-selection event until explicitly mapped. The visible `Use template` workflow alone is not Admin Analytics truth until `workout_builder_template_selected` is explicitly mapped into a dashboard metric.
 
 ## Data Placement And Cache Contract
 

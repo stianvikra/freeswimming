@@ -31,6 +31,7 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("habit_rest_day_logged")).toBe(true);
     expect(isAnalyticsEventName("habit_timer_saved")).toBe(true);
     expect(isAnalyticsEventName("workout_builder_started")).toBe(true);
+    expect(isAnalyticsEventName("workout_builder_template_selected")).toBe(true);
     expect(isAnalyticsEventName("workout_builder_saved")).toBe(true);
     expect(isAnalyticsEventName("unknown_event")).toBe(false);
   });

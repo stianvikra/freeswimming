@@ -177,7 +177,7 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /Template usage is not instrumented yet/i
+        /Template usage is not dashboard-mapped yet/i
       )
     ).toBeVisible();
     expect(

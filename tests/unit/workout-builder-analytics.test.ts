@@ -1,100 +1,68 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildWorkoutBuilderSavedPayload,
-  buildWorkoutBuilderStartedPayload,
-  getManualWorkoutBuilderEntry,
+  buildWorkoutBuilderTemplateSelectedPayload,
+  buildWorkoutBuilderTemplateSelectedPayloadForTemplate,
 } from "@/lib/analytics/workout-builder";
-import type { SessionDraft } from "@/lib/session-generator-v1/shared";
-
-function buildDraft(overrides?: Partial<SessionDraft>): SessionDraft {
-  return {
-    version: 1,
-    status: "draft",
-    generatorKind: "rule_engine_v1",
-    createdAt: "2026-06-09T12:00:00.000Z",
-    sourceFingerprint: "fingerprint-1",
-    title: "Private workout title that must not enter analytics",
-    titleSuggestions: ["Private workout title that must not enter analytics"],
-    description: "Private workout description that must not enter analytics.",
-    environment: "pool",
-    poolLengthUnit: "m",
-    poolLengthM: 25,
-    sessionType: "threshold_css",
-    effort: "moderate",
-    sizeMode: "distance",
-    targetDistanceM: 2200,
-    targetTimeMin: null,
-    totalDistanceM: 2200,
-    estimatedDurationMin: 45,
-    basePaceSecondsPer100m: 118,
-    usedCssPaceLabel: "1:58",
-    allowedStrokes: ["freestyle"],
-    equipmentAllowlist: ["kickboard"],
-    focusText: "Private focus text that must not enter analytics.",
-    goalTitle: "Private goal title that must not enter analytics.",
-    constraintText: "Private constraint that must not enter analytics.",
-    warnings: [],
-    steps: [
-      {
-        id: "step-1",
-        category: "warmup",
-        name: "Private step name",
-        stroke: "freestyle",
-        intensity: "easy",
-        durationMode: "distance",
-        distanceM: 400,
-        timeMin: null,
-        targetSummary: "Private target summary",
-        notes: "Private notes",
-      },
-    ],
-    ...overrides,
-  };
-}
 
 describe("workout builder analytics", () => {
-  it("builds stable manual builder start payloads without route or free-text data", () => {
-    expect(getManualWorkoutBuilderEntry("pool")).toBe("manual-pool");
-    expect(getManualWorkoutBuilderEntry("open_water")).toBe("manual-open-water");
-
+  it("builds a privacy-safe template selection payload from an active registry template", () => {
     expect(
-      buildWorkoutBuilderStartedPayload({
-        builderMode: "pool",
-        hasCssPaceDefault: true,
+      buildWorkoutBuilderTemplateSelectedPayload({
+        templateKey: "pool_endurance_base_1000",
       })
     ).toEqual({
       source: "workout_builder",
       surface: "my_library_workouts",
+      templateKey: "pool_endurance_base_1000",
+      templateSource: "workout_builder_v1",
       builderMode: "pool",
-      builderEntry: "manual-pool",
-      hasCssPaceDefault: true,
+      environment: "pool",
+      sessionType: "endurance",
+      sizeMode: "distance",
     });
   });
 
-  it("keeps save payloads low-cardinality and excludes private workout text", () => {
-    const payload = buildWorkoutBuilderSavedPayload({
-      draft: buildDraft({
-        environment: "open_water",
-        totalDistanceM: Number.NaN,
-        estimatedDurationMin: Number.POSITIVE_INFINITY,
-      }),
-      sourceKind: "manual",
-      saveKind: "first_canonical_save",
+  it("does not emit template selection payloads for missing, invalid, or unknown identities", () => {
+    expect(buildWorkoutBuilderTemplateSelectedPayload({ templateKey: null })).toBeNull();
+    expect(
+      buildWorkoutBuilderTemplateSelectedPayload({ templateKey: "Bad Template Key" })
+    ).toBeNull();
+    expect(
+      buildWorkoutBuilderTemplateSelectedPayload({ templateKey: "missing_template" })
+    ).toBeNull();
+  });
+
+  it("rejects deprecated templates and excludes editable display/workout values", () => {
+    const payload = buildWorkoutBuilderTemplateSelectedPayloadForTemplate({
+      templateKey: "deprecated_template",
+      status: "deprecated",
+      environment: "pool",
+      sessionType: "technique",
+      sizeMode: "distance",
     });
 
-    expect(payload).toEqual({
+    expect(payload).toBeNull();
+
+    const activePayload = buildWorkoutBuilderTemplateSelectedPayloadForTemplate({
+      templateKey: "pool_technique_reset_900",
+      status: "active",
+      environment: "pool",
+      sessionType: "technique",
+      sizeMode: "distance",
+    });
+
+    expect(activePayload).toEqual({
       source: "workout_builder",
       surface: "my_library_workouts",
-      sourceKind: "manual",
-      saveKind: "first_canonical_save",
-      builderMode: "open_water",
-      environment: "open_water",
-      sessionType: "threshold_css",
+      templateKey: "pool_technique_reset_900",
+      templateSource: "workout_builder_v1",
+      builderMode: "pool",
+      environment: "pool",
+      sessionType: "technique",
       sizeMode: "distance",
-      stepCount: 1,
-      totalDistanceM: null,
-      estimatedDurationMin: null,
     });
-    expect(JSON.stringify(payload)).not.toContain("Private");
+    expect(JSON.stringify(activePayload)).not.toContain("Technique reset 900");
+    expect(JSON.stringify(activePayload)).not.toContain("manual-template");
+    expect(JSON.stringify(activePayload)).not.toContain("notes");
   });
 });
