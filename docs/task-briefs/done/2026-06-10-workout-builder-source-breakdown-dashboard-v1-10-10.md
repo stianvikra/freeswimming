@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -18,7 +18,7 @@
 
 - `last_audited`: `2026-06-10`
 - `base`: branch `workout-builder-source-breakdown-dashboard-v1` from clean synced `main@f68a9554` with parent brief refresh carried into this implementation workstream
-- `audit_status`: `ready`
+- `audit_status`: `complete`
 - `decision`: Execute this bounded child after owner said `mplementer Workout Builder Source Breakdown Dashboard V1` on `2026-06-10`.
 - `reason`: PR `#1049` persists privacy-safe `workout_builder_started`, `workout_builder_saved`, and existing generator events such as `session_draft_generated`; PR `#1051` provides the Admin Analytics dashboard pattern. The owner explicitly requested implementation, and the scope remains bounded to read-only Admin Analytics source breakdown without checkout, CTA, export, finance, vendor, or builder/generator UX behavior changes.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, verification lanes, `ANALYTICS_EVENT_NAMES`, `lib/analytics/workout-builder.ts`, `lib/analytics/admin-insights.ts`, `lib/analytics/admin-dashboard.ts`, `components/admin/AdminAnalyticsDashboard.tsx`, `/api/admin/analytics/insights`, `session_draft_generated` instrumentation, workout save payloads, Admin Help/Guide, route/label/support sweep rules, or parent brief scope change before implementation starts.
@@ -402,3 +402,33 @@ Use the repo-standard Safari PR flow, preferably `npm run pr:create:safari`, unl
 - `2026-06-10 | implemented + targeted validation | added source-breakdown aggregation, Admin Analytics view-model/UI panel, Help/Guide copy, API/architecture/privacy docs, parent checkpoint update, and targeted tests; validation passed: targeted Vitest 4 files / 21 tests, npm run typecheck, and route/label/support sweep for the listed source/funnel/admin/finance/export identifiers with no deferred same-slice fallout | next: run lint:briefs, lint:quality-gates, git diff --check, then capture screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-06-10 | screenshot handoff ready | captured after/reference artifacts in output/workout-builder-source-breakdown-dashboard-v1-2026-06-10-125853 using deterministic local Admin Analytics fixtures; visual inspection found no clipping, overlap, horizontal scroll, or schema-missing label gaps; temporary capture harness was removed and no shipped visual/rendering files changed after capture | next: wait for owner screenshot approval or visual corrections before npm run verify:pre-pr`
 - `2026-06-10 | pre-pr gate passed | owner approved screenshot handoff and merge-on-good-tests path; npm run verify:pre-pr passed on the full lane with branch current to origin/main@f68a9554, lint/typecheck/unit/build/perf budgets green, and Playwright E2E 106 passed / 530 skipped | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge`
+- `2026-06-10 | merged | PR #1053 merged with squash commit 83e57c8c after GitHub CI was green and npm run verify:pre-merge passed full lane; post-merge-preflight surfaced this repo-managed docs-only closeout | next: complete closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1053`
+- `squash_commit`: `83e57c8c`
+- `result`: Closed Workout Builder Source Breakdown Dashboard V1. Admin Analytics now shows a read-only source breakdown that separates manual builder starts/saves from generated-session drafts/saves, with unknown save sources counted safely and with Help/Guide interpretation boundaries.
+- `validation`: targeted Vitest (`4` files / `21` tests), `npm run typecheck`, route/label/support sweep, `npm run lint:quality-gates`, `git diff --check`, `npm run lint:briefs:all`, screenshot handoff approved, `npm run verify:pre-pr` full lane PASS, PR #1053 CI PASS, and `npm run verify:pre-merge` full lane PASS (`106` Playwright passed / `530` skipped).
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this bounded read-only analytics/dashboard slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                 | Gaps / Notes                                                                   |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Source breakdown answers the bounded manual-vs-generated contribution question; PR #1053 and targeted dashboard tests passed.            | No gap for this slice.                                                         |
+| UX flow clarity                               | `5/5`          | Read-only range-aware panel, Help/Guide caveats, component assertions, and approved screenshots.                                         | Not a unique-user, checkout, revenue, export, Stripe, or finance truth.        |
+| Visual design quality                         | `5/5`          | Approved `after/reference` screenshots in `output/workout-builder-source-breakdown-dashboard-v1-2026-06-10-125853`.                      | Capture used a temporary dev-only harness because local admin login was noisy. |
+| Business logic correctness and data integrity | `5/5`          | Insights/view-model tests cover manual/generated counts, rates, zero denominators, unknown source kinds, and malformed/missing payloads. | Future source kinds require explicit mapping before joining dedicated rates.   |
+| Accessibility (a11y)                          | `5/5`          | Component assertions, preserved Admin Analytics headings/labels, and full verification gates.                                            | No gap for this slice.                                                         |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency, chart, route, vendor script, or client fetch; perf budgets passed in pre-PR and pre-merge.                            | Trend recommendation remains `hold`.                                           |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical analytics rows and server-only payload inspection; browser receives aggregate counts only.                              | No new persisted dashboard state.                                              |
+| Caching and invalidation strategy             | `5/5`          | Existing Admin Analytics no-store/range refetch behavior preserved; broad gates passed.                                                  | No gap for this slice.                                                         |
+| Reliability and failure handling              | `5/5`          | Schema-missing, zero denominator, unknown source, capped/no-data/failure-state contracts preserved and tested.                           | No gap for this slice.                                                         |
+| Security and authz                            | `5/5`          | Existing admin viewer+ API boundary unchanged; no new API or wider data access.                                                          | No auth model change.                                                          |
+| Privacy and compliance                        | `5/5`          | Aggregate-only UI; no raw payload JSON, workout identifiers, user identifiers, URLs, payment data, or Stripe fields rendered.            | No gap for this slice.                                                         |
+| Content governance                            | `5/5`          | Admin Help/Guide, API contract, architecture registry, external-service matrix, privacy runbook, and parent brief updated.               | No same-slice fallout deferred.                                                |
+| Analytics and KPI observability               | `5/5`          | Admin Analytics now separates manual starts/saves, generated drafts/saves, rates, and unknown saves for the selected range.              | Template usage and commerce attribution remain future child work.              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Admin Analytics component/view-model/insights patterns; package/dependency surface unchanged.                            | No gap for this slice.                                                         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot handoff, PR CI, `verify:pre-pr`, and `verify:pre-merge` all passed.                                           | Local dev-login noise caused expected skips, not failures.                     |
+| Scalability and cost efficiency               | `5/5`          | Uses existing bounded analytics event reads and low-cardinality source mapping; no materialized view, warehouse job, or chart bundle.    | No gap for this slice.                                                         |
+| DevOps and rollback readiness                 | `5/5`          | No migration/env/provider/job change; rollback is a revert of PR #1053 plus this docs-only closeout.                                     | No gap for this slice.                                                         |
