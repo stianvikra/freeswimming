@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@c2171772` after Workout Builder Template Runtime Source / Selection Surface V1 PR `#1059` and repo-managed closeout PR `#1060`
+- `base`: clean synced `main@6d87eb68` after Workout Builder Template Usage Instrumentation V1 PR `#1061`
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, and PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface needed before template usage instrumentation can resume.
+- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, and PR `#1061` shipped the typed privacy-safe template-selection event. Dedicated Admin Analytics template usage aggregation remains a later child.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -40,9 +40,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
   - Closed by PR `#1055` / squash commit `0e61938b`.
   - Owns only generated draft/save/completion visibility from existing first-party telemetry and renders template usage as not instrumented.
-- In-progress child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+  - Closed by PR `#1061` / squash commit `6d87eb68`.
   - Owns only first-party instrumentation for explicit workout-builder template selection through the registry-backed `templateKey` and `Use template` action.
-  - Must keep Admin Analytics template usage as `not_instrumented` until a later dashboard mapping child decides aggregation and labels.
+  - Keeps Admin Analytics template usage as `not_instrumented` until a later dashboard mapping child decides aggregation and labels.
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
   - Closed by PR `#1057` / squash commit `92d40fbb`.
   - Owns the product/data contract for what a workout-builder template is, where its stable identity comes from, and what counts as explicit user selection.
@@ -64,7 +65,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Use `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md` as the active child for this track. It adds the first-party `workout_builder_template_selected` event only for the registry-backed `Use template` selection action created by PR `#1059`; dedicated Admin Analytics template usage aggregation remains a later child.
+No active child is approved after PR `#1061`. The next candidate is a dedicated Admin Analytics template usage mapping child that consumes `workout_builder_template_selected` only after owner approval; commercial UI, checkout, finance, vendor analytics, and raw event drilldown remain out of scope.
 
 Why this should still come before commercial UI:
 
@@ -72,9 +73,9 @@ Why this should still come before commercial UI:
 - It keeps commercial decisions downstream of observed product workflow quality.
 - It remains smaller and safer than checkout attribution, finance reporting, or third-party vendor analytics.
 
-Potential child scope:
+Potential next child scope:
 
-- Add a real first-party template-selection event using the scoped taxonomy and registry-backed identity.
+- Map the real first-party template-selection event using the scoped taxonomy and registry-backed identity.
 - Preserve existing admin viewer+ auth, no-store reads, capped/schema-missing/fetch-failed states, and privacy boundary.
 - Keep Admin Help/Guide interpretation that future template counts are product telemetry, not unique-user conversion, checkout conversion, revenue, or finance truth.
 - Add targeted analytics payload, call-site, sanitizer, and negative-path tests before any dashboard label claims template usage.
@@ -352,3 +353,4 @@ Future child implementation:
 - `2026-06-10 | runtime source child merged | PR #1059 merged at squash commit c6cd5b56 and closeout PR #1060 moved the runtime source child to done; registry-backed templateKey identity and explicit Use template selection now unblock the instrumentation child | next: implement docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
 - `2026-06-10 | template instrumentation screenshot stop | active child added the typed template-selection event, payload helper, Use-template call site, Admin Analytics/Help interpretation updates, and targeted tests; local typecheck, quality-gates, lint:briefs -- --all, and diff-check passed; screenshot artifacts captured at output/workout-builder-template-usage-instrumentation-2026-06-10-201809 | next: wait for owner screenshot approval before child verify:pre-pr`
 - `2026-06-10 | template instrumentation screenshots approved | owner approved the screenshot handoff; active child can proceed to verify:pre-pr and PR prep | next: child verify:pre-pr`
+- `2026-06-10 | template instrumentation child merged | PR #1061 merged at squash commit 6d87eb68 after green local pre-pr, CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no approved active child, and template usage dashboard aggregation remains a later mapping child before any commercial UI | next: finish docs-only closeout PR and rerun post-merge-preflight`

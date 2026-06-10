@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -379,11 +379,11 @@ Executed on `2026-06-10`:
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Done child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
 - Done unblock path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
-- Current status: in progress; runtime instrumentation may use the registry-backed `templateKey` source and explicit `Use template` action created by PR `#1059`.
+- Current status: done; PR `#1061` shipped the privacy-safe `workout_builder_template_selected` event for the registry-backed `templateKey` source and explicit `Use template` action created by PR `#1059`.
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -402,3 +402,30 @@ Executed on `2026-06-10`:
 - `2026-06-10 | screenshot handoff stop | typecheck, lint:quality-gates, lint:briefs -- --all, and git diff --check passed; captured after/reference screenshot artifacts at output/workout-builder-template-usage-instrumentation-2026-06-10-201809 using a temporary local-only harness route because /dev/login was blocked by the Supabase egress guard; harness route removed after capture and no scoped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-10 | screenshot approved | owner approved the screenshot handoff in chat; no scoped product-rendering files changed after capture | next: run npm run verify:pre-pr`
 - `2026-06-10 | pre-PR gate passed | npm run verify:pre-pr passed locally on the full lane after screenshot approval; Playwright skipped authenticated/dev-login-dependent cases where the local Supabase auth endpoint returned the expected unavailable HTML response | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`
+- `2026-06-10 | implementation merged | PR #1061 merged at squash commit 6d87eb68 after green local verify:pre-pr, green required CI, and npm run verify:pre-merge; the child moved to done in this repo-managed closeout | next: finish docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1061`
+- `squash_commit`: `6d87eb68`
+- `result`: Closed Workout Builder Template Usage Instrumentation V1 by adding a typed first-party template-selection event for the explicit registry-backed `Use template` action while keeping Admin Analytics template usage unmapped until a later dashboard child.
+- `validation`: Targeted Vitest coverage passed for event taxonomy, payload helper, call site, Admin Analytics view model/dashboard, and Admin Help Center; `npm run verify:pre-pr` passed on full lane; PR CI passed; `npm run verify:pre-merge` passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                    | Gaps / Notes                                                           |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1061`, route/label/support sweep, parent checkpoint                                                                                                    | No gap in slice; dashboard mapping remains a later child.              |
+| Business logic correctness and data integrity | `5/5`          | Payload helper tests and call-site tests prove only explicit valid template selection emits.                                                                | None.                                                                  |
+| Performance (CWV + payloads)                  | `5/5`          | Dependency-free best-effort event, bounded scalar payload, full `verify:pre-pr` perf gate.                                                                  | None.                                                                  |
+| Data placement and sync boundaries            | `5/5`          | Existing `analytics_events` ingestion and registry-backed template identity; no migration or local analytics identity.                                      | None.                                                                  |
+| Reliability and failure handling              | `5/5`          | Analytics failure remains best-effort; invalid/missing template identity emits no event.                                                                    | None.                                                                  |
+| Security and authz                            | `5/5`          | Existing protected workout-builder/auth boundaries retained; no trusted event for invalid template identity.                                                | None.                                                                  |
+| Privacy and compliance                        | `5/5`          | Payload excludes raw titles, notes, URLs, user identifiers, payment data, and high-cardinality workout values.                                              | None.                                                                  |
+| Content governance                            | `5/5`          | API/architecture/Help/Admin Analytics contracts updated; parent and child checkpoints aligned.                                                              | None.                                                                  |
+| Analytics and KPI observability               | `5/5`          | Typed `workout_builder_template_selected` event exists; Admin Analytics still states dashboard mapping is not present.                                      | Dedicated template usage dashboard aggregation intentionally deferred. |
+| Commerce and revenue ops                      | `5/5`          | Docs preserve boundary that template usage is product telemetry, not checkout conversion, revenue attribution, Stripe reconciliation, or finance reporting. | None.                                                                  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing analytics helpers, event taxonomy, template registry, Admin Analytics view model, and Vitest/Testing Library stack.                         | None.                                                                  |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `npm run lint:briefs -- --all`, `npm run verify:pre-pr`, green CI, and `npm run verify:pre-merge`.                                          | None.                                                                  |
+| Scalability and cost efficiency               | `5/5`          | Low-cardinality event dimensions; no warehouse/export job, dependency, vendor, or new aggregation table.                                                    | None.                                                                  |
+| DevOps and rollback readiness                 | `5/5`          | Additive event/call-site/docs/tests only; rollback is reverting PR `#1061`.                                                                                 | None.                                                                  |
