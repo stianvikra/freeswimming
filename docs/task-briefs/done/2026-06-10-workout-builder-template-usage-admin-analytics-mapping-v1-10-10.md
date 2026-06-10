@@ -399,14 +399,14 @@ Implementation validation:
 - `npm run lint:briefs`
 - `git diff --check`
 - `npm run verify:pre-pr` - passed full lane on `2026-06-10`; included lint, typecheck, `239` unit test files / `1505` tests, production build, perf budgets, and Playwright e2e (`106` passed, `536` skipped by existing environment guards).
-- required PR CI checks
-- `npm run verify:pre-merge`
+- required PR CI checks - passed on PR `#1063`.
+- `npm run verify:pre-merge` - passed on `2026-06-10`; reused the current-HEAD full public verify PASS marker and skipped private-gate regression because `SITE_LOCK_ENABLED!=1`.
 
 ## Session Continuity And Recovery
 
-- Canonical child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
+- Canonical child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Latest completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Latest completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Recovery protocol:
   1. `git status -sb`
@@ -423,3 +423,35 @@ Implementation validation:
 - `2026-06-10 | pre-pr gate passed | npm run verify:pre-pr passed full lane with branch-current, lint, typecheck, unit, build, perf budgets, and Playwright e2e; no tracked gate artifacts changed | next: commit, push, and open PR`
 - `2026-06-10 | regenerated screenshot handoff stop | pre-commit formatting touched the committed diff after the first screenshot approval, so screenshots were regenerated in output/workout-builder-template-usage-admin-analytics-mapping-v1-2026-06-10-215814 against committed HEAD with the temporary local-only harness removed afterward; no product-rendering files changed after the regenerated capture | next: wait for owner approval before push, PR, and pre-merge gate`
 - `2026-06-10 | regenerated screenshot approved | owner approved the regenerated after/reference screenshot handoff; no product-rendering files changed after the regenerated capture | next: amend commit with approval evidence, run final npm run verify:pre-pr, push, and open PR`
+- `2026-06-10 | merged | PR #1063 merged at squash commit 617ca14f after green local pre-pr, CI, and pre-merge gates; this repo-managed closeout moved the brief to done and records final evidence | next: validate and merge docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1063`
+- `squash_commit`: `617ca14f`
+- `result`: Closed Workout Builder Template Usage Admin Analytics Mapping V1. Admin Analytics now maps explicit workout-builder template selections from `workout_builder_template_selected` into a read-only, registry-labeled template usage module with unknown-key fallback and clear non-commerce caveats.
+- `validation`: Targeted Vitest passed (`4` files / `22` tests), `npm run typecheck` passed, `npm run lint:quality-gates` passed, `npm run lint:briefs -- --all` passed, `git diff --check` passed, regenerated screenshot handoff was owner-approved, `npm run verify:pre-pr` passed full lane on `2026-06-10`, PR `#1063` CI passed, and `npm run verify:pre-merge` passed on `2026-06-10`.
+- `screenshot_artifacts`: `output/workout-builder-template-usage-admin-analytics-mapping-v1-2026-06-10-215814`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remain `4/5` where the slice intentionally did not add admin edit workflows, incident operations, finance reporting, or i18n infrastructure.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                           | Gaps / Notes   |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Product goals and IA                          | `5/5`          | PR `#1063`, parent/child scope, Help/Guide caveats                                                                                 | No target gap. |
+| UX flow clarity                               | `5/5`          | Admin Analytics component tests, Help/Guide assertion, approved screenshot handoff                                                 | No target gap. |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/workout-builder-template-usage-admin-analytics-mapping-v1-2026-06-10-215814` | No target gap. |
+| Business logic correctness and data integrity | `5/5`          | Insights/view-model tests for explicit event, unknown keys, and unsafe fields                                                      | No target gap. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and preserved Admin Analytics semantics                                                                 | No target gap. |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency or route; `npm run verify:pre-pr` build/perf lane passed                                                         | No target gap. |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical aggregate only; no local analytics identity or dashboard persistence                                              | No target gap. |
+| Caching and invalidation strategy             | `5/5`          | Existing Admin Analytics no-store/range refetch behavior preserved                                                                 | No target gap. |
+| Reliability and failure handling              | `5/5`          | Zero/unknown/capped/schema/error handling covered by targeted tests                                                                | No target gap. |
+| Security and authz                            | `5/5`          | Existing admin viewer+ boundary preserved; no new API or mutation surface                                                          | No target gap. |
+| Privacy and compliance                        | `5/5`          | Aggregate counts only; unsafe raw payload fields filtered by tests                                                                 | No target gap. |
+| Content governance                            | `5/5`          | Help/Guide, API, architecture, parent, and child docs updated                                                                      | No target gap. |
+| Analytics and KPI observability               | `5/5`          | Admin dashboard now exposes explicit template-selection counts with caveats                                                        | No target gap. |
+| Commerce and revenue ops                      | `5/5`          | Commerce/finance/Stripe boundaries documented and tested through Help/Guide copy                                                   | No target gap. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Admin Analytics/view-model/insights/template registry patterns; no dependency added                                         | No target gap. |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, screenshot handoff, `verify:pre-pr`, CI, and `verify:pre-merge` passed                                            | No target gap. |
+| Scalability and cost efficiency               | `5/5`          | Existing bounded analytics reads and low-cardinality template keys reused                                                          | No target gap. |
+| DevOps and rollback readiness                 | `5/5`          | No migration/env/provider/job changes; rollback is a code/docs/test revert                                                         | No target gap. |
