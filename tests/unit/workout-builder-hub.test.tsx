@@ -23,9 +23,15 @@ const navigationState = vi.hoisted(() => ({
   replace: vi.fn(),
   refresh: vi.fn(),
 }));
+const { sendClientAnalyticsEventMock } = vi.hoisted(() => ({
+  sendClientAnalyticsEventMock: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationState,
+}));
+vi.mock("@/lib/analytics/client", () => ({
+  sendClientAnalyticsEvent: sendClientAnalyticsEventMock,
 }));
 
 function buildDraft(overrides?: Partial<SessionDraft>): SessionDraft {
@@ -3731,6 +3737,24 @@ describe("WorkoutBuilderHub", () => {
     expect(
       screen.getByTestId("workout-builder-template-use-pool_technique_reset_900")
     ).toHaveAccessibleName("Use template");
+
+    const templateUseLink = screen.getByTestId(
+      "workout-builder-template-use-pool_endurance_base_1000"
+    );
+    templateUseLink.addEventListener("click", (event) => event.preventDefault());
+
+    fireEvent.click(templateUseLink);
+
+    expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("workout_builder_template_selected", {
+      source: "workout_builder",
+      surface: "my_library_workouts",
+      templateKey: "pool_endurance_base_1000",
+      templateSource: "workout_builder_v1",
+      builderMode: "pool",
+      environment: "pool",
+      sessionType: "endurance",
+      sizeMode: "distance",
+    });
   });
 
   it("starts an editable local draft from a valid workout template without manual draft storage", async () => {
@@ -3838,6 +3862,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByText("That workout template is not available.")).toBeVisible();
     expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
+    expect(sendClientAnalyticsEventMock).not.toHaveBeenCalled();
   });
 
   it("creates the canonical workout only on the first explicit save from a local draft", async () => {

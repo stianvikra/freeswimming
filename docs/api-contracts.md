@@ -254,14 +254,16 @@
   signed-in `user_id`, even when an auth cookie exists.
 - `eventName` must match the allowed analytics event contract list (see `ANALYTICS_EVENT_NAMES`
   in `lib/analytics/events.ts`). Workout-builder funnel V1 adds
-  `workout_builder_started` and `workout_builder_saved` as signed-in product events.
+  `workout_builder_started`, `workout_builder_template_selected`, and `workout_builder_saved` as
+  signed-in product events.
 - Payload is sanitized. Free text, raw URLs/referrers, raw User-Agent, raw IP, email, payment,
   shipping, cart notes, and nested objects are stripped or redacted.
 - Workout-builder funnel payloads may include only low-cardinality workflow dimensions such as
-  `source`, `surface`, `builderMode`, `builderEntry`, `sourceKind`, `saveKind`, `environment`,
-  `sessionType`, `sizeMode`, `stepCount`, `totalDistanceM`, and `estimatedDurationMin`. They must
-  not include workout title, notes, raw route URL, email, IP, user agent, payment/cart data, or raw
-  workout text. V1 intentionally does not copy the private workout row ID into analytics payloads.
+  `source`, `surface`, `builderMode`, `builderEntry`, `templateKey`, `templateSource`,
+  `sourceKind`, `saveKind`, `environment`, `sessionType`, `sizeMode`, `stepCount`,
+  `totalDistanceM`, and `estimatedDurationMin`. They must not include template title, workout
+  title, notes, raw route URL, email, IP, user agent, payment/cart data, or raw workout text. V1
+  intentionally does not copy the private workout row ID into analytics payloads.
 - Accepted events are persisted best-effort to `analytics_events` after sanitization. Persistence
   failures log server diagnostics but must not block the client event response.
 - Body:
@@ -340,10 +342,10 @@
 - Workout builder generated-completion caveat:
   `workoutBuilderTemplateGeneratedCompletion` is product telemetry derived from
   `session_draft_generated` and `workout_builder_saved` with `sourceKind = ai_session_v1`.
-  Template usage is returned as `not_instrumented` until the dedicated template-selection event
-  exists; the dashboard must not infer template usage from session type, generator block toggles,
-  draft creation, saved source kind, the visible `Use template` workflow, or adjacent activity. The
-  identity/selection precondition is defined in
+  Template usage is returned as `not_instrumented` until a dedicated dashboard mapping exists for
+  `workout_builder_template_selected`; the dashboard must not infer template usage from session
+  type, generator block toggles, draft creation, saved source kind, the visible `Use template`
+  workflow, or adjacent activity. The identity/selection precondition is defined in
   `docs/architecture/workout-builder-template-identity-selection-contract.md`.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,

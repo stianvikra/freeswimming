@@ -204,11 +204,11 @@ describe("admin analytics dashboard view model", () => {
         id: "template-usage",
         label: "Template usage",
         value: "Not instrumented",
-        detail: "No explicit template event",
+        detail: "No dashboard mapping",
       },
     ]);
     expect(viewModel.workoutBuilderTemplateGeneratedCompletion.caveat).toContain(
-      "no explicit template-selection event"
+      "template-selection event is not mapped"
     );
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
@@ -398,7 +398,7 @@ describe("admin analytics dashboard view model", () => {
       id: "template-usage",
       label: "Template usage",
       value: "Not instrumented",
-      detail: "No explicit template event",
+      detail: "No dashboard mapping",
     });
 
     const duplicateTelemetry = buildAnalyticsDashboardViewModel(
@@ -520,6 +520,12 @@ describe("admin analytics dashboard view model", () => {
     expect(formatAnalyticsIdentifierLabel("workout_builder_saved", "event")).toMatchObject({
       label: "Workout builder saved",
       secondary: "workout_builder_saved",
+    });
+    expect(
+      formatAnalyticsIdentifierLabel("workout_builder_template_selected", "event")
+    ).toMatchObject({
+      label: "Workout builder template selected",
+      secondary: "workout_builder_template_selected",
     });
     expect(formatAnalyticsIdentifierLabel("session_draft_generated", "event")).toMatchObject({
       label: "Session draft generated",

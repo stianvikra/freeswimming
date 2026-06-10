@@ -13,6 +13,8 @@ import {
   useAutoDismissNotice,
   WORKOUT_NOTICE_AUTO_DISMISS_MS,
 } from "@/components/my-library/workouts/useAutoDismissNotice";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import { buildWorkoutBuilderTemplateSelectedPayload } from "@/lib/analytics/workout-builder";
 import type { ManualWorkoutBuilderMode, ManualWorkoutDraftDefaults } from "@/lib/workouts/manual";
 import {
   clearStoredManualWorkoutDraft,
@@ -94,6 +96,13 @@ function WorkoutTemplateSelectionSurface() {
 
   if (templates.length === 0) return null;
 
+  function trackTemplateSelection(templateKey: string) {
+    const payload = buildWorkoutBuilderTemplateSelectedPayload({ templateKey });
+    if (!payload) return;
+
+    void sendClientAnalyticsEvent("workout_builder_template_selected", payload);
+  }
+
   return (
     <section
       aria-labelledby="workout-builder-template-selection-heading"
@@ -145,6 +154,7 @@ function WorkoutTemplateSelectionSurface() {
                 <Link
                   href={buildTemplateDraftHref(template)}
                   data-testid={`workout-builder-template-use-${template.templateKey}`}
+                  onClick={() => trackTemplateSelection(template.templateKey)}
                   className={cx(primaryActionClass, "w-full sm:w-auto")}
                 >
                   Use template

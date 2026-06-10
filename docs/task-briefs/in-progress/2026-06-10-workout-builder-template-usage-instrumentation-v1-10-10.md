@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10`
-- `status`: `blocked`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -13,26 +13,25 @@
   - `docs/task-briefs/done/2026-06-10-workout-builder-funnel-dashboard-v1-10-10.md`
   - `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
   - `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
-- `blocked_by`:
   - `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
   - `docs/architecture/workout-builder-template-identity-selection-contract.md`
-  - `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
+  - `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - `execution_mode`: `end-to-end-after-explicit-implement`
 - `branch`: `workout-builder-template-usage-instrumentation-v1`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@99acbbb5` after Workout Builder Template Usage / Generated Completion Dashboard V1 PR `#1055` and repo-managed closeout PR `#1056`
-- `audit_status`: `blocked`
-- `decision`: Block runtime implementation after the required template-support audit; do not add `workout_builder_template_selected` until a stable workout-builder template source of truth and explicit selection action exist and satisfy `docs/architecture/workout-builder-template-identity-selection-contract.md`.
-- `reason`: The audit found generator intake blocks, session generator inputs, manual workout scaffolds, saved workout `sourceKind`, goal templates, email templates, admin incident templates, route templates, and future-planning brief references, but no current runtime workout-builder template entity, stable template ID/key, or explicit user action that selects a workout-builder template.
+- `base`: clean synced `main@c2171772` after Workout Builder Template Runtime Source / Selection Surface V1 PR `#1059` and repo-managed closeout PR `#1060`
+- `audit_status`: `ready`
+- `decision`: Resume runtime implementation now that PR `#1059` shipped a registry-backed workout-template source and explicit `Use template` selection surface that satisfy `docs/architecture/workout-builder-template-identity-selection-contract.md`.
+- `reason`: The previous blocker is resolved by `lib/workouts/templates.ts` and `components/my-library/workouts/WorkoutBuilderHub.tsx`, where active templates use stable write-once `templateKey` values and the user explicitly selects `Use template` to start a local editable workout draft.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, task brief template, scorecard categories, analytics event taxonomy, `ANALYTICS_EVENT_NAMES`, `lib/analytics/workout-builder.ts`, `lib/analytics/events.ts`, `lib/analytics/persistence.ts`, `/api/analytics/event`, workout-builder/generator template surfaces, `lib/session-generator-v1/`, `components/my-library/generator/`, `components/my-library/workouts/`, `/api/admin/analytics/insights`, Admin Analytics dashboard/template usage contract, Help/Guide contract, or route/label/support sweep rules change before implementation starts.
 
 Current unblock contract:
 
 - `docs/architecture/workout-builder-template-identity-selection-contract.md` defines the conservative decision: runtime template selection must use immutable `templateId` or write-once `templateKey`, selection requires an explicit `Use template`-equivalent action that starts or populates a draft, and unknown/deprecated values fail closed.
-- This instrumentation child remains blocked until `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md` is merged and validated as the real runtime source/selection surface. After that merge, refresh this brief before adding `workout_builder_template_selected`.
+- `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md` is merged and validated as the real runtime source/selection surface. This child may now add `workout_builder_template_selected` only to the explicit `Use template` selection action.
 
 ## Goal
 
@@ -64,7 +63,7 @@ Implementation must start with a template-support audit before adding an event o
    - button labels or display copy.
 5. If the product decision is to create a new reusable workout-template system first, stop and create a separate planned brief for that data/product slice before implementation.
 
-Template-support audit result on `2026-06-10`:
+Template-support audit result on `2026-06-10` before runtime source existed:
 
 - Runtime implementation is blocked.
 - No stable workout-builder template source of truth was found in current runtime code.
@@ -86,11 +85,20 @@ Template-support audit result on `2026-06-10`:
   - keep Admin Analytics template usage as `not_instrumented`,
   - require a separate product/data decision for a real workout-template identity and selection contract before this instrumentation can resume.
 
-Proposed event name after a successful audit:
+Refresh audit result on `2026-06-10` after PR `#1059` / `#1060`:
+
+- Runtime implementation may resume.
+- `lib/workouts/templates.ts` is the V1 repo-canonical source of truth for active workout-builder template identity.
+- `templateKey` is the stable write-once low-cardinality identity for V1 instrumentation.
+- `components/my-library/workouts/WorkoutBuilderHub.tsx` exposes the explicit `Use template` action that starts a local editable workout draft.
+- Instrument only that selection action.
+- Continue to keep Admin Analytics template usage as `not_instrumented` until a later dashboard mapping child decides how to aggregate and label the event.
+
+Event name:
 
 - `workout_builder_template_selected`
 
-Allowed payload shape after a successful audit:
+Allowed payload shape:
 
 - `source`: `workout_builder`
 - `surface`: `my_library_workouts`
@@ -136,10 +144,10 @@ Critical target categories for the 10/10 claim gate:
 | --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------- |
 | Product goals and IA                          | `target`     | The child answers one product question only: did a user explicitly select a real workout-builder template before later dashboard or commercial decisions.                         | template-support audit + implementation diff            | `5/5`                   |
 | UX flow clarity                               | `supporting` | Supporting only: existing builder/generator flows remain unchanged and analytics failures must not block navigation, template selection, draft creation, or save.                 | component/call-site tests + diff review                 | `4/5`                   |
-| Visual design quality                         | `N/A`        | N/A because instrumentation-only implementation must not change rendered layout, CSS, card structure, print, brand, or visible workflow UI.                                       | explicit visual scope rationale                         | `N/A`                   |
+| Visual design quality                         | `supporting` | Supporting only: this slice updates Admin Analytics/Help interpretation copy without layout, CSS, card structure, print, brand, or workflow UI changes.                           | screenshot handoff + copy diff                          | `4/5`                   |
 | Business logic correctness and data integrity | `target`     | Event emits only for an explicit template-selection action with a stable workout-builder template ID/key; no inferred or adjacent activity is counted as template usage.          | payload helper tests + call-site tests + audit record   | `5/5`                   |
 | Admin editor ergonomics                       | `supporting` | Supporting only: Admin Analytics remains read-only and no admin edit/config workflow is introduced.                                                                               | admin scope rationale                                   | `4/5`                   |
-| Accessibility (a11y)                          | `N/A`        | N/A because no keyboard flow, focus order, aria label, semantic markup, contrast, or rendered state is changed.                                                                   | explicit a11y scope rationale                           | `N/A`                   |
+| Accessibility (a11y)                          | `supporting` | Supporting only: updated text remains in existing semantic Help/Admin containers; no keyboard flow, focus order, aria label, or interactive state changes.                        | component tests + screenshot review                     | `4/5`                   |
 | Performance (CWV + payloads)                  | `target`     | Event is best-effort, low-cardinality, dependency-free, and does not add charting, vendor scripts, extra route loads, or large payloads.                                          | payload tests + package diff + verify gate              | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Analytics rows remain server-canonical in `analytics_events`; template truth stays in the existing workout-template source; no local analytics identity is added.                 | data contract + tests                                   | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: existing analytics ingestion and admin insight reads remain no-store; no cache/revalidation behavior changes.                                                    | route/cache review                                      | `4/5`                   |
@@ -147,7 +155,7 @@ Critical target categories for the 10/10 claim gate:
 | Security and authz                            | `target`     | Protected user/template surfaces retain existing auth boundaries; unauthorized or invalid template actions do not create trusted template-usage events.                           | auth boundary review + negative-path tests              | `5/5`                   |
 | Privacy and compliance                        | `target`     | Payload includes only safe scalar workflow dimensions and stable non-sensitive template IDs; no raw titles/text/URLs, personal identifiers, payment data, or raw payload UI.      | sanitizer/payload tests + privacy docs                  | `5/5`                   |
 | Content governance                            | `target`     | Event taxonomy, template-identity caveats, unsupported inference rules, and parent/child checkpoint logs stay aligned before implementation.                                      | docs/API contract + route/label/support sweep           | `5/5`                   |
-| Admin workflow and editability                | `supporting` | Supporting only: no admin workflow label, action, role, recovery path, or edit behavior changes.                                                                                  | Help/Guide impact rationale                             | `4/5`                   |
+| Admin workflow and editability                | `supporting` | Supporting only: no admin workflow action, role, recovery path, or edit behavior changes; Help/Admin interpretation copy is updated to avoid stale template-usage guidance.       | Help/Guide assertions + screenshot handoff              | `4/5`                   |
 | SEO and crawlability                          | `N/A`        | N/A because this changes no public route, metadata, sitemap, robots, canonical URL, structured data, or crawlable content.                                                        | explicit SEO scope rationale                            | `N/A`                   |
 | AI discoverability                            | `N/A`        | N/A because this adds no public semantic content, public entity page, structured data, or AI-facing crawl surface.                                                                | explicit AI-discoverability scope rationale             | `N/A`                   |
 | Analytics and KPI observability               | `target`     | Template usage becomes observable only through a typed, privacy-safe event with stable identity; dashboard template-count claims remain out of scope until a later mapping child. | event tests + API/docs contract + admin fallback review | `5/5`                   |
@@ -163,10 +171,11 @@ Critical target categories for the 10/10 claim gate:
 ## Stack / Architecture Best-Practice Gate
 
 - React/Next.js:
-  - Reuse the existing workout-builder/generator component where a real template selection occurs.
+  - Reference surface: reuse the existing `components/my-library/workouts/WorkoutBuilderHub.tsx` template selection surface, `components/admin/AdminHelpCenter.tsx`, and `lib/analytics/admin-dashboard.ts` view-model/caveat structure rather than creating a new UI surface.
   - Use the existing `/api/analytics/event` client route through `sendClientAnalyticsEvent` for client-side template selection, or existing server analytics persistence only if the selection is server-confirmed.
   - Do not add a new route, modal, dashboard tab, chart, export action, or dashboard builder.
   - Do not change route cache behavior; analytics ingestion/admin reads remain no-store.
+  - Session-step reference contract: `docs/design/session-step-surface-contract.md` remains unchanged; this slice does not alter session-step rendering, shared renderer behavior, step editing, repeat groups, or workout draft semantics.
 - TypeScript/domain contracts:
   - Add `workout_builder_template_selected` to `ANALYTICS_EVENT_NAMES` only after the audit proves a valid call site.
   - Add or extend a narrow workout-builder analytics helper so payload shape is typed, sanitized, bounded, and testable.
@@ -179,8 +188,9 @@ Critical target categories for the 10/10 claim gate:
 - External services/tools:
   - No Plausible, GA4, Meta, Hotjar, Clarity, tag manager, cookie, visitor ID, webhook, SDK, secret, Stripe, checkout, or finance integration change.
 - UI system:
-  - No visible UI/layout change is planned.
-  - If implementation changes visible Admin Analytics labels, Help/Guide text, layout, or a rendered template surface, screenshot handoff becomes required before `npm run verify:pre-pr`.
+  - Shared component reuse: keep the existing Admin Analytics cards/lists and Help/Guide sections; update only the interpretation copy needed to avoid stale template-usage guidance.
+  - No visible layout, CSS, card structure, print, brand, route, or workflow action change is planned.
+  - Because visible Admin Analytics/Help text changes, screenshot handoff is required before `npm run verify:pre-pr`.
 - Testing:
   - Unit tests for event taxonomy and payload helper.
   - Component/call-site tests for explicit template selection when a valid stable ID exists.
@@ -254,15 +264,26 @@ Critical target categories for the 10/10 claim gate:
 
 ## Help / Guide Impact
 
-N/A for the planned instrumentation-only slice with rationale: this child should not change visible admin/user workflow labels, Help/Guide surfaces, recovery paths, support procedures, or dashboard template-usage claims. If implementation adds visible Admin Analytics labels, a dedicated template usage dashboard module, Help/Guide copy, or support interpretation, that same PR must update Help/Guide assertions and provide screenshot handoff before `npm run verify:pre-pr`.
+Required because this implementation adds the `workout_builder_template_selected` event while keeping the dedicated Admin Analytics template usage KPI unmapped. Admin Help/Guide and Admin Analytics caveats must say template usage is not dashboard-mapped yet, not that the event is missing. No admin workflow action, role, recovery path, or edit behavior changes.
 
 ## Screenshot / Visual Impact
 
-No screenshot artifact handoff is planned for instrumentation-only implementation because no rendered markup, CSS, layout, print, brand, responsive behavior, visible card/button text, or user-facing workflow state should change.
+Screenshot artifact handoff is required because visible Admin Analytics/Help interpretation copy changes. No rendered layout, CSS, print, brand, responsive behavior, card structure, button text, or user-facing workout workflow state should change.
 
-- Screenshot artifacts: N/A for the intended non-visual analytics instrumentation.
-- Screenshot comparison naming: N/A unless implementation changes a rendered UI surface.
-- Owner screenshot approval stop: required only if visible UI/Help/Guide/Admin Analytics rendering changes.
+- Screenshot artifacts: required after targeted implementation QA is stable.
+- Screenshot comparison naming: `after/reference`, focused on Admin Analytics and Help/Guide interpretation copy.
+- Owner screenshot approval stop: required before `npm run verify:pre-pr`, PR update, and `npm run verify:pre-merge`.
+
+Captured on `2026-06-10 20:18`:
+
+- Artifacts folder: `output/workout-builder-template-usage-instrumentation-2026-06-10-201809`
+- Handoff type: `after/reference`.
+- Screenshots:
+  - `after-admin-analytics-template-mapping-desktop.png`
+  - `after-admin-help-analytics-copy-desktop.png`
+  - `after-admin-help-analytics-copy-mobile.png`
+  - `reference-admin-analytics-dashboard-shell-desktop.png`
+- Capture note: local `/dev/login` was blocked by the Supabase egress guard, so screenshots used a temporary local-only harness route that rendered the production Admin Analytics/Help components with deterministic fixture data; the harness route was removed after capture. No scoped product-rendering files changed after capture.
 
 ## Route / Label / Support Surface Sweep
 
@@ -302,13 +323,21 @@ Check at minimum:
 - Help/Guide sources and assertions
 - active/planned/done analytics, workout, commerce, and AW-022 briefs.
 
+Executed on `2026-06-10`:
+
+- Identifiers: `workout_builder_template_selected`, `Template usage`, `Use template`, `templateKey`, `templateId`, `Admin Analytics`, `Help/Guide`, `sourceKind`, and `sessionType`.
+- Fallout handled: added typed event taxonomy, added privacy-safe payload helper, instrumented only the explicit `Use template` action, updated Admin Analytics generic event label, updated Admin Analytics/Help/API/architecture support interpretation from event-missing to dashboard-mapping-missing, and kept generated-completion template usage as `not_instrumented`.
+- Deferred fallout: no dedicated template usage dashboard aggregation, no Admin Analytics template-count KPI, no raw payload drilldown, no CSV/export, no checkout/pricing/Stripe/finance/vendor analytics, no persisted template table, no RLS/migration/generated DB type change, and no inference from session type, generator toggles, source kind, save events, or visible labels.
+
 ## Scope
 
-- Audit whether a real workout-builder template source of truth and explicit template-selection action exist.
-- If the audit fails, stop without adding runtime event names, payload helpers, call sites, dashboard labels, or fake tests.
-- Record the blocker, route/label/support sweep evidence, and parent checkpoint status.
+- Record the refreshed audit that `lib/workouts/templates.ts` and `Use template` now satisfy the resume condition.
+- Add a typed, privacy-safe `workout_builder_template_selected` event for explicit workout-builder template selection.
+- Add a narrow payload helper that accepts only stable bounded template identity and safe canonical workout-builder dimensions.
+- Emit the event best-effort from the existing template selection action only.
+- Update Admin Analytics/Help interpretation copy so `not_instrumented` means not dashboard-mapped yet, not that the event is missing.
 - Keep Admin Analytics template usage as `not_instrumented`.
-- Define the exact resume condition for future implementation.
+- Record route/label/support sweep evidence and parent checkpoint status.
 
 ## Out Of Scope
 
@@ -326,25 +355,19 @@ Check at minimum:
 ## Acceptance Criteria
 
 1. Runtime work begins with a recorded audit of the real workout-builder template source and explicit selection action.
-2. If no stable workout-builder template identity exists, implementation stops without adding fake telemetry and records the blocker/follow-up.
-3. `workout_builder_template_selected` is not added until a stable source/action exists.
-4. Existing Admin Analytics generated-completion/template state is not relabeled as counted template usage in this child.
-5. Route/label/support sweep is recorded with the blocking evidence.
-6. Parent checkpoint log reflects that implementation is blocked on a product/data decision, not a code/test failure.
-7. Changed briefs pass `npm run lint:briefs` and `git diff --check`.
+2. `workout_builder_template_selected` is added only after the stable `templateKey` source and `Use template` action are confirmed.
+3. Payload helper rejects missing, invalid, deprecated, editable, raw, or high-cardinality template/workout/user values and returns no event for invalid identity.
+4. The template selection call site emits best-effort telemetry without blocking draft creation or navigation when analytics fails.
+5. Existing Admin Analytics generated-completion/template state is not relabeled as counted template usage in this child.
+6. Route/label/support sweep is recorded with no fake template inference from adjacent surfaces.
+7. Screenshot handoff covers the visible Admin Analytics/Help interpretation copy before `npm run verify:pre-pr`.
+8. Changed briefs pass `npm run lint:briefs`, targeted tests, `npm run typecheck`, `npm run lint:quality-gates`, `git diff --check`, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge`.
 
 ## Validation
 
-For this blocked closeout:
-
-- `npm run lint:briefs`
-- `npm run lint:briefs:all`
-- `git diff --check`
-
-For future implementation after unblock:
-
 - targeted unit/component tests for analytics taxonomy, payload helper, template call site, sanitizer/privacy exclusions, and negative paths
 - route/label/support-surface sweep
+- screenshot handoff for Admin Analytics/Help interpretation copy
 - `npm run typecheck`
 - `npm run lint:quality-gates`
 - `npm run lint:briefs`
@@ -356,10 +379,11 @@ For future implementation after unblock:
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Blocked child path: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
 - Done unblock path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Done runtime source path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
-- Current status: blocked; runtime instrumentation is not safe until a stable workout-builder template identity and explicit selection action exist.
+- Current status: in progress; runtime instrumentation may use the registry-backed `templateKey` source and explicit `Use template` action created by PR `#1059`.
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -373,3 +397,8 @@ For future implementation after unblock:
 - `2026-06-10 | unblock brief planned | created docs/task-briefs/planned/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md as the product/data contract that must decide template source-of-truth, stable ID/key, rename/repurpose behavior, and explicit selection action before this instrumentation can resume | next: wait for owner implementation approval or scope edits on the unblock brief`
 - `2026-06-10 | unblock contract implemented | docs/architecture/workout-builder-template-identity-selection-contract.md now defines the required future identity/selection rules and confirms current runtime template selection is not supported; this instrumentation child remains blocked until a runtime source and explicit selection surface are implemented under that contract | next: do not resume instrumentation until a dedicated runtime template source/selection child exists`
 - `2026-06-10 | unblock contract merged | PR #1057 closed the identity/selection contract at docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md; this instrumentation child remains blocked because the contract deliberately did not create a runtime template source or explicit selection surface | next: create a separate runtime template source/selection child before instrumentation resumes`
+- `2026-06-10 | runtime source merged | PR #1059 and closeout PR #1060 shipped the registry-backed template source and explicit Use-template selection surface; child moved back to in-progress from clean main@c2171772 | next: implement the typed privacy-safe workout_builder_template_selected event only on the explicit template selection action`
+- `2026-06-10 | implementation + targeted tests | added the typed workout_builder_template_selected event, bounded template payload helper, explicit Use-template call site, Admin Analytics/Help/API interpretation updates, route/label/support sweep evidence, and targeted Vitest coverage; targeted tests passed for analytics events, workout-builder analytics, workout-builder hub, Admin Analytics view model/dashboard, and Admin Help Center | next: run typecheck/lint gates, capture screenshot handoff, and stop for owner visual approval before verify:pre-pr`
+- `2026-06-10 | screenshot handoff stop | typecheck, lint:quality-gates, lint:briefs -- --all, and git diff --check passed; captured after/reference screenshot artifacts at output/workout-builder-template-usage-instrumentation-2026-06-10-201809 using a temporary local-only harness route because /dev/login was blocked by the Supabase egress guard; harness route removed after capture and no scoped product-rendering files changed after capture | next: wait for owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-10 | screenshot approved | owner approved the screenshot handoff in chat; no scoped product-rendering files changed after capture | next: run npm run verify:pre-pr`
+- `2026-06-10 | pre-PR gate passed | npm run verify:pre-pr passed locally on the full lane after screenshot approval; Playwright skipped authenticated/dev-login-dependent cases where the local Supabase auth endpoint returned the expected unavailable HTML response | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge readiness`
