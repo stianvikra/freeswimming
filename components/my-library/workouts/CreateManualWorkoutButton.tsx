@@ -2,6 +2,8 @@
 
 import { startTransition, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import { buildWorkoutBuilderStartedPayload } from "@/lib/analytics/workout-builder";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 
 type Props = {
@@ -21,6 +23,7 @@ export default function CreateManualWorkoutButton({
   className = "",
   testId = "create-manual-workout",
   builderMode = "pool",
+  manualPoolCssMetricSecondsPer100m = null,
   draftHrefBuilder,
 }: Props) {
   const router = useRouter();
@@ -59,6 +62,19 @@ export default function CreateManualWorkoutButton({
 
     try {
       const draftHref = buildDraftHref(builderMode);
+      const hasCssPaceDefault =
+        builderMode === "pool" &&
+        typeof manualPoolCssMetricSecondsPer100m === "number" &&
+        Number.isFinite(manualPoolCssMetricSecondsPer100m) &&
+        manualPoolCssMetricSecondsPer100m > 0;
+
+      void sendClientAnalyticsEvent(
+        "workout_builder_started",
+        buildWorkoutBuilderStartedPayload({
+          builderMode,
+          hasCssPaceDefault,
+        })
+      );
 
       startTransition(() => {
         router.push(draftHref);

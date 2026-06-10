@@ -16,6 +16,7 @@
 - Completed V1 scope: additive `analytics_events` persistence, fail-soft event writes, and admin-only JSON insights.
 - Completed read-only dashboard scope: visible admin dashboard over the existing insights contract, without new persistence, vendors, cookies, visitor IDs, CSV export, rollups, retention cleanup, or finance-grade reporting.
 - Completed lifecycle scope: additive daily rollups, service-role-only rollup refresh/prune functions, lifecycle diagnostics, docs, and tests without automatic scheduled deletion.
+- Active dependent product child: `docs/task-briefs/in-progress/2026-06-09-workout-builder-funnel-instrumentation-v1-10-10.md` uses this platform to add privacy-safe workout-builder start/save events without changing dashboard architecture, vendors, cookies, exports, finance reporting, or public-to-user joins.
 - Still deferred here: CSV export, scheduled retention automation, broader product/auth/library reliability modules, and finance-grade reporting.
 
 ## Goal
