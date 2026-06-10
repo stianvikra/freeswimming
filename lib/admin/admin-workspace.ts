@@ -68,11 +68,11 @@ export const ADMIN_ANALYTICS_WORKSPACE_BOUNDARY = {
   mutationBoundary:
     "Admin Analytics does not mutate analytics rows; it reads /api/admin/analytics/insights through the existing admin viewer+ route boundary.",
   viewBoundary:
-    "Admin analytics metrics, funnel, top lists, caveats, and trust states live under a dedicated dashboard component boundary.",
+    "Admin analytics metrics, commerce funnel, workout-builder funnel, top lists, caveats, and trust states live under a dedicated dashboard component boundary.",
   serverCanonicalData: ["sanitized analytics_events rows", "admin analytics insights response"],
   localOnlyState: ["selected range", "loading/error/retry state"],
   activationBrief:
-    "docs/task-briefs/in-progress/2026-06-09-admin-analytics-dashboard-read-only-v1-10-10.md",
+    "docs/task-briefs/in-progress/2026-06-10-workout-builder-funnel-dashboard-v1-10-10.md",
 } as const satisfies AdminWorkspaceModuleBoundary;
 
 export const ADMIN_WORKSPACE_MODULE_BOUNDARIES = [

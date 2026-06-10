@@ -4,6 +4,7 @@ import {
   type AnalyticsDailyRollupStatusRow,
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
+import type { AnalyticsEventName } from "@/lib/analytics/events";
 
 export type AnalyticsEventInsightRow = Pick<
   Database["public"]["Tables"]["analytics_events"]["Row"],
@@ -53,11 +54,18 @@ export type AnalyticsInsightsResponse = {
     checkoutCompletionRate: number | null;
     entitlementGrantRate: number | null;
   };
+  workoutBuilderFunnel: {
+    started: number;
+    saved: number;
+    saveRate: number | null;
+  };
 };
 
 export const ANALYTICS_INSIGHTS_DEFAULT_RANGE_DAYS = 30;
 export const ANALYTICS_INSIGHTS_MAX_RANGE_DAYS = 90;
 export const ANALYTICS_INSIGHTS_ROW_CAP = 5000;
+const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
+const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
 
 export function selectAnalyticsInsightFields() {
   return `
@@ -145,6 +153,8 @@ export function buildAnalyticsInsights(input: {
 
   const checkoutStarted = eventCounts.get("checkout_started") ?? 0;
   const checkoutCompleted = eventCounts.get("checkout_completed") ?? 0;
+  const workoutBuilderStarted = eventCounts.get(WORKOUT_BUILDER_STARTED_EVENT) ?? 0;
+  const workoutBuilderSaved = eventCounts.get(WORKOUT_BUILDER_SAVED_EVENT) ?? 0;
 
   return {
     ok: true,
@@ -185,6 +195,11 @@ export function buildAnalyticsInsights(input: {
       entitlementGranted: eventCounts.get("entitlement_granted") ?? 0,
       checkoutCompletionRate: ratio(checkoutCompleted, checkoutStarted),
       entitlementGrantRate: ratio(eventCounts.get("entitlement_granted") ?? 0, checkoutCompleted),
+    },
+    workoutBuilderFunnel: {
+      started: workoutBuilderStarted,
+      saved: workoutBuilderSaved,
+      saveRate: ratio(workoutBuilderSaved, workoutBuilderStarted),
     },
   };
 }

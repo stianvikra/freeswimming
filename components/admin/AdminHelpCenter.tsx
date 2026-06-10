@@ -19,7 +19,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-06-09";
+const LAST_UPDATED = "2026-06-10";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe event health, funnel counts, workout-builder save-rate, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating bounded revenue-proxy counts as finance reconciliation or linking public aggregate traffic to users.",
+      "Treating bounded revenue-proxy or builder save-rate counts as finance reconciliation, checkout conversion, or user-level attribution.",
   },
   {
     name: "Email templates",
@@ -271,6 +271,11 @@ const ANALYTICS_WORKFLOW = [
     title: "Use the KPI strip for a quick pulse",
     detail:
       "Total events, public aggregate, known users, client/server split, and checkout rate answer whether safe instrumentation is active in the selected range.",
+  },
+  {
+    title: "Read workout builder save-rate as product telemetry",
+    detail:
+      "Started counts workout_builder_started, Saved counts workout_builder_saved, and Save rate is Saved / Started for the selected range. Duplicate starts and saves can exist, so this is not unique-user conversion, checkout performance, Stripe reconciliation, or finance reporting.",
   },
   {
     title: "Read funnel as product signal only",
@@ -510,6 +515,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Data health states",
         meaning:
           "Fresh means recent safe events exist. Quiet means no recent event is visible. Capped means totals may be incomplete. Schema missing means the migration/setup is not ready. No data yet means the selected range has no matching rows.",
+      },
+      {
+        label: "Started / Saved / Save rate",
+        meaning:
+          "Shows the workout-builder product telemetry for the selected range. It is useful for builder completion review, not user-level attribution, checkout conversion, Stripe reconciliation, export, or finance reporting.",
       },
     ],
   },

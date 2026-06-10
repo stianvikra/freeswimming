@@ -13,13 +13,17 @@ const basePayload: AnalyticsInsightsResponse = {
   until: "2026-06-09T12:00:00.000Z",
   rowCap: 5000,
   capped: false,
-  totalEvents: 4,
+  totalEvents: 10,
   lastEventAt: "2026-06-09T10:15:00.000Z",
   uniqueKnownUsers: 1,
   publicAggregateEvents: 2,
   clientEvents: 2,
   serverEvents: 2,
-  eventCounts: [{ key: "plans_viewed", count: 2 }],
+  eventCounts: [
+    { key: "workout_builder_started", count: 5 },
+    { key: "workout_builder_saved", count: 3 },
+    { key: "plans_viewed", count: 2 },
+  ],
   routeCounts: [{ key: "/plans", category: "pricing", count: 2 }],
   productCounts: [{ key: "guide_poolside", productType: "course_addon", count: 2 }],
   lifecycle: {
@@ -48,6 +52,11 @@ const basePayload: AnalyticsInsightsResponse = {
     entitlementGranted: 1,
     checkoutCompletionRate: 1,
     entitlementGrantRate: 1,
+  },
+  workoutBuilderFunnel: {
+    started: 5,
+    saved: 3,
+    saveRate: 0.6,
   },
 };
 
@@ -89,6 +98,7 @@ describe("AdminAnalyticsDashboard", () => {
     await screen.findByTestId("admin-analytics-health");
     expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
 
@@ -96,6 +106,15 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       within(screen.getByTestId("admin-analytics-funnel")).getByText("Checkout completed")
     ).toBeVisible();
+    const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");
+    expect(within(builderFunnel).getByText("Started to saved signal")).toBeVisible();
+    expect(within(builderFunnel).getByText("Started")).toBeVisible();
+    expect(within(builderFunnel).getByText("Saved")).toBeVisible();
+    expect(within(builderFunnel).getByText("Save rate")).toBeVisible();
+    expect(within(builderFunnel).getByText("5")).toBeVisible();
+    expect(within(builderFunnel).getByText("3")).toBeVisible();
+    expect(within(builderFunnel).getByText("60%")).toBeVisible();
+    expect(within(builderFunnel).queryByRole("button")).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
     ).toBeVisible();
@@ -107,6 +126,9 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(/not Stripe reconciliation/i)
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-caveats")).getByText(/not unique-user conversion/i)
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
@@ -157,8 +179,12 @@ describe("AdminAnalyticsDashboard", () => {
 
     render(<AdminAnalyticsDashboard />);
 
-    expect(await screen.findByText("Schema missing")).toBeVisible();
+    const health = await screen.findByTestId("admin-analytics-health");
+    expect(within(health).getByText("Schema missing")).toBeVisible();
     expect(screen.getByText("Not ready")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
+      "Not counted"
+    );
     expect(screen.getByText(/database errors/i)).toBeVisible();
     expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
   });
@@ -175,6 +201,11 @@ describe("AdminAnalyticsDashboard", () => {
             { key: "https://example.com/?email=user@example.com", category: null, count: 1 },
           ],
           productCounts: [{ key: "customer@example.com", productType: null, count: 1 }],
+          workoutBuilderFunnel: {
+            started: 0,
+            saved: 2,
+            saveRate: null,
+          },
         })
       );
     vi.stubGlobal("fetch", fetchMock);
@@ -186,6 +217,9 @@ describe("AdminAnalyticsDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
     await screen.findByText("Unknown event");
+    expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
+      "Not counted"
+    );
     expect(screen.getByText("Unknown route")).toBeVisible();
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(document.body).not.toHaveTextContent("user@example.com");

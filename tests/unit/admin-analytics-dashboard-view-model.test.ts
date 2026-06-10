@@ -18,13 +18,15 @@ const basePayload: AnalyticsDashboardPayload = {
   until: "2026-06-09T12:00:00.000Z",
   rowCap: 5000,
   capped: false,
-  totalEvents: 4,
+  totalEvents: 10,
   lastEventAt: "2026-06-09T10:15:00.000Z",
   uniqueKnownUsers: 1,
   publicAggregateEvents: 2,
   clientEvents: 2,
   serverEvents: 2,
   eventCounts: [
+    { key: "workout_builder_started", count: 5 },
+    { key: "workout_builder_saved", count: 3 },
     { key: "plans_viewed", count: 2 },
     { key: "new_safe_event", count: 1 },
   ],
@@ -57,6 +59,11 @@ const basePayload: AnalyticsDashboardPayload = {
     checkoutCompletionRate: 1,
     entitlementGrantRate: 1,
   },
+  workoutBuilderFunnel: {
+    started: 5,
+    saved: 3,
+    saveRate: 0.6,
+  },
 };
 
 describe("admin analytics dashboard view model", () => {
@@ -82,7 +89,7 @@ describe("admin analytics dashboard view model", () => {
       "client-server",
       "checkout-rate",
     ]);
-    expect(viewModel.metrics[0]).toMatchObject({ label: "Total events", value: "4" });
+    expect(viewModel.metrics[0]).toMatchObject({ label: "Total events", value: "10" });
     expect(viewModel.funnel.map((step) => step.id)).toEqual([
       "public-page-viewed",
       "plans-viewed",
@@ -91,7 +98,38 @@ describe("admin analytics dashboard view model", () => {
       "checkout-completed",
       "entitlement-granted",
     ]);
+    expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
+      {
+        id: "builder-started",
+        label: "Started",
+        value: "5",
+        detail: "Manual builder starts",
+      },
+      {
+        id: "builder-saved",
+        label: "Saved",
+        value: "3",
+        detail: "Successful creates or updates",
+      },
+      {
+        id: "builder-save-rate",
+        label: "Save rate",
+        value: "60%",
+        detail: "Saved / started",
+      },
+    ]);
+    expect(viewModel.workoutBuilderFunnel.caveat).toContain("not unique-user");
     expect(viewModel.eventItems[0]).toMatchObject({
+      label: "Workout builder started",
+      secondary: "workout_builder_started",
+      count: "5",
+    });
+    expect(viewModel.eventItems[1]).toMatchObject({
+      label: "Workout builder saved",
+      secondary: "workout_builder_saved",
+      count: "3",
+    });
+    expect(viewModel.eventItems[2]).toMatchObject({
       label: "Plans viewed",
       secondary: "plans_viewed",
       count: "2",
@@ -129,6 +167,11 @@ describe("admin analytics dashboard view model", () => {
           eventCounts: [],
           routeCounts: [],
           productCounts: [],
+          workoutBuilderFunnel: {
+            started: 0,
+            saved: 0,
+            saveRate: null,
+          },
         },
         { now }
       ).state
@@ -149,7 +192,72 @@ describe("admin analytics dashboard view model", () => {
       state: "schema-missing",
       stateLabel: "Schema missing",
       metrics: [{ id: "schema", value: "Not ready" }],
+      workoutBuilderFunnel: {
+        metrics: [
+          { id: "builder-started", value: "Not counted" },
+          { id: "builder-saved", value: "Not counted" },
+          { id: "builder-save-rate", value: "Not counted" },
+        ],
+      },
     });
+  });
+
+  it("handles zero starts and duplicate save telemetry without inferring fake rates", () => {
+    const zeroStarts = buildAnalyticsDashboardViewModel(
+      {
+        ...basePayload,
+        eventCounts: [
+          { key: "workout_builder_saved", count: 2 },
+          { key: "future_safe_event", count: 1 },
+        ],
+        workoutBuilderFunnel: {
+          started: 0,
+          saved: 2,
+          saveRate: null,
+        },
+      },
+      { now }
+    );
+
+    expect(zeroStarts.workoutBuilderFunnel.metrics).toEqual([
+      {
+        id: "builder-started",
+        label: "Started",
+        value: "0",
+        detail: "Manual builder starts",
+      },
+      {
+        id: "builder-saved",
+        label: "Saved",
+        value: "2",
+        detail: "Successful creates or updates",
+      },
+      {
+        id: "builder-save-rate",
+        label: "Save rate",
+        value: "Not counted",
+        detail: "Saved / started",
+      },
+    ]);
+    expect(zeroStarts.workoutBuilderFunnel.caveat).toContain("until a builder start exists");
+
+    const duplicateTelemetry = buildAnalyticsDashboardViewModel(
+      {
+        ...basePayload,
+        workoutBuilderFunnel: {
+          started: 2,
+          saved: 3,
+          saveRate: 1.5,
+        },
+      },
+      { now }
+    );
+
+    expect(duplicateTelemetry.workoutBuilderFunnel.metrics[2]).toMatchObject({
+      label: "Save rate",
+      value: "150%",
+    });
+    expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain("Duplicate starts and saves");
   });
 
   it("does not expose unsafe raw payload-like identifiers in labels or secondary text", () => {
@@ -167,6 +275,11 @@ describe("admin analytics dashboard view model", () => {
         productCounts: [
           { key: "customer@example.com", productType: "email=user@example.com", count: 1 },
         ],
+        workoutBuilderFunnel: {
+          started: 0,
+          saved: 0,
+          saveRate: null,
+        },
       },
       { now }
     );

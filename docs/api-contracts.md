@@ -327,6 +327,10 @@
   `/admin/analytics` route is an alias into the same admin workspace tab.
 - Caveat: checkout and entitlement counts are product/revenue-proxy signals only. They are not
   Stripe reconciliation, accounting, refunds, payouts, invoices, or revenue recognition.
+- Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
+  `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
+  selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
+  or finance reporting.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -376,6 +380,11 @@
     "entitlementGranted": 1,
     "checkoutCompletionRate": 0.5,
     "entitlementGrantRate": 1
+  },
+  "workoutBuilderFunnel": {
+    "started": 5,
+    "saved": 3,
+    "saveRate": 0.6
   }
 }
 ```
