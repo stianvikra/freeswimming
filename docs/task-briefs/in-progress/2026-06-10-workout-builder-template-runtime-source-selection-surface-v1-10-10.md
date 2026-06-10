@@ -333,6 +333,8 @@ Current implementation validation before screenshot handoff:
 - `npm run lint:briefs:all` PASS.
 - `npm run verify:pre-pr` first run failed on missing standard brief evidence for the session-step reference contract; fixed by documenting `docs/design/session-step-surface-contract.md` reuse before rerun.
 - `npm run verify:pre-pr` PASS after evidence fix: full public lane, including lint, typecheck, unit, build, perf budgets, and E2E summary `106 passed`, `536 skipped`.
+- PR `#1059` CI initially blocked on required CodeQL `Analyze (javascript-typescript)` with repeated GitHub REST auth failures during CodeQL init; narrowed CodeQL workflow `GITHUB_TOKEN` permissions were expanded with PR read and status write scopes so explicit permissions do not set those API surfaces to `none`.
+- `npm run verify:pre-pr` PASS after CodeQL workflow permission fix: full public lane, including lint, typecheck, unit, build, perf budgets, and E2E summary `106 passed`, `536 skipped`.
 
 ## Checkpoint Log
 
@@ -342,3 +344,5 @@ Current implementation validation before screenshot handoff:
 - `2026-06-10 | screenshot approval | owner approved screenshot handoff and authorized merge when tests are green | next: run `npm run verify:pre-pr`, commit, push, open PR, monitor CI, run `npm run verify:pre-merge`, then merge if all required checks stay green`
 - `2026-06-10 | pre-pr gate fix | first `npm run verify:pre-pr`stopped at quality-gate evidence for missing session-step reference contract wording; added explicit`docs/design/session-step-surface-contract.md`reuse evidence | next: rerun`npm run verify:pre-pr`
 - `2026-06-10 | pre-pr verified | `npm run verify:pre-pr` passed the full public lane after the brief evidence fix; no generated output artifacts were left in the commit set | next: commit, push, open PR, and monitor CI`
+- `2026-06-10 | CI release-gate fix | required CodeQL `Analyze (javascript-typescript)`failed twice in init with GitHub REST`Requires authentication`; added minimal `pull-requests: read`and`statuses: write`permissions to the CodeQL workflow while keeping`security-events: write` | next: rerun pre-PR validation, commit, push, and monitor required CI again`
+- `2026-06-10 | CI fix pre-pr verified | `npm run verify:pre-pr`passed after the CodeQL workflow permission fix with E2E summary`106 passed`, `536 skipped` | next: commit, push, and monitor required CI again`
