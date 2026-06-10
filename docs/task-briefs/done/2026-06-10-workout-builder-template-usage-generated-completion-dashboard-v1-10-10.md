@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -353,7 +353,7 @@ Planning-only brief creation:
 - `npm run lint:briefs`
 - `git diff --check`
 
-Implementation validation completed so far:
+Implementation validation:
 
 - `./node_modules/.bin/vitest run tests/unit/admin-analytics-insights.test.ts tests/unit/admin-analytics-dashboard-view-model.test.ts tests/unit/admin-analytics-dashboard.test.tsx tests/unit/admin-help-center.test.tsx` - passed, `4` files and `21` tests.
 - `npm run typecheck` - passed.
@@ -363,15 +363,14 @@ Implementation validation completed so far:
 - `npm run lint:briefs -- --all` - passed.
 - Screenshot handoff captured and visually inspected; owner approved on `2026-06-10`.
 - `npm run verify:pre-pr` - passed full lane on `2026-06-10`: branch-current, quality gates, admin/env/PR-body lint, ESLint with existing output warnings only, typecheck, `238` unit test files / `1493` tests, build, perf budgets, and Playwright E2E `106` passed / `530` skipped.
-
-Remaining validation before merge:
-
-- required PR CI checks
-- `npm run verify:pre-merge`
+- `npm run verify:pre-pr` on committed `HEAD add696cd` - passed full lane at `artifacts/test-runs/20260610-144841`, including branch-current, brief/quality/admin/env/PR-body lint, ESLint with existing output warnings only, typecheck, `238` unit test files / `1493` tests, build, perf budgets, and Playwright E2E `106` passed / `530` skipped.
+- PR `#1055` CI - passed: `verify` `5m32s`, `e2e-smoke` `1m34s`, `site-lock-smoke` `3s`, `deploy-preview` `1m38s`, `size-check`, `CodeQL`, Vercel, and Vercel Preview Comments.
+- `npm run verify:pre-merge` - passed on `2026-06-10`, full lane scope, reused public verify PASS for current `HEAD add696cd`, skipped private-gate regression because `SITE_LOCK_ENABLED!=1`, and recorded `artifacts/verify-pre-merge/20260610-130328.json`.
+- PR `#1055` merged on `2026-06-10` at squash commit `0e61938b`.
 
 ## Session Continuity And Recovery
 
-- Canonical child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
+- Canonical child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Recovery protocol:
   1. `git status -sb`
@@ -384,3 +383,34 @@ Remaining validation before merge:
 - `2026-06-10 | moved to in-progress | owner requested implementation on branch workout-builder-template-generated-completion-dashboard-v1; telemetry audit found generated draft/save/completion metrics are supported but template usage is not safely measurable, so the runtime slice must render template usage as Not instrumented and avoid new events | next: finish UI/docs/tests, then capture screenshot handoff and stop for owner approval before verify:pre-pr`
 - `2026-06-10 | screenshot handoff ready | implemented generated-completion UI/docs/tests, captured after/reference screenshots in output/workout-builder-template-generated-completion-dashboard-v1-2026-06-10-142604, and completed targeted unit/type/brief/quality/diff checks | next: wait for owner screenshot approval or visual corrections before npm run verify:pre-pr`
 - `2026-06-10 | pre-pr gate passed | owner approved screenshot handoff and merge on good tests; npm run verify:pre-pr passed the full lane with unit/build/perf/e2e coverage, so the branch is ready for commit, push, PR creation, CI monitoring, and pre-merge gate | next: commit and open PR`
+- `2026-06-10 | merged | committed add696cd, opened PR #1055, passed required CI, passed npm run verify:pre-merge, and merged at squash commit 0e61938b; repo-managed closeout moved this child to done and parent now has no active child | next: finish closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1055`
+- `squash_commit`: `0e61938b`
+- `result`: Closed Workout Builder Template Usage / Generated Completion Dashboard V1 by shipping a read-only Admin Analytics module for generated drafts, generated saves, and generated completion rate while explicitly showing template usage as `Not instrumented` until a real template identity exists.
+- `validation`: targeted Vitest, typecheck, brief/quality/diff checks, owner-approved after/reference screenshots, `npm run verify:pre-pr` full lane, PR `#1055` CI, and `npm run verify:pre-merge`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Accessibility (a11y), Performance (CWV + payloads), Data placement and sync boundaries, Caching and invalidation strategy, Reliability and failure handling, Security and authz, Privacy and compliance, Analytics and KPI observability, Stack-fit and dependency discipline, Testing and QA automation, and DevOps and rollback readiness.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                    | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1055` shipped only the approved generated-completion dashboard subset and kept commercial UI deferred.                                 | No gap.      |
+| UX flow clarity                               | `5/5`          | Admin Analytics UI and Help/Guide copy label generated drafts, generated saves, completion rate, and unsupported template usage clearly.    | No gap.      |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/workout-builder-template-generated-completion-dashboard-v1-2026-06-10-142604`.        | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | View-model and insights tests cover generated draft/save/rate derivation and unsupported template usage fallback.                           | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Reused existing Admin Analytics semantic card patterns; PR CI and full Playwright lane passed.                                              | No gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | `npm run verify:pre-pr` full lane passed build and perf budgets; no new dependency or payload-heavy client surface.                         | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Metrics remain server-canonical read-only admin insights from existing first-party analytics rows; no local persistence.                    | No gap.      |
+| Caching and invalidation strategy             | `5/5`          | Existing Admin Analytics range/refresh/no-store behavior preserved and covered by targeted tests.                                           | No gap.      |
+| Reliability and failure handling              | `5/5`          | Schema-missing, no-data, zero-denominator, and not-instrumented states have deterministic safe rendering.                                   | No gap.      |
+| Security and authz                            | `5/5`          | Existing admin-only insights route and viewer+ boundary unchanged; no raw payload or access-control expansion.                              | No gap.      |
+| Privacy and compliance                        | `5/5`          | Aggregated counts only; no emails, IPs, user agents, visitor IDs, raw workout text, raw URLs, payment details, or raw payload JSON exposed. | No gap.      |
+| Content governance                            | `5/5`          | Help/Guide and API/architecture contracts updated in the same PR.                                                                           | No gap.      |
+| Analytics and KPI observability               | `5/5`          | Generated-completion KPI is mapped to explicit safe events; template usage is not inferred and is marked not instrumented.                  | No gap.      |
+| Commerce and revenue ops                      | `5/5`          | CTA, checkout, pricing, entitlement, Stripe, export, and finance-grade reporting stayed out of scope.                                       | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js/Admin Analytics/view-model/test patterns; no dependency changes.                                                    | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted unit/component tests, `npm run verify:pre-pr`, PR `#1055` CI, and `npm run verify:pre-merge` passed.                               | No gap.      |
+| Scalability and cost efficiency               | `5/5`          | Uses existing capped analytics fetch/aggregation path and adds no rollup job, migration, vendor, or background cost.                        | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Small scoped PR, docs contracts, green CI, pre-merge PASS marker, and no schema/runtime config migration needed.                            | No gap.      |
