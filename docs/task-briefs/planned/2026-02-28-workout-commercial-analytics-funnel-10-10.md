@@ -43,9 +43,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 - Blocked child: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
   - Audited the proposed first-party instrumentation path for explicit workout-builder template selection.
   - Runtime implementation is blocked until a stable workout-builder template identity and explicit selection action exist.
-- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+  - Closed by PR `#1057` / squash commit `92d40fbb`.
   - Owns the product/data contract for what a workout-builder template is, where its stable identity comes from, and what counts as explicit user selection.
-  - This is the unblock path before template usage instrumentation can resume.
+  - Confirms template usage instrumentation cannot resume until a real runtime template source and explicit selection surface exist.
   - Contract artifact: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Still deferred after generated completion:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
@@ -59,7 +60,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-The active child is `Workout Builder Template Identity / Selection Contract V1`, which defines stable workout-builder template identity and explicit selection behavior before template usage instrumentation resumes. This child remains docs-only and does not add runtime templates, analytics events, dashboard labels, schemas, checkout, export, vendor, or finance behavior.
+No child is active after `Workout Builder Template Identity / Selection Contract V1`. Template usage instrumentation remains blocked until a future child creates or identifies a real runtime template source and explicit selection surface that satisfies `docs/architecture/workout-builder-template-identity-selection-contract.md`.
 
 Why this should still come before commercial UI:
 
@@ -318,7 +319,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
 - Planned child path: none for template usage instrumentation after audit.
-- Active unblock child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Blocked child path: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
 - Recovery protocol:
@@ -343,3 +344,4 @@ Future child implementation:
 - `2026-06-10 | template instrumentation blocked | required audit found no current runtime workout-builder template entity, stable template ID/key, or explicit template-selection action, so the child moved to docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md without adding event taxonomy, payload helpers, call sites, dashboard labels, migrations, vendors, checkout, export, or finance scope | next: owner decision on whether to create a workout-template identity/selection contract before resuming instrumentation`
 - `2026-06-10 | planned unblock child created | created planned contract brief docs/task-briefs/planned/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md so template identity, source-of-truth, rename/repurpose rules, and explicit selection behavior can be decided before blocked instrumentation resumes | next: wait for owner implementation approval or scope edits`
 - `2026-06-10 | unblock child in progress | owner requested implementation of Workout Builder Template Identity / Selection Contract V1; the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md and added docs/architecture/workout-builder-template-identity-selection-contract.md as the durable contract artifact; parent remains plan-only and runtime template instrumentation remains blocked until a real template source and explicit selection surface exist | next: validate docs-only contract slice and prepare PR`
+- `2026-06-10 | unblock contract child merged | PR #1057 merged at squash commit 92d40fbb; the contract child moved to docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md and confirms that instrumentation remains blocked until a future runtime child adds or identifies a canonical template source plus explicit Use-template-equivalent selection surface | next: finish docs-only closeout PR and rerun post-merge-preflight`
