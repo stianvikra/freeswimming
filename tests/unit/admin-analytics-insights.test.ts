@@ -111,13 +111,37 @@ describe("admin analytics insights", () => {
           public_aggregate: false,
           occurred_at: "2026-06-09T10:06:00.000Z",
         },
+        {
+          ...baseRow,
+          event_name: "workout_builder_started",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:07:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_started",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:08:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:09:00.000Z",
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
       rollupRows: [
         {
           rollup_day: "2026-06-09",
-          event_count: 3,
+          event_count: 6,
           refreshed_at: "2026-06-09T10:30:00.000Z",
         },
       ],
@@ -127,23 +151,28 @@ describe("admin analytics insights", () => {
     expect(insights).toMatchObject({
       ok: true,
       schemaReady: true,
-      totalEvents: 3,
+      totalEvents: 6,
       publicAggregateEvents: 1,
-      clientEvents: 1,
-      serverEvents: 2,
+      clientEvents: 3,
+      serverEvents: 3,
       uniqueKnownUsers: 1,
-      lastEventAt: "2026-06-09T10:06:00.000Z",
+      lastEventAt: "2026-06-09T10:09:00.000Z",
       funnel: {
         plansViewed: 1,
         checkoutStarted: 1,
         checkoutCompleted: 1,
         checkoutCompletionRate: 1,
       },
+      workoutBuilderFunnel: {
+        started: 2,
+        saved: 1,
+        saveRate: 0.5,
+      },
       lifecycle: {
         rollup: {
           status: "ready",
           latestDay: "2026-06-09",
-          totalRolledUpEvents: 3,
+          totalRolledUpEvents: 6,
         },
       },
     });
@@ -151,6 +180,28 @@ describe("admin analytics insights", () => {
     expect(insights.productCounts[0]).toMatchObject({
       key: "guide_poolside",
       productType: "course_addon",
+    });
+  });
+
+  it("keeps workout builder save-rate not counted when starts are missing", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.workoutBuilderFunnel).toEqual({
+      started: 0,
+      saved: 1,
+      saveRate: null,
     });
   });
 

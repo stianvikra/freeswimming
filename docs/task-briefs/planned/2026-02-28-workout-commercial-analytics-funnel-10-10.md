@@ -6,13 +6,15 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-09`
+- `updated`: `2026-06-10`
 
 ## Child Slices
 
-- Active child: `docs/task-briefs/in-progress/2026-06-09-workout-builder-funnel-instrumentation-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-09-workout-builder-funnel-instrumentation-v1-10-10.md`
+- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-funnel-dashboard-v1-10-10.md`
 - Workout Builder Funnel Instrumentation V1 owns only privacy-safe first-party events for manual builder start and canonical workout save/update.
-- Still deferred here: template usage, plan completion, upsell/commercial placement rules, CTA policy, dedicated dashboard KPI modules, CSV/export, finance-grade reporting, and checkout/pricing changes.
+- Workout Builder Funnel Dashboard V1 owns only read-only Admin Analytics visibility for builder starts, saves, and save-rate using the already shipped events.
+- Still deferred here: template usage, plan completion, upsell/commercial placement rules, CTA policy, broader dedicated dashboard KPI modules, CSV/export, finance-grade reporting, and checkout/pricing changes.
 
 ## Brief Audit Record
 

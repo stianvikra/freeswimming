@@ -1,4 +1,5 @@
 import type { AnalyticsInsightsResponse } from "@/lib/analytics/admin-insights";
+import type { AnalyticsEventName } from "@/lib/analytics/events";
 
 export const ANALYTICS_DASHBOARD_RANGE_OPTIONS = [7, 30, 90] as const;
 export const ANALYTICS_DASHBOARD_DEFAULT_RANGE_DAYS = 30;
@@ -58,6 +59,12 @@ export type AnalyticsDashboardFunnelStep = {
   detail: string;
 };
 
+export type AnalyticsDashboardWorkoutBuilderFunnel = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -68,6 +75,7 @@ export type AnalyticsDashboardViewModel = {
   rowCapLabel: string;
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
+  workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   eventItems: AnalyticsDashboardListItem[];
   routeItems: AnalyticsDashboardListItem[];
   productItems: AnalyticsDashboardListItem[];
@@ -75,6 +83,8 @@ export type AnalyticsDashboardViewModel = {
 };
 
 const countFormatter = new Intl.NumberFormat("en-US");
+const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
+const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
 
 const EVENT_LABELS: Record<string, string> = {
   checkout_completed: "Checkout completed",
@@ -272,6 +282,85 @@ function buildFunnel(payload: AnalyticsInsightsResponse): AnalyticsDashboardFunn
   }));
 }
 
+function findEventCount(
+  items: AnalyticsInsightsResponse["eventCounts"],
+  eventName: AnalyticsEventName
+): number {
+  return items.find((item) => item.key === eventName)?.count ?? 0;
+}
+
+function rate(numerator: number, denominator: number): number | null {
+  if (denominator <= 0) return null;
+  return Math.round((numerator / denominator) * 1000) / 1000;
+}
+
+function buildWorkoutBuilderFunnel(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutBuilderFunnel {
+  const started =
+    payload.workoutBuilderFunnel?.started ??
+    findEventCount(payload.eventCounts, WORKOUT_BUILDER_STARTED_EVENT);
+  const saved =
+    payload.workoutBuilderFunnel?.saved ??
+    findEventCount(payload.eventCounts, WORKOUT_BUILDER_SAVED_EVENT);
+  const saveRate = payload.workoutBuilderFunnel?.saveRate ?? rate(saved, started);
+
+  return {
+    metrics: [
+      {
+        id: "builder-started",
+        label: "Started",
+        value: formatAnalyticsCount(started),
+        detail: "Manual builder starts",
+      },
+      {
+        id: "builder-saved",
+        label: "Saved",
+        value: formatAnalyticsCount(saved),
+        detail: "Successful creates or updates",
+      },
+      {
+        id: "builder-save-rate",
+        label: "Save rate",
+        value: formatAnalyticsPercent(saveRate),
+        detail: "Saved / started",
+      },
+    ],
+    detail: "Read-only product telemetry for the selected range.",
+    caveat:
+      started === 0
+        ? "Save rate is not counted until a builder start exists in this range."
+        : "Duplicate starts and saves can exist; this is not unique-user, checkout, or finance conversion.",
+  };
+}
+
+function buildSchemaMissingWorkoutBuilderFunnel(): AnalyticsDashboardWorkoutBuilderFunnel {
+  return {
+    metrics: [
+      {
+        id: "builder-started",
+        label: "Started",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "builder-saved",
+        label: "Saved",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "builder-save-rate",
+        label: "Save rate",
+        value: "Not counted",
+        detail: "Saved / started",
+      },
+    ],
+    detail: "Workout builder funnel is hidden from inference until analytics schema is ready.",
+    caveat: "Apply the analytics_events migration before reading builder funnel counts.",
+  };
+}
+
 export function buildAnalyticsDashboardViewModel(
   payload: AnalyticsDashboardPayload,
   options: { now?: Date } = {}
@@ -301,6 +390,7 @@ export function buildAnalyticsDashboardViewModel(
         },
       ],
       funnel: [],
+      workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       eventItems: [],
       routeItems: [],
       productItems: [],
@@ -388,6 +478,7 @@ export function buildAnalyticsDashboardViewModel(
       },
     ],
     funnel: buildFunnel(payload),
+    workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     eventItems: buildListItems(payload.eventCounts, "event"),
     routeItems: buildListItems(payload.routeCounts, "route"),
     productItems: buildListItems(payload.productCounts, "product"),
@@ -396,6 +487,7 @@ export function buildAnalyticsDashboardViewModel(
         ? `This range hit the ${formatAnalyticsCount(payload.rowCap)} row cap. Treat totals as bounded.`
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} row cap.`,
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
+      "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],
