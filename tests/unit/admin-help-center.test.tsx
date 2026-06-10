@@ -74,7 +74,10 @@ describe("AdminHelpCenter", () => {
     ).toBeVisible();
     expect(screen.getByText(/Started counts workout_builder_started/i)).toBeVisible();
     expect(screen.getByText(/Manual starts count current manual builder entries/i)).toBeVisible();
+    expect(screen.getByText(/Generated completion uses session_draft_generated/i)).toBeVisible();
+    expect(screen.getByText(/Template usage is shown as Not instrumented/i)).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
+    expect(screen.getByText("Generated completion / Template usage:")).toBeVisible();
     expect(screen.getByText(/not user-level attribution, checkout conversion/i)).toBeVisible();
     expect(screen.getByText(/Do not infer missing revenue, user attribution/i)).toBeVisible();
     expect(

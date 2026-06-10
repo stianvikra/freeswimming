@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@83e57c8c` after Workout Builder Source Breakdown Dashboard V1 PR `#1053`
+- `base`: clean synced `main@69618263` after Workout Builder Source Breakdown Dashboard V1 PR `#1053` and repo-managed closeout PR `#1054`
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first three safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, and PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution. The remaining work is still too broad for one implementation PR and must continue as narrow child slices with explicit analytics, commerce, Help/Guide, and visual gates.
+- `reason`: The first three safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, and PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution. The owner explicitly requested implementation of the template usage / generated completion child on `2026-06-10`; the child is active and must keep template usage as not instrumented unless telemetry proves a real template identity.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -37,8 +37,12 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
   - Closed by PR `#1053` / squash commit `83e57c8c`.
   - Owns only a read-only Admin Analytics breakdown that separates manual builder starts/saves from generated-session draft/saves using existing safe first-party events and payload dimensions where available.
+- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
+  - Created after PR `#1053` and repo-managed closeout PR `#1054`.
+  - Must first audit whether existing safe first-party telemetry can support generated completion and real template usage; template usage must not be inferred from session type, generator block toggles, draft creation, or adjacent activity.
 - Still deferred after source breakdown:
-  - template usage taxonomy,
+  - runtime implementation of the template usage / generated completion child,
+  - template usage instrumentation if existing events cannot safely support it,
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - commercial placement rules,
   - workout-context upsell CTA policy,
@@ -50,9 +54,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child Candidate
 
-No active child is approved after PR `#1053`. The next child should remain an owner decision after reviewing source-breakdown data.
+Active child after PR `#1053` / closeout PR `#1054`: `Workout Builder Template Usage / Generated Completion Dashboard V1`.
 
-Recommended next candidate if the data supports it: `Workout Builder Template Usage / Generated Completion Dashboard V1`.
+Implementation path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`.
 
 Why this should come before commercial UI:
 
@@ -71,7 +75,7 @@ Proposed child scope:
 
 Proposed child out of scope:
 
-- New event names unless implementation proves an existing event cannot answer the source split safely.
+- New event names unless implementation proves existing events cannot answer the template/completion question safely and the owner approves a separate instrumentation child.
 - Any CTA placement, upsell copy, checkout/pricing/entitlement/Stripe behavior, product catalog change, export/CSV, finance-grade reporting, third-party vendor, cookie, visitor ID, raw payload drilldown, migration, RLS change, or workout-builder UX change.
 
 ## Scope
@@ -312,6 +316,7 @@ Future child implementation:
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
+- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -324,3 +329,7 @@ Future child implementation:
 - `2026-06-10 | child moved to in-progress | owner requested implementation, and the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md on branch workout-builder-source-breakdown-dashboard-v1; parent remains plan-only and the child owns the runtime work | next: complete the child implementation and screenshot approval stop`
 - `2026-06-10 | active child implemented to screenshot stop | Workout Builder Source Breakdown Dashboard V1 now has aggregation, Admin Analytics UI, Help/Guide copy, contract docs, targeted tests, and route/label/support sweep recorded in the child brief; parent remains plan-only and no CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope was added | next: capture child screenshot handoff and wait for owner approval before verify:pre-pr`
 - `2026-06-10 | source breakdown child merged | PR #1053 merged at squash commit 83e57c8c and the child moved to done in the repo-managed closeout; parent now has no approved active child, and the next candidate should be chosen from observed source-breakdown data before any CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope is added | next: finish docs-only closeout PR and run post-merge-preflight`
+- `2026-06-10 | planned child created | created planned child brief docs/task-briefs/planned/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md from clean main@69618263 after PR #1053 and closeout PR #1054; implementation is not approved yet and must begin with a telemetry-support audit so template usage is not inferred from unsupported signals | next: wait for owner implementation approval or scope edits`
+- `2026-06-10 | child moved to in-progress | owner requested implementation, and the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md on branch workout-builder-template-generated-completion-dashboard-v1; parent remains plan-only and the child owns runtime work | next: complete implementation, targeted tests, and screenshot approval stop`
+- `2026-06-10 | active child at screenshot stop | Workout Builder Template Usage / Generated Completion Dashboard V1 implemented the supported generated-completion subset, renders template usage as Not instrumented, updated Help/Guide/contracts/tests, and captured after/reference screenshot artifacts; parent remains plan-only and no CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope was added | next: wait for owner screenshot approval before child verify:pre-pr`
+- `2026-06-10 | active child pre-pr passed | owner approved screenshots and merge on good tests; the child passed npm run verify:pre-pr full lane with unit/build/perf/e2e coverage and remains scoped to Admin Analytics telemetry interpretation only | next: child PR creation, CI monitoring, pre-merge gate, and merge if green`

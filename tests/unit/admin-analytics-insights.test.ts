@@ -205,6 +205,13 @@ describe("admin analytics insights", () => {
         manualSaveRate: 0.5,
         generatedSaveRate: 1,
       },
+      workoutBuilderTemplateGeneratedCompletion: {
+        generatedDrafts: 1,
+        generatedSaves: 1,
+        generatedCompletionRate: 1,
+        templateUsageCount: null,
+        templateUsageStatus: "not_instrumented",
+      },
       lifecycle: {
         rollup: {
           status: "ready",
@@ -250,6 +257,13 @@ describe("admin analytics insights", () => {
       manualSaveRate: null,
       generatedSaveRate: null,
     });
+    expect(insights.workoutBuilderTemplateGeneratedCompletion).toEqual({
+      generatedDrafts: 0,
+      generatedSaves: 0,
+      generatedCompletionRate: null,
+      templateUsageCount: null,
+      templateUsageStatus: "not_instrumented",
+    });
   });
 
   it("keeps malformed and missing workout save source kinds unmapped", () => {
@@ -290,6 +304,13 @@ describe("admin analytics insights", () => {
       unknownSaves: 2,
       generatedDrafts: 1,
       generatedSaveRate: 1,
+    });
+    expect(insights.workoutBuilderTemplateGeneratedCompletion).toMatchObject({
+      generatedDrafts: 1,
+      generatedSaves: 1,
+      generatedCompletionRate: 1,
+      templateUsageCount: null,
+      templateUsageStatus: "not_instrumented",
     });
   });
 

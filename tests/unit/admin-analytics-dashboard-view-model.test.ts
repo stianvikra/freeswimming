@@ -74,6 +74,13 @@ const basePayload: AnalyticsDashboardPayload = {
     manualSaveRate: 0.4,
     generatedSaveRate: 0.25,
   },
+  workoutBuilderTemplateGeneratedCompletion: {
+    generatedDrafts: 4,
+    generatedSaves: 1,
+    generatedCompletionRate: 0.25,
+    templateUsageCount: null,
+    templateUsageStatus: "not_instrumented",
+  },
 };
 
 describe("admin analytics dashboard view model", () => {
@@ -174,6 +181,35 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutBuilderSourceBreakdown.caveat).toContain("not unique-user");
+    expect(viewModel.workoutBuilderTemplateGeneratedCompletion.metrics).toEqual([
+      {
+        id: "generated-completion-drafts",
+        label: "Generated drafts",
+        value: "4",
+        detail: "AI session drafts",
+      },
+      {
+        id: "generated-completion-saves",
+        label: "Generated saves",
+        value: "1",
+        detail: "Saved generated sessions",
+      },
+      {
+        id: "generated-completion-rate",
+        label: "Completion rate",
+        value: "25%",
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "template-usage",
+        label: "Template usage",
+        value: "Not instrumented",
+        detail: "No explicit template event",
+      },
+    ]);
+    expect(viewModel.workoutBuilderTemplateGeneratedCompletion.caveat).toContain(
+      "no explicit template identity"
+    );
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
       secondary: "workout_builder_started",
@@ -236,6 +272,13 @@ describe("admin analytics dashboard view model", () => {
             manualSaveRate: null,
             generatedSaveRate: null,
           },
+          workoutBuilderTemplateGeneratedCompletion: {
+            generatedDrafts: 0,
+            generatedSaves: 0,
+            generatedCompletionRate: null,
+            templateUsageCount: null,
+            templateUsageStatus: "not_instrumented",
+          },
         },
         { now }
       ).state
@@ -274,6 +317,14 @@ describe("admin analytics dashboard view model", () => {
           { id: "source-unknown-saves", value: "Not counted" },
         ],
       },
+      workoutBuilderTemplateGeneratedCompletion: {
+        metrics: [
+          { id: "generated-completion-drafts", value: "Not counted" },
+          { id: "generated-completion-saves", value: "Not counted" },
+          { id: "generated-completion-rate", value: "Not counted" },
+          { id: "template-usage", value: "Not instrumented" },
+        ],
+      },
     });
   });
 
@@ -298,6 +349,13 @@ describe("admin analytics dashboard view model", () => {
           unknownSaves: 0,
           manualSaveRate: null,
           generatedSaveRate: 0,
+        },
+        workoutBuilderTemplateGeneratedCompletion: {
+          generatedDrafts: 1,
+          generatedSaves: 0,
+          generatedCompletionRate: 0,
+          templateUsageCount: null,
+          templateUsageStatus: "not_instrumented",
         },
       },
       { now }
@@ -330,6 +388,18 @@ describe("admin analytics dashboard view model", () => {
       value: "Not counted",
       detail: "Manual saves / starts",
     });
+    expect(zeroStarts.workoutBuilderTemplateGeneratedCompletion.metrics).toContainEqual({
+      id: "generated-completion-rate",
+      label: "Completion rate",
+      value: "0%",
+      detail: "Generated saves / drafts",
+    });
+    expect(zeroStarts.workoutBuilderTemplateGeneratedCompletion.metrics).toContainEqual({
+      id: "template-usage",
+      label: "Template usage",
+      value: "Not instrumented",
+      detail: "No explicit template event",
+    });
 
     const duplicateTelemetry = buildAnalyticsDashboardViewModel(
       {
@@ -348,6 +418,13 @@ describe("admin analytics dashboard view model", () => {
           manualSaveRate: 1.5,
           generatedSaveRate: 2,
         },
+        workoutBuilderTemplateGeneratedCompletion: {
+          generatedDrafts: 1,
+          generatedSaves: 2,
+          generatedCompletionRate: 2,
+          templateUsageCount: null,
+          templateUsageStatus: "not_instrumented",
+        },
       },
       { now }
     );
@@ -360,6 +437,12 @@ describe("admin analytics dashboard view model", () => {
     expect(duplicateTelemetry.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-generated-save-rate",
       label: "Generated save rate",
+      value: "200%",
+      detail: "Generated saves / drafts",
+    });
+    expect(duplicateTelemetry.workoutBuilderTemplateGeneratedCompletion.metrics).toContainEqual({
+      id: "generated-completion-rate",
+      label: "Completion rate",
       value: "200%",
       detail: "Generated saves / drafts",
     });
@@ -394,6 +477,13 @@ describe("admin analytics dashboard view model", () => {
           unknownSaves: 1,
           manualSaveRate: null,
           generatedSaveRate: null,
+        },
+        workoutBuilderTemplateGeneratedCompletion: {
+          generatedDrafts: 0,
+          generatedSaves: 0,
+          generatedCompletionRate: null,
+          templateUsageCount: null,
+          templateUsageStatus: "not_instrumented",
         },
       },
       { now }
