@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-funnel-dashboard-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -43,7 +43,6 @@ Critical target categories for the 10/10 claim gate:
 - UX flow clarity
 - Visual design quality
 - Business logic correctness and data integrity
-- Accessibility (a11y)
 - Reliability and failure handling
 - Security and authz
 - Privacy and compliance
@@ -356,3 +355,33 @@ Use the repo-standard Safari PR flow, preferably `npm run pr:create:safari`, unl
 - `2026-06-10 | screenshot approved | owner approved screenshot handoff and approved merge on good tests; visual stop cleared with artifact folder output/workout-builder-funnel-dashboard-v1-2026-06-10-082212 and no product-rendering files changed after capture | next: run npm run verify:pre-pr, commit/push/open PR, monitor CI, run npm run verify:pre-merge, then merge if all gates are green`
 - `2026-06-10 | pre-pr gate passed | npm run verify:pre-pr passed full lane on branch workout-builder-funnel-dashboard-v1: lint/quality/admin/env/pr-body, typecheck, unit tests, production build, perf budgets, and Playwright E2E 106 passed / 530 skipped; only existing ESLint warnings in output screenshot helper artifacts appeared | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge`
 - `2026-06-10 | committed | implementation commit 9b669b6f created with scoped dashboard/view-model/Help/docs/tests diff after green pre-pr gate | next: push branch, open PR, monitor CI, then run npm run verify:pre-merge before merge`
+- `2026-06-10 | merged | PR #1051 merged to main as squash commit 83ac7f07 after green CI and local npm run verify:pre-merge; post-merge preflight surfaced this repo-managed docs-only closeout | next: complete closeout PR, merge it if docs-only gates pass, sync main, then run post-merge preflight again`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1051`
+- `squash_commit`: `83ac7f07`
+- `result`: Admin Analytics now shows a compact read-only Workout Builder funnel with Started, Saved, and Save rate derived from the already shipped privacy-safe builder events, so the owner can inspect builder usage without raw event interpretation.
+- `validation`: targeted Vitest 5 files / 24 tests; route/label/support sweep; screenshot handoff approved from `output/workout-builder-funnel-dashboard-v1-2026-06-10-082212`; `npm run verify:pre-pr` full lane passed twice; PR #1051 CI passed; `npm run verify:pre-merge` passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remain intentionally bounded by scope and have no release-blocking gaps.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                         | Gaps / Notes                                      |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1051 added one Admin Analytics module for builder starts, saves, and save-rate only.                                         | No in-scope gap.                                  |
+| UX flow clarity                               | `5/5`          | Component tests and approved screenshots cover read-only labels, zero/schema-missing states, and no CTA/export/drilldown action. | No in-scope gap.                                  |
+| Visual design quality                         | `5/5`          | Approved after/reference screenshot handoff in `output/workout-builder-funnel-dashboard-v1-2026-06-10-082212`.                   | No product-rendering files changed after capture. |
+| Business logic correctness and data integrity | `5/5`          | Insights/view-model tests cover normal counts, zero starts, duplicate saves over starts, schema-missing, and unsafe values.      | No in-scope gap.                                  |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions cover headings, labels, and rendered metric text; full Playwright gate passed.                        | No in-scope gap.                                  |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, new route, chart bundle, migration, or extra fetch; full build/perf budgets passed.                               | No in-scope gap.                                  |
+| Data placement and sync boundaries            | `5/5`          | Values remain server-canonical aggregate analytics data; dashboard range remains local/query-only.                               | No new writes or persisted dashboard state.       |
+| Caching and invalidation strategy             | `5/5`          | Existing no-store Admin Analytics fetch boundary was preserved and covered by view-model/component tests.                        | No in-scope gap.                                  |
+| Reliability and failure handling              | `5/5`          | Tests cover zero starts, schema missing, duplicate telemetry, and unsafe fallback behavior.                                      | No in-scope gap.                                  |
+| Security and authz                            | `5/5`          | No new API/auth surface; admin workspace boundary remains existing viewer+ protected analytics access.                           | No in-scope gap.                                  |
+| Privacy and compliance                        | `5/5`          | Module renders aggregate counts/rate only and tests assert unsafe identifiers/raw fields are not surfaced.                       | No in-scope gap.                                  |
+| Content governance                            | `5/5`          | Admin Help/Guide, API contract, cache/authz registry, parent brief, and unit assertions were updated.                            | No in-scope gap.                                  |
+| Analytics and KPI observability               | `5/5`          | Admin can read started, saved, and save-rate directly from `/api/admin/analytics/insights` without raw top-event interpretation. | No in-scope gap.                                  |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Admin Analytics component/view-model patterns and added no dependency/provider.                                  | No in-scope gap.                                  |
+| Testing and QA automation                     | `5/5`          | Targeted tests, lint/typecheck/build/perf/E2E via `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                        | No in-scope gap.                                  |
+| Scalability and cost efficiency               | `5/5`          | Uses existing aggregate counts over two low-cardinality event names; no rollup/export/warehouse job added.                       | No in-scope gap.                                  |
+| DevOps and rollback readiness                 | `5/5`          | Rollback is a standard revert of dashboard/view-model/docs/tests; no env, migration, job, or provider change.                    | No in-scope gap.                                  |
