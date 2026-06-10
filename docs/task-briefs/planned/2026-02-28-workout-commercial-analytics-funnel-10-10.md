@@ -44,6 +44,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1061` / squash commit `6d87eb68`.
   - Owns only first-party instrumentation for explicit workout-builder template selection through the registry-backed `templateKey` and `Use template` action.
   - Keeps Admin Analytics template usage as `not_instrumented` until a later dashboard mapping child decides aggregation and labels.
+- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
+  - Owns only read-only Admin Analytics mapping for `workout_builder_template_selected` using registry-backed template identity.
+  - Implementation is approved and must start with a mapping-support audit.
+  - Commercial UI, checkout, finance, export, vendor analytics, raw event drilldown, and builder/generator UX remain out of scope.
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
   - Closed by PR `#1057` / squash commit `92d40fbb`.
   - Owns the product/data contract for what a workout-builder template is, where its stable identity comes from, and what counts as explicit user selection.
@@ -65,7 +69,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-No active child is approved after PR `#1061`. The next candidate is a dedicated Admin Analytics template usage mapping child that consumes `workout_builder_template_selected` only after owner approval; commercial UI, checkout, finance, vendor analytics, and raw event drilldown remain out of scope.
+The active child is `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`. It consumes `workout_builder_template_selected` only after a mapping-support audit confirms the event, payload, template registry, and explicit selection call site remain valid. Commercial UI, checkout, finance, vendor analytics, and raw event drilldown remain out of scope.
 
 Why this should still come before commercial UI:
 
@@ -73,12 +77,12 @@ Why this should still come before commercial UI:
 - It keeps commercial decisions downstream of observed product workflow quality.
 - It remains smaller and safer than checkout attribution, finance reporting, or third-party vendor analytics.
 
-Potential next child scope:
+Planned child scope:
 
 - Map the real first-party template-selection event using the scoped taxonomy and registry-backed identity.
 - Preserve existing admin viewer+ auth, no-store reads, capped/schema-missing/fetch-failed states, and privacy boundary.
 - Keep Admin Help/Guide interpretation that future template counts are product telemetry, not unique-user conversion, checkout conversion, revenue, or finance truth.
-- Add targeted analytics payload, call-site, sanitizer, and negative-path tests before any dashboard label claims template usage.
+- Add targeted admin insights, view-model, component, Help/Guide, unknown-template, unsafe-field, and negative-path tests before any dashboard label claims template usage.
 
 Proposed child out of scope:
 
@@ -322,8 +326,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+- Planned child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
@@ -354,3 +359,6 @@ Future child implementation:
 - `2026-06-10 | template instrumentation screenshot stop | active child added the typed template-selection event, payload helper, Use-template call site, Admin Analytics/Help interpretation updates, and targeted tests; local typecheck, quality-gates, lint:briefs -- --all, and diff-check passed; screenshot artifacts captured at output/workout-builder-template-usage-instrumentation-2026-06-10-201809 | next: wait for owner screenshot approval before child verify:pre-pr`
 - `2026-06-10 | template instrumentation screenshots approved | owner approved the screenshot handoff; active child can proceed to verify:pre-pr and PR prep | next: child verify:pre-pr`
 - `2026-06-10 | template instrumentation child merged | PR #1061 merged at squash commit 6d87eb68 after green local pre-pr, CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no approved active child, and template usage dashboard aggregation remains a later mapping child before any commercial UI | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-10 | planned mapping child created | created planned child brief docs/task-briefs/planned/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md from clean synced main@a4cb0f6f after PR #1061 and closeout PR #1062; implementation is not approved yet and must begin with a mapping-support audit so template usage is counted only from workout_builder_template_selected and not inferred from adjacent builder/generator/save/commercial activity | next: wait for owner implementation approval or scope edits`
+- `2026-06-10 | mapping child in progress | owner requested implementation of docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md on branch workout-builder-template-usage-admin-analytics-mapping-v1; parent remains plan-only and the child owns runtime work | next: complete mapping-support audit before Admin Analytics implementation`
+- `2026-06-10 | mapping child screenshot stop | active child added Admin Analytics template usage aggregation/UI, Help/Guide/API/architecture updates, targeted tests, route/label/support sweep evidence, and after/reference screenshot artifacts; parent remains plan-only and no CTA, checkout, Stripe, export, finance, vendor, raw drilldown, or builder/generator UX scope was added | next: wait for owner screenshot approval before child verify:pre-pr`

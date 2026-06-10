@@ -5,7 +5,13 @@ import {
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
+import { WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE } from "@/lib/analytics/workout-builder";
 import type { WorkoutSourceKind } from "@/lib/workouts/shared";
+import {
+  getWorkoutTemplateByKey,
+  parseWorkoutTemplateKey,
+  type WorkoutTemplateLifecycleStatus,
+} from "@/lib/workouts/templates";
 
 export type AnalyticsEventInsightRow = Pick<
   Database["public"]["Tables"]["analytics_events"]["Row"],
@@ -24,6 +30,13 @@ export type AnalyticsEventInsightRow = Pick<
 
 export type AnalyticsInsightCount = {
   key: string;
+  count: number;
+};
+
+export type WorkoutBuilderTemplateUsageCount = {
+  key: string;
+  label: string;
+  status: WorkoutTemplateLifecycleStatus;
   count: number;
 };
 
@@ -75,7 +88,14 @@ export type AnalyticsInsightsResponse = {
     generatedSaves: number;
     generatedCompletionRate: number | null;
     templateUsageCount: number | null;
-    templateUsageStatus: "not_instrumented";
+    templateUsageStatus: "mapped";
+  };
+  workoutBuilderTemplateUsage: {
+    templateSelections: number;
+    knownTemplateSelections: number;
+    unknownTemplateSelections: number;
+    templatesSelected: number;
+    templateCounts: WorkoutBuilderTemplateUsageCount[];
   };
 };
 
@@ -84,6 +104,8 @@ export const ANALYTICS_INSIGHTS_MAX_RANGE_DAYS = 90;
 export const ANALYTICS_INSIGHTS_ROW_CAP = 5000;
 const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
 const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
+const WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT =
+  "workout_builder_template_selected" satisfies AnalyticsEventName;
 const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
 const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
 const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
@@ -133,6 +155,15 @@ function getSafePayloadSourceKind(payload: AnalyticsEventInsightRow["payload"]):
   if (typeof sourceKind !== "string") return null;
   if (!/^[a-z][a-z0-9_:-]{0,80}$/.test(sourceKind)) return null;
   return sourceKind;
+}
+
+function getSafeTemplateSelectionKey(payload: AnalyticsEventInsightRow["payload"]): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const candidate = payload as { templateKey?: unknown; templateSource?: unknown };
+  if (candidate.templateSource !== WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE) return null;
+  const parsedKey = parseWorkoutTemplateKey(candidate.templateKey);
+  if (!parsedKey || parsedKey !== candidate.templateKey) return null;
+  return parsedKey;
 }
 
 export function buildAnalyticsInsights(input: {
@@ -189,18 +220,45 @@ export function buildAnalyticsInsights(input: {
   let manualSaves = 0;
   let generatedSaves = 0;
   let unknownSaves = 0;
+  let knownTemplateSelections = 0;
+  let unknownTemplateSelections = 0;
+  const templateSelectionCounts = new Map<string, number>();
 
   for (const row of input.rows) {
-    if (row.event_name !== WORKOUT_BUILDER_SAVED_EVENT) continue;
-    const sourceKind = getSafePayloadSourceKind(row.payload);
-    if (sourceKind === MANUAL_WORKOUT_SOURCE_KIND) {
-      manualSaves += 1;
-    } else if (sourceKind === AI_SESSION_WORKOUT_SOURCE_KIND) {
-      generatedSaves += 1;
-    } else {
-      unknownSaves += 1;
+    if (row.event_name === WORKOUT_BUILDER_SAVED_EVENT) {
+      const sourceKind = getSafePayloadSourceKind(row.payload);
+      if (sourceKind === MANUAL_WORKOUT_SOURCE_KIND) {
+        manualSaves += 1;
+      } else if (sourceKind === AI_SESSION_WORKOUT_SOURCE_KIND) {
+        generatedSaves += 1;
+      } else {
+        unknownSaves += 1;
+      }
+      continue;
+    }
+
+    if (row.event_name === WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT) {
+      const templateKey = getSafeTemplateSelectionKey(row.payload);
+      const template = getWorkoutTemplateByKey(templateKey);
+      if (templateKey && template) {
+        knownTemplateSelections += 1;
+        increment(templateSelectionCounts, templateKey);
+      } else {
+        unknownTemplateSelections += 1;
+      }
     }
   }
+
+  const templateCounts = sortedCounts(templateSelectionCounts).map((item) => {
+    const template = getWorkoutTemplateByKey(item.key);
+    return {
+      key: item.key,
+      label: template?.title ?? "Unknown template",
+      status: template?.status ?? "deprecated",
+      count: item.count,
+    };
+  });
+  const templateSelections = eventCounts.get(WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT) ?? 0;
 
   return {
     ok: true,
@@ -260,8 +318,15 @@ export function buildAnalyticsInsights(input: {
       generatedDrafts,
       generatedSaves,
       generatedCompletionRate: ratio(generatedSaves, generatedDrafts),
-      templateUsageCount: null,
-      templateUsageStatus: "not_instrumented",
+      templateUsageCount: templateSelections,
+      templateUsageStatus: "mapped",
+    },
+    workoutBuilderTemplateUsage: {
+      templateSelections,
+      knownTemplateSelections,
+      unknownTemplateSelections,
+      templatesSelected: templateCounts.length,
+      templateCounts,
     },
   };
 }

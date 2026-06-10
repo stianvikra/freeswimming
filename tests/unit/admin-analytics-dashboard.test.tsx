@@ -72,8 +72,28 @@ const basePayload: AnalyticsInsightsResponse = {
     generatedDrafts: 4,
     generatedSaves: 1,
     generatedCompletionRate: 0.25,
-    templateUsageCount: null,
-    templateUsageStatus: "not_instrumented",
+    templateUsageCount: 3,
+    templateUsageStatus: "mapped",
+  },
+  workoutBuilderTemplateUsage: {
+    templateSelections: 3,
+    knownTemplateSelections: 2,
+    unknownTemplateSelections: 1,
+    templatesSelected: 2,
+    templateCounts: [
+      {
+        key: "pool_endurance_base_1000",
+        label: "Aerobic base 1000",
+        status: "active",
+        count: 2,
+      },
+      {
+        key: "pool_technique_reset_900",
+        label: "Technique reset 900",
+        status: "active",
+        count: 1,
+      },
+    ],
   },
 };
 
@@ -120,6 +140,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
     ).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-builder-template-usage")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
 
@@ -155,8 +176,16 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(generatedCompletion).getByText("Generated saves")).toBeVisible();
     expect(within(generatedCompletion).getByText("Completion rate")).toBeVisible();
     expect(within(generatedCompletion).getByText("Template usage")).toBeVisible();
-    expect(within(generatedCompletion).getByText("Not instrumented")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Explicit selections")).toBeVisible();
     expect(within(generatedCompletion).queryByRole("button")).not.toBeInTheDocument();
+    const templateUsage = screen.getByTestId("admin-analytics-workout-builder-template-usage");
+    expect(within(templateUsage).getByText("Template usage")).toBeVisible();
+    expect(within(templateUsage).getByText("Template selections")).toBeVisible();
+    expect(within(templateUsage).getByText("Templates selected")).toBeVisible();
+    expect(within(templateUsage).getByText("Unknown template")).toBeVisible();
+    expect(within(templateUsage).getByText("Aerobic base 1000")).toBeVisible();
+    expect(within(templateUsage).getByText("Technique reset 900")).toBeVisible();
+    expect(within(templateUsage).queryByRole("button")).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
     ).toBeVisible();
@@ -177,7 +206,7 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /Template usage is not dashboard-mapped yet/i
+        /Template usage is product telemetry only/i
       )
     ).toBeVisible();
     expect(
@@ -240,7 +269,10 @@ describe("AdminAnalyticsDashboard", () => {
     ).toHaveTextContent("Not counted");
     expect(
       screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
-    ).toHaveTextContent("Not instrumented");
+    ).toHaveTextContent("Not counted");
+    expect(screen.getByTestId("admin-analytics-workout-builder-template-usage")).toHaveTextContent(
+      "Not counted"
+    );
     expect(screen.getByText(/database errors/i)).toBeVisible();
     expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
   });
@@ -275,8 +307,15 @@ describe("AdminAnalyticsDashboard", () => {
             generatedDrafts: 0,
             generatedSaves: 0,
             generatedCompletionRate: null,
-            templateUsageCount: null,
-            templateUsageStatus: "not_instrumented",
+            templateUsageCount: 0,
+            templateUsageStatus: "mapped",
+          },
+          workoutBuilderTemplateUsage: {
+            templateSelections: 0,
+            knownTemplateSelections: 0,
+            unknownTemplateSelections: 0,
+            templatesSelected: 0,
+            templateCounts: [],
           },
         })
       );
@@ -297,7 +336,10 @@ describe("AdminAnalyticsDashboard", () => {
     ).toHaveTextContent("Unknown saves");
     expect(
       screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
-    ).toHaveTextContent("Not instrumented");
+    ).toHaveTextContent("0");
+    expect(screen.getByTestId("admin-analytics-workout-builder-template-usage")).toHaveTextContent(
+      "No template selections in this range"
+    );
     expect(screen.getByText("Unknown route")).toBeVisible();
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(document.body).not.toHaveTextContent("user@example.com");
