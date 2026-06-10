@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@99acbbb5` after Workout Builder Template Usage / Generated Completion Dashboard V1 PR `#1055` and repo-managed closeout PR `#1056`
+- `base`: clean synced `main@ba125c18` after Workout Builder Template Identity / Selection Contract V1 PR `#1057` and repo-managed closeout PR `#1058`
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first four safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, and PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented because current telemetry has no real template identity. The attempted template usage instrumentation child is blocked because the required audit found no stable runtime workout-builder template identity or explicit selection action.
+- `reason`: The first four safe telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, and PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented because current telemetry has no real template identity. PR `#1057` closed the template identity/selection contract and confirmed runtime implementation remains blocked until a real template source and explicit selection surface exist.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -48,6 +48,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns the product/data contract for what a workout-builder template is, where its stable identity comes from, and what counts as explicit user selection.
   - Confirms template usage instrumentation cannot resume until a real runtime template source and explicit selection surface exist.
   - Contract artifact: `docs/architecture/workout-builder-template-identity-selection-contract.md`
+- In-progress child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
+  - Owns the next runtime unblocker: a real interim workout-template source and explicit `Use template` selection surface.
+  - Must keep `workout_builder_template_selected` and Admin Analytics template usage out of scope until the blocked instrumentation child resumes.
 - Still deferred after generated completion:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - commercial placement rules,
@@ -60,7 +63,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-No child is active after `Workout Builder Template Identity / Selection Contract V1`. Template usage instrumentation remains blocked until a future child creates or identifies a real runtime template source and explicit selection surface that satisfies `docs/architecture/workout-builder-template-identity-selection-contract.md`.
+Use `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md` as the active child for this track. It creates or identifies the real runtime template source and explicit selection surface required by `docs/architecture/workout-builder-template-identity-selection-contract.md`. Template usage instrumentation remains blocked until that runtime child is implemented and validated.
 
 Why this should still come before commercial UI:
 

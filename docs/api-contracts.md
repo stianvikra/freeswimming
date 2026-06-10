@@ -340,10 +340,11 @@
 - Workout builder generated-completion caveat:
   `workoutBuilderTemplateGeneratedCompletion` is product telemetry derived from
   `session_draft_generated` and `workout_builder_saved` with `sourceKind = ai_session_v1`.
-  Template usage is returned as `not_instrumented` until an explicit template identity or
-  template-selection event exists; the dashboard must not infer template usage from session type,
-  generator block toggles, draft creation, or adjacent activity. The identity/selection precondition
-  is defined in `docs/architecture/workout-builder-template-identity-selection-contract.md`.
+  Template usage is returned as `not_instrumented` until the dedicated template-selection event
+  exists; the dashboard must not infer template usage from session type, generator block toggles,
+  draft creation, saved source kind, the visible `Use template` workflow, or adjacent activity. The
+  identity/selection precondition is defined in
+  `docs/architecture/workout-builder-template-identity-selection-contract.md`.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.

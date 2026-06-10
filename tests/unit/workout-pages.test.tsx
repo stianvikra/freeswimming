@@ -39,6 +39,7 @@ vi.mock("@/components/my-library/workouts/WorkoutBuilderHub", () => ({
     browseOnly,
     hideShellIntro,
     manualLocalDraftMode,
+    templateLocalDraftKey,
     preferExpandedDetailsOnLoad,
     trainingFocusOptions,
     workoutLibrary,
@@ -49,12 +50,14 @@ vi.mock("@/components/my-library/workouts/WorkoutBuilderHub", () => ({
     hideShellIntro?: boolean;
     preferExpandedDetailsOnLoad?: boolean;
     manualLocalDraftMode?: ManualWorkoutBuilderMode | null;
+    templateLocalDraftKey?: string | null;
   }) => (
     <div
       data-testid="workout-builder-hub"
       data-browse-only={browseOnly ? "true" : "false"}
       data-hide-shell-intro={hideShellIntro ? "true" : "false"}
       data-manual-local-draft-mode={manualLocalDraftMode ?? ""}
+      data-template-local-draft-key={templateLocalDraftKey ?? ""}
       data-prefer-expanded-details-on-load={preferExpandedDetailsOnLoad ? "true" : "false"}
       data-recent-count={workoutLibrary.recentWorkouts.length}
       data-selected-workout-id={workoutLibrary.selectedWorkout?.id ?? ""}
@@ -208,6 +211,58 @@ describe("My Swim Sessions workspace pages", () => {
     expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
       "data-prefer-expanded-details-on-load",
       "true"
+    );
+  });
+
+  it("opens valid workout template requests as focused local drafts", async () => {
+    render(
+      await WorkoutSessionsPage({
+        searchParams: Promise.resolve({
+          draft: "pool",
+          entry: "template",
+          template: "pool_endurance_base_1000",
+        }),
+      })
+    );
+
+    expect(screen.getByRole("heading", { name: "Pool session builder", level: 1 })).toBeVisible();
+    expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "hidden");
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute("data-browse-only", "false");
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-manual-local-draft-mode",
+      "pool"
+    );
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-template-local-draft-key",
+      "pool_endurance_base_1000"
+    );
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-prefer-expanded-details-on-load",
+      "true"
+    );
+  });
+
+  it("does not fall back to a manual draft when a workout template key is invalid", async () => {
+    render(
+      await WorkoutSessionsPage({
+        searchParams: Promise.resolve({
+          draft: "pool",
+          entry: "template",
+          template: "missing_template",
+        }),
+      })
+    );
+
+    expect(screen.getByRole("heading", { name: "My Swim Sessions", level: 1 })).toBeVisible();
+    expect(screen.getByTestId("site-chrome")).toHaveAttribute("data-mobile-nav-mode", "hidden");
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute("data-browse-only", "false");
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-manual-local-draft-mode",
+      ""
+    );
+    expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+      "data-template-local-draft-key",
+      "missing_template"
     );
   });
 

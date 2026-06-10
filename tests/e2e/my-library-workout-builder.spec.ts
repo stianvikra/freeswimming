@@ -116,9 +116,31 @@ async function waitForLocalWorkoutBuilderRoute(page: Page) {
   await page.waitForLoadState("domcontentloaded");
 }
 
+async function waitForTemplateWorkoutBuilderRoute(page: Page, templateKey: string) {
+  await page.waitForURL(
+    new RegExp(`/my-library/workouts\\?draft=pool&entry=template&template=${templateKey}$`),
+    {
+      timeout: 60_000,
+      waitUntil: "commit",
+    }
+  );
+  await page.waitForLoadState("domcontentloaded");
+}
+
 async function waitForSavedWorkoutBuilderRoute(page: Page) {
   await page.waitForURL(
     /\/my-library\/workouts\/[0-9a-f-]+(?:\?entry=manual-(?:pool|open-water))?$/,
+    {
+      timeout: 60_000,
+      waitUntil: "commit",
+    }
+  );
+  await page.waitForLoadState("domcontentloaded");
+}
+
+async function waitForSavedTemplateWorkoutBuilderRoute(page: Page, templateKey: string) {
+  await page.waitForURL(
+    new RegExp(`/my-library/workouts/[0-9a-f-]+\\?entry=template&template=${templateKey}$`),
     {
       timeout: 60_000,
       waitUntil: "commit",
@@ -352,6 +374,72 @@ test.describe("my library workout builder", () => {
     const savedWorkoutPreview = await openSavedWorkoutPreview(page, workoutId);
     await expect(savedWorkoutPreview).toContainText("Total");
     expect(hydrationConsoleMessages).toEqual([]);
+  });
+
+  test("starts from a workout template and saves the edited session", async ({
+    page,
+  }, testInfo) => {
+    runOnceOnDesktopChromium(testInfo.project.name);
+    test.slow();
+    testInfo.setTimeout(180_000);
+
+    const templateKey = "pool_endurance_base_1000";
+    const uniqueTitle = `QA template draft ${Date.now()}`;
+
+    await loginToMyLibraryViaDevBypass(page);
+    await openWorkoutBrowse(page);
+
+    const templateUseLink = page.getByTestId(`workout-builder-template-use-${templateKey}`);
+    const schemaReady = await templateUseLink.isVisible().catch(() => false);
+
+    if (!schemaReady) {
+      await expect(
+        page.getByText("Canonical workout save is still syncing in this environment.")
+      ).toBeVisible();
+      return;
+    }
+
+    await templateUseLink.click();
+    await waitForTemplateWorkoutBuilderRoute(page, templateKey);
+    await waitForWorkoutBuilderClientReady(page);
+    await waitForWorkoutBuilderSaveReady(page);
+
+    await expect(page.getByTestId("workout-builder-template-draft-started")).toContainText(
+      "Started from Aerobic base 1000."
+    );
+    await openMetadataPanelIfCollapsed(page);
+    await expect(page.getByTestId("session-draft-title")).toHaveValue("Aerobic base 1000");
+    await page.getByTestId("session-draft-title").fill(uniqueTitle);
+
+    const saveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/my-library/workouts") &&
+        response.request().method() === "POST"
+    );
+
+    await page.getByTestId("workout-builder-save").click();
+    const saveResponse = await saveResponsePromise;
+    const savePayload = (await saveResponse.json().catch(() => null)) as { ok?: boolean } | null;
+
+    expect(saveResponse.status()).toBe(200);
+    expect(savePayload?.ok).toBe(true);
+    await waitForSavedTemplateWorkoutBuilderRoute(page, templateKey);
+    await waitForWorkoutBuilderClientReady(page);
+    await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
+    await openMetadataPanelIfCollapsed(page);
+    await expect(page.getByTestId("session-draft-title")).toHaveValue(uniqueTitle);
+
+    const workoutMatch = new URL(page.url()).pathname.match(
+      /\/my-library\/workouts\/([0-9a-f-]+)$/
+    );
+    expect(workoutMatch?.[1]).toBeTruthy();
+    const workoutId = workoutMatch![1];
+
+    await gotoWithTransientRetry(page, "/my-library/workouts");
+    await waitForWorkoutBuilderClientReady(page);
+    const savedWorkoutCard = page.getByTestId(`saved-workout-card-${workoutId}`);
+    await expect(savedWorkoutCard).toBeVisible();
+    await expect(savedWorkoutCard).toContainText(uniqueTitle);
   });
 
   test("resumes and discards a local pool draft without adding it to My Swim Sessions first", async ({

@@ -208,7 +208,7 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutBuilderTemplateGeneratedCompletion.caveat).toContain(
-      "no explicit template identity"
+      "no explicit template-selection event"
     );
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",

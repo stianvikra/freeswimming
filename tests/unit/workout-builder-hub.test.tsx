@@ -3706,6 +3706,140 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
   });
 
+  it("shows registry-backed workout templates as explicit use-template actions", () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+          recentWorkouts: [],
+        })}
+        browseOnly
+      />
+    );
+
+    const selection = screen.getByTestId("workout-builder-template-selection");
+    expect(within(selection).getByRole("heading", { name: "Start from template" })).toBeVisible();
+    expect(
+      screen.getByTestId("workout-builder-template-card-pool_endurance_base_1000")
+    ).toHaveTextContent("Aerobic base 1000");
+    expect(
+      screen.getByTestId("workout-builder-template-use-pool_endurance_base_1000")
+    ).toHaveAttribute(
+      "href",
+      "/my-library/workouts?draft=pool&entry=template&template=pool_endurance_base_1000"
+    );
+    expect(
+      screen.getByTestId("workout-builder-template-use-pool_technique_reset_900")
+    ).toHaveAccessibleName("Use template");
+  });
+
+  it("starts an editable local draft from a valid workout template without manual draft storage", async () => {
+    vi.mocked(fetch).mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        draft: SessionDraft;
+        sourceKind?: string;
+        templateKey?: string;
+      };
+
+      return {
+        ok: true,
+        json: async () => ({
+          ok: true,
+          workout: buildWorkoutRecord({
+            id: "workout-created",
+            sourceKind: "manual",
+            draft: body.draft,
+          }),
+          summary: buildWorkoutSummary({
+            id: "workout-created",
+            sourceKind: "manual",
+            title: body.draft.title,
+          }),
+        }),
+      } as Response;
+    });
+
+    const storageKey = buildManualWorkoutLocalDraftStorageKey("user-1", "pool");
+
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        userId="user-1"
+        manualLocalDraftMode="pool"
+        templateLocalDraftKey="pool_endurance_base_1000"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-draft-title")).toBeVisible();
+    });
+
+    expect(screen.getByTestId("workout-builder-template-draft-started")).toHaveTextContent(
+      "Started from Aerobic base 1000."
+    );
+    expect(screen.getByTestId("session-draft-title")).toHaveValue("Aerobic base 1000");
+    expect(window.localStorage.getItem(storageKey)).toBeNull();
+
+    fireEvent.click(screen.getByTestId("workout-builder-save"));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/workouts",
+        expect.objectContaining({
+          method: "POST",
+        })
+      );
+    });
+
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+    const body = JSON.parse(String(request?.body ?? "{}")) as {
+      draft?: SessionDraft;
+      sourceKind?: string;
+      templateKey?: string;
+    };
+
+    expect(body.sourceKind).toBe("manual");
+    expect(body.templateKey).toBeUndefined();
+    expect(body.draft?.sourceFingerprint).toMatch(/^manual-template-/);
+    expect(JSON.stringify(body)).not.toContain("pool_endurance_base_1000");
+
+    await waitFor(() => {
+      expect(navigationState.replace).toHaveBeenCalledWith(
+        "/my-library/workouts/workout-created?entry=template&template=pool_endurance_base_1000"
+      );
+    });
+  });
+
+  it("fails closed for unavailable workout template requests", async () => {
+    render(
+      <WorkoutBuilderHub
+        workoutLibrary={buildWorkoutLibrary({
+          selectedWorkout: null,
+        })}
+        userId="user-1"
+        manualLocalDraftMode={null}
+        templateLocalDraftKey="missing_template"
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
+        "data-client-ready",
+        "true"
+      );
+    });
+
+    expect(screen.getByTestId("workout-builder-template-unavailable")).toHaveAttribute(
+      "role",
+      "alert"
+    );
+    expect(screen.getByText("That workout template is not available.")).toBeVisible();
+    expect(screen.queryByTestId("session-draft-title")).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("creates the canonical workout only on the first explicit save from a local draft", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {

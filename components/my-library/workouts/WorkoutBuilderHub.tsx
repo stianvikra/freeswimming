@@ -19,6 +19,12 @@ import {
   loadOrCreateStoredManualWorkoutDraft,
   writeStoredManualWorkoutDraft,
 } from "@/lib/workouts/manual-local-draft";
+import {
+  buildWorkoutTemplateDraft,
+  getActiveWorkoutTemplateByKey,
+  listActiveWorkoutTemplates,
+  type WorkoutBuilderTemplate,
+} from "@/lib/workouts/templates";
 import type {
   WorkoutDeleteApiResponse,
   WorkoutEditorRecord,
@@ -40,6 +46,7 @@ type Props = {
   preferExpandedDetailsOnLoad?: boolean;
   userId?: string | null;
   manualLocalDraftMode?: ManualWorkoutBuilderMode | null;
+  templateLocalDraftKey?: string | null;
 };
 
 type WorkoutBuilderFeedbackTone = "warning" | "error" | "success" | "empty";
@@ -76,6 +83,80 @@ const currentDangerPanelClass =
   "rounded-[var(--fs-radius-card)] border border-rose-200 bg-rose-50/80 p-3 sm:p-4";
 const currentWarningPanelClass =
   "rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50/80 p-3 sm:p-4";
+
+function buildTemplateDraftHref(template: WorkoutBuilderTemplate) {
+  const templateKey = encodeURIComponent(template.templateKey);
+  return `/my-library/workouts?draft=${template.environment}&entry=template&template=${templateKey}`;
+}
+
+function WorkoutTemplateSelectionSurface() {
+  const templates = listActiveWorkoutTemplates();
+
+  if (templates.length === 0) return null;
+
+  return (
+    <section
+      aria-labelledby="workout-builder-template-selection-heading"
+      data-testid="workout-builder-template-selection"
+      className="space-y-3"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="min-w-0">
+          <h3
+            id="workout-builder-template-selection-heading"
+            className="text-base font-semibold text-slate-900"
+          >
+            Start from template
+          </h3>
+        </div>
+        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          {templates.length} available
+        </p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {templates.map((template) => (
+          <article
+            key={template.templateKey}
+            data-testid={`workout-builder-template-card-${template.templateKey}`}
+            className="rounded-[var(--fs-radius-card)] border border-slate-200 bg-white/85 p-4 shadow-sm"
+          >
+            <div className="flex min-h-full flex-col gap-4">
+              <div className="min-w-0 space-y-2">
+                <p className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-brand-700)] uppercase">
+                  {template.category}
+                </p>
+                <h4 className="text-base font-semibold text-slate-950">{template.title}</h4>
+                <p className="text-sm leading-6 text-slate-600">{template.description}</p>
+                <div
+                  aria-label={`${template.title} summary`}
+                  className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600"
+                >
+                  {template.summaryItems.map((summaryItem) => (
+                    <span
+                      key={summaryItem}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1"
+                    >
+                      {summaryItem}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-auto">
+                <Link
+                  href={buildTemplateDraftHref(template)}
+                  data-testid={`workout-builder-template-use-${template.templateKey}`}
+                  className={cx(primaryActionClass, "w-full sm:w-auto")}
+                >
+                  Use template
+                </Link>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function WorkoutBuilderFeedback({
   tone,
@@ -133,8 +214,13 @@ export default function WorkoutBuilderHub({
   preferExpandedDetailsOnLoad = false,
   userId = null,
   manualLocalDraftMode = null,
+  templateLocalDraftKey = null,
 }: Props) {
   const router = useRouter();
+  const requestedTemplate = useMemo(
+    () => (templateLocalDraftKey ? getActiveWorkoutTemplateByKey(templateLocalDraftKey) : null),
+    [templateLocalDraftKey]
+  );
   const [savedWorkout, setSavedWorkout] = useState<WorkoutEditorRecord | null>(
     workoutLibrary.selectedWorkout
   );
@@ -153,9 +239,22 @@ export default function WorkoutBuilderHub({
   );
   const [clientReady, setClientReady] = useState(false);
   const [activeLocalDraftMode, setActiveLocalDraftMode] = useState<ManualWorkoutBuilderMode | null>(
-    workoutLibrary.selectedWorkout ? null : manualLocalDraftMode
+    workoutLibrary.selectedWorkout
+      ? null
+      : requestedTemplate
+        ? requestedTemplate.environment
+        : manualLocalDraftMode
+  );
+  const [activeTemplateKey, setActiveTemplateKey] = useState<string | null>(
+    workoutLibrary.selectedWorkout ? null : (requestedTemplate?.templateKey ?? null)
   );
   const [localDraftRecovered, setLocalDraftRecovered] = useState(false);
+  const activeTemplate = useMemo(
+    () => (activeTemplateKey ? getActiveWorkoutTemplateByKey(activeTemplateKey) : null),
+    [activeTemplateKey]
+  );
+  const templateRequestUnavailable =
+    !savedWorkout && templateLocalDraftKey !== null && requestedTemplate === null;
   const hasUnsavedChanges =
     savedWorkout !== null ? haveWorkoutDraftChanges(draft, savedWorkout.draft) : false;
   const manualPoolDraftDefaults = useMemo<ManualWorkoutDraftDefaults | undefined>(() => {
@@ -180,7 +279,14 @@ export default function WorkoutBuilderHub({
   }, []);
 
   useEffect(() => {
-    const nextLocalDraftMode = workoutLibrary.selectedWorkout ? null : manualLocalDraftMode;
+    const nextRequestedTemplate = templateLocalDraftKey
+      ? getActiveWorkoutTemplateByKey(templateLocalDraftKey)
+      : null;
+    const nextLocalDraftMode = workoutLibrary.selectedWorkout
+      ? null
+      : nextRequestedTemplate
+        ? nextRequestedTemplate.environment
+        : manualLocalDraftMode;
 
     setSavedWorkout(workoutLibrary.selectedWorkout);
     setDraft(workoutLibrary.selectedWorkout?.draft ?? null);
@@ -194,9 +300,13 @@ export default function WorkoutBuilderHub({
     setPendingCurrentDelete(false);
     setPendingCurrentDraftDiscard(false);
     setActiveLocalDraftMode(nextLocalDraftMode);
+    setActiveTemplateKey(
+      workoutLibrary.selectedWorkout ? null : (nextRequestedTemplate?.templateKey ?? null)
+    );
     setLocalDraftRecovered(false);
   }, [
     manualLocalDraftMode,
+    templateLocalDraftKey,
     workoutLibrary.recentWorkouts,
     workoutLibrary.selectedWorkout,
     workoutLibrary.selectedWorkoutMissing,
@@ -215,7 +325,7 @@ export default function WorkoutBuilderHub({
   }, [discardUndoDraft]);
 
   useEffect(() => {
-    if (!clientReady || !userId || !activeLocalDraftMode || savedWorkout) {
+    if (!clientReady || !userId || !activeLocalDraftMode || savedWorkout || activeTemplateKey) {
       return;
     }
 
@@ -227,15 +337,52 @@ export default function WorkoutBuilderHub({
 
     setDraft(loadedDraft.draft);
     setLocalDraftRecovered(loadedDraft.recovered);
-  }, [activeLocalDraftMode, clientReady, manualPoolDraftDefaults, savedWorkout, userId]);
+  }, [
+    activeLocalDraftMode,
+    activeTemplateKey,
+    clientReady,
+    manualPoolDraftDefaults,
+    savedWorkout,
+    userId,
+  ]);
 
   useEffect(() => {
-    if (!clientReady || !userId || !activeLocalDraftMode || savedWorkout || !draft) {
+    if (!clientReady || !activeTemplateKey || savedWorkout) {
+      return;
+    }
+
+    const templateDraft = buildWorkoutTemplateDraft(
+      activeTemplateKey,
+      new Date(),
+      manualPoolDraftDefaults
+    );
+
+    if (!templateDraft) {
+      setDraft(null);
+      setActiveLocalDraftMode(null);
+      setActiveTemplateKey(null);
+      setError("That workout template is not available.");
+      return;
+    }
+
+    setDraft(templateDraft);
+    setLocalDraftRecovered(false);
+  }, [activeTemplateKey, clientReady, manualPoolDraftDefaults, savedWorkout]);
+
+  useEffect(() => {
+    if (
+      !clientReady ||
+      !userId ||
+      !activeLocalDraftMode ||
+      activeTemplateKey ||
+      savedWorkout ||
+      !draft
+    ) {
       return;
     }
 
     writeStoredManualWorkoutDraft(userId, activeLocalDraftMode, draft);
-  }, [activeLocalDraftMode, clientReady, draft, savedWorkout, userId]);
+  }, [activeLocalDraftMode, activeTemplateKey, clientReady, draft, savedWorkout, userId]);
 
   async function saveWorkout() {
     const isFirstCanonicalSave = !savedWorkout && activeLocalDraftMode !== null;
@@ -281,7 +428,7 @@ export default function WorkoutBuilderHub({
         return;
       }
 
-      if (isFirstCanonicalSave && userId && activeLocalDraftMode) {
+      if (isFirstCanonicalSave && userId && activeLocalDraftMode && !activeTemplateKey) {
         clearStoredManualWorkoutDraft(userId, activeLocalDraftMode);
       }
 
@@ -292,17 +439,18 @@ export default function WorkoutBuilderHub({
       setDraft(canonicalWorkout.draft);
       setRecentWorkouts((current) => upsertRecentWorkoutSummary(current, responseBody.summary));
       setActiveLocalDraftMode(null);
+      setActiveTemplateKey(null);
       setLocalDraftRecovered(false);
       setSuccess(
         isFirstCanonicalSave ? "Saved to My Swim Sessions." : "Changes saved to this session."
       );
 
       if (isFirstCanonicalSave) {
-        router.replace(
-          `/my-library/workouts/${canonicalWorkout.id}?entry=${
-            canonicalMode === "pool" ? "manual-pool" : "manual-open-water"
-          }`
-        );
+        const entryQuery = activeTemplateKey
+          ? `entry=template&template=${encodeURIComponent(activeTemplateKey)}`
+          : `entry=${canonicalMode === "pool" ? "manual-pool" : "manual-open-water"}`;
+
+        router.replace(`/my-library/workouts/${canonicalWorkout.id}?${entryQuery}`);
         router.refresh();
       }
     } catch {
@@ -347,22 +495,28 @@ export default function WorkoutBuilderHub({
   }
 
   function confirmDiscardLocalDraft() {
-    if (!userId || !activeLocalDraftMode) return;
+    if (!activeLocalDraftMode) return;
 
     const discardedMode = activeLocalDraftMode;
+    const discardedTemplateTitle = activeTemplate?.title ?? null;
 
-    clearStoredManualWorkoutDraft(userId, discardedMode);
+    if (userId && !activeTemplateKey) {
+      clearStoredManualWorkoutDraft(userId, discardedMode);
+    }
     setDraft(null);
     setSavedWorkout(null);
     setActiveLocalDraftMode(null);
+    setActiveTemplateKey(null);
     setLocalDraftRecovered(false);
     setPendingCurrentDraftDiscard(false);
     setDiscardUndoDraft(null);
     setError("");
     setSuccess(
-      discardedMode === "pool"
-        ? "Discarded the local pool draft."
-        : "Discarded the local open-water draft."
+      discardedTemplateTitle
+        ? `Discarded the local draft from ${discardedTemplateTitle}.`
+        : discardedMode === "pool"
+          ? "Discarded the local pool draft."
+          : "Discarded the local open-water draft."
     );
     router.replace("/my-library/workouts");
     router.refresh();
@@ -575,13 +729,19 @@ export default function WorkoutBuilderHub({
         </WorkoutBuilderFeedback>
       ) : null}
 
+      {templateRequestUnavailable ? (
+        <WorkoutBuilderFeedback tone="error" testId="workout-builder-template-unavailable">
+          <p>That workout template is not available.</p>
+        </WorkoutBuilderFeedback>
+      ) : null}
+
       {success ? (
         <WorkoutBuilderFeedback tone="success" testId="workout-builder-action-success">
           <p>{success}</p>
         </WorkoutBuilderFeedback>
       ) : null}
 
-      {activeLocalDraftMode && !savedWorkout && localDraftRecovered ? (
+      {activeLocalDraftMode && !savedWorkout && !activeTemplateKey && localDraftRecovered ? (
         <WorkoutBuilderFeedback tone="success" testId="workout-builder-local-draft-recovered">
           <p>
             {activeLocalDraftMode === "pool"
@@ -639,9 +799,11 @@ export default function WorkoutBuilderHub({
           >
             <p className="text-sm font-medium text-amber-900">Discard this local draft?</p>
             <p className="mt-1 text-sm text-amber-900/90">
-              {activeLocalDraftMode === "pool"
-                ? "This removes the unsaved pool draft from this device. Nothing is deleted from My Swim Sessions."
-                : "This removes the unsaved open-water draft from this device. Nothing is deleted from My Swim Sessions."}
+              {activeTemplate
+                ? `This removes the unsaved draft from ${activeTemplate.title}. Nothing is deleted from My Swim Sessions.`
+                : activeLocalDraftMode === "pool"
+                  ? "This removes the unsaved pool draft from this device. Nothing is deleted from My Swim Sessions."
+                  : "This removes the unsaved open-water draft from this device. Nothing is deleted from My Swim Sessions."}
             </p>
             <div
               data-testid="workout-builder-current-draft-confirm-actions"
@@ -665,6 +827,8 @@ export default function WorkoutBuilderHub({
             </div>
           </div>
         ) : null}
+
+        {browseOnly && workoutLibrary.schemaReady ? <WorkoutTemplateSelectionSurface /> : null}
 
         {browseOnly ? (
           recentWorkouts.length > 0 ? (
@@ -774,6 +938,13 @@ export default function WorkoutBuilderHub({
               </p>
             </WorkoutBuilderFeedback>
           </div>
+        ) : null}
+
+        {draft && !savedWorkout && activeTemplate ? (
+          <WorkoutBuilderFeedback tone="empty" testId="workout-builder-template-draft-started">
+            <p className="font-medium text-slate-900">Started from {activeTemplate.title}.</p>
+            <p className="mt-2 text-slate-600">Edit anything here before saving.</p>
+          </WorkoutBuilderFeedback>
         ) : null}
 
         {draft && (savedWorkout || activeLocalDraftMode) ? (
