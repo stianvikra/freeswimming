@@ -14,7 +14,7 @@
   - `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
   - `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
 - `blocked_by`:
-  - `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+  - `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
   - `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - `execution_mode`: `end-to-end-after-explicit-implement`
 - `branch`: `workout-builder-template-usage-instrumentation-v1`
@@ -356,7 +356,7 @@ For future implementation after unblock:
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Blocked child path: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
-- Active unblock path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Done unblock path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Current status: blocked; runtime instrumentation is not safe until a stable workout-builder template identity and explicit selection action exist.
 - Recovery protocol:
@@ -371,3 +371,4 @@ For future implementation after unblock:
 - `2026-06-10 | blocked by audit | route/label/support sweep found no current runtime workout-builder template entity, stable template ID/key, or explicit template-selection action; existing generator intake blocks, session draft generation, workout save source kinds, goal templates, email templates, admin incident templates, and route templates are not valid template-usage sources | next: owner decision on whether to create a workout-template identity/selection contract before resuming instrumentation`
 - `2026-06-10 | unblock brief planned | created docs/task-briefs/planned/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md as the product/data contract that must decide template source-of-truth, stable ID/key, rename/repurpose behavior, and explicit selection action before this instrumentation can resume | next: wait for owner implementation approval or scope edits on the unblock brief`
 - `2026-06-10 | unblock contract implemented | docs/architecture/workout-builder-template-identity-selection-contract.md now defines the required future identity/selection rules and confirms current runtime template selection is not supported; this instrumentation child remains blocked until a runtime source and explicit selection surface are implemented under that contract | next: do not resume instrumentation until a dedicated runtime template source/selection child exists`
+- `2026-06-10 | unblock contract merged | PR #1057 closed the identity/selection contract at docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md; this instrumentation child remains blocked because the contract deliberately did not create a runtime template source or explicit selection surface | next: create a separate runtime template source/selection child before instrumentation resumes`

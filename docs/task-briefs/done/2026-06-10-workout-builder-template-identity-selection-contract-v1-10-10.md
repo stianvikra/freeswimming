@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -19,11 +19,11 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: active branch `workout-builder-template-identity-selection-contract-v1` after clean synced `main@99acbbb5`, with the template usage instrumentation child blocked by audit.
-- `audit_status`: `ready`
+- `base`: merged `main@92d40fbb` after PR `#1057`, with the template usage instrumentation child still blocked by runtime source/selection availability.
+- `audit_status`: `closed`
 - `decision`: Implement this as the narrow docs-only contract child that must be completed before template usage instrumentation can resume.
 - `reason`: The instrumentation audit found no runtime workout-builder template entity, stable template ID/key, or explicit template-selection action; this child owns the product/data identity decision instead of adding fake analytics.
-- `must_refresh_before_execution_if`: Refresh if AGENTS.md, task brief template, scorecard categories, workout data-contract brief, workout-builder/generator runtime surfaces, `lib/workouts/`, `lib/session-generator-v1/`, analytics event taxonomy, Admin Analytics template usage contract, Help/Guide contract, or route/label/support sweep rules change before merge.
+- `must_refresh_before_execution_if`: Closed. Refresh a future child if AGENTS.md, task brief template, scorecard categories, workout data-contract brief, workout-builder/generator runtime surfaces, `lib/workouts/`, `lib/session-generator-v1/`, analytics event taxonomy, Admin Analytics template usage contract, Help/Guide contract, or route/label/support sweep rules change before runtime template/source work resumes.
 
 ## Goal
 
@@ -273,7 +273,7 @@ Sweep evidence on `2026-06-10`:
 
 ## Acceptance Criteria
 
-1. In-progress brief exists at `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`.
+1. Done brief exists at `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`.
 2. Brief explains the product decision in owner-readable Norwegian and states what is out of scope.
 3. Architecture contract exists at `docs/architecture/workout-builder-template-identity-selection-contract.md`.
 4. Contract defines template source-of-truth, stable identity, rename/repurpose, selection action, unknown/deprecated fallback, and future instrumentation preconditions.
@@ -302,10 +302,10 @@ For future runtime execution:
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Done child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Blocked dependent child path: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
-- Current status: docs-only contract implemented locally; no runtime template or analytics work is approved in this child.
+- Current status: merged and closed by PR `#1057`; no runtime template or analytics work shipped in this child.
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -316,3 +316,29 @@ For future runtime execution:
 - `2026-06-10 | planned child created | created planned contract brief after template usage instrumentation was blocked by audit; this child owns the source-of-truth, stable template identity, rename/repurpose, selection action, and unknown/deprecated fallback decisions needed before instrumentation can resume | next: wait for owner implementation approval or scope edits`
 - `2026-06-10 | child moved to in-progress | owner requested implementation, branch renamed to workout-builder-template-identity-selection-contract-v1, and lifecycle moved to in-progress; scope remains docs-only contract with no runtime template/event/schema/dashboard/commerce changes | next: create durable architecture contract and update parent/blocked child references`
 - `2026-06-10 | contract implemented | added docs/architecture/workout-builder-template-identity-selection-contract.md with the conservative decision that runtime templates are not supported yet, future identity must be immutable templateId or write-once templateKey, selection requires explicit Use-template-equivalent draft population, and unknown/deprecated values fail closed; instrumentation remains blocked until a real template source and selection surface exist | next: validate brief lint, diff check, and pre-pr docs lane`
+- `2026-06-10 | contract merged | PR #1057 merged at squash commit 92d40fbb after docs-only verify:pre-pr, green CI, and docs-only verify:pre-merge; this closeout moves the brief to done and confirms instrumentation remains blocked until a real runtime template source and selection surface exist | next: rerun post-merge preflight after closeout merge`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1057`
+- `squash_commit`: `92d40fbb`
+- `result`: Closed Workout Builder Template Identity / Selection Contract V1. The repo now has a durable contract for what counts as a workout-builder template, where future stable identity must come from, what action counts as selection, and why current Admin Analytics template usage must remain `not_instrumented`.
+- `validation`: `npm run lint:briefs:all` pass, `git diff --check` pass, `npm run verify:pre-pr` pass on docs-only lane, PR #1057 CI pass, `npm run verify:pre-merge` pass on docs-only lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no runtime UI/schema/event/dashboard/commerce/export/vendor scope shipped.
+
+| Category                                      | Achieved Score | Evidence                                                                                             | Gaps / Notes                                                                         |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Contract doc + parent/blocked checkpoint + PR `#1057`                                                | Runtime template source remains a separate future child.                             |
+| UX flow clarity                               | `5/5`          | Selection contract defines explicit `Use template`-equivalent action and no-count examples           | No visible UI shipped.                                                               |
+| Business logic correctness and data integrity | `5/5`          | Identity, rename/repurpose, unknown/deprecated, and no-inference rules documented                    | Runtime tests deferred until runtime source exists.                                  |
+| Data placement and sync boundaries            | `5/5`          | Contract separates future server-canonical/registry-canonical/local-only boundaries                  | Future persisted source needs migration/RLS child.                                   |
+| Caching and invalidation strategy             | `5/5`          | Contract defines registry deploy invalidation and future server read/mutation invalidation needs     | Runtime cache rules deferred until source exists.                                    |
+| Reliability and failure handling              | `5/5`          | Unknown, invalid, unavailable, and deprecated IDs fail closed                                        | Runtime negative tests deferred until source exists.                                 |
+| Privacy and compliance                        | `5/5`          | Payload exclusions and no raw/private dimensions documented                                          | No analytics payload shipped.                                                        |
+| Content governance                            | `5/5`          | Parent, blocked child, API contract, architecture docs, and lifecycle brief aligned                  | Future Help/Guide needed only if visible template UI/support interpretation changes. |
+| Analytics and KPI observability               | `5/5`          | Preconditions for `workout_builder_template_selected` and continued `not_instrumented` state defined | Instrumentation intentionally remains blocked.                                       |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only diff; no dependency, runtime, schema, vendor, Stripe, checkout, export, or finance change  | None.                                                                                |
+| Testing and QA automation                     | `5/5`          | `lint:briefs:all`, `verify:pre-pr`, CI, and `verify:pre-merge` passed                                | Runtime tests deferred until runtime source/selection child.                         |
+| Scalability and cost efficiency               | `5/5`          | Low-cardinality `templateId`/`templateKey` guardrails; titles/per-user IDs excluded                  | None for docs-only scope.                                                            |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only PR is revertable; no migration/provider/env change                                         | Future runtime/schema child must define rollout/rollback separately.                 |
