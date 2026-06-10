@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@69618263` after Workout Builder Source Breakdown Dashboard V1 PR `#1053` and repo-managed closeout PR `#1054`
+- `base`: clean synced `main@99acbbb5` after Workout Builder Template Usage / Generated Completion Dashboard V1 PR `#1055` and repo-managed closeout PR `#1056`
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first four safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, and PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented because current telemetry has no real template identity.
+- `reason`: The first four safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, and PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented because current telemetry has no real template identity. The attempted template usage instrumentation child is blocked because the required audit found no stable runtime workout-builder template identity or explicit selection action.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -40,8 +40,14 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
   - Closed by PR `#1055` / squash commit `0e61938b`.
   - Owns only generated draft/save/completion visibility from existing first-party telemetry and renders template usage as not instrumented.
+- Blocked child: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
+  - Audited the proposed first-party instrumentation path for explicit workout-builder template selection.
+  - Runtime implementation is blocked until a stable workout-builder template identity and explicit selection action exist.
+- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+  - Owns the product/data contract for what a workout-builder template is, where its stable identity comes from, and what counts as explicit user selection.
+  - This is the unblock path before template usage instrumentation can resume.
+  - Contract artifact: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Still deferred after generated completion:
-  - template usage instrumentation if existing events cannot safely support it,
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - commercial placement rules,
   - workout-context upsell CTA policy,
@@ -51,9 +57,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - checkout/pricing changes,
   - third-party analytics vendor activation.
 
-## Next Child Candidate
+## Next Child
 
-No child is active after PR `#1055`. The next likely child is a narrow `Workout Builder Template Usage Instrumentation V1`, but it must be created as a new planned brief before implementation.
+The active child is `Workout Builder Template Identity / Selection Contract V1`, which defines stable workout-builder template identity and explicit selection behavior before template usage instrumentation resumes. This child remains docs-only and does not add runtime templates, analytics events, dashboard labels, schemas, checkout, export, vendor, or finance behavior.
 
 Why this should still come before commercial UI:
 
@@ -311,7 +317,10 @@ Future child implementation:
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-generated-completion-dashboard-v1-10-10.md`
-- Active child path: none after PR `#1055`.
+- Planned child path: none for template usage instrumentation after audit.
+- Active unblock child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
+- Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
+- Blocked child path: `docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -329,3 +338,8 @@ Future child implementation:
 - `2026-06-10 | active child at screenshot stop | Workout Builder Template Usage / Generated Completion Dashboard V1 implemented the supported generated-completion subset, renders template usage as Not instrumented, updated Help/Guide/contracts/tests, and captured after/reference screenshot artifacts; parent remains plan-only and no CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope was added | next: wait for owner screenshot approval before child verify:pre-pr`
 - `2026-06-10 | active child pre-pr passed | owner approved screenshots and merge on good tests; the child passed npm run verify:pre-pr full lane with unit/build/perf/e2e coverage and remains scoped to Admin Analytics telemetry interpretation only | next: child PR creation, CI monitoring, pre-merge gate, and merge if green`
 - `2026-06-10 | generated completion child merged | PR #1055 merged at squash commit 0e61938b after green local pre-pr, CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and template usage instrumentation remains deferred to a new planned child before any commercial UI | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-10 | planned child created | created planned child brief docs/task-briefs/planned/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md from clean main@99acbbb5 after PR #1055 and closeout PR #1056; implementation is not approved yet and must begin with a workout-builder template-support audit so template usage is not inferred from unsupported signals | next: wait for owner implementation approval or scope edits`
+- `2026-06-10 | child moved to in-progress | owner requested implementation, and the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md on branch workout-builder-template-usage-instrumentation-v1; parent remains plan-only and the child must audit template support before runtime work | next: complete the template-support audit and either implement the event or document the blocker`
+- `2026-06-10 | template instrumentation blocked | required audit found no current runtime workout-builder template entity, stable template ID/key, or explicit template-selection action, so the child moved to docs/task-briefs/blocked/2026-06-10-workout-builder-template-usage-instrumentation-v1-10-10.md without adding event taxonomy, payload helpers, call sites, dashboard labels, migrations, vendors, checkout, export, or finance scope | next: owner decision on whether to create a workout-template identity/selection contract before resuming instrumentation`
+- `2026-06-10 | planned unblock child created | created planned contract brief docs/task-briefs/planned/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md so template identity, source-of-truth, rename/repurpose rules, and explicit selection behavior can be decided before blocked instrumentation resumes | next: wait for owner implementation approval or scope edits`
+- `2026-06-10 | unblock child in progress | owner requested implementation of Workout Builder Template Identity / Selection Contract V1; the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md and added docs/architecture/workout-builder-template-identity-selection-contract.md as the durable contract artifact; parent remains plan-only and runtime template instrumentation remains blocked until a real template source and explicit selection surface exist | next: validate docs-only contract slice and prepare PR`
