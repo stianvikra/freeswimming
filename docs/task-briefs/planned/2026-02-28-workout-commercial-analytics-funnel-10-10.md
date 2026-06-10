@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@f68a9554` after Workout Builder Funnel Dashboard V1 PR `#1051` and repo-managed closeout PR `#1052`
+- `base`: clean synced `main@83e57c8c` after Workout Builder Source Breakdown Dashboard V1 PR `#1053`
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first two safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, and PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate. The remaining work is still too broad for one implementation PR and must continue as narrow child slices with explicit analytics, commerce, Help/Guide, and visual gates.
+- `reason`: The first three safe children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, and PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution. The remaining work is still too broad for one implementation PR and must continue as narrow child slices with explicit analytics, commerce, Help/Guide, and visual gates.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -34,10 +34,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns only privacy-safe first-party events for manual builder start and successful canonical workout create/update.
 - Done child: `docs/task-briefs/done/2026-06-10-workout-builder-funnel-dashboard-v1-10-10.md`
   - Owns only read-only Admin Analytics visibility for builder starts, saves, and save-rate using the shipped events.
-- In-progress child: `docs/task-briefs/in-progress/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
-  - Recommended branch if approved for implementation: `workout-builder-source-breakdown-dashboard-v1`
+- Done child: `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
+  - Closed by PR `#1053` / squash commit `83e57c8c`.
   - Owns only a read-only Admin Analytics breakdown that separates manual builder starts/saves from generated-session draft/saves using existing safe first-party events and payload dimensions where available.
-- Deferred until after source breakdown:
+- Still deferred after source breakdown:
   - template usage taxonomy,
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - commercial placement rules,
@@ -48,27 +48,25 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - checkout/pricing changes,
   - third-party analytics vendor activation.
 
-## Active Child Slice
+## Next Child Candidate
 
-Active: `Workout Builder Source Breakdown Dashboard V1`.
+No active child is approved after PR `#1053`. The next child should remain an owner decision after reviewing source-breakdown data.
 
-Why this is the next slice:
+Recommended next candidate if the data supports it: `Workout Builder Template Usage / Generated Completion Dashboard V1`.
 
-- It builds directly on shipped data instead of adding new collection first.
-- It answers a product question the current dashboard cannot answer: whether saves come mainly from manual builder use or from generated AI session drafts.
-- It keeps the commercial boundary clean. The owner can inspect product workflow quality before deciding where an upsell or paid handoff belongs.
-- It is smaller and safer than CTA placement, checkout attribution, finance reporting, or vendor analytics.
+Why this should come before commercial UI:
+
+- It can explain whether users need reusable templates or generator-completion clarity before any CTA/checkout placement.
+- It keeps commercial decisions downstream of observed product workflow quality.
+- It remains smaller and safer than checkout attribution, finance reporting, or third-party vendor analytics.
 
 Proposed child scope:
 
-- Extend the Admin Analytics insights/view-model contract to derive safe counts for:
-  - manual builder starts from `workout_builder_started`,
-  - generated drafts from `session_draft_generated`,
-  - manual saves from `workout_builder_saved` with safe `sourceKind = manual`,
-  - generated-session saves from `workout_builder_saved` with safe `sourceKind = ai_session_v1`.
-- Render a compact read-only Admin Analytics module such as `Builder source breakdown`.
+- Audit whether existing first-party events can safely distinguish template usage, generated draft acceptance, and generated-session completion without new telemetry.
+- If existing events are sufficient, render a compact read-only Admin Analytics module for the next mapped product question.
+- If existing events are not sufficient, create a bounded instrumentation child first rather than inferring unsupported metrics.
 - Preserve existing range selection, admin viewer+ auth, no-store reads, capped/schema-missing/fetch-failed states, and privacy boundary.
-- Update Admin Help/Guide interpretation so these counts are product telemetry, not unique-user conversion, checkout conversion, revenue, or finance truth.
+- Update Admin Help/Guide interpretation so any new counts remain product telemetry, not unique-user conversion, checkout conversion, revenue, or finance truth.
 - Add targeted unit/component tests, route/label/support sweep evidence, and after/reference screenshot handoff before `npm run verify:pre-pr`.
 
 Proposed child out of scope:
@@ -313,7 +311,7 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -325,3 +323,4 @@ Future child implementation:
 - `2026-06-10 | planned child created | created planned child brief docs/task-briefs/planned/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md for read-only Admin Analytics source breakdown; implementation remains blocked on explicit owner execute/build/implement instruction and visual screenshot approval stop once implemented | next: wait for owner implementation approval or scope edits`
 - `2026-06-10 | child moved to in-progress | owner requested implementation, and the child moved to docs/task-briefs/in-progress/2026-06-10-workout-builder-source-breakdown-dashboard-v1-10-10.md on branch workout-builder-source-breakdown-dashboard-v1; parent remains plan-only and the child owns the runtime work | next: complete the child implementation and screenshot approval stop`
 - `2026-06-10 | active child implemented to screenshot stop | Workout Builder Source Breakdown Dashboard V1 now has aggregation, Admin Analytics UI, Help/Guide copy, contract docs, targeted tests, and route/label/support sweep recorded in the child brief; parent remains plan-only and no CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope was added | next: capture child screenshot handoff and wait for owner approval before verify:pre-pr`
+- `2026-06-10 | source breakdown child merged | PR #1053 merged at squash commit 83e57c8c and the child moved to done in the repo-managed closeout; parent now has no approved active child, and the next candidate should be chosen from observed source-breakdown data before any CTA, checkout, Stripe, export, finance, vendor, or builder/generator UX scope is added | next: finish docs-only closeout PR and run post-merge-preflight`
