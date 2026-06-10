@@ -74,6 +74,10 @@ This foundation therefore does not add non-essential cookies, localStorage visit
   safe dimensions such as builder mode, source kind, save kind, session type, size mode, step count,
   distance, and duration. It must not store workout titles, notes, route URLs, private workout row
   IDs, or raw workout text in the analytics payload.
+- Workout-context upsell placement policy may use builder, generator, source, generated-completion,
+  and template-usage metrics only as aggregate product evidence. It does not authorize a runtime
+  workout-context CTA, new `upsell_*` payload meaning, checkout attribution, finance reporting,
+  third-party analytics forwarding, cookies, visitor IDs, or public-to-user attribution.
 - Admin source-breakdown may inspect safe `sourceKind` payload values server-side to derive manual,
   generated, and unknown save counts. The dashboard returns only aggregate counts/rates and must not
   expose raw payload JSON.
@@ -91,6 +95,11 @@ New public pages can be counted when they register a route template, category, s
 New products such as swim mugs can be counted when they come from canonical catalog/Stripe data and expose safe product dimensions. Unknown products render as `Unknown product / not counted`.
 
 New lessons can use coarse progress events only when stable runtime IDs exist. Lesson titles and slugs are display labels, not analytics identity.
+
+New workout-context CTA placements require the policy contract in
+`docs/architecture/workout-context-upsell-placement-policy.md` plus explicit mapping for placement
+ID, product ID, event meaning, Help/Guide interpretation, screenshot evidence, and unknown/disabled
+fallbacks before release.
 
 ## Release Evidence Required
 
