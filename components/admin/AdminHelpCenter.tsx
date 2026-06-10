@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, workout-builder save-rate, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe event health, funnel counts, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating bounded revenue-proxy or builder save-rate counts as finance reconciliation, checkout conversion, or user-level attribution.",
+      "Treating bounded revenue-proxy, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
   },
   {
     name: "Email templates",
@@ -281,6 +281,11 @@ const ANALYTICS_WORKFLOW = [
     title: "Read workout builder source breakdown as product telemetry",
     detail:
       "Manual starts count current manual builder entries, Generated drafts count session_draft_generated, Manual saves count workout_builder_saved with sourceKind manual, and Generated saves count sourceKind ai_session_v1. Unknown saves stay unmapped until explicitly reviewed. These rates are not unique-user conversion, checkout conversion, revenue attribution, export success, Stripe reconciliation, entitlement truth, or finance reporting.",
+  },
+  {
+    title: "Read generated completion without inferring template usage",
+    detail:
+      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage is shown as Not instrumented until an explicit template identity or template-selection event exists; do not infer it from session type, generator block toggles, draft creation, or adjacent activity.",
   },
   {
     title: "Read funnel as product signal only",
@@ -525,6 +530,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Started / Saved / Save rate",
         meaning:
           "Shows the workout-builder product telemetry for the selected range. It is useful for builder completion review, not user-level attribution, checkout conversion, Stripe reconciliation, export, or finance reporting.",
+      },
+      {
+        label: "Generated completion / Template usage",
+        meaning:
+          "Shows generated drafts and generated saves only from supported events. Template usage is Not instrumented until a real template identity or template-selection event exists.",
       },
     ],
   },

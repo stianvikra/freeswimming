@@ -70,6 +70,13 @@ export type AnalyticsInsightsResponse = {
     manualSaveRate: number | null;
     generatedSaveRate: number | null;
   };
+  workoutBuilderTemplateGeneratedCompletion: {
+    generatedDrafts: number;
+    generatedSaves: number;
+    generatedCompletionRate: number | null;
+    templateUsageCount: number | null;
+    templateUsageStatus: "not_instrumented";
+  };
 };
 
 export const ANALYTICS_INSIGHTS_DEFAULT_RANGE_DAYS = 30;
@@ -248,6 +255,13 @@ export function buildAnalyticsInsights(input: {
       unknownSaves,
       manualSaveRate: ratio(manualSaves, workoutBuilderStarted),
       generatedSaveRate: ratio(generatedSaves, generatedDrafts),
+    },
+    workoutBuilderTemplateGeneratedCompletion: {
+      generatedDrafts,
+      generatedSaves,
+      generatedCompletionRate: ratio(generatedSaves, generatedDrafts),
+      templateUsageCount: null,
+      templateUsageStatus: "not_instrumented",
     },
   };
 }

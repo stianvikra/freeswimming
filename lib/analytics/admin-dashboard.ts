@@ -71,6 +71,12 @@ export type AnalyticsDashboardWorkoutBuilderSourceBreakdown = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -83,6 +89,7 @@ export type AnalyticsDashboardViewModel = {
   funnel: AnalyticsDashboardFunnelStep[];
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
+  workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
   eventItems: AnalyticsDashboardListItem[];
   routeItems: AnalyticsDashboardListItem[];
   productItems: AnalyticsDashboardListItem[];
@@ -493,6 +500,98 @@ function buildSchemaMissingWorkoutBuilderSourceBreakdown(): AnalyticsDashboardWo
   };
 }
 
+function buildWorkoutBuilderTemplateGeneratedCompletion(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion {
+  const generatedDrafts =
+    payload.workoutBuilderTemplateGeneratedCompletion?.generatedDrafts ??
+    payload.workoutBuilderSourceBreakdown?.generatedDrafts ??
+    findEventCount(payload.eventCounts, SESSION_DRAFT_GENERATED_EVENT);
+  const generatedSaves =
+    payload.workoutBuilderTemplateGeneratedCompletion?.generatedSaves ??
+    payload.workoutBuilderSourceBreakdown?.generatedSaves ??
+    0;
+  const generatedCompletionRate =
+    payload.workoutBuilderTemplateGeneratedCompletion?.generatedCompletionRate ??
+    payload.workoutBuilderSourceBreakdown?.generatedSaveRate ??
+    rate(generatedSaves, generatedDrafts);
+  const templateUsageStatus =
+    payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageStatus ?? "not_instrumented";
+  const templateUsageValue =
+    templateUsageStatus === "not_instrumented"
+      ? "Not instrumented"
+      : formatAnalyticsCount(payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageCount);
+
+  return {
+    metrics: [
+      {
+        id: "generated-completion-drafts",
+        label: "Generated drafts",
+        value: formatAnalyticsCount(generatedDrafts),
+        detail: "AI session drafts",
+      },
+      {
+        id: "generated-completion-saves",
+        label: "Generated saves",
+        value: formatAnalyticsCount(generatedSaves),
+        detail: "Saved generated sessions",
+      },
+      {
+        id: "generated-completion-rate",
+        label: "Completion rate",
+        value: formatAnalyticsPercent(generatedCompletionRate),
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "template-usage",
+        label: "Template usage",
+        value: templateUsageValue,
+        detail: "No explicit template event",
+      },
+    ],
+    detail:
+      "Read-only generated-session completion signal with template usage kept separate from unsupported inference.",
+    caveat:
+      generatedDrafts === 0
+        ? "Completion rate is not counted until a generated draft exists in this range; template usage is not instrumented yet."
+        : "Template usage is not counted yet because V1 telemetry has no explicit template identity or template-selection event.",
+  };
+}
+
+function buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(): AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion {
+  return {
+    metrics: [
+      {
+        id: "generated-completion-drafts",
+        label: "Generated drafts",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "generated-completion-saves",
+        label: "Generated saves",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "generated-completion-rate",
+        label: "Completion rate",
+        value: "Not counted",
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "template-usage",
+        label: "Template usage",
+        value: "Not instrumented",
+        detail: "No explicit template event",
+      },
+    ],
+    detail:
+      "Generated completion and template usage are hidden from inference until analytics schema is ready.",
+    caveat: "Apply the analytics_events migration before reading generated-completion counts.",
+  };
+}
+
 export function buildAnalyticsDashboardViewModel(
   payload: AnalyticsDashboardPayload,
   options: { now?: Date } = {}
@@ -524,6 +623,8 @@ export function buildAnalyticsDashboardViewModel(
       funnel: [],
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
+      workoutBuilderTemplateGeneratedCompletion:
+        buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(),
       eventItems: [],
       routeItems: [],
       productItems: [],
@@ -613,6 +714,8 @@ export function buildAnalyticsDashboardViewModel(
     funnel: buildFunnel(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
+    workoutBuilderTemplateGeneratedCompletion:
+      buildWorkoutBuilderTemplateGeneratedCompletion(payload),
     eventItems: buildListItems(payload.eventCounts, "event"),
     routeItems: buildListItems(payload.routeCounts, "route"),
     productItems: buildListItems(payload.productCounts, "product"),
@@ -623,6 +726,7 @@ export function buildAnalyticsDashboardViewModel(
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
+      "Template usage is not instrumented yet; do not infer it from session type, generator block toggles, draft creation, or adjacent activity.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],

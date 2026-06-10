@@ -68,6 +68,13 @@ const basePayload: AnalyticsInsightsResponse = {
     manualSaveRate: 0.4,
     generatedSaveRate: 0.25,
   },
+  workoutBuilderTemplateGeneratedCompletion: {
+    generatedDrafts: 4,
+    generatedSaves: 1,
+    generatedCompletionRate: 0.25,
+    templateUsageCount: null,
+    templateUsageStatus: "not_instrumented",
+  },
 };
 
 function okResponse(payload: AnalyticsDashboardPayload = basePayload) {
@@ -110,6 +117,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-source-breakdown")).toBeVisible();
+    expect(
+      screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
+    ).toBeVisible();
     expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
 
@@ -137,6 +147,16 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(sourceBreakdown).getByText("40%")).toBeVisible();
     expect(within(sourceBreakdown).getByText("25%")).toBeVisible();
     expect(within(sourceBreakdown).queryByRole("button")).not.toBeInTheDocument();
+    const generatedCompletion = screen.getByTestId(
+      "admin-analytics-workout-builder-template-generated-completion"
+    );
+    expect(within(generatedCompletion).getByText("Generated completion")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Generated drafts")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Generated saves")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Completion rate")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Template usage")).toBeVisible();
+    expect(within(generatedCompletion).getByText("Not instrumented")).toBeVisible();
+    expect(within(generatedCompletion).queryByRole("button")).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
     ).toBeVisible();
@@ -154,6 +174,11 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(/not export success/i)
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-caveats")).getByText(
+        /Template usage is not instrumented yet/i
+      )
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
@@ -213,6 +238,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
     ).toHaveTextContent("Not counted");
+    expect(
+      screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
+    ).toHaveTextContent("Not instrumented");
     expect(screen.getByText(/database errors/i)).toBeVisible();
     expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
   });
@@ -243,6 +271,13 @@ describe("AdminAnalyticsDashboard", () => {
             manualSaveRate: null,
             generatedSaveRate: null,
           },
+          workoutBuilderTemplateGeneratedCompletion: {
+            generatedDrafts: 0,
+            generatedSaves: 0,
+            generatedCompletionRate: null,
+            templateUsageCount: null,
+            templateUsageStatus: "not_instrumented",
+          },
         })
       );
     vi.stubGlobal("fetch", fetchMock);
@@ -260,6 +295,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
     ).toHaveTextContent("Unknown saves");
+    expect(
+      screen.getByTestId("admin-analytics-workout-builder-template-generated-completion")
+    ).toHaveTextContent("Not instrumented");
     expect(screen.getByText("Unknown route")).toBeVisible();
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(document.body).not.toHaveTextContent("user@example.com");
