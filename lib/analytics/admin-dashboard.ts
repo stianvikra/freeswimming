@@ -65,6 +65,12 @@ export type AnalyticsDashboardWorkoutBuilderFunnel = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutBuilderSourceBreakdown = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -76,6 +82,7 @@ export type AnalyticsDashboardViewModel = {
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
+  workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   eventItems: AnalyticsDashboardListItem[];
   routeItems: AnalyticsDashboardListItem[];
   productItems: AnalyticsDashboardListItem[];
@@ -85,6 +92,7 @@ export type AnalyticsDashboardViewModel = {
 const countFormatter = new Intl.NumberFormat("en-US");
 const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
 const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
+const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
 
 const EVENT_LABELS: Record<string, string> = {
   checkout_completed: "Checkout completed",
@@ -94,6 +102,7 @@ const EVENT_LABELS: Record<string, string> = {
   product_viewed: "Product viewed",
   public_cta_clicked: "Public CTA clicked",
   public_page_viewed: "Public page viewed",
+  session_draft_generated: "Session draft generated",
   workout_builder_saved: "Workout builder saved",
   workout_builder_started: "Workout builder started",
 };
@@ -361,6 +370,129 @@ function buildSchemaMissingWorkoutBuilderFunnel(): AnalyticsDashboardWorkoutBuil
   };
 }
 
+function buildWorkoutBuilderSourceBreakdown(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutBuilderSourceBreakdown {
+  const manualStarts =
+    payload.workoutBuilderSourceBreakdown?.manualStarts ??
+    payload.workoutBuilderFunnel?.started ??
+    findEventCount(payload.eventCounts, WORKOUT_BUILDER_STARTED_EVENT);
+  const generatedDrafts =
+    payload.workoutBuilderSourceBreakdown?.generatedDrafts ??
+    findEventCount(payload.eventCounts, SESSION_DRAFT_GENERATED_EVENT);
+  const manualSaves = payload.workoutBuilderSourceBreakdown?.manualSaves ?? 0;
+  const generatedSaves = payload.workoutBuilderSourceBreakdown?.generatedSaves ?? 0;
+  const unknownSaves = payload.workoutBuilderSourceBreakdown?.unknownSaves ?? 0;
+  const manualSaveRate =
+    payload.workoutBuilderSourceBreakdown?.manualSaveRate ?? rate(manualSaves, manualStarts);
+  const generatedSaveRate =
+    payload.workoutBuilderSourceBreakdown?.generatedSaveRate ??
+    rate(generatedSaves, generatedDrafts);
+
+  return {
+    metrics: [
+      {
+        id: "source-manual-starts",
+        label: "Manual starts",
+        value: formatAnalyticsCount(manualStarts),
+        detail: "Manual builder entries",
+      },
+      {
+        id: "source-generated-drafts",
+        label: "Generated drafts",
+        value: formatAnalyticsCount(generatedDrafts),
+        detail: "AI session drafts",
+      },
+      {
+        id: "source-manual-saves",
+        label: "Manual saves",
+        value: formatAnalyticsCount(manualSaves),
+        detail: "Saved manual workouts",
+      },
+      {
+        id: "source-generated-saves",
+        label: "Generated saves",
+        value: formatAnalyticsCount(generatedSaves),
+        detail: "Saved generated sessions",
+      },
+      {
+        id: "source-manual-save-rate",
+        label: "Manual save rate",
+        value: formatAnalyticsPercent(manualSaveRate),
+        detail: "Manual saves / starts",
+      },
+      {
+        id: "source-generated-save-rate",
+        label: "Generated save rate",
+        value: formatAnalyticsPercent(generatedSaveRate),
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "source-unknown-saves",
+        label: "Unknown saves",
+        value: formatAnalyticsCount(unknownSaves),
+        detail: "Missing or unmapped source",
+      },
+    ],
+    detail: "Read-only source split for builder and generated-session workflow signals.",
+    caveat:
+      unknownSaves > 0
+        ? "Unknown saves are excluded from manual/generated rates until their source is explicitly mapped."
+        : "Duplicate drafts and saves can exist; this is not unique-user, checkout, export, or finance conversion.",
+  };
+}
+
+function buildSchemaMissingWorkoutBuilderSourceBreakdown(): AnalyticsDashboardWorkoutBuilderSourceBreakdown {
+  return {
+    metrics: [
+      {
+        id: "source-manual-starts",
+        label: "Manual starts",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "source-generated-drafts",
+        label: "Generated drafts",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "source-manual-saves",
+        label: "Manual saves",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "source-generated-saves",
+        label: "Generated saves",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "source-manual-save-rate",
+        label: "Manual save rate",
+        value: "Not counted",
+        detail: "Manual saves / starts",
+      },
+      {
+        id: "source-generated-save-rate",
+        label: "Generated save rate",
+        value: "Not counted",
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "source-unknown-saves",
+        label: "Unknown saves",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+    ],
+    detail: "Source breakdown is hidden from inference until analytics schema is ready.",
+    caveat: "Apply the analytics_events migration before reading source breakdown counts.",
+  };
+}
+
 export function buildAnalyticsDashboardViewModel(
   payload: AnalyticsDashboardPayload,
   options: { now?: Date } = {}
@@ -391,6 +523,7 @@ export function buildAnalyticsDashboardViewModel(
       ],
       funnel: [],
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
+      workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       eventItems: [],
       routeItems: [],
       productItems: [],
@@ -479,6 +612,7 @@ export function buildAnalyticsDashboardViewModel(
     ],
     funnel: buildFunnel(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
+    workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     eventItems: buildListItems(payload.eventCounts, "event"),
     routeItems: buildListItems(payload.routeCounts, "route"),
     productItems: buildListItems(payload.productCounts, "product"),
@@ -488,6 +622,7 @@ export function buildAnalyticsDashboardViewModel(
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} row cap.`,
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
+      "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],

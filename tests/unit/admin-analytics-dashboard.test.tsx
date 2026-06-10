@@ -22,6 +22,7 @@ const basePayload: AnalyticsInsightsResponse = {
   eventCounts: [
     { key: "workout_builder_started", count: 5 },
     { key: "workout_builder_saved", count: 3 },
+    { key: "session_draft_generated", count: 4 },
     { key: "plans_viewed", count: 2 },
   ],
   routeCounts: [{ key: "/plans", category: "pricing", count: 2 }],
@@ -57,6 +58,15 @@ const basePayload: AnalyticsInsightsResponse = {
     started: 5,
     saved: 3,
     saveRate: 0.6,
+  },
+  workoutBuilderSourceBreakdown: {
+    manualStarts: 5,
+    generatedDrafts: 4,
+    manualSaves: 2,
+    generatedSaves: 1,
+    unknownSaves: 0,
+    manualSaveRate: 0.4,
+    generatedSaveRate: 0.25,
   },
 };
 
@@ -99,6 +109,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-builder-source-breakdown")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
 
@@ -115,6 +126,17 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(builderFunnel).getByText("3")).toBeVisible();
     expect(within(builderFunnel).getByText("60%")).toBeVisible();
     expect(within(builderFunnel).queryByRole("button")).not.toBeInTheDocument();
+    const sourceBreakdown = screen.getByTestId("admin-analytics-workout-builder-source-breakdown");
+    expect(within(sourceBreakdown).getByText("Source breakdown")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Manual starts")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Generated drafts")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Manual saves")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Generated saves")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Manual save rate")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("Generated save rate")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("40%")).toBeVisible();
+    expect(within(sourceBreakdown).getByText("25%")).toBeVisible();
+    expect(within(sourceBreakdown).queryByRole("button")).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
     ).toBeVisible();
@@ -129,6 +151,9 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(/not unique-user conversion/i)
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("admin-analytics-caveats")).getByText(/not export success/i)
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
@@ -185,6 +210,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
       "Not counted"
     );
+    expect(
+      screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
+    ).toHaveTextContent("Not counted");
     expect(screen.getByText(/database errors/i)).toBeVisible();
     expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
   });
@@ -206,6 +234,15 @@ describe("AdminAnalyticsDashboard", () => {
             saved: 2,
             saveRate: null,
           },
+          workoutBuilderSourceBreakdown: {
+            manualStarts: 0,
+            generatedDrafts: 0,
+            manualSaves: 0,
+            generatedSaves: 0,
+            unknownSaves: 2,
+            manualSaveRate: null,
+            generatedSaveRate: null,
+          },
         })
       );
     vi.stubGlobal("fetch", fetchMock);
@@ -220,6 +257,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
       "Not counted"
     );
+    expect(
+      screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
+    ).toHaveTextContent("Unknown saves");
     expect(screen.getByText("Unknown route")).toBeVisible();
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(document.body).not.toHaveTextContent("user@example.com");

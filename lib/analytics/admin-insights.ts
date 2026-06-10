@@ -5,12 +5,14 @@ import {
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
+import type { WorkoutSourceKind } from "@/lib/workouts/shared";
 
 export type AnalyticsEventInsightRow = Pick<
   Database["public"]["Tables"]["analytics_events"]["Row"],
   | "channel"
   | "event_name"
   | "occurred_at"
+  | "payload"
   | "product_id"
   | "product_type"
   | "public_aggregate"
@@ -59,6 +61,15 @@ export type AnalyticsInsightsResponse = {
     saved: number;
     saveRate: number | null;
   };
+  workoutBuilderSourceBreakdown: {
+    manualStarts: number;
+    generatedDrafts: number;
+    manualSaves: number;
+    generatedSaves: number;
+    unknownSaves: number;
+    manualSaveRate: number | null;
+    generatedSaveRate: number | null;
+  };
 };
 
 export const ANALYTICS_INSIGHTS_DEFAULT_RANGE_DAYS = 30;
@@ -66,6 +77,9 @@ export const ANALYTICS_INSIGHTS_MAX_RANGE_DAYS = 90;
 export const ANALYTICS_INSIGHTS_ROW_CAP = 5000;
 const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
 const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
+const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
+const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
+const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
 
 export function selectAnalyticsInsightFields() {
   return `
@@ -78,6 +92,7 @@ export function selectAnalyticsInsightFields() {
     route_category,
     product_id,
     product_type,
+    payload,
     occurred_at
   `;
 }
@@ -103,6 +118,14 @@ function sortedCounts(map: Map<string, number>): AnalyticsInsightCount[] {
 function ratio(numerator: number, denominator: number): number | null {
   if (denominator <= 0) return null;
   return Math.round((numerator / denominator) * 1000) / 1000;
+}
+
+function getSafePayloadSourceKind(payload: AnalyticsEventInsightRow["payload"]): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const sourceKind = (payload as { sourceKind?: unknown }).sourceKind;
+  if (typeof sourceKind !== "string") return null;
+  if (!/^[a-z][a-z0-9_:-]{0,80}$/.test(sourceKind)) return null;
+  return sourceKind;
 }
 
 export function buildAnalyticsInsights(input: {
@@ -155,6 +178,22 @@ export function buildAnalyticsInsights(input: {
   const checkoutCompleted = eventCounts.get("checkout_completed") ?? 0;
   const workoutBuilderStarted = eventCounts.get(WORKOUT_BUILDER_STARTED_EVENT) ?? 0;
   const workoutBuilderSaved = eventCounts.get(WORKOUT_BUILDER_SAVED_EVENT) ?? 0;
+  const generatedDrafts = eventCounts.get(SESSION_DRAFT_GENERATED_EVENT) ?? 0;
+  let manualSaves = 0;
+  let generatedSaves = 0;
+  let unknownSaves = 0;
+
+  for (const row of input.rows) {
+    if (row.event_name !== WORKOUT_BUILDER_SAVED_EVENT) continue;
+    const sourceKind = getSafePayloadSourceKind(row.payload);
+    if (sourceKind === MANUAL_WORKOUT_SOURCE_KIND) {
+      manualSaves += 1;
+    } else if (sourceKind === AI_SESSION_WORKOUT_SOURCE_KIND) {
+      generatedSaves += 1;
+    } else {
+      unknownSaves += 1;
+    }
+  }
 
   return {
     ok: true,
@@ -200,6 +239,15 @@ export function buildAnalyticsInsights(input: {
       started: workoutBuilderStarted,
       saved: workoutBuilderSaved,
       saveRate: ratio(workoutBuilderSaved, workoutBuilderStarted),
+    },
+    workoutBuilderSourceBreakdown: {
+      manualStarts: workoutBuilderStarted,
+      generatedDrafts,
+      manualSaves,
+      generatedSaves,
+      unknownSaves,
+      manualSaveRate: ratio(manualSaves, workoutBuilderStarted),
+      generatedSaveRate: ratio(generatedSaves, generatedDrafts),
     },
   };
 }

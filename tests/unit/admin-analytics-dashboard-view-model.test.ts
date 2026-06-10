@@ -27,6 +27,7 @@ const basePayload: AnalyticsDashboardPayload = {
   eventCounts: [
     { key: "workout_builder_started", count: 5 },
     { key: "workout_builder_saved", count: 3 },
+    { key: "session_draft_generated", count: 4 },
     { key: "plans_viewed", count: 2 },
     { key: "new_safe_event", count: 1 },
   ],
@@ -63,6 +64,15 @@ const basePayload: AnalyticsDashboardPayload = {
     started: 5,
     saved: 3,
     saveRate: 0.6,
+  },
+  workoutBuilderSourceBreakdown: {
+    manualStarts: 5,
+    generatedDrafts: 4,
+    manualSaves: 2,
+    generatedSaves: 1,
+    unknownSaves: 0,
+    manualSaveRate: 0.4,
+    generatedSaveRate: 0.25,
   },
 };
 
@@ -119,6 +129,51 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutBuilderFunnel.caveat).toContain("not unique-user");
+    expect(viewModel.workoutBuilderSourceBreakdown.metrics).toEqual([
+      {
+        id: "source-manual-starts",
+        label: "Manual starts",
+        value: "5",
+        detail: "Manual builder entries",
+      },
+      {
+        id: "source-generated-drafts",
+        label: "Generated drafts",
+        value: "4",
+        detail: "AI session drafts",
+      },
+      {
+        id: "source-manual-saves",
+        label: "Manual saves",
+        value: "2",
+        detail: "Saved manual workouts",
+      },
+      {
+        id: "source-generated-saves",
+        label: "Generated saves",
+        value: "1",
+        detail: "Saved generated sessions",
+      },
+      {
+        id: "source-manual-save-rate",
+        label: "Manual save rate",
+        value: "40%",
+        detail: "Manual saves / starts",
+      },
+      {
+        id: "source-generated-save-rate",
+        label: "Generated save rate",
+        value: "25%",
+        detail: "Generated saves / drafts",
+      },
+      {
+        id: "source-unknown-saves",
+        label: "Unknown saves",
+        value: "0",
+        detail: "Missing or unmapped source",
+      },
+    ]);
+    expect(viewModel.workoutBuilderSourceBreakdown.caveat).toContain("not unique-user");
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
       secondary: "workout_builder_started",
@@ -129,7 +184,7 @@ describe("admin analytics dashboard view model", () => {
       secondary: "workout_builder_saved",
       count: "3",
     });
-    expect(viewModel.eventItems[2]).toMatchObject({
+    expect(viewModel.eventItems[3]).toMatchObject({
       label: "Plans viewed",
       secondary: "plans_viewed",
       count: "2",
@@ -172,6 +227,15 @@ describe("admin analytics dashboard view model", () => {
             saved: 0,
             saveRate: null,
           },
+          workoutBuilderSourceBreakdown: {
+            manualStarts: 0,
+            generatedDrafts: 0,
+            manualSaves: 0,
+            generatedSaves: 0,
+            unknownSaves: 0,
+            manualSaveRate: null,
+            generatedSaveRate: null,
+          },
         },
         { now }
       ).state
@@ -199,6 +263,17 @@ describe("admin analytics dashboard view model", () => {
           { id: "builder-save-rate", value: "Not counted" },
         ],
       },
+      workoutBuilderSourceBreakdown: {
+        metrics: [
+          { id: "source-manual-starts", value: "Not counted" },
+          { id: "source-generated-drafts", value: "Not counted" },
+          { id: "source-manual-saves", value: "Not counted" },
+          { id: "source-generated-saves", value: "Not counted" },
+          { id: "source-manual-save-rate", value: "Not counted" },
+          { id: "source-generated-save-rate", value: "Not counted" },
+          { id: "source-unknown-saves", value: "Not counted" },
+        ],
+      },
     });
   });
 
@@ -214,6 +289,15 @@ describe("admin analytics dashboard view model", () => {
           started: 0,
           saved: 2,
           saveRate: null,
+        },
+        workoutBuilderSourceBreakdown: {
+          manualStarts: 0,
+          generatedDrafts: 1,
+          manualSaves: 2,
+          generatedSaves: 0,
+          unknownSaves: 0,
+          manualSaveRate: null,
+          generatedSaveRate: 0,
         },
       },
       { now }
@@ -240,6 +324,12 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(zeroStarts.workoutBuilderFunnel.caveat).toContain("until a builder start exists");
+    expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
+      id: "source-manual-save-rate",
+      label: "Manual save rate",
+      value: "Not counted",
+      detail: "Manual saves / starts",
+    });
 
     const duplicateTelemetry = buildAnalyticsDashboardViewModel(
       {
@@ -248,6 +338,15 @@ describe("admin analytics dashboard view model", () => {
           started: 2,
           saved: 3,
           saveRate: 1.5,
+        },
+        workoutBuilderSourceBreakdown: {
+          manualStarts: 2,
+          generatedDrafts: 1,
+          manualSaves: 3,
+          generatedSaves: 2,
+          unknownSaves: 1,
+          manualSaveRate: 1.5,
+          generatedSaveRate: 2,
         },
       },
       { now }
@@ -258,6 +357,13 @@ describe("admin analytics dashboard view model", () => {
       value: "150%",
     });
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain("Duplicate starts and saves");
+    expect(duplicateTelemetry.workoutBuilderSourceBreakdown.metrics).toContainEqual({
+      id: "source-generated-save-rate",
+      label: "Generated save rate",
+      value: "200%",
+      detail: "Generated saves / drafts",
+    });
+    expect(duplicateTelemetry.workoutBuilderSourceBreakdown.caveat).toContain("Unknown saves");
   });
 
   it("does not expose unsafe raw payload-like identifiers in labels or secondary text", () => {
@@ -279,6 +385,15 @@ describe("admin analytics dashboard view model", () => {
           started: 0,
           saved: 0,
           saveRate: null,
+        },
+        workoutBuilderSourceBreakdown: {
+          manualStarts: 0,
+          generatedDrafts: 0,
+          manualSaves: 0,
+          generatedSaves: 0,
+          unknownSaves: 1,
+          manualSaveRate: null,
+          generatedSaveRate: null,
         },
       },
       { now }
@@ -315,6 +430,10 @@ describe("admin analytics dashboard view model", () => {
     expect(formatAnalyticsIdentifierLabel("workout_builder_saved", "event")).toMatchObject({
       label: "Workout builder saved",
       secondary: "workout_builder_saved",
+    });
+    expect(formatAnalyticsIdentifierLabel("session_draft_generated", "event")).toMatchObject({
+      label: "Session draft generated",
+      secondary: "session_draft_generated",
     });
     expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({
       label: "Future Safe Event",

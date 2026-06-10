@@ -73,6 +73,7 @@ describe("AdminHelpCenter", () => {
       screen.getByText(/not finance reconciliation or user-level public traffic/i)
     ).toBeVisible();
     expect(screen.getByText(/Started counts workout_builder_started/i)).toBeVisible();
+    expect(screen.getByText(/Manual starts count current manual builder entries/i)).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
     expect(screen.getByText(/not user-level attribution, checkout conversion/i)).toBeVisible();
     expect(screen.getByText(/Do not infer missing revenue, user attribution/i)).toBeVisible();
