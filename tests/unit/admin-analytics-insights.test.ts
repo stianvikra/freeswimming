@@ -68,6 +68,7 @@ const baseRow: AnalyticsEventInsightRow = {
   route_category: "pricing",
   product_id: "guide_poolside",
   product_type: "course_addon",
+  payload: {},
   occurred_at: "2026-06-09T10:00:00.000Z",
 };
 
@@ -133,7 +134,34 @@ describe("admin analytics insights", () => {
           channel: "server",
           user_id: "user-1",
           public_aggregate: false,
+          payload: { sourceKind: "manual" },
           occurred_at: "2026-06-09T10:09:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "session_draft_generated",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          occurred_at: "2026-06-09T10:10:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+          payload: { sourceKind: "ai_session_v1" },
+          occurred_at: "2026-06-09T10:11:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          channel: "server",
+          user_id: "user-1",
+          public_aggregate: false,
+          payload: { sourceKind: "future_source" },
+          occurred_at: "2026-06-09T10:12:00.000Z",
         },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
@@ -141,7 +169,7 @@ describe("admin analytics insights", () => {
       rollupRows: [
         {
           rollup_day: "2026-06-09",
-          event_count: 6,
+          event_count: 9,
           refreshed_at: "2026-06-09T10:30:00.000Z",
         },
       ],
@@ -151,12 +179,12 @@ describe("admin analytics insights", () => {
     expect(insights).toMatchObject({
       ok: true,
       schemaReady: true,
-      totalEvents: 6,
+      totalEvents: 9,
       publicAggregateEvents: 1,
-      clientEvents: 3,
-      serverEvents: 3,
+      clientEvents: 4,
+      serverEvents: 5,
       uniqueKnownUsers: 1,
-      lastEventAt: "2026-06-09T10:09:00.000Z",
+      lastEventAt: "2026-06-09T10:12:00.000Z",
       funnel: {
         plansViewed: 1,
         checkoutStarted: 1,
@@ -165,14 +193,23 @@ describe("admin analytics insights", () => {
       },
       workoutBuilderFunnel: {
         started: 2,
-        saved: 1,
-        saveRate: 0.5,
+        saved: 3,
+        saveRate: 1.5,
+      },
+      workoutBuilderSourceBreakdown: {
+        manualStarts: 2,
+        generatedDrafts: 1,
+        manualSaves: 1,
+        generatedSaves: 1,
+        unknownSaves: 1,
+        manualSaveRate: 0.5,
+        generatedSaveRate: 1,
       },
       lifecycle: {
         rollup: {
           status: "ready",
           latestDay: "2026-06-09",
-          totalRolledUpEvents: 6,
+          totalRolledUpEvents: 9,
         },
       },
     });
@@ -192,6 +229,7 @@ describe("admin analytics insights", () => {
           channel: "server",
           user_id: "user-1",
           public_aggregate: false,
+          payload: { sourceKind: "manual" },
         },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
@@ -202,6 +240,56 @@ describe("admin analytics insights", () => {
       started: 0,
       saved: 1,
       saveRate: null,
+    });
+    expect(insights.workoutBuilderSourceBreakdown).toEqual({
+      manualStarts: 0,
+      generatedDrafts: 0,
+      manualSaves: 1,
+      generatedSaves: 0,
+      unknownSaves: 0,
+      manualSaveRate: null,
+      generatedSaveRate: null,
+    });
+  });
+
+  it("keeps malformed and missing workout save source kinds unmapped", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          payload: { sourceKind: "manual" },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          payload: { sourceKind: "ai_session_v1" },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          payload: { sourceKind: "https://example.com/?email=user@example.com" },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          payload: {},
+        },
+        {
+          ...baseRow,
+          event_name: "session_draft_generated",
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.workoutBuilderSourceBreakdown).toMatchObject({
+      manualSaves: 1,
+      generatedSaves: 1,
+      unknownSaves: 2,
+      generatedDrafts: 1,
+      generatedSaveRate: 1,
     });
   });
 

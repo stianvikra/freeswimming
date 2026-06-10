@@ -278,6 +278,11 @@ const ANALYTICS_WORKFLOW = [
       "Started counts workout_builder_started, Saved counts workout_builder_saved, and Save rate is Saved / Started for the selected range. Duplicate starts and saves can exist, so this is not unique-user conversion, checkout performance, Stripe reconciliation, or finance reporting.",
   },
   {
+    title: "Read workout builder source breakdown as product telemetry",
+    detail:
+      "Manual starts count current manual builder entries, Generated drafts count session_draft_generated, Manual saves count workout_builder_saved with sourceKind manual, and Generated saves count sourceKind ai_session_v1. Unknown saves stay unmapped until explicitly reviewed. These rates are not unique-user conversion, checkout conversion, revenue attribution, export success, Stripe reconciliation, entitlement truth, or finance reporting.",
+  },
+  {
     title: "Read funnel as product signal only",
     detail:
       "Plans, product, checkout, and entitlement counts are useful for product review. They do not replace Stripe, accounting, finance reconciliation, refunds, invoices, payouts, or revenue recognition.",

@@ -331,6 +331,12 @@
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
   or finance reporting.
+- Workout builder source caveat: `workoutBuilderSourceBreakdown` is product telemetry derived from
+  `workout_builder_started`, `session_draft_generated`, and `workout_builder_saved` safe
+  `sourceKind` values. Manual/generated source rates are not unique-user conversion, checkout
+  conversion, export success, revenue attribution, entitlement truth, Stripe reconciliation, or
+  finance reporting. Missing, malformed, deprecated, or unmapped save sources must be counted as
+  unknown/unmapped and excluded from manual/generated source-specific rates until explicitly mapped.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -385,6 +391,15 @@
     "started": 5,
     "saved": 3,
     "saveRate": 0.6
+  },
+  "workoutBuilderSourceBreakdown": {
+    "manualStarts": 5,
+    "generatedDrafts": 4,
+    "manualSaves": 2,
+    "generatedSaves": 1,
+    "unknownSaves": 0,
+    "manualSaveRate": 0.4,
+    "generatedSaveRate": 0.25
   }
 }
 ```

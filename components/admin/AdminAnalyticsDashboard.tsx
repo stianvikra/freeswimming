@@ -165,6 +165,52 @@ function WorkoutBuilderFunnelPanel({
   );
 }
 
+function WorkoutBuilderSourceBreakdownPanel({
+  breakdown,
+}: {
+  breakdown: AnalyticsDashboardViewModel["workoutBuilderSourceBreakdown"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-builder-source-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-builder-source-breakdown"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Workout builder</p>
+          <h3
+            id="admin-analytics-workout-builder-source-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Source breakdown
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{breakdown.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+          Product telemetry
+        </p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {breakdown.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className={cx("mt-4", mutedTextClass)}>{breakdown.caveat}</p>
+    </section>
+  );
+}
+
 export default function AdminAnalyticsDashboard() {
   const [rangeDays, setRangeDays] = useState<AnalyticsDashboardRangeDays>(30);
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
@@ -381,6 +427,7 @@ export default function AdminAnalyticsDashboard() {
           </section>
 
           <WorkoutBuilderFunnelPanel funnel={viewModel.workoutBuilderFunnel} />
+          <WorkoutBuilderSourceBreakdownPanel breakdown={viewModel.workoutBuilderSourceBreakdown} />
 
           <div className="grid gap-4 lg:grid-cols-3" data-testid="admin-analytics-top-lists">
             <ListPanel

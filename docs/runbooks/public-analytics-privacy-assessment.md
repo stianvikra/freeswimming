@@ -74,6 +74,9 @@ This foundation therefore does not add non-essential cookies, localStorage visit
   safe dimensions such as builder mode, source kind, save kind, session type, size mode, step count,
   distance, and duration. It must not store workout titles, notes, route URLs, private workout row
   IDs, or raw workout text in the analytics payload.
+- Admin source-breakdown may inspect safe `sourceKind` payload values server-side to derive manual,
+  generated, and unknown save counts. The dashboard returns only aggregate counts/rates and must not
+  expose raw payload JSON.
 - Daily rollups store only aggregate counts and already-sanitized dimensions in
   `analytics_event_daily_rollups`. They do not store payload JSON, `user_id`, email, raw URL, IP,
   User-Agent, visitor ID, or private training/user content.
