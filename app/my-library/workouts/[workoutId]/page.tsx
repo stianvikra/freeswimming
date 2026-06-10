@@ -42,7 +42,8 @@ export default async function WorkoutBuilderPage({ params, searchParams }: Props
   const preferExpandedDetailsOnLoad =
     entryMode === "manual-create" ||
     entryMode === "manual-pool" ||
-    entryMode === "manual-open-water";
+    entryMode === "manual-open-water" ||
+    entryMode === "template";
 
   if (!UUID_PATTERN.test(workoutId)) {
     notFound();

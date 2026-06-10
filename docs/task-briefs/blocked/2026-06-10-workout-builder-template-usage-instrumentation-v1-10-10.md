@@ -16,6 +16,7 @@
 - `blocked_by`:
   - `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
   - `docs/architecture/workout-builder-template-identity-selection-contract.md`
+  - `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - `execution_mode`: `end-to-end-after-explicit-implement`
 - `branch`: `workout-builder-template-usage-instrumentation-v1`
 
@@ -30,8 +31,8 @@
 
 Current unblock contract:
 
-- `docs/architecture/workout-builder-template-identity-selection-contract.md` defines the conservative decision: current runtime template selection is not supported, future identity must come from immutable `templateId` or write-once `templateKey`, selection requires an explicit `Use template`-equivalent action that starts or populates a draft, and unknown/deprecated values fail closed.
-- This instrumentation child remains blocked after that contract because no runtime workout-builder template source or explicit selection surface exists yet.
+- `docs/architecture/workout-builder-template-identity-selection-contract.md` defines the conservative decision: runtime template selection must use immutable `templateId` or write-once `templateKey`, selection requires an explicit `Use template`-equivalent action that starts or populates a draft, and unknown/deprecated values fail closed.
+- This instrumentation child remains blocked until `docs/task-briefs/in-progress/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md` is merged and validated as the real runtime source/selection surface. After that merge, refresh this brief before adding `workout_builder_template_selected`.
 
 ## Goal
 

@@ -9,6 +9,7 @@ import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 import type { WorkoutPoolsideFocusOption } from "@/lib/workouts/shared";
 import { loadWorkoutLibrarySnapshot } from "@/lib/workouts/server";
+import { getActiveWorkoutTemplateByKey } from "@/lib/workouts/templates";
 
 export const dynamic = "force-dynamic";
 
@@ -33,8 +34,20 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
   const entryMode = readSearchParamValue(resolvedSearchParams, "entry");
   const rawDraftMode = readSearchParamValue(resolvedSearchParams, "draft");
+  const rawTemplateKey = readSearchParamValue(resolvedSearchParams, "template");
+  const templateRequestKey = rawTemplateKey.trim() || null;
+  const requestedTemplate = templateRequestKey
+    ? getActiveWorkoutTemplateByKey(templateRequestKey)
+    : null;
+  const hasTemplateRequest = templateRequestKey !== null;
   const localDraftMode: ManualWorkoutBuilderMode | null =
-    rawDraftMode === "pool" || rawDraftMode === "open_water" ? rawDraftMode : null;
+    hasTemplateRequest && requestedTemplate
+      ? requestedTemplate.environment
+      : hasTemplateRequest
+        ? null
+        : rawDraftMode === "pool" || rawDraftMode === "open_water"
+          ? rawDraftMode
+          : null;
   const { supabase, user } = await getServerSupabaseUserIfAuthCookiePresent();
 
   if (!supabase || !user) {
@@ -63,14 +76,16 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
         : "My Swim Sessions";
   const preferExpandedDetailsOnLoad =
     localDraftMode !== null ||
+    hasTemplateRequest ||
     entryMode === "manual-create" ||
     entryMode === "manual-pool" ||
     entryMode === "manual-open-water";
 
-  const backHref = localDraftMode === null ? "/my-library" : "/my-library/workouts";
+  const isFocusedDraftRoute = localDraftMode !== null || hasTemplateRequest;
+  const backHref = isFocusedDraftRoute ? "/my-library/workouts" : "/my-library";
 
   return (
-    <SiteChrome mobileNavMode={localDraftMode === null ? "default" : "hidden"}>
+    <SiteChrome mobileNavMode={isFocusedDraftRoute ? "hidden" : "default"}>
       <section
         data-testid="workout-builder-route-shell"
         data-mobile-density="tight"
@@ -108,11 +123,12 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
               }
               manualPoolCssPaceLabel={athleteProfileSnapshot.cssMetric?.paceLabel ?? null}
               swimmerName={athleteProfileSnapshot.profile?.primaryName ?? null}
-              browseOnly={localDraftMode === null}
-              hideShellIntro={localDraftMode !== null}
+              browseOnly={!isFocusedDraftRoute}
+              hideShellIntro={isFocusedDraftRoute}
               preferExpandedDetailsOnLoad={preferExpandedDetailsOnLoad}
               userId={user.id}
               manualLocalDraftMode={localDraftMode}
+              templateLocalDraftKey={templateRequestKey}
             />
           </div>
         </div>

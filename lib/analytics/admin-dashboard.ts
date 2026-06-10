@@ -554,7 +554,7 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
     caveat:
       generatedDrafts === 0
         ? "Completion rate is not counted until a generated draft exists in this range; template usage is not instrumented yet."
-        : "Template usage is not counted yet because V1 telemetry has no explicit template identity or template-selection event.",
+        : "Template usage is not counted yet because V1 telemetry has no explicit template-selection event.",
   };
 }
 
@@ -726,7 +726,7 @@ export function buildAnalyticsDashboardViewModel(
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
-      "Template usage is not instrumented yet; do not infer it from session type, generator block toggles, draft creation, or adjacent activity.",
+      "Template usage is not instrumented yet; do not infer it from session type, generator block toggles, draft creation, visible Use template actions, or adjacent activity.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],

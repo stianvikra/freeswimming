@@ -6,14 +6,14 @@ Last updated: 2026-06-10
 
 This contract defines what must be true before FreeSwimming can count `Template usage` for Workout Builder in Admin Analytics.
 
-The current product decision is conservative: Workout Builder does not yet have a runtime template source of truth, stable template identity, or explicit template-selection action. Template usage must therefore remain `not_instrumented` until a later runtime child adds a real template entity or approved registry plus a clear selection surface.
+The current product decision is conservative: Workout Builder may expose a runtime template source and explicit `Use template` action before analytics is instrumented. Template usage must therefore remain `not_instrumented` until a later instrumentation child adds a typed `workout_builder_template_selected` event from that real selection action.
 
 ## Current Product Decision
 
-- Current runtime support: not supported.
+- Current runtime support: V1 typed in-repo registry and explicit `Use template` selection surface.
 - Current Admin Analytics behavior: keep `Template usage` as `not_instrumented`.
 - Current instrumentation behavior: do not add `workout_builder_template_selected`.
-- Unblock condition: a future child must add or identify a canonical workout-builder template source and an explicit selection action before instrumentation resumes.
+- Instrumentation unblock condition: a future child must add the typed, privacy-safe template-selection event from the canonical selection action before Admin Analytics can count template usage.
 
 ## Template Definition
 
@@ -39,7 +39,7 @@ Preferred future source:
 
 - A persisted `workout_template` or equivalent server-canonical entity from the workout data contract, after that contract is refreshed and implemented.
 
-Allowed future interim source only with a separate owner-approved child:
+Current V1 interim source:
 
 - A typed in-repo template registry with a write-once `templateKey`, fixtures, unknown/deprecated tests, and documented migration path to the persisted entity.
 
@@ -145,7 +145,7 @@ Forbidden analytics payload values:
 - Stripe IDs,
 - raw payload JSON in Admin UI.
 
-Analytics failure must fail soft and must not block template use. Missing, unknown, deprecated, or invalid template identity must emit no trusted template-selection event until explicitly mapped.
+Analytics failure must fail soft and must not block template use. Missing, unknown, deprecated, or invalid template identity must emit no trusted template-selection event until explicitly mapped. The visible `Use template` workflow alone is not Admin Analytics truth until the dedicated event exists.
 
 ## Data Placement And Cache Contract
 
@@ -191,7 +191,7 @@ Safe fallback for unknown/deprecated values:
 
 ## Support And Operations Boundaries
 
-This contract changes no runtime Help/Guide copy, admin workflow, support queue, route, schema, RLS policy, export, checkout, Stripe, entitlement, finance, or vendor behavior.
+This contract changes no admin workflow, support queue, schema, RLS policy, export, checkout, Stripe, entitlement, finance, or vendor behavior. The V1 runtime selection child may change visible Workout Builder entry copy and Admin Help interpretation while preserving `Template usage` as `not_instrumented`.
 
 Future visible template-selection UI must include:
 
@@ -209,6 +209,7 @@ Before resuming template usage instrumentation, the future child must prove:
 - rename vs repurpose policy is implemented,
 - explicit selection action exists,
 - invalid/unknown/deprecated IDs fail closed,
+- selection emits from the accepted `Use template` action only,
 - payload sanitizer excludes forbidden data,
 - Admin Analytics interpretation remains product telemetry only,
 - Help/Guide and screenshot requirements are handled if visible UI changes.
