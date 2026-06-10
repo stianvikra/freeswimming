@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
 - `updated`: `2026-06-10`
@@ -346,3 +346,32 @@ Current implementation validation before screenshot handoff:
 - `2026-06-10 | pre-pr verified | `npm run verify:pre-pr` passed the full public lane after the brief evidence fix; no generated output artifacts were left in the commit set | next: commit, push, open PR, and monitor CI`
 - `2026-06-10 | CI release-gate fix | required CodeQL `Analyze (javascript-typescript)`failed twice in init with GitHub REST`Requires authentication`; added minimal `pull-requests: read`and`statuses: write`permissions to the CodeQL workflow while keeping`security-events: write` | next: rerun pre-PR validation, commit, push, and monitor required CI again`
 - `2026-06-10 | CI fix pre-pr verified | `npm run verify:pre-pr`passed after the CodeQL workflow permission fix with E2E summary`106 passed`, `536 skipped` | next: commit, push, and monitor required CI again`
+
+## Completion Record
+
+- `completed`: `2026-06-10`
+- `merged_pr`: `#1059`
+- `squash_commit`: `c6cd5b56ef4f1be0598618d00d2220dd4c8700b7`
+- `result`: Shipped a registry-backed Workout Builder template source and a visible `Use template` selection path that creates an editable local workout draft from a stable template key while keeping analytics instrumentation, persisted template storage, and commerce out of scope.
+- `validation`: Targeted unit/component tests passed; screenshot handoff was owner-approved; `npm run verify:pre-pr` passed on the implementation branch; GitHub CI passed after CodeQL workflow permission fix; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260610-171652.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Registry-backed template source, visible `Use template` path, PR `#1059`, screenshot handoff, and `verify:pre-merge` PASS.                                                                                             | None.        |
+| UX flow clarity                               | `5/5`          | Selection remains explicit; manual, generated, preview, and save paths stay separate; component/e2e coverage and screenshot handoff verify the flow.                                                                   | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/workout-builder-template-runtime-source-selection-surface-v1-2026-06-10-171145`; no rendering files changed after capture.                                       | None.        |
+| Business logic correctness and data integrity | `5/5`          | `lib/workouts/templates.ts` validates stable template keys, duplicate/invalid/deprecated behavior, and deterministic draft creation; targeted tests and full gates passed.                                             | None.        |
+| Accessibility (a11y)                          | `5/5`          | Template actions have accessible names and button semantics; Testing Library coverage plus public a11y/E2E gates passed.                                                                                               | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency; static low-cardinality registry; perf budget gate passed in `verify:pre-pr` and `verify:pre-merge`.                                                                                                 | None.        |
+| Data placement and sync boundaries            | `5/5`          | Registry is repo-canonical for V1; selected draft stays local until existing workout save; no template identity is persisted or inferred from browser storage/analytics.                                               | None.        |
+| Caching and invalidation strategy             | `5/5`          | Static registry invalidates through deploy/build; existing workout save/read cache behavior unchanged; no dynamic template cache added.                                                                                | None.        |
+| Reliability and failure handling              | `5/5`          | Unknown/invalid/unavailable template keys fail closed and do not create fallback drafts; route/component negative-path tests passed.                                                                                   | None.        |
+| Security and authz                            | `5/5`          | My Library route boundaries and protected save APIs remain unchanged; malformed/unknown template inputs fail closed; CI/security gates passed.                                                                         | None.        |
+| Privacy and compliance                        | `5/5`          | Template metadata excludes user identifiers, raw workout payloads, payment data, URLs, emails, IPs, and visitor IDs; no third-party analytics or cookies added.                                                        | None.        |
+| Content governance                            | `5/5`          | Identity/rename/deprecation rules are documented in architecture/API docs and enforced by registry tests; route/label/support sweep recorded.                                                                          | None.        |
+| Analytics and KPI observability               | `5/5`          | Runtime source and selection action are now explicit; Admin Analytics remains `not_instrumented`; blocked instrumentation brief depends on this completed slice.                                                       | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js/Workout Builder/manual draft contracts and session-step surface contract; no dependency or new persistence layer added.                                                                        | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests passed; `npm run verify:pre-pr` PASS; GitHub CI required checks PASS; `npm run verify:pre-merge` PASS with `106 passed`, `536 skipped`.                                                                 | None.        |
+| Scalability and cost efficiency               | `5/5`          | Bounded static registry avoids per-user/per-workout query cost and future active templates render via registry iteration.                                                                                              | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration/env/secret/provider change; rollback is revert of PR `#1059`; CodeQL permissions now include the minimal PR/status scopes needed for required analysis; CI and local pre-merge gates passed before merge. | None.        |
