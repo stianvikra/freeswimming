@@ -342,11 +342,15 @@
 - Workout builder generated-completion caveat:
   `workoutBuilderTemplateGeneratedCompletion` is product telemetry derived from
   `session_draft_generated` and `workout_builder_saved` with `sourceKind = ai_session_v1`.
-  Template usage is returned as `not_instrumented` until a dedicated dashboard mapping exists for
-  `workout_builder_template_selected`; the dashboard must not infer template usage from session
-  type, generator block toggles, draft creation, saved source kind, the visible `Use template`
-  workflow, or adjacent activity. The identity/selection precondition is defined in
+  Template usage is counted only from `workout_builder_template_selected`; the dashboard must not
+  infer template usage from session type, generator block toggles, draft creation, saved source
+  kind, visible labels, or adjacent activity. The identity/selection precondition is defined in
   `docs/architecture/workout-builder-template-identity-selection-contract.md`.
+- Workout builder template usage caveat: `workoutBuilderTemplateUsage` is product telemetry derived
+  only from explicit `workout_builder_template_selected` rows with safe `templateKey` and
+  `templateSource` payload values. Known template labels come from the workout-template registry,
+  not raw analytics payload labels. Missing, malformed, deprecated, unknown, or unmapped keys and
+  sources remain separate from known templates until explicitly mapped.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -415,8 +419,28 @@
     "generatedDrafts": 4,
     "generatedSaves": 1,
     "generatedCompletionRate": 0.25,
-    "templateUsageCount": null,
-    "templateUsageStatus": "not_instrumented"
+    "templateUsageCount": 3,
+    "templateUsageStatus": "mapped"
+  },
+  "workoutBuilderTemplateUsage": {
+    "templateSelections": 3,
+    "knownTemplateSelections": 2,
+    "unknownTemplateSelections": 1,
+    "templatesSelected": 2,
+    "templateCounts": [
+      {
+        "key": "pool_endurance_base_1000",
+        "label": "Aerobic base 1000",
+        "status": "active",
+        "count": 2
+      },
+      {
+        "key": "pool_technique_reset_900",
+        "label": "Technique reset 900",
+        "status": "active",
+        "count": 1
+      }
+    ]
   }
 }
 ```

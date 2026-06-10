@@ -77,6 +77,14 @@ export type AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutBuilderTemplateUsage = {
+  metrics: AnalyticsDashboardMetric[];
+  items: AnalyticsDashboardListItem[];
+  emptyLabel: string;
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -90,6 +98,7 @@ export type AnalyticsDashboardViewModel = {
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
+  workoutBuilderTemplateUsage: AnalyticsDashboardWorkoutBuilderTemplateUsage;
   eventItems: AnalyticsDashboardListItem[];
   routeItems: AnalyticsDashboardListItem[];
   productItems: AnalyticsDashboardListItem[];
@@ -99,6 +108,8 @@ export type AnalyticsDashboardViewModel = {
 const countFormatter = new Intl.NumberFormat("en-US");
 const WORKOUT_BUILDER_STARTED_EVENT = "workout_builder_started" satisfies AnalyticsEventName;
 const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsEventName;
+const WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT =
+  "workout_builder_template_selected" satisfies AnalyticsEventName;
 const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
 
 const EVENT_LABELS: Record<string, string> = {
@@ -168,6 +179,14 @@ function isSafeAnalyticsIdentifier(value: string | null | undefined): value is s
   if (value.length > 120) return false;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return false;
   return /^[a-zA-Z0-9_./:-]+$/.test(value);
+}
+
+function isSafeTemplateDisplayLabel(value: string | null | undefined): value is string {
+  if (!value) return false;
+  if (value.length > 80) return false;
+  if (/[@<>{}[\]\\]/.test(value)) return false;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return false;
+  return /^[a-zA-Z0-9][a-zA-Z0-9 .,&()/+-]*$/.test(value);
 }
 
 function titleCaseWords(value: string): string {
@@ -517,11 +536,13 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
     payload.workoutBuilderSourceBreakdown?.generatedSaveRate ??
     rate(generatedSaves, generatedDrafts);
   const templateUsageStatus =
-    payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageStatus ?? "not_instrumented";
+    payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageStatus ?? "mapped";
+  const templateUsageCount =
+    payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageCount ??
+    payload.workoutBuilderTemplateUsage?.templateSelections ??
+    findEventCount(payload.eventCounts, WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT);
   const templateUsageValue =
-    templateUsageStatus === "not_instrumented"
-      ? "Not instrumented"
-      : formatAnalyticsCount(payload.workoutBuilderTemplateGeneratedCompletion?.templateUsageCount);
+    templateUsageStatus === "mapped" ? formatAnalyticsCount(templateUsageCount) : "Not counted";
 
   return {
     metrics: [
@@ -547,15 +568,15 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
         id: "template-usage",
         label: "Template usage",
         value: templateUsageValue,
-        detail: "No dashboard mapping",
+        detail: "Explicit selections",
       },
     ],
     detail:
-      "Read-only generated-session completion signal with template usage kept separate from unsupported inference.",
+      "Read-only generated-session completion signal with explicit template selection kept separate from unsupported inference.",
     caveat:
       generatedDrafts === 0
-        ? "Completion rate is not counted until a generated draft exists in this range; template usage is not dashboard-mapped yet."
-        : "Template usage is not counted yet because the template-selection event is not mapped into this dashboard module.",
+        ? "Completion rate is not counted until a generated draft exists in this range; template usage is counted only from explicit template-selection events."
+        : "Template usage is counted only from explicit template-selection events, not session type, source kind, draft creation, or adjacent activity.",
   };
 }
 
@@ -583,13 +604,101 @@ function buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(): Analytic
       {
         id: "template-usage",
         label: "Template usage",
-        value: "Not instrumented",
-        detail: "No dashboard mapping",
+        value: "Not counted",
+        detail: "Schema missing",
       },
     ],
     detail:
       "Generated completion and template usage are hidden from inference until analytics schema is ready.",
     caveat: "Apply the analytics_events migration before reading generated-completion counts.",
+  };
+}
+
+function buildWorkoutBuilderTemplateUsage(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutBuilderTemplateUsage {
+  const usage = payload.workoutBuilderTemplateUsage;
+  const templateSelections =
+    usage?.templateSelections ??
+    findEventCount(payload.eventCounts, WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT);
+  const knownTemplateSelections = usage?.knownTemplateSelections ?? 0;
+  const unknownTemplateSelections = usage?.unknownTemplateSelections ?? 0;
+  const templatesSelected = usage?.templatesSelected ?? usage?.templateCounts?.length ?? 0;
+  const items =
+    usage?.templateCounts?.slice(0, 5).map((item): AnalyticsDashboardListItem => {
+      const safeKey = isSafeAnalyticsIdentifier(item.key) ? item.key : "unknown_template";
+      const safeLabel = isSafeTemplateDisplayLabel(item.label) ? item.label : "Unknown template";
+      const status = item.status === "deprecated" ? "Deprecated template" : "Active template";
+      return {
+        key: safeKey,
+        label: safeLabel,
+        secondary: `${status} - ${safeKey}`,
+        count: formatAnalyticsCount(item.count),
+      };
+    }) ?? [];
+
+  return {
+    metrics: [
+      {
+        id: "template-selections",
+        label: "Template selections",
+        value: formatAnalyticsCount(templateSelections),
+        detail: "Explicit Use template events",
+      },
+      {
+        id: "templates-selected",
+        label: "Templates selected",
+        value: formatAnalyticsCount(templatesSelected),
+        detail: "Known template keys",
+      },
+      {
+        id: "unknown-template-selections",
+        label: "Unknown template",
+        value: formatAnalyticsCount(unknownTemplateSelections),
+        detail: "Missing or unmapped key/source",
+      },
+    ],
+    items,
+    emptyLabel:
+      templateSelections === 0
+        ? "No template selections in this range."
+        : "No known template keys in this range.",
+    detail: "Read-only usage for explicit registry-backed workout template selections.",
+    caveat:
+      unknownTemplateSelections > 0
+        ? "Unknown template selections are kept separate until their key/source is explicitly mapped."
+        : knownTemplateSelections === 0
+          ? "Template selection counts remain zero until users explicitly choose Use template."
+          : "Duplicate selections can exist; this is not unique-user, checkout, export, revenue, or finance conversion.",
+  };
+}
+
+function buildSchemaMissingWorkoutBuilderTemplateUsage(): AnalyticsDashboardWorkoutBuilderTemplateUsage {
+  return {
+    metrics: [
+      {
+        id: "template-selections",
+        label: "Template selections",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "templates-selected",
+        label: "Templates selected",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "unknown-template-selections",
+        label: "Unknown template",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+    ],
+    items: [],
+    emptyLabel: "Template usage is hidden from inference until analytics schema is ready.",
+    detail: "Template usage is hidden from inference until analytics schema is ready.",
+    caveat: "Apply the analytics_events migration before reading template selection counts.",
   };
 }
 
@@ -626,6 +735,7 @@ export function buildAnalyticsDashboardViewModel(
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
         buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(),
+      workoutBuilderTemplateUsage: buildSchemaMissingWorkoutBuilderTemplateUsage(),
       eventItems: [],
       routeItems: [],
       productItems: [],
@@ -717,6 +827,7 @@ export function buildAnalyticsDashboardViewModel(
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
       buildWorkoutBuilderTemplateGeneratedCompletion(payload),
+    workoutBuilderTemplateUsage: buildWorkoutBuilderTemplateUsage(payload),
     eventItems: buildListItems(payload.eventCounts, "event"),
     routeItems: buildListItems(payload.routeCounts, "route"),
     productItems: buildListItems(payload.productCounts, "product"),
@@ -727,7 +838,7 @@ export function buildAnalyticsDashboardViewModel(
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
-      "Template usage is not dashboard-mapped yet; do not infer it from session type, generator block toggles, draft creation, visible Use template actions, or adjacent activity.",
+      "Template usage is product telemetry only and counts explicit template-selection events; do not infer it from session type, generator block toggles, draft creation, source kind, visible labels, or adjacent activity.",
       "Public aggregate events are intentionally not linked to user profiles.",
       "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],

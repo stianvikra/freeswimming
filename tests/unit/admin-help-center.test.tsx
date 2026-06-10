@@ -77,7 +77,7 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText(/Generated completion uses session_draft_generated/i)).toBeVisible();
     expect(
       screen.getByText(
-        /Generated completion uses session_draft_generated.*dashboard mapping exists for workout_builder_template_selected/i
+        /Generated completion uses session_draft_generated.*Template usage counts only workout_builder_template_selected/i
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();

@@ -163,13 +163,49 @@ describe("admin analytics insights", () => {
           payload: { sourceKind: "future_source" },
           occurred_at: "2026-06-09T10:12:00.000Z",
         },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          payload: {
+            templateKey: "pool_endurance_base_1000",
+            templateSource: "workout_builder_v1",
+          },
+          occurred_at: "2026-06-09T10:13:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          payload: {
+            templateKey: "pool_technique_reset_900",
+            templateSource: "workout_builder_v1",
+          },
+          occurred_at: "2026-06-09T10:14:00.000Z",
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          channel: "client",
+          user_id: "user-1",
+          public_aggregate: false,
+          payload: {
+            templateKey: "future_template",
+            templateSource: "future_template_source",
+          },
+          occurred_at: "2026-06-09T10:15:00.000Z",
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
       rollupRows: [
         {
           rollup_day: "2026-06-09",
-          event_count: 9,
+          event_count: 12,
           refreshed_at: "2026-06-09T10:30:00.000Z",
         },
       ],
@@ -179,12 +215,12 @@ describe("admin analytics insights", () => {
     expect(insights).toMatchObject({
       ok: true,
       schemaReady: true,
-      totalEvents: 9,
+      totalEvents: 12,
       publicAggregateEvents: 1,
-      clientEvents: 4,
+      clientEvents: 7,
       serverEvents: 5,
       uniqueKnownUsers: 1,
-      lastEventAt: "2026-06-09T10:12:00.000Z",
+      lastEventAt: "2026-06-09T10:15:00.000Z",
       funnel: {
         plansViewed: 1,
         checkoutStarted: 1,
@@ -209,17 +245,37 @@ describe("admin analytics insights", () => {
         generatedDrafts: 1,
         generatedSaves: 1,
         generatedCompletionRate: 1,
-        templateUsageCount: null,
-        templateUsageStatus: "not_instrumented",
+        templateUsageCount: 3,
+        templateUsageStatus: "mapped",
+      },
+      workoutBuilderTemplateUsage: {
+        templateSelections: 3,
+        knownTemplateSelections: 2,
+        unknownTemplateSelections: 1,
+        templatesSelected: 2,
       },
       lifecycle: {
         rollup: {
           status: "ready",
           latestDay: "2026-06-09",
-          totalRolledUpEvents: 9,
+          totalRolledUpEvents: 12,
         },
       },
     });
+    expect(insights.workoutBuilderTemplateUsage.templateCounts).toEqual([
+      {
+        key: "pool_endurance_base_1000",
+        label: "Aerobic base 1000",
+        status: "active",
+        count: 1,
+      },
+      {
+        key: "pool_technique_reset_900",
+        label: "Technique reset 900",
+        status: "active",
+        count: 1,
+      },
+    ]);
     expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
     expect(insights.productCounts[0]).toMatchObject({
       key: "guide_poolside",
@@ -261,8 +317,15 @@ describe("admin analytics insights", () => {
       generatedDrafts: 0,
       generatedSaves: 0,
       generatedCompletionRate: null,
-      templateUsageCount: null,
-      templateUsageStatus: "not_instrumented",
+      templateUsageCount: 0,
+      templateUsageStatus: "mapped",
+    });
+    expect(insights.workoutBuilderTemplateUsage).toEqual({
+      templateSelections: 0,
+      knownTemplateSelections: 0,
+      unknownTemplateSelections: 0,
+      templatesSelected: 0,
+      templateCounts: [],
     });
   });
 
@@ -309,9 +372,84 @@ describe("admin analytics insights", () => {
       generatedDrafts: 1,
       generatedSaves: 1,
       generatedCompletionRate: 1,
-      templateUsageCount: null,
-      templateUsageStatus: "not_instrumented",
+      templateUsageCount: 0,
+      templateUsageStatus: "mapped",
     });
+  });
+
+  it("maps template usage only from explicit safe template selection events", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          payload: {
+            templateKey: "pool_endurance_base_1000",
+            templateSource: "workout_builder_v1",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          payload: {
+            templateKey: "pool_endurance_base_1000",
+            templateSource: "workout_builder_v1",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          payload: {
+            templateKey: "unknown_template",
+            templateSource: "workout_builder_v1",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          payload: {
+            templateKey: "pool_technique_reset_900",
+            templateSource: "future_source",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_template_selected",
+          payload: {
+            templateKey: "Bad Template Key",
+            templateSource: "workout_builder_v1",
+            email: "user@example.com",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "workout_builder_saved",
+          payload: {
+            sourceKind: "manual",
+            templateKey: "pool_technique_reset_900",
+            templateSource: "workout_builder_v1",
+          },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.workoutBuilderTemplateUsage).toEqual({
+      templateSelections: 5,
+      knownTemplateSelections: 2,
+      unknownTemplateSelections: 3,
+      templatesSelected: 1,
+      templateCounts: [
+        {
+          key: "pool_endurance_base_1000",
+          label: "Aerobic base 1000",
+          status: "active",
+          count: 2,
+        },
+      ],
+    });
+    expect(JSON.stringify(insights.workoutBuilderTemplateUsage)).not.toContain("user@example.com");
   });
 
   it("fails closed for unauthenticated admin insights access", async () => {

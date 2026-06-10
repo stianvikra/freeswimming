@@ -78,8 +78,28 @@ const basePayload: AnalyticsDashboardPayload = {
     generatedDrafts: 4,
     generatedSaves: 1,
     generatedCompletionRate: 0.25,
-    templateUsageCount: null,
-    templateUsageStatus: "not_instrumented",
+    templateUsageCount: 3,
+    templateUsageStatus: "mapped",
+  },
+  workoutBuilderTemplateUsage: {
+    templateSelections: 3,
+    knownTemplateSelections: 2,
+    unknownTemplateSelections: 1,
+    templatesSelected: 2,
+    templateCounts: [
+      {
+        key: "pool_endurance_base_1000",
+        label: "Aerobic base 1000",
+        status: "active",
+        count: 2,
+      },
+      {
+        key: "pool_technique_reset_900",
+        label: "Technique reset 900",
+        status: "active",
+        count: 1,
+      },
+    ],
   },
 };
 
@@ -203,13 +223,48 @@ describe("admin analytics dashboard view model", () => {
       {
         id: "template-usage",
         label: "Template usage",
-        value: "Not instrumented",
-        detail: "No dashboard mapping",
+        value: "3",
+        detail: "Explicit selections",
       },
     ]);
     expect(viewModel.workoutBuilderTemplateGeneratedCompletion.caveat).toContain(
-      "template-selection event is not mapped"
+      "counted only from explicit template-selection events"
     );
+    expect(viewModel.workoutBuilderTemplateUsage.metrics).toEqual([
+      {
+        id: "template-selections",
+        label: "Template selections",
+        value: "3",
+        detail: "Explicit Use template events",
+      },
+      {
+        id: "templates-selected",
+        label: "Templates selected",
+        value: "2",
+        detail: "Known template keys",
+      },
+      {
+        id: "unknown-template-selections",
+        label: "Unknown template",
+        value: "1",
+        detail: "Missing or unmapped key/source",
+      },
+    ]);
+    expect(viewModel.workoutBuilderTemplateUsage.items).toEqual([
+      {
+        key: "pool_endurance_base_1000",
+        label: "Aerobic base 1000",
+        secondary: "Active template - pool_endurance_base_1000",
+        count: "2",
+      },
+      {
+        key: "pool_technique_reset_900",
+        label: "Technique reset 900",
+        secondary: "Active template - pool_technique_reset_900",
+        count: "1",
+      },
+    ]);
+    expect(viewModel.workoutBuilderTemplateUsage.caveat).toContain("Unknown template selections");
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
       secondary: "workout_builder_started",
@@ -276,8 +331,15 @@ describe("admin analytics dashboard view model", () => {
             generatedDrafts: 0,
             generatedSaves: 0,
             generatedCompletionRate: null,
-            templateUsageCount: null,
-            templateUsageStatus: "not_instrumented",
+            templateUsageCount: 0,
+            templateUsageStatus: "mapped",
+          },
+          workoutBuilderTemplateUsage: {
+            templateSelections: 0,
+            knownTemplateSelections: 0,
+            unknownTemplateSelections: 0,
+            templatesSelected: 0,
+            templateCounts: [],
           },
         },
         { now }
@@ -322,7 +384,14 @@ describe("admin analytics dashboard view model", () => {
           { id: "generated-completion-drafts", value: "Not counted" },
           { id: "generated-completion-saves", value: "Not counted" },
           { id: "generated-completion-rate", value: "Not counted" },
-          { id: "template-usage", value: "Not instrumented" },
+          { id: "template-usage", value: "Not counted" },
+        ],
+      },
+      workoutBuilderTemplateUsage: {
+        metrics: [
+          { id: "template-selections", value: "Not counted" },
+          { id: "templates-selected", value: "Not counted" },
+          { id: "unknown-template-selections", value: "Not counted" },
         ],
       },
     });
@@ -354,8 +423,15 @@ describe("admin analytics dashboard view model", () => {
           generatedDrafts: 1,
           generatedSaves: 0,
           generatedCompletionRate: 0,
-          templateUsageCount: null,
-          templateUsageStatus: "not_instrumented",
+          templateUsageCount: 0,
+          templateUsageStatus: "mapped",
+        },
+        workoutBuilderTemplateUsage: {
+          templateSelections: 0,
+          knownTemplateSelections: 0,
+          unknownTemplateSelections: 0,
+          templatesSelected: 0,
+          templateCounts: [],
         },
       },
       { now }
@@ -397,9 +473,12 @@ describe("admin analytics dashboard view model", () => {
     expect(zeroStarts.workoutBuilderTemplateGeneratedCompletion.metrics).toContainEqual({
       id: "template-usage",
       label: "Template usage",
-      value: "Not instrumented",
-      detail: "No dashboard mapping",
+      value: "0",
+      detail: "Explicit selections",
     });
+    expect(zeroStarts.workoutBuilderTemplateUsage.emptyLabel).toBe(
+      "No template selections in this range."
+    );
 
     const duplicateTelemetry = buildAnalyticsDashboardViewModel(
       {
@@ -422,8 +501,22 @@ describe("admin analytics dashboard view model", () => {
           generatedDrafts: 1,
           generatedSaves: 2,
           generatedCompletionRate: 2,
-          templateUsageCount: null,
-          templateUsageStatus: "not_instrumented",
+          templateUsageCount: 3,
+          templateUsageStatus: "mapped",
+        },
+        workoutBuilderTemplateUsage: {
+          templateSelections: 3,
+          knownTemplateSelections: 3,
+          unknownTemplateSelections: 0,
+          templatesSelected: 1,
+          templateCounts: [
+            {
+              key: "pool_endurance_base_1000",
+              label: "Aerobic base 1000",
+              status: "active",
+              count: 3,
+            },
+          ],
         },
       },
       { now }
@@ -446,6 +539,13 @@ describe("admin analytics dashboard view model", () => {
       value: "200%",
       detail: "Generated saves / drafts",
     });
+    expect(duplicateTelemetry.workoutBuilderTemplateUsage.metrics).toContainEqual({
+      id: "template-selections",
+      label: "Template selections",
+      value: "3",
+      detail: "Explicit Use template events",
+    });
+    expect(duplicateTelemetry.workoutBuilderTemplateUsage.caveat).toContain("Duplicate selections");
     expect(duplicateTelemetry.workoutBuilderSourceBreakdown.caveat).toContain("Unknown saves");
   });
 
@@ -482,8 +582,22 @@ describe("admin analytics dashboard view model", () => {
           generatedDrafts: 0,
           generatedSaves: 0,
           generatedCompletionRate: null,
-          templateUsageCount: null,
-          templateUsageStatus: "not_instrumented",
+          templateUsageCount: 2,
+          templateUsageStatus: "mapped",
+        },
+        workoutBuilderTemplateUsage: {
+          templateSelections: 2,
+          knownTemplateSelections: 1,
+          unknownTemplateSelections: 1,
+          templatesSelected: 1,
+          templateCounts: [
+            {
+              key: "pool_endurance_base_1000",
+              label: "user@example.com",
+              status: "active",
+              count: 1,
+            },
+          ],
         },
       },
       { now }
@@ -500,6 +614,10 @@ describe("admin analytics dashboard view model", () => {
     expect(viewModel.productItems[0]).toMatchObject({
       label: "Unknown product",
       secondary: null,
+    });
+    expect(viewModel.workoutBuilderTemplateUsage.items[0]).toMatchObject({
+      label: "Unknown template",
+      secondary: "Active template - pool_endurance_base_1000",
     });
     expect(JSON.stringify(viewModel)).not.toContain("user@example.com");
     expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({

@@ -283,9 +283,9 @@ const ANALYTICS_WORKFLOW = [
       "Manual starts count current manual builder entries, Generated drafts count session_draft_generated, Manual saves count workout_builder_saved with sourceKind manual, and Generated saves count sourceKind ai_session_v1. Unknown saves stay unmapped until explicitly reviewed. These rates are not unique-user conversion, checkout conversion, revenue attribution, export success, Stripe reconciliation, entitlement truth, or finance reporting.",
   },
   {
-    title: "Read generated completion without inferring template usage",
+    title: "Read generated completion and template usage separately",
     detail:
-      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage is shown as Not instrumented until a dedicated dashboard mapping exists for workout_builder_template_selected; do not infer it from session type, generator block toggles, draft creation, source kind, visible Use template actions, or adjacent activity.",
+      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage counts only workout_builder_template_selected from the explicit Use template action and registry-backed templateKey. Do not infer it from session type, generator block toggles, draft creation, source kind, visible labels, save events, or adjacent activity.",
   },
   {
     title: "Read funnel as product signal only",
@@ -534,7 +534,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Generated completion / Template usage",
         meaning:
-          "Shows generated drafts and generated saves only from supported events. Template usage is Not instrumented until a dedicated dashboard mapping exists for workout_builder_template_selected.",
+          "Shows generated drafts and generated saves from supported events, plus template selections from workout_builder_template_selected only. Unknown template keys stay unmapped until explicitly reviewed.",
       },
     ],
   },
