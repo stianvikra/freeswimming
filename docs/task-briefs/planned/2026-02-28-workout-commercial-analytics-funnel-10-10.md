@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-11`
-- `base`: clean synced `main@a2653085` after PR `#1080` and closeout PR `#1081`; `npm run post-merge:preflight` was reported clean.
+- `base`: clean synced `main@d3a4d162` after PR `#1082` and closeout PR `#1083`; `npm run post-merge:preflight` was reported clean.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1081`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, and the workout-context plans checkout attribution bridge are all closed. The owner selected and requested implementation of Workout Context Checkout-Started Admin Analytics Mapping V1 as the active child.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1083`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, and workout-context checkout-start Admin Analytics mapping are all closed. No active or planned child is selected.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -94,10 +94,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns only the attribution bridge from the existing saved-workout CTA through `/plans` into the existing checkout-start request.
   - Keeps client upsell telemetry separate from server `checkout_started` attribution.
   - Direct workout-context checkout, new shop, new products, dashboard modules, checkout completion, Stripe webhook changes, entitlement, finance, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, visible redesign, and builder/generator algorithm changes remain out of scope unless explicitly approved.
-- In-progress child: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
-  - Owner selected this as the next bounded child after PR `#1081`.
-  - Owns only future read-only Admin Analytics mapping for mapped workout-context `checkout_started` handoffs with `source=workout_context`, `placementId=workout_saved_post_success`, and `productId=guide_poolside`.
-  - Owner requested implementation on branch `workout-context-checkout-started-admin-analytics-mapping-v1`.
+- Done child: `docs/task-briefs/done/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
+  - Closed by PR `#1082` / squash commit `b670e9a8`; repo-managed closeout PR `#1083` / squash commit `d3a4d162` moved the child to done and left post-merge preflight clean.
+  - Owns only read-only Admin Analytics mapping for mapped workout-context `checkout_started` handoffs with `source=workout_context`, `placementId=workout_saved_post_success`, and `productId=guide_poolside`.
   - Direct workout-context checkout, checkout completion, Stripe webhook changes, entitlement, finance, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, and builder/generator algorithm changes remain out of scope unless explicitly approved.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
@@ -109,22 +108,22 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
+Active child: none.
 
-Workout Context Checkout-Started Admin Analytics Mapping V1 is active and may only add read-only Admin Analytics mapping for mapped workout-context `checkout_started` handoffs. It must keep checkout handoff separate from CTA clicks, payment success, entitlement, revenue, unique-user conversion, and finance truth. Any future child must be explicitly selected before adding direct workout-context checkout, `upsell_declined`, checkout completion, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
+No next child is selected. Any future child must be explicitly selected before adding direct workout-context checkout, `upsell_declined`, checkout completion, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
-Safe follow-up candidate families after the checkout-started Admin Analytics mapping child:
+Safe follow-up candidate families after the completed checkout-started Admin Analytics mapping child:
 
-- Workout-context checkout-start Admin Analytics mapping: active as the current bounded child.
-- Checkout attribution and finance separation: complete through checkout-start attribution hardening and the `/plans` attribution bridge; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
+- Checkout completion / entitlement attribution foundation: deferred until a child explicitly maps provider/webhook metadata, privacy-safe join boundaries, support states, and current Stripe docs evidence. It must not infer purchase, access, revenue, unique-user conversion, or finance truth from checkout-start counts.
+- Checkout attribution and finance separation: complete through checkout-start attribution hardening, the `/plans` attribution bridge, and read-only checkout-start Admin Analytics mapping; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
 Current guardrails:
 
 - Do not reopen the completed template usage mapping scope as the next child.
+- Do not reopen the completed checkout-started Admin Analytics mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
 - Do not add runtime CTA, new event callsites/meanings, direct checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, shop expansion, or builder/generator UX changes without a new approved child brief.
-- Keep the active checkout-started Admin Analytics mapping scoped to read-only Admin Analytics and screenshot approval before `npm run verify:pre-pr`.
 - Any next child must include the pre-implementation owner explanation, scorecard mapping, data-boundary decisions, forward-compatibility contract, route/label/support sweep triggers, Help/Guide impact, and validation plan before implementation starts.
 
 ## Scope
@@ -446,3 +445,4 @@ Future child implementation:
 - `2026-06-11 | checkout-started admin mapping screenshots approved | owner approved regenerated screenshots at output/workout-context-checkout-started-admin-analytics-2026-06-11-185350; no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
 - `2026-06-11 | checkout-started admin mapping pre-pr passed | active child passed npm run verify:pre-pr full lane with branch-current, lint, typecheck, unit, build, performance budgets, and Playwright e2e; no scoped product-rendering source changed after the final approved screenshot capture | next: commit, push, open PR, monitor CI, and run child pre-merge gate`
 - `2026-06-11 | checkout-started admin mapping child merged | PR #1082 merged at squash commit b670e9a8 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and direct checkout, checkout completion, Stripe webhook changes, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route creation, product catalog mutation, new pricing, visible redesign, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-11 | checkout-started admin mapping closeout merged and parent cleaned | closeout PR #1083 merged at squash commit d3a4d162, npm run post-merge:preflight was reported clean, and this parent was refreshed to remove stale active-child wording for the completed checkout-started Admin Analytics mapping child; no active or planned child is selected | next: owner chooses whether to create a new bounded child brief`
