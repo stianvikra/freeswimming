@@ -62,6 +62,7 @@ export default function CheckoutButton({
         body: JSON.stringify({
           productId,
           cancelPath: buildCancelPathWithTracking(cancelPath),
+          source: analyticsSource,
         }),
       });
 

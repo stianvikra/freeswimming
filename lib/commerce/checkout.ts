@@ -1,5 +1,22 @@
 import type Stripe from "stripe";
-import type { CatalogProduct } from "@/lib/commerce/catalog";
+import type { CatalogProduct, CatalogProductId } from "@/lib/commerce/catalog";
+
+export const CHECKOUT_ATTRIBUTION_SOURCES = [
+  "plans",
+  "library_explore",
+  "workout_context",
+] as const;
+
+export const CHECKOUT_ATTRIBUTION_PLACEMENT_IDS = ["workout_saved_post_success"] as const;
+
+export type CheckoutAttributionSource = (typeof CHECKOUT_ATTRIBUTION_SOURCES)[number] | "unknown";
+export type CheckoutAttributionPlacementId = (typeof CHECKOUT_ATTRIBUTION_PLACEMENT_IDS)[number];
+
+export type CheckoutStartedAnalyticsPayload = {
+  productId: CatalogProductId;
+  source: CheckoutAttributionSource;
+  placementId?: CheckoutAttributionPlacementId;
+};
 
 type CheckoutUser = {
   id?: string | null;
@@ -13,6 +30,9 @@ type BuildCheckoutSessionPayloadInput = {
   user?: CheckoutUser | null;
 };
 
+const CHECKOUT_ATTRIBUTION_SOURCE_SET = new Set<string>(CHECKOUT_ATTRIBUTION_SOURCES);
+const CHECKOUT_ATTRIBUTION_PLACEMENT_ID_SET = new Set<string>(CHECKOUT_ATTRIBUTION_PLACEMENT_IDS);
+
 export function getSafeCheckoutCancelPath(input: string | undefined, fallback = "/programs") {
   if (!input) return fallback;
   if (!input.startsWith("/")) return fallback;
@@ -23,6 +43,39 @@ export function getSafeCheckoutCancelPath(input: string | undefined, fallback = 
 export function getCheckoutSuccessUrl(origin: string) {
   const successUrl = new URL("/checkout/success", origin).toString();
   return `${successUrl}?session_id={CHECKOUT_SESSION_ID}`;
+}
+
+export function normalizeCheckoutAttributionSource(value: unknown): CheckoutAttributionSource {
+  if (typeof value !== "string") return "unknown";
+  const normalized = value.trim();
+  return CHECKOUT_ATTRIBUTION_SOURCE_SET.has(normalized)
+    ? (normalized as CheckoutAttributionSource)
+    : "unknown";
+}
+
+export function normalizeCheckoutAttributionPlacementId(
+  value: unknown
+): CheckoutAttributionPlacementId | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return CHECKOUT_ATTRIBUTION_PLACEMENT_ID_SET.has(normalized)
+    ? (normalized as CheckoutAttributionPlacementId)
+    : null;
+}
+
+export function buildCheckoutStartedAnalyticsPayload(input: {
+  productId: CatalogProductId;
+  source?: unknown;
+  placementId?: unknown;
+}): CheckoutStartedAnalyticsPayload {
+  const source = normalizeCheckoutAttributionSource(input.source);
+  const placementId = normalizeCheckoutAttributionPlacementId(input.placementId);
+
+  return {
+    productId: input.productId,
+    source,
+    ...(source === "workout_context" && placementId ? { placementId } : {}),
+  };
 }
 
 function buildCheckoutMetadata(
