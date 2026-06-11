@@ -54,6 +54,25 @@ const basePayload: AnalyticsInsightsResponse = {
     checkoutCompletionRate: 1,
     entitlementGrantRate: 1,
   },
+  existingUpsellBaseline: {
+    presented: 1,
+    accepted: 1,
+    declined: 1,
+    acceptedRate: 1,
+    declineRate: 1,
+    unknownSourceEvents: 0,
+    sourceCounts: [
+      {
+        key: "plans",
+        presented: 1,
+        accepted: 1,
+        declined: 1,
+        total: 3,
+        acceptedRate: 1,
+        declineRate: 1,
+      },
+    ],
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -135,6 +154,7 @@ describe("AdminAnalyticsDashboard", () => {
     await screen.findByTestId("admin-analytics-health");
     expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-source-breakdown")).toBeVisible();
     expect(
@@ -148,6 +168,18 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       within(screen.getByTestId("admin-analytics-funnel")).getByText("Checkout completed")
     ).toBeVisible();
+    const existingUpsell = screen.getByTestId("admin-analytics-existing-upsell-baseline");
+    expect(within(existingUpsell).getByText("Existing upsell baseline")).toBeVisible();
+    expect(within(existingUpsell).getByText("Presented")).toBeVisible();
+    expect(within(existingUpsell).getByText("Accepted")).toBeVisible();
+    expect(within(existingUpsell).getByText("Accepted rate")).toBeVisible();
+    expect(within(existingUpsell).getByText("Cancelled returns")).toBeVisible();
+    expect(within(existingUpsell).getByText("Cancel rate")).toBeVisible();
+    expect(within(existingUpsell).getByText("Plans")).toBeVisible();
+    expect(
+      within(existingUpsell).getByText("1 presented / 1 accepted / 1 cancelled")
+    ).toBeVisible();
+    expect(within(existingUpsell).queryByRole("button")).not.toBeInTheDocument();
     const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");
     expect(within(builderFunnel).getByText("Started to saved signal")).toBeVisible();
     expect(within(builderFunnel).getByText("Started")).toBeVisible();
@@ -264,6 +296,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
       "Not counted"
     );
+    expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toHaveTextContent(
+      "Not counted"
+    );
     expect(
       screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
     ).toHaveTextContent("Not counted");
@@ -289,6 +324,25 @@ describe("AdminAnalyticsDashboard", () => {
             { key: "https://example.com/?email=user@example.com", category: null, count: 1 },
           ],
           productCounts: [{ key: "customer@example.com", productType: null, count: 1 }],
+          existingUpsellBaseline: {
+            presented: 0,
+            accepted: 1,
+            declined: 0,
+            acceptedRate: null,
+            declineRate: null,
+            unknownSourceEvents: 1,
+            sourceCounts: [
+              {
+                key: "customer@example.com",
+                presented: 0,
+                accepted: 1,
+                declined: 0,
+                total: 1,
+                acceptedRate: null,
+                declineRate: null,
+              },
+            ],
+          },
           workoutBuilderFunnel: {
             started: 0,
             saved: 2,
@@ -342,6 +396,9 @@ describe("AdminAnalyticsDashboard", () => {
     );
     expect(screen.getByText("Unknown route")).toBeVisible();
     expect(screen.getByText("Unknown product")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toHaveTextContent(
+      "Unknown source"
+    );
     expect(document.body).not.toHaveTextContent("user@example.com");
   });
 

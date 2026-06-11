@@ -329,6 +329,101 @@ describe("admin analytics insights", () => {
     });
   });
 
+  it("maps existing upsell events by safe current surface without exposing raw payload", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "upsell_presented",
+          source: "plans",
+          payload: {
+            source: "plans",
+            email: "user@example.com",
+            rawUrl: "https://example.com/?email=user@example.com",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_accepted",
+          source: "plans",
+          payload: { source: "plans" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "plans",
+          payload: { source: "plans", reason: "checkout_cancelled" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_presented",
+          source: null,
+          payload: { surface: "library_explore" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_accepted",
+          source: "library_explore",
+          payload: { source: "library_explore" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: null,
+          payload: { surface: "my_library", reason: "checkout_cancelled" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_accepted",
+          source: "future_surface",
+          payload: { source: "future_surface" },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.existingUpsellBaseline).toEqual({
+      presented: 2,
+      accepted: 3,
+      declined: 2,
+      acceptedRate: 1.5,
+      declineRate: 1,
+      unknownSourceEvents: 1,
+      sourceCounts: [
+        {
+          key: "library_explore",
+          presented: 1,
+          accepted: 1,
+          declined: 1,
+          total: 3,
+          acceptedRate: 1,
+          declineRate: 1,
+        },
+        {
+          key: "plans",
+          presented: 1,
+          accepted: 1,
+          declined: 1,
+          total: 3,
+          acceptedRate: 1,
+          declineRate: 1,
+        },
+        {
+          key: "unknown",
+          presented: 0,
+          accepted: 1,
+          declined: 0,
+          total: 1,
+          acceptedRate: null,
+          declineRate: null,
+        },
+      ],
+    });
+    expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("user@example.com");
+    expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("future_surface");
+  });
+
   it("keeps malformed and missing workout save source kinds unmapped", () => {
     const insights = buildAnalyticsInsights({
       rows: [

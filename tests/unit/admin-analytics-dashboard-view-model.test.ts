@@ -60,6 +60,25 @@ const basePayload: AnalyticsDashboardPayload = {
     checkoutCompletionRate: 1,
     entitlementGrantRate: 1,
   },
+  existingUpsellBaseline: {
+    presented: 1,
+    accepted: 1,
+    declined: 1,
+    acceptedRate: 1,
+    declineRate: 1,
+    unknownSourceEvents: 0,
+    sourceCounts: [
+      {
+        key: "plans",
+        presented: 1,
+        accepted: 1,
+        declined: 1,
+        total: 3,
+        acceptedRate: 1,
+        declineRate: 1,
+      },
+    ],
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -135,6 +154,47 @@ describe("admin analytics dashboard view model", () => {
       "checkout-completed",
       "entitlement-granted",
     ]);
+    expect(viewModel.existingUpsellBaseline.metrics).toEqual([
+      {
+        id: "upsell-presented",
+        label: "Presented",
+        value: "1",
+        detail: "Current commercial surfaces",
+      },
+      {
+        id: "upsell-accepted",
+        label: "Accepted",
+        value: "1",
+        detail: "Clicked commercial action",
+      },
+      {
+        id: "upsell-accepted-rate",
+        label: "Accepted rate",
+        value: "100%",
+        detail: "Accepted / presented",
+      },
+      {
+        id: "upsell-declined",
+        label: "Cancelled returns",
+        value: "1",
+        detail: "Checkout cancelled return",
+      },
+      {
+        id: "upsell-decline-rate",
+        label: "Cancel rate",
+        value: "100%",
+        detail: "Cancelled / presented",
+      },
+    ]);
+    expect(viewModel.existingUpsellBaseline.sourceItems).toEqual([
+      {
+        key: "plans",
+        label: "Plans",
+        secondary: "1 presented / 1 accepted / 1 cancelled",
+        count: "3",
+      },
+    ]);
+    expect(viewModel.existingUpsellBaseline.caveat).toContain("not checkout completion");
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
       {
         id: "builder-started",
@@ -291,6 +351,7 @@ describe("admin analytics dashboard view model", () => {
       count: "2",
     });
     expect(viewModel.caveats.join(" ")).toContain("not Stripe reconciliation");
+    expect(viewModel.caveats.join(" ")).toContain("accepted is not checkout completion");
     expect(viewModel.caveats.join(" ")).toContain("not linked to user profiles");
   });
 
@@ -313,6 +374,15 @@ describe("admin analytics dashboard view model", () => {
           eventCounts: [],
           routeCounts: [],
           productCounts: [],
+          existingUpsellBaseline: {
+            presented: 0,
+            accepted: 0,
+            declined: 0,
+            acceptedRate: null,
+            declineRate: null,
+            unknownSourceEvents: 0,
+            sourceCounts: [],
+          },
           workoutBuilderFunnel: {
             started: 0,
             saved: 0,
@@ -368,6 +438,15 @@ describe("admin analytics dashboard view model", () => {
           { id: "builder-save-rate", value: "Not counted" },
         ],
       },
+      existingUpsellBaseline: {
+        metrics: [
+          { id: "upsell-presented", value: "Not counted" },
+          { id: "upsell-accepted", value: "Not counted" },
+          { id: "upsell-accepted-rate", value: "Not counted" },
+          { id: "upsell-declined", value: "Not counted" },
+          { id: "upsell-decline-rate", value: "Not counted" },
+        ],
+      },
       workoutBuilderSourceBreakdown: {
         metrics: [
           { id: "source-manual-starts", value: "Not counted" },
@@ -409,6 +488,25 @@ describe("admin analytics dashboard view model", () => {
           started: 0,
           saved: 2,
           saveRate: null,
+        },
+        existingUpsellBaseline: {
+          presented: 0,
+          accepted: 2,
+          declined: 1,
+          acceptedRate: null,
+          declineRate: null,
+          unknownSourceEvents: 0,
+          sourceCounts: [
+            {
+              key: "plans",
+              presented: 0,
+              accepted: 2,
+              declined: 1,
+              total: 3,
+              acceptedRate: null,
+              declineRate: null,
+            },
+          ],
         },
         workoutBuilderSourceBreakdown: {
           manualStarts: 0,
@@ -458,6 +556,15 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(zeroStarts.workoutBuilderFunnel.caveat).toContain("until a builder start exists");
+    expect(zeroStarts.existingUpsellBaseline.metrics).toContainEqual({
+      id: "upsell-accepted-rate",
+      label: "Accepted rate",
+      value: "Not counted",
+      detail: "Accepted / presented",
+    });
+    expect(zeroStarts.existingUpsellBaseline.caveat).toContain(
+      "until an upsell presentation exists"
+    );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -487,6 +594,25 @@ describe("admin analytics dashboard view model", () => {
           started: 2,
           saved: 3,
           saveRate: 1.5,
+        },
+        existingUpsellBaseline: {
+          presented: 2,
+          accepted: 3,
+          declined: 0,
+          acceptedRate: 1.5,
+          declineRate: 0,
+          unknownSourceEvents: 1,
+          sourceCounts: [
+            {
+              key: "future_source",
+              presented: 1,
+              accepted: 0,
+              declined: 0,
+              total: 1,
+              acceptedRate: 0,
+              declineRate: 0,
+            },
+          ],
         },
         workoutBuilderSourceBreakdown: {
           manualStarts: 2,
@@ -526,6 +652,17 @@ describe("admin analytics dashboard view model", () => {
       label: "Save rate",
       value: "150%",
     });
+    expect(duplicateTelemetry.existingUpsellBaseline.metrics).toContainEqual({
+      id: "upsell-accepted-rate",
+      label: "Accepted rate",
+      value: "150%",
+      detail: "Accepted / presented",
+    });
+    expect(duplicateTelemetry.existingUpsellBaseline.sourceItems[0]).toMatchObject({
+      key: "unknown",
+      label: "Unknown source",
+    });
+    expect(duplicateTelemetry.existingUpsellBaseline.caveat).toContain("Unknown source events");
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain("Duplicate starts and saves");
     expect(duplicateTelemetry.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-generated-save-rate",
@@ -644,6 +781,18 @@ describe("admin analytics dashboard view model", () => {
     ).toMatchObject({
       label: "Workout builder template selected",
       secondary: "workout_builder_template_selected",
+    });
+    expect(formatAnalyticsIdentifierLabel("upsell_presented", "event")).toMatchObject({
+      label: "Upsell presented",
+      secondary: "upsell_presented",
+    });
+    expect(formatAnalyticsIdentifierLabel("upsell_accepted", "event")).toMatchObject({
+      label: "Upsell accepted",
+      secondary: "upsell_accepted",
+    });
+    expect(formatAnalyticsIdentifierLabel("upsell_declined", "event")).toMatchObject({
+      label: "Upsell declined",
+      secondary: "upsell_declined",
     });
     expect(formatAnalyticsIdentifierLabel("session_draft_generated", "event")).toMatchObject({
       label: "Session draft generated",

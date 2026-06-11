@@ -329,6 +329,12 @@
   `/admin/analytics` route is an alias into the same admin workspace tab.
 - Caveat: checkout and entitlement counts are product/revenue-proxy signals only. They are not
   Stripe reconciliation, accounting, refunds, payouts, invoices, or revenue recognition.
+- Existing upsell caveat: `existingUpsellBaseline` is current-surface commercial telemetry derived
+  from `upsell_presented`, `upsell_accepted`, and `upsell_declined`. `upsell_presented` is surface
+  visibility, not checkout start. `upsell_accepted` is clicked intent, not checkout completion.
+  `upsell_declined` is the current checkout-cancel return signal, not all users who ignored,
+  dismissed, or failed to convert. Unknown source/product values remain separate until explicitly
+  mapped.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
@@ -406,6 +412,43 @@
     "entitlementGranted": 1,
     "checkoutCompletionRate": 0.5,
     "entitlementGrantRate": 1
+  },
+  "existingUpsellBaseline": {
+    "presented": 4,
+    "accepted": 2,
+    "declined": 1,
+    "acceptedRate": 0.5,
+    "declineRate": 0.25,
+    "unknownSourceEvents": 1,
+    "sourceCounts": [
+      {
+        "key": "plans",
+        "presented": 3,
+        "accepted": 1,
+        "declined": 1,
+        "total": 5,
+        "acceptedRate": 0.333,
+        "declineRate": 0.333
+      },
+      {
+        "key": "library_explore",
+        "presented": 1,
+        "accepted": 1,
+        "declined": 0,
+        "total": 2,
+        "acceptedRate": 1,
+        "declineRate": 0
+      },
+      {
+        "key": "unknown",
+        "presented": 0,
+        "accepted": 1,
+        "declined": 0,
+        "total": 1,
+        "acceptedRate": null,
+        "declineRate": null
+      }
+    ]
   },
   "workoutBuilderFunnel": {
     "started": 5,

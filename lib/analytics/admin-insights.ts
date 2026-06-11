@@ -40,6 +40,16 @@ export type WorkoutBuilderTemplateUsageCount = {
   count: number;
 };
 
+export type ExistingUpsellSourceCount = {
+  key: string;
+  presented: number;
+  accepted: number;
+  declined: number;
+  total: number;
+  acceptedRate: number | null;
+  declineRate: number | null;
+};
+
 export type AnalyticsInsightsResponse = {
   ok: true;
   schemaReady: true;
@@ -68,6 +78,15 @@ export type AnalyticsInsightsResponse = {
     entitlementGranted: number;
     checkoutCompletionRate: number | null;
     entitlementGrantRate: number | null;
+  };
+  existingUpsellBaseline: {
+    presented: number;
+    accepted: number;
+    declined: number;
+    acceptedRate: number | null;
+    declineRate: number | null;
+    unknownSourceEvents: number;
+    sourceCounts: ExistingUpsellSourceCount[];
   };
   workoutBuilderFunnel: {
     started: number;
@@ -107,8 +126,12 @@ const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsE
 const WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT =
   "workout_builder_template_selected" satisfies AnalyticsEventName;
 const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
+const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
+const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
+const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
 const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
 const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
+const EXISTING_UPSELL_SOURCE_VALUES = new Set(["plans", "library_explore"]);
 
 export function selectAnalyticsInsightFields() {
   return `
@@ -164,6 +187,56 @@ function getSafeTemplateSelectionKey(payload: AnalyticsEventInsightRow["payload"
   const parsedKey = parseWorkoutTemplateKey(candidate.templateKey);
   if (!parsedKey || parsedKey !== candidate.templateKey) return null;
   return parsedKey;
+}
+
+function getSafePayloadDimension(
+  payload: AnalyticsEventInsightRow["payload"],
+  key: "source" | "surface"
+): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const value = (payload as Record<string, unknown>)[key];
+  if (typeof value !== "string") return null;
+  if (!/^[a-z][a-z0-9_:-]{0,80}$/.test(value)) return null;
+  return value;
+}
+
+function normalizeExistingUpsellSource(row: AnalyticsEventInsightRow): string {
+  const candidates = [
+    row.source,
+    getSafePayloadDimension(row.payload, "source"),
+    getSafePayloadDimension(row.payload, "surface"),
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (candidate === "my_library") return "library_explore";
+    if (EXISTING_UPSELL_SOURCE_VALUES.has(candidate)) return candidate;
+  }
+
+  return "unknown";
+}
+
+function buildEmptyUpsellSourceCount(key: string): ExistingUpsellSourceCount {
+  return {
+    key,
+    presented: 0,
+    accepted: 0,
+    declined: 0,
+    total: 0,
+    acceptedRate: null,
+    declineRate: null,
+  };
+}
+
+function getUpsellSourceCount(
+  map: Map<string, ExistingUpsellSourceCount>,
+  key: string
+): ExistingUpsellSourceCount {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const next = buildEmptyUpsellSourceCount(key);
+  map.set(key, next);
+  return next;
 }
 
 export function buildAnalyticsInsights(input: {
@@ -222,9 +295,25 @@ export function buildAnalyticsInsights(input: {
   let unknownSaves = 0;
   let knownTemplateSelections = 0;
   let unknownTemplateSelections = 0;
+  let unknownUpsellSourceEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
+  const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
 
   for (const row of input.rows) {
+    if (
+      row.event_name === UPSELL_PRESENTED_EVENT ||
+      row.event_name === UPSELL_ACCEPTED_EVENT ||
+      row.event_name === UPSELL_DECLINED_EVENT
+    ) {
+      const source = normalizeExistingUpsellSource(row);
+      const sourceCount = getUpsellSourceCount(upsellSourceCounts, source);
+      sourceCount.total += 1;
+      if (source === "unknown") unknownUpsellSourceEvents += 1;
+      if (row.event_name === UPSELL_PRESENTED_EVENT) sourceCount.presented += 1;
+      if (row.event_name === UPSELL_ACCEPTED_EVENT) sourceCount.accepted += 1;
+      if (row.event_name === UPSELL_DECLINED_EVENT) sourceCount.declined += 1;
+    }
+
     if (row.event_name === WORKOUT_BUILDER_SAVED_EVENT) {
       const sourceKind = getSafePayloadSourceKind(row.payload);
       if (sourceKind === MANUAL_WORKOUT_SOURCE_KIND) {
@@ -259,6 +348,16 @@ export function buildAnalyticsInsights(input: {
     };
   });
   const templateSelections = eventCounts.get(WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT) ?? 0;
+  const upsellPresented = eventCounts.get(UPSELL_PRESENTED_EVENT) ?? 0;
+  const upsellAccepted = eventCounts.get(UPSELL_ACCEPTED_EVENT) ?? 0;
+  const upsellDeclined = eventCounts.get(UPSELL_DECLINED_EVENT) ?? 0;
+  const upsellSourceCountItems = [...upsellSourceCounts.values()]
+    .map((item) => ({
+      ...item,
+      acceptedRate: ratio(item.accepted, item.presented),
+      declineRate: ratio(item.declined, item.presented),
+    }))
+    .sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
 
   return {
     ok: true,
@@ -299,6 +398,15 @@ export function buildAnalyticsInsights(input: {
       entitlementGranted: eventCounts.get("entitlement_granted") ?? 0,
       checkoutCompletionRate: ratio(checkoutCompleted, checkoutStarted),
       entitlementGrantRate: ratio(eventCounts.get("entitlement_granted") ?? 0, checkoutCompleted),
+    },
+    existingUpsellBaseline: {
+      presented: upsellPresented,
+      accepted: upsellAccepted,
+      declined: upsellDeclined,
+      acceptedRate: ratio(upsellAccepted, upsellPresented),
+      declineRate: ratio(upsellDeclined, upsellPresented),
+      unknownSourceEvents: unknownUpsellSourceEvents,
+      sourceCounts: upsellSourceCountItems,
     },
     workoutBuilderFunnel: {
       started: workoutBuilderStarted,
