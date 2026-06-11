@@ -13,6 +13,12 @@ export const CHECKOUT_ATTRIBUTION_SOURCES = [
 
 export const CHECKOUT_ATTRIBUTION_PLACEMENT_IDS = ["workout_saved_post_success"] as const;
 
+export const CHECKOUT_ATTRIBUTION_METADATA_KEYS = {
+  source: "fs_attribution_source",
+  placementId: "fs_attribution_placement_id",
+  productId: "fs_attribution_product_id",
+} as const;
+
 export const WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION = {
   source: "workout_context",
   placementId: "workout_saved_post_success",
@@ -42,6 +48,14 @@ export type CheckoutStartedAnalyticsPayload = {
   placementId?: CheckoutAttributionPlacementId;
 };
 
+export type MappedCheckoutAttribution = typeof WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION;
+
+export type CheckoutAttributionAnalyticsPayload = {
+  productId: CatalogProductId;
+  source: MappedCheckoutAttribution["source"];
+  placementId: MappedCheckoutAttribution["placementId"];
+};
+
 type CheckoutUser = {
   id?: string | null;
   email?: string | null;
@@ -51,6 +65,7 @@ type BuildCheckoutSessionPayloadInput = {
   appUrl: string;
   cancelPath?: string;
   product: CatalogProduct;
+  checkoutAttribution?: MappedCheckoutAttribution | null;
   user?: CheckoutUser | null;
 };
 
@@ -117,6 +132,68 @@ export function buildCheckoutStartedAnalyticsPayload(input: {
   };
 }
 
+export function buildMappedCheckoutAttribution(input: {
+  productId: CatalogProductId;
+  source?: unknown;
+  placementId?: unknown;
+}): MappedCheckoutAttribution | null {
+  const source = normalizeCheckoutAttributionSource(input.source);
+  const placementId = normalizeCheckoutAttributionPlacementId(input.placementId);
+
+  if (
+    source === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source &&
+    placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId &&
+    input.productId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId
+  ) {
+    return WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION;
+  }
+
+  return null;
+}
+
+export function buildCheckoutAttributionMetadata(
+  attribution?: MappedCheckoutAttribution | null
+): Stripe.MetadataParam {
+  if (!attribution) return {};
+
+  return {
+    [CHECKOUT_ATTRIBUTION_METADATA_KEYS.source]: attribution.source,
+    [CHECKOUT_ATTRIBUTION_METADATA_KEYS.placementId]: attribution.placementId,
+    [CHECKOUT_ATTRIBUTION_METADATA_KEYS.productId]: attribution.productId,
+  };
+}
+
+export function getMappedCheckoutAttributionFromMetadata(
+  metadata: Stripe.Metadata | null | undefined,
+  actualProductId: CatalogProductId | null | undefined
+): MappedCheckoutAttribution | null {
+  if (!actualProductId) return null;
+
+  const metadataProductId = normalizeCatalogProductId(
+    metadata?.[CHECKOUT_ATTRIBUTION_METADATA_KEYS.productId]
+  );
+
+  if (metadataProductId !== actualProductId) return null;
+
+  return buildMappedCheckoutAttribution({
+    productId: actualProductId,
+    source: metadata?.[CHECKOUT_ATTRIBUTION_METADATA_KEYS.source],
+    placementId: metadata?.[CHECKOUT_ATTRIBUTION_METADATA_KEYS.placementId],
+  });
+}
+
+export function buildCheckoutAttributionAnalyticsPayload(
+  attribution?: MappedCheckoutAttribution | null
+): CheckoutAttributionAnalyticsPayload | Record<string, never> {
+  if (!attribution) return {};
+
+  return {
+    productId: attribution.productId,
+    source: attribution.source,
+    placementId: attribution.placementId,
+  };
+}
+
 export function buildWorkoutContextPlansHref() {
   const params = new URLSearchParams({
     source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
@@ -158,12 +235,14 @@ export function resolvePlansCheckoutAttributionForProduct(input: {
 
 function buildCheckoutMetadata(
   product: CatalogProduct,
-  user?: CheckoutUser | null
+  user?: CheckoutUser | null,
+  checkoutAttribution?: MappedCheckoutAttribution | null
 ): Stripe.MetadataParam {
   return {
     fs_product_id: product.id,
     fs_product_slug: product.slug,
     fs_product_kind: product.kind,
+    ...buildCheckoutAttributionMetadata(checkoutAttribution),
     ...(user?.id ? { fs_user_id: user.id } : {}),
   };
 }
@@ -172,9 +251,10 @@ export function buildCheckoutSessionPayload({
   appUrl,
   cancelPath,
   product,
+  checkoutAttribution,
   user,
 }: BuildCheckoutSessionPayloadInput): Stripe.Checkout.SessionCreateParams {
-  const metadata = buildCheckoutMetadata(product, user);
+  const metadata = buildCheckoutMetadata(product, user, checkoutAttribution);
 
   return {
     mode: "payment",

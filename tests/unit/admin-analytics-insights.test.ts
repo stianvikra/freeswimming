@@ -587,12 +587,40 @@ describe("admin analytics insights", () => {
             productId: "guide_poolside",
           },
         },
+        {
+          ...baseRow,
+          event_name: "checkout_completed",
+          channel: "server",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            sessionId: "cs_test_secret",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "entitlement_granted",
+          channel: "server",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            grantedLatencyMs: 1200,
+          },
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
     });
 
     expect(insights.funnel.checkoutStarted).toBe(4);
+    expect(insights.funnel.checkoutCompleted).toBe(1);
+    expect(insights.funnel.entitlementGranted).toBe(1);
     expect(insights.workoutContextCheckoutStarted).toEqual({
       placementId: "workout_saved_post_success",
       productId: "guide_poolside",

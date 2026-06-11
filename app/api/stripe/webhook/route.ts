@@ -13,6 +13,11 @@ import {
   getCatalogProducts,
   type CatalogProduct,
 } from "@/lib/commerce/catalog";
+import {
+  buildCheckoutAttributionAnalyticsPayload,
+  getMappedCheckoutAttributionFromMetadata,
+  type MappedCheckoutAttribution,
+} from "@/lib/commerce/checkout";
 import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
 import { getDiscountRedeemedPayload } from "@/lib/stripe/webhook-discount";
 import { createStripeClient, getStripeWebhookSecret } from "@/lib/stripe/server";
@@ -62,14 +67,17 @@ async function resolveProductFromSession(
   return getCatalogProductByStripePriceId(priceId);
 }
 
-async function fulfillCheckoutSession(stripe: Stripe, session: Stripe.Checkout.Session) {
+async function fulfillCheckoutSession(
+  session: Stripe.Checkout.Session,
+  product: CatalogProduct | null,
+  checkoutAttribution: MappedCheckoutAttribution | null
+) {
   const purchaserEmail = getCheckoutSessionEmail(session);
   if (!purchaserEmail) {
     console.warn("[StripeWebhook] Session missing purchaser email", { sessionId: session.id });
     return;
   }
 
-  const product = await resolveProductFromSession(stripe, session);
   if (!product) {
     console.warn("[StripeWebhook] Could not resolve product for session", {
       sessionId: session.id,
@@ -99,9 +107,9 @@ async function fulfillCheckoutSession(stripe: Stripe, session: Stripe.Checkout.S
     channel: "server",
     userId,
     payload: {
-      sessionId: session.id,
       productId: product.id,
       grantedLatencyMs,
+      ...buildCheckoutAttributionAnalyticsPayload(checkoutAttribution),
     },
   });
 
@@ -150,18 +158,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, deferred: true });
     }
 
+    const product = await resolveProductFromSession(stripe, session);
+    const checkoutAttribution = getMappedCheckoutAttributionFromMetadata(
+      session.metadata,
+      product?.id
+    );
+
     await trackAndPersistAnalyticsEvent({
       eventName: "checkout_completed",
       channel: "server",
       userId: getValidUserId(session),
       payload: {
-        sessionId: session.id,
-        productId: session.metadata?.fs_product_id ?? null,
+        productId: product?.id ?? null,
         eventType: event.type,
+        ...buildCheckoutAttributionAnalyticsPayload(checkoutAttribution),
       },
     });
 
-    const discountPayload = getDiscountRedeemedPayload(session);
+    const discountPayload = getDiscountRedeemedPayload(session, product?.id ?? null);
     if (discountPayload) {
       await trackAndPersistAnalyticsEvent({
         eventName: "discount_redeemed",
@@ -171,7 +185,7 @@ export async function POST(request: Request) {
       });
     }
 
-    await fulfillCheckoutSession(stripe, session);
+    await fulfillCheckoutSession(session, product, checkoutAttribution);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[StripeWebhook] Fulfillment failed", { eventType: event.type, error });

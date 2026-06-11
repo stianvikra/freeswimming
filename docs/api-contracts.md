@@ -189,8 +189,15 @@
 - `checkout_started` means checkout handoff/session creation only. It is not payment success,
   entitlement, Stripe reconciliation, revenue, refund, payout, invoice, accounting export, or
   finance truth.
-- Mapped workout-context checkout-start attribution does not automatically carry into checkout
-  completion or entitlement grant interpretation. The durable completion/entitlement contract is
+- Mapped workout-context checkout-start attribution may carry into Stripe Checkout Session metadata,
+  invoice metadata, webhook `checkout_completed`, and `entitlement_granted` payloads only when
+  `source=workout_context`, `placementId=workout_saved_post_success`, and
+  `productId=guide_poolside` match the server-resolved catalog product. Generic, unknown, missing,
+  malformed, future, or mismatched values stay generic.
+- The propagated completion/entitlement fields are backend telemetry/support context only. They do
+  not create a dedicated Admin Analytics module and are not payment success, app access guarantee,
+  Stripe reconciliation, revenue, refund, payout, invoice, accounting export, or finance truth.
+  The durable completion/entitlement contract is
   `docs/architecture/workout-context-checkout-completion-entitlement-attribution-contract.md`.
 - The persisted analytics payload contains only low-cardinality attribution such as `productId`,
   normalized `source`, and approved `placementId`.
@@ -463,11 +470,13 @@
   Unknown or unmapped checkout-start rows stay out of the dedicated count and may appear only as a
   bounded review-needed aggregate. These values are not purchase, access, revenue, accounting,
   Stripe reconciliation, finance reporting, or unique-user conversion.
-- Workout-context checkout completion and entitlement attribution caveat: current generic
-  `checkout_completed` and `entitlement_granted` rows are not counted as dedicated workout-context
-  completion or entitlement outcomes. A future implementation child must add an approved
-  server-owned propagation path, tests, support copy, and privacy boundaries before those metrics
-  can appear as dedicated workout-context KPI modules.
+- Workout-context checkout completion and entitlement attribution caveat: `checkout_completed` and
+  `entitlement_granted` rows may carry approved backend-only workout-context attribution after
+  Stripe signature verification, paid/async-success handling, product resolution, and entitlement
+  fulfillment. They are still not counted as dedicated workout-context completion or entitlement
+  outcomes in the current Admin Analytics response. A future dashboard child must explicitly map
+  those rows, tests, support copy, and privacy boundaries before dedicated workout-context KPI
+  modules appear.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
