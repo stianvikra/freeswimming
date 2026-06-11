@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import TrackEventOnMount from "@/components/analytics/TrackEventOnMount";
+import TrackedLink from "@/components/analytics/TrackedLink";
 import { cx } from "@/components/ui/cx";
 import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
@@ -14,7 +16,10 @@ import {
   WORKOUT_NOTICE_AUTO_DISMISS_MS,
 } from "@/components/my-library/workouts/useAutoDismissNotice";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
-import { buildWorkoutBuilderTemplateSelectedPayload } from "@/lib/analytics/workout-builder";
+import {
+  buildWorkoutBuilderTemplateSelectedPayload,
+  buildWorkoutContextCtaPayload,
+} from "@/lib/analytics/workout-builder";
 import type { ManualWorkoutBuilderMode, ManualWorkoutDraftDefaults } from "@/lib/workouts/manual";
 import {
   clearStoredManualWorkoutDraft,
@@ -49,6 +54,7 @@ type Props = {
   userId?: string | null;
   manualLocalDraftMode?: ManualWorkoutBuilderMode | null;
   templateLocalDraftKey?: string | null;
+  workoutContextCtaProductAvailable?: boolean;
 };
 
 type WorkoutBuilderFeedbackTone = "warning" | "error" | "success" | "empty";
@@ -206,6 +212,27 @@ function WorkoutBuilderFeedback({
   );
 }
 
+function WorkoutContextCta({
+  payload,
+}: {
+  payload: ReturnType<typeof buildWorkoutContextCtaPayload>;
+}) {
+  return (
+    <>
+      <TrackEventOnMount eventName="upsell_presented" payload={payload} />
+      <TrackedLink
+        href="/plans#plans-comparison-heading"
+        eventName="upsell_accepted"
+        payload={payload}
+        data-testid="workout-context-cta-link"
+        className={cx(secondaryActionClass, "bg-white/90 hover:bg-white")}
+      >
+        See Poolside guide
+      </TrackedLink>
+    </>
+  );
+}
+
 function upsertRecentWorkoutSummary(current: WorkoutSummary[], next: WorkoutSummary) {
   const existing = current.filter((summary) => summary.id !== next.id);
   return [next, ...existing].sort(
@@ -225,6 +252,7 @@ export default function WorkoutBuilderHub({
   userId = null,
   manualLocalDraftMode = null,
   templateLocalDraftKey = null,
+  workoutContextCtaProductAvailable = false,
 }: Props) {
   const router = useRouter();
   const requestedTemplate = useMemo(
@@ -267,6 +295,24 @@ export default function WorkoutBuilderHub({
     !savedWorkout && templateLocalDraftKey !== null && requestedTemplate === null;
   const hasUnsavedChanges =
     savedWorkout !== null ? haveWorkoutDraftChanges(draft, savedWorkout.draft) : false;
+  const workoutContextCtaPayload = useMemo(
+    () =>
+      savedWorkout && draft
+        ? buildWorkoutContextCtaPayload({
+            draft,
+            sourceKind: savedWorkout.sourceKind,
+          })
+        : null,
+    [draft, savedWorkout]
+  );
+  const workoutContextCtaAction =
+    success &&
+    savedWorkout &&
+    !hasUnsavedChanges &&
+    workoutContextCtaProductAvailable &&
+    workoutContextCtaPayload ? (
+      <WorkoutContextCta payload={workoutContextCtaPayload} />
+    ) : null;
   const manualPoolDraftDefaults = useMemo<ManualWorkoutDraftDefaults | undefined>(() => {
     if (
       typeof manualPoolCssMetricSecondsPer100m === "number" &&
@@ -746,7 +792,11 @@ export default function WorkoutBuilderHub({
       ) : null}
 
       {success ? (
-        <WorkoutBuilderFeedback tone="success" testId="workout-builder-action-success">
+        <WorkoutBuilderFeedback
+          tone="success"
+          action={workoutContextCtaAction}
+          testId="workout-builder-action-success"
+        >
           <p>{success}</p>
         </WorkoutBuilderFeedback>
       ) : null}

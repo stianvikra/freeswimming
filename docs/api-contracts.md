@@ -333,8 +333,9 @@
   from `upsell_presented`, `upsell_accepted`, and `upsell_declined`. `upsell_presented` is surface
   visibility, not checkout start. `upsell_accepted` is clicked intent, not checkout completion.
   `upsell_declined` is the current checkout-cancel return signal, not all users who ignored,
-  dismissed, or failed to convert. Unknown source/product values remain separate until explicitly
-  mapped.
+  dismissed, or failed to convert. The current-surface totals count only approved existing sources
+  such as `plans` and `library_explore`; unknown and workout-context sources remain separate until
+  explicitly mapped.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
@@ -357,13 +358,12 @@
   `templateSource` payload values. Known template labels come from the workout-template registry,
   not raw analytics payload labels. Missing, malformed, deprecated, unknown, or unmapped keys and
   sources remain separate from known templates until explicitly mapped.
-- Workout-context upsell caveat: existing workout-builder, generator, source, generated-completion,
-  and template-usage metrics may inform placement policy only as aggregate product evidence. They
-  are not CTA presentation, CTA acceptance, checkout conversion, entitlement truth, Stripe
-  reconciliation, revenue attribution, or finance reporting. A workout-context CTA event/dashboard
-  requires a later runtime child after
-  `docs/architecture/workout-context-upsell-placement-policy.md` and
-  `docs/architecture/workout-context-cta-measurement-contract.md`.
+- Workout-context upsell caveat: V1 runtime may emit `upsell_presented` only when the
+  `workout_saved_post_success` CTA renders for mapped product `guide_poolside`, and
+  `upsell_accepted` only when that CTA is activated. Those events mean CTA visibility/clicked
+  intent only. They are not checkout conversion, entitlement truth, Stripe reconciliation, revenue
+  attribution, or finance reporting. A dedicated workout-context CTA dashboard remains a later child
+  after runtime event evidence exists.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.

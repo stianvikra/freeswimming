@@ -378,6 +378,17 @@ describe("admin analytics insights", () => {
           source: "future_surface",
           payload: { source: "future_surface" },
         },
+        {
+          ...baseRow,
+          event_name: "upsell_presented",
+          source: "workout_context",
+          payload: {
+            source: "workout_context",
+            surface: "saved_workout_post_success",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+          },
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
@@ -385,11 +396,11 @@ describe("admin analytics insights", () => {
 
     expect(insights.existingUpsellBaseline).toEqual({
       presented: 2,
-      accepted: 3,
+      accepted: 2,
       declined: 2,
-      acceptedRate: 1.5,
+      acceptedRate: 1,
       declineRate: 1,
-      unknownSourceEvents: 1,
+      unknownSourceEvents: 2,
       sourceCounts: [
         {
           key: "library_explore",
@@ -411,17 +422,18 @@ describe("admin analytics insights", () => {
         },
         {
           key: "unknown",
-          presented: 0,
+          presented: 1,
           accepted: 1,
           declined: 0,
-          total: 1,
-          acceptedRate: null,
-          declineRate: null,
+          total: 2,
+          acceptedRate: 1,
+          declineRate: 0,
         },
       ],
     });
     expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("user@example.com");
     expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("future_surface");
+    expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("workout_context");
   });
 
   it("keeps malformed and missing workout save source kinds unmapped", () => {

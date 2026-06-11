@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, existing upsell baseline, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe event health, funnel counts, existing upsell baseline, workout-context CTA caveats, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating bounded revenue-proxy, existing upsell, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
+      "Treating bounded revenue-proxy, existing upsell, workout-context CTA, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
   },
   {
     name: "Email templates",
@@ -280,7 +280,12 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Read existing upsell baseline as current-surface signal",
     detail:
-      "Presented counts upsell_presented on current commercial surfaces, Accepted counts clicked commercial actions, and Cancelled returns counts the existing checkout-cancel return signal. Accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement, Stripe reconciliation, revenue, or finance truth.",
+      "Presented counts upsell_presented on current /plans and My Library commercial surfaces, Accepted counts clicked commercial actions there, and Cancelled returns counts the existing checkout-cancel return signal. Workout-context sources are kept separate until explicitly mapped. Accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement, Stripe reconciliation, revenue, or finance truth.",
+  },
+  {
+    title: "Read workout-context CTA as visibility and clicked intent",
+    detail:
+      "Workout-context CTA V1 may show the Poolside guide option only after a successful saved-workout state. Its upsell_presented event means that CTA rendered for placement workout_saved_post_success, and upsell_accepted means the user clicked it. It is not checkout completion, entitlement, revenue, Stripe reconciliation, finance truth, or a unique-user conversion metric. A dedicated workout-context CTA dashboard remains a later mapping child.",
   },
   {
     title: "Read workout builder source breakdown as product telemetry",
@@ -539,7 +544,12 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Existing upsell baseline",
         meaning:
-          "Shows current /plans and My Library upsell presentation, click, and checkout-cancel return events. Use it as a commercial surface baseline only, not checkout completion, entitlement, revenue, or finance evidence.",
+          "Shows current /plans and My Library upsell presentation, click, and checkout-cancel return events. Workout-context CTA sources are separate diagnostics until mapped. Use it as a commercial surface baseline only, not checkout completion, entitlement, revenue, or finance evidence.",
+      },
+      {
+        label: "Workout-context CTA",
+        meaning:
+          "A saved-workout post-success Poolside guide prompt. Presented means rendered, Accepted means clicked, and neither value means checkout completion, entitlement, revenue, Stripe reconciliation, or finance truth.",
       },
       {
         label: "Generated completion / Template usage",
