@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -227,7 +227,7 @@ Implementation capture:
 - Artifact folder: `output/workout-context-checkout-started-admin-analytics-2026-06-11-185350`.
 - Representative files: `after-admin-analytics-dashboard-desktop.png`, `after-admin-analytics-dashboard-mobile.png`, `after-workout-context-checkout-started-panel-desktop.png`, `after-workout-context-checkout-started-panel-mobile.png`, `after-workout-context-checkout-started-schema-missing-desktop.png`, `reference-workout-context-cta-panel-desktop.png`, `after-admin-help-analytics-copy-desktop.png`, and `after-admin-help-analytics-buttons-desktop.png`.
 - Temporary local `/visual-admin-analytics` capture route was removed after generation. No scoped product-rendering source file was changed after the final screenshot capture.
-- Owner screenshot approval is pending; do not run `npm run verify:pre-pr`, create/update PR, or run merge-readiness gates before approval or explicit waiver.
+- Owner screenshot approval was received in chat before `npm run verify:pre-pr`, PR creation, and merge-readiness gates.
 
 ## Route / Label / Support Surface Sweep
 
@@ -324,3 +324,34 @@ Implementation validation before screenshot stop:
 - `2026-06-11 | non-technical copy polish and regenerated screenshot stop | owner asked what event means and requested terms be explained; updated visible Admin Analytics copy to use tracked action, last activity, read limit, setup missing, and browser/server, added Help/Guide explanation that event is the technical name for a logged action, reran targeted Vitest, and regenerated after/reference screenshot artifacts at output/workout-context-checkout-started-admin-analytics-2026-06-11-185350; temporary visual capture route was removed after generation, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-11 | screenshots approved | owner approved regenerated screenshot handoff at output/workout-context-checkout-started-admin-analytics-2026-06-11-185350; no scoped product-rendering source changed after final capture | next: run npm run verify:pre-pr`
 - `2026-06-11 | pre-pr passed | npm run verify:pre-pr passed full lane on branch workout-context-checkout-started-admin-analytics-mapping-v1: branch-current, quality gates, admin/env/pr-body lint, eslint, typecheck, unit tests, build, performance budgets, and Playwright e2e all passed; no scoped product-rendering source changed after the final approved screenshot capture | next: commit, push, open PR, monitor CI, then run pre-merge gate`
+- `2026-06-11 | merged | PR #1082 merged at squash commit b670e9a8 after green local pre-pr, required PR CI, and local pre-merge gates; this repo-managed closeout moved the brief to done and records final evidence | next: validate and merge docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1082`
+- `squash_commit`: `b670e9a8`
+- `result`: Closed Workout Context Checkout-Started Admin Analytics Mapping V1. Admin Analytics now shows the mapped saved-workout Poolside Guide checkout handoff as its own read-only module, keeps unknown checkout-start rows out of the KPI, and explains the dashboard terms in Help/Guide for non-technical admins.
+- `validation`: Targeted Vitest passed (`4` files / `25` tests), `npm run typecheck` passed, `npm run lint:quality-gates` passed, `npm run lint:briefs:all` passed, `git diff --check` passed, screenshot handoff was owner-approved, `npm run verify:pre-pr` passed full lane on `47f6e52b`, PR `#1082` CI passed, and `npm run verify:pre-merge` passed full lane on `47f6e52b`.
+- `screenshot_artifacts`: `output/workout-context-checkout-started-admin-analytics-2026-06-11-185350`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining scoped target gaps. Supporting-only caching, i18n, scalability, and rollback categories stayed within their intended bounded scope without adding new infrastructure.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                    | Gaps / Notes   |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Product goals and IA                          | `5/5`          | PR `#1082`, parent/child scope, Admin Analytics module separating checkout handoff from CTA clicks and generic checkout starts                              | No target gap. |
+| UX flow clarity                               | `5/5`          | Admin dashboard copy tests, Help/Guide term explanation, owner-approved screenshots                                                                         | No target gap. |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots in `output/workout-context-checkout-started-admin-analytics-2026-06-11-185350`                                   | No target gap. |
+| Business logic correctness and data integrity | `5/5`          | Insights tests cover mapped `checkout_started` rows and unknown/unmapped source, placement, and product rows                                                | No target gap. |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and preserved read-only Admin Analytics semantics                                                                                | No target gap. |
+| Performance (CWV + payloads)                  | `5/5`          | No new dependency, route, migration, vendor script, or unbounded query; build/perf lane passed in `verify:pre-pr` and `verify:pre-merge`                    | No target gap. |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical aggregate only through existing Admin Analytics endpoint; no local/admin state, checkout mutation, entitlement state, or finance truth     | No target gap. |
+| Reliability and failure handling              | `5/5`          | Tests and UI coverage for empty, unknown, duplicate, capped/read-limit, schema-missing/setup-missing, and failed-read states                                | No target gap. |
+| Security and authz                            | `5/5`          | Existing admin viewer-gated endpoint preserved; no new public route, mutation, credential, secret, or authz widening                                        | No target gap. |
+| Privacy and compliance                        | `5/5`          | Aggregate counts/labels only; raw payload JSON, user identifiers, URLs, Stripe IDs, payment data, and personal data stay out of the dashboard               | No target gap. |
+| Content governance                            | `5/5`          | Help/Guide, API contract, architecture docs, finance separation contract, parent checkpoint, and child brief updated consistently                           | No target gap. |
+| Analytics and KPI observability               | `5/5`          | Dedicated mapped checkout-start aggregate plus review-needed diagnostics, while preserving generic checkout-start and CTA prompt counts                     | No target gap. |
+| Commerce and revenue ops                      | `5/5`          | UI, Help/Guide, API, and finance separation docs state checkout handoff is not payment, entitlement, Stripe reconciliation, revenue, or finance reporting   | No target gap. |
+| Incident response and support operations      | `5/5`          | Help/Guide and support-surface sweep cover empty, unknown, capped/read-limit, stale, setup-missing, failed-read, duplicate, and non-finance interpretations | No target gap. |
+| Finance and reporting operations              | `5/5`          | No finance/export files changed; checkout-start count remains product telemetry only and cannot be used as revenue/accounting truth                         | No target gap. |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `admin-insights`, `admin-dashboard`, `AdminAnalyticsDashboard`, Help/Guide, and test patterns; no dependency added                          | No target gap. |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, typecheck, quality gates, brief lint, screenshot handoff, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed                            | No target gap. |
