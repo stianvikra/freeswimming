@@ -295,6 +295,9 @@ export function buildAnalyticsInsights(input: {
   let unknownSaves = 0;
   let knownTemplateSelections = 0;
   let unknownTemplateSelections = 0;
+  let upsellPresented = 0;
+  let upsellAccepted = 0;
+  let upsellDeclined = 0;
   let unknownUpsellSourceEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
@@ -307,11 +310,21 @@ export function buildAnalyticsInsights(input: {
     ) {
       const source = normalizeExistingUpsellSource(row);
       const sourceCount = getUpsellSourceCount(upsellSourceCounts, source);
+      const isExistingSource = EXISTING_UPSELL_SOURCE_VALUES.has(source);
       sourceCount.total += 1;
       if (source === "unknown") unknownUpsellSourceEvents += 1;
-      if (row.event_name === UPSELL_PRESENTED_EVENT) sourceCount.presented += 1;
-      if (row.event_name === UPSELL_ACCEPTED_EVENT) sourceCount.accepted += 1;
-      if (row.event_name === UPSELL_DECLINED_EVENT) sourceCount.declined += 1;
+      if (row.event_name === UPSELL_PRESENTED_EVENT) {
+        sourceCount.presented += 1;
+        if (isExistingSource) upsellPresented += 1;
+      }
+      if (row.event_name === UPSELL_ACCEPTED_EVENT) {
+        sourceCount.accepted += 1;
+        if (isExistingSource) upsellAccepted += 1;
+      }
+      if (row.event_name === UPSELL_DECLINED_EVENT) {
+        sourceCount.declined += 1;
+        if (isExistingSource) upsellDeclined += 1;
+      }
     }
 
     if (row.event_name === WORKOUT_BUILDER_SAVED_EVENT) {
@@ -348,9 +361,6 @@ export function buildAnalyticsInsights(input: {
     };
   });
   const templateSelections = eventCounts.get(WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT) ?? 0;
-  const upsellPresented = eventCounts.get(UPSELL_PRESENTED_EVENT) ?? 0;
-  const upsellAccepted = eventCounts.get(UPSELL_ACCEPTED_EVENT) ?? 0;
-  const upsellDeclined = eventCounts.get(UPSELL_DECLINED_EVENT) ?? 0;
   const upsellSourceCountItems = [...upsellSourceCounts.values()]
     .map((item) => ({
       ...item,

@@ -4,26 +4,27 @@ Last updated: 2026-06-10
 
 ## Purpose
 
-This contract defines when a future commercial CTA may be considered in workout-builder or
-generator context.
+This contract defines when a commercial CTA may be considered in workout-builder or generator
+context.
 
-Current decision: no workout-context upsell CTA is implemented or approved by this policy. Existing
-commercial surfaces remain `/plans` and My Library explore. Existing `upsell_presented`,
-`upsell_accepted`, and `upsell_declined` events may continue to describe those current commerce
-surfaces. Workout-context use of those events must first follow the measurement contract in
-`docs/architecture/workout-context-cta-measurement-contract.md`, and still requires a later runtime
-child before any CTA is shown or instrumented.
+Current decision: runtime V1 approves only a non-blocking saved-workout post-success CTA for
+`placementId=workout_saved_post_success` and `productId=guide_poolside`. Existing commercial
+surfaces remain `/plans` and My Library explore. Existing `upsell_presented`, `upsell_accepted`,
+and `upsell_declined` events may continue to describe those current commerce surfaces. Workout-context
+V1 may use `upsell_presented` and `upsell_accepted` only under the measurement contract in
+`docs/architecture/workout-context-cta-measurement-contract.md`; `upsell_declined`, new placements,
+new products, checkout attribution, entitlement-aware targeting, finance reporting, and dashboard
+mapping still require later children.
 
 ## Product Principle
 
 A workout-context CTA must never interrupt the user's primary training job. The primary job is to
-create, generate, review, save, edit, export, or recover a workout. A future CTA may be evaluated
-only after that job has reached a stable, non-error state.
+create, generate, review, save, edit, export, or recover a workout. A CTA may be evaluated only
+after that job has reached a stable, non-error state.
 
-The first recommended runtime candidate, if later approved, is a non-blocking post-success or
-workout-review placement after the user has saved or accepted a workout draft. This is the least
-ambiguous moment because the user has completed the core action and the app can avoid implying that
-purchase is required to finish the workout.
+The first approved runtime candidate is a non-blocking post-success placement after the user has
+saved a workout. This is the least ambiguous moment because the user has completed the core action
+and the app can avoid implying that purchase is required to finish the workout.
 
 ## Placement Matrix
 
@@ -50,7 +51,7 @@ Allowed as aggregate planning evidence only:
 - template selection from explicit `workout_builder_template_selected`,
 - safe route/product/catalog availability signals where already mapped.
 
-Conditionally allowed in a future runtime child:
+Conditionally allowed in a future runtime child, or in runtime V1 where explicitly mapped:
 
 - placement surface ID,
 - stable product ID from the catalog,
@@ -89,9 +90,9 @@ Before workout-context CTA performance can be measured, the measurement contract
 The first measurement contract is
 `docs/architecture/workout-context-cta-measurement-contract.md`.
 
-Until then, Admin Analytics must not add a workout-context CTA module or infer CTA performance from
-builder starts, saves, generated drafts, template selection, checkout starts, checkout completions,
-or entitlement grants.
+Until a later dashboard child maps runtime CTA aggregation, Admin Analytics must not add a
+workout-context CTA module or infer CTA performance from builder starts, saves, generated drafts,
+template selection, checkout starts, checkout completions, or entitlement grants.
 
 ## Commerce And Finance Boundary
 
@@ -127,7 +128,7 @@ Rules:
 
 This policy is docs-only. It does not choose runtime storage.
 
-A future runtime child must choose exactly one source for placement truth:
+Any future runtime/config child must choose exactly one source for placement truth:
 
 - static policy encoded in typed code,
 - typed registry,

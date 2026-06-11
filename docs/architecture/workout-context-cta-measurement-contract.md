@@ -4,7 +4,7 @@ Last updated: 2026-06-11
 
 ## Purpose
 
-This contract defines how FreeSwimming may measure the first future workout-context commercial CTA.
+This contract defines how FreeSwimming may measure the first workout-context commercial CTA.
 It is intentionally a measurement contract only. No workout-context CTA is implemented by this
 document.
 
@@ -12,12 +12,13 @@ The current product decision is conservative:
 
 - First eligible placement candidate: saved-workout post-success state.
 - Stable placement ID for that candidate: `workout_saved_post_success`.
+- Runtime V1 mapped product: `guide_poolside`.
 - Product identity source: `CatalogProductId` from `lib/commerce/catalog.ts`.
-- Event family: existing `upsell_presented`, `upsell_accepted`, and `upsell_declined` may be used
-  only after a later runtime child implements mapped workout-context callsites with the semantics
-  below.
+- Event family: runtime V1 may use `upsell_presented` and `upsell_accepted` for the mapped
+  workout-context callsites with the semantics below. `upsell_declined` remains unmapped for
+  workout context.
 - Dashboard truth: no dedicated workout-context CTA Admin Analytics module may be added until
-  runtime events exist.
+  runtime event evidence exists and a later dashboard child maps aggregation/copy/tests.
 
 ## Placement Decision
 
@@ -70,8 +71,8 @@ Product identity must come from the catalog product ID. It must not come from:
 - entitlement row,
 - analytics payload copy.
 
-The first runtime child must choose the exact product ID or IDs it wants to offer from the current
-catalog. This contract does not select the product for release.
+Runtime V1 selects `guide_poolside` for release. Future products require explicit mapping before
+presentation.
 
 Fail-closed behavior:
 
@@ -247,10 +248,10 @@ Repurpose requiring a new child:
 
 Support may say:
 
-- no workout-context CTA exists until a runtime child implements one,
-- `workout_saved_post_success` is the first approved measurement candidate only,
-- a future presented event means the CTA rendered in that mapped placement,
-- a future accepted event means clicked intent only,
+- workout-context CTA V1 may appear only after a successful saved-workout post-success state,
+- `workout_saved_post_success` is the first approved runtime placement,
+- a presented event means the CTA rendered in that mapped placement,
+- an accepted event means clicked intent only,
 - product telemetry is not checkout, entitlement, Stripe, revenue, or finance evidence.
 
 Support must not say:
@@ -261,7 +262,8 @@ Support must not say:
 - checkout completion means entitlement or finance reconciliation is complete,
 - analytics counts prove individual behavior.
 
-Future visible CTA/dashboard work must update Help/Guide and relevant runbooks in the same PR.
+Future dashboard, decline, checkout, entitlement, finance, or additional CTA-placement work must
+update Help/Guide and relevant runbooks in the same PR.
 
 ## Forward Compatibility
 

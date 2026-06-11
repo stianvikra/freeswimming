@@ -4,6 +4,7 @@ import SiteChrome from "@/components/SiteChrome";
 import WorkoutBuilderHub from "@/components/my-library/workouts/WorkoutBuilderHub";
 import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadAthleteProfileSnapshot } from "@/lib/athlete-profile/server";
+import { loadWorkoutContextCtaProductAvailable } from "@/lib/commerce/workout-context-cta-server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { loadTrainingContextSnapshot } from "@/lib/training-context/server";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
@@ -54,10 +55,16 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
     redirect("/auth/sign-in?next=%2Fmy-library%2Fworkouts");
   }
 
-  const [workoutLibrary, trainingContextSnapshot, athleteProfileSnapshot] = await Promise.all([
+  const [
+    workoutLibrary,
+    trainingContextSnapshot,
+    athleteProfileSnapshot,
+    workoutContextCtaProductAvailable,
+  ] = await Promise.all([
     loadWorkoutLibrarySnapshot(supabase, user.id, null),
     loadTrainingContextSnapshot(supabase, user.id),
     loadAthleteProfileSnapshot(supabase, user.id),
+    loadWorkoutContextCtaProductAvailable(),
   ]);
   const trainingFocusOptions: WorkoutPoolsideFocusOption[] =
     trainingContextSnapshot.schemaReady && !trainingContextSnapshot.loadError
@@ -129,6 +136,7 @@ export default async function WorkoutSessionsPage({ searchParams }: Props) {
               userId={user.id}
               manualLocalDraftMode={localDraftMode}
               templateLocalDraftKey={templateRequestKey}
+              workoutContextCtaProductAvailable={workoutContextCtaProductAvailable}
             />
           </div>
         </div>

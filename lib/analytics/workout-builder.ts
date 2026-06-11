@@ -1,4 +1,5 @@
 import type { SessionDraft } from "@/lib/session-generator-v1/shared";
+import type { CatalogProductId } from "@/lib/commerce/catalog";
 import type { ManualWorkoutBuilderMode } from "@/lib/workouts/manual";
 import type { WorkoutSourceKind } from "@/lib/workouts/shared";
 import {
@@ -10,6 +11,10 @@ import {
 export const WORKOUT_BUILDER_ANALYTICS_SOURCE = "workout_builder";
 export const WORKOUT_BUILDER_ANALYTICS_SURFACE = "my_library_workouts";
 export const WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE = "workout_builder_v1";
+export const WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE = "workout_context";
+export const WORKOUT_CONTEXT_CTA_SURFACE = "saved_workout_post_success";
+export const WORKOUT_CONTEXT_CTA_PLACEMENT_ID = "workout_saved_post_success";
+export const WORKOUT_CONTEXT_CTA_PRODUCT_ID = "guide_poolside" satisfies CatalogProductId;
 
 export type WorkoutBuilderSaveKind = "first_canonical_save" | "existing_workout_update";
 
@@ -87,4 +92,18 @@ export function buildWorkoutBuilderTemplateSelectedPayload(input: { templateKey:
   return buildWorkoutBuilderTemplateSelectedPayloadForTemplate(
     getActiveWorkoutTemplateByKey(input.templateKey)
   );
+}
+
+export function buildWorkoutContextCtaPayload(input: {
+  draft: Pick<SessionDraft, "environment">;
+  sourceKind: WorkoutSourceKind;
+}) {
+  return {
+    source: WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
+    surface: WORKOUT_CONTEXT_CTA_SURFACE,
+    placementId: WORKOUT_CONTEXT_CTA_PLACEMENT_ID,
+    productId: WORKOUT_CONTEXT_CTA_PRODUCT_ID,
+    sourceKind: input.sourceKind,
+    builderMode: getWorkoutBuilderMode(input.draft.environment),
+  };
 }
