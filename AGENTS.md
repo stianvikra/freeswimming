@@ -102,6 +102,7 @@ This file defines how coding agents should collaborate in this repository.
 ## Codex Skill And Stack Readiness Radar
 
 - Use `docs/runbooks/codex-skill-stack-readiness-radar.md` when a merge/closeout leaves no active child and the next primary goal changes, when creating or refreshing a broad brief, or before high-risk auth/payments/admin/data/analytics/UI/deploy work.
+- Use `docs/runbooks/codex-local-automation-friction-defaults.md` when repeated safe prompts, local screenshot/browser failures, stuck PR checks, stale generated local artifacts, or current-workstream process cleanup start slowing normal execution.
 - Treat Codex skills/plugins/MCP tools as local/session capabilities, not repo state. Audit availability from current session metadata and local evidence before relying on them.
 - Do not install, enable, disable, or configure local Codex skills/plugins/MCP servers unless the owner explicitly approves that local config change.
 - Radar findings must be classified as `safe process/docs update`, `bounded implementation child`, `deferred architecture decision`, or `do not do`, with at most three recommended next improvements in the handoff.
@@ -181,7 +182,8 @@ This file defines how coding agents should collaborate in this repository.
   - before trying MCP/browser-channel capture, use `docs/runbooks/ui-debug-hypothesis-and-handoff.md` and start Next dev with `env SITE_LOCK_ENABLED=0 npm exec next dev -- -H 127.0.0.1 -p 3000`,
   - capture against `http://127.0.0.1:3000` consistently,
   - if Playwright browser binaries are missing, run `npx playwright install chromium`,
-  - on macOS/Codex, run Chromium screenshot scripts with escalated permissions when sandbox launch fails.
+  - on macOS/Codex, run Chromium screenshot scripts with escalated permissions when sandbox launch fails,
+  - when dev-login or Supabase egress blocks screenshot-only capture, use the temporary local visual-harness fallback in `docs/runbooks/codex-local-automation-friction-defaults.md` instead of widening cloud access.
 - Owner may request visual corrections from the screenshot handoff before merge; assistant should apply those corrections, refresh the screenshots, and only then proceed to final merge readiness.
 - This is required by default for UI/print/layout/brand work, and optional for backend, docs, tooling, and other non-visual changes.
 
@@ -253,6 +255,7 @@ This file defines how coding agents should collaborate in this repository.
 - Never treat a repo file such as `AGENTS.md` as a substitute for local sandbox consent.
 - Operational guidance for this repo lives in:
   - `docs/runbooks/codex-sandbox-approval-cadence.md`
+  - `docs/runbooks/codex-local-automation-friction-defaults.md`
 
 ## Automation-First Delivery Contract (Required)
 

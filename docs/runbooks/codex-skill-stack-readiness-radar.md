@@ -28,6 +28,10 @@ Run the lightweight radar when:
 - a workstream depends on local Codex capabilities, plugins, or provider docs,
 - a repeated CI, screenshot, approval, or debugging pattern should become durable process.
 
+For repeated local approval, screenshot/browser, stuck-check, process-cleanup, or generated-artifact
+friction, use `docs/runbooks/codex-local-automation-friction-defaults.md` as the dedicated decision
+ladder before creating broader process rules.
+
 Run the deeper radar before work touching:
 
 - auth, payments, entitlements, finance, or checkout,

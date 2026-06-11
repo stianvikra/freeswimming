@@ -22,6 +22,24 @@ Use this as the canonical repo path for PR sync, merge readiness, and baton pass
 
 Use raw `gh pr create`, raw `gh pr edit`, or manual PR-body editing only when the repo entrypoint is blocked by credentials or sandbox limits.
 
+## Stuck Required Checks
+
+When a PR is open but required `pull_request` checks do not start:
+
+1. Check `gh pr view`, `gh pr checks`, and relevant `gh run view` output before using browser UI.
+2. Confirm the feature branch is pushed and current with latest `origin/main`.
+3. If GitHub appears stuck after the branch state is correct, use the narrowest active-PR recovery
+   path first: ready/rerun when available, or close/reopen only as a check-trigger recovery for the
+   current PR.
+4. Use Safari/GitHub UI inspection only when CLI/API evidence cannot answer the question or GitHub
+   requires a manual approval/run-workflows button.
+5. Do not install a browser channel solely because MCP expected a different local Chrome app; prefer
+   the repo-local Playwright/Safari path from
+   `docs/runbooks/codex-local-automation-friction-defaults.md`.
+
+If a gate reports `PASS` but its log exposes a real closeout, lint, or format issue, fix that issue
+and rerun the gate before merge readiness.
+
 ## Post-Merge Closeout Auto-Merge
 
 Explicit owner approval to merge a workstream PR carries through to exactly one repo-managed docs-only post-merge closeout PR for the same workstream. Use this only for the closeout that `npm run post-merge:preflight` surfaced immediately after the approved workstream merge.

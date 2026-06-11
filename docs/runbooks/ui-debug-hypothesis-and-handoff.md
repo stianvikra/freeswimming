@@ -72,6 +72,20 @@ For local UI screenshot handoffs in this repo, start from the known-good Playwri
 
 5. Prefer repo-local Playwright scripts or Playwright CLI for reproducible artifacts. Do not default to MCP/browser-channel capture for handoff screenshots unless the local path is unavailable; MCP can fail when the Chrome channel is not installed and does not replace full-resolution artifact capture.
 
+6. If `/dev/login`, cloud auth, or Supabase egress guard blocks a screenshot-only path, do not widen
+   Supabase/cloud access just to capture visuals. Use a temporary local visual harness only when
+   needed: render the real production component with deterministic mock data, avoid API/DB traffic,
+   remove the temporary route/script before validation and PR diff, and state the harness caveat in
+   the screenshot handoff.
+
+7. Prefer concrete DOM or route-ready waits over `networkidle` when a Next route keeps background
+   network activity open. Hide only capture-only chrome such as the local Next dev indicator when it
+   obscures the product surface, then inspect the generated artifacts before handoff.
+
+8. After capture, use `docs/runbooks/codex-local-automation-friction-defaults.md` to inspect and stop
+   current-workstream Next/Playwright/Chromium/capture processes and remove temporary generated
+   artifacts or stale Next type/cache files from removed temporary routes.
+
 ## High-Cost Bug Logging
 
 Log expensive or recurring bugs in `docs/runbooks/high-cost-debug-log.md`.
