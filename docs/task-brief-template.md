@@ -21,6 +21,7 @@ Use this quick check so the task execution is precise:
 - State local tooling prerequisite (Node LTS + npm installed where local validation runs)
 - State automation mode (`automation-first` default, or explicit manual checkpoints)
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
+- State whether the Codex skill/stack readiness radar applies (`docs/runbooks/codex-skill-stack-readiness-radar.md`) and, when it does, include capability audit, top-three findings, and return path
 - State stack/architecture best-practice impact (React/Next, TypeScript, Supabase, external services, UI primitives, tests)
 - State forward compatibility contract: what future products/labels/workflows/data values follow automatically, what needs explicit mapping, and how unknown values fail safely
 - State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
@@ -135,6 +136,13 @@ Automation gate:
 ## Stack / Architecture Best-Practice Gate (Required)
 
 For every non-trivial brief, state which stack surfaces are impacted and what best-practice pattern must be used.
+
+When the work starts a new broad slice, changes primary goal after merge/closeout, or touches auth,
+payments, admin, data, analytics, UI/reference surfaces, deploy, support, external providers, or
+Codex tooling, use `docs/runbooks/codex-skill-stack-readiness-radar.md` before implementation.
+Record the capability audit, at most three recommended systemic findings, and the return path to
+the active parent or queue. Do not install or configure local Codex skills/plugins/MCP servers
+without explicit owner approval.
 
 Include:
 

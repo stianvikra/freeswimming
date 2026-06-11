@@ -68,6 +68,10 @@ Before marking a brief `ready`, check:
 - scope still matches the current repo and owner request,
 - affected paths still exist,
 - scorecard categories are correct for the current scope,
+- Codex skill/stack readiness radar applicability is checked with
+  `docs/runbooks/codex-skill-stack-readiness-radar.md` when the work starts a broad slice, changes
+  primary goal after merge/closeout, or touches high-risk auth/payments/admin/data/analytics/UI/deploy
+  surfaces,
 - target thresholds are measurable,
 - forward compatibility is explicit for new products, labels, workflow states, identifiers, routes,
   locales, providers, exports, analytics payloads, and unknown values, or explicitly `N/A`,
@@ -103,6 +107,8 @@ Refresh the audit record when:
 - implementation starts from a newer `main` after significant changes,
 - AGENTS.md or the task-brief template changes,
 - scorecard categories or lint rules change,
+- Codex skill/plugin availability, local `.codex` capability state, or the skill/stack readiness
+  radar changes,
 - forward compatibility rules, task-brief template requirements, or AGENTS.md slice-recommendation
   rules change,
 - validation commands or docs-only/full-lane rules change,

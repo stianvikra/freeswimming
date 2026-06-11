@@ -6,11 +6,11 @@ Keep dependency hygiene, runtime pinning, performance budgets, and release-gate 
 
 ## Cadence
 
-| Rhythm    | Owner action                                                                                                        | Evidence location                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk.                                        | GitHub PRs/checks plus active maintenance issue if work is needed.                               |
-| Monthly   | Complete one maintenance issue from the monthly reminder workflow, including a lightweight stack/tooling fit check. | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                    |
-| Quarterly | Run a deeper stack/tooling ecosystem-fit audit and decide whether to open fresh planned briefs.                     | Active maintenance issue plus any fresh planned, in-progress, or done stack/tooling audit brief. |
+| Rhythm    | Owner action                                                                                                                             | Evidence location                                                                                |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Weekly    | Review Dependabot PRs, security alerts, CodeQL, nightly E2E, and audit risk.                                                             | GitHub PRs/checks plus active maintenance issue if work is needed.                               |
+| Monthly   | Complete one maintenance issue from the monthly reminder workflow, including a lightweight stack/tooling and Codex capability fit check. | GitHub issue created by `.github/workflows/monthly-maintenance-reminder.yml`.                    |
+| Quarterly | Run a deeper stack/tooling/Codex capability ecosystem-fit audit and decide whether to open fresh planned briefs.                         | Active maintenance issue plus any fresh planned, in-progress, or done stack/tooling audit brief. |
 
 ## Monthly Issue Flow
 
@@ -74,6 +74,7 @@ Monthly lightweight audit:
 - runtime alignment across `.nvmrc`, `package.json`, GitHub Actions, Vercel, and local gates,
 - runtime support window/EOL posture for the pinned Node LTS line,
 - CI/tooling warnings, release-gate flakes, and recurring non-failing warnings,
+- current Codex skill/plugin/capability gaps using `docs/runbooks/codex-skill-stack-readiness-radar.md`,
 - `npm run test:perf:trend` and the current perf-budget `tighten` / `hold` / `revert` decision,
 - whether any lesson from recent PRs belongs in a runbook, architecture/testing docs, or a planned brief.
 
@@ -83,6 +84,7 @@ Quarterly deeper audit:
 - Playwright, Vitest, Testing Library, browser matrix, heap/resource assumptions, and flake posture,
 - Supabase, generated database types, migrations, auth/RLS assumptions, and fail-closed behavior,
 - Stripe SDK/API posture, Checkout/Billing Portal/webhook/finance reconciliation contracts,
+- Codex skill/plugin/MCP availability, curated skill candidates, approval friction, and whether local capability choices should become repo process or remain local-only,
 - GitHub Actions, CodeQL, Vercel, branch protection, required checks, and rollback path,
 - performance budgets, security/audit posture, secrets/config governance, and support/incident runbooks.
 
