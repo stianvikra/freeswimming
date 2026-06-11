@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-10-workout-context-upsell-placement-policy-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-10`
-- `updated`: `2026-06-10`
+- `updated`: `2026-06-11`
 - `parent_brief`: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - `related_briefs`:
   - `docs/task-briefs/done/2026-06-09-workout-builder-funnel-instrumentation-v1-10-10.md`
@@ -20,7 +20,7 @@
 
 - `last_audited`: `2026-06-10`
 - `base`: clean synced `main@451ba841` after PR `#1065` clarified the workout commercial funnel next-child guardrails.
-- `audit_status`: `in-progress`
+- `audit_status`: `done`
 - `decision`: Implement this as the bounded docs-only policy child before any workout-context CTA instrumentation, dashboard, checkout, entitlement, finance, or runtime CTA implementation.
 - `reason`: Owner explicitly requested `execute Workout Context Upsell Placement Policy V1`; builder, generator, source, and template usage telemetry now exists as first-party evidence, but the parent still forbids commercial UI until placement rules and interpretation boundaries are decided in this separate child.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, the task brief template, scorecard categories, Admin Analytics interpretation, analytics event taxonomy, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder/generator routes, template registry, route/label/support sweep rules, or finance/reporting contracts change.
@@ -314,6 +314,8 @@ Local validation evidence on `2026-06-10`:
 - `npm run lint:briefs -- --all` PASS, including this in-progress child.
 - `npm run verify:docs-only` PASS; lane selected docs-only because all changed files are docs/governance.
 - `npm run verify:pre-pr` PASS; branch is current with `origin/main@451ba841` and docs-only lane passed.
+- required PR CI checks PASS on PR `#1066`.
+- `npm run verify:pre-merge` PASS on `2026-06-11`; branch was current with `origin/main@451ba841` and docs-only lane reused the current-HEAD docs-only verification PASS marker.
 
 Future runtime CTA child:
 
@@ -331,7 +333,7 @@ Future runtime CTA child:
 ## Session Continuity And Recovery
 
 - Parent brief: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
+- Canonical child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Contract path: `docs/architecture/workout-context-upsell-placement-policy.md`
 - Latest completed analytics child: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
 - Recovery protocol:
@@ -345,3 +347,32 @@ Future runtime CTA child:
 - `2026-06-10 | child moved to in-progress | owner requested execution, branch workout-context-upsell-placement-policy-v1 was created, and the child moved to docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md; parent remains plan-only and runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, and builder/generator UX remain out of scope | next: complete docs-only policy contract and validation`
 - `2026-06-10 | policy contract implemented | added docs/architecture/workout-context-upsell-placement-policy.md, updated API/privacy interpretation docs, and recorded route/label/support sweep evidence; no runtime code, visible UI, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX changes were made | next: run docs-only validation and pre-pr gate`
 - `2026-06-10 | local pre-pr passed | docs-only validation passed with git diff --check, lint:briefs -- --all, verify:docs-only, and verify:pre-pr on current origin/main@451ba841; scope remains docs/governance only with no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX changes | next: commit, push, open PR, and monitor CI`
+- `2026-06-10 | PR ready | committed docs-only policy work at 58fb83fc, opened PR #1066, and required CI passed; scope remained docs/governance only with no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX changes | next: run pre-merge gate after owner merge approval`
+- `2026-06-11 | merged | PR #1066 merged at squash commit 56701757 after green local pre-pr, CI, and pre-merge gates; this repo-managed closeout moved the brief to done and records final evidence | next: validate and merge docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1066`
+- `squash_commit`: `56701757`
+- `result`: Closed Workout Context Upsell Placement Policy V1. The policy now defines where a future workout-context CTA may appear, which first-party workout signals may inform placement, and which commerce, finance, privacy, support, and fail-closed boundaries must remain in place before any runtime CTA work begins.
+- `validation`: `git diff --check` passed, `npm run lint:briefs -- --all` passed, `npm run verify:docs-only` passed, `npm run verify:pre-pr` passed docs-only lane on `2026-06-10`, PR `#1066` CI passed, and `npm run verify:pre-merge` passed docs-only lane on `2026-06-11`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no runtime/UI/checkout/finance surface was added.
+
+| Category                                      | Achieved Score | Evidence                                                                                                   | Gaps / Notes   |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- | -------------- |
+| Product goals and IA                          | `5/5`          | Policy contract and parent checkpoint define allowed, conditional, and forbidden placement categories.     | No target gap. |
+| UX flow clarity                               | `5/5`          | Policy forbids active editing, intake/loading, validation, recovery, and operator surfaces for CTA use.    | No target gap. |
+| Business logic correctness and data integrity | `5/5`          | Existing workout telemetry is documented as placement evidence only, not conversion or finance truth.      | No target gap. |
+| Data placement and sync boundaries            | `5/5`          | Future runtime config remains deferred and must choose canonical source, cache, invalidation, and sync.    | No target gap. |
+| Reliability and failure handling              | `5/5`          | Unknown, deprecated, disabled, or unmapped placement/product/signal values must fail closed.               | No target gap. |
+| Security and authz                            | `5/5`          | Policy forbids widened data access and requires fail-closed protected future endpoints.                    | No target gap. |
+| Privacy and compliance                        | `5/5`          | Raw workout content, personal identifiers, raw URLs, visitor IDs, payment IDs, and raw payloads excluded.  | No target gap. |
+| Content governance                            | `5/5`          | API/privacy docs, policy artifact, parent, and child brief align on future CTA interpretation.             | No target gap. |
+| Analytics and KPI observability               | `5/5`          | Signal eligibility matrix separates product telemetry from CTA presentation, acceptance, and checkout.     | No target gap. |
+| Commerce and revenue ops                      | `5/5`          | Existing `/plans` and My Library explore remain the only approved commerce surfaces.                       | No target gap. |
+| Incident response and support operations      | `5/5`          | Support interpretation and Help/Guide/runbook requirements are documented for any later visible CTA.       | No target gap. |
+| Finance and reporting operations              | `5/5`          | Workout telemetry is explicitly barred from finance-grade revenue, refund, payout, invoice, or reconcile.  | No target gap. |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only slice reused existing brief/runbook/architecture patterns and added no dependency or runtime.    | No target gap. |
+| Testing and QA automation                     | `5/5`          | Brief lint, docs-only verify, pre-pr, PR CI, and pre-merge gates passed.                                   | No target gap. |
+| DevOps and rollback readiness                 | `5/5`          | Change is docs-only and revertable; future runtime CTA must define kill switch, rollback, and diagnostics. | No target gap. |
