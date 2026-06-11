@@ -93,6 +93,12 @@ export type AnalyticsDashboardExistingUpsellBaseline = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutContextCta = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -104,6 +110,7 @@ export type AnalyticsDashboardViewModel = {
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
   existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
+  workoutContextCta: AnalyticsDashboardWorkoutContextCta;
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
@@ -368,9 +375,9 @@ function buildExistingUpsellBaseline(
       return {
         key,
         label: formatExistingUpsellSourceLabel(key),
-        secondary: `${formatAnalyticsCount(item.presented)} presented / ${formatAnalyticsCount(
+        secondary: `${formatAnalyticsCount(item.presented)} shown / ${formatAnalyticsCount(
           item.accepted
-        )} accepted / ${formatAnalyticsCount(item.declined)} cancelled`,
+        )} clicked / ${formatAnalyticsCount(item.declined)} checkout cancelled`,
         count: formatAnalyticsCount(item.total),
       };
     }) ?? [];
@@ -379,44 +386,45 @@ function buildExistingUpsellBaseline(
     metrics: [
       {
         id: "upsell-presented",
-        label: "Presented",
+        label: "Shown",
         value: formatAnalyticsCount(presented),
-        detail: "Current commercial surfaces",
+        detail: "Sales prompt views",
       },
       {
         id: "upsell-accepted",
-        label: "Accepted",
+        label: "Clicked",
         value: formatAnalyticsCount(accepted),
-        detail: "Clicked commercial action",
+        detail: "Clicked sales prompt",
       },
       {
         id: "upsell-accepted-rate",
-        label: "Accepted rate",
+        label: "Click rate",
         value: formatAnalyticsPercent(acceptedRate),
-        detail: "Accepted / presented",
+        detail: "Clicked / shown",
       },
       {
         id: "upsell-declined",
-        label: "Cancelled returns",
+        label: "Checkout cancelled",
         value: formatAnalyticsCount(declined),
-        detail: "Checkout cancelled return",
+        detail: "Returned from checkout",
       },
       {
         id: "upsell-decline-rate",
         label: "Cancel rate",
         value: formatAnalyticsPercent(declineRate),
-        detail: "Cancelled / presented",
+        detail: "Cancelled / shown",
       },
     ],
     sourceItems,
-    emptyLabel: "No existing upsell events in this range.",
-    detail: "Read-only baseline for current /plans and My Library commercial surfaces.",
+    emptyLabel: "No current sales prompt activity in this range.",
+    detail:
+      "Shows how often current sales prompts on Plans and My Library were shown, clicked, or returned from checkout.",
     caveat:
       presented === 0
-        ? "Accepted and cancelled rates are not counted until an upsell presentation exists in this range."
+        ? "Click and cancel rates are not counted until a current sales prompt has been shown in this range."
         : unknownSourceEvents > 0
-          ? "Unknown source events are kept separate until their surface/product mapping is explicitly approved."
-          : "Duplicate client events can exist; accepted is not checkout completion and cancelled returns are not all declined users.",
+          ? "Some sales prompt activity does not match an approved surface yet. It stays out of the main numbers until reviewed."
+          : "Clicks are not purchases. Checkout cancelled only means a user returned from checkout, not that every non-buyer declined.",
   };
 }
 
@@ -425,39 +433,119 @@ function buildSchemaMissingExistingUpsellBaseline(): AnalyticsDashboardExistingU
     metrics: [
       {
         id: "upsell-presented",
-        label: "Presented",
+        label: "Shown",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "upsell-accepted",
-        label: "Accepted",
+        label: "Clicked",
         value: "Not counted",
-        detail: "Clicked commercial action",
+        detail: "Clicked sales prompt",
       },
       {
         id: "upsell-accepted-rate",
-        label: "Accepted rate",
+        label: "Click rate",
         value: "Not counted",
-        detail: "Accepted / presented",
+        detail: "Clicked / shown",
       },
       {
         id: "upsell-declined",
-        label: "Cancelled returns",
+        label: "Checkout cancelled",
         value: "Not counted",
-        detail: "Checkout cancelled return",
+        detail: "Returned from checkout",
       },
       {
         id: "upsell-decline-rate",
         label: "Cancel rate",
         value: "Not counted",
-        detail: "Cancelled / presented",
+        detail: "Cancelled / shown",
       },
     ],
     sourceItems: [],
-    emptyLabel: "Existing upsell baseline is hidden until analytics schema is ready.",
-    detail: "Existing upsell baseline is hidden until analytics schema is ready.",
-    caveat: "Apply the analytics_events migration before reading existing upsell counts.",
+    emptyLabel: "Current sales prompt counts are hidden until analytics setup is ready.",
+    detail: "Current sales prompt counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading current sales prompt counts.",
+  };
+}
+
+function buildWorkoutContextCta(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutContextCta {
+  const cta = payload.workoutContextCta;
+  const presented = cta?.presented ?? 0;
+  const accepted = cta?.accepted ?? 0;
+  const acceptedRate = cta?.acceptedRate ?? rate(accepted, presented);
+  const unknownEvents = cta?.unknownEvents ?? 0;
+
+  return {
+    metrics: [
+      {
+        id: "workout-context-cta-presented",
+        label: "Shown",
+        value: formatAnalyticsCount(presented),
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-accepted",
+        label: "Clicked",
+        value: formatAnalyticsCount(accepted),
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-accepted-rate",
+        label: "Click rate",
+        value: formatAnalyticsPercent(acceptedRate),
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-unknown",
+        label: "Needs review",
+        value: formatAnalyticsCount(unknownEvents),
+        detail: "Kept out of totals",
+      },
+    ],
+    detail:
+      "Shows how often the Poolside guide prompt was shown and clicked after a workout was saved.",
+    caveat:
+      presented === 0
+        ? "Click rate is not counted until this prompt has been shown in the selected range."
+        : unknownEvents > 0
+          ? "Some events do not match the approved prompt setup. They stay out of the main numbers until reviewed."
+          : "Clicks are interest signals only. They are not purchases, access grants, revenue, or accounting records.",
+  };
+}
+
+function buildSchemaMissingWorkoutContextCta(): AnalyticsDashboardWorkoutContextCta {
+  return {
+    metrics: [
+      {
+        id: "workout-context-cta-presented",
+        label: "Shown",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-cta-accepted",
+        label: "Clicked",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-cta-accepted-rate",
+        label: "Click rate",
+        value: "Not counted",
+        detail: "Clicked / shown",
+      },
+      {
+        id: "workout-context-cta-unknown",
+        label: "Needs review",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+    ],
+    detail: "Saved-workout guide prompt counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading saved-workout guide prompt counts.",
   };
 }
 
@@ -478,13 +566,13 @@ function buildWorkoutBuilderFunnel(
         id: "builder-started",
         label: "Started",
         value: formatAnalyticsCount(started),
-        detail: "Manual builder starts",
+        detail: "Builder starts",
       },
       {
         id: "builder-saved",
         label: "Saved",
         value: formatAnalyticsCount(saved),
-        detail: "Successful creates or updates",
+        detail: "Workouts saved",
       },
       {
         id: "builder-save-rate",
@@ -493,11 +581,11 @@ function buildWorkoutBuilderFunnel(
         detail: "Saved / started",
       },
     ],
-    detail: "Read-only product telemetry for the selected range.",
+    detail: "Shows how many workouts were started and saved in this range.",
     caveat:
       started === 0
         ? "Save rate is not counted until a builder start exists in this range."
-        : "Duplicate starts and saves can exist; this is not unique-user, checkout, or finance conversion.",
+        : "A person may create more than one tracked action. These numbers describe product activity, not purchases or revenue.",
   };
 }
 
@@ -508,13 +596,13 @@ function buildSchemaMissingWorkoutBuilderFunnel(): AnalyticsDashboardWorkoutBuil
         id: "builder-started",
         label: "Started",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "builder-saved",
         label: "Saved",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "builder-save-rate",
@@ -523,8 +611,8 @@ function buildSchemaMissingWorkoutBuilderFunnel(): AnalyticsDashboardWorkoutBuil
         detail: "Saved / started",
       },
     ],
-    detail: "Workout builder funnel is hidden from inference until analytics schema is ready.",
-    caveat: "Apply the analytics_events migration before reading builder funnel counts.",
+    detail: "Builder start and save counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading builder start and save counts.",
   };
 }
 
@@ -553,13 +641,13 @@ function buildWorkoutBuilderSourceBreakdown(
         id: "source-manual-starts",
         label: "Manual starts",
         value: formatAnalyticsCount(manualStarts),
-        detail: "Manual builder entries",
+        detail: "Manual builder starts",
       },
       {
         id: "source-generated-drafts",
         label: "Generated drafts",
         value: formatAnalyticsCount(generatedDrafts),
-        detail: "AI session drafts",
+        detail: "Generated workout drafts",
       },
       {
         id: "source-manual-saves",
@@ -571,7 +659,7 @@ function buildWorkoutBuilderSourceBreakdown(
         id: "source-generated-saves",
         label: "Generated saves",
         value: formatAnalyticsCount(generatedSaves),
-        detail: "Saved generated sessions",
+        detail: "Saved generated workouts",
       },
       {
         id: "source-manual-save-rate",
@@ -587,16 +675,16 @@ function buildWorkoutBuilderSourceBreakdown(
       },
       {
         id: "source-unknown-saves",
-        label: "Unknown saves",
+        label: "Needs review",
         value: formatAnalyticsCount(unknownSaves),
-        detail: "Missing or unmapped source",
+        detail: "Saved workouts missing a known type",
       },
     ],
-    detail: "Read-only source split for builder and generated-session workflow signals.",
+    detail: "Shows manual and generated workout activity side by side.",
     caveat:
       unknownSaves > 0
-        ? "Unknown saves are excluded from manual/generated rates until their source is explicitly mapped."
-        : "Duplicate drafts and saves can exist; this is not unique-user, checkout, export, or finance conversion.",
+        ? "Some saved workouts are not linked to a supported type yet. They stay out of manual/generated rates until reviewed."
+        : "A person may create more than one tracked action. These numbers describe product activity, not exports, purchases, or revenue.",
   };
 }
 
@@ -607,25 +695,25 @@ function buildSchemaMissingWorkoutBuilderSourceBreakdown(): AnalyticsDashboardWo
         id: "source-manual-starts",
         label: "Manual starts",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "source-generated-drafts",
         label: "Generated drafts",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "source-manual-saves",
         label: "Manual saves",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "source-generated-saves",
         label: "Generated saves",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "source-manual-save-rate",
@@ -641,13 +729,13 @@ function buildSchemaMissingWorkoutBuilderSourceBreakdown(): AnalyticsDashboardWo
       },
       {
         id: "source-unknown-saves",
-        label: "Unknown saves",
+        label: "Needs review",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
     ],
-    detail: "Source breakdown is hidden from inference until analytics schema is ready.",
-    caveat: "Apply the analytics_events migration before reading source breakdown counts.",
+    detail: "Manual/generated workout split is hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading manual/generated workout counts.",
   };
 }
 
@@ -681,13 +769,13 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
         id: "generated-completion-drafts",
         label: "Generated drafts",
         value: formatAnalyticsCount(generatedDrafts),
-        detail: "AI session drafts",
+        detail: "Generated workout drafts",
       },
       {
         id: "generated-completion-saves",
         label: "Generated saves",
         value: formatAnalyticsCount(generatedSaves),
-        detail: "Saved generated sessions",
+        detail: "Saved generated workouts",
       },
       {
         id: "generated-completion-rate",
@@ -697,17 +785,17 @@ function buildWorkoutBuilderTemplateGeneratedCompletion(
       },
       {
         id: "template-usage",
-        label: "Template usage",
+        label: "Template starts",
         value: templateUsageValue,
-        detail: "Explicit selections",
+        detail: "Use template clicks",
       },
     ],
     detail:
-      "Read-only generated-session completion signal with explicit template selection kept separate from unsupported inference.",
+      "Shows how often generated drafts became saved sessions, with template starts kept separate.",
     caveat:
       generatedDrafts === 0
-        ? "Completion rate is not counted until a generated draft exists in this range; template usage is counted only from explicit template-selection events."
-        : "Template usage is counted only from explicit template-selection events, not session type, source kind, draft creation, or adjacent activity.",
+        ? "Completion rate is not counted until a generated draft exists in this range. Template starts count only the Use template action."
+        : "Template starts count only the Use template action, not nearby labels, generated drafts, or saved workouts.",
   };
 }
 
@@ -718,13 +806,13 @@ function buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(): Analytic
         id: "generated-completion-drafts",
         label: "Generated drafts",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "generated-completion-saves",
         label: "Generated saves",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "generated-completion-rate",
@@ -734,14 +822,14 @@ function buildSchemaMissingWorkoutBuilderTemplateGeneratedCompletion(): Analytic
       },
       {
         id: "template-usage",
-        label: "Template usage",
+        label: "Template starts",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
     ],
     detail:
-      "Generated completion and template usage are hidden from inference until analytics schema is ready.",
-    caveat: "Apply the analytics_events migration before reading generated-completion counts.",
+      "Generated session and template start counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading generated session counts.",
   };
 }
 
@@ -763,7 +851,7 @@ function buildWorkoutBuilderTemplateUsage(
       return {
         key: safeKey,
         label: safeLabel,
-        secondary: `${status} - ${safeKey}`,
+        secondary: status,
         count: formatAnalyticsCount(item.count),
       };
     }) ?? [];
@@ -772,35 +860,35 @@ function buildWorkoutBuilderTemplateUsage(
     metrics: [
       {
         id: "template-selections",
-        label: "Template selections",
+        label: "Template starts",
         value: formatAnalyticsCount(templateSelections),
-        detail: "Explicit Use template events",
+        detail: "Use template clicks",
       },
       {
         id: "templates-selected",
-        label: "Templates selected",
+        label: "Templates used",
         value: formatAnalyticsCount(templatesSelected),
-        detail: "Known template keys",
+        detail: "Known templates",
       },
       {
         id: "unknown-template-selections",
-        label: "Unknown template",
+        label: "Needs review",
         value: formatAnalyticsCount(unknownTemplateSelections),
-        detail: "Missing or unmapped key/source",
+        detail: "Missing approved template",
       },
     ],
     items,
     emptyLabel:
       templateSelections === 0
-        ? "No template selections in this range."
-        : "No known template keys in this range.",
-    detail: "Read-only usage for explicit registry-backed workout template selections.",
+        ? "No template starts in this range."
+        : "No approved templates in this range.",
+    detail: "Shows which workout templates users started from.",
     caveat:
       unknownTemplateSelections > 0
-        ? "Unknown template selections are kept separate until their key/source is explicitly mapped."
+        ? "Some template starts do not match an approved template yet. They stay out of template totals until reviewed."
         : knownTemplateSelections === 0
           ? "Template selection counts remain zero until users explicitly choose Use template."
-          : "Duplicate selections can exist; this is not unique-user, checkout, export, revenue, or finance conversion.",
+          : "A person may start the same template more than once. These numbers are not purchases, exports, or revenue.",
   };
 }
 
@@ -809,27 +897,27 @@ function buildSchemaMissingWorkoutBuilderTemplateUsage(): AnalyticsDashboardWork
     metrics: [
       {
         id: "template-selections",
-        label: "Template selections",
+        label: "Template starts",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "templates-selected",
-        label: "Templates selected",
+        label: "Templates used",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
       {
         id: "unknown-template-selections",
-        label: "Unknown template",
+        label: "Needs review",
         value: "Not counted",
-        detail: "Schema missing",
+        detail: "Setup missing",
       },
     ],
     items: [],
-    emptyLabel: "Template usage is hidden from inference until analytics schema is ready.",
-    detail: "Template usage is hidden from inference until analytics schema is ready.",
-    caveat: "Apply the analytics_events migration before reading template selection counts.",
+    emptyLabel: "Template start counts are hidden until analytics setup is ready.",
+    detail: "Template start counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading template start counts.",
   };
 }
 
@@ -863,6 +951,7 @@ export function buildAnalyticsDashboardViewModel(
       ],
       funnel: [],
       existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
+      workoutContextCta: buildSchemaMissingWorkoutContextCta(),
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
@@ -956,6 +1045,7 @@ export function buildAnalyticsDashboardViewModel(
     ],
     funnel: buildFunnel(payload),
     existingUpsellBaseline: buildExistingUpsellBaseline(payload),
+    workoutContextCta: buildWorkoutContextCta(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
@@ -968,13 +1058,14 @@ export function buildAnalyticsDashboardViewModel(
       payload.capped
         ? `This range hit the ${formatAnalyticsCount(payload.rowCap)} row cap. Treat totals as bounded.`
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} row cap.`,
-      "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
-      "Existing upsell baseline counts current commercial surface visibility and clicked intent only; accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement or finance truth.",
-      "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
-      "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
-      "Template usage is product telemetry only and counts explicit template-selection events; do not infer it from session type, generator block toggles, draft creation, source kind, visible labels, or adjacent activity.",
+      "Sales funnel counts are product signals only. They are not purchase or accounting records; use Stripe and accounting reports for money.",
+      "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
+      "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Builder save-rate shows product activity only. It is not unique people, checkout performance, purchases, or revenue.",
+      "Manual/generated workout split shows product activity only. It is not export success, revenue attribution, or accounting evidence.",
+      "Template starts count only the Use template action. Do not infer template use from nearby labels, saved workouts, or generated drafts.",
       "Public aggregate events are intentionally not linked to user profiles.",
-      "Raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
+      "Sensitive details such as raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],
   };
 }
