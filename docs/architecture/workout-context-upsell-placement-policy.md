@@ -10,7 +10,9 @@ generator context.
 Current decision: no workout-context upsell CTA is implemented or approved by this policy. Existing
 commercial surfaces remain `/plans` and My Library explore. Existing `upsell_presented`,
 `upsell_accepted`, and `upsell_declined` events may continue to describe those current commerce
-surfaces, but workout-context use of those events requires a later child brief.
+surfaces. Workout-context use of those events must first follow the measurement contract in
+`docs/architecture/workout-context-cta-measurement-contract.md`, and still requires a later runtime
+child before any CTA is shown or instrumented.
 
 ## Product Principle
 
@@ -73,7 +75,7 @@ Workout-builder, generator, source, generated-completion, and template-usage met
 telemetry. They may justify where a future CTA should be explored, but they do not mean a CTA was
 shown, accepted, declined, or converted.
 
-Before workout-context CTA performance can be measured, a later child must define:
+Before workout-context CTA performance can be measured, the measurement contract must define:
 
 - the exact placement ID(s),
 - the exact product ID(s),
@@ -83,6 +85,9 @@ Before workout-context CTA performance can be measured, a later child must defin
 - Admin Analytics interpretation,
 - Help/Guide copy,
 - tests for allowed, forbidden, unknown, disabled, and failure states.
+
+The first measurement contract is
+`docs/architecture/workout-context-cta-measurement-contract.md`.
 
 Until then, Admin Analytics must not add a workout-context CTA module or infer CTA performance from
 builder starts, saves, generated drafts, template selection, checkout starts, checkout completions,
