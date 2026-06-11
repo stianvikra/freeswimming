@@ -28,6 +28,7 @@ Use this quick check so the task execution is precise:
 - State visual artifact rule for UI/print/layout/brand changes, including folder path and `before/after` or `after/reference` naming
 - State route/label/support-surface impact sweep rule when routes, labels, workflow actions, Help/Guide surfaces, runbooks, or support paths are removed/renamed/consolidated
 - State high-cost debugging rule when prior attempts have failed, including hypothesis list, ranked probes, and bug-log impact
+- State whether local automation friction defaults apply when prior screenshot, browser, CI, sandbox approval, process-cleanup, or generated-artifact issues are likely (`docs/runbooks/codex-local-automation-friction-defaults.md`)
 - State session handoff rule when a new chat is the better working mode, not only when context is already heavy
 - State closeout gate (completion audit + final 10/10 quality/safety/perf/regression sweep + move/cleanup prompts)
 

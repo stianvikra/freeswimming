@@ -18,6 +18,30 @@ Before starting a similar investigation, scan this file for matching symptoms an
 - Evidence:
 ```
 
+## 2026-06-11 - Codex Local Automation: repeated screenshot, approval, and PR-check friction
+
+- Surface: Codex local execution flow, Playwright/Chromium screenshot capture, GitHub PR checks,
+  temporary visual harnesses, and current-workstream process cleanup.
+- Symptom: repeated workstreams lost time to the same questions and fallbacks: Chromium macOS sandbox
+  prompts, missing browser/channel mismatch, `/dev/login` or Supabase egress blocking
+  screenshot-only capture, stale generated Next type/cache artifacts from temporary routes, Next dev
+  overlay covering screenshots, `networkidle` waits timing out on active Next routes, hanging
+  `gh pr checks --watch`, and PR checks not starting until a narrow recovery action was used.
+- Root cause: the best path existed across AGENTS, screenshot runbooks, sandbox guidance, and done
+  brief evidence, but the combined decision ladder was not a single canonical source.
+- Fix pattern: use `docs/runbooks/codex-local-automation-friction-defaults.md` before repeating known
+  failed attempts; start from repo-local Playwright capture, use local visual harnesses instead of
+  widening Supabase access for screenshots, wait for concrete DOM markers, hide only capture-only
+  chrome, inspect/stop current-workstream processes, and prefer CLI/API PR-check recovery before UI
+  automation.
+- Detection/probe: when a new prompt or failure matches screenshot/browser/sandbox/stuck-check/local
+  cleanup history, check the local automation runbook before asking for a bespoke decision.
+- Prevention: keep recurring command approvals narrow in the Codex UI, document new repeated patterns
+  in the active brief checkpoint or this log, and preserve the active product parent return path.
+- Evidence: task brief
+  `docs/task-briefs/in-progress/2026-06-11-codex-local-automation-friction-visual-capture-defaults-10-10.md`
+  and runbook `docs/runbooks/codex-local-automation-friction-defaults.md`.
+
 ## 2026-06-08 - Habits Sound: merged ding still sounded like the old/wrong sound
 
 - Surface: `/my-library/habits`, `/my-library/dryland` Micro Sessions bubbles, `lib/audio/client-sound.ts`, local opt-in completion/target sound.

@@ -32,6 +32,7 @@ Prefer one-time approval instead when the command is:
   - `git push`
   - `git fetch`
   - `git checkout`
+  - `git switch`
   - `git worktree add`
   - `git worktree remove`
   - `git worktree prune`
@@ -46,13 +47,30 @@ Prefer one-time approval instead when the command is:
   - `gh run view`
   - `gh run watch`
   - `gh run rerun`
+  - `gh workflow view`
+  - `gh workflow list`
 - Validation:
   - `npm run verify:pre-pr`
   - `npm run verify:pre-merge`
+  - `npm run verify:docs-only`
   - `npm run build`
   - `npm run typecheck`
   - `npx playwright test`
   - `npx vitest run`
+- Local UI development and screenshot setup:
+  - `npm exec next dev`
+  - `npx playwright install chromium`
+- Process inspection:
+  - `pgrep -af`
+  - `ps -p`
+  - `ps -Ao`
+  - `lsof -i`
+  - `lsof +D`
+  - `lsof +L1`
+
+Use one-time approval instead of recurring approval for broad or mutating command families such as
+`kill`, `rm`, and `gh api` unless the exact command is narrow, tied to the active workstream, and the
+target has already been identified.
 
 ## Expected Edge Cases
 
@@ -75,3 +93,7 @@ Even with good recurring approvals, Codex may still ask again when:
 - approval persistence purely from repo text,
 - destructive-command confirmation,
 - credential- or secret-handling prompts.
+
+For repeated local screenshot, browser, process-cleanup, or stuck-check patterns, use
+`docs/runbooks/codex-local-automation-friction-defaults.md` before asking the owner to make another
+one-off decision.
