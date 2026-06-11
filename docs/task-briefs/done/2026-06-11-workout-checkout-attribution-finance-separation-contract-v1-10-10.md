@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -310,7 +310,7 @@ Future runtime children:
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md`
+- Completed child path: `docs/task-briefs/done/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md`
 - Architecture contract path: `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`
 - Latest completed child path: `docs/task-briefs/done/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
 - Recovery protocol:
@@ -326,3 +326,32 @@ Future runtime children:
 - `2026-06-11 | docs validation passed | route/label/support sweep found only expected existing commerce, analytics, entitlement, finance, support, and task-brief references; npm run lint:briefs:all, npm run verify:docs-only, git diff --check, and trailing-whitespace checks passed for the docs-only contract with no runtime scope added | next: run npm run verify:pre-pr before commit/push`
 - `2026-06-11 | pre-pr passed | npm run verify:pre-pr passed the docs-only lane and confirmed branch workout-checkout-attribution-finance-separation-contract-v1 contains current origin/main@2be08770; scope remains docs-only with no runtime CTA, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, pricing, dashboard, or builder/generator UX changes | next: commit, push, open PR, monitor CI, and run pre-merge gate`
 - `2026-06-11 | PR checkpoint amended | initial PR #1076 CI and npm run verify:pre-merge passed before the checkpoint amend; the amended branch keeps scope docs-only with no runtime CTA, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, pricing, dashboard, or builder/generator UX changes | next: rerun pre-pr/pre-merge on the amended branch, update PR #1076, and wait for owner merge approval`
+- `2026-06-11 | implementation merged | PR #1076 merged at squash commit 948e0309 after green docs-only pre-pr, PR CI, and pre-merge gates; closeout moved this child to done with no runtime CTA, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, pricing, dashboard, or builder/generator UX changes | next: finish docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1076`
+- `squash_commit`: `948e0309`
+- `result`: Closed Workout Checkout Attribution + Finance Separation Contract V1 as a docs-only architecture and planning contract. Product CTA telemetry, checkout attribution, Stripe/provider truth, entitlement truth, and finance reporting now have separate ownership boundaries before any later commerce implementation.
+- `validation`: `npm run lint:briefs:all` PASS; `npm run verify:docs-only` PASS; `git diff --check` PASS; route/label/support sweep PASS; `npm run verify:pre-pr` PASS; PR #1076 CI PASS; `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no runtime, migration, Stripe, entitlement, finance, dashboard, export, or UI scope was added.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                  | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Architecture contract plus parent checkpoint defines the next commerce boundary without expanding runtime CTA scope.                                                      | None.        |
+| Business logic correctness and data integrity | `5/5`          | Contract separates CTA, checkout attribution, provider truth, entitlement truth, and finance reporting; route/support sweep found no runtime fallout.                     | None.        |
+| Data placement and sync boundaries            | `5/5`          | Contract defines analytics, server, provider, entitlement, and finance ownership boundaries.                                                                              | None.        |
+| Caching and invalidation strategy             | `5/5`          | Contract requires future checkout, entitlement, and dashboard children to define cache, stale-state, retry, and repair behavior.                                          | None.        |
+| Reliability and failure handling              | `5/5`          | Failure/fallback matrix covers unknown products, missing checkout config, provider failure, webhook delay, entitlement lag, reconciliation mismatch, and stale analytics. | None.        |
+| Security and authz                            | `5/5`          | Contract preserves fail-closed protected routes, server-only Stripe data, webhook verification, and future negative-path test requirements.                               | None.        |
+| Privacy and compliance                        | `5/5`          | Contract forbids raw Stripe IDs, checkout URLs, emails, payment details, invoices, raw payloads, URLs/referrers, IPs, user agents, and free text in client analytics.     | None.        |
+| Content governance                            | `5/5`          | Durable architecture doc, parent brief reference, API caveat, and task brief passed brief lint and docs-only gates.                                                       | None.        |
+| Analytics and KPI observability               | `5/5`          | KPI interpretation rules prevent Admin Analytics from implying checkout, entitlement, Stripe, revenue, or finance truth.                                                  | None.        |
+| Commerce and revenue ops                      | `5/5`          | Checkout attribution, product identity, provider state, entitlement grants, and revenue operations stay separately reconcilable.                                          | None.        |
+| Incident response and support operations      | `5/5`          | Contract gives support language for checkout handoff, webhook delay, entitlement repair, reconciliation mismatch, and analytics-vs-finance interpretation.                | None.        |
+| Finance and reporting operations              | `5/5`          | Finance reporting is tied to Stripe/accounting reconciliation and exports, not CTA clicks, checkout-start counts, entitlement rows, or Admin Analytics modules.           | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only diff reused existing architecture/task-brief patterns and added no dependency, route, migration, provider, checkout, entitlement, or UI code.                   | None.        |
+| Testing and QA automation                     | `5/5`          | `npm run lint:briefs:all`, `npm run verify:docs-only`, `git diff --check`, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed.                         | None.        |
+| Scalability and cost efficiency               | `5/5`          | Contract defers raw drilldown/export/warehouse expansion and requires bounded low-cardinality attribution dimensions.                                                     | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only contract is revertable without migrations, provider config, env changes, entitlement repairs, or finance scripts.                                               | None.        |
