@@ -72,11 +72,21 @@ describe("AdminHelpCenter", () => {
     expect(
       screen.getByText(/not money records or tracking individual public visitors/i)
     ).toBeVisible();
+    expect(screen.getByText("Know the dashboard words")).toBeVisible();
+    expect(
+      screen.getByText(
+        /A logged action is one counted thing that happened.*Event is the technical name/i
+      )
+    ).toBeVisible();
+    expect(screen.getByText(/Read limit means the dashboard stopped/i)).toBeVisible();
     expect(screen.getByText(/Started shows how often the builder was opened/i)).toBeVisible();
     expect(
       screen.getByText(/Manual starts and saves show hands-on builder activity/i)
     ).toBeVisible();
     expect(screen.getByText(/Shown means the Poolside guide prompt appeared/i)).toBeVisible();
+    expect(
+      screen.getByText(/Checkout handoffs mean the approved saved-workout guide path/i)
+    ).toBeVisible();
     expect(
       screen.getByText(/Shown means a current sales prompt on Plans or My Library appeared/i)
     ).toBeVisible();
@@ -89,6 +99,7 @@ describe("AdminHelpCenter", () => {
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
+    expect(screen.getByText("Poolside guide checkout:")).toBeVisible();
     expect(screen.getByText("Generated sessions / Template starts:")).toBeVisible();
     expect(screen.getByText(/not purchases, revenue, exports, or unique people/i)).toBeVisible();
     expect(screen.getByText(/Do not infer missing revenue, individual visitors/i)).toBeVisible();

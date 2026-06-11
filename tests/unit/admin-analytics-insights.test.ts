@@ -285,6 +285,13 @@ describe("admin analytics insights", () => {
       acceptedRate: null,
       unknownEvents: 0,
     });
+    expect(insights.workoutContextCheckoutStarted).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      started: 0,
+      unknownEvents: 0,
+    });
     expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
     expect(insights.productCounts[0]).toMatchObject({
       key: "guide_poolside",
@@ -526,6 +533,81 @@ describe("admin analytics insights", () => {
       unknownSourceEvents: 0,
       sourceCounts: [],
     });
+  });
+
+  it("maps workout-context checkout-started handoffs without exposing raw payload", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "checkout_started",
+          channel: "server",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            sessionId: "cs_test_secret",
+            email: "user@example.com",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "checkout_started",
+          channel: "server",
+          source: "workout_context",
+          product_id: "future_product",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "future_product",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "checkout_started",
+          channel: "server",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "future_placement",
+            productId: "guide_poolside",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "checkout_started",
+          channel: "server",
+          source: "plans",
+          product_id: "guide_poolside",
+          payload: {
+            source: "plans",
+            productId: "guide_poolside",
+          },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.funnel.checkoutStarted).toBe(4);
+    expect(insights.workoutContextCheckoutStarted).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      started: 1,
+      unknownEvents: 2,
+    });
+    expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain("future_product");
+    expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain(
+      "future_placement"
+    );
+    expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain("cs_test_secret");
+    expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain(
+      "user@example.com"
+    );
   });
 
   it("keeps malformed and missing workout save source kinds unmapped", () => {

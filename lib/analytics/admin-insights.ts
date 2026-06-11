@@ -5,6 +5,7 @@ import {
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
+import { WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION } from "@/lib/commerce/checkout";
 import {
   WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE,
   WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
@@ -103,6 +104,13 @@ export type AnalyticsInsightsResponse = {
     acceptedRate: number | null;
     unknownEvents: number;
   };
+  workoutContextCheckoutStarted: {
+    placementId: string;
+    productId: string;
+    source: string;
+    started: number;
+    unknownEvents: number;
+  };
   workoutBuilderFunnel: {
     started: number;
     saved: number;
@@ -144,6 +152,7 @@ const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies Analyt
 const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
 const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
 const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
+const CHECKOUT_STARTED_EVENT = "checkout_started" satisfies AnalyticsEventName;
 const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
 const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
 const EXISTING_UPSELL_SOURCE_VALUES = new Set(["plans", "library_explore"]);
@@ -246,6 +255,26 @@ function isMappedWorkoutContextCtaRow(row: AnalyticsEventInsightRow): boolean {
   );
 }
 
+function isWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  return (
+    source === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source ||
+    placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId
+  );
+}
+
+function isMappedWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
+  return (
+    source === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source &&
+    placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId &&
+    productId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId
+  );
+}
+
 function normalizeExistingUpsellSource(row: AnalyticsEventInsightRow): string {
   const candidates = [
     row.source,
@@ -331,7 +360,7 @@ export function buildAnalyticsInsights(input: {
     }
   }
 
-  const checkoutStarted = eventCounts.get("checkout_started") ?? 0;
+  const checkoutStarted = eventCounts.get(CHECKOUT_STARTED_EVENT) ?? 0;
   const checkoutCompleted = eventCounts.get("checkout_completed") ?? 0;
   const workoutBuilderStarted = eventCounts.get(WORKOUT_BUILDER_STARTED_EVENT) ?? 0;
   const workoutBuilderSaved = eventCounts.get(WORKOUT_BUILDER_SAVED_EVENT) ?? 0;
@@ -348,10 +377,20 @@ export function buildAnalyticsInsights(input: {
   let workoutContextCtaPresented = 0;
   let workoutContextCtaAccepted = 0;
   let workoutContextCtaUnknownEvents = 0;
+  let workoutContextCheckoutStarted = 0;
+  let workoutContextCheckoutStartedUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
 
   for (const row of input.rows) {
+    if (row.event_name === CHECKOUT_STARTED_EVENT) {
+      if (isMappedWorkoutContextCheckoutStartedRow(row)) {
+        workoutContextCheckoutStarted += 1;
+      } else if (isWorkoutContextCheckoutStartedRow(row)) {
+        workoutContextCheckoutStartedUnknownEvents += 1;
+      }
+    }
+
     if (
       row.event_name === UPSELL_PRESENTED_EVENT ||
       row.event_name === UPSELL_ACCEPTED_EVENT ||
@@ -489,6 +528,13 @@ export function buildAnalyticsInsights(input: {
       accepted: workoutContextCtaAccepted,
       acceptedRate: ratio(workoutContextCtaAccepted, workoutContextCtaPresented),
       unknownEvents: workoutContextCtaUnknownEvents,
+    },
+    workoutContextCheckoutStarted: {
+      placementId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId,
+      productId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId,
+      source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
+      started: workoutContextCheckoutStarted,
+      unknownEvents: workoutContextCheckoutStartedUnknownEvents,
     },
     workoutBuilderFunnel: {
       started: workoutBuilderStarted,

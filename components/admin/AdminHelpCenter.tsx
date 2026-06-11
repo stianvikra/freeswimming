@@ -63,7 +63,7 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, current sales prompt activity, saved-workout guide prompt interest, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, saved-workout guide prompt interest, saved-workout checkout handoffs, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
     commonRisk:
       "Treating dashboard counts as purchases, accounting records, checkout completion, or unique people instead of product activity signals.",
   },
@@ -263,14 +263,19 @@ const MESSAGE_WORKFLOW = [
 
 const ANALYTICS_WORKFLOW = [
   {
+    title: "Know the dashboard words",
+    detail:
+      "A logged action is one counted thing that happened, such as a page view, a button click, or a checkout handoff. Event is the technical name for the same thing. Read limit means the dashboard stopped at a safe maximum number of stored records. Setup missing means the analytics storage is not ready, so numbers stay hidden instead of guessed.",
+  },
+  {
     title: "Start with data health",
     detail:
-      "Check range, generated time, last event, setup state, and row limit before reading any dashboard number. Capped or setup-missing data must be treated as incomplete.",
+      "Check range, generated time, last activity, setup state, and read limit before reading any dashboard number. Capped or setup-missing data must be treated as incomplete.",
   },
   {
     title: "Use the top summary for a quick pulse",
     detail:
-      "Total events, public aggregate, known users, client/server split, and checkout rate answer whether safe instrumentation is active in the selected range.",
+      "Total tracked actions, public aggregate, known users, browser/server split, and checkout rate answer whether safe tracking is active in the selected range.",
   },
   {
     title: "Read builder starts and saves as product activity",
@@ -285,7 +290,12 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Read the saved-workout guide prompt as interest",
     detail:
-      "Shown means the Poolside guide prompt appeared after a workout was saved. Clicked means someone clicked that prompt. Needs review means some events do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Shown means the Poolside guide prompt appeared after a workout was saved. Clicked means someone clicked that prompt. Needs review means some logged actions do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
+  },
+  {
+    title: "Read saved-workout checkout handoffs as checkout start only",
+    detail:
+      "Checkout handoffs mean the approved saved-workout guide path reached checkout start. Needs review means some checkout-start actions do not match that approved path yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
     title: "Read manual vs generated workouts side by side",
@@ -305,7 +315,7 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Use top lists for direction, not raw investigation",
     detail:
-      "Top events, routes, and products show safe labels for direction. The dashboard intentionally does not show raw technical payloads, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details, or payment/shipping data.",
+      "Top tracked actions, routes, and products show safe labels for direction. The dashboard intentionally does not show raw technical payloads, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details, or payment/shipping data.",
   },
   {
     title: "Respect the public privacy boundary",
@@ -534,7 +544,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Data health states",
         meaning:
-          "Fresh means recent safe events exist. Quiet means no recent event is visible. Capped means totals may be incomplete. Schema missing means the migration/setup is not ready. No data yet means the selected range has no matching rows.",
+          "Fresh means recent tracked activity exists. Quiet means no recent tracked activity is visible. Capped means totals may be incomplete. Setup missing means analytics storage is not ready. No data yet means the selected range has no matching records.",
       },
       {
         label: "Started / Saved / Save rate",
@@ -550,6 +560,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Poolside guide prompt",
         meaning:
           "Shows how often the Poolside guide prompt was shown and clicked after a workout was saved. Needs review stays out of the main numbers until reviewed, and none of these values mean purchase, access, revenue, or accounting evidence.",
+      },
+      {
+        label: "Poolside guide checkout",
+        meaning:
+          "Shows checkout handoffs from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean purchase, access, revenue, accounting evidence, or unique people.",
       },
       {
         label: "Generated sessions / Template starts",
@@ -715,7 +730,7 @@ const CONNECTED_SERVICES = [
   {
     name: "First-party analytics",
     purpose:
-      "Stores sanitized aggregate/product/funnel/upsell events and renders read-only admin insights without third-party scripts.",
+      "Stores sanitized aggregate/product/funnel/upsell logged actions and renders read-only admin insights without third-party scripts.",
     caution:
       "Do not treat dashboard counts, including sales prompt clicks and checkout-cancel returns, as accounting records, unique-person tracking, or approval for cookies/vendor tracking.",
   },
@@ -949,8 +964,8 @@ export default function AdminHelpCenter() {
       <section id="analytics" className={helpSectionClass}>
         <h3 className={helpHeadingClass}>How Analytics works</h3>
         <p className={helpBodyClass}>
-          Analytics is a read-only operational dashboard over sanitized first-party events. Use it
-          for product and support direction, not money records or tracking individual public
+          Analytics is a read-only operational dashboard over sanitized first-party logged actions.
+          Use it for product and support direction, not money records or tracking individual public
           visitors.
         </p>
         <div className="mt-3 space-y-3">
@@ -1004,8 +1019,8 @@ export default function AdminHelpCenter() {
               </li>
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>
-                Inspect privacy-safe analytics event health, read-only funnel signals, and existing
-                upsell baseline caveats.
+                Inspect privacy-safe analytics health, read-only funnel signals, and existing
+                upsell, saved-workout guide prompt, and checkout handoff caveats.
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
@@ -1143,9 +1158,9 @@ export default function AdminHelpCenter() {
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Check Data health first. Empty can mean no traffic in range, Quiet can mean no recent
-              event, Capped means totals are bounded, and Setup missing means the analytics setup is
-              not ready. Do not infer missing revenue, individual visitors, or accounting truth from
-              this dashboard alone.
+              tracked activity, Capped means totals are bounded, and Setup missing means the
+              analytics setup is not ready. Do not infer missing revenue, individual visitors, or
+              accounting truth from this dashboard alone.
             </p>
           </article>
           <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
