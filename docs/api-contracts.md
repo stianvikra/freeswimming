@@ -361,8 +361,9 @@
   and template-usage metrics may inform placement policy only as aggregate product evidence. They
   are not CTA presentation, CTA acceptance, checkout conversion, entitlement truth, Stripe
   reconciliation, revenue attribution, or finance reporting. A workout-context CTA event/dashboard
-  requires a later child after
-  `docs/architecture/workout-context-upsell-placement-policy.md`.
+  requires a later runtime child after
+  `docs/architecture/workout-context-upsell-placement-policy.md` and
+  `docs/architecture/workout-context-cta-measurement-contract.md`.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.

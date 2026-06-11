@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-11`
-- `base`: clean synced `main@765179c2` after PR `#1068` shipped the existing upsell Admin Analytics baseline.
+- `base`: clean synced `main@a5b4760d` after PR `#1069` closed the existing upsell Admin Analytics baseline brief and `npm run post-merge:preflight` was clean.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, PR `#1066` closed the docs-only workout-context upsell placement policy, PR `#1067` closed its repo-managed docs-only closeout, and PR `#1068` shipped the read-only existing upsell Admin Analytics baseline. No child is active or planned until the owner explicitly selects the next bounded slice.
+- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, PR `#1066` closed the docs-only workout-context upsell placement policy, PR `#1067` closed its repo-managed docs-only closeout, PR `#1068` shipped the read-only existing upsell Admin Analytics baseline, and PR `#1069` closed its repo-managed docs-only closeout. The owner selected and executed Workout Context CTA Measurement Contract V1 as the next docs-only child.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -65,6 +65,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1068` / squash commit `765179c2`.
   - Owns only read-only Admin Analytics baseline visibility for existing `upsell_presented`, `upsell_accepted`, and `upsell_declined` events on current `/plans` and My Library commercial surfaces.
   - Runtime workout-context CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, and builder/generator UX remain out of scope.
+- In-progress child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md`
+  - Owns only a docs-only measurement contract for the first future workout-context CTA candidate.
+  - Must define placement/product/event/payload/dashboard/support boundaries before any runtime workout-context CTA or dedicated dashboard child.
+  - Runtime CTA UI, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, and builder/generator UX remain out of scope.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - runtime commercial CTA implementation,
@@ -77,13 +81,14 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-No active child.
+Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md`
 
-The placement-policy child is closed. Future work must still start as a separate owner-approved child and must not add runtime workout-context CTA, new CTA event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without that explicit child scope.
+The planned measurement-contract child may only define the first workout-context CTA placement/product/event/payload/dashboard/support boundaries in docs. It must not add runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, or builder/generator UX changes.
 
-Safe follow-up candidate families after the existing upsell baseline:
+Safe follow-up candidate families after the planned measurement contract closes:
 
-- Workout-context CTA instrumentation/dashboard: add privacy-safe workout-context `upsell_presented` / `upsell_accepted` / `upsell_declined` visibility only after placement policy and existing-surface baseline boundaries are explicit.
+- Runtime workout-context CTA implementation: add the first approved non-blocking workout-context CTA and privacy-safe event callsites only after the docs contract is complete.
+- Workout-context CTA Admin Analytics mapping: add read-only workout-context CTA dashboard visibility only after runtime events exist and their meanings are explicit.
 - Checkout attribution and finance separation: define how product telemetry, checkout conversion, entitlement truth, Stripe reconciliation, and finance reporting stay separate before any commerce implementation.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -91,7 +96,7 @@ Current guardrails:
 
 - Do not reopen the completed template usage mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
-- Do not add runtime CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without a new approved child brief.
+- Do not add runtime CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, or builder/generator UX changes without a new approved child brief.
 - Any next child must include the pre-implementation owner explanation, scorecard mapping, data-boundary decisions, forward-compatibility contract, route/label/support sweep triggers, Help/Guide impact, and validation plan before implementation starts.
 
 ## Scope
@@ -333,7 +338,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -381,3 +386,5 @@ Future child implementation:
 - `2026-06-11 | existing upsell baseline screenshots approved | owner approved the child screenshot handoff in chat; no product rendering files changed after final capture | next: child verify:pre-pr`
 - `2026-06-11 | existing upsell baseline pre-pr passed | active child passed npm run verify:pre-pr full lane with typecheck, unit tests, build, performance budgets, and Playwright; no runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope was added | next: commit, push, open PR, monitor CI, then run child pre-merge gate`
 - `2026-06-11 | existing upsell baseline child merged | PR #1068 merged at squash commit 765179c2 after green local pre-pr, CI, and pre-merge gates; child moved to done in the repo-managed closeout, parent has no active child, and runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-11 | planned measurement contract child created | owner approved Workout Context CTA Measurement Contract V1 as the next bounded child; created docs/task-briefs/planned/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md from clean synced main@a5b4760d after PR #1069 and clean post-merge preflight, with implementation still blocked on explicit owner execute/build/implement instruction and no runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope approved | next: wait for owner implementation approval or scope edits`
+- `2026-06-11 | measurement contract child in progress | owner requested execution of Workout Context CTA Measurement Contract V1 on branch workout-context-cta-measurement-contract-v1; child moved to docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md and remains docs-only, with no runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope approved | next: complete docs contract and validation`
