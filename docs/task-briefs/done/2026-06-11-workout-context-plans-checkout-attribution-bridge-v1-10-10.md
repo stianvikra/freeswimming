@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -368,17 +368,17 @@ Implementation evidence:
 - `npm exec vitest run tests/unit/habit-perfect-day-hub.test.tsx -t "keeps the slip logged success message inside the habit card"`: pass, 72 tests in the file; used to verify the first `verify:pre-pr` unit failure was not reproducible in isolation.
 - `npm run verify:pre-pr`: pass on rerun, full public lane; unit suite 240 files / 1525 tests, build pass, perf budgets pass, e2e 106 passed / 536 skipped. Log: `artifacts/test-runs/20260611-174726/verify.log`.
 
-Remaining:
+Merge-readiness evidence:
 
-- required PR CI checks
-- `npm run verify:pre-merge`
+- PR CI checks for `#1080`: pass.
+- `npm run verify:pre-merge`: pass, full public lane; unit suite 240 files / 1525 tests, build pass, perf budgets pass, e2e 106 passed / 536 skipped. PASS marker: `artifacts/verify-pre-merge/20260611-161004.json`.
 
 ## Session Continuity And Recovery
 
-- Canonical child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
+- Canonical child path: `docs/task-briefs/done/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Planned branch if executed: `workout-context-plans-checkout-attribution-bridge-v1`
-- Current status: in-progress after explicit owner execute/build/implement instruction.
+- Current status: done after PR `#1080` merged at squash commit `7ba175f2`.
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -390,3 +390,32 @@ Remaining:
 - `2026-06-11 | child moved to in-progress | owner requested implementation on branch workout-context-plans-checkout-attribution-bridge-v1; child moved to in-progress and remains scoped to the saved-workout CTA -> /plans -> existing checkout-start attribution bridge, with no direct checkout, dashboard module, Stripe webhook, entitlement, finance, shop/product catalog mutation, pricing, export, raw drilldown, visible UI redesign, or builder/generator algorithm changes | next: audit current CTA/plans/checkout code and implement the bounded bridge`
 - `2026-06-11 | bridge implemented with targeted validation | implemented the mapped saved-workout CTA -> /plans -> checkout-start attribution bridge, separated client plans telemetry from server checkout-start attribution, updated API/architecture contracts, recorded route/label/support sweep evidence, and passed targeted Vitest for checkout payloads, CheckoutButton, PlansPage, and WorkoutBuilderHub; no visible copy/layout/style, direct checkout, dashboard, Stripe webhook, entitlement, finance, shop/product catalog mutation, export, raw drilldown, or builder/generator algorithm scope was added | next: run typecheck, quality gates, brief lint, diff check, verify:pre-pr, then commit/push/PR`
 - `2026-06-11 | pre-pr gate green | first broad pre-pr run hit a non-reproducible HabitPerfectDayHub unit failure; the habit test file passed in isolation and the rerun passed full public pre-pr verification including lint, typecheck, unit suite, build, perf budgets, and e2e; no visual rendering files changed after the screenshot N/A decision | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge-readiness summary`
+- `2026-06-11 | attribution bridge child merged | PR #1080 merged at squash commit 7ba175f2 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, and direct workout-context checkout, checkout completion, dashboard modules, Stripe webhook changes, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route creation, product catalog mutation, new pricing, visible redesign, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1080`
+- `squash_commit`: `7ba175f2`
+- `result`: Closed Workout Context Plans Checkout Attribution Bridge V1; saved-workout users still land on `/plans`, but the approved Poolside checkout-start request can now carry bounded workout-context attribution without changing payment, entitlement, revenue, finance, or visible UI behavior.
+- `validation`: Targeted Vitest for checkout/session payload, CheckoutButton, PlansPage, and WorkoutBuilderHub passed, 4 files / 87 tests; `npm run verify:pre-pr` passed the full public lane on rerun; PR CI for `#1080` passed; `npm run verify:pre-merge` passed the full public lane with unit 240 files / 1525 tests, build, perf budgets, and e2e 106 passed / 536 skipped; no visual rendering files changed after the screenshot N/A decision.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; screenshot handoff was N/A because no visible UI, print, layout, brand, style, CSS class, asset, or product-rendering file changed.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | Existing saved-workout CTA still routes through `/plans`, while checkout-start attribution can now identify only the approved workout-context handoff.                   | No gap.      |
+| UX flow clarity                               | `5/5`          | Button copy, navigation, pending/error behavior, and cancel source remain unchanged; targeted component/page tests passed.                                               | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Helper and page tests prove the mapped bridge requires exact source, placement, query product, and checkout product matches.                                             | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Attribution hints stay transient in URL/request values; `/api/checkout/session` remains the server checkout-start boundary.                                              | No gap.      |
+| Reliability and failure handling              | `5/5`          | Unknown, malformed, future, and unrelated values fall back safely and do not emit mapped workout-context checkout attribution.                                           | No gap.      |
+| Security and authz                            | `5/5`          | Browser-provided attribution is not trusted as product, price, or provider truth; checkout remains catalog-backed.                                                       | No gap.      |
+| Privacy and compliance                        | `5/5`          | The bridge uses only low-cardinality IDs and excludes raw URLs, private workout data, users, visitors, provider IDs, payment details, IPs, and user agents.              | No gap.      |
+| Content governance                            | `5/5`          | API contract, checkout/finance architecture contract, route/support sweep evidence, parent brief, and this brief were updated.                                           | No gap.      |
+| Analytics and KPI observability               | `5/5`          | Checkout-start attribution is separated from client `upsell_accepted` telemetry and remains explicitly not payment, entitlement, revenue, unique-user, or finance truth. | No gap.      |
+| Commerce and revenue ops                      | `5/5`          | Stripe-hosted checkout, product catalog, pricing, fulfillment, checkout completion, entitlement, refunds, payouts, invoices, and finance truth were unchanged.           | No gap.      |
+| Incident response and support operations      | `5/5`          | Docs distinguish mapped workout-context starts, generic plans starts, unknown/future attribution, checkout unavailable, and provider failure without raw IDs.            | No gap.      |
+| Finance and reporting operations              | `5/5`          | Finance truth remains outside this slice, and no finance/export/reconciliation files changed.                                                                            | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next route/page boundaries, `CheckoutButton`, commerce checkout helpers, catalog IDs, and current test stack with no new dependency.                     | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, typecheck, quality gates, brief lint, diff check, full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                                           | No gap.      |
+| Scalability and cost efficiency               | `5/5`          | Attribution dimensions remain bounded and low-cardinality; no storage, rollup, warehouse, vendor forwarding, export, or per-user tracking was added.                     | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Change has no migration, env, dependency, provider config, pricing, or product catalog mutation; rollback restores generic plans attribution.                            | No gap.      |

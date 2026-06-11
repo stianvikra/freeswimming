@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-11`
-- `base`: clean synced `main@6a858185` after PR `#1078` and closeout PR `#1079`.
+- `base`: clean synced `main@7ba175f2` after PR `#1080`; `npm run post-merge:preflight` surfaced this repo-managed docs-only closeout.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1078`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, and checkout-start attribution hardening are all closed. The active child is the bounded workout-context plans checkout attribution bridge.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1080`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, and the workout-context plans checkout attribution bridge are all closed. No active or selected child remains after this closeout.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -89,9 +89,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns only hardening of existing `/api/checkout/session` checkout-start attribution.
   - Implemented privacy-safe allowlisted `checkout_started` attribution, no Stripe/session IDs in analytics or client response, minimal client response, and deterministic route failure tests.
   - Direct workout-context checkout, checkout completion, Stripe webhook changes, entitlement, finance, export, raw drilldown, vendor analytics, dashboard modules, pricing, product catalog mutation, migration, RLS, and visible UI changes remain out of scope unless explicitly approved.
-- Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
-  - Owns only the future attribution bridge from the existing saved-workout CTA through `/plans` into the existing checkout-start request.
-  - Must keep client upsell telemetry separate from server `checkout_started` attribution.
+- Done child: `docs/task-briefs/done/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
+  - Closed by PR `#1080` / squash commit `7ba175f2`.
+  - Owns only the attribution bridge from the existing saved-workout CTA through `/plans` into the existing checkout-start request.
+  - Keeps client upsell telemetry separate from server `checkout_started` attribution.
   - Direct workout-context checkout, new shop, new products, dashboard modules, checkout completion, Stripe webhook changes, entitlement, finance, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, visible redesign, and builder/generator algorithm changes remain out of scope unless explicitly approved.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
@@ -103,21 +104,21 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Selected child: `docs/task-briefs/in-progress/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`.
+Selected child: none.
 
-The workout-context CTA Admin Analytics mapping child, checkout attribution/finance separation contract child, and Checkout Started Attribution Hardening V1 child are complete. The selected planned child is intentionally narrower than direct checkout: it may preserve mapped workout-context attribution through `/plans` into the existing checkout-start request only after explicit owner execution approval. Any future child must be explicitly selected before adding direct workout-context checkout, `upsell_declined`, checkout completion, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, dashboard changes, visible UI changes, shop/product expansion, or builder/generator algorithm changes.
+The workout-context CTA Admin Analytics mapping child, checkout attribution/finance separation contract child, Checkout Started Attribution Hardening V1 child, and Workout Context Plans Checkout Attribution Bridge V1 child are complete. Any future child must be explicitly selected before adding direct workout-context checkout, `upsell_declined`, checkout completion, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, dashboard changes, visible UI changes, shop/product expansion, or builder/generator algorithm changes.
 
 Safe follow-up candidate families after the runtime CTA/event-callsites child:
 
 - Workout-context CTA Admin Analytics mapping follow-up: complete; only reopen if owner requests a new bounded dashboard/reporting slice.
-- Checkout attribution and finance separation: complete; checkout-start attribution hardening is complete; the selected next bridge should preserve mapped workout-context checkout-start attribution through `/plans`, while entitlement, support diagnostics, finance reconciliation, checkout completion, dashboard modules, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
+- Checkout attribution and finance separation: complete; checkout-start attribution hardening and the `/plans` attribution bridge are complete; entitlement, support diagnostics, finance reconciliation, checkout completion, dashboard modules, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
 Current guardrails:
 
 - Do not reopen the completed template usage mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
-- Do not add runtime CTA, new event callsites/meanings, direct checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes beyond the selected bridge, product catalog mutation, shop expansion, or builder/generator UX changes without a new approved child brief.
+- Do not add runtime CTA, new event callsites/meanings, direct checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, shop expansion, or builder/generator UX changes without a new approved child brief.
 - Any next child must include the pre-implementation owner explanation, scorecard mapping, data-boundary decisions, forward-compatibility contract, route/label/support sweep triggers, Help/Guide impact, and validation plan before implementation starts.
 
 ## Scope
@@ -357,9 +358,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-11-checkout-started-attribution-hardening-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
 - Planned child path: none
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
+- Active child path: none
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -431,3 +432,4 @@ Future child implementation:
 - `2026-06-11 | checkout-started attribution hardening child merged | PR #1078 merged at squash commit b067c30c after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and direct workout-context checkout, checkout completion, Stripe webhook changes, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route creation, product catalog mutation, new pricing, dashboard changes, visible UI changes, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
 - `2026-06-11 | planned attribution bridge child created | created docs/task-briefs/planned/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md from clean synced main@6a858185 after PR #1078 and closeout PR #1079; implementation is not approved yet and scope remains limited to a future saved-workout CTA -> /plans -> existing checkout-start attribution bridge, with no direct checkout, dashboard module, Stripe webhook, entitlement, finance, shop/product catalog mutation, pricing, export, raw drilldown, visible redesign, or builder/generator algorithm changes | next: wait for owner implementation approval or scope edits`
 - `2026-06-11 | attribution bridge child in progress | owner requested implementation on branch workout-context-plans-checkout-attribution-bridge-v1; active child is docs/task-briefs/in-progress/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md and remains scoped to the saved-workout CTA -> /plans -> existing checkout-start attribution bridge, with no direct checkout, dashboard module, Stripe webhook, entitlement, finance, shop/product catalog mutation, pricing, export, raw drilldown, visible redesign, or builder/generator algorithm changes | next: audit current CTA/plans/checkout code and implement the bounded bridge`
+- `2026-06-11 | attribution bridge child merged | PR #1080 merged at squash commit 7ba175f2 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and direct workout-context checkout, checkout completion, dashboard modules, Stripe webhook changes, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route creation, product catalog mutation, new pricing, visible redesign, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
