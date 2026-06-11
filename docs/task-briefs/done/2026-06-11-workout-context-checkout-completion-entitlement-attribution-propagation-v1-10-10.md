@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -24,8 +24,8 @@
 
 - `last_audited`: `2026-06-11`
 - `base`: clean synced `main@c37e4caf` after PR `#1090` closed the Codex local automation defaults follow-up. Re-audit read the parent, the checkout completion/entitlement attribution contract, checkout/session route, Stripe webhook route, analytics sanitizer/persistence, Admin Analytics aggregation/view-model, and relevant checkout/webhook/admin analytics tests. Execution started on branch `workout-context-checkout-attribution-propagation-v1`; official Stripe Checkout, Checkout Session create, event type, webhook signature, and idempotency docs were rechecked on 2026-06-11 before runtime changes.
-- `audit_status`: `in-progress`
-- `decision`: Owner explicitly requested implementation; proceed with the scoped runtime child on branch `workout-context-checkout-attribution-propagation-v1`.
+- `audit_status`: `done`
+- `decision`: Closed by PR `#1091` / squash commit `95dc532b` with the scoped runtime propagation implemented and no dedicated Admin Analytics, finance, UI, product/pricing, direct checkout, export/raw drilldown, migration/RLS, vendor, or builder/generator scope added.
 - `reason`: Checkout-start workout-context attribution is implemented and mapped in Admin Analytics, but current Stripe Checkout Session metadata, webhook `checkout_completed`, and entitlement `entitlement_granted` signals remain generic. This child now implements the approved server-owned, allowlisted, low-cardinality propagation path before any later dedicated workout-context completion or entitlement KPI can exist.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, task brief template, scorecard categories, Codex skill/stack readiness radar, local automation defaults, official Stripe Checkout/webhook/idempotency/API guidance, `stripe` SDK behavior, `app/api/checkout/session/route.ts`, `app/api/stripe/webhook/route.ts`, `lib/commerce/checkout.ts`, `lib/commerce/catalog.ts`, `lib/commerce/entitlements.ts`, `ANALYTICS_EVENT_NAMES`, analytics sanitization/persistence, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, finance reconciliation scripts, external service matrix, data-access/authz/cache registry, route/label/support sweep rules, or checkout/entitlement/finance contracts change.
 
@@ -380,8 +380,45 @@ Validation record:
 - `npm run lint:briefs:all` passed on 2026-06-11, including this in-progress child.
 - `git diff --check` passed on 2026-06-11.
 - `npm run verify:pre-pr` passed on 2026-06-11 using the full-public lane in
-  `artifacts/test-runs/20260611-231040`: quality gates, admin audit, env parity, PR body lint,
+  `artifacts/test-runs/20260611-231914`: quality gates, admin audit, env parity, PR body lint,
   ESLint, typecheck, unit tests, build, perf budgets, and Playwright E2E passed.
+- Required PR CI checks passed for PR `#1091` on 2026-06-11 after one rerun of the flaky unrelated
+  `session-generator-panel.test.tsx` unit failure; the targeted test passed locally before rerun.
+- `npm run verify:pre-merge` passed on 2026-06-11 and recorded
+  `artifacts/verify-pre-merge/20260611-213832.json`.
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1091`
+- `squash_commit`: `95dc532b`
+- `result`: Closed the server-owned propagation path from approved workout-context checkout-start
+  attribution into Stripe Checkout Session metadata, webhook-backed `checkout_completed`, and
+  app-recognized `entitlement_granted` product telemetry. This makes future completion/access KPIs
+  possible without treating analytics as purchase, access, revenue, or finance truth.
+- `validation`: targeted Vitest, typecheck, `lint:briefs:all`, `git diff --check`,
+  `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no scoped gaps remain.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                             | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1091`, no UI/dashboard scope, parent checkpoint                                                                                 | None         |
+| Business logic correctness and data integrity | `5/5`          | Checkout/session + webhook route/helper tests for mapped, generic, mismatch, missing, malformed, and provider-failure paths          | None         |
+| Performance (CWV + payloads)                  | `5/5`          | `verify:pre-pr` build/perf budgets passed; only bounded metadata/payload fields added                                                | None         |
+| Data placement and sync boundaries            | `5/5`          | Architecture/API docs preserve provider, entitlement, analytics, and finance boundaries                                              | None         |
+| Caching and invalidation strategy             | `5/5`          | Existing dynamic checkout/webhook route boundaries preserved                                                                         | None         |
+| Reliability and failure handling              | `5/5`          | Invalid signature, ignored event, non-paid defer, async success, missing email, unresolved product, and provider fallback tests      | None         |
+| Security and authz                            | `5/5`          | Webhook signature remains first gate; browser input is allowlisted before propagation                                                | None         |
+| Privacy and compliance                        | `5/5`          | Provider IDs removed from touched analytics payloads; tests assert no raw provider IDs in analytics                                  | None         |
+| Content governance                            | `5/5`          | API contracts, architecture docs, support runbook, parent, and child brief updated                                                   | None         |
+| Analytics and KPI observability               | `5/5`          | `checkout_completed` and `entitlement_granted` now carry safe mapped dimensions; Admin Analytics completion mapping remains deferred | None         |
+| Commerce and revenue ops                      | `5/5`          | Stripe Checkout metadata/invoice metadata use provider-supported metadata only; pricing/catalog/finance unchanged                    | None         |
+| Incident response and support operations      | `5/5`          | Support-safe runbook language covers mapped/missing/mismatch/lag interpretation                                                      | None         |
+| Finance and reporting operations              | `5/5`          | Finance boundary documented; no finance scripts, exports, reconciliation, refunds, payouts, invoices, or accounting changes          | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next route handlers, Stripe wrapper, catalog IDs, analytics helpers, and Vitest patterns; no dependency added        | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, local full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed                                                     | None         |
+| Scalability and cost efficiency               | `5/5`          | Low-cardinality fields only; no rollup, migration, export, warehouse, or extra dashboard query                                       | None         |
+| DevOps and rollback readiness                 | `5/5`          | Revert-only rollback; no schema or provider dashboard config required                                                                | None         |
 
 ## Rollback / Release Notes
 
@@ -395,3 +432,4 @@ Validation record:
 - `2026-06-11 | child in progress | owner requested implementation; moved to in-progress on branch workout-context-checkout-attribution-propagation-v1, rechecked official Stripe Checkout, Checkout Session create, event type, webhook signature, and idempotency docs, and updated parent active-child pointers. Scope remains server-owned checkout/Stripe/webhook/entitlement analytics attribution propagation only, with no dedicated Admin Analytics module, finance, UI, product/pricing, direct checkout, export/raw drilldown, migration/RLS, vendor, or builder/generator scope | next: implement typed metadata helpers, checkout/webhook propagation, docs, targeted tests, and verify:pre-pr`
 - `2026-06-11 | implementation validated before broad gate | implemented typed checkout attribution metadata helpers, checkout session/invoice metadata propagation, webhook metadata extraction/product validation, privacy-safe checkout_completed/entitlement_granted payload propagation, discount payload provider-ID removal, docs/support updates, route/label/support sweep record, and targeted tests. Local targeted validation passed; latest commit is pending pre-pr commit | next: run npm run verify:pre-pr, then commit, push, open PR, monitor CI, and run verify:pre-merge`
 - `2026-06-11 | pre-pr gate passed | npm run verify:pre-pr passed on the full-public lane in artifacts/test-runs/20260611-231040 after the runtime and docs changes. Screenshot handoff is N/A because no rendered UI, layout, brand, print/export, or visual asset files changed | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge readiness`
+- `2026-06-11 | child merged | PR #1091 merged at squash commit 95dc532b after green local pre-pr, PR CI rerun, and pre-merge gates; this repo-managed closeout moved the child to done. Dedicated Admin Analytics completion/entitlement modules, finance reporting, direct checkout, new products/prices, entitlement rule changes, raw drilldown/export, vendor analytics, migrations/RLS, visible UI, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
