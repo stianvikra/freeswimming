@@ -85,6 +85,14 @@ export type AnalyticsDashboardWorkoutBuilderTemplateUsage = {
   caveat: string;
 };
 
+export type AnalyticsDashboardExistingUpsellBaseline = {
+  metrics: AnalyticsDashboardMetric[];
+  sourceItems: AnalyticsDashboardListItem[];
+  emptyLabel: string;
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -95,6 +103,7 @@ export type AnalyticsDashboardViewModel = {
   rowCapLabel: string;
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
+  existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
@@ -111,6 +120,9 @@ const WORKOUT_BUILDER_SAVED_EVENT = "workout_builder_saved" satisfies AnalyticsE
 const WORKOUT_BUILDER_TEMPLATE_SELECTED_EVENT =
   "workout_builder_template_selected" satisfies AnalyticsEventName;
 const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies AnalyticsEventName;
+const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
+const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
+const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
 
 const EVENT_LABELS: Record<string, string> = {
   checkout_completed: "Checkout completed",
@@ -121,6 +133,9 @@ const EVENT_LABELS: Record<string, string> = {
   public_cta_clicked: "Public CTA clicked",
   public_page_viewed: "Public page viewed",
   session_draft_generated: "Session draft generated",
+  upsell_accepted: "Upsell accepted",
+  upsell_declined: "Upsell declined",
+  upsell_presented: "Upsell presented",
   workout_builder_saved: "Workout builder saved",
   workout_builder_started: "Workout builder started",
   workout_builder_template_selected: "Workout builder template selected",
@@ -318,6 +333,12 @@ function buildFunnel(payload: AnalyticsInsightsResponse): AnalyticsDashboardFunn
   }));
 }
 
+function formatExistingUpsellSourceLabel(key: string | null | undefined): string {
+  if (key === "plans") return "Plans";
+  if (key === "library_explore") return "My Library explore";
+  return "Unknown source";
+}
+
 function findEventCount(
   items: AnalyticsInsightsResponse["eventCounts"],
   eventName: AnalyticsEventName
@@ -328,6 +349,116 @@ function findEventCount(
 function rate(numerator: number, denominator: number): number | null {
   if (denominator <= 0) return null;
   return Math.round((numerator / denominator) * 1000) / 1000;
+}
+
+function buildExistingUpsellBaseline(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardExistingUpsellBaseline {
+  const baseline = payload.existingUpsellBaseline;
+  const presented =
+    baseline?.presented ?? findEventCount(payload.eventCounts, UPSELL_PRESENTED_EVENT);
+  const accepted = baseline?.accepted ?? findEventCount(payload.eventCounts, UPSELL_ACCEPTED_EVENT);
+  const declined = baseline?.declined ?? findEventCount(payload.eventCounts, UPSELL_DECLINED_EVENT);
+  const acceptedRate = baseline?.acceptedRate ?? rate(accepted, presented);
+  const declineRate = baseline?.declineRate ?? rate(declined, presented);
+  const unknownSourceEvents = baseline?.unknownSourceEvents ?? 0;
+  const sourceItems =
+    baseline?.sourceCounts?.slice(0, 5).map((item): AnalyticsDashboardListItem => {
+      const key = item.key === "plans" || item.key === "library_explore" ? item.key : "unknown";
+      return {
+        key,
+        label: formatExistingUpsellSourceLabel(key),
+        secondary: `${formatAnalyticsCount(item.presented)} presented / ${formatAnalyticsCount(
+          item.accepted
+        )} accepted / ${formatAnalyticsCount(item.declined)} cancelled`,
+        count: formatAnalyticsCount(item.total),
+      };
+    }) ?? [];
+
+  return {
+    metrics: [
+      {
+        id: "upsell-presented",
+        label: "Presented",
+        value: formatAnalyticsCount(presented),
+        detail: "Current commercial surfaces",
+      },
+      {
+        id: "upsell-accepted",
+        label: "Accepted",
+        value: formatAnalyticsCount(accepted),
+        detail: "Clicked commercial action",
+      },
+      {
+        id: "upsell-accepted-rate",
+        label: "Accepted rate",
+        value: formatAnalyticsPercent(acceptedRate),
+        detail: "Accepted / presented",
+      },
+      {
+        id: "upsell-declined",
+        label: "Cancelled returns",
+        value: formatAnalyticsCount(declined),
+        detail: "Checkout cancelled return",
+      },
+      {
+        id: "upsell-decline-rate",
+        label: "Cancel rate",
+        value: formatAnalyticsPercent(declineRate),
+        detail: "Cancelled / presented",
+      },
+    ],
+    sourceItems,
+    emptyLabel: "No existing upsell events in this range.",
+    detail: "Read-only baseline for current /plans and My Library commercial surfaces.",
+    caveat:
+      presented === 0
+        ? "Accepted and cancelled rates are not counted until an upsell presentation exists in this range."
+        : unknownSourceEvents > 0
+          ? "Unknown source events are kept separate until their surface/product mapping is explicitly approved."
+          : "Duplicate client events can exist; accepted is not checkout completion and cancelled returns are not all declined users.",
+  };
+}
+
+function buildSchemaMissingExistingUpsellBaseline(): AnalyticsDashboardExistingUpsellBaseline {
+  return {
+    metrics: [
+      {
+        id: "upsell-presented",
+        label: "Presented",
+        value: "Not counted",
+        detail: "Schema missing",
+      },
+      {
+        id: "upsell-accepted",
+        label: "Accepted",
+        value: "Not counted",
+        detail: "Clicked commercial action",
+      },
+      {
+        id: "upsell-accepted-rate",
+        label: "Accepted rate",
+        value: "Not counted",
+        detail: "Accepted / presented",
+      },
+      {
+        id: "upsell-declined",
+        label: "Cancelled returns",
+        value: "Not counted",
+        detail: "Checkout cancelled return",
+      },
+      {
+        id: "upsell-decline-rate",
+        label: "Cancel rate",
+        value: "Not counted",
+        detail: "Cancelled / presented",
+      },
+    ],
+    sourceItems: [],
+    emptyLabel: "Existing upsell baseline is hidden until analytics schema is ready.",
+    detail: "Existing upsell baseline is hidden until analytics schema is ready.",
+    caveat: "Apply the analytics_events migration before reading existing upsell counts.",
+  };
 }
 
 function buildWorkoutBuilderFunnel(
@@ -731,6 +862,7 @@ export function buildAnalyticsDashboardViewModel(
         },
       ],
       funnel: [],
+      existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
@@ -823,6 +955,7 @@ export function buildAnalyticsDashboardViewModel(
       },
     ],
     funnel: buildFunnel(payload),
+    existingUpsellBaseline: buildExistingUpsellBaseline(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
@@ -836,6 +969,7 @@ export function buildAnalyticsDashboardViewModel(
         ? `This range hit the ${formatAnalyticsCount(payload.rowCap)} row cap. Treat totals as bounded.`
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} row cap.`,
       "Revenue proxy counts are product signals only; they are not Stripe reconciliation, finance reporting, or revenue recognition.",
+      "Existing upsell baseline counts current commercial surface visibility and clicked intent only; accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement or finance truth.",
       "Workout builder save-rate is product telemetry only; it is not unique-user conversion, checkout performance, or finance truth.",
       "Workout builder source breakdown is product telemetry only; it is not export success, revenue attribution, Stripe reconciliation, or finance truth.",
       "Template usage is product telemetry only and counts explicit template-selection events; do not infer it from session type, generator block toggles, draft creation, source kind, visible labels, or adjacent activity.",

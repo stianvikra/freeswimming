@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe event health, funnel counts, existing upsell baseline, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating bounded revenue-proxy, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
+      "Treating bounded revenue-proxy, existing upsell, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
   },
   {
     name: "Email templates",
@@ -276,6 +276,11 @@ const ANALYTICS_WORKFLOW = [
     title: "Read workout builder save-rate as product telemetry",
     detail:
       "Started counts workout_builder_started, Saved counts workout_builder_saved, and Save rate is Saved / Started for the selected range. Duplicate starts and saves can exist, so this is not unique-user conversion, checkout performance, Stripe reconciliation, or finance reporting.",
+  },
+  {
+    title: "Read existing upsell baseline as current-surface signal",
+    detail:
+      "Presented counts upsell_presented on current commercial surfaces, Accepted counts clicked commercial actions, and Cancelled returns counts the existing checkout-cancel return signal. Accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement, Stripe reconciliation, revenue, or finance truth.",
   },
   {
     title: "Read workout builder source breakdown as product telemetry",
@@ -532,6 +537,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Shows the workout-builder product telemetry for the selected range. It is useful for builder completion review, not user-level attribution, checkout conversion, Stripe reconciliation, export, or finance reporting.",
       },
       {
+        label: "Existing upsell baseline",
+        meaning:
+          "Shows current /plans and My Library upsell presentation, click, and checkout-cancel return events. Use it as a commercial surface baseline only, not checkout completion, entitlement, revenue, or finance evidence.",
+      },
+      {
         label: "Generated completion / Template usage",
         meaning:
           "Shows generated drafts and generated saves from supported events, plus template selections from workout_builder_template_selected only. Unknown template keys stay unmapped until explicitly reviewed.",
@@ -695,9 +705,9 @@ const CONNECTED_SERVICES = [
   {
     name: "First-party analytics",
     purpose:
-      "Stores sanitized aggregate/product/funnel events and renders read-only admin insights without third-party scripts.",
+      "Stores sanitized aggregate/product/funnel/upsell events and renders read-only admin insights without third-party scripts.",
     caution:
-      "Do not treat dashboard counts as finance truth, user-level attribution, or approval for cookies/vendor tracking.",
+      "Do not treat dashboard counts, including existing upsell accepted/cancelled signals, as finance truth, user-level attribution, or approval for cookies/vendor tracking.",
   },
 ];
 
@@ -983,7 +993,10 @@ export default function AdminHelpCenter() {
                 required for publish/revert).
               </li>
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
-              <li>Inspect privacy-safe analytics event health and read-only funnel signals.</li>
+              <li>
+                Inspect privacy-safe analytics event health, read-only funnel signals, and existing
+                upsell baseline caveats.
+              </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
             </ul>

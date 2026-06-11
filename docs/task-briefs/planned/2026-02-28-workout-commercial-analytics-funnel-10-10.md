@@ -11,11 +11,11 @@
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-10`
-- `base`: clean synced `main@56701757` after PR `#1066` closed the workout-context upsell placement policy child.
+- `last_audited`: `2026-06-11`
+- `base`: clean synced `main@13b3b072` after PR `#1067` closed the workout-context upsell placement policy closeout.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, and PR `#1066` closed the docs-only workout-context upsell placement policy. No commercial implementation child is approved.
+- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, PR `#1066` closed the docs-only workout-context upsell placement policy, and PR `#1067` closed its repo-managed docs-only closeout. Existing Upsell Event Admin Analytics Baseline V1 is now the active child after owner execution approval.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -61,10 +61,15 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1066` / squash commit `56701757`.
   - Owns only the docs-only policy decision for where workout-context upsell CTA may appear and which existing first-party signals it may read.
   - Runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, and builder/generator UX remain out of scope.
+- Active child: `docs/task-briefs/in-progress/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
+  - Created from clean synced `main@13b3b072` after PR `#1067`.
+  - Owner requested execution on `2026-06-11`.
+  - Owns only read-only Admin Analytics baseline visibility for existing `upsell_presented`, `upsell_accepted`, and `upsell_declined` events on current `/plans` and My Library commercial surfaces.
+  - Runtime workout-context CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, and builder/generator UX remain out of scope.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - runtime commercial CTA implementation,
-  - CTA instrumentation/dashboard,
+  - workout-context CTA instrumentation/dashboard beyond existing current-surface baseline,
   - broader dedicated KPI modules,
   - CSV/export,
   - finance-grade reporting,
@@ -73,13 +78,19 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-No active child is approved.
+Active child:
 
-The placement-policy child is closed. Future work must still start as a separate owner-approved child and must not add runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without that explicit child scope.
+- `docs/task-briefs/in-progress/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
 
-Safe follow-up candidate families after the policy child exists:
+The placement-policy child is closed. Future work must still start as a separate owner-approved child and must not add runtime workout-context CTA, new CTA event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without that explicit child scope.
 
-- CTA instrumentation/dashboard: add privacy-safe `upsell_presented` / `upsell_accepted` / `upsell_declined` visibility only after placement policy is executed and closed.
+Current planned candidate after the policy child:
+
+- Existing Upsell Event Admin Analytics Baseline V1: add read-only Admin Analytics visibility for existing `upsell_presented` / `upsell_accepted` / `upsell_declined` events on current commercial surfaces only.
+
+Safe follow-up candidate families after the current planned child is either executed or deferred:
+
+- Workout-context CTA instrumentation/dashboard: add privacy-safe workout-context `upsell_presented` / `upsell_accepted` / `upsell_declined` visibility only after placement policy and existing-surface baseline boundaries are explicit.
 - Checkout attribution and finance separation: define how product telemetry, checkout conversion, entitlement truth, Stripe reconciliation, and finance reporting stay separate before any commerce implementation.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -87,7 +98,7 @@ Current guardrails:
 
 - Do not reopen the completed template usage mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
-- Do not add CTA, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without a new approved child brief.
+- Do not add runtime CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without a new approved child brief.
 - Any next child must include the pre-implementation owner explanation, scorecard mapping, data-boundary decisions, forward-compatibility contract, route/label/support sweep triggers, Help/Guide impact, and validation plan before implementation starts.
 
 ## Scope
@@ -329,7 +340,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -370,3 +381,9 @@ Future child implementation:
 - `2026-06-10 | planned placement-policy child created | owner selected Workout Context Upsell Placement Policy V1 as the next bounded child; created docs/task-briefs/planned/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md from clean synced main@451ba841, with implementation still blocked on explicit owner execute/build/implement instruction and no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX scope approved | next: wait for owner implementation approval or scope edits`
 - `2026-06-10 | placement-policy child in progress | owner requested execution of Workout Context Upsell Placement Policy V1 on branch workout-context-upsell-placement-policy-v1; child moved to docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md and remains docs-only, with no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX scope approved | next: complete child validation and PR`
 - `2026-06-11 | placement-policy child merged | PR #1066 merged at squash commit 56701757 after green docs-only local pre-pr, CI, and pre-merge gates; parent has no active child, and runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-11 | planned existing upsell baseline child created | owner selected Existing Upsell Event Admin Analytics Baseline V1 as the next bounded child; created docs/task-briefs/planned/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md from clean synced main@13b3b072 after PR #1067 and clean post-merge preflight, with implementation still blocked on explicit owner execute/build/implement instruction and no runtime workout-context CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, or builder/generator UX scope approved | next: wait for owner implementation approval or scope edits`
+- `2026-06-11 | existing upsell baseline child in progress | owner requested execution of Existing Upsell Event Admin Analytics Baseline V1 on branch existing-upsell-event-admin-analytics-baseline-v1; child moved to docs/task-briefs/in-progress/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md and remains scoped to read-only Admin Analytics visibility for existing upsell events, with no runtime workout-context CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, or builder/generator UX approved | next: implement child and stop at screenshot handoff before verify:pre-pr`
+- `2026-06-11 | existing upsell baseline validation before screenshot | active child implemented read-only existing upsell aggregation/UI, Help/Guide/API-contract support copy, targeted tests, and route/label/support sweep evidence; targeted Vitest, typecheck, quality-gates, lint:briefs:all, and diff-check pass, with no runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX added | next: child screenshot handoff and owner approval stop before verify:pre-pr`
+- `2026-06-11 | existing upsell baseline screenshot stop | active child captured after/reference screenshot artifacts at output/existing-upsell-event-admin-analytics-baseline-v1-2026-06-11-074931; temporary local capture harness was removed after generation, no product rendering files changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
+- `2026-06-11 | existing upsell baseline screenshots approved | owner approved the child screenshot handoff in chat; no product rendering files changed after final capture | next: child verify:pre-pr`
+- `2026-06-11 | existing upsell baseline pre-pr passed | active child passed npm run verify:pre-pr full lane with typecheck, unit tests, build, performance budgets, and Playwright; no runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope was added | next: commit, push, open PR, monitor CI, then run child pre-merge gate`
