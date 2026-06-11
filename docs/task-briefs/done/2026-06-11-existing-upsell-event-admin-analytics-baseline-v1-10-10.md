@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -23,8 +23,8 @@
 
 - `last_audited`: `2026-06-11`
 - `base`: clean synced `main@13b3b072` after PR `#1067` closed the workout-context upsell placement policy closeout and `npm run post-merge:preflight` was clean.
-- `audit_status`: `ready`
-- `decision`: Execute this as the bounded child after the owner explicitly requested `xecute Existing Upsell Event Admin Analytics Baseline V1`.
+- `audit_status`: `closed`
+- `decision`: Closed by PR `#1068` / squash commit `765179c2`.
 - `reason`: Existing `upsell_presented`, `upsell_accepted`, and `upsell_declined` events already describe current `/plans` and My Library commercial surfaces, while the placement policy forbids inferring workout-context CTA performance, checkout completion, entitlement truth, or finance results from adjacent workout telemetry. A read-only Admin Analytics baseline can clarify today's commercial signals before any workout-context CTA runtime work.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` persistence/extraction, `/api/admin/analytics/insights`, `lib/analytics/admin-insights.ts`, `lib/analytics/admin-dashboard.ts`, `components/admin/AdminAnalyticsDashboard.tsx`, `components/analytics/TrackCheckoutCancel.tsx`, `components/my-library/CheckoutButton.tsx`, `app/plans/page.tsx`, `components/my-library/MyLibraryHub.tsx`, product catalog helpers, checkout/Stripe contracts, Admin Help/Guide contracts, screenshot handoff rules, or route/label/support sweep rules change.
 
@@ -280,7 +280,7 @@ Check at minimum:
 Sweep evidence on `2026-06-11`:
 
 - Command: `rg -n "upsell_presented|upsell_accepted|upsell_declined|checkout_started|checkout_completed|entitlement_granted|Stripe|finance|revenue|Admin Analytics|Help/Guide|library_explore|plans|workout-context|CTA" app components components/admin components/analytics components/my-library lib/analytics lib/commerce lib/admin/products.ts tests docs/api-contracts.md docs/architecture docs/runbooks docs/task-briefs/planned docs/task-briefs/in-progress docs/task-briefs/done`
-- Findings: required fallout is limited to Admin Analytics aggregation/view-model/UI, Admin Help/Guide interpretation, API contract caveats, targeted analytics tests, this active child brief, and the parent checkpoint.
+- Findings: required fallout is limited to Admin Analytics aggregation/view-model/UI, Admin Help/Guide interpretation, API contract caveats, targeted analytics tests, this child brief, and the parent checkpoint.
 - No runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, product catalog mutation, route, or builder/generator UX change is required for this slice.
 
 ## Scope
@@ -304,7 +304,7 @@ Sweep evidence on `2026-06-11`:
 
 ## Acceptance Criteria
 
-1. Brief is moved to `docs/task-briefs/in-progress/` and parent brief points to it as the active child approved for implementation.
+1. Brief moved through `docs/task-briefs/in-progress/` during implementation and is now closed in `docs/task-briefs/done/`.
 2. If executed, Admin Analytics shows existing upsell baseline totals and rates only from `upsell_presented`, `upsell_accepted`, and `upsell_declined`.
 3. Current `plans` and `library_explore` sources are mapped explicitly; unknown safe values render as unknown/fallback without raw payload exposure.
 4. Zero-denominator, duplicate, capped, schema-missing, stale, no-data, unknown, and failed-read states have deterministic labels and caveats.
@@ -326,20 +326,18 @@ Completed so far:
 - owner screenshot approval: approved in chat on `2026-06-11`
 - `npm run verify:pre-pr` PASS on `2026-06-11` (`artifacts/test-runs/20260611-085859/verify.log`; full lane with typecheck, unit tests, build, performance budgets, and Playwright)
 
-Pending after PR creation:
-
-- required PR CI checks
-- `npm run verify:pre-merge`
+- PR `#1068` CI PASS: `verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `Vercel`, `CodeQL`, and `size-check`
+- `npm run verify:pre-merge` PASS on `2026-06-11` (`artifacts/verify-pre-merge/20260611-072301.json`; full lane)
 
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
+- Done child path: `docs/task-briefs/done/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
 - Placement policy path: `docs/architecture/workout-context-upsell-placement-policy.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
-  3. reopen this child and the parent brief, then continue from the latest checkpoint.
+  3. reopen this done child and the parent brief, then continue from the latest checkpoint.
 
 ## Checkpoint Log
 
@@ -349,3 +347,35 @@ Pending after PR creation:
 - `2026-06-11 | screenshot approval stop | captured after/reference screenshot artifacts at output/existing-upsell-event-admin-analytics-baseline-v1-2026-06-11-074931 using the same AdminAnalyticsDashboard component with a temporary local harness removed after capture; no product rendering files changed after the final capture, and owner visual approval remains pending | next: wait for owner screenshot approval or visual corrections before npm run verify:pre-pr`
 - `2026-06-11 | screenshots approved | owner approved the screenshot handoff in chat; no product rendering files changed after the final capture | next: run npm run verify:pre-pr`
 - `2026-06-11 | pre-pr passed | child passed npm run verify:pre-pr full lane with typecheck, unit tests, build, performance budgets, and Playwright; scope still excludes runtime workout-context CTA, new event callsite, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, product catalog mutation, route, and builder/generator UX | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-11 | child merged | PR #1068 merged at squash commit 765179c2 after green local pre-pr, CI, and pre-merge gates; this child moved to done in the repo-managed closeout, parent has no active child, and runtime workout-context CTA, new event callsites/meanings, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, and builder/generator UX remain deferred | next: complete docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1068`
+- `squash_commit`: `765179c2`
+- `result`: Closed Existing Upsell Event Admin Analytics Baseline V1 by adding read-only Admin Analytics visibility for existing current-surface upsell events, with Help/Guide/API caveats that keep the signal separate from checkout, entitlement, Stripe, revenue, and finance truth.
+- `validation`: Targeted Vitest PASS (`3` files, `21` tests), `npm run verify:pre-pr` PASS, PR `#1068` CI PASS, and `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Admin Analytics panel, Help/Guide/API copy, screenshot handoff, PR `#1068`                                                                                 | No gap       |
+| UX flow clarity                               | `5/5`          | Component tests, screenshot approval, caveat copy                                                                                                          | No gap       |
+| Visual design quality                         | `5/5`          | [Screenshot artifacts](/Users/stianvikra/freeswimming/output/existing-upsell-event-admin-analytics-baseline-v1-2026-06-11-074931) approved on `2026-06-11` | No gap       |
+| Business logic correctness and data integrity | `5/5`          | Insight/view-model tests for zero, duplicate, unknown, capped, and schema-missing states                                                                   | No gap       |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and semantic Admin Analytics rendering                                                                                          | No gap       |
+| Data placement and sync boundaries            | `5/5`          | Server-side aggregation and unsafe-field tests                                                                                                             | No gap       |
+| Caching and invalidation strategy             | `5/5`          | Existing no-store Admin Analytics endpoint retained                                                                                                        | No gap       |
+| Reliability and failure handling              | `5/5`          | Negative-path view-model/component tests for no-data, missing schema, unknown values, and capped data                                                      | No gap       |
+| Security and authz                            | `5/5`          | Existing protected Admin Analytics boundary retained; CI and pre-merge gates passed                                                                        | No gap       |
+| Privacy and compliance                        | `5/5`          | Payload filtering tests and no raw payload/user/payment data in Admin UI                                                                                   | No gap       |
+| Content governance                            | `5/5`          | Help/Guide, API contract, parent checkpoint, and support caveats updated                                                                                   | No gap       |
+| Analytics and KPI observability               | `5/5`          | Existing `upsell_*` aggregation tests and dashboard view-model coverage                                                                                    | No gap       |
+| Commerce and revenue ops                      | `5/5`          | Labels/docs/tests keep CTA telemetry separate from checkout, entitlement, Stripe, and finance                                                              | No gap       |
+| Incident response and support operations      | `5/5`          | Help/Guide copy explains missing, unknown, stale, capped, and declined/cancelled-return states                                                             | No gap       |
+| Finance and reporting operations              | `5/5`          | Finance caveats in Admin, Help/Guide, API docs, and tests                                                                                                  | No gap       |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js/Admin Analytics/view-model/test surfaces; no dependency, migration, or route added                                                 | No gap       |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `verify:pre-pr`, PR CI, and `verify:pre-merge` all passed                                                                                  | No gap       |
+| Scalability and cost efficiency               | `5/5`          | Existing range-capped row aggregation and low-cardinality source mapping retained                                                                          | No gap       |
+| DevOps and rollback readiness                 | `5/5`          | No migration/env/provider/runtime checkout change; rollback is a revert of PR `#1068`                                                                      | No gap       |
