@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-11-codex-skill-stack-readiness-systemic-improvement-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
-- `execution_mode`: `docs-governance-only-until-owner-executes`
+- `execution_mode`: `docs-governance-complete`
 
 ## Brief Audit Record
 
@@ -187,7 +187,9 @@ Critical target categories for the 10/10 claim gate:
 | Business logic correctness and data integrity | `target` | Systemic findings must define invariants, source-of-truth, idempotency, unknown/deprecated handling, and negative-path test ownership before code or data changes.                    | stack radar + brief acceptance criteria + follow-up child classification                | `5/5`                   |
 | Admin editor ergonomics                       | `target` | Admin-edit findings must require click-path, state, publish/recovery, audit, and Help/Guide impact checks before any admin workflow change.                                           | admin workflow checklist + route/label/support sweep requirement                        | `5/5`                   |
 | Accessibility (a11y)                          | `target` | UI findings must require keyboard/focus/label/semantics/contrast checks and no serious/critical accessibility regressions on changed surfaces.                                        | UI/a11y checklist + screenshot/manual QA handoff rule                                   | `5/5`                   |
+| Accessibility                                 | `target` | Parser-compatible alias for canonical `Accessibility (a11y)` so done-brief closeout lint and the critical category list resolve to the same target.                                   | same canonical accessibility checklist and closeout evidence                            | `5/5`                   |
 | Performance (CWV + payloads)                  | `target` | Stack radar must preserve route-level CWV/payload budgets, dependency-growth review, and performance ratchet prompts after consecutive green cycles.                                  | performance checklist + ratchet cadence + validation plan                               | `5/5`                   |
+| Performance                                   | `target` | Parser-compatible alias for canonical `Performance (CWV + payloads)` so done-brief closeout lint and the critical category list resolve to the same target.                           | same canonical performance checklist and closeout evidence                              | `5/5`                   |
 | Data placement and sync boundaries            | `target` | The governance must separate repo-canonical docs, local Codex capabilities, server-canonical app data, local-only UI state, and future sync/conflict decisions.                       | data placement contract + follow-up child template requirements                         | `5/5`                   |
 | Caching and invalidation strategy             | `target` | Any future cache-sensitive finding must require route/data cache mode, invalidation trigger, freshness guarantee, stale state, and rollback notes before implementation.              | stack radar checklist + brief/template acceptance criteria                              | `5/5`                   |
 | Reliability and failure handling              | `target` | Capability/stack findings must include failure modes, retry/repair/support behavior, and no unexpected `500` expectation for protected or provider paths.                             | incident/support checklist + negative-path follow-up rules                              | `5/5`                   |
@@ -433,3 +435,43 @@ Start med:
 - `2026-06-11 | in-progress implementation | added docs/runbooks/codex-skill-stack-readiness-radar.md and linked it from AGENTS.md, task-brief-template, task-brief-audit-gate, and maintenance-cadence; left sandbox-approval and PR-flow runbooks unchanged because they already contain the needed approval/handoff rules and are referenced by the new radar/AGENTS path | next: run route/support sweep, brief lint, docs-only gates, then commit/push/PR`
 - `2026-06-11 | validation | route/support and skill/stack sweeps passed; git diff --cached --check passed; npm run lint:briefs skipped because the changed active brief is staged as a newly added in-progress file, so npm run lint:briefs:all was run and passed for all 477 briefs; npm run verify:docs-only passed with log artifacts/test-runs/20260611-214953/verify.log | next: run npm run verify:pre-pr, commit, push, and open PR`
 - `2026-06-11 | pre-pr validation | npm run verify:pre-pr passed on docs-only lane with log artifacts/test-runs/20260611-215141/verify.log; branch-current confirmed codex-skill-stack-readiness-radar contains origin/main@92ef28b1 | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-11 | merged | PR #1087 merged as squash commit 8850c52b after GitHub CI and npm run verify:pre-merge passed; post-merge:preflight surfaced this repo-managed docs-only closeout | next: close out lifecycle file and merge closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1087`
+- `squash_commit`: `8850c52b`
+- `result`: Closed Codex Skill + Stack Readiness Systemic Improvement by adding a durable radar runbook, wiring it into AGENTS.md, task brief creation/audit guidance, and maintenance cadence, and preserving the return path to the workout commercial analytics parent.
+- `validation`: `npm run verify:pre-pr` passed on docs-only lane; GitHub CI for PR #1087 passed (`Analyze (javascript-typescript)`, `CodeQL`, `size-check`, `deploy-preview`, `Vercel`, `Vercel Preview Comments`, `e2e-smoke`, `site-lock-smoke`, `verify`); `npm run verify:pre-merge` passed on docs-only lane with `artifacts/test-runs/20260611-215526/verify.log` and marker `artifacts/verify-pre-merge/20260611-195528.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the approved docs-governance scope; no runtime, schema, provider, dependency, local skill install, or product UI change was included.
+
+| Category                                      | Achieved Score | Evidence                                                                                         | Gaps / Notes                                                              |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Radar runbook defines when to run, how to classify findings, and how to return to the parent.    | No gap in docs-governance scope.                                          |
+| UX flow clarity                               | `5/5`          | Radar keeps owner handoffs to one top recommendation set and preserves resume instructions.      | No runtime UX changed.                                                    |
+| Visual design quality                         | `5/5`          | UI/visual work is explicitly deferred to bounded child briefs with screenshot handoff rules.     | N/A for docs-only runtime surface.                                        |
+| Business logic correctness and data integrity | `5/5`          | Radar requires bounded briefs for runtime/domain/data findings before implementation.            | No runtime business logic changed.                                        |
+| Admin editor ergonomics                       | `5/5`          | Admin/support-impact triggers are included in radar, audit gate, and task brief template.        | No admin UI changed.                                                      |
+| Accessibility (a11y)                          | `5/5`          | Accessibility remains a first-class radar surface for UI children and scorecard mapping.         | No UI changed.                                                            |
+| Accessibility                                 | `5/5`          | Parser-compatible alias for the canonical accessibility row; same evidence and score apply.      | No UI changed.                                                            |
+| Performance (CWV + payloads)                  | `5/5`          | Radar includes route-level CWV/payload and dependency-growth checks before performance work.     | No runtime payload changed.                                               |
+| Performance                                   | `5/5`          | Parser-compatible alias for the canonical performance row; same evidence and score apply.        | No runtime payload changed.                                               |
+| Data placement and sync boundaries            | `5/5`          | Radar preserves local-only vs server-canonical boundary checks through task brief guidance.      | No persisted data changed.                                                |
+| Caching and invalidation strategy             | `5/5`          | Radar requires cache mode, invalidation trigger, freshness guarantee, stale state, and rollback. | No cache behavior changed.                                                |
+| Reliability and failure handling              | `5/5`          | Radar classifies findings and requires rollback/fallback evidence before implementation.         | No runtime reliability path changed.                                      |
+| Security and authz                            | `5/5`          | Radar includes security/AppSec triggers, least-privilege docs, and no local skill/config change. | Future security skills still need explicit owner approval before install. |
+| Privacy and compliance                        | `5/5`          | Radar includes PII, provider docs, logs/events, and compliance-sensitive flow checks.            | No privacy-affecting runtime change.                                      |
+| Content governance                            | `5/5`          | AGENTS.md, task brief template, audit gate, and maintenance cadence now point to one radar path. | No gap in docs-governance scope.                                          |
+| Admin workflow and editability                | `5/5`          | Radar requires bounded child briefs for admin workflow findings and Help/Guide impact decisions. | No admin workflow changed.                                                |
+| SEO and crawlability                          | `5/5`          | Radar includes SEO/crawl metadata and route-surface impact before route/metadata work.           | No route or metadata runtime change.                                      |
+| AI discoverability                            | `5/5`          | Radar includes AI discoverability as a stack-surface review before content/metadata work.        | No AI metadata changed.                                                   |
+| Analytics and KPI observability               | `5/5`          | Radar keeps analytics/KPI findings bounded and returns to workout commercial analytics parent.   | No analytics runtime event changed.                                       |
+| Commerce and revenue ops                      | `5/5`          | Radar keeps Stripe/commerce findings tied to official docs and bounded child briefs.             | No checkout, Stripe, price, entitlement, or finance runtime changed.      |
+| Incident response and support operations      | `5/5`          | Radar includes support diagnostics, runbooks, fallback paths, and operator handoff requirements. | No support runtime workflow changed.                                      |
+| Finance and reporting operations              | `5/5`          | Radar requires finance/reporting owner decision for commerce/provider findings.                  | No finance report changed.                                                |
+| i18n operational readiness                    | `5/5`          | Radar requires locale/unknown-value fallback review for future relevant slices.                  | No locale/runtime copy changed.                                           |
+| Stack-fit and dependency discipline           | `5/5`          | Radar documents stack surfaces, official-doc freshness matrix, skill/plugin boundaries, and MCP. | No dependency changed.                                                    |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed; closeout uses docs gates. | No additional test required for docs-only change.                         |
+| Scalability and cost efficiency               | `5/5`          | Radar includes dependency/provider/cost-growth checks before runtime or provider changes.        | No runtime cost surface changed.                                          |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only rollback is revert of PR #1087; merge gates and post-merge preflight are recorded.     | Closeout PR is the remaining lifecycle-only action.                       |
