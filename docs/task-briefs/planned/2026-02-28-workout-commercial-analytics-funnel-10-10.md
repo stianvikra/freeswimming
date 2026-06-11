@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-10`
+- `updated`: `2026-06-11`
 - `execution_mode`: `plan-only-parent`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-10`
-- `base`: clean synced `main@451ba841` after PR `#1065` clarified the workout commercial funnel next-child guardrails.
+- `base`: clean synced `main@56701757` after PR `#1066` closed the workout-context upsell placement policy child.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, and PR `#1063` shipped read-only Admin Analytics template usage mapping for that event. A docs-only workout-context upsell placement policy child is in progress, but no commercial implementation child is approved.
+- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, and PR `#1066` closed the docs-only workout-context upsell placement policy. No commercial implementation child is approved.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -57,11 +57,11 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1059` / squash commit `c6cd5b56`.
   - Owns the runtime unblocker: a real interim workout-template source and explicit `Use template` selection surface.
   - Kept `workout_builder_template_selected` and Admin Analytics template usage out of scope so the dedicated instrumentation child can add the event safely.
-- Active child: `docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
+  - Closed by PR `#1066` / squash commit `56701757`.
   - Owns only the docs-only policy decision for where workout-context upsell CTA may appear and which existing first-party signals it may read.
-  - Owner approved execution; the child is docs-only and must not add runtime commercial implementation.
   - Runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, and builder/generator UX remain out of scope.
-- Still deferred after the planned placement-policy child:
+- Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - runtime commercial CTA implementation,
   - CTA instrumentation/dashboard,
@@ -73,9 +73,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: `docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`.
+No active child is approved.
 
-This child is approved only for docs-only policy execution. It must not add runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes.
+The placement-policy child is closed. Future work must still start as a separate owner-approved child and must not add runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, or builder/generator UX changes without that explicit child scope.
 
 Safe follow-up candidate families after the policy child exists:
 
@@ -327,9 +327,10 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-usage-admin-analytics-mapping-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Planned child path: none
-- Active child path: `docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
+- Active child path: none
+- Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
@@ -368,3 +369,4 @@ Future child implementation:
 - `2026-06-10 | parent next-child cleanup | owner approved docs-only parent refresh after closeout PR #1064 and clean post-merge preflight; removed stale next-child wording for the completed template usage mapping child and replaced it with neutral next-child selection guardrails | next: owner chooses whether to create a new bounded child brief`
 - `2026-06-10 | planned placement-policy child created | owner selected Workout Context Upsell Placement Policy V1 as the next bounded child; created docs/task-briefs/planned/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md from clean synced main@451ba841, with implementation still blocked on explicit owner execute/build/implement instruction and no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX scope approved | next: wait for owner implementation approval or scope edits`
 - `2026-06-10 | placement-policy child in progress | owner requested execution of Workout Context Upsell Placement Policy V1 on branch workout-context-upsell-placement-policy-v1; child moved to docs/task-briefs/in-progress/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md and remains docs-only, with no runtime CTA, analytics event, dashboard, checkout, Stripe, entitlement, finance, vendor, export, migration, or builder/generator UX scope approved | next: complete child validation and PR`
+- `2026-06-11 | placement-policy child merged | PR #1066 merged at squash commit 56701757 after green docs-only local pre-pr, CI, and pre-merge gates; parent has no active child, and runtime CTA, CTA events/dashboard, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
