@@ -189,6 +189,9 @@
 - `checkout_started` means checkout handoff/session creation only. It is not payment success,
   entitlement, Stripe reconciliation, revenue, refund, payout, invoice, accounting export, or
   finance truth.
+- Mapped workout-context checkout-start attribution does not automatically carry into checkout
+  completion or entitlement grant interpretation. The durable completion/entitlement contract is
+  `docs/architecture/workout-context-checkout-completion-entitlement-attribution-contract.md`.
 - The persisted analytics payload contains only low-cardinality attribution such as `productId`,
   normalized `source`, and approved `placementId`.
 - The response and analytics payload must not expose Checkout Session ID, Stripe customer ID,
@@ -407,7 +410,9 @@
 - Caveat: checkout and entitlement counts are product/revenue-proxy signals only. They are not
   Stripe reconciliation, accounting, refunds, payouts, invoices, or revenue recognition.
   The durable separation contract is
-  `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`.
+  `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`. The
+  workout-context completion/entitlement attribution contract is
+  `docs/architecture/workout-context-checkout-completion-entitlement-attribution-contract.md`.
 - Existing upsell caveat: `existingUpsellBaseline` is current-surface commercial telemetry derived
   from `upsell_presented`, `upsell_accepted`, and `upsell_declined`. `upsell_presented` is surface
   visibility, not checkout start. `upsell_accepted` is clicked intent, not checkout completion.
@@ -458,6 +463,11 @@
   Unknown or unmapped checkout-start rows stay out of the dedicated count and may appear only as a
   bounded review-needed aggregate. These values are not purchase, access, revenue, accounting,
   Stripe reconciliation, finance reporting, or unique-user conversion.
+- Workout-context checkout completion and entitlement attribution caveat: current generic
+  `checkout_completed` and `entitlement_granted` rows are not counted as dedicated workout-context
+  completion or entitlement outcomes. A future implementation child must add an approved
+  server-owned propagation path, tests, support copy, and privacy boundaries before those metrics
+  can appear as dedicated workout-context KPI modules.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.

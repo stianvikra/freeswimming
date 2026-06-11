@@ -11,6 +11,12 @@ It is intentionally a contract only. It does not add or change runtime CTA rende
 routes, Stripe API calls, webhook handling, entitlement writes, finance scripts, Admin Analytics UI,
 pricing, product catalog rows, exports, raw drilldown, migrations, or RLS.
 
+Related workout-context completion and entitlement attribution boundaries are defined in
+`docs/architecture/workout-context-checkout-completion-entitlement-attribution-contract.md`.
+That contract confirms current generic `checkout_completed` and `entitlement_granted` rows are not
+dedicated workout-context outcomes until a later implementation child adds approved server-owned
+attribution propagation and tests.
+
 ## Official Provider Baseline
 
 Official Stripe docs were checked on 2026-06-11 for this contract:
