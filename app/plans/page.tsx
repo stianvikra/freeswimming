@@ -14,13 +14,37 @@ import {
   type CatalogProductOverridesById,
   type CatalogProductAvailability,
 } from "@/lib/commerce/catalog";
+import {
+  resolvePlansCheckoutAttributionForProduct,
+  type CheckoutAttributionSearchParams,
+} from "@/lib/commerce/checkout";
 import { getCheckoutCtaLabel, getPlanCopy, getPurchaseModelCopy } from "./plansPresentation";
 
 export const dynamic = "force-dynamic";
 
-function PlanCard({ product }: { product: CatalogProductAvailability }) {
+type PlansPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+async function resolveSearchParams(
+  searchParams: PlansPageProps["searchParams"]
+): Promise<CheckoutAttributionSearchParams> {
+  return searchParams ? await searchParams : {};
+}
+
+function PlanCard({
+  product,
+  searchParams,
+}: {
+  product: CatalogProductAvailability;
+  searchParams: CheckoutAttributionSearchParams;
+}) {
   const copy = getPlanCopy(product);
   const purchaseModel = getPurchaseModelCopy(product);
+  const checkoutAttribution = resolvePlansCheckoutAttributionForProduct({
+    productId: product.id,
+    searchParams,
+  });
 
   return (
     <article
@@ -54,6 +78,8 @@ function PlanCard({ product }: { product: CatalogProductAvailability }) {
                 productId={product.id}
                 cancelPath="/plans"
                 analyticsSource="plans"
+                checkoutAttributionSource={checkoutAttribution.source}
+                checkoutAttributionPlacementId={checkoutAttribution.placementId}
                 label={getCheckoutCtaLabel(product)}
               />
             </div>
@@ -146,7 +172,8 @@ function toAnalyticsProductTypeList(products: CatalogProductAvailability[]) {
   return productTypes.length > 0 ? productTypes.join(",") : null;
 }
 
-export default async function PlansPage() {
+export default async function PlansPage({ searchParams }: PlansPageProps) {
+  const resolvedSearchParams = await resolveSearchParams(searchParams);
   let catalogOverrides: CatalogProductOverridesById = {};
   try {
     catalogOverrides = await loadPublicCatalogOverridesCached();
@@ -278,7 +305,7 @@ export default async function PlansPage() {
           </div>
           <div className="grid gap-3 sm:gap-4" data-testid="plans-comparison">
             {products.map((product) => (
-              <PlanCard key={product.id} product={product} />
+              <PlanCard key={product.id} product={product} searchParams={resolvedSearchParams} />
             ))}
           </div>
         </section>

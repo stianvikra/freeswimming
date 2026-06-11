@@ -11,6 +11,7 @@ import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/u
 import CreateManualWorkoutButton from "@/components/my-library/workouts/CreateManualWorkoutButton";
 import SavedWorkoutsPanel from "@/components/my-library/workouts/SavedWorkoutsPanel";
 import WorkoutEditor from "@/components/my-library/workouts/WorkoutEditor";
+import { buildWorkoutContextPlansHref } from "@/lib/commerce/checkout";
 import {
   useAutoDismissNotice,
   WORKOUT_NOTICE_AUTO_DISMISS_MS,
@@ -221,7 +222,7 @@ function WorkoutContextCta({
     <>
       <TrackEventOnMount eventName="upsell_presented" payload={payload} />
       <TrackedLink
-        href="/plans#plans-comparison-heading"
+        href={buildWorkoutContextPlansHref()}
         eventName="upsell_accepted"
         payload={payload}
         data-testid="workout-context-cta-link"

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogProduct } from "@/lib/commerce/catalog";
 import {
+  buildWorkoutContextPlansHref,
   buildCheckoutSessionPayload,
   buildCheckoutStartedAnalyticsPayload,
+  resolvePlansCheckoutAttributionForProduct,
 } from "@/lib/commerce/checkout";
 
 const product: CatalogProduct = {
@@ -108,6 +110,77 @@ describe("buildCheckoutStartedAnalyticsPayload", () => {
     ).toEqual({
       productId: "guide_poolside",
       source: "plans",
+    });
+  });
+});
+
+describe("workout-context plans checkout attribution bridge", () => {
+  it("builds the mapped plans href without private workout data", () => {
+    const href = buildWorkoutContextPlansHref();
+
+    expect(href).toBe(
+      "/plans?source=workout_context&placementId=workout_saved_post_success&productId=guide_poolside#plans-comparison-heading"
+    );
+    expect(href).not.toContain("workout-");
+    expect(href).not.toContain("session");
+    expect(href).not.toContain("email");
+  });
+
+  it("maps checkout attribution only for the approved plans source placement and product", () => {
+    expect(
+      resolvePlansCheckoutAttributionForProduct({
+        productId: "guide_poolside",
+        searchParams: {
+          source: "workout_context",
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+        },
+      })
+    ).toEqual({
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+  });
+
+  it("falls back to generic plans attribution for unrelated products and future values", () => {
+    expect(
+      resolvePlansCheckoutAttributionForProduct({
+        productId: "guide_0_1000m",
+        searchParams: {
+          source: "workout_context",
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+        },
+      })
+    ).toEqual({ source: "plans" });
+
+    expect(
+      resolvePlansCheckoutAttributionForProduct({
+        productId: "guide_poolside",
+        searchParams: {
+          source: "future_shop",
+          placementId: "future_placement",
+          productId: "future_product",
+        },
+      })
+    ).toEqual({ source: "plans" });
+  });
+
+  it("accepts URLSearchParams and ignores duplicated raw values beyond the first safe value", () => {
+    const searchParams = new URLSearchParams();
+    searchParams.append("source", "workout_context");
+    searchParams.append("source", "https://evil.example/source");
+    searchParams.append("placementId", "workout_saved_post_success");
+    searchParams.append("productId", "guide_poolside");
+
+    expect(
+      resolvePlansCheckoutAttributionForProduct({
+        productId: "guide_poolside",
+        searchParams,
+      })
+    ).toEqual({
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
     });
   });
 });

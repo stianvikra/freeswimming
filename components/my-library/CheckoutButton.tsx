@@ -4,11 +4,17 @@ import { useId, useState } from "react";
 import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
 import { cx } from "@/components/ui/cx";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import type {
+  CheckoutAttributionPlacementId,
+  CheckoutAttributionSource,
+} from "@/lib/commerce/checkout";
 
 type Props = {
   productId: string;
   cancelPath?: string;
   analyticsSource?: "plans" | "library_explore" | "unknown";
+  checkoutAttributionSource?: CheckoutAttributionSource;
+  checkoutAttributionPlacementId?: CheckoutAttributionPlacementId;
   label?: string;
   className?: string;
 };
@@ -26,6 +32,8 @@ export default function CheckoutButton({
   productId,
   cancelPath = "/my-library",
   analyticsSource = "unknown",
+  checkoutAttributionSource,
+  checkoutAttributionPlacementId,
   label = "Buy now",
   className = "",
 }: Props) {
@@ -54,16 +62,19 @@ export default function CheckoutButton({
     });
 
     try {
+      const requestBody = {
+        productId,
+        cancelPath: buildCancelPathWithTracking(cancelPath),
+        source: checkoutAttributionSource ?? analyticsSource,
+        ...(checkoutAttributionPlacementId ? { placementId: checkoutAttributionPlacementId } : {}),
+      };
+
       const response = await fetch("/api/checkout/session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          productId,
-          cancelPath: buildCancelPathWithTracking(cancelPath),
-          source: analyticsSource,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const json = (await response.json()) as CheckoutResponse;

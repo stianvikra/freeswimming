@@ -144,6 +144,14 @@
   - unknown, missing, malformed, or future values normalize to `unknown`.
 - `placementId` is optional and counted only for explicitly mapped source/placement pairs. Current
   workout-context placement support is limited to `workout_saved_post_success`.
+- The current `/plans` workout-context attribution bridge may send `source=workout_context` and
+  `placementId=workout_saved_post_success` only when the incoming plans query and the clicked
+  checkout button both map to `productId=guide_poolside`. Other products, missing values,
+  malformed values, or future shop/source/placement values fall back to generic `plans` or
+  `unknown` attribution and must not count as mapped workout-context checkout starts.
+- Plans-surface client telemetry stays separate from server checkout-start attribution: a plans
+  checkout button may still emit client `upsell_accepted` with `source=plans` while its
+  `/api/checkout/session` request carries the approved workout-context checkout attribution.
 - `cancelPath` must be a local path. Absolute URLs and protocol-relative URLs fall back to the
   server default.
 
@@ -436,6 +444,13 @@
   workout-context rows stay out of KPI counts. These values are not checkout conversion,
   entitlement truth, Stripe reconciliation, revenue attribution, finance reporting, or unique-user
   conversion.
+- Checkout-start attribution caveat: the mapped saved-workout CTA may preserve
+  `source=workout_context`, `placementId=workout_saved_post_success`, and
+  `productId=guide_poolside` through `/plans` into `checkout_started`. This remains checkout
+  handoff/session creation only, not CTA conversion, checkout completion, entitlement, Stripe
+  reconciliation, revenue attribution, finance reporting, or unique-user conversion. Future shop
+  products, placements, routes, or checkout sources require explicit mapping before they enter
+  dedicated workout-context checkout KPIs.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.

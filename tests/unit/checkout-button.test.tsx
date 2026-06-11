@@ -67,6 +67,45 @@ describe("CheckoutButton", () => {
     expect(feedback).toHaveTextContent("qa-test-checkout-error");
   });
 
+  it("keeps plans client telemetry separate from mapped server checkout attribution", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ ok: false, error: "qa-test-checkout-error" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <CheckoutButton
+        productId="guide_poolside"
+        cancelPath="/plans"
+        analyticsSource="plans"
+        checkoutAttributionSource="workout_context"
+        checkoutAttributionPlacementId="workout_saved_post_success"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Buy now" }));
+
+    await waitFor(() => {
+      expect(sendClientAnalyticsEvent).toHaveBeenCalledWith("upsell_accepted", {
+        productId: "guide_poolside",
+        source: "plans",
+      });
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody).toMatchObject({
+      productId: "guide_poolside",
+      cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+  });
+
   it("allows a clearer visible checkout label without changing the default contract", () => {
     render(
       <CheckoutButton productId="guide_poolside" label="Buy Poolside guide" className="max-w-xs" />

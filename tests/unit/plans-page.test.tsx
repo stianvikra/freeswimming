@@ -1,5 +1,5 @@
 import type React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PlansPage from "@/app/plans/page";
 import {
@@ -97,7 +97,7 @@ describe("PlansPage", () => {
   it("presents value proof and secure checkout expectations for available plans", async () => {
     stubAvailableProducts();
 
-    render(await PlansPage());
+    render(await PlansPage({}));
 
     expect(
       screen.getByRole("heading", {
@@ -213,10 +213,77 @@ describe("PlansPage", () => {
     });
   });
 
+  it("passes mapped workout-context checkout attribution only to the approved Poolside plan", async () => {
+    stubAvailableProducts();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ ok: false, error: "qa-test-checkout-error" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      await PlansPage({
+        searchParams: Promise.resolve({
+          source: "workout_context",
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+        }),
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Buy Poolside guide" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/checkout/session",
+        expect.objectContaining({
+          body: expect.any(String),
+        })
+      );
+    });
+
+    const poolsideCheckoutCall = fetchMock.mock.calls.find((call) => {
+      const body = JSON.parse(String(call[1]?.body ?? "{}")) as Record<string, unknown>;
+      return body.productId === "guide_poolside";
+    });
+    const requestBody = JSON.parse(String(poolsideCheckoutCall?.[1]?.body ?? "{}"));
+
+    expect(requestBody).toMatchObject({
+      productId: "guide_poolside",
+      cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+
+    fetchMock.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Buy 0-1000m guide" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/checkout/session",
+        expect.objectContaining({
+          body: expect.any(String),
+        })
+      );
+    });
+
+    const guideCheckoutCall = fetchMock.mock.calls.find((call) => {
+      const body = JSON.parse(String(call[1]?.body ?? "{}")) as Record<string, unknown>;
+      return body.productId === "guide_0_1000m";
+    });
+    const guideRequestBody = JSON.parse(String(guideCheckoutCall?.[1]?.body ?? "{}"));
+
+    expect(guideRequestBody).toMatchObject({
+      productId: "guide_0_1000m",
+      source: "plans",
+    });
+    expect(guideRequestBody).not.toHaveProperty("placementId");
+  });
+
   it("keeps unavailable products recoverable without checkout buttons", async () => {
     stubUnavailableProducts();
 
-    render(await PlansPage());
+    render(await PlansPage({}));
 
     expect(
       screen.getByText(
