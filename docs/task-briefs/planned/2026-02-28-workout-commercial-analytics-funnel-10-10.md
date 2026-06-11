@@ -74,7 +74,8 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1072` / squash commit `36b11d16`.
   - Owns only the first saved-workout post-success workout-context CTA and privacy-safe `upsell_presented` / `upsell_accepted` callsites for `placementId=workout_saved_post_success` and `productId=guide_poolside`.
   - Admin Analytics runtime module, `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, and builder/generator algorithm changes remain out of scope.
-- In-progress child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
+- Done child: `docs/task-briefs/done/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
+  - Closed by PR `#1074` / squash commit `f7af4d9d`.
   - Owns only read-only Admin Analytics mapping for the shipped workout-context CTA events with `placementId=workout_saved_post_success`, `productId=guide_poolside`, and `source=workout_context`.
   - Keeps existing `/plans` and My Library upsell baseline separate.
   - `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, and builder/generator algorithm changes remain out of scope.
@@ -88,13 +89,13 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Selected child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`.
+Selected child: none.
 
-The workout-context CTA Admin Analytics mapping child is now in progress. It must not add `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, or builder/generator algorithm changes.
+The workout-context CTA Admin Analytics mapping child is complete. Any next child must be selected explicitly before implementation starts and must not add `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, or builder/generator algorithm changes unless that scope is named in the new child.
 
 Safe follow-up candidate families after the runtime CTA/event-callsites child:
 
-- Workout-context CTA Admin Analytics mapping: selected and in progress; add read-only workout-context CTA dashboard visibility only for the shipped mapped CTA events.
+- Workout-context CTA Admin Analytics mapping follow-up: complete; only reopen if owner requests a new bounded dashboard/reporting slice.
 - Checkout attribution and finance separation: define how product telemetry, checkout conversion, entitlement truth, Stripe reconciliation, and finance reporting stay separate before any commerce implementation.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -344,7 +345,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-cta-runtime-event-callsites-v1-10-10.md`
 - Planned child path: none
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
+- Active child path: none
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -406,3 +407,4 @@ Future child implementation:
 - `2026-06-11 | admin mapping child screenshot stop | active child passed typecheck, lint:briefs:all, diff-check, and targeted Vitest, then regenerated after/reference screenshot artifacts at output/workout-context-cta-admin-analytics-2026-06-11-141620 with admin-readable copy visible; temporary capture harness was removed and no scoped product-rendering files changed after final capture | next: wait for owner screenshot approval or copy corrections before verify:pre-pr`
 - `2026-06-11 | admin mapping child screenshot copy correction | owner reviewed after-workout-context-cta-desktop and requested removal of the three Shown/Clicked/Click rate detail lines while keeping Needs review; active child regenerated after/reference artifacts at output/workout-context-cta-admin-analytics-2026-06-11-142708 and removed temporary capture files after generation | next: final targeted QA and wait for owner visual approval before verify:pre-pr`
 - `2026-06-11 | admin mapping child pre-pr passed | owner approved the regenerated screenshot handoff, and active child passed npm run verify:pre-pr full lane with no scoped product-rendering source changes after the final approved screenshot capture | next: commit, push, open/update PR, monitor CI, and run child pre-merge gate`
+- `2026-06-11 | admin mapping child merged | PR #1074 merged at squash commit f7af4d9d after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and upsell_declined, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
