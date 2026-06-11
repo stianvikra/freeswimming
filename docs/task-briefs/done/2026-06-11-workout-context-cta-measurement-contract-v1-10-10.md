@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-cta-measurement-contract-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -19,9 +19,9 @@
 
 - `last_audited`: `2026-06-11`
 - `base`: clean synced `main@a5b4760d` after PR `#1069` closed the existing upsell analytics baseline brief and `npm run post-merge:preflight` was clean.
-- `audit_status`: `ready`
-- `decision`: Execute this child as docs-only contract work on branch `workout-context-cta-measurement-contract-v1`.
-- `reason`: Owner explicitly requested implementation. Placement policy and existing-surface Admin Analytics baseline are complete, and this child is limited to a durable measurement contract for a future workout-context CTA before any runtime CTA, event callsite, dashboard module, checkout, entitlement, Stripe, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, or builder/generator UX change.
+- `audit_status`: `closed`
+- `decision`: Closed by PR `#1070` / squash commit `51f0c2c3`.
+- `reason`: Placement policy and existing-surface Admin Analytics baseline are complete, and this child added only the durable docs-only measurement contract for a future workout-context CTA. No runtime CTA, event callsite, dashboard module, checkout, entitlement, Stripe, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, or builder/generator UX change was added.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `ANALYTICS_EVENT_NAMES`, `analytics_events` schema/persistence, `/api/admin/analytics/insights`, Admin Analytics UI or Help/Guide contracts, `lib/commerce/catalog.ts`, checkout/Stripe/entitlement contracts, `docs/architecture/workout-context-upsell-placement-policy.md`, `docs/api-contracts.md`, screenshot handoff rules, or route/label/support sweep rules change.
 
 ## Goal
@@ -312,13 +312,14 @@ Validation evidence:
 
 - `npm run lint:briefs:all` passed on `2026-06-11`.
 - `git diff --check` and `git diff --cached --check` passed on `2026-06-11`.
-- `npm run lint:briefs` was run before the branch had committed diff and reported no changed task briefs; `npm run verify:pre-pr` will rerun the branch-level brief gate before PR update.
-- Pending after commit: `npm run verify:pre-pr`, required PR CI checks, and `npm run verify:pre-merge`.
+- `npm run verify:pre-pr` passed in docs-only lane on `2026-06-11`.
+- PR `#1070` CI passed: CodeQL, verify, e2e-smoke, site-lock-smoke, deploy-preview, size-check, Vercel, and Vercel Preview Comments.
+- `npm run verify:pre-merge` passed in docs-only lane on `2026-06-11`.
 
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md`
+- Done child path: `docs/task-briefs/done/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md`
 - Contract path: `docs/architecture/workout-context-cta-measurement-contract.md`
 - Existing placement policy: `docs/architecture/workout-context-upsell-placement-policy.md`
 - Latest completed child path: `docs/task-briefs/done/2026-06-11-existing-upsell-event-admin-analytics-baseline-v1-10-10.md`
@@ -332,3 +333,33 @@ Validation evidence:
 - `2026-06-11 | planned child created | created planned child brief from clean synced main@a5b4760d after PR #1069 and clean post-merge preflight; implementation is not approved yet and must remain docs-only contract work unless the owner explicitly requests execution; no runtime CTA, event callsite, dashboard, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, or builder/generator UX scope approved | next: wait for owner implementation approval or scope edits`
 - `2026-06-11 | child moved to in-progress | owner requested implementation of Workout Context CTA Measurement Contract V1 on branch workout-context-cta-measurement-contract-v1; child moved to docs/task-briefs/in-progress/2026-06-11-workout-context-cta-measurement-contract-v1-10-10.md and remains docs-only, with no runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope approved | next: complete docs contract, targeted validation, pre-pr gate, PR, CI, and pre-merge gate`
 - `2026-06-11 | docs contract implemented before validation | added docs/architecture/workout-context-cta-measurement-contract.md, updated placement policy and API caveats to point future runtime work at the contract, and recorded route/label/support sweep evidence; no runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog mutation, or builder/generator UX scope was added | next: run targeted docs validation and pre-pr gate`
+- `2026-06-11 | docs contract merged | PR #1070 merged at squash commit 51f0c2c3 after green local pre-pr, CI, and pre-merge gates; this closeout moved the child to done and confirms runtime workout-context CTA, new event callsites, Admin Analytics runtime modules, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route changes, product catalog mutation, and builder/generator UX remain deferred | next: rerun post-merge preflight after closeout PR merges`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1070`
+- `squash_commit`: `51f0c2c3`
+- `result`: Closed Workout Context CTA Measurement Contract V1 by adding the durable measurement contract for the first future workout-context CTA candidate and linking future runtime/dashboard work to that contract.
+- `validation`: `npm run lint:briefs:all`, `git diff --check`, `git diff --cached --check`, `npm run verify:pre-pr`, PR `#1070` CI, and `npm run verify:pre-merge` all passed for the docs-only lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this docs-only contract scope.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                 | Gaps / Notes                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| Product goals and IA                          | `5/5`          | Contract names `workout_saved_post_success` as first candidate and parent/API/policy references separate it from current `/plans` and My Library commercial surfaces.    | None for docs-only scope.          |
+| UX flow clarity                               | `5/5`          | Contract states save/review/recovery actions stay primary and lists forbidden editing, intake, loading, auth, entitlement, checkout, support, and finance states.        | Runtime UI deferred.               |
+| Business logic correctness and data integrity | `5/5`          | Contract defines `upsell_*` meanings, zero-denominator behavior, duplicate caveat, unknown handling, and checkout/entitlement/finance separation.                        | Runtime tests deferred to runtime. |
+| Data placement and sync boundaries            | `5/5`          | Contract separates server-canonical analytics/catalog/checkout/entitlement/finance truth from best-effort browser CTA telemetry.                                         | None for docs-only scope.          |
+| Caching and invalidation strategy             | `5/5`          | Contract requires a future runtime child to define placement/product source of truth, cache mode, invalidation, stale behavior, rollback, and kill switch.               | None for docs-only scope.          |
+| Reliability and failure handling              | `5/5`          | Fail-closed matrix covers disabled, unmapped, missing/inactive product, unavailable catalog/entitlement checks, analytics failure, and admin trust states.               | None for docs-only scope.          |
+| Security and authz                            | `5/5`          | Contract forbids access widening and requires future protected changes to fail closed with negative-path tests.                                                          | Runtime auth tests deferred.       |
+| Privacy and compliance                        | `5/5`          | Forbidden payload list excludes raw workout, user, URL, payment, Stripe, support, and free-text data from CTA analytics.                                                 | None for docs-only scope.          |
+| Content governance                            | `5/5`          | Added architecture contract, updated placement policy/API caveat, parent checkpoint, route/label/support sweep evidence, and this completion record.                     | None.                              |
+| Analytics and KPI observability               | `5/5`          | Contract blocks dedicated workout-context CTA Admin Analytics until mapped callsites, event helpers, tests, Help/Guide copy, screenshot handoff, and trust states exist. | Runtime dashboard deferred.        |
+| Commerce and revenue ops                      | `5/5`          | Contract keeps CTA telemetry separate from checkout start/completion, entitlement grants, product catalog truth, Stripe reconciliation, and purchase recovery.           | Commerce implementation deferred.  |
+| Incident response and support operations      | `5/5`          | Support boundary explains absent CTA, presented/accepted meanings, and what support must not claim.                                                                      | Runtime runbook copy deferred.     |
+| Finance and reporting operations              | `5/5`          | Finance boundary forbids using workout-context CTA signals as revenue, refund, payout, invoice, accounting export, entitlement, Stripe, or finance evidence.             | Finance work deferred.             |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only change added no dependency, runtime route, migration, vendor, checkout, UI, or product catalog mutation.                                                       | None.                              |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, PR `#1070` CI, and `npm run verify:pre-merge` passed in docs-only lane.                                                                         | None.                              |
+| Scalability and cost efficiency               | `5/5`          | Contract keeps future CTA dimensions low-cardinality and requires separate scope for raw drilldown, export, warehouse, or per-user analytics.                            | None for docs-only scope.          |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only change is revertable without migration/provider/env/runtime changes; future runtime child must define rollback and kill switch.                                | None for docs-only scope.          |
