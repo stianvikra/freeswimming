@@ -681,7 +681,10 @@ describe("WorkoutBuilderHub", () => {
     const cta = screen.getByTestId("workout-context-cta-link");
     expect(cta).toBeVisible();
     expect(cta).toHaveAccessibleName("See Poolside guide");
-    expect(cta).toHaveAttribute("href", "/plans#plans-comparison-heading");
+    expect(cta).toHaveAttribute(
+      "href",
+      "/plans?source=workout_context&placementId=workout_saved_post_success&productId=guide_poolside#plans-comparison-heading"
+    );
     expect(JSON.stringify(expectedPayload)).not.toContain("workout-1");
     expect(JSON.stringify(expectedPayload)).not.toContain("Saved workout with CTA");
 
