@@ -334,8 +334,8 @@
   visibility, not checkout start. `upsell_accepted` is clicked intent, not checkout completion.
   `upsell_declined` is the current checkout-cancel return signal, not all users who ignored,
   dismissed, or failed to convert. The current-surface totals count only approved existing sources
-  such as `plans` and `library_explore`; unknown and workout-context sources remain separate until
-  explicitly mapped.
+  such as `plans` and `library_explore`; unknown sources remain separate, and workout-context CTA
+  rows are counted only in the dedicated `workoutContextCta` aggregate when explicitly mapped.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
@@ -358,12 +358,13 @@
   `templateSource` payload values. Known template labels come from the workout-template registry,
   not raw analytics payload labels. Missing, malformed, deprecated, unknown, or unmapped keys and
   sources remain separate from known templates until explicitly mapped.
-- Workout-context upsell caveat: V1 runtime may emit `upsell_presented` only when the
-  `workout_saved_post_success` CTA renders for mapped product `guide_poolside`, and
-  `upsell_accepted` only when that CTA is activated. Those events mean CTA visibility/clicked
-  intent only. They are not checkout conversion, entitlement truth, Stripe reconciliation, revenue
-  attribution, or finance reporting. A dedicated workout-context CTA dashboard remains a later child
-  after runtime event evidence exists.
+- Workout-context CTA caveat: `workoutContextCta` is product telemetry derived only from mapped
+  `upsell_presented` and `upsell_accepted` rows with `source=workout_context`,
+  `placementId=workout_saved_post_success`, and `productId=guide_poolside`. Presented means the
+  mapped saved-workout CTA rendered; accepted means clicked intent. Unknown or unmapped
+  workout-context rows stay out of KPI counts. These values are not checkout conversion,
+  entitlement truth, Stripe reconciliation, revenue attribution, finance reporting, or unique-user
+  conversion.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -450,6 +451,15 @@
         "declineRate": null
       }
     ]
+  },
+  "workoutContextCta": {
+    "placementId": "workout_saved_post_success",
+    "productId": "guide_poolside",
+    "source": "workout_context",
+    "presented": 4,
+    "accepted": 2,
+    "acceptedRate": 0.5,
+    "unknownEvents": 1
   },
   "workoutBuilderFunnel": {
     "started": 5,

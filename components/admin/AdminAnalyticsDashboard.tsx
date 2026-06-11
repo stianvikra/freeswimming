@@ -137,7 +137,7 @@ function WorkoutBuilderFunnelPanel({
             id="admin-analytics-workout-builder-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Started to saved signal
+            Builder starts and saves
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{funnel.detail}</p>
         </div>
@@ -154,7 +154,7 @@ function WorkoutBuilderFunnelPanel({
               <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
                 {metric.value}
               </p>
-              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+              {metric.detail ? <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p> : null}
             </dd>
           </div>
         ))}
@@ -183,11 +183,13 @@ function ExistingUpsellBaselinePanel({
             id="admin-analytics-existing-upsell-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Existing upsell baseline
+            Current sales prompts
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{baseline.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Current surfaces</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+          Plans and library
+        </p>
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -198,7 +200,7 @@ function ExistingUpsellBaselinePanel({
               <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
                 {metric.value}
               </p>
-              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+              {metric.detail ? <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p> : null}
             </dd>
           </div>
         ))}
@@ -236,6 +238,50 @@ function ExistingUpsellBaselinePanel({
   );
 }
 
+function WorkoutContextCtaPanel({
+  cta,
+}: {
+  cta: AnalyticsDashboardViewModel["workoutContextCta"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-context-cta-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-context-cta"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Commerce</p>
+          <h3
+            id="admin-analytics-workout-context-cta-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Poolside guide prompt
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{cta.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cta.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className={cx("mt-4", mutedTextClass)}>{cta.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutBuilderSourceBreakdownPanel({
   breakdown,
 }: {
@@ -254,7 +300,7 @@ function WorkoutBuilderSourceBreakdownPanel({
             id="admin-analytics-workout-builder-source-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Source breakdown
+            Manual vs generated workouts
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{breakdown.detail}</p>
         </div>
@@ -300,7 +346,7 @@ function WorkoutBuilderTemplateGeneratedCompletionPanel({
             id="admin-analytics-workout-builder-generated-completion-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Generated completion
+            Generated sessions
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{completion.detail}</p>
         </div>
@@ -346,7 +392,7 @@ function WorkoutBuilderTemplateUsagePanel({
             id="admin-analytics-workout-builder-template-usage-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Template usage
+            Template starts
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{usage.detail}</p>
         </div>
@@ -617,6 +663,7 @@ export default function AdminAnalyticsDashboard() {
           </section>
 
           <ExistingUpsellBaselinePanel baseline={viewModel.existingUpsellBaseline} />
+          <WorkoutContextCtaPanel cta={viewModel.workoutContextCta} />
           <WorkoutBuilderFunnelPanel funnel={viewModel.workoutBuilderFunnel} />
           <WorkoutBuilderSourceBreakdownPanel breakdown={viewModel.workoutBuilderSourceBreakdown} />
           <WorkoutBuilderTemplateGeneratedCompletionPanel

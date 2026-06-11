@@ -17,8 +17,9 @@ The current product decision is conservative:
 - Event family: runtime V1 may use `upsell_presented` and `upsell_accepted` for the mapped
   workout-context callsites with the semantics below. `upsell_declined` remains unmapped for
   workout context.
-- Dashboard truth: no dedicated workout-context CTA Admin Analytics module may be added until
-  runtime event evidence exists and a later dashboard child maps aggregation/copy/tests.
+- Dashboard truth: the dedicated workout-context CTA Admin Analytics module may count only the
+  explicitly mapped runtime callsites and must keep checkout, entitlement, Stripe, revenue, and
+  finance truth separate.
 
 ## Placement Decision
 
@@ -131,7 +132,7 @@ Forbidden values:
 
 ## Dashboard Interpretation
 
-No Admin Analytics workout-context CTA module may exist until a later child has all of this:
+The Admin Analytics workout-context CTA module may exist only when all of this is true:
 
 - mapped runtime CTA callsites,
 - exact `placementId`,
@@ -146,7 +147,7 @@ When it exists, the module must describe:
 
 - presented as CTA visibility only,
 - accepted as clicked intent only,
-- declined only as the exact mapped decline signal,
+- declined only as the exact mapped decline signal if a later child defines one,
 - all rates as event-rate telemetry, not unique-user conversion,
 - checkout, entitlement, Stripe, revenue, and finance truth as separate systems.
 

@@ -79,6 +79,15 @@ const basePayload: AnalyticsDashboardPayload = {
       },
     ],
   },
+  workoutContextCta: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    presented: 4,
+    accepted: 2,
+    acceptedRate: 0.5,
+    unknownEvents: 1,
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -157,56 +166,83 @@ describe("admin analytics dashboard view model", () => {
     expect(viewModel.existingUpsellBaseline.metrics).toEqual([
       {
         id: "upsell-presented",
-        label: "Presented",
+        label: "Shown",
         value: "1",
-        detail: "Current commercial surfaces",
+        detail: "Sales prompt views",
       },
       {
         id: "upsell-accepted",
-        label: "Accepted",
+        label: "Clicked",
         value: "1",
-        detail: "Clicked commercial action",
+        detail: "Clicked sales prompt",
       },
       {
         id: "upsell-accepted-rate",
-        label: "Accepted rate",
+        label: "Click rate",
         value: "100%",
-        detail: "Accepted / presented",
+        detail: "Clicked / shown",
       },
       {
         id: "upsell-declined",
-        label: "Cancelled returns",
+        label: "Checkout cancelled",
         value: "1",
-        detail: "Checkout cancelled return",
+        detail: "Returned from checkout",
       },
       {
         id: "upsell-decline-rate",
         label: "Cancel rate",
         value: "100%",
-        detail: "Cancelled / presented",
+        detail: "Cancelled / shown",
       },
     ]);
     expect(viewModel.existingUpsellBaseline.sourceItems).toEqual([
       {
         key: "plans",
         label: "Plans",
-        secondary: "1 presented / 1 accepted / 1 cancelled",
+        secondary: "1 shown / 1 clicked / 1 checkout cancelled",
         count: "3",
       },
     ]);
-    expect(viewModel.existingUpsellBaseline.caveat).toContain("not checkout completion");
+    expect(viewModel.existingUpsellBaseline.caveat).toContain("Clicks are not purchases");
+    expect(viewModel.workoutContextCta.metrics).toEqual([
+      {
+        id: "workout-context-cta-presented",
+        label: "Shown",
+        value: "4",
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-accepted",
+        label: "Clicked",
+        value: "2",
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-accepted-rate",
+        label: "Click rate",
+        value: "50%",
+        detail: "",
+      },
+      {
+        id: "workout-context-cta-unknown",
+        label: "Needs review",
+        value: "1",
+        detail: "Kept out of totals",
+      },
+    ]);
+    expect(viewModel.workoutContextCta.caveat).toContain("do not match the approved prompt setup");
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
       {
         id: "builder-started",
         label: "Started",
         value: "5",
-        detail: "Manual builder starts",
+        detail: "Builder starts",
       },
       {
         id: "builder-saved",
         label: "Saved",
         value: "3",
-        detail: "Successful creates or updates",
+        detail: "Workouts saved",
       },
       {
         id: "builder-save-rate",
@@ -215,19 +251,19 @@ describe("admin analytics dashboard view model", () => {
         detail: "Saved / started",
       },
     ]);
-    expect(viewModel.workoutBuilderFunnel.caveat).toContain("not unique-user");
+    expect(viewModel.workoutBuilderFunnel.caveat).toContain("not purchases or revenue");
     expect(viewModel.workoutBuilderSourceBreakdown.metrics).toEqual([
       {
         id: "source-manual-starts",
         label: "Manual starts",
         value: "5",
-        detail: "Manual builder entries",
+        detail: "Manual builder starts",
       },
       {
         id: "source-generated-drafts",
         label: "Generated drafts",
         value: "4",
-        detail: "AI session drafts",
+        detail: "Generated workout drafts",
       },
       {
         id: "source-manual-saves",
@@ -239,7 +275,7 @@ describe("admin analytics dashboard view model", () => {
         id: "source-generated-saves",
         label: "Generated saves",
         value: "1",
-        detail: "Saved generated sessions",
+        detail: "Saved generated workouts",
       },
       {
         id: "source-manual-save-rate",
@@ -255,24 +291,24 @@ describe("admin analytics dashboard view model", () => {
       },
       {
         id: "source-unknown-saves",
-        label: "Unknown saves",
+        label: "Needs review",
         value: "0",
-        detail: "Missing or unmapped source",
+        detail: "Saved workouts missing a known type",
       },
     ]);
-    expect(viewModel.workoutBuilderSourceBreakdown.caveat).toContain("not unique-user");
+    expect(viewModel.workoutBuilderSourceBreakdown.caveat).toContain("not exports");
     expect(viewModel.workoutBuilderTemplateGeneratedCompletion.metrics).toEqual([
       {
         id: "generated-completion-drafts",
         label: "Generated drafts",
         value: "4",
-        detail: "AI session drafts",
+        detail: "Generated workout drafts",
       },
       {
         id: "generated-completion-saves",
         label: "Generated saves",
         value: "1",
-        detail: "Saved generated sessions",
+        detail: "Saved generated workouts",
       },
       {
         id: "generated-completion-rate",
@@ -282,49 +318,51 @@ describe("admin analytics dashboard view model", () => {
       },
       {
         id: "template-usage",
-        label: "Template usage",
+        label: "Template starts",
         value: "3",
-        detail: "Explicit selections",
+        detail: "Use template clicks",
       },
     ]);
     expect(viewModel.workoutBuilderTemplateGeneratedCompletion.caveat).toContain(
-      "counted only from explicit template-selection events"
+      "Use template action"
     );
     expect(viewModel.workoutBuilderTemplateUsage.metrics).toEqual([
       {
         id: "template-selections",
-        label: "Template selections",
+        label: "Template starts",
         value: "3",
-        detail: "Explicit Use template events",
+        detail: "Use template clicks",
       },
       {
         id: "templates-selected",
-        label: "Templates selected",
+        label: "Templates used",
         value: "2",
-        detail: "Known template keys",
+        detail: "Known templates",
       },
       {
         id: "unknown-template-selections",
-        label: "Unknown template",
+        label: "Needs review",
         value: "1",
-        detail: "Missing or unmapped key/source",
+        detail: "Missing approved template",
       },
     ]);
     expect(viewModel.workoutBuilderTemplateUsage.items).toEqual([
       {
         key: "pool_endurance_base_1000",
         label: "Aerobic base 1000",
-        secondary: "Active template - pool_endurance_base_1000",
+        secondary: "Active template",
         count: "2",
       },
       {
         key: "pool_technique_reset_900",
         label: "Technique reset 900",
-        secondary: "Active template - pool_technique_reset_900",
+        secondary: "Active template",
         count: "1",
       },
     ]);
-    expect(viewModel.workoutBuilderTemplateUsage.caveat).toContain("Unknown template selections");
+    expect(viewModel.workoutBuilderTemplateUsage.caveat).toContain(
+      "do not match an approved template"
+    );
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
       secondary: "workout_builder_started",
@@ -350,8 +388,8 @@ describe("admin analytics dashboard view model", () => {
       secondary: "course_addon",
       count: "2",
     });
-    expect(viewModel.caveats.join(" ")).toContain("not Stripe reconciliation");
-    expect(viewModel.caveats.join(" ")).toContain("accepted is not checkout completion");
+    expect(viewModel.caveats.join(" ")).toContain("not purchase or accounting records");
+    expect(viewModel.caveats.join(" ")).toContain("Clicks are not purchases");
     expect(viewModel.caveats.join(" ")).toContain("not linked to user profiles");
   });
 
@@ -382,6 +420,15 @@ describe("admin analytics dashboard view model", () => {
             declineRate: null,
             unknownSourceEvents: 0,
             sourceCounts: [],
+          },
+          workoutContextCta: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            presented: 0,
+            accepted: 0,
+            acceptedRate: null,
+            unknownEvents: 0,
           },
           workoutBuilderFunnel: {
             started: 0,
@@ -447,6 +494,14 @@ describe("admin analytics dashboard view model", () => {
           { id: "upsell-decline-rate", value: "Not counted" },
         ],
       },
+      workoutContextCta: {
+        metrics: [
+          { id: "workout-context-cta-presented", value: "Not counted" },
+          { id: "workout-context-cta-accepted", value: "Not counted" },
+          { id: "workout-context-cta-accepted-rate", value: "Not counted" },
+          { id: "workout-context-cta-unknown", value: "Not counted" },
+        ],
+      },
       workoutBuilderSourceBreakdown: {
         metrics: [
           { id: "source-manual-starts", value: "Not counted" },
@@ -508,6 +563,15 @@ describe("admin analytics dashboard view model", () => {
             },
           ],
         },
+        workoutContextCta: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          presented: 0,
+          accepted: 1,
+          acceptedRate: null,
+          unknownEvents: 1,
+        },
         workoutBuilderSourceBreakdown: {
           manualStarts: 0,
           generatedDrafts: 1,
@@ -540,13 +604,13 @@ describe("admin analytics dashboard view model", () => {
         id: "builder-started",
         label: "Started",
         value: "0",
-        detail: "Manual builder starts",
+        detail: "Builder starts",
       },
       {
         id: "builder-saved",
         label: "Saved",
         value: "2",
-        detail: "Successful creates or updates",
+        detail: "Workouts saved",
       },
       {
         id: "builder-save-rate",
@@ -558,13 +622,20 @@ describe("admin analytics dashboard view model", () => {
     expect(zeroStarts.workoutBuilderFunnel.caveat).toContain("until a builder start exists");
     expect(zeroStarts.existingUpsellBaseline.metrics).toContainEqual({
       id: "upsell-accepted-rate",
-      label: "Accepted rate",
+      label: "Click rate",
       value: "Not counted",
-      detail: "Accepted / presented",
+      detail: "Clicked / shown",
     });
     expect(zeroStarts.existingUpsellBaseline.caveat).toContain(
-      "until an upsell presentation exists"
+      "until a current sales prompt has been shown"
     );
+    expect(zeroStarts.workoutContextCta.metrics).toContainEqual({
+      id: "workout-context-cta-accepted-rate",
+      label: "Click rate",
+      value: "Not counted",
+      detail: "",
+    });
+    expect(zeroStarts.workoutContextCta.caveat).toContain("until this prompt has been shown");
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -579,12 +650,12 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(zeroStarts.workoutBuilderTemplateGeneratedCompletion.metrics).toContainEqual({
       id: "template-usage",
-      label: "Template usage",
+      label: "Template starts",
       value: "0",
-      detail: "Explicit selections",
+      detail: "Use template clicks",
     });
     expect(zeroStarts.workoutBuilderTemplateUsage.emptyLabel).toBe(
-      "No template selections in this range."
+      "No template starts in this range."
     );
 
     const duplicateTelemetry = buildAnalyticsDashboardViewModel(
@@ -613,6 +684,15 @@ describe("admin analytics dashboard view model", () => {
               declineRate: 0,
             },
           ],
+        },
+        workoutContextCta: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          presented: 2,
+          accepted: 3,
+          acceptedRate: 1.5,
+          unknownEvents: 0,
         },
         workoutBuilderSourceBreakdown: {
           manualStarts: 2,
@@ -654,16 +734,27 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(duplicateTelemetry.existingUpsellBaseline.metrics).toContainEqual({
       id: "upsell-accepted-rate",
-      label: "Accepted rate",
+      label: "Click rate",
       value: "150%",
-      detail: "Accepted / presented",
+      detail: "Clicked / shown",
     });
     expect(duplicateTelemetry.existingUpsellBaseline.sourceItems[0]).toMatchObject({
       key: "unknown",
       label: "Unknown source",
     });
-    expect(duplicateTelemetry.existingUpsellBaseline.caveat).toContain("Unknown source events");
-    expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain("Duplicate starts and saves");
+    expect(duplicateTelemetry.existingUpsellBaseline.caveat).toContain(
+      "does not match an approved surface"
+    );
+    expect(duplicateTelemetry.workoutContextCta.metrics).toContainEqual({
+      id: "workout-context-cta-accepted-rate",
+      label: "Click rate",
+      value: "150%",
+      detail: "",
+    });
+    expect(duplicateTelemetry.workoutContextCta.caveat).toContain("interest signals only");
+    expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
+      "create more than one tracked action"
+    );
     expect(duplicateTelemetry.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-generated-save-rate",
       label: "Generated save rate",
@@ -678,12 +769,16 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(duplicateTelemetry.workoutBuilderTemplateUsage.metrics).toContainEqual({
       id: "template-selections",
-      label: "Template selections",
+      label: "Template starts",
       value: "3",
-      detail: "Explicit Use template events",
+      detail: "Use template clicks",
     });
-    expect(duplicateTelemetry.workoutBuilderTemplateUsage.caveat).toContain("Duplicate selections");
-    expect(duplicateTelemetry.workoutBuilderSourceBreakdown.caveat).toContain("Unknown saves");
+    expect(duplicateTelemetry.workoutBuilderTemplateUsage.caveat).toContain(
+      "same template more than once"
+    );
+    expect(duplicateTelemetry.workoutBuilderSourceBreakdown.caveat).toContain(
+      "not linked to a supported type"
+    );
   });
 
   it("does not expose unsafe raw payload-like identifiers in labels or secondary text", () => {
@@ -754,7 +849,7 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(viewModel.workoutBuilderTemplateUsage.items[0]).toMatchObject({
       label: "Unknown template",
-      secondary: "Active template - pool_endurance_base_1000",
+      secondary: "Active template",
     });
     expect(JSON.stringify(viewModel)).not.toContain("user@example.com");
     expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({

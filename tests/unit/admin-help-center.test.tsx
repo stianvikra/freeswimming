@@ -70,20 +70,28 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();
     expect(
-      screen.getByText(/not finance reconciliation or user-level public traffic/i)
+      screen.getByText(/not money records or tracking individual public visitors/i)
     ).toBeVisible();
-    expect(screen.getByText(/Started counts workout_builder_started/i)).toBeVisible();
-    expect(screen.getByText(/Manual starts count current manual builder entries/i)).toBeVisible();
-    expect(screen.getByText(/Generated completion uses session_draft_generated/i)).toBeVisible();
+    expect(screen.getByText(/Started shows how often the builder was opened/i)).toBeVisible();
+    expect(
+      screen.getByText(/Manual starts and saves show hands-on builder activity/i)
+    ).toBeVisible();
+    expect(screen.getByText(/Shown means the Poolside guide prompt appeared/i)).toBeVisible();
+    expect(
+      screen.getByText(/Shown means a current sales prompt on Plans or My Library appeared/i)
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Generated sessions show how often generated drafts became saved workouts/i)
+    ).toBeVisible();
     expect(
       screen.getByText(
-        /Generated completion uses session_draft_generated.*Template usage counts only workout_builder_template_selected/i
+        /Generated sessions show how often generated drafts became saved workouts.*Template starts count only the Use template action/i
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
-    expect(screen.getByText("Generated completion / Template usage:")).toBeVisible();
-    expect(screen.getByText(/not user-level attribution, checkout conversion/i)).toBeVisible();
-    expect(screen.getByText(/Do not infer missing revenue, user attribution/i)).toBeVisible();
+    expect(screen.getByText("Generated sessions / Template starts:")).toBeVisible();
+    expect(screen.getByText(/not purchases, revenue, exports, or unique people/i)).toBeVisible();
+    expect(screen.getByText(/Do not infer missing revenue, individual visitors/i)).toBeVisible();
     expect(
       screen.getByText(
         "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."

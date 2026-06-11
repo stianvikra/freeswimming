@@ -90,9 +90,10 @@ Before workout-context CTA performance can be measured, the measurement contract
 The first measurement contract is
 `docs/architecture/workout-context-cta-measurement-contract.md`.
 
-Until a later dashboard child maps runtime CTA aggregation, Admin Analytics must not add a
-workout-context CTA module or infer CTA performance from builder starts, saves, generated drafts,
-template selection, checkout starts, checkout completions, or entitlement grants.
+The Admin Analytics workout-context CTA module may count only the explicitly mapped
+`workout_saved_post_success` / `guide_poolside` runtime CTA events. It must not infer CTA
+performance from builder starts, saves, generated drafts, template selection, checkout starts,
+checkout completions, or entitlement grants.
 
 ## Commerce And Finance Boundary
 

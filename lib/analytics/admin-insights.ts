@@ -5,7 +5,13 @@ import {
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
-import { WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE } from "@/lib/analytics/workout-builder";
+import {
+  WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE,
+  WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
+  WORKOUT_CONTEXT_CTA_PLACEMENT_ID,
+  WORKOUT_CONTEXT_CTA_PRODUCT_ID,
+  WORKOUT_CONTEXT_CTA_SURFACE,
+} from "@/lib/analytics/workout-builder";
 import type { WorkoutSourceKind } from "@/lib/workouts/shared";
 import {
   getWorkoutTemplateByKey,
@@ -87,6 +93,15 @@ export type AnalyticsInsightsResponse = {
     declineRate: number | null;
     unknownSourceEvents: number;
     sourceCounts: ExistingUpsellSourceCount[];
+  };
+  workoutContextCta: {
+    placementId: string;
+    productId: string;
+    source: string;
+    presented: number;
+    accepted: number;
+    acceptedRate: number | null;
+    unknownEvents: number;
   };
   workoutBuilderFunnel: {
     started: number;
@@ -191,13 +206,44 @@ function getSafeTemplateSelectionKey(payload: AnalyticsEventInsightRow["payload"
 
 function getSafePayloadDimension(
   payload: AnalyticsEventInsightRow["payload"],
-  key: "source" | "surface"
+  key: "placementId" | "productId" | "source" | "surface"
 ): string | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   const value = (payload as Record<string, unknown>)[key];
   if (typeof value !== "string") return null;
   if (!/^[a-z][a-z0-9_:-]{0,80}$/.test(value)) return null;
   return value;
+}
+
+function getSafeRowOrPayloadDimension(
+  rowValue: string | null | undefined,
+  payload: AnalyticsEventInsightRow["payload"],
+  payloadKey: "placementId" | "productId" | "source" | "surface"
+): string | null {
+  if (rowValue && /^[a-z][a-z0-9_:-]{0,80}$/.test(rowValue)) return rowValue;
+  return getSafePayloadDimension(payload, payloadKey);
+}
+
+function isWorkoutContextUpsellRow(row: AnalyticsEventInsightRow): boolean {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const surface = getSafePayloadDimension(row.payload, "surface");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  return (
+    source === WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE ||
+    surface === WORKOUT_CONTEXT_CTA_SURFACE ||
+    placementId === WORKOUT_CONTEXT_CTA_PLACEMENT_ID
+  );
+}
+
+function isMappedWorkoutContextCtaRow(row: AnalyticsEventInsightRow): boolean {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
+  return (
+    source === WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE &&
+    placementId === WORKOUT_CONTEXT_CTA_PLACEMENT_ID &&
+    productId === WORKOUT_CONTEXT_CTA_PRODUCT_ID
+  );
 }
 
 function normalizeExistingUpsellSource(row: AnalyticsEventInsightRow): string {
@@ -299,6 +345,9 @@ export function buildAnalyticsInsights(input: {
   let upsellAccepted = 0;
   let upsellDeclined = 0;
   let unknownUpsellSourceEvents = 0;
+  let workoutContextCtaPresented = 0;
+  let workoutContextCtaAccepted = 0;
+  let workoutContextCtaUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
 
@@ -308,6 +357,20 @@ export function buildAnalyticsInsights(input: {
       row.event_name === UPSELL_ACCEPTED_EVENT ||
       row.event_name === UPSELL_DECLINED_EVENT
     ) {
+      const isWorkoutContextRow = isWorkoutContextUpsellRow(row);
+      if (isWorkoutContextRow) {
+        const isMapped = isMappedWorkoutContextCtaRow(row);
+        if (isMapped && row.event_name === UPSELL_PRESENTED_EVENT) {
+          workoutContextCtaPresented += 1;
+        } else if (isMapped && row.event_name === UPSELL_ACCEPTED_EVENT) {
+          workoutContextCtaAccepted += 1;
+        } else {
+          workoutContextCtaUnknownEvents += 1;
+        }
+      }
+
+      if (isWorkoutContextRow) continue;
+
       const source = normalizeExistingUpsellSource(row);
       const sourceCount = getUpsellSourceCount(upsellSourceCounts, source);
       const isExistingSource = EXISTING_UPSELL_SOURCE_VALUES.has(source);
@@ -417,6 +480,15 @@ export function buildAnalyticsInsights(input: {
       declineRate: ratio(upsellDeclined, upsellPresented),
       unknownSourceEvents: unknownUpsellSourceEvents,
       sourceCounts: upsellSourceCountItems,
+    },
+    workoutContextCta: {
+      placementId: WORKOUT_CONTEXT_CTA_PLACEMENT_ID,
+      productId: WORKOUT_CONTEXT_CTA_PRODUCT_ID,
+      source: WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
+      presented: workoutContextCtaPresented,
+      accepted: workoutContextCtaAccepted,
+      acceptedRate: ratio(workoutContextCtaAccepted, workoutContextCtaPresented),
+      unknownEvents: workoutContextCtaUnknownEvents,
     },
     workoutBuilderFunnel: {
       started: workoutBuilderStarted,

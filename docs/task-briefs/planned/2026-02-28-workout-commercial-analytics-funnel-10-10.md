@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-11`
-- `base`: clean synced `main@36b11d16` after PR `#1072` shipped Workout Context CTA Runtime + Event Callsites V1.
+- `base`: clean synced `main@e31d2d19` after PR `#1073` closed the Workout Context CTA Runtime + Event Callsites V1 brief.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, PR `#1066` closed the docs-only workout-context upsell placement policy, PR `#1067` closed its repo-managed docs-only closeout, PR `#1068` shipped the read-only existing upsell Admin Analytics baseline, PR `#1069` closed its repo-managed docs-only closeout, PR `#1070` closed Workout Context CTA Measurement Contract V1, PR `#1071` closed its repo-managed docs-only closeout, and PR `#1072` shipped the first saved-workout post-success workout-context CTA plus privacy-safe presentation/click callsites. The owner must explicitly select the next bounded slice before more work starts under this parent.
+- `reason`: The first telemetry/dashboard children are complete: PR `#1049` shipped privacy-safe workout builder start/save events, PR `#1051` shipped read-only Admin Analytics visibility for started, saved, and save-rate, PR `#1053` shipped source breakdown visibility for manual-vs-generated contribution, PR `#1055` shipped generated draft/save/completion visibility while keeping template usage as not instrumented, PR `#1057` closed the template identity/selection contract, PR `#1059` shipped the runtime template source plus explicit `Use template` selection surface, PR `#1061` shipped the typed privacy-safe template-selection event, PR `#1063` shipped read-only Admin Analytics template usage mapping for that event, PR `#1066` closed the docs-only workout-context upsell placement policy, PR `#1067` closed its repo-managed docs-only closeout, PR `#1068` shipped the read-only existing upsell Admin Analytics baseline, PR `#1069` closed its repo-managed docs-only closeout, PR `#1070` closed Workout Context CTA Measurement Contract V1, PR `#1071` closed its repo-managed docs-only closeout, PR `#1072` shipped the first saved-workout post-success workout-context CTA plus privacy-safe presentation/click callsites, and PR `#1073` closed its repo-managed docs-only closeout. The owner explicitly selected the bounded workout-context CTA Admin Analytics mapping child on 2026-06-11.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -74,9 +74,12 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1072` / squash commit `36b11d16`.
   - Owns only the first saved-workout post-success workout-context CTA and privacy-safe `upsell_presented` / `upsell_accepted` callsites for `placementId=workout_saved_post_success` and `productId=guide_poolside`.
   - Admin Analytics runtime module, `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, and builder/generator algorithm changes remain out of scope.
+- In-progress child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
+  - Owns only read-only Admin Analytics mapping for the shipped workout-context CTA events with `placementId=workout_saved_post_success`, `productId=guide_poolside`, and `source=workout_context`.
+  - Keeps existing `/plans` and My Library upsell baseline separate.
+  - `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, and builder/generator algorithm changes remain out of scope.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
-  - dedicated workout-context CTA Admin Analytics mapping/dashboard beyond existing current-surface baseline,
   - broader dedicated KPI modules,
   - CSV/export,
   - finance-grade reporting,
@@ -85,13 +88,13 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-No selected child.
+Selected child: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`.
 
-The runtime CTA/event-callsites child is closed. Future work must still start as a separate owner-approved child and must not add Admin Analytics runtime modules, `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, or builder/generator algorithm changes without that explicit child scope.
+The workout-context CTA Admin Analytics mapping child is now in progress. It must not add `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, or builder/generator algorithm changes.
 
 Safe follow-up candidate families after the runtime CTA/event-callsites child:
 
-- Workout-context CTA Admin Analytics mapping: add read-only workout-context CTA dashboard visibility only after runtime events exist and their meanings are explicit.
+- Workout-context CTA Admin Analytics mapping: selected and in progress; add read-only workout-context CTA dashboard visibility only for the shipped mapped CTA events.
 - Checkout attribution and finance separation: define how product telemetry, checkout conversion, entitlement truth, Stripe reconciliation, and finance reporting stay separate before any commerce implementation.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -341,7 +344,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-cta-runtime-event-callsites-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-cta-admin-analytics-mapping-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -398,3 +401,8 @@ Future child implementation:
 - `2026-06-11 | runtime CTA screenshots approved | owner approved screenshot handoff for output/workout-context-cta-runtime-2026-06-11-105229, and route/label/support sweep found only expected scoped fallout plus unchanged existing checkout/Stripe/entitlement references | next: child lint/tests and verify:pre-pr`
 - `2026-06-11 | runtime CTA pre-pr passed | child validation passed npm run lint:briefs:all, targeted Vitest, git diff --check, npm run lint:quality-gates, and npm run verify:pre-pr full lane on branch workout-context-cta-runtime-v1 with no scoped product-rendering source changes after the final approved screenshot capture | next: commit, push, open PR, monitor CI, and run pre-merge gate`
 - `2026-06-11 | runtime CTA child merged | PR #1072 merged at squash commit 36b11d16 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and Admin Analytics runtime modules, upsell_declined, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-11 | runtime CTA closeout merged and admin mapping child selected | closeout PR #1073 merged at squash commit e31d2d19 after clean post-merge preflight, and owner then executed Workout Context CTA Admin Analytics Mapping V1 on branch workout-context-cta-admin-analytics-mapping-v1 | next: implement read-only Admin Analytics mapping and stop at screenshot approval before pre-PR`
+- `2026-06-11 | admin mapping child copy polish | active child added the bounded workout-context CTA Admin Analytics aggregate/panel and then polished touched Admin Analytics and Help/Guide wording for non-technical admins with labels like Shown, Clicked, Needs review, Current sales prompts, Poolside guide prompt, Generated sessions, and Template starts; targeted Vitest passed and no checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, runtime CTA, or builder/generator algorithm scope was added | next: typecheck/brief lint/diff check, regenerate child screenshot handoff, and wait for owner approval before verify:pre-pr`
+- `2026-06-11 | admin mapping child screenshot stop | active child passed typecheck, lint:briefs:all, diff-check, and targeted Vitest, then regenerated after/reference screenshot artifacts at output/workout-context-cta-admin-analytics-2026-06-11-141620 with admin-readable copy visible; temporary capture harness was removed and no scoped product-rendering files changed after final capture | next: wait for owner screenshot approval or copy corrections before verify:pre-pr`
+- `2026-06-11 | admin mapping child screenshot copy correction | owner reviewed after-workout-context-cta-desktop and requested removal of the three Shown/Clicked/Click rate detail lines while keeping Needs review; active child regenerated after/reference artifacts at output/workout-context-cta-admin-analytics-2026-06-11-142708 and removed temporary capture files after generation | next: final targeted QA and wait for owner visual approval before verify:pre-pr`
+- `2026-06-11 | admin mapping child pre-pr passed | owner approved the regenerated screenshot handoff, and active child passed npm run verify:pre-pr full lane with no scoped product-rendering source changes after the final approved screenshot capture | next: commit, push, open/update PR, monitor CI, and run child pre-merge gate`

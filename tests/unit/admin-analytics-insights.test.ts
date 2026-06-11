@@ -276,6 +276,15 @@ describe("admin analytics insights", () => {
         count: 1,
       },
     ]);
+    expect(insights.workoutContextCta).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      presented: 0,
+      accepted: 0,
+      acceptedRate: null,
+      unknownEvents: 0,
+    });
     expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
     expect(insights.productCounts[0]).toMatchObject({
       key: "guide_poolside",
@@ -389,6 +398,29 @@ describe("admin analytics insights", () => {
             productId: "guide_poolside",
           },
         },
+        {
+          ...baseRow,
+          event_name: "upsell_accepted",
+          source: "workout_context",
+          payload: {
+            source: "workout_context",
+            surface: "saved_workout_post_success",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_presented",
+          source: "workout_context",
+          product_id: "future_product",
+          payload: {
+            source: "workout_context",
+            surface: "saved_workout_post_success",
+            placementId: "workout_saved_post_success",
+            productId: "future_product",
+          },
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
@@ -400,7 +432,7 @@ describe("admin analytics insights", () => {
       declined: 2,
       acceptedRate: 1,
       declineRate: 1,
-      unknownSourceEvents: 2,
+      unknownSourceEvents: 1,
       sourceCounts: [
         {
           key: "library_explore",
@@ -422,18 +454,78 @@ describe("admin analytics insights", () => {
         },
         {
           key: "unknown",
-          presented: 1,
+          presented: 0,
           accepted: 1,
           declined: 0,
-          total: 2,
-          acceptedRate: 1,
-          declineRate: 0,
+          total: 1,
+          acceptedRate: null,
+          declineRate: null,
         },
       ],
+    });
+    expect(insights.workoutContextCta).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      presented: 1,
+      accepted: 1,
+      acceptedRate: 1,
+      unknownEvents: 1,
     });
     expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("user@example.com");
     expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("future_surface");
     expect(JSON.stringify(insights.existingUpsellBaseline)).not.toContain("workout_context");
+    expect(JSON.stringify(insights.workoutContextCta)).not.toContain("future_product");
+  });
+
+  it("keeps workout-context CTA click rate not counted when presentations are missing", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "upsell_accepted",
+          source: "workout_context",
+          payload: {
+            source: "workout_context",
+            surface: "saved_workout_post_success",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            email: "user@example.com",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "workout_context",
+          payload: {
+            source: "workout_context",
+            surface: "saved_workout_post_success",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+          },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.workoutContextCta).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      presented: 0,
+      accepted: 1,
+      acceptedRate: null,
+      unknownEvents: 1,
+    });
+    expect(JSON.stringify(insights.workoutContextCta)).not.toContain("user@example.com");
+    expect(insights.existingUpsellBaseline).toMatchObject({
+      presented: 0,
+      accepted: 0,
+      declined: 0,
+      unknownSourceEvents: 0,
+      sourceCounts: [],
+    });
   });
 
   it("keeps malformed and missing workout save source kinds unmapped", () => {

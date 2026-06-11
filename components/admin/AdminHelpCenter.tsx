@@ -19,7 +19,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-06-10";
+const LAST_UPDATED = "2026-06-11";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe event health, funnel counts, existing upsell baseline, workout-context CTA caveats, workout-builder save-rate, generated completion, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe event health, funnel counts, current sales prompt activity, saved-workout guide prompt interest, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating bounded revenue-proxy, existing upsell, workout-context CTA, builder save-rate, or generated completion counts as finance reconciliation, checkout conversion, template usage, or user-level attribution.",
+      "Treating dashboard counts as purchases, accounting records, checkout completion, or unique people instead of product activity signals.",
   },
   {
     name: "Email templates",
@@ -265,52 +265,52 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Start with data health",
     detail:
-      "Check range, generated time, last event, schema state, and row cap before reading any KPI. Capped or schema-missing data must be treated as incomplete.",
+      "Check range, generated time, last event, setup state, and row limit before reading any dashboard number. Capped or setup-missing data must be treated as incomplete.",
   },
   {
-    title: "Use the KPI strip for a quick pulse",
+    title: "Use the top summary for a quick pulse",
     detail:
       "Total events, public aggregate, known users, client/server split, and checkout rate answer whether safe instrumentation is active in the selected range.",
   },
   {
-    title: "Read workout builder save-rate as product telemetry",
+    title: "Read builder starts and saves as product activity",
     detail:
-      "Started counts workout_builder_started, Saved counts workout_builder_saved, and Save rate is Saved / Started for the selected range. Duplicate starts and saves can exist, so this is not unique-user conversion, checkout performance, Stripe reconciliation, or finance reporting.",
+      "Started shows how often the builder was opened. Saved shows how often a workout was saved. A person can create more than one tracked action, so this is not unique people, purchases, checkout performance, or revenue.",
   },
   {
-    title: "Read existing upsell baseline as current-surface signal",
+    title: "Read current sales prompts as prompt activity",
     detail:
-      "Presented counts upsell_presented on current /plans and My Library commercial surfaces, Accepted counts clicked commercial actions there, and Cancelled returns counts the existing checkout-cancel return signal. Workout-context sources are kept separate until explicitly mapped. Accepted is not checkout completion, cancelled returns are not all declined users, and neither value is entitlement, Stripe reconciliation, revenue, or finance truth.",
+      "Shown means a current sales prompt on Plans or My Library appeared. Clicked means someone clicked it. Checkout cancelled means someone returned from checkout. Clicks are not purchases, and checkout cancelled does not mean every other visitor declined.",
   },
   {
-    title: "Read workout-context CTA as visibility and clicked intent",
+    title: "Read the saved-workout guide prompt as interest",
     detail:
-      "Workout-context CTA V1 may show the Poolside guide option only after a successful saved-workout state. Its upsell_presented event means that CTA rendered for placement workout_saved_post_success, and upsell_accepted means the user clicked it. It is not checkout completion, entitlement, revenue, Stripe reconciliation, finance truth, or a unique-user conversion metric. A dedicated workout-context CTA dashboard remains a later mapping child.",
+      "Shown means the Poolside guide prompt appeared after a workout was saved. Clicked means someone clicked that prompt. Needs review means some events do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
-    title: "Read workout builder source breakdown as product telemetry",
+    title: "Read manual vs generated workouts side by side",
     detail:
-      "Manual starts count current manual builder entries, Generated drafts count session_draft_generated, Manual saves count workout_builder_saved with sourceKind manual, and Generated saves count sourceKind ai_session_v1. Unknown saves stay unmapped until explicitly reviewed. These rates are not unique-user conversion, checkout conversion, revenue attribution, export success, Stripe reconciliation, entitlement truth, or finance reporting.",
+      "Manual starts and saves show hands-on builder activity. Generated drafts and saves show AI-assisted activity. Needs review means saved workouts are missing a supported type. These rates are product activity only, not exports, purchases, revenue, or accounting evidence.",
   },
   {
-    title: "Read generated completion and template usage separately",
+    title: "Read generated sessions and template starts separately",
     detail:
-      "Generated completion uses session_draft_generated and workout_builder_saved with sourceKind ai_session_v1. Template usage counts only workout_builder_template_selected from the explicit Use template action and registry-backed templateKey. Do not infer it from session type, generator block toggles, draft creation, source kind, visible labels, save events, or adjacent activity.",
+      "Generated sessions show how often generated drafts became saved workouts. Template starts count only the Use template action. Do not infer template use from nearby labels, generated drafts, or saved workouts.",
   },
   {
     title: "Read funnel as product signal only",
     detail:
-      "Plans, product, checkout, and entitlement counts are useful for product review. They do not replace Stripe, accounting, finance reconciliation, refunds, invoices, payouts, or revenue recognition.",
+      "Plans, product, checkout, and access counts are useful for product review. They do not replace Stripe, accounting reports, refunds, invoices, payouts, or revenue records.",
   },
   {
     title: "Use top lists for direction, not raw investigation",
     detail:
-      "Top events, routes, and products use stable event names, route templates, and product IDs. The dashboard intentionally does not show raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details, or payment/shipping data.",
+      "Top events, routes, and products show safe labels for direction. The dashboard intentionally does not show raw technical payloads, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details, or payment/shipping data.",
   },
   {
     title: "Respect the public privacy boundary",
     detail:
-      "Public aggregate traffic is not linked to signed-in user profiles, even when the same browser may later authenticate. Unknown or unmapped values should be treated as not counted or generic until explicitly mapped.",
+      "Public aggregate traffic is not linked to signed-in user profiles, even when the same browser may later authenticate. Values marked as needing review should stay out of decisions until reviewed.",
   },
 ];
 
@@ -539,22 +539,22 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Started / Saved / Save rate",
         meaning:
-          "Shows the workout-builder product telemetry for the selected range. It is useful for builder completion review, not user-level attribution, checkout conversion, Stripe reconciliation, export, or finance reporting.",
+          "Shows builder starts, saved workouts, and save rate for the selected range. It is useful for builder review, not purchases, revenue, exports, or unique people.",
       },
       {
-        label: "Existing upsell baseline",
+        label: "Current sales prompts",
         meaning:
-          "Shows current /plans and My Library upsell presentation, click, and checkout-cancel return events. Workout-context CTA sources are separate diagnostics until mapped. Use it as a commercial surface baseline only, not checkout completion, entitlement, revenue, or finance evidence.",
+          "Shows how often current sales prompts on Plans and My Library were shown, clicked, or returned from checkout. Use it as prompt activity only, not purchase, access, revenue, or accounting evidence.",
       },
       {
-        label: "Workout-context CTA",
+        label: "Poolside guide prompt",
         meaning:
-          "A saved-workout post-success Poolside guide prompt. Presented means rendered, Accepted means clicked, and neither value means checkout completion, entitlement, revenue, Stripe reconciliation, or finance truth.",
+          "Shows how often the Poolside guide prompt was shown and clicked after a workout was saved. Needs review stays out of the main numbers until reviewed, and none of these values mean purchase, access, revenue, or accounting evidence.",
       },
       {
-        label: "Generated completion / Template usage",
+        label: "Generated sessions / Template starts",
         meaning:
-          "Shows generated drafts and generated saves from supported events, plus template selections from workout_builder_template_selected only. Unknown template keys stay unmapped until explicitly reviewed.",
+          "Shows generated drafts, generated saves, and template starts. Template starts count only the Use template action, and items that need review stay out of template totals until reviewed.",
       },
     ],
   },
@@ -717,7 +717,7 @@ const CONNECTED_SERVICES = [
     purpose:
       "Stores sanitized aggregate/product/funnel/upsell events and renders read-only admin insights without third-party scripts.",
     caution:
-      "Do not treat dashboard counts, including existing upsell accepted/cancelled signals, as finance truth, user-level attribution, or approval for cookies/vendor tracking.",
+      "Do not treat dashboard counts, including sales prompt clicks and checkout-cancel returns, as accounting records, unique-person tracking, or approval for cookies/vendor tracking.",
   },
 ];
 
@@ -950,8 +950,8 @@ export default function AdminHelpCenter() {
         <h3 className={helpHeadingClass}>How Analytics works</h3>
         <p className={helpBodyClass}>
           Analytics is a read-only operational dashboard over sanitized first-party events. Use it
-          for product and support direction, not finance reconciliation or user-level public traffic
-          attribution.
+          for product and support direction, not money records or tracking individual public
+          visitors.
         </p>
         <div className="mt-3 space-y-3">
           {ANALYTICS_WORKFLOW.map((item) => (
@@ -1139,13 +1139,13 @@ export default function AdminHelpCenter() {
           </article>
           <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">
-              Analytics is empty, quiet, capped, or schema-missing
+              Analytics is empty, quiet, capped, or setup-missing
             </p>
             <p className="mt-1 text-sm text-amber-800">
               Check Data health first. Empty can mean no traffic in range, Quiet can mean no recent
-              event, Capped means totals are bounded, and Schema missing means the analytics_events
-              migration/setup is not ready. Do not infer missing revenue, user attribution, or
-              finance truth from this dashboard alone.
+              event, Capped means totals are bounded, and Setup missing means the analytics setup is
+              not ready. Do not infer missing revenue, individual visitors, or accounting truth from
+              this dashboard alone.
             </p>
           </article>
           <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
