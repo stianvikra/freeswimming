@@ -99,6 +99,14 @@ This file defines how coding agents should collaborate in this repository.
 - Do not claim `10/10` architecture unless the active brief names the relevant stack surfaces, proves reuse or a justified exception, and validates the critical invariants with tests or direct evidence.
 - Do not claim forward compatibility when the code is hardcoded to today's known rows, labels, or product IDs unless the brief explicitly says that future values require a mapping update and includes the fallback behavior for unmapped values.
 
+## Codex Skill And Stack Readiness Radar
+
+- Use `docs/runbooks/codex-skill-stack-readiness-radar.md` when a merge/closeout leaves no active child and the next primary goal changes, when creating or refreshing a broad brief, or before high-risk auth/payments/admin/data/analytics/UI/deploy work.
+- Treat Codex skills/plugins/MCP tools as local/session capabilities, not repo state. Audit availability from current session metadata and local evidence before relying on them.
+- Do not install, enable, disable, or configure local Codex skills/plugins/MCP servers unless the owner explicitly approves that local config change.
+- Radar findings must be classified as `safe process/docs update`, `bounded implementation child`, `deferred architecture decision`, or `do not do`, with at most three recommended next improvements in the handoff.
+- Stack or capability findings must not expand an active product/runtime slice; create or update a bounded task brief when implementation is needed.
+
 ## Guardrails
 
 - Keep changes minimal and targeted.
