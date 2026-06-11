@@ -145,11 +145,20 @@ describe("/api/checkout/session route", () => {
         mode: "payment",
         cancel_url: "https://freeswimming.example/plans",
         line_items: [{ price: "price_poolside", quantity: 1 }],
+        metadata: expect.objectContaining({
+          fs_product_id: "guide_poolside",
+          fs_product_slug: "poolside-guide",
+          fs_product_kind: "course_addon",
+        }),
       }),
       {
         idempotencyKey: expect.stringMatching(/^checkout-session:/),
       }
     );
+    const sessionPayload = stripe.checkout.sessions.create.mock.calls[0]?.[0];
+    expect(sessionPayload.metadata).not.toHaveProperty("fs_attribution_source");
+    expect(sessionPayload.metadata).not.toHaveProperty("fs_attribution_placement_id");
+    expect(sessionPayload.metadata).not.toHaveProperty("fs_attribution_product_id");
     expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
       eventName: "checkout_started",
       channel: "server",
@@ -168,6 +177,9 @@ describe("/api/checkout/session route", () => {
   });
 
   it("keeps mapped workout-context placement and normalizes unknown checkout sources", async () => {
+    const stripe = buildStripeClient();
+    createStripeClientMock.mockReturnValue(stripe);
+
     await POST(
       buildRequest({
         productId: "guide_poolside",
@@ -184,6 +196,29 @@ describe("/api/checkout/session route", () => {
           placementId: "workout_saved_post_success",
         },
       })
+    );
+    expect(stripe.checkout.sessions.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          fs_product_id: "guide_poolside",
+          fs_attribution_source: "workout_context",
+          fs_attribution_placement_id: "workout_saved_post_success",
+          fs_attribution_product_id: "guide_poolside",
+        }),
+        invoice_creation: {
+          enabled: true,
+          invoice_data: {
+            metadata: expect.objectContaining({
+              fs_attribution_source: "workout_context",
+              fs_attribution_placement_id: "workout_saved_post_success",
+              fs_attribution_product_id: "guide_poolside",
+            }),
+          },
+        },
+      }),
+      {
+        idempotencyKey: expect.stringMatching(/^checkout-session:/),
+      }
     );
 
     trackAndPersistAnalyticsEventMock.mockClear();
@@ -204,6 +239,8 @@ describe("/api/checkout/session route", () => {
         },
       })
     );
+    const unknownSessionPayload = stripe.checkout.sessions.create.mock.calls[1]?.[0];
+    expect(unknownSessionPayload.metadata).not.toHaveProperty("fs_attribution_source");
   });
 
   it("fails closed before provider calls for invalid request and unavailable products", async () => {

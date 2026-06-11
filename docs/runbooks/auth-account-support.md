@@ -38,6 +38,11 @@ Use this runbook when users ask where account, sign-in, billing, or recovery act
   - verify the Checkout Session has `payment_status=paid`,
   - verify `invoice_creation.enabled=true` and an invoice ID exists for the session,
   - treat older sandbox purchases made before invoice creation was enabled as receipt/charge-only records; they do not retroactively gain portal invoice history.
+- If a Checkout Session, webhook analytics row, or entitlement row has workout-context attribution
+  such as `source=workout_context` and `placementId=workout_saved_post_success`, treat it as safe
+  product telemetry/support context only. It can help diagnose the saved-workout-to-plans path, but
+  it is not revenue, refund, payout, invoice, accounting, Stripe reconciliation, unique-user
+  conversion, or app access proof by itself.
 - If a sign-in email does not arrive: ask them to check spam/junk, wait for any cooldown, then request a new sign-in email on `/auth/sign-in`.
 - If the secure email link does not open: ask them to enter the one-time code from the same email on `/auth/sign-in`.
 - If an iPhone Home Screen app user says the email link opens in Safari or Safari denies the sign-in:

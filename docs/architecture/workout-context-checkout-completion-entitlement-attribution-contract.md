@@ -4,16 +4,19 @@ Last updated: 2026-06-11
 
 ## Purpose
 
-This contract defines whether the mapped workout-context checkout-start handoff can be connected to
+This contract defines how the mapped workout-context checkout-start handoff can be connected to
 checkout completion and entitlement grant interpretation.
 
-It is intentionally a docs-only contract. It does not add or change checkout routes, Stripe Checkout
-Session payloads, webhook handling, entitlement writes, Admin Analytics modules, finance scripts,
-exports, raw drilldown, migrations, RLS, pricing, product catalog rows, or UI.
+The current runtime implementation carries only the approved server-owned attribution fields from
+checkout-start into Stripe Checkout Session metadata, webhook-backed `checkout_completed`, and
+app-recognized `entitlement_granted` product telemetry. It still does not add Admin Analytics
+completion/entitlement modules, finance scripts, exports, raw drilldown, migrations, RLS, pricing,
+product catalog rows, direct checkout, or UI.
 
 ## Official Provider Baseline
 
-Official Stripe docs were checked on 2026-06-11 for this contract:
+Official Stripe docs were checked on 2026-06-11 for this contract and rechecked before the runtime
+propagation implementation:
 
 - Stripe Checkout: <https://docs.stripe.com/payments/checkout>
 - Create a Checkout Session: <https://docs.stripe.com/api/checkout/sessions/create>
@@ -58,15 +61,25 @@ Stripe session and webhook:
 
 - The current Checkout Session metadata carries product identity and, when available, a server-owned
   user reference for provider/fulfillment purposes.
-- The current Checkout Session metadata does not carry approved workout-context `source` or
-  `placementId` into Stripe.
+- The current Checkout Session metadata and invoice metadata carry approved workout-context
+  attribution only when source, placement, and product match the server-owned mapping:
+  - `fs_attribution_source=workout_context`,
+  - `fs_attribution_placement_id=workout_saved_post_success`,
+  - `fs_attribution_product_id=guide_poolside`.
+- Generic plans/library traffic, unknown values, malformed values, future values, and product
+  mismatches omit those attribution fields.
 - The webhook route supports `checkout.session.completed` and
   `checkout.session.async_payment_succeeded`.
 - `checkout.session.completed` with a non-`paid` payment status is deferred for async payment
   confirmation.
-- The webhook emits generic server-side `checkout_completed` after provider completion validation.
+- The webhook emits server-side `checkout_completed` after provider completion validation and
+  catalog product resolution. It adds safe `source`, `placementId`, and `productId` only when the
+  Stripe metadata matches the resolved catalog product.
 - The webhook then attempts entitlement fulfillment and emits generic server-side
-  `entitlement_granted` after the app recognizes access.
+  `entitlement_granted` after the app recognizes access. It adds the same safe attribution only
+  after entitlement fulfillment succeeds.
+- Analytics payloads do not include Checkout Session IDs, customer IDs, payment IDs, invoice IDs,
+  checkout URLs, portal URLs, emails, user IDs, or raw provider responses.
 
 Analytics sanitizer:
 
@@ -77,36 +90,43 @@ Analytics sanitizer:
 
 ## Contract Decision
 
-Workout-context checkout completion and entitlement attribution are not implemented today.
+Workout-context checkout completion and entitlement attribution propagation is implemented only as a
+backend telemetry/support foundation.
 
-The existing generic `checkout_completed` and `entitlement_granted` events must not be counted as
-dedicated workout-context completion or entitlement outcomes unless a later implementation child
-adds an approved server-owned propagation path and tests it end to end.
+The existing generic `checkout_completed` and `entitlement_granted` events may carry approved
+workout-context attribution fields, but they must not be counted as dedicated workout-context
+completion or entitlement outcomes unless a later dashboard child explicitly maps those rows and
+tests the privacy/support boundaries end to end.
 
 Allowed today:
 
 - Show generic checkout completion and entitlement grant counts with caveats.
 - Show mapped workout-context checkout-start handoff counts with caveats.
+- Persist approved workout-context attribution on webhook-backed `checkout_completed` and
+  `entitlement_granted` rows as low-cardinality product telemetry.
 - Say that the mapped workout-context path reached checkout handoff for `guide_poolside` when the
   mapped `checkout_started` row exists.
 
 Forbidden today:
 
-- Joining mapped workout-context `checkout_started` rows to generic `checkout_completed` rows.
-- Joining mapped workout-context CTA clicks or checkout starts to generic `entitlement_granted`
+- Joining mapped workout-context `checkout_started` rows to unmapped/generic `checkout_completed`
   rows.
+- Joining mapped workout-context CTA clicks or checkout starts to unmapped/generic
+  `entitlement_granted` rows.
+- Showing dedicated workout-context completion or entitlement modules before a later dashboard child
+  maps and tests the new propagated fields.
 - Inferring purchase, access, revenue, refund, payout, invoice, accounting, or finance truth from
   `upsell_*` or `checkout_started` rows.
 - Claiming unique-user conversion from aggregate event counts.
 - Displaying raw provider identifiers, raw payload JSON, emails, user IDs, checkout URLs, or payment
   details in Admin Analytics.
 
-## Future Propagation Contract
+## Runtime Propagation Contract
 
-A later implementation child may carry workout-context attribution into provider/webhook handling
-only through a server-owned, allowlisted, low-cardinality contract.
+Workout-context attribution may enter provider/webhook handling only through a server-owned,
+allowlisted, low-cardinality contract.
 
-Approved future propagation shape:
+Approved propagation shape:
 
 | Field                         | Allowed value today                    | Source of truth                                   | Notes                                                                       |
 | ----------------------------- | -------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -115,7 +135,7 @@ Approved future propagation shape:
 | `fs_attribution_placement_id` | `workout_saved_post_success`           | approved placement mapping                        | Must be omitted when source is not the mapped workout-context source.       |
 | `fs_attribution_product_id`   | `guide_poolside`                       | validated request product after catalog lookup    | Must match the actual catalog product being checked out.                    |
 
-Allowed storage targets for those future fields:
+Allowed storage targets for those fields:
 
 - Stripe Checkout Session metadata.
 - Invoice metadata only when the same low-cardinality values are needed for support or
@@ -123,7 +143,7 @@ Allowed storage targets for those future fields:
 - A future server-owned checkout attribution table or log only if a separate child defines schema,
   RLS, retention, repair, and query limits.
 
-Forbidden future propagation values:
+Forbidden propagation values:
 
 - workout IDs, workout titles, workout notes, generated prompts, raw workout JSON,
 - raw route URLs, raw referrers, query strings, ad click IDs, visitor IDs, localStorage IDs,
@@ -154,7 +174,7 @@ Required caveats:
 
 ## Failure And Support States
 
-Future runtime or dashboard children must preserve these meanings:
+Runtime and future dashboard children must preserve these meanings:
 
 | State                                        | Required interpretation                                                                                     |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -223,10 +243,10 @@ Support must not say:
 - Entitlement access proves revenue, refund, payout, invoice, or accounting state.
 - Admin Analytics proves individual behavior, unique-user conversion, or finance truth.
 
-## Required Future Implementation Evidence
+## Required Evidence
 
-Before any runtime or dashboard child may ship workout-context completion or entitlement attribution,
-it must include:
+Before any runtime or dashboard child may ship or reinterpret workout-context completion or
+entitlement attribution, it must include:
 
 - current official Stripe docs evidence,
 - typed metadata or server-owned attribution helper,

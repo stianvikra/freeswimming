@@ -24,7 +24,7 @@ describe("getDiscountRedeemedPayload", () => {
     expect(getDiscountRedeemedPayload(session)).toBeNull();
   });
 
-  it("returns payload when discount amount is present", () => {
+  it("returns payload when discount amount is present without raw provider ids", () => {
     const session = buildCheckoutSession({
       metadata: {
         fs_product_id: "guide_poolside",
@@ -35,9 +35,16 @@ describe("getDiscountRedeemedPayload", () => {
       } as CheckoutSessionTotalDetails,
     });
 
-    expect(getDiscountRedeemedPayload(session)).toEqual({
-      sessionId: "cs_test_123",
+    expect(getDiscountRedeemedPayload(session, "guide_poolside")).toEqual({
       productId: "guide_poolside",
+      amountDiscount: 1200,
+      currency: "usd",
+    });
+    expect(JSON.stringify(getDiscountRedeemedPayload(session, "guide_poolside"))).not.toContain(
+      "cs_test_123"
+    );
+    expect(getDiscountRedeemedPayload(session)).toEqual({
+      productId: null,
       amountDiscount: 1200,
       currency: "usd",
     });

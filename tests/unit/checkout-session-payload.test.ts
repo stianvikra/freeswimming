@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogProduct } from "@/lib/commerce/catalog";
 import {
+  buildCheckoutAttributionAnalyticsPayload,
+  buildCheckoutAttributionMetadata,
   buildWorkoutContextPlansHref,
+  buildMappedCheckoutAttribution,
   buildCheckoutSessionPayload,
   buildCheckoutStartedAnalyticsPayload,
+  getMappedCheckoutAttributionFromMetadata,
   resolvePlansCheckoutAttributionForProduct,
 } from "@/lib/commerce/checkout";
 
@@ -70,6 +74,34 @@ describe("buildCheckoutSessionPayload", () => {
       fs_product_kind: "course_addon",
     });
   });
+
+  it("adds approved workout-context attribution metadata to session and invoice only when mapped", () => {
+    const checkoutAttribution = buildMappedCheckoutAttribution({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+    const payload = buildCheckoutSessionPayload({
+      appUrl: "https://freeswimming.example",
+      cancelPath: "/plans",
+      product,
+      checkoutAttribution,
+      user: null,
+    });
+
+    expect(payload.metadata).toMatchObject({
+      fs_product_id: "guide_poolside",
+      fs_attribution_source: "workout_context",
+      fs_attribution_placement_id: "workout_saved_post_success",
+      fs_attribution_product_id: "guide_poolside",
+    });
+    expect(payload.invoice_creation).toEqual({
+      enabled: true,
+      invoice_data: {
+        metadata: payload.metadata,
+      },
+    });
+  });
 });
 
 describe("buildCheckoutStartedAnalyticsPayload", () => {
@@ -111,6 +143,96 @@ describe("buildCheckoutStartedAnalyticsPayload", () => {
       productId: "guide_poolside",
       source: "plans",
     });
+  });
+});
+
+describe("checkout attribution metadata", () => {
+  it("maps only the approved workout-context source placement and product", () => {
+    const attribution = buildMappedCheckoutAttribution({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+
+    expect(attribution).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+    expect(buildCheckoutAttributionMetadata(attribution)).toEqual({
+      fs_attribution_source: "workout_context",
+      fs_attribution_placement_id: "workout_saved_post_success",
+      fs_attribution_product_id: "guide_poolside",
+    });
+    expect(buildCheckoutAttributionAnalyticsPayload(attribution)).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+  });
+
+  it("fails closed for generic sources unknown placements and product mismatches", () => {
+    expect(
+      buildMappedCheckoutAttribution({
+        productId: "guide_poolside",
+        source: "plans",
+        placementId: "workout_saved_post_success",
+      })
+    ).toBeNull();
+    expect(
+      buildMappedCheckoutAttribution({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "future_placement",
+      })
+    ).toBeNull();
+    expect(
+      buildMappedCheckoutAttribution({
+        productId: "guide_0_1000m",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+      })
+    ).toBeNull();
+    expect(buildCheckoutAttributionMetadata(null)).toEqual({});
+    expect(buildCheckoutAttributionAnalyticsPayload(null)).toEqual({});
+  });
+
+  it("extracts webhook attribution only when metadata matches the resolved catalog product", () => {
+    expect(
+      getMappedCheckoutAttributionFromMetadata(
+        {
+          fs_attribution_source: "workout_context",
+          fs_attribution_placement_id: "workout_saved_post_success",
+          fs_attribution_product_id: "guide_poolside",
+        },
+        "guide_poolside"
+      )
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+
+    expect(
+      getMappedCheckoutAttributionFromMetadata(
+        {
+          fs_attribution_source: "workout_context",
+          fs_attribution_placement_id: "workout_saved_post_success",
+          fs_attribution_product_id: "guide_poolside",
+        },
+        "guide_0_1000m"
+      )
+    ).toBeNull();
+    expect(
+      getMappedCheckoutAttributionFromMetadata(
+        {
+          fs_attribution_source: "workout_context",
+          fs_attribution_placement_id: "future_placement",
+          fs_attribution_product_id: "guide_poolside",
+        },
+        "guide_poolside"
+      )
+    ).toBeNull();
   });
 });
 

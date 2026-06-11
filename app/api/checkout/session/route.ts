@@ -9,6 +9,7 @@ import {
   type CatalogProduct,
 } from "@/lib/commerce/catalog";
 import {
+  buildMappedCheckoutAttribution,
   buildCheckoutSessionPayload,
   buildCheckoutStartedAnalyticsPayload,
 } from "@/lib/commerce/checkout";
@@ -86,16 +87,22 @@ export async function POST(request: Request) {
 
     const stripe = createStripeClient();
     const appUrl = getAppUrl();
-    const sessionPayload = buildCheckoutSessionPayload({
-      appUrl,
-      cancelPath: typeof body.cancelPath === "string" ? body.cancelPath : undefined,
-      product,
-      user,
-    });
     const checkoutStartedPayload = buildCheckoutStartedAnalyticsPayload({
       productId: product.id,
       source: body.source,
       placementId: body.placementId,
+    });
+    const checkoutAttribution = buildMappedCheckoutAttribution({
+      productId: product.id,
+      source: body.source,
+      placementId: body.placementId,
+    });
+    const sessionPayload = buildCheckoutSessionPayload({
+      appUrl,
+      cancelPath: typeof body.cancelPath === "string" ? body.cancelPath : undefined,
+      product,
+      checkoutAttribution,
+      user,
     });
 
     const session = await stripe.checkout.sessions.create(sessionPayload, {
