@@ -79,6 +79,11 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns only read-only Admin Analytics mapping for the shipped workout-context CTA events with `placementId=workout_saved_post_success`, `productId=guide_poolside`, and `source=workout_context`.
   - Keeps existing `/plans` and My Library upsell baseline separate.
   - `upsell_declined`, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, and builder/generator algorithm changes remain out of scope.
+- Done child: `docs/task-briefs/done/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md`
+  - Closed by PR `#1076` / squash commit `948e0309`.
+  - Owns only the docs-only contract separating CTA/product telemetry, checkout attribution, Stripe/provider truth, entitlement truth, and finance reporting.
+  - Confirms Admin Analytics cannot prove checkout completion, entitlement access, Stripe reconciliation, revenue, refunds, payouts, invoices, accounting exports, or finance truth.
+  - Runtime checkout, Stripe API/webhook/portal changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, pricing, dashboard changes, and builder/generator algorithm changes remain out of scope.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - broader dedicated KPI modules,
@@ -89,14 +94,14 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Selected child: `docs/task-briefs/in-progress/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md`.
+Selected child: none.
 
-The workout-context CTA Admin Analytics mapping child is complete. The selected in-progress child is a docs-only checkout attribution and finance separation contract. It must not add `upsell_declined`, runtime CTA changes, checkout route changes, Stripe API/webhook/portal changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, dashboard changes, or builder/generator algorithm changes unless that scope is explicitly approved in a later child.
+The workout-context CTA Admin Analytics mapping child and the checkout attribution/finance separation contract child are complete. No new active or planned child is selected. Any future child must be explicitly selected and must not add `upsell_declined`, runtime CTA changes, checkout route changes, Stripe API/webhook/portal changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, new pricing, dashboard changes, or builder/generator algorithm changes unless that scope is explicitly approved in that later child.
 
 Safe follow-up candidate families after the runtime CTA/event-callsites child:
 
 - Workout-context CTA Admin Analytics mapping follow-up: complete; only reopen if owner requests a new bounded dashboard/reporting slice.
-- Checkout attribution and finance separation: define how product telemetry, checkout conversion, entitlement truth, Stripe reconciliation, and finance reporting stay separate before any commerce implementation.
+- Checkout attribution and finance separation: complete; only reopen if owner requests a runtime checkout attribution, entitlement, support diagnostics, or finance reconciliation child.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
 Current guardrails:
@@ -343,7 +348,7 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-cta-runtime-event-callsites-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md`
 - Planned child path: none
 - Active child path: none
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
@@ -352,6 +357,7 @@ Future child implementation:
 - Contract path: `docs/architecture/workout-builder-template-identity-selection-contract.md`
 - Placement policy path: `docs/architecture/workout-context-upsell-placement-policy.md`
 - Workout-context CTA measurement contract path: `docs/architecture/workout-context-cta-measurement-contract.md`
+- Workout checkout attribution and finance separation contract path: `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -410,3 +416,4 @@ Future child implementation:
 - `2026-06-11 | admin mapping child merged | PR #1074 merged at squash commit f7af4d9d after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and upsell_declined, checkout, Stripe, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route changes, product catalog mutation, new pricing, runtime CTA changes, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
 - `2026-06-11 | planned checkout/finance separation child created | created docs/task-briefs/planned/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md from clean synced main@2be08770 after PR #1075 and clean post-merge preflight; implementation is not approved yet and scope remains docs-only contract work separating CTA/product telemetry, checkout attribution, entitlement truth, Stripe reconciliation, and finance reporting before any runtime commerce expansion | next: wait for owner implementation approval or scope edits`
 - `2026-06-11 | checkout/finance separation child in progress | owner requested implementation of Workout Checkout Attribution + Finance Separation Contract V1 on branch workout-checkout-attribution-finance-separation-contract-v1; child moved to docs/task-briefs/in-progress/2026-06-11-workout-checkout-attribution-finance-separation-contract-v1-10-10.md and remains docs-only with no runtime CTA, checkout, Stripe, entitlement, finance, vendor, export, raw drilldown, migration, RLS, route, product catalog, pricing, dashboard, or builder/generator UX scope approved | next: complete docs contract and validation`
+- `2026-06-11 | checkout/finance separation child merged | PR #1076 merged at squash commit 948e0309 after green docs-only pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active or selected child, and runtime checkout, Stripe API/webhook/portal changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, pricing, dashboard changes, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
