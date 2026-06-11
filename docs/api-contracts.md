@@ -451,6 +451,13 @@
   reconciliation, revenue attribution, finance reporting, or unique-user conversion. Future shop
   products, placements, routes, or checkout sources require explicit mapping before they enter
   dedicated workout-context checkout KPIs.
+- Workout-context checkout-start dashboard caveat: `workoutContextCheckoutStarted` is derived only
+  from mapped `checkout_started` rows with `source=workout_context`,
+  `placementId=workout_saved_post_success`, and `productId=guide_poolside`. It is separate from
+  `workoutContextCta` shown/clicked intent and from the generic funnel `checkoutStarted` count.
+  Unknown or unmapped checkout-start rows stay out of the dedicated count and may appear only as a
+  bounded review-needed aggregate. These values are not purchase, access, revenue, accounting,
+  Stripe reconciliation, finance reporting, or unique-user conversion.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -545,6 +552,13 @@
     "presented": 4,
     "accepted": 2,
     "acceptedRate": 0.5,
+    "unknownEvents": 1
+  },
+  "workoutContextCheckoutStarted": {
+    "placementId": "workout_saved_post_success",
+    "productId": "guide_poolside",
+    "source": "workout_context",
+    "started": 2,
     "unknownEvents": 1
   },
   "workoutBuilderFunnel": {

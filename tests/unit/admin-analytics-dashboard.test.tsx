@@ -82,6 +82,13 @@ const basePayload: AnalyticsInsightsResponse = {
     acceptedRate: 0.5,
     unknownEvents: 1,
   },
+  workoutContextCheckoutStarted: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    started: 2,
+    unknownEvents: 1,
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -165,6 +172,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-context-checkout-started")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-source-breakdown")).toBeVisible();
     expect(
@@ -207,6 +215,23 @@ describe("AdminAnalyticsDashboard", () => {
       within(workoutContextCta).getByText(/do not match the approved prompt setup/i)
     ).toBeVisible();
     expect(within(workoutContextCta).queryByRole("button")).not.toBeInTheDocument();
+    const workoutContextCheckoutStarted = screen.getByTestId(
+      "admin-analytics-workout-context-checkout-started"
+    );
+    expect(
+      within(workoutContextCheckoutStarted).getByText("Poolside guide checkout")
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("Checkout handoffs")).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("Needs review")).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("2")).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("1")).toBeVisible();
+    expect(
+      within(workoutContextCheckoutStarted).getByText(
+        /do not match the approved saved-workout guide path/i
+      )
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).queryByRole("button")).not.toBeInTheDocument();
     const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");
     expect(within(builderFunnel).getByText("Builder starts and saves")).toBeVisible();
     expect(within(builderFunnel).getByText("Started")).toBeVisible();
@@ -260,7 +285,7 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /not purchases, access grants, revenue/i
+        /checkout starts for the approved guide path only/i
       )
     ).toBeVisible();
     expect(
@@ -326,7 +351,7 @@ describe("AdminAnalyticsDashboard", () => {
     render(<AdminAnalyticsDashboard />);
 
     const health = await screen.findByTestId("admin-analytics-health");
-    expect(within(health).getByText("Schema missing")).toBeVisible();
+    expect(within(health).getByText("Setup missing")).toBeVisible();
     expect(screen.getByText("Not ready")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
       "Not counted"
@@ -337,6 +362,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toHaveTextContent(
       "Not counted"
     );
+    expect(
+      screen.getByTestId("admin-analytics-workout-context-checkout-started")
+    ).toHaveTextContent("Not counted");
     expect(
       screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
     ).toHaveTextContent("Not counted");
@@ -390,6 +418,13 @@ describe("AdminAnalyticsDashboard", () => {
             acceptedRate: null,
             unknownEvents: 1,
           },
+          workoutContextCheckoutStarted: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            started: 0,
+            unknownEvents: 1,
+          },
           workoutBuilderFunnel: {
             started: 0,
             saved: 2,
@@ -428,7 +463,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(alert).toHaveTextContent("Could not load analytics insights right now.");
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
-    await screen.findByText("Unknown event");
+    await screen.findByText("Unknown tracked action");
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toHaveTextContent(
       "Not counted"
     );
@@ -449,6 +484,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toHaveTextContent(
       "Not counted"
     );
+    expect(
+      screen.getByTestId("admin-analytics-workout-context-checkout-started")
+    ).toHaveTextContent("Needs review");
     expect(document.body).not.toHaveTextContent("user@example.com");
   });
 

@@ -88,6 +88,13 @@ const basePayload: AnalyticsDashboardPayload = {
     acceptedRate: 0.5,
     unknownEvents: 1,
   },
+  workoutContextCheckoutStarted: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    started: 2,
+    unknownEvents: 1,
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -154,7 +161,7 @@ describe("admin analytics dashboard view model", () => {
       "client-server",
       "checkout-rate",
     ]);
-    expect(viewModel.metrics[0]).toMatchObject({ label: "Total events", value: "10" });
+    expect(viewModel.metrics[0]).toMatchObject({ label: "Total tracked actions", value: "10" });
     expect(viewModel.funnel.map((step) => step.id)).toEqual([
       "public-page-viewed",
       "plans-viewed",
@@ -231,6 +238,26 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutContextCta.caveat).toContain("do not match the approved prompt setup");
+    expect(viewModel.workoutContextCheckoutStarted.metrics).toEqual([
+      {
+        id: "workout-context-checkout-started",
+        label: "Checkout handoffs",
+        value: "2",
+        detail: "",
+      },
+      {
+        id: "workout-context-checkout-started-unknown",
+        label: "Needs review",
+        value: "1",
+        detail: "Kept out of totals",
+      },
+    ]);
+    expect(viewModel.workoutContextCheckoutStarted.detail).toContain(
+      "saved-workout guide path reached checkout handoff"
+    );
+    expect(viewModel.workoutContextCheckoutStarted.caveat).toContain(
+      "do not match the approved saved-workout guide path"
+    );
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
       {
         id: "builder-started",
@@ -365,17 +392,17 @@ describe("admin analytics dashboard view model", () => {
     );
     expect(viewModel.eventItems[0]).toMatchObject({
       label: "Workout builder started",
-      secondary: "workout_builder_started",
+      secondary: "Tracked action",
       count: "5",
     });
     expect(viewModel.eventItems[1]).toMatchObject({
       label: "Workout builder saved",
-      secondary: "workout_builder_saved",
+      secondary: "Tracked action",
       count: "3",
     });
     expect(viewModel.eventItems[3]).toMatchObject({
       label: "Plans viewed",
-      secondary: "plans_viewed",
+      secondary: "Tracked action",
       count: "2",
     });
     expect(viewModel.routeItems[0]).toMatchObject({
@@ -390,6 +417,7 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(viewModel.caveats.join(" ")).toContain("not purchase or accounting records");
     expect(viewModel.caveats.join(" ")).toContain("Clicks are not purchases");
+    expect(viewModel.caveats.join(" ")).toContain("checkout starts for the approved guide path");
     expect(viewModel.caveats.join(" ")).toContain("not linked to user profiles");
   });
 
@@ -428,6 +456,13 @@ describe("admin analytics dashboard view model", () => {
             presented: 0,
             accepted: 0,
             acceptedRate: null,
+            unknownEvents: 0,
+          },
+          workoutContextCheckoutStarted: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            started: 0,
             unknownEvents: 0,
           },
           workoutBuilderFunnel: {
@@ -476,7 +511,7 @@ describe("admin analytics dashboard view model", () => {
       )
     ).toMatchObject({
       state: "schema-missing",
-      stateLabel: "Schema missing",
+      stateLabel: "Setup missing",
       metrics: [{ id: "schema", value: "Not ready" }],
       workoutBuilderFunnel: {
         metrics: [
@@ -500,6 +535,12 @@ describe("admin analytics dashboard view model", () => {
           { id: "workout-context-cta-accepted", value: "Not counted" },
           { id: "workout-context-cta-accepted-rate", value: "Not counted" },
           { id: "workout-context-cta-unknown", value: "Not counted" },
+        ],
+      },
+      workoutContextCheckoutStarted: {
+        metrics: [
+          { id: "workout-context-checkout-started", value: "Not counted" },
+          { id: "workout-context-checkout-started-unknown", value: "Not counted" },
         ],
       },
       workoutBuilderSourceBreakdown: {
@@ -572,6 +613,13 @@ describe("admin analytics dashboard view model", () => {
           acceptedRate: null,
           unknownEvents: 1,
         },
+        workoutContextCheckoutStarted: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          started: 0,
+          unknownEvents: 1,
+        },
         workoutBuilderSourceBreakdown: {
           manualStarts: 0,
           generatedDrafts: 1,
@@ -636,6 +684,15 @@ describe("admin analytics dashboard view model", () => {
       detail: "",
     });
     expect(zeroStarts.workoutContextCta.caveat).toContain("until this prompt has been shown");
+    expect(zeroStarts.workoutContextCheckoutStarted.metrics).toContainEqual({
+      id: "workout-context-checkout-started",
+      label: "Checkout handoffs",
+      value: "0",
+      detail: "",
+    });
+    expect(zeroStarts.workoutContextCheckoutStarted.caveat).toContain(
+      "until this path starts checkout"
+    );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -692,6 +749,13 @@ describe("admin analytics dashboard view model", () => {
           presented: 2,
           accepted: 3,
           acceptedRate: 1.5,
+          unknownEvents: 0,
+        },
+        workoutContextCheckoutStarted: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          started: 3,
           unknownEvents: 0,
         },
         workoutBuilderSourceBreakdown: {
@@ -752,6 +816,13 @@ describe("admin analytics dashboard view model", () => {
       detail: "",
     });
     expect(duplicateTelemetry.workoutContextCta.caveat).toContain("interest signals only");
+    expect(duplicateTelemetry.workoutContextCheckoutStarted.metrics).toContainEqual({
+      id: "workout-context-checkout-started",
+      label: "Checkout handoffs",
+      value: "3",
+      detail: "",
+    });
+    expect(duplicateTelemetry.workoutContextCheckoutStarted.caveat).toContain("not a purchase");
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
       "create more than one tracked action"
     );
@@ -836,7 +907,7 @@ describe("admin analytics dashboard view model", () => {
     );
 
     expect(viewModel.eventItems[0]).toMatchObject({
-      label: "Unknown event",
+      label: "Unknown tracked action",
       secondary: null,
     });
     expect(viewModel.routeItems[0]).toMatchObject({
@@ -853,8 +924,8 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(JSON.stringify(viewModel)).not.toContain("user@example.com");
     expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({
-      label: "Future Safe Event",
-      secondary: "future_safe_event",
+      label: "Future Safe Action",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("https://example.com/plans", "route")).toMatchObject({
       label: "Unknown route",
@@ -865,37 +936,37 @@ describe("admin analytics dashboard view model", () => {
   it("labels workout-builder funnel events while preserving fallback labels", () => {
     expect(formatAnalyticsIdentifierLabel("workout_builder_started", "event")).toMatchObject({
       label: "Workout builder started",
-      secondary: "workout_builder_started",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("workout_builder_saved", "event")).toMatchObject({
       label: "Workout builder saved",
-      secondary: "workout_builder_saved",
+      secondary: "Tracked action",
     });
     expect(
       formatAnalyticsIdentifierLabel("workout_builder_template_selected", "event")
     ).toMatchObject({
       label: "Workout builder template selected",
-      secondary: "workout_builder_template_selected",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("upsell_presented", "event")).toMatchObject({
       label: "Upsell presented",
-      secondary: "upsell_presented",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("upsell_accepted", "event")).toMatchObject({
       label: "Upsell accepted",
-      secondary: "upsell_accepted",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("upsell_declined", "event")).toMatchObject({
       label: "Upsell declined",
-      secondary: "upsell_declined",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("session_draft_generated", "event")).toMatchObject({
       label: "Session draft generated",
-      secondary: "session_draft_generated",
+      secondary: "Tracked action",
     });
     expect(formatAnalyticsIdentifierLabel("future_safe_event", "event")).toMatchObject({
-      label: "Future Safe Event",
-      secondary: "future_safe_event",
+      label: "Future Safe Action",
+      secondary: "Tracked action",
     });
   });
 });

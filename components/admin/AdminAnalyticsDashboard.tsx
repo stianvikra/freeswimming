@@ -282,6 +282,50 @@ function WorkoutContextCtaPanel({
   );
 }
 
+function WorkoutContextCheckoutStartedPanel({
+  checkoutStarted,
+}: {
+  checkoutStarted: AnalyticsDashboardViewModel["workoutContextCheckoutStarted"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-context-checkout-started-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-context-checkout-started"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Commerce</p>
+          <h3
+            id="admin-analytics-workout-context-checkout-started-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Poolside guide checkout
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{checkoutStarted.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        {checkoutStarted.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className={cx("mt-4", mutedTextClass)}>{checkoutStarted.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutBuilderSourceBreakdownPanel({
   breakdown,
 }: {
@@ -490,7 +534,7 @@ export default function AdminAnalyticsDashboard() {
             <p className={eyebrowClass}>Analytics</p>
             <h2 className={cx("mt-1", headingClass)}>Read-only insight dashboard</h2>
             <p className={cx("mt-2 max-w-3xl", mutedTextClass)}>
-              Privacy-safe product, route, and commerce signals from first-party events only.
+              Privacy-safe product, route, and commerce signals from first-party logged actions.
             </p>
           </div>
           <button
@@ -580,13 +624,13 @@ export default function AdminAnalyticsDashboard() {
                   </dd>
                 </div>
                 <div>
-                  <dt className={metadataLabelClass}>Last event</dt>
+                  <dt className={metadataLabelClass}>Last activity</dt>
                   <dd className="mt-1 font-semibold text-[color:var(--fs-color-ink-strong)]">
                     {viewModel.lastEventLabel}
                   </dd>
                 </div>
                 <div>
-                  <dt className={metadataLabelClass}>Row cap</dt>
+                  <dt className={metadataLabelClass}>Read limit</dt>
                   <dd className="mt-1 font-semibold text-[color:var(--fs-color-ink-strong)]">
                     {viewModel.rowCapLabel}
                   </dd>
@@ -664,6 +708,9 @@ export default function AdminAnalyticsDashboard() {
 
           <ExistingUpsellBaselinePanel baseline={viewModel.existingUpsellBaseline} />
           <WorkoutContextCtaPanel cta={viewModel.workoutContextCta} />
+          <WorkoutContextCheckoutStartedPanel
+            checkoutStarted={viewModel.workoutContextCheckoutStarted}
+          />
           <WorkoutBuilderFunnelPanel funnel={viewModel.workoutBuilderFunnel} />
           <WorkoutBuilderSourceBreakdownPanel breakdown={viewModel.workoutBuilderSourceBreakdown} />
           <WorkoutBuilderTemplateGeneratedCompletionPanel
@@ -673,8 +720,8 @@ export default function AdminAnalyticsDashboard() {
 
           <div className="grid gap-4 lg:grid-cols-3" data-testid="admin-analytics-top-lists">
             <ListPanel
-              title="Top events"
-              emptyLabel="No event counts in this range."
+              title="Top tracked actions"
+              emptyLabel="No tracked action counts in this range."
               items={viewModel.eventItems}
               testId="admin-analytics-top-events"
             />

@@ -67,6 +67,10 @@ Checkout attribution:
   `productId=guide_poolside` when the clicked checkout button targets the same catalog product.
   Other products, future shop routes, future placements, malformed values, or generic plans traffic
   must remain generic checkout attribution until a later child maps them explicitly.
+- Admin Analytics may show a dedicated workout-context checkout-start aggregate only for those
+  mapped `checkout_started` rows. That aggregate is still checkout handoff only and must remain
+  separate from CTA views/clicks, checkout completion, entitlement, revenue, Stripe reconciliation,
+  unique-user conversion, and finance reporting.
 
 Payment/provider:
 

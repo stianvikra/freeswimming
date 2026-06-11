@@ -99,6 +99,12 @@ export type AnalyticsDashboardWorkoutContextCta = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutContextCheckoutStarted = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -111,6 +117,7 @@ export type AnalyticsDashboardViewModel = {
   funnel: AnalyticsDashboardFunnelStep[];
   existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
   workoutContextCta: AnalyticsDashboardWorkoutContextCta;
+  workoutContextCheckoutStarted: AnalyticsDashboardWorkoutContextCheckoutStarted;
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
@@ -185,7 +192,7 @@ export function formatAnalyticsTimestamp(
   isoValue: string | null | undefined,
   now: Date = new Date()
 ): string {
-  if (!isoValue) return "No event yet";
+  if (!isoValue) return "No activity yet";
   const date = new Date(isoValue);
   if (Number.isNaN(date.getTime())) return "Unknown time";
 
@@ -227,7 +234,7 @@ export function formatAnalyticsIdentifierLabel(
   if (!isSafeAnalyticsIdentifier(value)) {
     const label =
       fallback === "event"
-        ? "Unknown event"
+        ? "Unknown tracked action"
         : fallback === "route"
           ? "Unknown route"
           : "Unknown product";
@@ -236,8 +243,8 @@ export function formatAnalyticsIdentifierLabel(
 
   if (fallback === "event") {
     return {
-      label: EVENT_LABELS[value] ?? titleCaseWords(value),
-      secondary: value,
+      label: EVENT_LABELS[value] ?? titleCaseWords(value).replace(/\bEvents?\b/g, "Action"),
+      secondary: "Tracked action",
       key: value,
     };
   }
@@ -511,7 +518,7 @@ function buildWorkoutContextCta(
       presented === 0
         ? "Click rate is not counted until this prompt has been shown in the selected range."
         : unknownEvents > 0
-          ? "Some events do not match the approved prompt setup. They stay out of the main numbers until reviewed."
+          ? "Some logged actions do not match the approved prompt setup. They stay out of the main numbers until reviewed."
           : "Clicks are interest signals only. They are not purchases, access grants, revenue, or accounting records.",
   };
 }
@@ -546,6 +553,59 @@ function buildSchemaMissingWorkoutContextCta(): AnalyticsDashboardWorkoutContext
     ],
     detail: "Saved-workout guide prompt counts are hidden until analytics setup is ready.",
     caveat: "Finish analytics setup before reading saved-workout guide prompt counts.",
+  };
+}
+
+function buildWorkoutContextCheckoutStarted(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutContextCheckoutStarted {
+  const checkoutStarted = payload.workoutContextCheckoutStarted;
+  const started = checkoutStarted?.started ?? 0;
+  const unknownEvents = checkoutStarted?.unknownEvents ?? 0;
+
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-started",
+        label: "Checkout handoffs",
+        value: formatAnalyticsCount(started),
+        detail: "",
+      },
+      {
+        id: "workout-context-checkout-started-unknown",
+        label: "Needs review",
+        value: formatAnalyticsCount(unknownEvents),
+        detail: "Kept out of totals",
+      },
+    ],
+    detail: "Shows how often the saved-workout guide path reached checkout handoff.",
+    caveat:
+      started === 0
+        ? "Checkout handoff is not counted until this path starts checkout in the selected range."
+        : unknownEvents > 0
+          ? "Some checkout-start actions do not match the approved saved-workout guide path. They stay out of the main number until reviewed."
+          : "Checkout handoff is not a purchase, access grant, revenue, accounting record, or unique person.",
+  };
+}
+
+function buildSchemaMissingWorkoutContextCheckoutStarted(): AnalyticsDashboardWorkoutContextCheckoutStarted {
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-started",
+        label: "Checkout handoffs",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-checkout-started-unknown",
+        label: "Needs review",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+    ],
+    detail: "Saved-workout checkout handoff counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading saved-workout checkout handoff counts.",
   };
 }
 
@@ -933,25 +993,26 @@ export function buildAnalyticsDashboardViewModel(
   if (isSchemaMissingPayload(payload)) {
     return {
       state: "schema-missing",
-      stateLabel: "Schema missing",
+      stateLabel: "Setup missing",
       stateDetail:
         payload.warning ??
-        "Analytics persistence is not ready. Apply the analytics_events migration first.",
+        "Analytics storage is not ready yet. Finish setup before reading these numbers.",
       rangeLabel,
       generatedAtLabel,
-      lastEventLabel: "No event yet",
+      lastEventLabel: "No activity yet",
       rowCapLabel: "Not counted",
       metrics: [
         {
           id: "schema",
-          label: "Schema",
+          label: "Analytics setup",
           value: "Not ready",
-          detail: "analytics_events is not queryable yet.",
+          detail: "Setup is not ready yet.",
         },
       ],
       funnel: [],
       existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
       workoutContextCta: buildSchemaMissingWorkoutContextCta(),
+      workoutContextCheckoutStarted: buildSchemaMissingWorkoutContextCheckoutStarted(),
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
@@ -986,14 +1047,14 @@ export function buildAnalyticsDashboardViewModel(
           : "Quiet";
   const stateDetail =
     state === "no-data"
-      ? "No matching analytics events were found for this range."
+      ? "No matching tracked activity was found for this range."
       : state === "capped"
-        ? "This range hit the bounded row cap, so totals may be incomplete."
+        ? "This range hit the read limit, so totals may be incomplete."
         : state === "fresh"
-          ? "Analytics has recent safe events in this range."
-          : "No recent event is visible in this range; traffic may be quiet or instrumentation may need review.";
+          ? "Analytics has recent safe tracked activity in this range."
+          : "No recent tracked activity is visible in this range; traffic may be quiet or tracking may need review.";
 
-  const clientServerDetail = `${formatAnalyticsCount(payload.clientEvents)} client / ${formatAnalyticsCount(
+  const clientServerDetail = `${formatAnalyticsCount(payload.clientEvents)} browser / ${formatAnalyticsCount(
     payload.serverEvents
   )} server`;
 
@@ -1008,13 +1069,13 @@ export function buildAnalyticsDashboardViewModel(
     metrics: [
       {
         id: "total-events",
-        label: "Total events",
+        label: "Total tracked actions",
         value: formatAnalyticsCount(payload.totalEvents),
-        detail: payload.capped ? "Bounded by row cap" : `In the last ${rangeLabel}`,
+        detail: payload.capped ? "Bounded by read limit" : `In the last ${rangeLabel}`,
       },
       {
         id: "last-event",
-        label: "Last event",
+        label: "Last activity",
         value: formatAnalyticsTimestamp(payload.lastEventAt, now),
         detail: state === "quiet" ? "Needs review if traffic is expected" : "Freshness signal",
       },
@@ -1028,13 +1089,13 @@ export function buildAnalyticsDashboardViewModel(
         id: "known-users",
         label: "Known users",
         value: formatAnalyticsCount(payload.uniqueKnownUsers),
-        detail: "Distinct signed-in users in safe events",
+        detail: "Distinct signed-in users in safe activity",
       },
       {
         id: "client-server",
-        label: "Client / server",
+        label: "Browser / server",
         value: clientServerDetail,
-        detail: "Source split",
+        detail: "Where it was counted",
       },
       {
         id: "checkout-rate",
@@ -1046,6 +1107,7 @@ export function buildAnalyticsDashboardViewModel(
     funnel: buildFunnel(payload),
     existingUpsellBaseline: buildExistingUpsellBaseline(payload),
     workoutContextCta: buildWorkoutContextCta(payload),
+    workoutContextCheckoutStarted: buildWorkoutContextCheckoutStarted(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
@@ -1056,15 +1118,16 @@ export function buildAnalyticsDashboardViewModel(
     productItems: buildListItems(payload.productCounts, "product"),
     caveats: [
       payload.capped
-        ? `This range hit the ${formatAnalyticsCount(payload.rowCap)} row cap. Treat totals as bounded.`
-        : `This range is below the ${formatAnalyticsCount(payload.rowCap)} row cap.`,
+        ? `This range hit the ${formatAnalyticsCount(payload.rowCap)} read limit. Treat totals as bounded.`
+        : `This range is below the ${formatAnalyticsCount(payload.rowCap)} read limit.`,
       "Sales funnel counts are product signals only. They are not purchase or accounting records; use Stripe and accounting reports for money.",
       "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",
       "Builder save-rate shows product activity only. It is not unique people, checkout performance, purchases, or revenue.",
       "Manual/generated workout split shows product activity only. It is not export success, revenue attribution, or accounting evidence.",
       "Template starts count only the Use template action. Do not infer template use from nearby labels, saved workouts, or generated drafts.",
-      "Public aggregate events are intentionally not linked to user profiles.",
+      "Public aggregate activity is intentionally not linked to user profiles.",
       "Sensitive details such as raw URLs, emails, IPs, user agents, notes, cart details, and raw payload JSON are not shown.",
     ],
   };
