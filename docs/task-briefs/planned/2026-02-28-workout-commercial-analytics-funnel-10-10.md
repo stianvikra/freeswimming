@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-11`
-- `base`: clean synced `main@1a6ef169` after PR `#1084`; `npm run post-merge:preflight` was reported clean with no closeout required.
+- `base`: clean synced `main@6ca0e50d` after PR `#1085`; post-merge preflight surfaced the repo-managed closeout completed in this follow-up PR.
 - `audit_status`: `ready`
 - `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1083`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, and workout-context checkout-start Admin Analytics mapping are all closed. The workout-context checkout completion + entitlement attribution contract child is active as a docs-only execution slice.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1085`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, workout-context checkout-start Admin Analytics mapping, and the workout-context checkout completion + entitlement attribution contract are all closed. No active or planned child is selected.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -98,8 +98,8 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1082` / squash commit `b670e9a8`; repo-managed closeout PR `#1083` / squash commit `d3a4d162` moved the child to done and left post-merge preflight clean.
   - Owns only read-only Admin Analytics mapping for mapped workout-context `checkout_started` handoffs with `source=workout_context`, `placementId=workout_saved_post_success`, and `productId=guide_poolside`.
   - Direct workout-context checkout, checkout completion, Stripe webhook changes, entitlement, finance, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, and builder/generator algorithm changes remain out of scope unless explicitly approved.
-- Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
-  - Created from clean synced `main@1a6ef169` after PR `#1084` and clean post-merge preflight reported by owner; execution started on branch `workout-context-checkout-completion-entitlement-contract-v1`.
+- Done child: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
+  - Closed by PR `#1085` / squash commit `6ca0e50d`.
   - Owns only a docs-only contract for whether and how mapped workout-context checkout-start attribution may be carried into checkout completion and entitlement-grant interpretation.
   - Runtime checkout, Stripe webhook changes, entitlement mutation, Admin Analytics modules, finance reconciliation, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, and builder/generator algorithm changes remain out of scope unless explicitly approved.
 - Still deferred after the placement-policy child:
@@ -112,15 +112,15 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`.
+Active child: none.
 
 Planned child: none.
 
-The active child is approved only for docs-only contract execution. A future child must still be explicitly selected before adding checkout completion attribution implementation, entitlement attribution implementation, provider/webhook metadata mapping implementation, support diagnostics implementation, Admin Analytics completion/entitlement modules, direct workout-context checkout, `upsell_declined`, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
+A future child must still be explicitly selected before adding checkout completion attribution implementation, entitlement attribution implementation, provider/webhook metadata mapping implementation, support diagnostics implementation, Admin Analytics completion/entitlement modules, direct workout-context checkout, `upsell_declined`, Stripe webhook changes, entitlement mutation, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
 Safe follow-up candidate families after the completed checkout-started Admin Analytics mapping child:
 
-- Checkout completion / entitlement attribution foundation: active as a docs-only contract child. It must explicitly map provider/webhook metadata options, privacy-safe join boundaries, support states, and current Stripe docs evidence before any implementation. It must not infer purchase, access, revenue, unique-user conversion, or finance truth from checkout-start counts.
+- Checkout completion / entitlement attribution foundation: the docs-only contract is complete. Any implementation child must follow that contract, re-check current Stripe docs, add privacy-safe server-owned propagation tests, and still avoid inferring purchase, access, revenue, unique-user conversion, or finance truth from checkout-start counts.
 - Checkout attribution and finance separation: complete through checkout-start attribution hardening, the `/plans` attribution bridge, and read-only checkout-start Admin Analytics mapping; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -369,9 +369,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
 - Planned child path: none
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
+- Active child path: none
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -379,6 +379,7 @@ Future child implementation:
 - Placement policy path: `docs/architecture/workout-context-upsell-placement-policy.md`
 - Workout-context CTA measurement contract path: `docs/architecture/workout-context-cta-measurement-contract.md`
 - Workout checkout attribution and finance separation contract path: `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`
+- Workout-context checkout completion and entitlement attribution contract path: `docs/architecture/workout-context-checkout-completion-entitlement-attribution-contract.md`
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
@@ -454,3 +455,4 @@ Future child implementation:
 - `2026-06-11 | checkout-started admin mapping closeout merged and parent cleaned | closeout PR #1083 merged at squash commit d3a4d162, npm run post-merge:preflight was reported clean, and this parent was refreshed to remove stale active-child wording for the completed checkout-started Admin Analytics mapping child; no active or planned child is selected | next: owner chooses whether to create a new bounded child brief`
 - `2026-06-11 | planned completion/entitlement attribution contract child created | created docs/task-briefs/planned/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md from clean synced main@1a6ef169 after PR #1084 and clean post-merge preflight reported by owner; implementation is not approved yet and scope remains limited to a future docs-only contract for checkout completion and entitlement attribution boundaries, with no runtime checkout, Stripe webhook, entitlement, Admin Analytics, finance, export, raw drilldown, vendor analytics, product catalog, pricing, route, UI, or builder/generator scope approved | next: wait for owner implementation approval or scope edits`
 - `2026-06-11 | completion/entitlement attribution contract child in progress | owner requested execution on branch workout-context-checkout-completion-entitlement-contract-v1; active child is docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md and remains docs-only, with no runtime checkout, Stripe webhook, entitlement, Admin Analytics, finance, export, raw drilldown, vendor analytics, product catalog, pricing, route, UI, or builder/generator scope approved | next: complete architecture contract, support sweep, docs validation, and PR prep`
+- `2026-06-11 | completion/entitlement attribution contract child merged | PR #1085 merged at squash commit 6ca0e50d after green docs-only pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active or planned child, and runtime checkout, Stripe webhook, entitlement, Admin Analytics modules, finance reconciliation, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, and builder/generator algorithm scope remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`

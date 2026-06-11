@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-11`
@@ -27,9 +27,9 @@
 
 - `last_audited`: `2026-06-11`
 - `base`: clean synced `main@1a6ef169` after PR `#1084` cleaned the workout commercial analytics parent status; owner reported `npm run post-merge:preflight` clean with no closeout required. Execution started on branch `workout-context-checkout-completion-entitlement-contract-v1`.
-- `audit_status`: `ready`
-- `decision`: Execute this docs-only contract child on branch `workout-context-checkout-completion-entitlement-contract-v1`.
-- `reason`: The owner explicitly requested execution. Workout-context CTA presentation/click telemetry, the `/plans` checkout-start attribution bridge, and read-only Admin Analytics checkout-start mapping are complete. The current Stripe webhook already emits provider-backed `checkout_completed` and entitlement-backed `entitlement_granted`, but workout-context completion/entitlement attribution has no explicit privacy, metadata, support, or finance boundary yet. A contract is required before carrying workout-context source/placement through Stripe metadata, webhook fulfillment, entitlement diagnostics, or any dedicated Admin Analytics completion module.
+- `audit_status`: `closed`
+- `decision`: Closed by PR `#1085` / squash commit `6ca0e50d398cd8013481f44116c94beb9b196229`.
+- `reason`: The owner explicitly requested execution. Workout-context CTA presentation/click telemetry, the `/plans` checkout-start attribution bridge, and read-only Admin Analytics checkout-start mapping are complete. This docs-only child created the contract needed before carrying workout-context source/placement through Stripe metadata, webhook fulfillment, entitlement diagnostics, or any dedicated Admin Analytics completion module.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, the task brief template, scorecard categories, official Stripe Checkout/webhook/idempotency/API guidance, `stripe` SDK behavior, `app/api/checkout/session/route.ts`, `app/api/stripe/webhook/route.ts`, `app/api/portal/route.ts`, `lib/commerce/checkout.ts`, `lib/commerce/catalog.ts`, `lib/commerce/entitlements.ts`, `ANALYTICS_EVENT_NAMES`, analytics persistence, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, finance reconciliation scripts, external service matrix, data-access/authz/cache registry, route/label/support sweep rules, or checkout/entitlement/finance contracts change.
 
 ## Goal
@@ -332,8 +332,8 @@ Execution evidence:
 
 ## Acceptance Criteria
 
-1. Child brief exists in `docs/task-briefs/in-progress/` with parent, dependencies, audit record, scorecard mapping, architecture gate, data-boundary decisions, identity contract, forward-compatibility contract, Help/Guide impact, screenshot rationale, route/label/support sweep, acceptance criteria, validation, and checkpoint log.
-2. Parent brief names this child as active while keeping planned child as none.
+1. Child brief exists in `docs/task-briefs/done/` with parent, dependencies, audit record, scorecard mapping, architecture gate, data-boundary decisions, identity contract, forward-compatibility contract, Help/Guide impact, screenshot rationale, route/label/support sweep, acceptance criteria, validation, checkpoint log, and completion record.
+2. Parent brief names this child as done while keeping active and planned child as none.
 3. The execution remains docs-only with no runtime checkout, Stripe webhook, entitlement, Admin Analytics UI, finance, export, raw drilldown, product catalog, route, or UI changes.
 4. The contract boundary names checkout completion and entitlement grant as separate from checkout start, CTA click, Stripe reconciliation, revenue, refund, payout, invoice, accounting, and finance truth.
 5. The contract explicitly says current generic `checkout_completed` and `entitlement_granted` rows cannot be counted as dedicated workout-context completion or entitlement outcomes.
@@ -348,13 +348,13 @@ Execution evidence:
 Docs-only contract execution:
 
 - route/label/support sweep recorded in this brief
-- `npm run lint:briefs` (`No changed task briefs found. Skipping.` because the lifecycle move was already staged when run)
+- `npm run lint:briefs` (pass for changed child and parent briefs on final committed pre-PR gate)
 - `npm run lint:briefs:all` (pass across all brief files)
 - `git diff --check` (pass)
 - `npm run verify:docs-only` (pass; docs/governance-only lane)
-- `npm run verify:pre-pr` (pass; docs/governance-only lane, branch current with `origin/main@1a6ef169`, log `artifacts/test-runs/20260611-202736/verify.log`)
-- required PR CI checks
-- `npm run verify:pre-merge`
+- `npm run verify:pre-pr` (pass; docs/governance-only lane, branch current with `origin/main@1a6ef169`, log `artifacts/test-runs/20260611-203044/verify.log`)
+- required PR CI checks (pass for PR `#1085`: Analyze, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, verify)
+- `npm run verify:pre-merge` (pass; docs/governance-only lane, marker `artifacts/verify-pre-merge/20260611-183357.json`)
 
 Future runtime implementation child, if later approved:
 
@@ -375,7 +375,7 @@ Future runtime implementation child, if later approved:
 ## Session Continuity And Recovery
 
 - Parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
+- Done child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md`
 - Related durable contracts:
   - `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`
   - `docs/architecture/workout-context-cta-measurement-contract.md`
@@ -385,7 +385,7 @@ Future runtime implementation child, if later approved:
 - Recovery protocol:
   1. `git status -sb`
   2. `git log --oneline -n 10`
-  3. reopen the parent and this active child, then continue from the latest checkpoint.
+  3. reopen the parent and this done child, then continue from the latest checkpoint.
 
 ## Checkpoint Log
 
@@ -393,3 +393,32 @@ Future runtime implementation child, if later approved:
 - `2026-06-11 | child moved to in-progress | owner requested execution on branch workout-context-checkout-completion-entitlement-contract-v1; child moved to docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-attribution-contract-v1-10-10.md and remains docs-only with no runtime checkout, Stripe webhook, entitlement, Admin Analytics UI, finance, export, raw drilldown, product catalog, pricing, route, UI, or builder/generator scope approved | next: complete architecture contract, support sweep, docs validation, and PR prep`
 - `2026-06-11 | contract drafted and support sweep recorded | added the architecture contract, updated API/matrix/route-registry/finance-separation/parent docs, and recorded route/label/support sweep evidence; current generic checkout_completed and entitlement_granted rows are explicitly not dedicated workout-context completion or entitlement outcomes | next: run docs validation and prepare PR`
 - `2026-06-11 | local docs gates passed | npm run lint:briefs skipped because the lifecycle-moved brief was already staged, npm run lint:briefs:all passed, git diff --check passed, npm run verify:docs-only passed, and npm run verify:pre-pr passed in the docs/governance-only lane with branch current to origin/main@1a6ef169 | next: commit, push, open PR, monitor CI, and run npm run verify:pre-merge before merge recommendation`
+- `2026-06-11 | contract child merged | PR #1085 merged at squash commit 6ca0e50d398cd8013481f44116c94beb9b196229 after green docs-only pre-pr, PR CI, and pre-merge gates; child moved to done in this repo-managed closeout and runtime checkout, Stripe webhook, entitlement, Admin Analytics modules, finance reconciliation, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, and builder/generator algorithm scope remain deferred | next: complete docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-11`
+- `merged_pr`: `#1085`
+- `squash_commit`: `6ca0e50d398cd8013481f44116c94beb9b196229`
+- `result`: Closed Workout Context Checkout Completion + Entitlement Attribution Contract V1. The repo now has a durable docs-only contract that says current generic `checkout_completed` and `entitlement_granted` rows are not dedicated workout-context outcomes, and future completion/entitlement attribution requires explicit server-owned, privacy-safe propagation and tests.
+- `validation`: route/label/support sweep recorded; `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:docs-only`, `npm run verify:pre-pr`, PR #1085 CI, and `npm run verify:pre-merge` all passed for the docs-only lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the approved docs-only contract scope.
+
+| Category                                      | Achieved Score | Evidence                                                                                                              | Gaps / Notes                                                                                     |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Contract artifact, parent checkpoint, PR `#1085`, squash `6ca0e50d`.                                                  | Runtime completion/entitlement implementation remains deferred to a future owner-approved child. |
+| Business logic correctness and data integrity | `5/5`          | Truth-layer contract separates checkout start, provider completion, entitlement grant, and finance truth.             | No runtime data mutation was in scope.                                                           |
+| Data placement and sync boundaries            | `5/5`          | Data placement contract defines analytics, checkout/session, provider, entitlement, finance, and browser boundaries.  | Future server-owned propagation needs its own schema/metadata/test child.                        |
+| Caching and invalidation strategy             | `5/5`          | Contract requires future checkout, webhook, entitlement, dashboard, and support children to define cache/repair flow. | No runtime cache changed in this docs-only slice.                                                |
+| Reliability and failure handling              | `5/5`          | Failure-state matrix covers missing metadata, unknown attribution, provider delay, retry, duplicate, lag, and repair. | Runtime negative-path tests are deferred to the future implementation child.                     |
+| Security and authz                            | `5/5`          | Contract preserves signature verification, fail-closed provider handling, server-only secrets, and least privilege.   | No authz/runtime route changed in this docs-only slice.                                          |
+| Privacy and compliance                        | `5/5`          | Forbidden-data list excludes provider IDs, emails, user IDs, raw URLs, payment data, raw payload JSON, and finance.   | Future dashboard/support work must preserve the same display boundary.                           |
+| Content governance                            | `5/5`          | Architecture contract, parent brief, API caveats, service matrix, registry, and closeout record updated.              | No Help/Guide UI change was needed because no product behavior changed.                          |
+| Analytics and KPI observability               | `5/5`          | KPI contract states allowed/forbidden Admin Analytics interpretations and future aggregate requirements.              | Dedicated workout-context completion/entitlement KPI modules remain deferred.                    |
+| Commerce and revenue ops                      | `5/5`          | Stripe Checkout/provider baseline and commerce boundary documented without changing checkout/webhook behavior.        | Future metadata propagation requires fresh Stripe docs review and runtime tests.                 |
+| Incident response and support operations      | `5/5`          | Support language and failure states distinguish provider delay, webhook retry, entitlement lag, and finance mismatch. | Future support diagnostics implementation remains deferred.                                      |
+| Finance and reporting operations              | `5/5`          | Finance boundary confirms Admin Analytics counts are not revenue, refund, payout, invoice, accounting, or finance.    | Finance reconciliation/export work remains deferred.                                             |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only diff reused existing architecture/brief/matrix patterns and added no dependencies.                          | None for approved docs-only scope.                                                               |
+| Testing and QA automation                     | `5/5`          | `lint:briefs`, `lint:briefs:all`, `verify:docs-only`, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.          | Future runtime child must add targeted route/webhook/helper/Admin Analytics tests.               |
+| Scalability and cost efficiency               | `5/5`          | Contract prevents raw drilldown/export/warehouse expansion and requires bounded low-cardinality dimensions.           | Export/warehouse/reporting expansion remains deferred.                                           |
+| DevOps and rollback readiness                 | `5/5`          | Rollback notes confirm docs-only revert path with no migrations, env, provider, entitlement, or runtime rollback.     | Future runtime rollout must define disable/repair/rollback paths before merge.                   |
