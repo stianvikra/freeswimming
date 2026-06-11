@@ -118,6 +118,75 @@
 - `X-RateLimit-Reset`
 - `Retry-After` (on `429`)
 
+## `POST /api/checkout/session`
+
+### Request
+
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "productId": "guide_poolside",
+  "cancelPath": "/plans",
+  "source": "plans",
+  "placementId": "workout_saved_post_success"
+}
+```
+
+- `productId` must be a catalog product ID. The route uses server catalog/price config and never
+  trusts browser-provided Stripe price IDs.
+- Allowed checkout-start attribution `source` values:
+  - `plans`
+  - `library_explore`
+  - `workout_context`
+  - unknown, missing, malformed, or future values normalize to `unknown`.
+- `placementId` is optional and counted only for explicitly mapped source/placement pairs. Current
+  workout-context placement support is limited to `workout_saved_post_success`.
+- `cancelPath` must be a local path. Absolute URLs and protocol-relative URLs fall back to the
+  server default.
+
+### Response
+
+- Success:
+
+```json
+{
+  "ok": true,
+  "url": "https://checkout.stripe.com/c/pay/..."
+}
+```
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "error": "Could not create checkout session."
+}
+```
+
+### Status Codes
+
+- `200`: Stripe Checkout Session created and a redirect URL is available
+- `400`: invalid JSON or unknown product
+- `409`: product is inactive/unavailable
+- `415`: unsupported content type
+- `500`: product config, product availability, Stripe provider, or missing redirect URL failure
+
+### Analytics And Privacy Boundary
+
+- Emits `checkout_started` only after the server creates a Checkout Session with a redirect URL.
+- `checkout_started` means checkout handoff/session creation only. It is not payment success,
+  entitlement, Stripe reconciliation, revenue, refund, payout, invoice, accounting export, or
+  finance truth.
+- The persisted analytics payload contains only low-cardinality attribution such as `productId`,
+  normalized `source`, and approved `placementId`.
+- The response and analytics payload must not expose Checkout Session ID, Stripe customer ID,
+  payment ID, invoice ID, email, user ID, raw URL/referrer, IP, User-Agent, payment details, or raw
+  provider responses.
+
 ## `GET /api/user/export`
 
 ### Request

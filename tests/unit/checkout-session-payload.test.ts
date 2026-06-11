@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogProduct } from "@/lib/commerce/catalog";
-import { buildCheckoutSessionPayload } from "@/lib/commerce/checkout";
+import {
+  buildCheckoutSessionPayload,
+  buildCheckoutStartedAnalyticsPayload,
+} from "@/lib/commerce/checkout";
 
 const product: CatalogProduct = {
   id: "guide_poolside",
@@ -63,6 +66,48 @@ describe("buildCheckoutSessionPayload", () => {
       fs_product_id: "guide_poolside",
       fs_product_slug: "poolside-guide",
       fs_product_kind: "course_addon",
+    });
+  });
+});
+
+describe("buildCheckoutStartedAnalyticsPayload", () => {
+  it("keeps mapped low-cardinality checkout attribution", () => {
+    expect(
+      buildCheckoutStartedAnalyticsPayload({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+      })
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+    });
+  });
+
+  it("falls back for unknown source and excludes unrelated placement values", () => {
+    expect(
+      buildCheckoutStartedAnalyticsPayload({
+        productId: "guide_poolside",
+        source: "https://evil.example/checkout?token=secret",
+        placementId: "future_unmapped_placement",
+      })
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "unknown",
+    });
+  });
+
+  it("does not attach workout placement outside workout-context attribution", () => {
+    expect(
+      buildCheckoutStartedAnalyticsPayload({
+        productId: "guide_poolside",
+        source: "plans",
+        placementId: "workout_saved_post_success",
+      })
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "plans",
     });
   });
 });

@@ -1,16 +1,26 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getServerSupabaseUserIfAuthCookiePresent } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/supabase/env";
-import { getCatalogProductById, getCatalogProducts } from "@/lib/commerce/catalog";
-import { buildCheckoutSessionPayload } from "@/lib/commerce/checkout";
+import {
+  getCatalogProductById,
+  getCatalogProducts,
+  type CatalogProduct,
+} from "@/lib/commerce/catalog";
+import {
+  buildCheckoutSessionPayload,
+  buildCheckoutStartedAnalyticsPayload,
+} from "@/lib/commerce/checkout";
 import { upsertCatalogProducts } from "@/lib/commerce/entitlements";
 import { trackAndPersistAnalyticsEvent } from "@/lib/analytics/persistence";
 import { createStripeClient } from "@/lib/stripe/server";
 
 type CheckoutBody = {
-  productId?: string;
-  cancelPath?: string;
+  productId?: unknown;
+  cancelPath?: unknown;
+  source?: unknown;
+  placementId?: unknown;
 };
 
 export const runtime = "nodejs";
@@ -29,7 +39,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
   }
 
-  const product = getCatalogProductById(body.productId ?? "");
+  let product: CatalogProduct | null;
+  try {
+    product = getCatalogProductById(typeof body.productId === "string" ? body.productId : "");
+  } catch (error) {
+    console.error("[Checkout] Could not load product catalog", {
+      message: error instanceof Error ? error.message : "Unknown catalog error.",
+    });
+    return NextResponse.json(
+      { ok: false, error: "Could not verify product availability right now." },
+      { status: 500 }
+    );
+  }
+
   if (!product) {
     return NextResponse.json({ ok: false, error: "Unknown product." }, { status: 400 });
   }
@@ -66,12 +88,19 @@ export async function POST(request: Request) {
     const appUrl = getAppUrl();
     const sessionPayload = buildCheckoutSessionPayload({
       appUrl,
-      cancelPath: body.cancelPath,
+      cancelPath: typeof body.cancelPath === "string" ? body.cancelPath : undefined,
       product,
       user,
     });
+    const checkoutStartedPayload = buildCheckoutStartedAnalyticsPayload({
+      productId: product.id,
+      source: body.source,
+      placementId: body.placementId,
+    });
 
-    const session = await stripe.checkout.sessions.create(sessionPayload);
+    const session = await stripe.checkout.sessions.create(sessionPayload, {
+      idempotencyKey: `checkout-session:${randomUUID()}`,
+    });
     if (!session.url) {
       return NextResponse.json(
         { ok: false, error: "Checkout session missing URL." },
@@ -79,17 +108,22 @@ export async function POST(request: Request) {
       );
     }
 
-    await trackAndPersistAnalyticsEvent({
-      eventName: "checkout_started",
-      channel: "server",
-      userId: user?.id ?? null,
-      payload: {
+    try {
+      await trackAndPersistAnalyticsEvent({
+        eventName: "checkout_started",
+        channel: "server",
+        userId: user?.id ?? null,
+        payload: checkoutStartedPayload,
+      });
+    } catch (error) {
+      console.error("[Checkout] Could not persist checkout-start analytics", {
         productId: product.id,
-        sessionId: session.id,
-      },
-    });
+        source: checkoutStartedPayload.source,
+        message: error instanceof Error ? error.message : "Unknown analytics error.",
+      });
+    }
 
-    return NextResponse.json({ ok: true, url: session.url, sessionId: session.id });
+    return NextResponse.json({ ok: true, url: session.url });
   } catch (error) {
     console.error("[Checkout] Could not create checkout session", error);
     return NextResponse.json(

@@ -57,6 +57,7 @@ describe("CheckoutButton", () => {
     expect(requestBody).toMatchObject({
       productId: "guide_poolside",
       cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
+      source: "plans",
     });
 
     const feedback = await screen.findByTestId("checkout-feedback");
