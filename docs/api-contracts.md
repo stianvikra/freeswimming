@@ -329,6 +329,8 @@
   `/admin/analytics` route is an alias into the same admin workspace tab.
 - Caveat: checkout and entitlement counts are product/revenue-proxy signals only. They are not
   Stripe reconciliation, accounting, refunds, payouts, invoices, or revenue recognition.
+  The durable separation contract is
+  `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`.
 - Existing upsell caveat: `existingUpsellBaseline` is current-surface commercial telemetry derived
   from `upsell_presented`, `upsell_accepted`, and `upsell_declined`. `upsell_presented` is surface
   visibility, not checkout start. `upsell_accepted` is clicked intent, not checkout completion.
