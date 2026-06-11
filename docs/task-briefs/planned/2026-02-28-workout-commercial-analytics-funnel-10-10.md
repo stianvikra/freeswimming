@@ -364,9 +364,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-plans-checkout-attribution-bridge-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
 - Planned child path: none
-- Active child path: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-started-admin-analytics-mapping-v1-10-10.md`
+- Active child path: none
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -445,3 +445,4 @@ Future child implementation:
 - `2026-06-11 | checkout-started admin mapping copy polish screenshot stop | owner asked for event/technical term clarity, so active child changed visible Admin Analytics copy to tracked action, last activity, read limit, setup missing, and browser/server, added Help/Guide term explanation, passed targeted Vitest, and regenerated after/reference screenshots at output/workout-context-checkout-started-admin-analytics-2026-06-11-185350; temporary visual capture route was removed after generation, and no direct checkout, checkout completion, Stripe webhook, entitlement, finance, export, raw drilldown, vendor analytics, pricing, product catalog mutation, migration, RLS, route creation, visible redesign, or builder/generator algorithm scope was added | next: wait for owner screenshot approval before child verify:pre-pr`
 - `2026-06-11 | checkout-started admin mapping screenshots approved | owner approved regenerated screenshots at output/workout-context-checkout-started-admin-analytics-2026-06-11-185350; no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
 - `2026-06-11 | checkout-started admin mapping pre-pr passed | active child passed npm run verify:pre-pr full lane with branch-current, lint, typecheck, unit, build, performance budgets, and Playwright e2e; no scoped product-rendering source changed after the final approved screenshot capture | next: commit, push, open PR, monitor CI, and run child pre-merge gate`
+- `2026-06-11 | checkout-started admin mapping child merged | PR #1082 merged at squash commit b670e9a8 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active child, and direct checkout, checkout completion, Stripe webhook changes, entitlement, finance, vendor analytics, export, raw drilldown, migrations, RLS, route creation, product catalog mutation, new pricing, visible redesign, and builder/generator algorithm changes remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
