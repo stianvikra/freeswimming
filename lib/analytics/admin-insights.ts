@@ -5,7 +5,11 @@ import {
   type AnalyticsLifecycleStatus,
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
-import { WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION } from "@/lib/commerce/checkout";
+import {
+  CHECKOUT_CANCEL_REASON,
+  WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE,
+  WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION,
+} from "@/lib/commerce/checkout";
 import {
   WORKOUT_BUILDER_TEMPLATE_ANALYTICS_SOURCE,
   WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
@@ -70,6 +74,24 @@ export type WorkoutContextCheckoutOutcomeDiagnosticKey =
 
 export type WorkoutContextCheckoutOutcomeDiagnosticCount = {
   key: WorkoutContextCheckoutOutcomeDiagnosticKey;
+  count: number;
+};
+
+export const WORKOUT_CONTEXT_CHECKOUT_CANCEL_DIAGNOSTIC_KEYS = [
+  "source_not_mapped",
+  "placement_not_mapped",
+  "product_not_mapped",
+  "surface_not_mapped",
+  "reason_not_mapped",
+  "incomplete_attribution",
+  "other_review_needed",
+] as const;
+
+export type WorkoutContextCheckoutCancelDiagnosticKey =
+  (typeof WORKOUT_CONTEXT_CHECKOUT_CANCEL_DIAGNOSTIC_KEYS)[number];
+
+export type WorkoutContextCheckoutCancelDiagnosticCount = {
+  key: WorkoutContextCheckoutCancelDiagnosticKey;
   count: number;
 };
 
@@ -138,6 +160,16 @@ export type AnalyticsInsightsResponse = {
     completionWithoutAccess?: number;
     accessWithoutCompletion?: number;
     reviewDiagnostics?: WorkoutContextCheckoutOutcomeDiagnosticCount[];
+  };
+  workoutContextCheckoutCancel: {
+    placementId: string;
+    productId: string;
+    source: string;
+    surface: string;
+    reason: string;
+    cancelled: number;
+    unknownEvents: number;
+    reviewDiagnostics: WorkoutContextCheckoutCancelDiagnosticCount[];
   };
   workoutBuilderFunnel: {
     started: number;
@@ -245,7 +277,7 @@ function getSafeTemplateSelectionKey(payload: AnalyticsEventInsightRow["payload"
 
 function getSafePayloadDimension(
   payload: AnalyticsEventInsightRow["payload"],
-  key: "placementId" | "productId" | "source" | "surface"
+  key: "placementId" | "productId" | "source" | "surface" | "reason"
 ): string | null {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   const value = (payload as Record<string, unknown>)[key];
@@ -257,7 +289,7 @@ function getSafePayloadDimension(
 function getSafeRowOrPayloadDimension(
   rowValue: string | null | undefined,
   payload: AnalyticsEventInsightRow["payload"],
-  payloadKey: "placementId" | "productId" | "source" | "surface"
+  payloadKey: "placementId" | "productId" | "source" | "surface" | "reason"
 ): string | null {
   if (rowValue && /^[a-z][a-z0-9_:-]{0,80}$/.test(rowValue)) return rowValue;
   return getSafePayloadDimension(payload, payloadKey);
@@ -282,6 +314,36 @@ function isMappedWorkoutContextCtaRow(row: AnalyticsEventInsightRow): boolean {
     source === WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE &&
     placementId === WORKOUT_CONTEXT_CTA_PLACEMENT_ID &&
     productId === WORKOUT_CONTEXT_CTA_PRODUCT_ID
+  );
+}
+
+function isWorkoutContextCheckoutCancelRow(row: AnalyticsEventInsightRow): boolean {
+  if (row.event_name !== UPSELL_DECLINED_EVENT) return false;
+
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const surface = getSafePayloadDimension(row.payload, "surface");
+
+  return (
+    source === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source ||
+    placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId ||
+    surface === WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE
+  );
+}
+
+function isMappedWorkoutContextCheckoutCancelRow(row: AnalyticsEventInsightRow): boolean {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
+  const surface = getSafePayloadDimension(row.payload, "surface");
+  const reason = getSafePayloadDimension(row.payload, "reason");
+
+  return (
+    source === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source &&
+    placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId &&
+    productId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId &&
+    surface === WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE &&
+    reason === CHECKOUT_CANCEL_REASON
   );
 }
 
@@ -320,6 +382,30 @@ function getWorkoutContextCheckoutOutcomeDiagnosticKey(
   if (productId !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId) {
     return "product_not_mapped";
   }
+  return "other_review_needed";
+}
+
+function getWorkoutContextCheckoutCancelDiagnosticKey(
+  row: AnalyticsEventInsightRow
+): WorkoutContextCheckoutCancelDiagnosticKey {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
+  const surface = getSafePayloadDimension(row.payload, "surface");
+  const reason = getSafePayloadDimension(row.payload, "reason");
+
+  if (!source || !placementId || !productId || !surface || !reason) {
+    return "incomplete_attribution";
+  }
+  if (source !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source) return "source_not_mapped";
+  if (placementId !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId) {
+    return "placement_not_mapped";
+  }
+  if (productId !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId) {
+    return "product_not_mapped";
+  }
+  if (surface !== WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE) return "surface_not_mapped";
+  if (reason !== CHECKOUT_CANCEL_REASON) return "reason_not_mapped";
   return "other_review_needed";
 }
 
@@ -438,10 +524,16 @@ export function buildAnalyticsInsights(input: {
   let workoutContextCheckoutCompleted = 0;
   let workoutContextEntitlementGranted = 0;
   let workoutContextCheckoutOutcomeUnknownEvents = 0;
+  let workoutContextCheckoutCancelCancelled = 0;
+  let workoutContextCheckoutCancelUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
   const workoutContextCheckoutOutcomeDiagnostics = new Map<
     WorkoutContextCheckoutOutcomeDiagnosticKey,
+    number
+  >();
+  const workoutContextCheckoutCancelDiagnostics = new Map<
+    WorkoutContextCheckoutCancelDiagnosticKey,
     number
   >();
 
@@ -478,9 +570,25 @@ export function buildAnalyticsInsights(input: {
       row.event_name === UPSELL_ACCEPTED_EVENT ||
       row.event_name === UPSELL_DECLINED_EVENT
     ) {
+      const isWorkoutContextCancelRow = isWorkoutContextCheckoutCancelRow(row);
+      if (isWorkoutContextCancelRow) {
+        if (isMappedWorkoutContextCheckoutCancelRow(row)) {
+          workoutContextCheckoutCancelCancelled += 1;
+        } else {
+          workoutContextCheckoutCancelUnknownEvents += 1;
+          increment(
+            workoutContextCheckoutCancelDiagnostics,
+            getWorkoutContextCheckoutCancelDiagnosticKey(row)
+          );
+        }
+        continue;
+      }
+
       const isWorkoutContextRow = isWorkoutContextUpsellRow(row);
       if (isWorkoutContextRow) {
-        const isMapped = isMappedWorkoutContextCtaRow(row);
+        const isMappedCtaAction =
+          row.event_name === UPSELL_PRESENTED_EVENT || row.event_name === UPSELL_ACCEPTED_EVENT;
+        const isMapped = isMappedCtaAction && isMappedWorkoutContextCtaRow(row);
         if (isMapped && row.event_name === UPSELL_PRESENTED_EVENT) {
           workoutContextCtaPresented += 1;
         } else if (isMapped && row.event_name === UPSELL_ACCEPTED_EVENT) {
@@ -640,6 +748,19 @@ export function buildAnalyticsInsights(input: {
       reviewDiagnostics: WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_KEYS.map((key) => ({
         key,
         count: workoutContextCheckoutOutcomeDiagnostics.get(key) ?? 0,
+      })),
+    },
+    workoutContextCheckoutCancel: {
+      placementId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId,
+      productId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId,
+      source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
+      surface: WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE,
+      reason: CHECKOUT_CANCEL_REASON,
+      cancelled: workoutContextCheckoutCancelCancelled,
+      unknownEvents: workoutContextCheckoutCancelUnknownEvents,
+      reviewDiagnostics: WORKOUT_CONTEXT_CHECKOUT_CANCEL_DIAGNOSTIC_KEYS.map((key) => ({
+        key,
+        count: workoutContextCheckoutCancelDiagnostics.get(key) ?? 0,
       })),
     },
     workoutBuilderFunnel: {

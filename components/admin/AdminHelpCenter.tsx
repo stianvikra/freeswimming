@@ -303,6 +303,11 @@ const ANALYTICS_WORKFLOW = [
       "Checkout handoffs mean the approved saved-workout guide path reached checkout start. Needs review means some checkout-start actions do not match that approved path yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
+    title: "Read saved-workout checkout cancel as mapped return only",
+    detail:
+      "Checkout cancelled means the approved saved-workout Poolside guide checkout returned through the mapped cancel path. Needs review stays out of the main number until reviewed. This is not ignored CTA, payment failure, entitlement failure, revenue, refunds, payouts, invoices, Stripe reconciliation, finance reporting, or unique people.",
+  },
+  {
     title: "Read saved-workout access as product support signal",
     detail:
       "Completed checkout means Stripe reported a supported completion event for the approved saved-workout guide path. Access granted means the app recognized access after fulfillment. Needs review stays out of the main numbers and may show safe reasons like source not mapped, placement not mapped, product not mapped, missing attribution, access pending, or access before checkout. Treat those as aggregate support diagnostics only, not provider failure, entitlement failure, revenue, Stripe reconciliation, accounting records, refunds, payouts, invoices, or unique people.",
@@ -580,6 +585,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Poolside guide checkout",
         meaning:
           "Shows checkout handoffs from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean purchase, access, revenue, accounting evidence, or unique people.",
+      },
+      {
+        label: "Poolside guide checkout cancel",
+        meaning:
+          "Shows mapped checkout-cancel returns from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean ignored CTA, payment failure, entitlement failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
       },
       {
         label: "Poolside guide access",
@@ -1040,8 +1050,8 @@ export default function AdminHelpCenter() {
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>
                 Inspect privacy-safe analytics health, read-only funnel signals, and existing
-                upsell, saved-workout guide stage summary, prompt, checkout handoff, and access
-                caveats.
+                upsell, saved-workout guide stage summary, prompt, checkout handoff, checkout
+                cancel, and access caveats.
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>

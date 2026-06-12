@@ -293,6 +293,24 @@ describe("admin analytics insights", () => {
       started: 0,
       unknownEvents: 0,
     });
+    expect(insights.workoutContextCheckoutCancel).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      surface: "plans_checkout_return",
+      reason: "checkout_cancelled",
+      cancelled: 0,
+      unknownEvents: 0,
+      reviewDiagnostics: [
+        { key: "source_not_mapped", count: 0 },
+        { key: "placement_not_mapped", count: 0 },
+        { key: "product_not_mapped", count: 0 },
+        { key: "surface_not_mapped", count: 0 },
+        { key: "reason_not_mapped", count: 0 },
+        { key: "incomplete_attribution", count: 0 },
+        { key: "other_review_needed", count: 0 },
+      ],
+    });
     expect(insights.routeCounts[0]).toMatchObject({ key: "/plans", category: "pricing" });
     expect(insights.productCounts[0]).toMatchObject({
       key: "guide_poolside",
@@ -486,6 +504,114 @@ describe("admin analytics insights", () => {
     expect(JSON.stringify(insights.workoutContextCta)).not.toContain("future_product");
   });
 
+  it("maps workout-context checkout-cancel returns without exposing raw payload", () => {
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            surface: "plans_checkout_return",
+            reason: "checkout_cancelled",
+            checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_secret",
+            email: "user@example.com",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "plans",
+          payload: { source: "plans", reason: "checkout_cancelled" },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            surface: "future_surface",
+            reason: "checkout_cancelled",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            surface: "plans_checkout_return",
+            reason: "future_reason",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "upsell_declined",
+          source: "workout_context",
+          product_id: null,
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            surface: "plans_checkout_return",
+            reason: "checkout_cancelled",
+          },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.existingUpsellBaseline).toMatchObject({
+      presented: 0,
+      accepted: 0,
+      declined: 1,
+      sourceCounts: [
+        {
+          key: "plans",
+          declined: 1,
+          total: 1,
+        },
+      ],
+    });
+    expect(insights.workoutContextCta).toMatchObject({
+      presented: 0,
+      accepted: 0,
+      unknownEvents: 0,
+    });
+    expect(insights.workoutContextCheckoutCancel).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      surface: "plans_checkout_return",
+      reason: "checkout_cancelled",
+      cancelled: 1,
+      unknownEvents: 3,
+      reviewDiagnostics: [
+        { key: "source_not_mapped", count: 0 },
+        { key: "placement_not_mapped", count: 0 },
+        { key: "product_not_mapped", count: 0 },
+        { key: "surface_not_mapped", count: 1 },
+        { key: "reason_not_mapped", count: 1 },
+        { key: "incomplete_attribution", count: 1 },
+        { key: "other_review_needed", count: 0 },
+      ],
+    });
+    expect(JSON.stringify(insights.workoutContextCheckoutCancel)).not.toContain("future_surface");
+    expect(JSON.stringify(insights.workoutContextCheckoutCancel)).not.toContain("future_reason");
+    expect(JSON.stringify(insights.workoutContextCheckoutCancel)).not.toContain("cs_test_secret");
+    expect(JSON.stringify(insights.workoutContextCheckoutCancel)).not.toContain("user@example.com");
+  });
+
   it("keeps workout-context CTA click rate not counted when presentations are missing", () => {
     const insights = buildAnalyticsInsights({
       rows: [
@@ -524,6 +650,10 @@ describe("admin analytics insights", () => {
       presented: 0,
       accepted: 1,
       acceptedRate: null,
+      unknownEvents: 0,
+    });
+    expect(insights.workoutContextCheckoutCancel).toMatchObject({
+      cancelled: 0,
       unknownEvents: 1,
     });
     expect(JSON.stringify(insights.workoutContextCta)).not.toContain("user@example.com");

@@ -107,6 +107,24 @@ const basePayload: AnalyticsInsightsResponse = {
       { key: "other_review_needed", count: 0 },
     ],
   },
+  workoutContextCheckoutCancel: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    surface: "plans_checkout_return",
+    reason: "checkout_cancelled",
+    cancelled: 1,
+    unknownEvents: 1,
+    reviewDiagnostics: [
+      { key: "source_not_mapped", count: 0 },
+      { key: "placement_not_mapped", count: 0 },
+      { key: "product_not_mapped", count: 0 },
+      { key: "surface_not_mapped", count: 1 },
+      { key: "reason_not_mapped", count: 0 },
+      { key: "incomplete_attribution", count: 0 },
+      { key: "other_review_needed", count: 0 },
+    ],
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -193,6 +211,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-checkout-started")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-checkout-outcome")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-context-checkout-cancel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-source-breakdown")).toBeVisible();
     expect(
@@ -292,6 +311,27 @@ describe("AdminAnalyticsDashboard", () => {
       within(workoutContextCheckoutOutcome).getByText(/aggregate support diagnostics only/i)
     ).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).queryByRole("button")).not.toBeInTheDocument();
+    const workoutContextCheckoutCancel = screen.getByTestId(
+      "admin-analytics-workout-context-checkout-cancel"
+    );
+    expect(
+      within(workoutContextCheckoutCancel).getByText("Poolside guide checkout cancel")
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Checkout cancelled")).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Needs review")).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Review signals")).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Surface not mapped")).toBeVisible();
+    expect(
+      within(workoutContextCheckoutCancel).getByText(
+        "The return surface is outside the approved plans checkout-cancel path."
+      )
+    ).toBeVisible();
+    expect(
+      within(workoutContextCheckoutCancel).getByText(/return-from-checkout telemetry only/i)
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).queryByText("Cancel rate")).toBeNull();
+    expect(within(workoutContextCheckoutCancel).queryByRole("button")).not.toBeInTheDocument();
     const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");
     expect(within(builderFunnel).getByText("Builder starts and saves")).toBeVisible();
     expect(within(builderFunnel).getByText("Started")).toBeVisible();
@@ -431,6 +471,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       screen.getByTestId("admin-analytics-workout-context-checkout-outcome")
     ).toHaveTextContent("Not counted");
+    expect(screen.getByTestId("admin-analytics-workout-context-checkout-cancel")).toHaveTextContent(
+      "Not counted"
+    );
     expect(
       screen.getByTestId("admin-analytics-workout-builder-source-breakdown")
     ).toHaveTextContent("Not counted");
@@ -499,6 +542,24 @@ describe("AdminAnalyticsDashboard", () => {
             entitlementGranted: 1,
             entitlementGrantRate: null,
             unknownEvents: 1,
+          },
+          workoutContextCheckoutCancel: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            surface: "plans_checkout_return",
+            reason: "checkout_cancelled",
+            cancelled: 0,
+            unknownEvents: 1,
+            reviewDiagnostics: [
+              { key: "source_not_mapped", count: 0 },
+              { key: "placement_not_mapped", count: 0 },
+              { key: "product_not_mapped", count: 0 },
+              { key: "surface_not_mapped", count: 0 },
+              { key: "reason_not_mapped", count: 0 },
+              { key: "incomplete_attribution", count: 1 },
+              { key: "other_review_needed", count: 0 },
+            ],
           },
           workoutBuilderFunnel: {
             started: 0,

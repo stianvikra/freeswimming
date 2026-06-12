@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-12`
-- `base`: clean synced `main@cd769275` after PR `#1101` implemented checkout-cancel runtime attribution and post-merge preflight surfaced this repo-managed closeout.
+- `base`: clean synced `main@a3d8a87c` after PR `#1101` implemented checkout-cancel runtime attribution, repo-managed closeout PR `#1102` moved the child to done, and post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Use this as the refreshed parent for future bounded child briefs only; do not execute this parent directly. No active or planned child is selected.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1101`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics for the completion/access review-needed aggregate, the read-only stage summary over existing mapped workout-context CTA/checkout handoff/completion/access aggregates, the docs-only checkout-cancel / decline measurement contract, and checkout-cancel runtime attribution are all closed. Explicit dismiss, dedicated Admin Analytics decline modules, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, and vendor analytics still require separate owner-approved children.
+- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. Active child is `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10.md`.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1101`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics for the completion/access review-needed aggregate, the read-only stage summary over existing mapped workout-context CTA/checkout handoff/completion/access aggregates, the docs-only checkout-cancel / decline measurement contract, and checkout-cancel runtime attribution are all closed. The active child owns read-only Admin Analytics checkout-cancel mapping. Explicit dismiss, stage-summary decline denominator/rate, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, and vendor analytics still require separate owner-approved children.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, Codex skill/stack readiness radar, Codex local automation defaults, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -126,6 +126,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1101` / squash commit `cd769275`.
   - Owns only runtime attribution for the existing mapped saved-workout CTA -> `/plans` -> Poolside guide checkout-cancel return.
   - Keeps Admin Analytics decline mapping, stage-summary decline denominator, explicit dismiss UI, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, visible redesign, and builder/generator UX out of scope until separately approved.
+- Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10.md`
+  - Started on branch `workout-context-checkout-cancel-admin-analytics-mapping-v1`.
+  - Owns only read-only Admin Analytics mapping for the approved workout-context checkout-cancel return with `source=workout_context`, `placementId=workout_saved_post_success`, `productId=guide_poolside`, `surface=plans_checkout_return`, and `reason=checkout_cancelled`.
+  - Keeps stage-summary decline denominator/rate, explicit dismiss UI, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, visible redesign outside Admin Analytics, and builder/generator UX out of scope until separately approved.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - broader dedicated KPI modules,
@@ -136,7 +140,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: none.
+Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10.md`.
 
 Planned child: none.
 
@@ -144,7 +148,8 @@ A separate future child must be explicitly selected before adding additional Adm
 
 Safe follow-up candidate families after the checkout-cancel / decline measurement contract:
 
-- Workout-context checkout-cancel runtime attribution: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`; future Admin Analytics decline mapping or a dashboard denominator requires a new owner-approved child and must follow `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
+- Workout-context checkout-cancel Admin Analytics mapping: active in `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10.md`; stage-summary decline denominator/rate, explicit dismiss, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
+- Workout-context checkout-cancel runtime attribution: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`; future dashboard denominator requires a new owner-approved child and must follow `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
 - Workout-context checkout-cancel / decline measurement contract: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`; future explicit dismiss runtime callsites or Admin Analytics decline mapping require a new owner-approved child and must follow the contract before any dashboard denominator includes decline.
 - Workout-context commercial stage summary: complete in `docs/task-briefs/done/2026-06-12-workout-context-commercial-funnel-stage-summary-v1-10-10.md`; future stage drilldowns or additional funnel slices require a new owner-approved child and must not infer unique-user conversion, revenue, entitlement failure, provider failure, or finance truth from analytics telemetry.
 - Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md`, `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`, and `docs/task-briefs/done/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md`. The shipped support diagnostics remain read-only and must still avoid inferring revenue, unique-user conversion, provider failure, entitlement failure, or finance truth from analytics telemetry.

@@ -436,9 +436,10 @@
   Workout-context checkout-cancel is mapped only for the approved saved-workout Poolside checkout
   return with `source=workout_context`, `placementId=workout_saved_post_success`,
   `productId=guide_poolside`, `surface=plans_checkout_return`, and
-  `reason=checkout_cancelled`; it remains outside dedicated Admin Analytics decline KPIs until a
-  future child maps denominator, copy, Help/Guide impact, and tests. Explicit dismiss remains
-  unmapped until a future child defines it under
+  `reason=checkout_cancelled`; the dedicated Admin Analytics checkout-cancel module counts only
+  that exact return and bounded review-needed buckets. It remains outside the Poolside guide stage
+  summary, and no decline denominator or rate exists until a future child maps denominator, copy,
+  Help/Guide impact, and tests. Explicit dismiss remains unmapped until a future child defines it under
   `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
@@ -492,6 +493,14 @@
   finance reporting. Unknown or unmapped future products, placements, sources, or checkout paths
   require explicit mapping before entering this dedicated summary. Decline/cancel is not a stage in
   this summary until a future child maps denominator, copy, Help/Guide impact, and tests.
+- Workout-context checkout-cancel dashboard caveat: `workoutContextCheckoutCancel` is derived only
+  from mapped `upsell_declined` rows with `source=workout_context`,
+  `placementId=workout_saved_post_success`, `productId=guide_poolside`,
+  `surface=plans_checkout_return`, and `reason=checkout_cancelled`. Checkout cancel means the
+  approved return-from-checkout path only. Unknown or unmapped cancel-like rows stay out of the
+  dedicated count and may appear only as bounded review-needed diagnostics. These values are not
+  ignored CTA, failed payment, provider failure, entitlement failure, revenue, refund, payout,
+  invoice, accounting export, Stripe reconciliation, finance reporting, or unique-user conversion.
 - Workout-context checkout completion and entitlement dashboard caveat:
   `workoutContextCheckoutOutcome` is derived only from mapped `checkout_completed` and
   `entitlement_granted` rows with `source=workout_context`,
@@ -622,6 +631,24 @@
       { "key": "source_not_mapped", "count": 0 },
       { "key": "placement_not_mapped", "count": 0 },
       { "key": "product_not_mapped", "count": 1 },
+      { "key": "incomplete_attribution", "count": 0 },
+      { "key": "other_review_needed", "count": 0 }
+    ]
+  },
+  "workoutContextCheckoutCancel": {
+    "placementId": "workout_saved_post_success",
+    "productId": "guide_poolside",
+    "source": "workout_context",
+    "surface": "plans_checkout_return",
+    "reason": "checkout_cancelled",
+    "cancelled": 1,
+    "unknownEvents": 1,
+    "reviewDiagnostics": [
+      { "key": "source_not_mapped", "count": 0 },
+      { "key": "placement_not_mapped", "count": 0 },
+      { "key": "product_not_mapped", "count": 0 },
+      { "key": "surface_not_mapped", "count": 1 },
+      { "key": "reason_not_mapped", "count": 0 },
       { "key": "incomplete_attribution", "count": 0 },
       { "key": "other_review_needed", "count": 0 }
     ]

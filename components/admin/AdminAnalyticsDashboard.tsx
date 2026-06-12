@@ -468,6 +468,80 @@ function WorkoutContextCheckoutOutcomePanel({
   );
 }
 
+function WorkoutContextCheckoutCancelPanel({
+  cancel,
+}: {
+  cancel: AnalyticsDashboardViewModel["workoutContextCheckoutCancel"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-context-checkout-cancel-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-context-checkout-cancel"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Commerce</p>
+          <h3
+            id="admin-analytics-workout-context-checkout-cancel-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Poolside guide checkout cancel
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{cancel.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+        {cancel.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {cancel.reviewItems.length === 0 ? (
+        <p className={cx("mt-4", mutedTextClass)}>{cancel.emptyReviewLabel}</p>
+      ) : (
+        <div className="mt-4">
+          <p className={metadataLabelClass}>Review signals</p>
+          <ul className="mt-2 grid gap-2">
+            {cancel.reviewItems.map((item) => (
+              <li
+                key={item.key}
+                className="flex min-w-0 items-start justify-between gap-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium break-words text-[color:var(--fs-color-ink-strong)]">
+                    {item.label}
+                  </p>
+                  {item.secondary ? (
+                    <p className="mt-0.5 text-xs break-words text-[color:var(--fs-color-muted)]">
+                      {item.secondary}
+                    </p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 text-right text-sm font-semibold text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                  {item.count}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className={cx("mt-4", mutedTextClass)}>{cancel.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutBuilderSourceBreakdownPanel({
   breakdown,
 }: {
@@ -855,6 +929,7 @@ export default function AdminAnalyticsDashboard() {
             checkoutStarted={viewModel.workoutContextCheckoutStarted}
           />
           <WorkoutContextCheckoutOutcomePanel outcome={viewModel.workoutContextCheckoutOutcome} />
+          <WorkoutContextCheckoutCancelPanel cancel={viewModel.workoutContextCheckoutCancel} />
           <WorkoutBuilderFunnelPanel funnel={viewModel.workoutBuilderFunnel} />
           <WorkoutBuilderSourceBreakdownPanel breakdown={viewModel.workoutBuilderSourceBreakdown} />
           <WorkoutBuilderTemplateGeneratedCompletionPanel
