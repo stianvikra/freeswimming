@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-12`
-- `base`: clean synced `main@38a0d9b3` after PR `#1097` added the read-only workout-context commercial stage summary.
+- `base`: clean synced `main@0dbd2090` after PR `#1097` added the read-only workout-context commercial stage summary and repo-managed closeout PR `#1098` moved the child to done.
 - `audit_status`: `ready`
-- `decision`: Use this as the refreshed parent for future bounded child briefs only; do not execute this parent directly. No active child is selected.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1097`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics for the completion/access review-needed aggregate, and the read-only stage summary over existing mapped workout-context CTA, checkout handoff, completion, and access aggregates are all closed. Finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, and vendor analytics still require new owner-approved children.
+- `decision`: Use this as the refreshed parent for future bounded child briefs only; do not execute this parent directly. The active child is a docs-only workout-context checkout-cancel / decline measurement contract.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1098`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics for the completion/access review-needed aggregate, and the read-only stage summary over existing mapped workout-context CTA, checkout handoff, completion, and access aggregates are all closed. Workout-context decline/cancel semantics, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, and vendor analytics still require new owner-approved children.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, Codex skill/stack readiness radar, Codex local automation defaults, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -118,6 +118,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1097` / squash commit `38a0d9b3`.
   - Owns only one read-only Admin Analytics stage summary over existing mapped workout-context CTA, checkout handoff, completion, and access aggregates.
   - Keeps new events, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, and builder/generator UX out of scope.
+- Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`
+  - Owns only a future docs-only contract for whether and how workout-context checkout cancel or explicit decline behavior may be measured.
+  - Runtime `upsell_declined` callsites, Admin Analytics mapping, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, and builder/generator UX remain out of scope until separately approved.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - broader dedicated KPI modules,
@@ -128,14 +131,15 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: none.
+Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`.
 
 Planned child: none.
 
-A separate future child must be explicitly selected before adding additional Admin Analytics drilldowns, direct workout-context checkout, `upsell_declined`, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
+A separate future child must be explicitly selected before adding additional Admin Analytics drilldowns, direct workout-context checkout, runtime `upsell_declined` callsites, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
 Safe follow-up candidate families after the support-diagnostics child:
 
+- Workout-context checkout-cancel / decline measurement contract: active in `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`; it must remain docs-only and must not add runtime events, dashboard mapping, checkout, Stripe, entitlement, finance, export, vendor, product, or builder scope.
 - Workout-context commercial stage summary: complete in `docs/task-briefs/done/2026-06-12-workout-context-commercial-funnel-stage-summary-v1-10-10.md`; future stage drilldowns or additional funnel slices require a new owner-approved child and must not infer unique-user conversion, revenue, entitlement failure, provider failure, or finance truth from analytics telemetry.
 - Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md`, `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`, and `docs/task-briefs/done/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md`. The shipped support diagnostics remain read-only and must still avoid inferring revenue, unique-user conversion, provider failure, entitlement failure, or finance truth from analytics telemetry.
 - Checkout attribution and finance separation: complete through checkout-start attribution hardening, the `/plans` attribution bridge, and read-only checkout-start Admin Analytics mapping; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
@@ -147,7 +151,7 @@ Current guardrails:
 - Do not reopen the completed checkout-started Admin Analytics mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
 - Do not reopen the completed stage-summary child as a broader drilldown, finance, or checkout slice.
-- Do not add runtime CTA, new event callsites/meanings, direct checkout, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, shop expansion, or builder/generator UX changes without a new approved child brief.
+- Do not add runtime CTA, new event callsites/meanings, direct checkout, finance, vendor analytics, export, raw drilldown, migration, RLS, route changes, product catalog mutation, shop expansion, or builder/generator UX changes without a new approved child brief. The planned checkout-cancel / decline contract child may define semantics only; it does not approve runtime `upsell_declined` implementation.
 - Any next child must include the pre-implementation owner explanation, scorecard mapping, data-boundary decisions, forward-compatibility contract, route/label/support sweep triggers, Help/Guide impact, and validation plan before implementation starts.
 
 ## Scope
@@ -389,7 +393,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-12-workout-context-commercial-funnel-stage-summary-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -495,3 +499,5 @@ Future child implementation:
 - `2026-06-12 | stage-summary screenshot stop | active child captured after/reference screenshot artifacts at output/workout-context-commercial-funnel-stage-summary-2026-06-12-122049; temporary capture route/script were removed after generation, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-12 | stage-summary pre-pr passed | owner approved screenshots, and active child passed npm run verify:pre-pr full lane with branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright E2E. No scoped product-rendering source changed after final approved screenshot capture, and no API response shape, event, checkout/Stripe/webhook/entitlement-rule/finance/export/vendor/migration/product/builder scope was added | next: commit, push, open PR, monitor CI, and run child verify:pre-merge`
 - `2026-06-12 | stage-summary child merged | PR #1097 merged at squash commit 38a0d9b3 after green local pre-pr, PR CI, and pre-merge gates; child is moving to done in repo-managed closeout, parent has no active or planned child, and additional drilldowns, direct checkout, finance reporting, export/raw drilldown, vendor analytics, visible redesign, migrations/RLS, product/pricing, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-12 | planned decline contract child created | after repo-managed closeout PR #1098 merged at squash commit 0dbd2090 and post-merge preflight was reported clean, created docs/task-briefs/planned/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md as the next bounded analytics child. Scope is docs-only checkout-cancel / decline measurement semantics, with no runtime upsell_declined callsite, Admin Analytics mapping, checkout/Stripe/webhook, entitlement-rule, finance/export/vendor/product/builder scope approved | next: wait for explicit owner execute/build/implement instruction or scope edits`
+- `2026-06-12 | decline contract child in progress | owner requested execution on branch workout-context-checkout-cancel-decline-contract-v1; active child is docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md and remains docs-only, with no runtime upsell_declined callsite, Admin Analytics mapping, checkout/Stripe/webhook, entitlement-rule, finance/export/vendor/product/builder scope approved | next: complete architecture/API/parent updates and docs validation`

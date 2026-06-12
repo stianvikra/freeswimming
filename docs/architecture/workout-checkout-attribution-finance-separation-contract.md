@@ -1,6 +1,6 @@
 # Workout Checkout Attribution + Finance Separation Contract
 
-Last updated: 2026-06-11
+Last updated: 2026-06-12
 
 ## Purpose
 
@@ -16,6 +16,11 @@ Related workout-context completion and entitlement attribution boundaries are de
 That contract confirms current generic `checkout_completed` and `entitlement_granted` rows are not
 dedicated workout-context outcomes until a later implementation child adds approved server-owned
 attribution propagation and tests.
+
+Workout-context checkout-cancel and decline boundaries are defined in
+`docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`. That contract
+keeps current `/plans` and My Library checkout-cancel telemetry separate from workout-context
+decline until a future child maps exact source, placement, product, and reason semantics.
 
 ## Official Provider Baseline
 
@@ -57,7 +62,8 @@ Product telemetry:
 - `upsell_presented` means a mapped surface or CTA rendered.
 - `upsell_accepted` means clicked or activated intent.
 - `upsell_declined` means only an explicitly mapped dismiss/cancel/return action. Current
-  checkout-cancel semantics must not be reused as all ignored users.
+  checkout-cancel semantics must not be reused as all ignored users, all non-buyers, generic
+  checkout failure, provider failure, entitlement failure, refund state, or finance truth.
 - Product telemetry rows may be duplicate best-effort events and must not be described as unique
   users unless a later child adds a deterministic unique-user contract.
 
@@ -161,18 +167,19 @@ Local/browser:
 
 Future checkout, entitlement, dashboard, or finance children must preserve these failure meanings:
 
-| State                                           | Required interpretation                                                                             |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Unknown, inactive, missing, or unmapped product | Fail closed for dedicated checkout/CTA KPIs and future runtime presentation until mapped.           |
-| Missing Stripe price/config                     | Checkout unavailable/config issue, not user disinterest and not product performance.                |
-| Checkout route validation failure               | Expected request failure with deterministic status, not payment failure.                            |
-| Stripe provider create failure                  | Provider availability/config issue, not payment failure or finance state.                           |
-| Invalid webhook signature                       | Security rejection. Must not fulfill entitlement or count completion.                               |
-| Ignored webhook event                           | Provider event intentionally out of scope. Must not imply checkout failure.                         |
-| Webhook delay or retry                          | Pending provider/fulfillment state. Must not be collapsed into success or failure without evidence. |
-| Entitlement lag or repair                       | App access state needs reconciliation. Must not be treated as revenue or refund state.              |
-| Reconciliation mismatch                         | Finance/support exception requiring finance evidence, not Admin Analytics correction.               |
-| Stale/capped analytics read                     | Reporting quality state only. Must not alter checkout, entitlement, provider, or finance truth.     |
+| State                                           | Required interpretation                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Unknown, inactive, missing, or unmapped product | Fail closed for dedicated checkout/CTA KPIs and future runtime presentation until mapped.                |
+| Missing Stripe price/config                     | Checkout unavailable/config issue, not user disinterest and not product performance.                     |
+| Checkout route validation failure               | Expected request failure with deterministic status, not payment failure.                                 |
+| Stripe provider create failure                  | Provider availability/config issue, not payment failure or finance state.                                |
+| Checkout-cancel return                          | A return signal only for the surface that emitted it; workout-context decline requires explicit mapping. |
+| Invalid webhook signature                       | Security rejection. Must not fulfill entitlement or count completion.                                    |
+| Ignored webhook event                           | Provider event intentionally out of scope. Must not imply checkout failure.                              |
+| Webhook delay or retry                          | Pending provider/fulfillment state. Must not be collapsed into success or failure without evidence.      |
+| Entitlement lag or repair                       | App access state needs reconciliation. Must not be treated as revenue or refund state.                   |
+| Reconciliation mismatch                         | Finance/support exception requiring finance evidence, not Admin Analytics correction.                    |
+| Stale/capped analytics read                     | Reporting quality state only. Must not alter checkout, entitlement, provider, or finance truth.          |
 
 ## Security And Privacy
 
@@ -237,6 +244,8 @@ Support must not say:
 
 - a CTA click proves checkout started or purchase happened,
 - checkout start proves payment success,
+- checkout cancel proves user decline, payment failure, provider failure, entitlement failure, or
+  finance state,
 - Stripe completion alone proves app access in every edge case,
 - entitlement access proves revenue, refund, payout, invoice, or accounting state,
 - Admin Analytics proves individual behavior or finance truth.
@@ -259,6 +268,7 @@ Explicit owner mapping is required for:
 
 - new product purchase models,
 - new workout-context placements,
+- workout-context checkout-cancel or explicit dismiss meanings,
 - new checkout steps or events,
 - new Stripe webhook meanings,
 - new entitlement states,
