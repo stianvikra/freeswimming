@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-11`
 - `updated`: `2026-06-12`
@@ -62,7 +62,7 @@ Critical target categories for the 10/10 claim gate:
 - UX flow clarity
 - Visual design quality
 - Business logic correctness and data integrity
-- Accessibility (a11y)
+- Accessibility
 - Data placement and sync boundaries
 - Reliability and failure handling
 - Security and authz
@@ -82,6 +82,7 @@ Critical target categories for the 10/10 claim gate:
 | Business logic correctness and data integrity | `target`     | Count only `checkout_completed` and `entitlement_granted` rows with mapped source, placement, and product; unknown/unmapped rows stay out of main counts and rates handle zero denominators.                       | `admin-insights` tests with mapped/unknown fixtures             | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice adds no admin editor, placement config, CRUD flow, publish workflow, or editable checkout setting.                                                                                          | explicit scope rationale                                        | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | New read-only dashboard panel keeps semantic section heading, readable metric labels, no keyboard trap, and no hidden interactive controls.                                                                        | Testing Library role/text assertions + screenshot/manual review | `5/5`                   |
+| Accessibility                                 | `target`     | Closeout parser alias for `Accessibility (a11y)`; same acceptance threshold applies.                                                                                                                               | Same evidence as `Accessibility (a11y)`.                        | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | No new dependency, chart library, route, migration, vendor script, or unbounded query; aggregate response remains bounded by existing row cap.                                                                     | package diff + pre-PR gate                                      | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Reads remain server-canonical aggregate analytics rows through `/api/admin/analytics/insights`; no local/admin state, checkout mutation, entitlement mutation, or finance truth is created.                        | data contract review + admin insight tests                      | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: Admin Analytics remains `no-store`; no cache, revalidation, or invalidation behavior changes.                                                                                                     | route/cache review                                              | `4/5`                   |
@@ -340,3 +341,33 @@ After screenshot approval:
 - `2026-06-11 | screenshot stop | implemented workoutContextCheckoutOutcome aggregation, Admin Analytics view-model/UI, Help/Guide/API/architecture copy, targeted tests, route/label/support sweep evidence, and after/reference screenshot artifacts at output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550. Temporary capture route/script were removed after generation, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-12 | screenshots approved | owner approved screenshot artifacts at output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550; no scoped product-rendering source changed after final capture | next: run npm run verify:pre-pr`
 - `2026-06-12 | pre-pr passed | after screenshot approval, active child passed targeted admin analytics insights Vitest and npm run verify:pre-pr full lane with branch-current, lint, typecheck, unit, build, performance budgets, and Playwright e2e. The date-sensitive route test now uses a fixed clock for deterministic rollup freshness, and no scoped product-rendering source changed after the final approved screenshot capture | next: commit, push, open PR, monitor CI, and run child pre-merge gate`
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1093`
+- `squash_commit`: `7fd13361`
+- `result`: Closed Workout Context Checkout Completion + Entitlement Admin Analytics Mapping V1 by adding a read-only Poolside guide access panel for mapped checkout completion and access-granted telemetry, with finance, Stripe reconciliation, export, raw drilldown, direct checkout, product, pricing, and entitlement-rule scope left out.
+- `validation`: Targeted admin analytics Vitest, `npm run lint:briefs:all`, `git diff --check`, owner-approved screenshot handoff at `output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550`, `npm run verify:pre-pr`, PR #1093 CI, and `npm run verify:pre-merge` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #1093, targeted tests, screenshot handoff, verify gates                             | No gap.      |
+| UX flow clarity                               | `5/5`          | Admin dashboard copy tests, Help/Guide assertion, screenshots                          | No gap.      |
+| Visual design quality                         | `5/5`          | Existing Admin Analytics surface reuse, desktop/mobile screenshots                     | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Mapped/unmapped fixture coverage in `admin-insights` tests                             | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions and screenshot/manual review                                | No gap.      |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)`                                                | No gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency added; perf budget lane passed                                           | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical aggregate route unchanged; tests cover read-only mapping              | No gap.      |
+| Reliability and failure handling              | `5/5`          | Empty, schema-missing, capped, stale, failed-read, and review-needed states covered    | No gap.      |
+| Security and authz                            | `5/5`          | Existing viewer-gated admin route preserved; no public route added                     | No gap.      |
+| Privacy and compliance                        | `5/5`          | Rendered-label/payload tests keep raw IDs, payment data, URLs, and user-level data out | No gap.      |
+| Content governance                            | `5/5`          | Help/Guide, API contract, architecture contract, parent, and brief updated             | No gap.      |
+| Analytics and KPI observability               | `5/5`          | `workoutContextCheckoutOutcome` aggregate and review diagnostics covered by tests      | No gap.      |
+| Commerce and revenue ops                      | `5/5`          | Finance/Stripe caveats in UI, Help/Guide, API, and architecture docs                   | No gap.      |
+| Incident response and support operations      | `5/5`          | Help/Guide and deterministic state copy cover support interpretation                   | No gap.      |
+| Finance and reporting operations              | `5/5`          | Finance/reporting caveats plus no finance/export changed-files evidence                | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing analytics/view-model/component/test surfaces; no dependency added      | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted tests, screenshot handoff, `verify:pre-pr`, CI, and `verify:pre-merge` passed | No gap.      |
