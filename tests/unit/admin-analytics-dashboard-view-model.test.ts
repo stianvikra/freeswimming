@@ -229,6 +229,77 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.existingUpsellBaseline.caveat).toContain("Clicks are not purchases");
+    expect(viewModel.workoutContextStageSummary.stages).toEqual([
+      {
+        id: "poolside-stage-shown",
+        label: "Shown",
+        value: 4,
+        count: "4",
+        percentOfMax: 100,
+        detail: "Prompt views",
+      },
+      {
+        id: "poolside-stage-clicked",
+        label: "Clicked",
+        value: 2,
+        count: "2",
+        percentOfMax: 50,
+        detail: "Clicked prompt",
+      },
+      {
+        id: "poolside-stage-checkout-handoff",
+        label: "Checkout handoff",
+        value: 2,
+        count: "2",
+        percentOfMax: 50,
+        detail: "Reached checkout",
+      },
+      {
+        id: "poolside-stage-completed-checkout",
+        label: "Completed checkout",
+        value: 1,
+        count: "1",
+        percentOfMax: 25,
+        detail: "Webhook completion",
+      },
+      {
+        id: "poolside-stage-access-granted",
+        label: "Access granted",
+        value: 1,
+        count: "1",
+        percentOfMax: 25,
+        detail: "App access",
+      },
+    ]);
+    expect(viewModel.workoutContextStageSummary.metrics).toEqual([
+      {
+        id: "poolside-stage-click-rate",
+        label: "Click rate",
+        value: "50%",
+        detail: "Clicked / shown",
+      },
+      {
+        id: "poolside-stage-handoff-rate",
+        label: "Handoff rate",
+        value: "100%",
+        detail: "Checkout handoff / clicked",
+      },
+      {
+        id: "poolside-stage-completion-rate",
+        label: "Completion rate",
+        value: "50%",
+        detail: "Completed / handoff",
+      },
+      {
+        id: "poolside-stage-access-rate",
+        label: "Access rate",
+        value: "100%",
+        detail: "Access / completed",
+      },
+    ]);
+    expect(viewModel.workoutContextStageSummary.caveat).toContain(
+      "not unique people, revenue, Stripe reconciliation, or accounting records"
+    );
     expect(viewModel.workoutContextCta.metrics).toEqual([
       {
         id: "workout-context-cta-presented",
@@ -475,6 +546,7 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(viewModel.caveats.join(" ")).toContain("not purchase or accounting records");
     expect(viewModel.caveats.join(" ")).toContain("Clicks are not purchases");
+    expect(viewModel.caveats.join(" ")).toContain("stage summary uses selected-range event counts");
     expect(viewModel.caveats.join(" ")).toContain("checkout starts for the approved guide path");
     expect(viewModel.caveats.join(" ")).toContain("not linked to user profiles");
   });

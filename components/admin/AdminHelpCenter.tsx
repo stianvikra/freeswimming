@@ -293,6 +293,11 @@ const ANALYTICS_WORKFLOW = [
       "Shown means the Poolside guide prompt appeared after a workout was saved. Clicked means someone clicked that prompt. Needs review means some logged actions do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
+    title: "Use Poolside guide stage summary as a quick path view",
+    detail:
+      "The stage summary lines up shown, clicked, checkout handoff, completed checkout, and access granted for the approved saved-workout guide path. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
+  },
+  {
     title: "Read saved-workout checkout handoffs as checkout start only",
     detail:
       "Checkout handoffs mean the approved saved-workout guide path reached checkout start. Needs review means some checkout-start actions do not match that approved path yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
@@ -560,6 +565,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Current sales prompts",
         meaning:
           "Shows how often current sales prompts on Plans and My Library were shown, clicked, or returned from checkout. Use it as prompt activity only, not purchase, access, revenue, or accounting evidence.",
+      },
+      {
+        label: "Poolside guide stage summary",
+        meaning:
+          "Shows shown, clicked, checkout handoff, completed checkout, and access granted together for the approved saved-workout guide path. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
       },
       {
         label: "Poolside guide prompt",
@@ -1030,7 +1040,8 @@ export default function AdminHelpCenter() {
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>
                 Inspect privacy-safe analytics health, read-only funnel signals, and existing
-                upsell, saved-workout guide prompt, checkout handoff, and access caveats.
+                upsell, saved-workout guide stage summary, prompt, checkout handoff, and access
+                caveats.
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>
