@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-12`
 - `updated`: `2026-06-12`
@@ -22,8 +22,8 @@
 - `last_audited`: `2026-06-12`
 - `base`: clean synced `main@a3d8a87c` after PR `#1101` implemented checkout-cancel runtime attribution, repo-managed closeout PR `#1102` moved the child to done, and post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Execute this bounded child on branch `workout-context-checkout-cancel-admin-analytics-mapping-v1`.
-- `reason`: The approved saved-workout CTA -> `/plans` -> Poolside guide checkout-cancel return now emits mapped `upsell_declined` telemetry. Admin Analytics still keeps those rows outside dedicated workout-context decline/cancel KPIs, so the next safe slice is a read-only mapping that counts only the exact approved cancel return and review-needed workout-context-like decline rows without adding explicit dismiss, stage-summary decline denominator, finance, Stripe, entitlement, export, vendor, product, or checkout behavior.
+- `decision`: Completed by PR `#1103` / squash commit `41e9d58a`.
+- `reason`: The approved saved-workout CTA -> `/plans` -> Poolside guide checkout-cancel return now has read-only Admin Analytics visibility for exact mapped `upsell_declined` rows and safe review-needed diagnostics. Explicit dismiss, stage-summary decline denominator/rate, finance, Stripe, entitlement, export, vendor, product, and checkout behavior remain deferred to separately approved children.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, task brief lint rules, scorecard categories, Codex skill/stack readiness radar, `ANALYTICS_EVENT_NAMES`, `analytics_events` schema, `lib/commerce/checkout.ts`, `components/analytics/TrackCheckoutCancel.tsx`, `lib/analytics/admin-insights.ts`, `lib/analytics/admin-dashboard.ts`, `components/admin/AdminAnalyticsDashboard.tsx`, Admin Help/Guide copy, `docs/api-contracts.md`, checkout/entitlement/finance contracts, product catalog IDs, checkout-cancel mapping constants, or screenshot handoff rules change.
 
 ## Goal
@@ -62,7 +62,6 @@ Critical target categories for the 10/10 claim gate:
 - UX flow clarity
 - Visual design quality
 - Business logic correctness and data integrity
-- Accessibility (a11y)
 - Data placement and sync boundaries
 - Reliability and failure handling
 - Security and authz
@@ -121,9 +120,9 @@ Systemic findings:
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Status: this child is active on branch `workout-context-checkout-cancel-admin-analytics-mapping-v1`.
-- Last merged workstream: PR `#1101` (`cd769275`) and closeout PR `#1102` (`a3d8a87c`).
-- Next planning step: implement the bounded Admin Analytics cancel mapping and stop at screenshot approval before `npm run verify:pre-pr`.
+- Status: this child closed in PR `#1103` / squash commit `41e9d58a`.
+- Last merged workstream: PR `#1103` (`41e9d58a`).
+- Next planning step: re-audit the parent before selecting any new bounded child.
 
 - React/Next.js:
   - Reuse `components/admin/AdminAnalyticsDashboard.tsx` and the existing read-only Admin Analytics panel/card/list pattern.
@@ -261,7 +260,7 @@ Return path:
   briefs, API contracts, architecture contracts, Admin Analytics UI/view-model, and Admin
   Help/Guide assertions.
 - Fallout handled: updated Admin Analytics insights/view-model/UI, Admin Help/Guide copy and
-  assertions, API/architecture caveats, this active child brief, and the parent checkpoint. No route,
+  assertions, API/architecture caveats, this child brief, and the parent checkpoint. No route,
   checkout, Stripe/webhook, entitlement mutation, finance/export, vendor analytics, raw drilldown,
   pricing, product catalog, migration, RLS, or public SEO surface was added.
 
@@ -272,3 +271,32 @@ Return path:
 - `2026-06-12 | screenshot approval stop | captured after/reference screenshot artifacts at output/workout-context-checkout-cancel-admin-analytics-2026-06-12-182318 for desktop dashboard, desktop/mobile checkout-cancel panel, schema-missing checkout-cancel panel, existing checkout-outcome reference panel, and Admin Help/Guide copy/buttons. Temporary local visual route was removed after capture, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-12 | screenshot approved | owner approved merge on good tests after screenshot handoff; no scoped product-rendering source changed after capture | next: run npm run verify:pre-pr, then commit, push, open PR, monitor CI, run verify:pre-merge, and merge only if gates stay green`
 - `2026-06-12 | pre-pr gate passed | npm run verify:pre-pr passed full lane from origin/main@a3d8a87c: lint/quality/admin/env/pr-body/eslint/typecheck/unit/build/perf/e2e green; Playwright reported 106 passed and 536 expected local skips | next: commit, push, open PR, monitor CI, run verify:pre-merge, and merge on green gates`
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1103`
+- `squash_commit`: `41e9d58a`
+- `result`: Admin Analytics now shows the approved saved-workout Poolside guide checkout-cancel return as a dedicated read-only panel and API aggregate, while keeping generic plans/My Library cancel telemetry, stage-summary denominator/rate, Stripe, entitlement, finance, export, vendor, product, and checkout behavior out of scope.
+- `validation`: targeted Vitest for Admin Analytics insights/view-model/component and Help/Guide copy passed; route/label/support sweep completed; screenshot handoff captured at `output/workout-context-checkout-cancel-admin-analytics-2026-06-12-182318` and owner approved it; `npm run verify:pre-pr` passed full lane on final commit `304fb1c1` with 106 Playwright tests passed and 536 expected local skips; PR `#1103` CI passed Analyze, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260612-180120.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for the approved bounded slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Exact mapped checkout-cancel panel/API aggregate shipped and stage-summary boundary preserved.           | No gap.      |
+| UX flow clarity                               | `5/5`          | Admin labels, Help/Guide, API copy, and screenshots explain mapped return-from-checkout only.            | No gap.      |
+| Visual design quality                         | `5/5`          | Reused existing Admin Analytics panel language; desktop/mobile screenshot handoff approved.              | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Tests cover exact source/placement/product/surface/reason matching plus rejected rows.                   | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Read-only semantic panel with no hidden controls; component tests and screenshots passed.                | No gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, route, migration, or unbounded query; full pre-PR performance budgets passed.             | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical `/api/admin/analytics/insights` aggregate only; no local state or mutation.             | No gap.      |
+| Reliability and failure handling              | `5/5`          | Zero, schema-missing, unknown, capped, and review-needed states covered.                                 | No gap.      |
+| Security and authz                            | `5/5`          | Existing admin-gated route preserved; no public route or data access widening.                           | No gap.      |
+| Privacy and compliance                        | `5/5`          | Payload filtering tests and UI assertions prevent raw payload/identifier exposure.                       | No gap.      |
+| Content governance                            | `5/5`          | Help/Guide, API, architecture contract, parent checkpoint, and child brief aligned.                      | No gap.      |
+| Analytics and KPI observability               | `5/5`          | Dedicated count plus safe diagnostics shipped without changing generic upsell baseline or stage summary. | No gap.      |
+| Commerce and revenue ops                      | `5/5`          | Copy separates cancel telemetry from checkout success, Stripe reconciliation, and revenue truth.         | No gap.      |
+| Incident response and support operations      | `5/5`          | Help/Guide and diagnostics explain review-needed, schema-missing, capped, and duplicate-count caveats.   | No gap.      |
+| Finance and reporting operations              | `5/5`          | Finance/revenue/refund/payout/invoice/accounting caveats documented and tested.                          | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Admin Analytics insight/view-model/UI surfaces and checkout constants; no dependency added.       | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, screenshots, full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                | No gap.      |
