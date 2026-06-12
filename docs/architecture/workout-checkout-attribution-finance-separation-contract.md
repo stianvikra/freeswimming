@@ -75,9 +75,11 @@ Checkout attribution:
 - Checkout start is not payment success, not entitlement, not revenue, and not finance truth.
 - Missing or failed checkout config should be treated as a checkout availability/support signal, not
   as user disinterest.
-- The saved-workout CTA may preserve mapped workout-context attribution through `/plans` only for
-  `source=workout_context`, `placementId=workout_saved_post_success`, and
-  `productId=guide_poolside` when the clicked checkout button targets the same catalog product.
+- Historical or externally linked saved-workout CTA paths may preserve mapped workout-context
+  attribution through `/plans` only for `source=workout_context`,
+  `placementId=workout_saved_post_success`, and `productId=guide_poolside` when the clicked
+  checkout button targets the same catalog product. The current workout save success surface no
+  longer renders that prompt.
   Other products, future shop routes, future placements, malformed values, or generic plans traffic
   must remain generic checkout attribution until a later child maps them explicitly.
 - Admin Analytics may show a dedicated workout-context checkout-start aggregate only for those
@@ -235,8 +237,9 @@ Support may say:
 
 - CTA/product telemetry shows product-interest signals only.
 - Checkout start means handoff/session creation, not payment success.
-- A mapped workout-context checkout start means the approved saved-workout CTA path reached checkout
-  handoff for `guide_poolside`; it is still not purchase, access, revenue, or finance proof.
+- A mapped workout-context checkout start means a historical or externally linked approved
+  saved-workout CTA path reached checkout handoff for `guide_poolside`; it is still not purchase,
+  access, revenue, or finance proof.
 - Stripe provider state and webhook fulfillment can lag or retry.
 - Entitlement state tells whether the app recognizes access.
 - Finance reporting comes from reconciliation/export evidence, not Admin Analytics counts.

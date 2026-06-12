@@ -93,17 +93,3 @@ export function buildWorkoutBuilderTemplateSelectedPayload(input: { templateKey:
     getActiveWorkoutTemplateByKey(input.templateKey)
   );
 }
-
-export function buildWorkoutContextCtaPayload(input: {
-  draft: Pick<SessionDraft, "environment">;
-  sourceKind: WorkoutSourceKind;
-}) {
-  return {
-    source: WORKOUT_CONTEXT_CTA_ANALYTICS_SOURCE,
-    surface: WORKOUT_CONTEXT_CTA_SURFACE,
-    placementId: WORKOUT_CONTEXT_CTA_PLACEMENT_ID,
-    productId: WORKOUT_CONTEXT_CTA_PRODUCT_ID,
-    sourceKind: input.sourceKind,
-    builderMode: getWorkoutBuilderMode(input.draft.environment),
-  };
-}

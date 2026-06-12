@@ -290,12 +290,12 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Read the saved-workout guide prompt as interest",
     detail:
-      "Shown means the Poolside guide prompt appeared after a workout was saved. Clicked means someone clicked that prompt. Needs review means some logged actions do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Shown and clicked are historical saved-workout Poolside guide prompt events. The current workout save success message no longer shows that prompt. Needs review means some logged actions do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
     title: "Use Poolside guide stage summary as a quick path view",
     detail:
-      "The stage summary lines up shown, clicked, checkout handoff, checkout cancelled, completed checkout, and access granted for the approved saved-workout guide path. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
+      "The stage summary lines up historical shown/clicked prompt activity with checkout handoff, checkout cancelled, completed checkout, and access granted for the approved saved-workout guide path. The current workout save success message no longer shows the prompt. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
   },
   {
     title: "Read saved-workout checkout handoffs as checkout start only",
@@ -574,12 +574,12 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Poolside guide stage summary",
         meaning:
-          "Shows shown, clicked, checkout handoff, checkout cancelled, completed checkout, and access granted together for the approved saved-workout guide path. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
+          "Shows historical shown/clicked prompt activity, checkout handoff, checkout cancelled, completed checkout, and access granted together for the approved saved-workout guide path. The current workout save success message no longer shows the prompt. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
       },
       {
         label: "Poolside guide prompt",
         meaning:
-          "Shows how often the Poolside guide prompt was shown and clicked after a workout was saved. Needs review stays out of the main numbers until reviewed, and none of these values mean purchase, access, revenue, or accounting evidence.",
+          "Shows historical shown/clicked events for the saved-workout Poolside guide prompt. The current workout save success message no longer shows that prompt. Needs review stays out of the main numbers until reviewed, and none of these values mean purchase, access, revenue, or accounting evidence.",
       },
       {
         label: "Poolside guide checkout",

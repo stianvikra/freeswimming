@@ -4,7 +4,6 @@ import {
   buildCheckoutAttributionAnalyticsPayload,
   buildCheckoutAttributionMetadata,
   buildWorkoutContextCheckoutCancelAttribution,
-  buildWorkoutContextPlansHref,
   buildMappedCheckoutAttribution,
   buildCheckoutSessionPayload,
   buildCheckoutStartedAnalyticsPayload,
@@ -239,17 +238,6 @@ describe("checkout attribution metadata", () => {
 });
 
 describe("workout-context plans checkout attribution bridge", () => {
-  it("builds the mapped plans href without private workout data", () => {
-    const href = buildWorkoutContextPlansHref();
-
-    expect(href).toBe(
-      "/plans?source=workout_context&placementId=workout_saved_post_success&productId=guide_poolside#plans-comparison-heading"
-    );
-    expect(href).not.toContain("workout-");
-    expect(href).not.toContain("session");
-    expect(href).not.toContain("email");
-  });
-
   it("maps checkout attribution only for the approved plans source placement and product", () => {
     expect(
       resolvePlansCheckoutAttributionForProduct({

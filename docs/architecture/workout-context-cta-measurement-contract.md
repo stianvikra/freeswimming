@@ -5,18 +5,20 @@ Last updated: 2026-06-12
 ## Purpose
 
 This contract defines how FreeSwimming may measure the first workout-context commercial CTA.
-It is intentionally a measurement contract only. No workout-context CTA is implemented by this
-document.
+It is intentionally a measurement contract for historical rows and any future owner-approved
+placement. The saved-workout save-success runtime prompt has been removed/deferred because the
+separate paid Poolside guide was not clear enough in that success-message context.
 
 The current product decision is conservative:
 
-- First eligible placement candidate: saved-workout post-success state.
+- First historical placement candidate: saved-workout post-success state.
 - Stable placement ID for that candidate: `workout_saved_post_success`.
-- Runtime V1 mapped product: `guide_poolside`.
+- Historical mapped product: `guide_poolside`.
 - Product identity source: `CatalogProductId` from `lib/commerce/catalog.ts`.
-- Event family: runtime V1 may use `upsell_presented` and `upsell_accepted` for the mapped
-  workout-context callsites with the semantics below. `upsell_declined` remains unmapped for
-  workout context until
+- Event family: historical runtime rows may use `upsell_presented` and `upsell_accepted` for the
+  mapped workout-context callsites with the semantics below. The current workout save success
+  surface no longer emits those prompt events. `upsell_declined` remains unmapped for workout
+  context until
   `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md` approves a
   concrete checkout-cancel, explicit dismiss, or equivalent bounded signal.
 - Dashboard truth: the dedicated workout-context CTA Admin Analytics module may count only the
@@ -25,8 +27,8 @@ The current product decision is conservative:
 
 ## Placement Decision
 
-The first runtime candidate is a non-blocking CTA after a successful canonical workout create or
-update.
+The first historical runtime candidate was a non-blocking CTA after a successful canonical workout
+create or update. It is now removed/deferred from the save success surface.
 
 Rules:
 
@@ -34,6 +36,8 @@ Rules:
 - The user must be in a stable post-success or review state.
 - Save confirmation, edit, recovery, export, and review actions must remain more prominent than the
   commercial action.
+- A future runtime prompt must explain that Poolside guide is a separate paid guide product, not a
+  Poolside Note export or part of the saved workout.
 - The CTA must not imply purchase is required to finish, recover, export, edit, or use the workout.
 - The placement ID is write-once after it appears in analytics, support diagnostics, docs, or tests.
 
@@ -74,8 +78,8 @@ Product identity must come from the catalog product ID. It must not come from:
 - entitlement row,
 - analytics payload copy.
 
-Runtime V1 selects `guide_poolside` for release. Future products require explicit mapping before
-presentation.
+Historical runtime mapping selected `guide_poolside`. Future products require explicit mapping
+before presentation.
 
 Fail-closed behavior:
 
@@ -94,8 +98,8 @@ baseline meanings.
 
 | Event              | Workout-context meaning                                                                                                                                    | Does not mean                                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `upsell_presented` | The mapped CTA was actually rendered in the mapped `placementId` for a mapped catalog product.                                                             | Checkout started, checkout completed, entitlement granted, revenue, or that the user saw every pixel.             |
-| `upsell_accepted`  | The user explicitly activated the mapped CTA.                                                                                                              | Checkout completion, payment success, entitlement, revenue, finance reconciliation, or unique-user conversion.    |
+| `upsell_presented` | The mapped historical CTA was actually rendered in the mapped `placementId` for a mapped catalog product.                                                  | Checkout started, checkout completed, entitlement granted, revenue, or that the user saw every pixel.             |
+| `upsell_accepted`  | The user explicitly activated the mapped historical CTA.                                                                                                   | Checkout completion, payment success, entitlement, revenue, finance reconciliation, or unique-user conversion.    |
 | `upsell_declined`  | Only the mapped checkout-cancel return, or a later mapped dismiss/skip signal, may count for workout context under the checkout-cancel / decline contract. | All ignored users, all non-buyers, generic checkout-cancel returns, failed checkout, refund, or finance evidence. |
 
 Duplicate client events count as repeated telemetry events unless a later child adds a deterministic
@@ -171,7 +175,7 @@ Server-canonical:
 
 Local/browser:
 
-- transient CTA visibility/click state only,
+- historical transient CTA visibility/click state only,
 - best-effort analytics emission that may duplicate on retry,
 - no analytics cookie, visitor ID, localStorage attribution, ad click ID, user-to-public bridge, or
   admin preference.

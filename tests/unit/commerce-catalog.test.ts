@@ -6,7 +6,6 @@ import {
   getCatalogProductsWithAvailability,
 } from "@/lib/commerce/catalog";
 import { buildCatalogOverridesFromRows } from "@/lib/commerce/catalog-overrides";
-import { isWorkoutContextCtaProductAvailable } from "@/lib/commerce/workout-context-cta";
 
 const ENV: NodeJS.ProcessEnv = {
   NODE_ENV: "test",
@@ -92,30 +91,5 @@ describe("commerce catalog", () => {
       available: false,
       missingEnvVar: null,
     });
-  });
-
-  it("fails the workout-context CTA closed when the mapped product is unavailable", () => {
-    expect(isWorkoutContextCtaProductAvailable(ENV)).toBe(true);
-    expect(
-      isWorkoutContextCtaProductAvailable({
-        NODE_ENV: "test",
-        STRIPE_PRICE_ID_0_1000M_GUIDE: "price_1000",
-        STRIPE_PRICE_ID_ANALYSIS: "price_analysis",
-      })
-    ).toBe(false);
-    expect(
-      isWorkoutContextCtaProductAvailable(
-        ENV,
-        buildCatalogOverridesFromRows([
-          {
-            id: "guide_poolside",
-            slug: "poolside-guide",
-            title: "Poolside guide",
-            kind: "course_addon",
-            active: false,
-          },
-        ])
-      )
-    ).toBe(false);
   });
 });
