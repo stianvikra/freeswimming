@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-12`
 - `updated`: `2026-06-12`
@@ -21,8 +21,8 @@
 - `last_audited`: `2026-06-12`
 - `base`: clean synced `main@be7f5c73` after PR `#1093` added workout completion/access Admin Analytics and repo-managed closeout PR `#1094` moved the child to done; post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Execute this bounded analytics child on branch `workout-context-checkout-outcome-support-diagnostics-v1`.
-- `reason`: Admin Analytics now has mapped completion/access counts, but the support-facing `Needs review` signal is still one aggregate count. The next safe slice is to split that count into bounded, privacy-safe diagnostic buckets and range-level access-gap signals without raw drilldown, finance, Stripe/provider, checkout, entitlement-rule, product, export, or vendor scope.
+- `decision`: Closed by PR `#1095` / squash commit `da21b5a7`.
+- `reason`: Admin Analytics now splits workout-context completion/access review-needed rows into bounded, privacy-safe support diagnostics and selected-range access-gap signals without raw drilldown, finance, Stripe/provider, checkout, entitlement-rule, product, export, or vendor scope.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, task brief lint rules, scorecard categories, Codex skill/stack readiness radar, `ANALYTICS_EVENT_NAMES`, `analytics_events` schema, `lib/commerce/checkout.ts`, `lib/analytics/admin-insights.ts`, `lib/analytics/admin-dashboard.ts`, `components/admin/AdminAnalyticsDashboard.tsx`, Admin Help/Guide copy, `docs/api-contracts.md`, checkout/entitlement/finance contracts, product catalog IDs, propagated attribution mapping, or screenshot handoff rules change.
 
 ## Goal
@@ -348,3 +348,34 @@ After screenshot approval:
 - `2026-06-12 | screenshot approval stop | quality-gate lint passed; after/reference screenshot artifacts were captured at output/workout-context-checkout-outcome-support-diagnostics-2026-06-12-082525 with desktop/mobile dashboard and Poolside guide access diagnostics plus checkout reference. Temporary local visual harness files were removed after capture, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-12 | screenshots approved | owner approved screenshot artifacts at output/workout-context-checkout-outcome-support-diagnostics-2026-06-12-082525; no scoped product-rendering source changed after final capture | next: run verify:pre-pr, commit, push, open PR, monitor CI, then run verify:pre-merge`
 - `2026-06-12 | pre-pr passed | after owner-approved screenshots, npm run verify:pre-pr passed the full lane with branch-current, lint, quality gates, typecheck, 241 unit files / 1539 tests, build, performance budgets, and Playwright 106 passed / 536 skipped. No scoped product-rendering source changed after final screenshot capture | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1095`
+- `squash_commit`: `da21b5a7`
+- `result`: Closed Workout Context Checkout Outcome Support Diagnostics V1. Admin Analytics now gives support-safe reasons for workout-context completion/access rows that need review, while keeping checkout, Stripe, entitlement-rule, finance, export, raw drilldown, vendor analytics, product/pricing, and builder/generator scope out.
+- `validation`: `npm run verify:pre-pr` PASS full lane (`artifacts/test-runs/20260612-085020`, 241 unit files / 1539 tests, Playwright 106 passed / 536 skipped); PR `#1095` CI PASS (`verify`, `e2e-smoke`, `site-lock-smoke`, `deploy-preview`, `size-check`, CodeQL, Vercel); `npm run verify:pre-merge` PASS (`artifacts/verify-pre-merge/20260612-070536.json`).
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- `screenshot_artifacts`: `output/workout-context-checkout-outcome-support-diagnostics-2026-06-12-082525`; no product-rendering source changed after final capture.
+
+| Category                                      | Achieved Score | Evidence                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1095` + Admin Analytics review-signal tests                      | None         |
+| UX flow clarity                               | `5/5`          | dashboard copy tests + approved screenshot handoff                    | None         |
+| Visual design quality                         | `5/5`          | after/reference desktop/mobile screenshot artifacts                   | None         |
+| Business logic correctness and data integrity | `5/5`          | `admin-insights` mapped/unmapped fixture coverage                     | None         |
+| Accessibility (a11y)                          | `5/5`          | component role/text assertions + screenshot review                    | None         |
+| Accessibility                                 | `5/5`          | same evidence as `Accessibility (a11y)`                               | None         |
+| Performance (CWV + payloads)                  | `5/5`          | no dependency added + pre-PR full lane PASS                           | None         |
+| Data placement and sync boundaries            | `5/5`          | server-canonical aggregate contract + tests                           | None         |
+| Reliability and failure handling              | `5/5`          | empty/schema-missing/stale/capped/read caveat coverage                | None         |
+| Security and authz                            | `5/5`          | existing admin route gate preserved + changed-files review            | None         |
+| Privacy and compliance                        | `5/5`          | bounded counts/labels only; no raw payload/provider/user/payment data | None         |
+| Content governance                            | `5/5`          | Help/Guide, API, architecture, matrix, parent updates                 | None         |
+| Analytics and KPI observability               | `5/5`          | review buckets + access-gap view-model/component tests                | None         |
+| Commerce and revenue ops                      | `5/5`          | finance/Stripe caveats in Help/Guide and contracts                    | None         |
+| Incident response and support operations      | `5/5`          | support diagnostics copy + route/label/support sweep                  | None         |
+| Finance and reporting operations              | `5/5`          | no finance/export files changed; explicit non-finance caveats         | None         |
+| Stack-fit and dependency discipline           | `5/5`          | reused Admin Analytics stack; no new dependency                       | None         |
+| Testing and QA automation                     | `5/5`          | targeted Vitest, screenshot approval, pre-PR, CI, pre-merge           | None         |
