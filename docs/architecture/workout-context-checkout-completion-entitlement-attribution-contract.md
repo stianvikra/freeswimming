@@ -171,6 +171,10 @@ Required caveats:
 
 - Completion means provider-backed Checkout Session completion for a mapped product and placement.
 - Entitlement grant means the app recognized access after fulfillment.
+- Review-needed diagnostics may separate only bounded safe buckets such as source not mapped,
+  placement not mapped, product not mapped, incomplete attribution, and other review-needed.
+- Completion without access and access without completion are selected-range support diagnostics,
+  not user/session joins, provider failure proof, entitlement failure proof, or finance evidence.
 - Neither value is unique-user conversion, revenue, refund, payout, invoice, accounting, or finance
   truth.
 - Completion without entitlement is a support state, not a finance state.
@@ -214,6 +218,7 @@ Admin Analytics may display:
 - bounded counts,
 - safe source/placement/product labels,
 - safe unknown/unmapped diagnostic counts,
+- selected-range completion/access gap counts,
 - stale/capped/read-failure trust states.
 
 Admin Analytics must not display:

@@ -300,7 +300,7 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Read saved-workout access as product support signal",
     detail:
-      "Completed checkout means Stripe reported a supported completion event for the approved saved-workout guide path. Access granted means the app recognized access after fulfillment. Needs review stays out of the main numbers until reviewed. These numbers are not revenue, Stripe reconciliation, accounting records, refunds, payouts, invoices, or unique people.",
+      "Completed checkout means Stripe reported a supported completion event for the approved saved-workout guide path. Access granted means the app recognized access after fulfillment. Needs review stays out of the main numbers and may show safe reasons like source not mapped, placement not mapped, product not mapped, missing attribution, access pending, or access before checkout. Treat those as aggregate support diagnostics only, not provider failure, entitlement failure, revenue, Stripe reconciliation, accounting records, refunds, payouts, invoices, or unique people.",
   },
   {
     title: "Read manual vs generated workouts side by side",
@@ -574,7 +574,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Poolside guide access",
         meaning:
-          "Shows completed checkout and app-recognized access for the approved saved-workout guide path. Needs review stays out of the main numbers until reviewed, and these values do not mean revenue, Stripe reconciliation, accounting evidence, refunds, payouts, invoices, or unique people.",
+          "Shows completed checkout and app-recognized access for the approved saved-workout guide path. Needs review can show safe aggregate reasons such as product not mapped or access pending, and these values do not mean provider failure, entitlement failure, revenue, Stripe reconciliation, accounting evidence, refunds, payouts, invoices, or unique people.",
       },
       {
         label: "Generated sessions / Template starts",

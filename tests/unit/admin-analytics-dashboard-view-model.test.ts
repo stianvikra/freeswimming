@@ -103,6 +103,15 @@ const basePayload: AnalyticsDashboardPayload = {
     entitlementGranted: 1,
     entitlementGrantRate: 1,
     unknownEvents: 1,
+    completionWithoutAccess: 0,
+    accessWithoutCompletion: 0,
+    reviewDiagnostics: [
+      { key: "source_not_mapped", count: 0 },
+      { key: "placement_not_mapped", count: 0 },
+      { key: "product_not_mapped", count: 1 },
+      { key: "incomplete_attribution", count: 0 },
+      { key: "other_review_needed", count: 0 },
+    ],
   },
   workoutBuilderFunnel: {
     started: 5,
@@ -296,8 +305,16 @@ describe("admin analytics dashboard view model", () => {
     expect(viewModel.workoutContextCheckoutOutcome.detail).toContain(
       "completed checkout and got app access"
     );
+    expect(viewModel.workoutContextCheckoutOutcome.reviewItems).toEqual([
+      {
+        key: "product_not_mapped",
+        label: "Product not mapped",
+        secondary: "The product is outside the approved Poolside guide mapping.",
+        count: "1",
+      },
+    ]);
     expect(viewModel.workoutContextCheckoutOutcome.caveat).toContain(
-      "do not match the approved saved-workout guide path"
+      "aggregate support diagnostics only"
     );
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
       {
@@ -914,8 +931,15 @@ describe("admin analytics dashboard view model", () => {
       value: "150%",
       detail: "Access / completed",
     });
+    expect(duplicateTelemetry.workoutContextCheckoutOutcome.reviewItems).toContainEqual({
+      key: "access-without-completion",
+      label: "Access before checkout",
+      secondary:
+        "Access is ahead of completed checkout in this range; usually a range, retry, or mapping review signal.",
+      count: "1",
+    });
     expect(duplicateTelemetry.workoutContextCheckoutOutcome.caveat).toContain(
-      "product/support signals"
+      "aggregate support diagnostics"
     );
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
       "create more than one tracked action"

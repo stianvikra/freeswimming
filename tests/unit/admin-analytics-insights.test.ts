@@ -626,6 +626,18 @@ describe("admin analytics insights", () => {
         },
         {
           ...baseRow,
+          event_name: "checkout_completed",
+          channel: "server",
+          source: "future_source",
+          product_id: "guide_poolside",
+          payload: {
+            source: "future_source",
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+          },
+        },
+        {
+          ...baseRow,
           event_name: "entitlement_granted",
           channel: "server",
           source: "workout_context",
@@ -649,14 +661,25 @@ describe("admin analytics insights", () => {
             productId: "guide_poolside",
           },
         },
+        {
+          ...baseRow,
+          event_name: "entitlement_granted",
+          channel: "server",
+          source: "workout_context",
+          product_id: null,
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+          },
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
     });
 
     expect(insights.funnel.checkoutStarted).toBe(4);
-    expect(insights.funnel.checkoutCompleted).toBe(3);
-    expect(insights.funnel.entitlementGranted).toBe(2);
+    expect(insights.funnel.checkoutCompleted).toBe(4);
+    expect(insights.funnel.entitlementGranted).toBe(3);
     expect(insights.workoutContextCheckoutStarted).toEqual({
       placementId: "workout_saved_post_success",
       productId: "guide_poolside",
@@ -671,7 +694,16 @@ describe("admin analytics insights", () => {
       completed: 1,
       entitlementGranted: 1,
       entitlementGrantRate: 1,
-      unknownEvents: 2,
+      unknownEvents: 4,
+      completionWithoutAccess: 0,
+      accessWithoutCompletion: 0,
+      reviewDiagnostics: [
+        { key: "source_not_mapped", count: 1 },
+        { key: "placement_not_mapped", count: 1 },
+        { key: "product_not_mapped", count: 1 },
+        { key: "incomplete_attribution", count: 1 },
+        { key: "other_review_needed", count: 0 },
+      ],
     });
     expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain("future_product");
     expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain(
@@ -682,6 +714,7 @@ describe("admin analytics insights", () => {
       "user@example.com"
     );
     expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain("future_product");
+    expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain("future_source");
     expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain(
       "future_placement"
     );

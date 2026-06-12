@@ -57,6 +57,22 @@ export type ExistingUpsellSourceCount = {
   declineRate: number | null;
 };
 
+export const WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_KEYS = [
+  "source_not_mapped",
+  "placement_not_mapped",
+  "product_not_mapped",
+  "incomplete_attribution",
+  "other_review_needed",
+] as const;
+
+export type WorkoutContextCheckoutOutcomeDiagnosticKey =
+  (typeof WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_KEYS)[number];
+
+export type WorkoutContextCheckoutOutcomeDiagnosticCount = {
+  key: WorkoutContextCheckoutOutcomeDiagnosticKey;
+  count: number;
+};
+
 export type AnalyticsInsightsResponse = {
   ok: true;
   schemaReady: true;
@@ -119,6 +135,9 @@ export type AnalyticsInsightsResponse = {
     entitlementGranted: number;
     entitlementGrantRate: number | null;
     unknownEvents: number;
+    completionWithoutAccess?: number;
+    accessWithoutCompletion?: number;
+    reviewDiagnostics?: WorkoutContextCheckoutOutcomeDiagnosticCount[];
   };
   workoutBuilderFunnel: {
     started: number;
@@ -191,7 +210,7 @@ export function parseAnalyticsInsightsRangeDays(value: string | null | undefined
   return Math.min(parsed, ANALYTICS_INSIGHTS_MAX_RANGE_DAYS);
 }
 
-function increment(map: Map<string, number>, key: string | null | undefined) {
+function increment<Key extends string>(map: Map<Key, number>, key: Key | null | undefined) {
   if (!key) return;
   map.set(key, (map.get(key) ?? 0) + 1);
 }
@@ -284,6 +303,24 @@ function isMappedWorkoutContextCheckoutAttributionRow(row: AnalyticsEventInsight
     placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId &&
     productId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId
   );
+}
+
+function getWorkoutContextCheckoutOutcomeDiagnosticKey(
+  row: AnalyticsEventInsightRow
+): WorkoutContextCheckoutOutcomeDiagnosticKey {
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const placementId = getSafePayloadDimension(row.payload, "placementId");
+  const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
+
+  if (!source || !placementId || !productId) return "incomplete_attribution";
+  if (source !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source) return "source_not_mapped";
+  if (placementId !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId) {
+    return "placement_not_mapped";
+  }
+  if (productId !== WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId) {
+    return "product_not_mapped";
+  }
+  return "other_review_needed";
 }
 
 function isWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
@@ -403,6 +440,10 @@ export function buildAnalyticsInsights(input: {
   let workoutContextCheckoutOutcomeUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
+  const workoutContextCheckoutOutcomeDiagnostics = new Map<
+    WorkoutContextCheckoutOutcomeDiagnosticKey,
+    number
+  >();
 
   for (const row of input.rows) {
     if (row.event_name === CHECKOUT_STARTED_EVENT) {
@@ -425,6 +466,10 @@ export function buildAnalyticsInsights(input: {
         }
       } else if (isWorkoutContextCheckoutAttributionRow(row)) {
         workoutContextCheckoutOutcomeUnknownEvents += 1;
+        increment(
+          workoutContextCheckoutOutcomeDiagnostics,
+          getWorkoutContextCheckoutOutcomeDiagnosticKey(row)
+        );
       }
     }
 
@@ -584,6 +629,18 @@ export function buildAnalyticsInsights(input: {
         workoutContextCheckoutCompleted
       ),
       unknownEvents: workoutContextCheckoutOutcomeUnknownEvents,
+      completionWithoutAccess: Math.max(
+        workoutContextCheckoutCompleted - workoutContextEntitlementGranted,
+        0
+      ),
+      accessWithoutCompletion: Math.max(
+        workoutContextEntitlementGranted - workoutContextCheckoutCompleted,
+        0
+      ),
+      reviewDiagnostics: WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_KEYS.map((key) => ({
+        key,
+        count: workoutContextCheckoutOutcomeDiagnostics.get(key) ?? 0,
+      })),
     },
     workoutBuilderFunnel: {
       started: workoutBuilderStarted,

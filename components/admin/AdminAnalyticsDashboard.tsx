@@ -365,6 +365,36 @@ function WorkoutContextCheckoutOutcomePanel({
         ))}
       </dl>
 
+      {outcome.reviewItems.length === 0 ? (
+        <p className={cx("mt-4", mutedTextClass)}>{outcome.emptyReviewLabel}</p>
+      ) : (
+        <div className="mt-4">
+          <p className={metadataLabelClass}>Review signals</p>
+          <ul className="mt-2 grid gap-2">
+            {outcome.reviewItems.map((item) => (
+              <li
+                key={item.key}
+                className="flex min-w-0 items-start justify-between gap-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium break-words text-[color:var(--fs-color-ink-strong)]">
+                    {item.label}
+                  </p>
+                  {item.secondary ? (
+                    <p className="mt-0.5 text-xs break-words text-[color:var(--fs-color-muted)]">
+                      {item.secondary}
+                    </p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 text-right text-sm font-semibold text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                  {item.count}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <p className={cx("mt-4", mutedTextClass)}>{outcome.caveat}</p>
     </section>
   );
