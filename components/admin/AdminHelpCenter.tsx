@@ -63,9 +63,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, saved-workout guide prompt interest, saved-workout checkout handoffs, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, saved-workout guide prompt interest, saved-workout checkout handoffs, saved-workout completion/access signals, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
     commonRisk:
-      "Treating dashboard counts as purchases, accounting records, checkout completion, or unique people instead of product activity signals.",
+      "Treating dashboard counts as purchases, accounting records, revenue, Stripe reconciliation, or unique people instead of product activity signals.",
   },
   {
     name: "Email templates",
@@ -296,6 +296,11 @@ const ANALYTICS_WORKFLOW = [
     title: "Read saved-workout checkout handoffs as checkout start only",
     detail:
       "Checkout handoffs mean the approved saved-workout guide path reached checkout start. Needs review means some checkout-start actions do not match that approved path yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
+  },
+  {
+    title: "Read saved-workout access as product support signal",
+    detail:
+      "Completed checkout means Stripe reported a supported completion event for the approved saved-workout guide path. Access granted means the app recognized access after fulfillment. Needs review stays out of the main numbers until reviewed. These numbers are not revenue, Stripe reconciliation, accounting records, refunds, payouts, invoices, or unique people.",
   },
   {
     title: "Read manual vs generated workouts side by side",
@@ -565,6 +570,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Poolside guide checkout",
         meaning:
           "Shows checkout handoffs from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean purchase, access, revenue, accounting evidence, or unique people.",
+      },
+      {
+        label: "Poolside guide access",
+        meaning:
+          "Shows completed checkout and app-recognized access for the approved saved-workout guide path. Needs review stays out of the main numbers until reviewed, and these values do not mean revenue, Stripe reconciliation, accounting evidence, refunds, payouts, invoices, or unique people.",
       },
       {
         label: "Generated sessions / Template starts",
@@ -1020,7 +1030,7 @@ export default function AdminHelpCenter() {
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>
                 Inspect privacy-safe analytics health, read-only funnel signals, and existing
-                upsell, saved-workout guide prompt, and checkout handoff caveats.
+                upsell, saved-workout guide prompt, checkout handoff, and access caveats.
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>

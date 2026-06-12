@@ -326,6 +326,50 @@ function WorkoutContextCheckoutStartedPanel({
   );
 }
 
+function WorkoutContextCheckoutOutcomePanel({
+  outcome,
+}: {
+  outcome: AnalyticsDashboardViewModel["workoutContextCheckoutOutcome"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-context-checkout-outcome-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-context-checkout-outcome"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Commerce</p>
+          <h3
+            id="admin-analytics-workout-context-checkout-outcome-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Poolside guide access
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{outcome.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {outcome.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className={cx("mt-4", mutedTextClass)}>{outcome.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutBuilderSourceBreakdownPanel({
   breakdown,
 }: {
@@ -711,6 +755,7 @@ export default function AdminAnalyticsDashboard() {
           <WorkoutContextCheckoutStartedPanel
             checkoutStarted={viewModel.workoutContextCheckoutStarted}
           />
+          <WorkoutContextCheckoutOutcomePanel outcome={viewModel.workoutContextCheckoutOutcome} />
           <WorkoutBuilderFunnelPanel funnel={viewModel.workoutBuilderFunnel} />
           <WorkoutBuilderSourceBreakdownPanel breakdown={viewModel.workoutBuilderSourceBreakdown} />
           <WorkoutBuilderTemplateGeneratedCompletionPanel

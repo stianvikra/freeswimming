@@ -9,9 +9,10 @@ checkout completion and entitlement grant interpretation.
 
 The current runtime implementation carries only the approved server-owned attribution fields from
 checkout-start into Stripe Checkout Session metadata, webhook-backed `checkout_completed`, and
-app-recognized `entitlement_granted` product telemetry. It still does not add Admin Analytics
-completion/entitlement modules, finance scripts, exports, raw drilldown, migrations, RLS, pricing,
-product catalog rows, direct checkout, or UI.
+app-recognized `entitlement_granted` product telemetry. Admin Analytics may now expose a read-only
+dedicated workout-context completion/access aggregate only for rows that carry the same approved
+source, placement, and product values. It still does not add finance scripts, exports, raw
+drilldown, migrations, RLS, pricing, product catalog rows, direct checkout, or provider UI.
 
 ## Official Provider Baseline
 
@@ -94,9 +95,10 @@ Workout-context checkout completion and entitlement attribution propagation is i
 backend telemetry/support foundation.
 
 The existing generic `checkout_completed` and `entitlement_granted` events may carry approved
-workout-context attribution fields, but they must not be counted as dedicated workout-context
-completion or entitlement outcomes unless a later dashboard child explicitly maps those rows and
-tests the privacy/support boundaries end to end.
+workout-context attribution fields. They may be counted as dedicated workout-context completion or
+entitlement outcomes only by the read-only Admin Analytics mapping that explicitly checks the
+approved source, placement, and product values and preserves the privacy/support boundaries end to
+end.
 
 Allowed today:
 
@@ -113,8 +115,8 @@ Forbidden today:
   rows.
 - Joining mapped workout-context CTA clicks or checkout starts to unmapped/generic
   `entitlement_granted` rows.
-- Showing dedicated workout-context completion or entitlement modules before a later dashboard child
-  maps and tests the new propagated fields.
+- Showing dedicated workout-context completion or entitlement modules for rows that do not match the
+  approved source, placement, and product mapping.
 - Inferring purchase, access, revenue, refund, payout, invoice, accounting, or finance truth from
   `upsell_*` or `checkout_started` rows.
 - Claiming unique-user conversion from aggregate event counts.
@@ -152,9 +154,11 @@ Forbidden propagation values:
 - checkout URLs, portal URLs, payment method details, cart details, support free text, finance export
   rows.
 
-## Future KPI Contract
+## Admin Analytics KPI Contract
 
-Dedicated workout-context completion or entitlement KPI modules require a later child.
+Dedicated workout-context completion or entitlement KPI modules require explicit mapping. The
+current read-only Admin Analytics module may use the aggregate shape below for the approved
+saved-workout guide path only.
 
 Minimum future aggregate shape:
 

@@ -83,6 +83,7 @@ describe("admin analytics insights", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it("bounds requested ranges", () => {
@@ -535,7 +536,7 @@ describe("admin analytics insights", () => {
     });
   });
 
-  it("maps workout-context checkout-started handoffs without exposing raw payload", () => {
+  it("maps workout-context checkout and access stages without exposing raw payload", () => {
     const insights = buildAnalyticsInsights({
       rows: [
         {
@@ -602,6 +603,29 @@ describe("admin analytics insights", () => {
         },
         {
           ...baseRow,
+          event_name: "checkout_completed",
+          channel: "server",
+          source: "workout_context",
+          product_id: "future_product",
+          payload: {
+            source: "workout_context",
+            placementId: "workout_saved_post_success",
+            productId: "future_product",
+          },
+        },
+        {
+          ...baseRow,
+          event_name: "checkout_completed",
+          channel: "server",
+          source: "plans",
+          product_id: "guide_poolside",
+          payload: {
+            source: "plans",
+            productId: "guide_poolside",
+          },
+        },
+        {
+          ...baseRow,
           event_name: "entitlement_granted",
           channel: "server",
           source: "workout_context",
@@ -613,19 +637,40 @@ describe("admin analytics insights", () => {
             grantedLatencyMs: 1200,
           },
         },
+        {
+          ...baseRow,
+          event_name: "entitlement_granted",
+          channel: "server",
+          source: "workout_context",
+          product_id: "guide_poolside",
+          payload: {
+            source: "workout_context",
+            placementId: "future_placement",
+            productId: "guide_poolside",
+          },
+        },
       ],
       generatedAt: new Date("2026-06-09T11:00:00.000Z"),
       rangeDays: 30,
     });
 
     expect(insights.funnel.checkoutStarted).toBe(4);
-    expect(insights.funnel.checkoutCompleted).toBe(1);
-    expect(insights.funnel.entitlementGranted).toBe(1);
+    expect(insights.funnel.checkoutCompleted).toBe(3);
+    expect(insights.funnel.entitlementGranted).toBe(2);
     expect(insights.workoutContextCheckoutStarted).toEqual({
       placementId: "workout_saved_post_success",
       productId: "guide_poolside",
       source: "workout_context",
       started: 1,
+      unknownEvents: 2,
+    });
+    expect(insights.workoutContextCheckoutOutcome).toEqual({
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      source: "workout_context",
+      completed: 1,
+      entitlementGranted: 1,
+      entitlementGrantRate: 1,
       unknownEvents: 2,
     });
     expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain("future_product");
@@ -634,6 +679,14 @@ describe("admin analytics insights", () => {
     );
     expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain("cs_test_secret");
     expect(JSON.stringify(insights.workoutContextCheckoutStarted)).not.toContain(
+      "user@example.com"
+    );
+    expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain("future_product");
+    expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain(
+      "future_placement"
+    );
+    expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain("cs_test_secret");
+    expect(JSON.stringify(insights.workoutContextCheckoutOutcome)).not.toContain(
       "user@example.com"
     );
   });
@@ -815,6 +868,9 @@ describe("admin analytics insights", () => {
   });
 
   it("queries bounded rows for viewer+ admins", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-09T11:00:00.000Z"));
+
     const { from, eventsChain, rollupsChain } = buildSupabaseQueries({
       eventsResult: {
         data: [baseRow],
