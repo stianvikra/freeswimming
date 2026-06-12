@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-12-workout-context-stage-summary-decline-denominator-rate-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-12`
 - `updated`: `2026-06-12`
@@ -373,3 +373,33 @@ Return path:
 - `2026-06-12 | screenshot stop | captured after/reference screenshot artifacts at output/workout-context-stage-summary-decline-rate-2026-06-12-202712 for desktop stage summary, mobile stage summary, Admin Help/Guide analytics copy, and checkout-cancel reference panel. Temporary /visual-admin-analytics route was removed after capture, dev server was stopped, no scoped product-rendering source changed after final capture, and owner visual approval is pending before verify:pre-pr | next: wait for owner screenshot approval or visual corrections`
 - `2026-06-12 | screenshots approved | owner approved screenshot artifacts at output/workout-context-stage-summary-decline-rate-2026-06-12-202712, and no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
 - `2026-06-12 | pre-pr passed | active child passed npm run verify:pre-pr full lane after owner-approved screenshots, including branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright E2E. No scoped product-rendering source changed after final capture, and no runtime/checkout/Stripe/entitlement-rule/finance/export/vendor/product/builder scope was added | next: commit, push, open PR, monitor CI, and run child verify:pre-merge`
+- `2026-06-12 | merged | PR #1105 merged at squash commit c75aae55 after owner-approved screenshots, green local pre-pr, green PR CI, and verify:pre-merge. This closeout moves the child to done; no runtime/checkout/Stripe/entitlement-rule/finance/export/vendor/product/builder scope was added | next: finish repo-managed docs-only closeout PR and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1105`
+- `squash_commit`: `c75aae55`
+- `result`: Closed Workout Context Stage Summary Decline Denominator Rate V1; Admin Analytics now includes the mapped checkout-cancel stage and `cancelled / shown` cancel rate in the Poolside guide stage summary while keeping finance, Stripe, unique-user, and revenue caveats explicit.
+- `validation`: Targeted Vitest for Admin Analytics view-model/component/help copy passed; `npm run lint`, `npm run typecheck`, `npm run lint:briefs:all`, `npm run lint:quality-gates`, and `git diff --check` passed before screenshot handoff; owner approved after/reference screenshots at `output/workout-context-stage-summary-decline-rate-2026-06-12-202712`; final `npm run verify:pre-pr` full lane passed on commit `22599e73`; PR #1105 CI passed (`verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, Vercel, size-check); `npm run verify:pre-merge` passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5` and no release-blocking gaps remain for this child.
+
+| Category                                      | Achieved Score | Evidence                                                                                                       | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Stage summary includes mapped checkout-cancel count and rate; PR #1105 merged after green gates.               | None         |
+| UX flow clarity                               | `5/5`          | Labels, caveats, Help/Guide copy, tests, and screenshots explain `Checkout cancelled` and `Cancelled / shown`. | None         |
+| Visual design quality                         | `5/5`          | Reused existing Admin Analytics stage-summary layout; owner approved desktop/mobile screenshot handoff.        | None         |
+| Business logic correctness and data integrity | `5/5`          | View-model tests cover mapped, zero-denominator, duplicate-count, and schema-missing states.                   | None         |
+| Accessibility (a11y)                          | `5/5`          | Read-only text/section semantics preserved; component tests and screenshots passed.                            | None         |
+| Performance (CWV + payloads)                  | `5/5`          | No dependency, route, migration, or unbounded query added; performance budgets passed in full pre-pr lane.     | None         |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical Admin Analytics aggregate remains the only source; no local/admin mutation added.             | None         |
+| Reliability and failure handling              | `5/5`          | Empty/zero/schema-missing states produce deterministic `Not counted` and caveat output.                        | None         |
+| Security and authz                            | `5/5`          | Existing admin-only insight route remained unchanged; no public route or auth widening added.                  | None         |
+| Privacy and compliance                        | `5/5`          | Dashboard renders only bounded counts/labels; no raw payload, IDs, payment data, or PII exposed.               | None         |
+| Content governance                            | `5/5`          | API, architecture, Help/Guide, parent, and child brief copy align on denominator and non-finance limits.       | None         |
+| Analytics and KPI observability               | `5/5`          | Mapped cancel count and `cancelled / shown` rate are visible with detailed cancel panel still separate.        | None         |
+| Commerce and revenue ops                      | `5/5`          | Copy separates checkout-cancel telemetry from purchase, revenue, Stripe, accounting, and finance truth.        | None         |
+| Incident response and support operations      | `5/5`          | Help/Guide and caveats explain denominator, duplicates, zero state, stale/capped/schema-missing reads.         | None         |
+| Finance and reporting operations              | `5/5`          | Finance caveats explicitly block revenue/refund/payout/invoice/accounting interpretation.                      | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Admin Analytics helpers/components/tests; no dependency added.                                 | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, brief lint, quality gates, full pre-pr, PR CI, and pre-merge gate all passed.                  | None         |
