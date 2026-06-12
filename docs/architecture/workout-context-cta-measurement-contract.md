@@ -92,11 +92,11 @@ Fail-closed behavior:
 Workout-context use of `upsell_*` events must not change the existing `/plans` and My Library
 baseline meanings.
 
-| Event              | Workout-context meaning                                                                                                                                  | Does not mean                                                                                                     |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `upsell_presented` | The mapped CTA was actually rendered in the mapped `placementId` for a mapped catalog product.                                                           | Checkout started, checkout completed, entitlement granted, revenue, or that the user saw every pixel.             |
-| `upsell_accepted`  | The user explicitly activated the mapped CTA.                                                                                                            | Checkout completion, payment success, entitlement, revenue, finance reconciliation, or unique-user conversion.    |
-| `upsell_declined`  | Only a later runtime child may define a mapped dismiss, skip, cancel, or return signal for workout context under the checkout-cancel / decline contract. | All ignored users, all non-buyers, generic checkout-cancel returns, failed checkout, refund, or finance evidence. |
+| Event              | Workout-context meaning                                                                                                                                    | Does not mean                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `upsell_presented` | The mapped CTA was actually rendered in the mapped `placementId` for a mapped catalog product.                                                             | Checkout started, checkout completed, entitlement granted, revenue, or that the user saw every pixel.             |
+| `upsell_accepted`  | The user explicitly activated the mapped CTA.                                                                                                              | Checkout completion, payment success, entitlement, revenue, finance reconciliation, or unique-user conversion.    |
+| `upsell_declined`  | Only the mapped checkout-cancel return, or a later mapped dismiss/skip signal, may count for workout context under the checkout-cancel / decline contract. | All ignored users, all non-buyers, generic checkout-cancel returns, failed checkout, refund, or finance evidence. |
 
 Duplicate client events count as repeated telemetry events unless a later child adds a deterministic
 dedupe contract. Dashboard copy must not call them unique users.
@@ -104,9 +104,9 @@ dedupe contract. Dashboard copy must not call them unique users.
 Zero denominator behavior:
 
 - accepted rate is `accepted / presented` when `presented > 0`; otherwise `null` or "not enough data",
-- declined rate is `declined / presented` only after the checkout-cancel / decline contract and a
-  runtime child define a mapped workout-context decline meaning; otherwise it must remain not
-  instrumented,
+- declined rate is `declined / presented` only after a dashboard child maps the approved decline
+  signal, denominator, zero behavior, copy, Help/Guide impact, and tests; otherwise it must remain
+  not instrumented,
 - checkout and entitlement rates must not be derived from workout-context `upsell_*` rows.
 
 ## Allowed Payload Dimensions

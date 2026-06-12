@@ -4,6 +4,10 @@ import { useId, useState } from "react";
 import CommerceActionFeedback from "@/components/commerce/CommerceActionFeedback";
 import { cx } from "@/components/ui/cx";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import {
+  buildWorkoutContextCheckoutCancelAttribution,
+  CHECKOUT_CANCEL_REASON,
+} from "@/lib/commerce/checkout";
 import type {
   CheckoutAttributionPlacementId,
   CheckoutAttributionSource,
@@ -45,9 +49,23 @@ export default function CheckoutButton({
 
   function buildCancelPathWithTracking(basePath: string) {
     const url = new URL(basePath, "https://freeswimming.org");
+    const workoutContextCancelAttribution = buildWorkoutContextCheckoutCancelAttribution({
+      productId,
+      source: checkoutAttributionSource,
+      placementId: checkoutAttributionPlacementId,
+    });
+
     url.searchParams.set("checkout", "cancelled");
     url.searchParams.set("product", productId);
-    url.searchParams.set("source", analyticsSource);
+    if (workoutContextCancelAttribution) {
+      url.searchParams.set("source", workoutContextCancelAttribution.source);
+      url.searchParams.set("placementId", workoutContextCancelAttribution.placementId);
+      url.searchParams.set("productId", workoutContextCancelAttribution.productId);
+      url.searchParams.set("surface", workoutContextCancelAttribution.surface);
+      url.searchParams.set("reason", CHECKOUT_CANCEL_REASON);
+    } else {
+      url.searchParams.set("source", analyticsSource);
+    }
     return `${url.pathname}${url.search}`;
   }
 

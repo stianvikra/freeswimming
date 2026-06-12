@@ -19,6 +19,9 @@ export const CHECKOUT_ATTRIBUTION_METADATA_KEYS = {
   productId: "fs_attribution_product_id",
 } as const;
 
+export const CHECKOUT_CANCEL_REASON = "checkout_cancelled" as const;
+export const WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE = "plans_checkout_return" as const;
+
 export const WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION = {
   source: "workout_context",
   placementId: "workout_saved_post_success",
@@ -49,6 +52,11 @@ export type CheckoutStartedAnalyticsPayload = {
 };
 
 export type MappedCheckoutAttribution = typeof WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION;
+
+export type WorkoutContextCheckoutCancelAttribution = MappedCheckoutAttribution & {
+  surface: typeof WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE;
+  reason: typeof CHECKOUT_CANCEL_REASON;
+};
 
 export type CheckoutAttributionAnalyticsPayload = {
   productId: CatalogProductId;
@@ -149,6 +157,46 @@ export function buildMappedCheckoutAttribution(input: {
   }
 
   return null;
+}
+
+export function buildWorkoutContextCheckoutCancelAttribution(input: {
+  productId: unknown;
+  source?: unknown;
+  placementId?: unknown;
+}): WorkoutContextCheckoutCancelAttribution | null {
+  const productId = normalizeCatalogProductId(input.productId);
+  if (!productId) return null;
+
+  const attribution = buildMappedCheckoutAttribution({
+    productId,
+    source: input.source,
+    placementId: input.placementId,
+  });
+
+  if (!attribution) return null;
+
+  return {
+    ...attribution,
+    surface: WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE,
+    reason: CHECKOUT_CANCEL_REASON,
+  };
+}
+
+export function parseWorkoutContextCheckoutCancelAttribution(input: {
+  productId: unknown;
+  source?: unknown;
+  placementId?: unknown;
+  surface?: unknown;
+  reason?: unknown;
+}): WorkoutContextCheckoutCancelAttribution | null {
+  if (input.surface !== WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE) return null;
+  if (input.reason !== CHECKOUT_CANCEL_REASON) return null;
+
+  return buildWorkoutContextCheckoutCancelAttribution({
+    productId: input.productId,
+    source: input.source,
+    placementId: input.placementId,
+  });
 }
 
 export function buildCheckoutAttributionMetadata(
