@@ -2161,7 +2161,7 @@ describe("HabitPerfectDayHub", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     const updatedCard = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
-    const success = within(updatedCard).getByTestId(
+    const success = await within(updatedCard).findByTestId(
       "habit-action-success-88888888-8888-4888-8888-888888888888"
     );
     expect(success).toHaveAttribute("role", "status");
