@@ -359,7 +359,7 @@ Check at minimum:
 
 ## Session Continuity And Recovery
 
-- Canonical source of truth: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`
+- Canonical source of truth: `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`
 - Parent: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Checkpoint cadence: update this brief when moved to in-progress, when the architecture contract is created, before PR handoff, and before any pause.
 - Recovery protocol:
@@ -407,3 +407,29 @@ Before moving this child to `done`:
 - Record validation evidence.
 - Confirm no runtime code, event callsite, dashboard, checkout/Stripe, entitlement, finance, export, vendor, migration, RLS, product, pricing, or builder/generator scope was added.
 - Record achieved target scorecard scores and `10/10 claim: yes/no`.
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1099`
+- `squash_commit`: `05e5f369`
+- `result`: Closed Workout Context Checkout-Cancel / Decline Measurement Contract V1 as a docs-only contract. The work defines when future workout-context checkout cancel or explicit decline behavior may be measured, keeps current `upsell_declined` unmapped for workout-context, and prevents support, finance, checkout, entitlement, or Admin Analytics from treating absence, failed checkout, provider failure, or finance state as decline.
+- `validation`: route/label/support sweep, `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr` docs-only lane, PR `#1099` CI, and `npm run verify:pre-merge` all passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting/N/A categories have explicit scope rationale.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1099`, architecture contract, parent checkpoint                                                                                     | None         |
+| UX flow clarity                               | `5/5`          | Contract semantics table distinguishes decline, cancel, ignore, abandon, and failed checkout                                             | None         |
+| Business logic correctness and data integrity | `5/5`          | Eligible/ineligible signal contract and route/label/support sweep                                                                        | None         |
+| Data placement and sync boundaries            | `5/5`          | Analytics/server/browser/checkout/provider/finance boundary contract                                                                     | None         |
+| Reliability and failure handling              | `5/5`          | Reliability matrix for duplicate, retry, stale, capped, schema-missing, failed-read, and unknown                                         | None         |
+| Security and authz                            | `5/5`          | Docs-only diff; future protected routes require fail-closed negative-path tests                                                          | None         |
+| Privacy and compliance                        | `5/5`          | Forbidden payload list excludes sensitive checkout, provider, user, request, workout, and finance data                                   | None         |
+| Content governance                            | `5/5`          | API, architecture, registry, parent, and brief updates aligned; `npm run lint:briefs` passed                                             | None         |
+| Analytics and KPI observability               | `5/5`          | Contract keeps workout-context `upsell_declined` unmapped until a future bounded signal/mapping child                                    | None         |
+| Commerce and revenue ops                      | `5/5`          | Checkout cancel/decline telemetry remains separate from Stripe, entitlement, refunds, recovery, and catalog/pricing                      | None         |
+| Incident response and support operations      | `5/5`          | Support interpretation section prevents reading cancel/decline counts as provider/access failures                                        | None         |
+| Finance and reporting operations              | `5/5`          | Finance caveat excludes revenue, refund, payout, invoice, accounting export, and Stripe reconciliation                                   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Docs-only diff; no dependency, route, migration, event callsite, vendor, checkout, Stripe, entitlement, or UI change                     | None         |
+| Testing and QA automation                     | `5/5`          | `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed | None         |
