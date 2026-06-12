@@ -437,9 +437,9 @@
   return with `source=workout_context`, `placementId=workout_saved_post_success`,
   `productId=guide_poolside`, `surface=plans_checkout_return`, and
   `reason=checkout_cancelled`; the dedicated Admin Analytics checkout-cancel module counts only
-  that exact return and bounded review-needed buckets. It remains outside the Poolside guide stage
-  summary, and no decline denominator or rate exists until a future child maps denominator, copy,
-  Help/Guide impact, and tests. Explicit dismiss remains unmapped until a future child defines it under
+  that exact return and bounded review-needed buckets. The Poolside guide stage summary may use
+  this mapped cancel count with `cancelled / shown` as its denominator. Explicit dismiss remains
+  unmapped until a future child defines it under
   `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
@@ -486,13 +486,15 @@
   Stripe reconciliation, finance reporting, or unique-user conversion.
 - Workout-context commercial stage-summary caveat: the Admin Analytics UI may derive a read-only
   stage summary from existing mapped `workoutContextCta`, `workoutContextCheckoutStarted`, and
-  `workoutContextCheckoutOutcome` aggregate fields. The summary lines up shown, clicked, checkout
-  handoff, completed checkout, and access granted for the approved saved-workout Poolside guide
-  path. Stage rates are selected-range event-count ratios only, not unique-user conversion, deduped
-  sessions, revenue, provider failure, entitlement failure, Stripe reconciliation, accounting, or
-  finance reporting. Unknown or unmapped future products, placements, sources, or checkout paths
-  require explicit mapping before entering this dedicated summary. Decline/cancel is not a stage in
-  this summary until a future child maps denominator, copy, Help/Guide impact, and tests.
+  `workoutContextCheckoutOutcome` aggregate fields plus the existing mapped
+  `workoutContextCheckoutCancel.cancelled` count. The summary lines up shown, clicked, checkout
+  handoff, checkout cancelled, completed checkout, and access granted for the approved
+  saved-workout Poolside guide path. Cancel rate is `cancelled / shown` for the mapped
+  return-from-checkout signal only; if shown is zero the rate is not counted. Stage rates are
+  selected-range event-count ratios only, not unique-user conversion, deduped sessions, revenue,
+  provider failure, entitlement failure, Stripe reconciliation, accounting, or finance reporting.
+  Unknown or unmapped future products, placements, sources, surfaces, reasons, or checkout paths
+  require explicit mapping before entering this dedicated summary.
 - Workout-context checkout-cancel dashboard caveat: `workoutContextCheckoutCancel` is derived only
   from mapped `upsell_declined` rows with `source=workout_context`,
   `placementId=workout_saved_post_success`, `productId=guide_poolside`,

@@ -273,6 +273,14 @@ describe("admin analytics dashboard view model", () => {
         detail: "Reached checkout",
       },
       {
+        id: "poolside-stage-checkout-cancelled",
+        label: "Checkout cancelled",
+        value: 1,
+        count: "1",
+        percentOfMax: 25,
+        detail: "Returned from checkout",
+      },
+      {
         id: "poolside-stage-completed-checkout",
         label: "Completed checkout",
         value: 1,
@@ -303,6 +311,12 @@ describe("admin analytics dashboard view model", () => {
         detail: "Checkout handoff / clicked",
       },
       {
+        id: "poolside-stage-cancel-rate",
+        label: "Cancel rate",
+        value: "25%",
+        detail: "Cancelled / shown",
+      },
+      {
         id: "poolside-stage-completion-rate",
         label: "Completion rate",
         value: "50%",
@@ -316,7 +330,7 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutContextStageSummary.caveat).toContain(
-      "not unique people, revenue, Stripe reconciliation, or accounting records"
+      "cancel rate are selected-range logged actions"
     );
     expect(viewModel.workoutContextCta.metrics).toEqual([
       {
@@ -752,6 +766,15 @@ describe("admin analytics dashboard view model", () => {
           { id: "workout-context-checkout-cancel-unknown", value: "Not counted" },
         ],
       },
+      workoutContextStageSummary: {
+        metrics: [
+          { id: "poolside-stage-click-rate", value: "Not counted" },
+          { id: "poolside-stage-handoff-rate", value: "Not counted" },
+          { id: "poolside-stage-cancel-rate", value: "Not counted" },
+          { id: "poolside-stage-completion-rate", value: "Not counted" },
+          { id: "poolside-stage-access-rate", value: "Not counted" },
+        ],
+      },
       workoutBuilderSourceBreakdown: {
         metrics: [
           { id: "source-manual-starts", value: "Not counted" },
@@ -953,6 +976,15 @@ describe("admin analytics dashboard view model", () => {
     expect(zeroStarts.workoutContextCheckoutCancel.caveat).toContain(
       "until the mapped guide checkout return is logged"
     );
+    expect(zeroStarts.workoutContextStageSummary.metrics).toContainEqual({
+      id: "poolside-stage-cancel-rate",
+      label: "Cancel rate",
+      value: "Not counted",
+      detail: "Cancelled / shown",
+    });
+    expect(zeroStarts.workoutContextStageSummary.caveat).toContain(
+      "until the Poolside guide prompt has been shown"
+    );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -1134,6 +1166,15 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(duplicateTelemetry.workoutContextCheckoutCancel.caveat).toContain(
       "return-from-checkout path only"
+    );
+    expect(duplicateTelemetry.workoutContextStageSummary.metrics).toContainEqual({
+      id: "poolside-stage-cancel-rate",
+      label: "Cancel rate",
+      value: "150%",
+      detail: "Cancelled / shown",
+    });
+    expect(duplicateTelemetry.workoutContextStageSummary.caveat).toContain(
+      "Cancelled means mapped return-from-checkout only"
     );
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
       "create more than one tracked action"

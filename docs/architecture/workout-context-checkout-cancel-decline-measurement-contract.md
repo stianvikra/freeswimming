@@ -164,13 +164,16 @@ When it exists, it must say:
 - decline/cancel counts are selected-range event counts,
 - checkout-cancel means return-from-checkout only for the mapped path,
 - explicit dismiss means the mapped dismiss control was activated,
-- decline rate may use `declined / presented` only after a later child maps the denominator, copy,
-  Help/Guide impact, zero behavior, and screenshot evidence,
+- decline rate may use `declined / presented` for the mapped checkout-cancel return only after the
+  stage-summary denominator child maps the copy, Help/Guide impact, zero behavior, and screenshot
+  evidence,
 - counts are not unique-user conversion, purchase failure, provider failure, entitlement failure,
   revenue, refund, payout, invoice, accounting export, Stripe reconciliation, or finance reporting.
 
-The existing Poolside guide stage summary must not add a decline stage until a future child maps the
-stage, denominator, zero behavior, Help/Guide copy, and screenshot evidence.
+The Poolside guide stage summary may include the mapped checkout-cancel return only with the
+approved `cancelled / shown` denominator, zero behavior, Help/Guide copy, and screenshot evidence.
+Future explicit dismiss or skip signals still need a separate mapping child before they enter the
+stage summary or any decline rate.
 
 ## Data Placement And Cache Contract
 

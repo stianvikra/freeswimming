@@ -247,13 +247,17 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextStageSummary).getByText("Shown")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Clicked")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Checkout handoff")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Checkout cancelled")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Completed checkout")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Access granted")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Handoff rate")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Cancel rate")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Cancelled / shown")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("25%")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Completion rate")).toBeVisible();
     expect(within(workoutContextStageSummary).getAllByText("100%")).toHaveLength(2);
     expect(
-      within(workoutContextStageSummary).getByText(/not unique people, revenue/i)
+      within(workoutContextStageSummary).getByText(/Cancelled means mapped return-from-checkout/i)
     ).toBeVisible();
     expect(within(workoutContextStageSummary).queryByRole("button")).not.toBeInTheDocument();
     const workoutContextCta = screen.getByTestId("admin-analytics-workout-context-cta");

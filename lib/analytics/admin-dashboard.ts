@@ -917,6 +917,7 @@ function buildWorkoutContextStageSummary(
   const shown = payload.workoutContextCta?.presented ?? 0;
   const clicked = payload.workoutContextCta?.accepted ?? 0;
   const handoff = payload.workoutContextCheckoutStarted?.started ?? 0;
+  const cancelled = payload.workoutContextCheckoutCancel?.cancelled ?? 0;
   const completed = payload.workoutContextCheckoutOutcome?.completed ?? 0;
   const accessGranted = payload.workoutContextCheckoutOutcome?.entitlementGranted ?? 0;
   const steps = [
@@ -937,6 +938,12 @@ function buildWorkoutContextStageSummary(
       label: "Checkout handoff",
       value: handoff,
       detail: "Reached checkout",
+    },
+    {
+      id: "poolside-stage-checkout-cancelled",
+      label: "Checkout cancelled",
+      value: cancelled,
+      detail: "Returned from checkout",
     },
     {
       id: "poolside-stage-completed-checkout",
@@ -973,6 +980,12 @@ function buildWorkoutContextStageSummary(
         detail: "Checkout handoff / clicked",
       },
       {
+        id: "poolside-stage-cancel-rate",
+        label: "Cancel rate",
+        value: formatAnalyticsPercent(rate(cancelled, shown)),
+        detail: "Cancelled / shown",
+      },
+      {
         id: "poolside-stage-completion-rate",
         label: "Completion rate",
         value: formatAnalyticsPercent(rate(completed, handoff)),
@@ -989,7 +1002,7 @@ function buildWorkoutContextStageSummary(
     caveat:
       shown === 0
         ? "Stage rates are not counted until the Poolside guide prompt has been shown in this range."
-        : "Stage counts are selected-range logged actions, not unique people, revenue, Stripe reconciliation, or accounting records. Use the detailed panels for review-needed rows.",
+        : "Stage counts and cancel rate are selected-range logged actions, not unique people, revenue, Stripe reconciliation, or accounting records. Cancelled means mapped return-from-checkout only; use the detailed panels for review-needed rows.",
   };
 }
 
@@ -998,6 +1011,7 @@ function buildSchemaMissingWorkoutContextStageSummary(): AnalyticsDashboardWorko
     "Shown",
     "Clicked",
     "Checkout handoff",
+    "Checkout cancelled",
     "Completed checkout",
     "Access granted",
   ].map((label, index) => ({
@@ -1023,6 +1037,12 @@ function buildSchemaMissingWorkoutContextStageSummary(): AnalyticsDashboardWorko
         label: "Handoff rate",
         value: "Not counted",
         detail: "Checkout handoff / clicked",
+      },
+      {
+        id: "poolside-stage-cancel-rate",
+        label: "Cancel rate",
+        value: "Not counted",
+        detail: "Cancelled / shown",
       },
       {
         id: "poolside-stage-completion-rate",
@@ -1561,7 +1581,7 @@ export function buildAnalyticsDashboardViewModel(
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} read limit.`,
       "Sales funnel counts are product signals only. They are not purchase or accounting records; use Stripe and accounting reports for money.",
       "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
-      "Saved-workout guide stage summary uses selected-range event counts only. It is not unique-user conversion, revenue, Stripe reconciliation, or finance reporting.",
+      "Saved-workout guide stage summary uses selected-range event counts only; cancel rate is cancelled / shown for the mapped return-from-checkout signal. It is not unique-user conversion, revenue, Stripe reconciliation, or finance reporting.",
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout completion and access counts show provider-backed completion and app-recognized access for the approved guide path only. They are not revenue, Stripe reconciliation, accounting records, or unique people.",
