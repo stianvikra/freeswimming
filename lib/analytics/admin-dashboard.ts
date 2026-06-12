@@ -1,4 +1,7 @@
-import type { AnalyticsInsightsResponse } from "@/lib/analytics/admin-insights";
+import type {
+  AnalyticsInsightsResponse,
+  WorkoutContextCheckoutOutcomeDiagnosticKey,
+} from "@/lib/analytics/admin-insights";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
 
 export const ANALYTICS_DASHBOARD_RANGE_OPTIONS = [7, 30, 90] as const;
@@ -107,6 +110,8 @@ export type AnalyticsDashboardWorkoutContextCheckoutStarted = {
 
 export type AnalyticsDashboardWorkoutContextCheckoutOutcome = {
   metrics: AnalyticsDashboardMetric[];
+  reviewItems: AnalyticsDashboardListItem[];
+  emptyReviewLabel: string;
   detail: string;
   caveat: string;
 };
@@ -144,6 +149,32 @@ const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies Analyt
 const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
 const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
 const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
+
+const WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_LABELS: Record<
+  WorkoutContextCheckoutOutcomeDiagnosticKey,
+  { label: string; secondary: string }
+> = {
+  source_not_mapped: {
+    label: "Source not mapped",
+    secondary: "A workout-context-like access action used a source that is not approved yet.",
+  },
+  placement_not_mapped: {
+    label: "Placement not mapped",
+    secondary: "The saved-workout placement did not match the approved guide path.",
+  },
+  product_not_mapped: {
+    label: "Product not mapped",
+    secondary: "The product is outside the approved Poolside guide mapping.",
+  },
+  incomplete_attribution: {
+    label: "Missing attribution",
+    secondary: "Source, placement, or product was missing or unsafe, so it stayed out of totals.",
+  },
+  other_review_needed: {
+    label: "Other review needed",
+    secondary: "The row looked related but did not fit a mapped support bucket.",
+  },
+};
 
 const EVENT_LABELS: Record<string, string> = {
   checkout_completed: "Checkout completed",
@@ -624,6 +655,55 @@ function buildWorkoutContextCheckoutOutcome(
   const entitlementGranted = outcome?.entitlementGranted ?? 0;
   const entitlementGrantRate = outcome?.entitlementGrantRate ?? rate(entitlementGranted, completed);
   const unknownEvents = outcome?.unknownEvents ?? 0;
+  const completionWithoutAccess =
+    outcome?.completionWithoutAccess ?? Math.max(completed - entitlementGranted, 0);
+  const accessWithoutCompletion =
+    outcome?.accessWithoutCompletion ?? Math.max(entitlementGranted - completed, 0);
+  const diagnosticItems = (outcome?.reviewDiagnostics ?? [])
+    .filter((item) => item.count > 0)
+    .map((item) => {
+      const labels = WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_LABELS[item.key];
+      return {
+        key: item.key,
+        label: labels.label,
+        secondary: labels.secondary,
+        count: formatAnalyticsCount(item.count),
+      };
+    });
+  const reviewItems: AnalyticsDashboardListItem[] = [
+    ...(diagnosticItems.length === 0 && unknownEvents > 0
+      ? [
+          {
+            key: "review-details-unavailable",
+            label: "Review details unavailable",
+            secondary: "Reason buckets are missing, so these rows stay out of totals.",
+            count: formatAnalyticsCount(unknownEvents),
+          },
+        ]
+      : diagnosticItems),
+    ...(completionWithoutAccess > 0
+      ? [
+          {
+            key: "completion-without-access",
+            label: "Access pending",
+            secondary:
+              "Completed checkout is ahead of access granted in this range; treat as timing or support review.",
+            count: formatAnalyticsCount(completionWithoutAccess),
+          },
+        ]
+      : []),
+    ...(accessWithoutCompletion > 0
+      ? [
+          {
+            key: "access-without-completion",
+            label: "Access before checkout",
+            secondary:
+              "Access is ahead of completed checkout in this range; usually a range, retry, or mapping review signal.",
+            count: formatAnalyticsCount(accessWithoutCompletion),
+          },
+        ]
+      : []),
+  ];
 
   return {
     metrics: [
@@ -652,12 +732,14 @@ function buildWorkoutContextCheckoutOutcome(
         detail: "Kept out of totals",
       },
     ],
+    reviewItems,
+    emptyReviewLabel: "No review diagnostics in this range.",
     detail: "Shows how often the saved-workout guide path completed checkout and got app access.",
     caveat:
       completed === 0
         ? "Completion and access are not counted until this path completes checkout in the selected range."
-        : unknownEvents > 0
-          ? "Some completion or access actions do not match the approved saved-workout guide path. They stay out of the main numbers until reviewed."
+        : reviewItems.length > 0 || unknownEvents > 0
+          ? "Review signals are aggregate support diagnostics only. They do not prove provider failure, entitlement failure, revenue, accounting, or unique people."
           : "Completion and access are product/support signals only. They are not revenue, accounting records, Stripe reconciliation, or unique people.",
   };
 }
@@ -690,6 +772,8 @@ function buildSchemaMissingWorkoutContextCheckoutOutcome(): AnalyticsDashboardWo
         detail: "Setup missing",
       },
     ],
+    reviewItems: [],
+    emptyReviewLabel: "Setup missing",
     detail: "Saved-workout completion and access counts are hidden until analytics setup is ready.",
     caveat: "Finish analytics setup before reading saved-workout completion and access counts.",
   };

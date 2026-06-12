@@ -97,6 +97,15 @@ const basePayload: AnalyticsInsightsResponse = {
     entitlementGranted: 1,
     entitlementGrantRate: 1,
     unknownEvents: 1,
+    completionWithoutAccess: 0,
+    accessWithoutCompletion: 0,
+    reviewDiagnostics: [
+      { key: "source_not_mapped", count: 0 },
+      { key: "placement_not_mapped", count: 0 },
+      { key: "product_not_mapped", count: 1 },
+      { key: "incomplete_attribution", count: 0 },
+      { key: "other_review_needed", count: 0 },
+    ],
   },
   workoutBuilderFunnel: {
     started: 5,
@@ -251,11 +260,16 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextCheckoutOutcome).getByText("Access granted")).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).getByText("Access rate")).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).getByText("Needs review")).toBeVisible();
-    expect(within(workoutContextCheckoutOutcome).getByText("100%")).toBeVisible();
+    expect(within(workoutContextCheckoutOutcome).getByText("Review signals")).toBeVisible();
+    expect(within(workoutContextCheckoutOutcome).getByText("Product not mapped")).toBeVisible();
     expect(
       within(workoutContextCheckoutOutcome).getByText(
-        /do not match the approved saved-workout guide path/i
+        "The product is outside the approved Poolside guide mapping."
       )
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutOutcome).getByText("100%")).toBeVisible();
+    expect(
+      within(workoutContextCheckoutOutcome).getByText(/aggregate support diagnostics only/i)
     ).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).queryByRole("button")).not.toBeInTheDocument();
     const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");

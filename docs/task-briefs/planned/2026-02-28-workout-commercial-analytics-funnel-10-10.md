@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-11`
+- `updated`: `2026-06-12`
 - `execution_mode`: `plan-only-parent`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-11`
-- `base`: clean synced `main@95dc532b` after PR `#1091` implemented workout-context checkout completion and entitlement attribution propagation.
+- `last_audited`: `2026-06-12`
+- `base`: clean synced `main@be7f5c73` after PR `#1093` added workout-context completion/access Admin Analytics and repo-managed closeout PR `#1094` moved the child to done; post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. No active or planned child is selected after the propagation implementation closed.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1091`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, and the server-owned completion/entitlement propagation path are all closed. Dedicated completion/entitlement Admin Analytics modules, finance reporting, direct checkout, product expansion, export/raw drilldown, and vendor analytics still require new owner-approved children.
+- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. The active child is Workout Context Checkout Outcome Support Diagnostics V1.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1094`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, and read-only completion/access Admin Analytics mapping are all closed. The next bounded analytics step is support-safe diagnostics for the existing completion/access review-needed aggregate. Finance reporting, direct checkout, product expansion, export/raw drilldown, and vendor analytics still require new owner-approved children.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, Codex skill/stack readiness radar, Codex local automation defaults, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -106,6 +106,10 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1091` / squash commit `95dc532b`.
   - Owns only the server-owned implementation path for carrying the approved workout-context source/placement/product attribution from checkout-start into Stripe Checkout Session metadata, webhook-backed `checkout_completed`, and app-recognized `entitlement_granted` product telemetry.
   - Dedicated Admin Analytics completion/entitlement modules, finance reporting, direct checkout, new products/prices, entitlement rule changes, raw drilldown/export, vendor analytics, migrations/RLS, visible UI, and builder/generator UX remain deferred to explicit future children.
+- Done child: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`
+  - Closed by PR `#1093` / squash commit `7fd13361`; repo-managed closeout PR `#1094` / squash commit `be7f5c73` moved the child to done and left post-merge preflight clean.
+  - Owns only read-only Admin Analytics mapping for propagated workout-context `checkout_completed` and `entitlement_granted` rows with `source=workout_context`, `placementId=workout_saved_post_success`, and `productId=guide_poolside`.
+  - Direct checkout, support diagnostics, additional drilldowns, finance reporting, export/raw drilldown, vendor analytics, visible redesign, migrations/RLS, product/pricing, and builder/generator UX remain deferred to explicit future children.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - broader dedicated KPI modules,
@@ -116,15 +120,18 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: none.
+Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md`
+
+- Owns only read-only Admin Analytics support diagnostics for the existing workout-context completion/access review-needed aggregate and range-level access-gap signals.
+- Keeps checkout, Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, new event callsites, and builder/generator UX out of scope.
 
 Planned child: none.
 
 A separate future child must be explicitly selected before adding support diagnostics implementation, additional Admin Analytics drilldowns, direct workout-context checkout, `upsell_declined`, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
-Safe follow-up candidate families after the completed checkout completion/access Admin Analytics mapping child:
+Safe follow-up candidate families after the planned support-diagnostics child:
 
-- Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md` and `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`. Future support-diagnostic or drilldown children must still avoid inferring revenue, unique-user conversion, or finance truth from analytics telemetry.
+- Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md` and `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`. The planned support-diagnostics child must still avoid inferring revenue, unique-user conversion, provider failure, entitlement failure, or finance truth from analytics telemetry.
 - Checkout attribution and finance separation: complete through checkout-start attribution hardening, the `/plans` attribution bridge, and read-only checkout-start Admin Analytics mapping; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -373,9 +380,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -469,3 +476,8 @@ Future child implementation:
 - `2026-06-12 | completion/entitlement admin mapping screenshots approved | owner approved screenshot artifacts at output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550, and no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
 - `2026-06-12 | completion/entitlement admin mapping pre-pr passed | active child passed targeted admin analytics insights Vitest and npm run verify:pre-pr full lane with branch-current, lint, typecheck, unit, build, performance budgets, and Playwright e2e; no checkout/Stripe/webhook/entitlement-rule/finance/export/vendor/migration/product/builder scope was added | next: commit, push, open PR, monitor CI, and run child pre-merge gate`
 - `2026-06-12 | completion/entitlement admin mapping child merged | PR #1093 merged at squash commit 7fd13361 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active or planned child, and direct checkout, support diagnostics, additional drilldowns, finance reporting, export/raw drilldown, vendor analytics, visible redesign, migrations/RLS, product/pricing, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-12 | planned support-diagnostics child created | after closeout PR #1094 merged at squash commit be7f5c73 and post-merge preflight was reported clean, refreshed this parent and created docs/task-briefs/planned/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md as the next bounded analytics child. Scope is read-only support diagnostics for the existing workout-context completion/access review-needed aggregate only, with no checkout/Stripe/webhook/entitlement-rule/finance/export/vendor/migration/product/builder scope | next: wait for explicit owner execute/build/implement instruction or scope edits`
+- `2026-06-12 | support-diagnostics child in progress | owner requested execution on branch workout-context-checkout-outcome-support-diagnostics-v1; active child is docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-outcome-support-diagnostics-v1-10-10.md and remains scoped to read-only Admin Analytics support diagnostics for workout-context checkout outcome review states only, with screenshot approval required before verify:pre-pr and no checkout/Stripe/webhook/entitlement-rule/finance/export/vendor/migration/product/builder scope | next: implement insights/view-model/UI/docs/tests and stop at screenshot handoff before pre-pr`
+- `2026-06-12 | support-diagnostics screenshot stop | active child added safe review buckets and range-level access-gap support diagnostics to the existing Poolside guide access Admin Analytics module, updated Help/Guide/API/architecture docs and tests, passed targeted validation plus quality-gate lint, and captured after/reference artifacts at output/workout-context-checkout-outcome-support-diagnostics-2026-06-12-082525. Temporary capture files were removed and no scoped product-rendering source changed after final capture | next: wait for owner screenshot approval before child verify:pre-pr`
+- `2026-06-12 | support-diagnostics screenshots approved | owner approved screenshot artifacts at output/workout-context-checkout-outcome-support-diagnostics-2026-06-12-082525, and no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
+- `2026-06-12 | support-diagnostics pre-pr passed | active child passed npm run verify:pre-pr full lane with branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright after owner-approved screenshots; no scoped product-rendering source changed after final capture | next: commit, push, open PR, monitor CI, and run child verify:pre-merge`

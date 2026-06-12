@@ -476,9 +476,13 @@
   `placementId=workout_saved_post_success`, and `productId=guide_poolside`. Completion means a
   supported Stripe checkout completion event was accepted by the webhook. Entitlement grant means
   the app recognized access after fulfillment. Unknown or unmapped completion/access rows stay out
-  of the dedicated count and may appear only as a bounded review-needed aggregate. These values are
-  not revenue, refunds, payouts, invoices, accounting, Stripe reconciliation, finance reporting, or
-  unique-user conversion.
+  of the dedicated count and may appear only as bounded review-needed diagnostics. Diagnostic keys
+  are limited to safe buckets such as `source_not_mapped`, `placement_not_mapped`,
+  `product_not_mapped`, `incomplete_attribution`, and `other_review_needed`; raw source, placement,
+  product, payload, provider, or user values must not be returned. `completionWithoutAccess` and
+  `accessWithoutCompletion` are selected-range support signals only, not user/session joins,
+  provider failure, entitlement failure, revenue, refunds, payouts, invoices, accounting, Stripe
+  reconciliation, finance reporting, or unique-user conversion.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -589,7 +593,16 @@
     "completed": 1,
     "entitlementGranted": 1,
     "entitlementGrantRate": 1,
-    "unknownEvents": 1
+    "unknownEvents": 1,
+    "completionWithoutAccess": 0,
+    "accessWithoutCompletion": 0,
+    "reviewDiagnostics": [
+      { "key": "source_not_mapped", "count": 0 },
+      { "key": "placement_not_mapped", "count": 0 },
+      { "key": "product_not_mapped", "count": 1 },
+      { "key": "incomplete_attribution", "count": 0 },
+      { "key": "other_review_needed", "count": 0 }
+    ]
   },
   "workoutBuilderFunnel": {
     "started": 5,
