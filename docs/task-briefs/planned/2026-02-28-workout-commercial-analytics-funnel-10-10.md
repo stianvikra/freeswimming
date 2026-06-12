@@ -116,15 +116,15 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: `docs/task-briefs/in-progress/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`.
+Active child: none.
 
 Planned child: none.
 
-A separate future child must be explicitly selected before adding support diagnostics implementation, Admin Analytics completion/entitlement modules, direct workout-context checkout, `upsell_declined`, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
+A separate future child must be explicitly selected before adding support diagnostics implementation, additional Admin Analytics drilldowns, direct workout-context checkout, `upsell_declined`, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
-Safe follow-up candidate families after the completed checkout-started Admin Analytics mapping child:
+Safe follow-up candidate families after the completed checkout completion/access Admin Analytics mapping child:
 
-- Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md`. Future dashboard or support-diagnostic children must still avoid inferring purchase, access, revenue, unique-user conversion, or finance truth from analytics telemetry.
+- Checkout completion / entitlement attribution foundation: complete through `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-attribution-propagation-v1-10-10.md` and `docs/task-briefs/done/2026-06-11-workout-context-checkout-completion-entitlement-admin-analytics-mapping-v1-10-10.md`. Future support-diagnostic or drilldown children must still avoid inferring revenue, unique-user conversion, or finance truth from analytics telemetry.
 - Checkout attribution and finance separation: complete through checkout-start attribution hardening, the `/plans` attribution bridge, and read-only checkout-start Admin Analytics mapping; entitlement, support diagnostics, finance reconciliation, checkout completion, new shop/product expansion, and direct workout-context checkout remain separate future decisions.
 - Export, CSV, raw drilldown, or third-party analytics: still deferred until the owner explicitly chooses those surfaces and their privacy/support boundaries.
 
@@ -468,3 +468,4 @@ Future child implementation:
 - `2026-06-11 | completion/entitlement admin mapping screenshot stop | active child added the mapped checkout completion/access aggregate, Admin Analytics module, Help/Guide/API/architecture copy, targeted tests, route/label/support sweep evidence, and after/reference screenshot artifacts at output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550; temporary capture route/script were removed after generation and no scoped product-rendering source changed after final capture | next: wait for owner screenshot approval before child verify:pre-pr`
 - `2026-06-12 | completion/entitlement admin mapping screenshots approved | owner approved screenshot artifacts at output/workout-context-completion-entitlement-admin-analytics-2026-06-11-235550, and no scoped product-rendering source changed after final capture | next: child verify:pre-pr`
 - `2026-06-12 | completion/entitlement admin mapping pre-pr passed | active child passed targeted admin analytics insights Vitest and npm run verify:pre-pr full lane with branch-current, lint, typecheck, unit, build, performance budgets, and Playwright e2e; no checkout/Stripe/webhook/entitlement-rule/finance/export/vendor/migration/product/builder scope was added | next: commit, push, open PR, monitor CI, and run child pre-merge gate`
+- `2026-06-12 | completion/entitlement admin mapping child merged | PR #1093 merged at squash commit 7fd13361 after green local pre-pr, PR CI, and pre-merge gates; child moved to done in repo-managed closeout, parent has no active or planned child, and direct checkout, support diagnostics, additional drilldowns, finance reporting, export/raw drilldown, vendor analytics, visible redesign, migrations/RLS, product/pricing, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
