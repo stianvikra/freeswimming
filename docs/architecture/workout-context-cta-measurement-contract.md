@@ -104,9 +104,9 @@ dedupe contract. Dashboard copy must not call them unique users.
 Zero denominator behavior:
 
 - accepted rate is `accepted / presented` when `presented > 0`; otherwise `null` or "not enough data",
-- declined rate is `declined / presented` only after a dashboard child maps the approved decline
-  signal, denominator, zero behavior, copy, Help/Guide impact, and tests; otherwise it must remain
-  not instrumented,
+- declined rate is `declined / presented` only for the mapped checkout-cancel return after the
+  stage-summary denominator child; future dismiss/skip signals still need their own mapping,
+  denominator, zero behavior, copy, Help/Guide impact, and tests,
 - checkout and entitlement rates must not be derived from workout-context `upsell_*` rows.
 
 ## Allowed Payload Dimensions

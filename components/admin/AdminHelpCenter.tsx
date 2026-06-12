@@ -295,7 +295,7 @@ const ANALYTICS_WORKFLOW = [
   {
     title: "Use Poolside guide stage summary as a quick path view",
     detail:
-      "The stage summary lines up shown, clicked, checkout handoff, completed checkout, and access granted for the approved saved-workout guide path. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
+      "The stage summary lines up shown, clicked, checkout handoff, checkout cancelled, completed checkout, and access granted for the approved saved-workout guide path. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
   },
   {
     title: "Read saved-workout checkout handoffs as checkout start only",
@@ -574,7 +574,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Poolside guide stage summary",
         meaning:
-          "Shows shown, clicked, checkout handoff, completed checkout, and access granted together for the approved saved-workout guide path. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
+          "Shows shown, clicked, checkout handoff, checkout cancelled, completed checkout, and access granted together for the approved saved-workout guide path. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
       },
       {
         label: "Poolside guide prompt",
