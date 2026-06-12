@@ -85,6 +85,9 @@ describe("AdminHelpCenter", () => {
     ).toBeVisible();
     expect(screen.getByText(/Shown means the Poolside guide prompt appeared/i)).toBeVisible();
     expect(
+      screen.getByText(/The stage summary lines up shown, clicked, checkout handoff/i)
+    ).toBeVisible();
+    expect(
       screen.getByText(/Checkout handoffs mean the approved saved-workout guide path/i)
     ).toBeVisible();
     expect(screen.getByText(/Completed checkout means Stripe reported/i)).toBeVisible();
@@ -100,6 +103,7 @@ describe("AdminHelpCenter", () => {
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
+    expect(screen.getByText("Poolside guide stage summary:")).toBeVisible();
     expect(screen.getByText("Poolside guide checkout:")).toBeVisible();
     expect(screen.getByText("Poolside guide access:")).toBeVisible();
     expect(screen.getByText("Generated sessions / Template starts:")).toBeVisible();

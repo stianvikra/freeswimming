@@ -189,6 +189,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-context-stage-summary")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-checkout-started")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-checkout-outcome")).toBeVisible();
@@ -217,6 +218,25 @@ describe("AdminAnalyticsDashboard", () => {
       within(existingUpsell).getByText("1 shown / 1 clicked / 1 checkout cancelled")
     ).toBeVisible();
     expect(within(existingUpsell).queryByRole("button")).not.toBeInTheDocument();
+    const workoutContextStageSummary = screen.getByTestId(
+      "admin-analytics-workout-context-stage-summary"
+    );
+    expect(
+      within(workoutContextStageSummary).getByText("Poolside guide stage summary")
+    ).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Shown")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Clicked")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Checkout handoff")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Completed checkout")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Access granted")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Handoff rate")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Completion rate")).toBeVisible();
+    expect(within(workoutContextStageSummary).getAllByText("100%")).toHaveLength(2);
+    expect(
+      within(workoutContextStageSummary).getByText(/not unique people, revenue/i)
+    ).toBeVisible();
+    expect(within(workoutContextStageSummary).queryByRole("button")).not.toBeInTheDocument();
     const workoutContextCta = screen.getByTestId("admin-analytics-workout-context-cta");
     expect(within(workoutContextCta).getByText("Poolside guide prompt")).toBeVisible();
     expect(within(workoutContextCta).getByText("Saved workout")).toBeVisible();
@@ -402,6 +422,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toHaveTextContent(
       "Not counted"
     );
+    expect(screen.getByTestId("admin-analytics-workout-context-stage-summary")).toHaveTextContent(
+      "Not counted"
+    );
     expect(
       screen.getByTestId("admin-analytics-workout-context-checkout-started")
     ).toHaveTextContent("Not counted");
@@ -532,6 +555,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toHaveTextContent(
       "Unknown source"
+    );
+    expect(screen.getByTestId("admin-analytics-workout-context-stage-summary")).toHaveTextContent(
+      "Not counted"
     );
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toHaveTextContent(
       "Not counted"

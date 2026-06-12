@@ -116,6 +116,13 @@ export type AnalyticsDashboardWorkoutContextCheckoutOutcome = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutContextStageSummary = {
+  stages: AnalyticsDashboardFunnelStep[];
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -127,6 +134,7 @@ export type AnalyticsDashboardViewModel = {
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
   existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
+  workoutContextStageSummary: AnalyticsDashboardWorkoutContextStageSummary;
   workoutContextCta: AnalyticsDashboardWorkoutContextCta;
   workoutContextCheckoutStarted: AnalyticsDashboardWorkoutContextCheckoutStarted;
   workoutContextCheckoutOutcome: AnalyticsDashboardWorkoutContextCheckoutOutcome;
@@ -779,6 +787,137 @@ function buildSchemaMissingWorkoutContextCheckoutOutcome(): AnalyticsDashboardWo
   };
 }
 
+function buildWorkoutContextStageSummary(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutContextStageSummary {
+  const shown = payload.workoutContextCta?.presented ?? 0;
+  const clicked = payload.workoutContextCta?.accepted ?? 0;
+  const handoff = payload.workoutContextCheckoutStarted?.started ?? 0;
+  const completed = payload.workoutContextCheckoutOutcome?.completed ?? 0;
+  const accessGranted = payload.workoutContextCheckoutOutcome?.entitlementGranted ?? 0;
+  const steps = [
+    {
+      id: "poolside-stage-shown",
+      label: "Shown",
+      value: shown,
+      detail: "Prompt views",
+    },
+    {
+      id: "poolside-stage-clicked",
+      label: "Clicked",
+      value: clicked,
+      detail: "Clicked prompt",
+    },
+    {
+      id: "poolside-stage-checkout-handoff",
+      label: "Checkout handoff",
+      value: handoff,
+      detail: "Reached checkout",
+    },
+    {
+      id: "poolside-stage-completed-checkout",
+      label: "Completed checkout",
+      value: completed,
+      detail: "Webhook completion",
+    },
+    {
+      id: "poolside-stage-access-granted",
+      label: "Access granted",
+      value: accessGranted,
+      detail: "App access",
+    },
+  ];
+  const max = Math.max(1, ...steps.map((step) => step.value));
+
+  return {
+    stages: steps.map((step) => ({
+      ...step,
+      count: formatAnalyticsCount(step.value),
+      percentOfMax: Math.max(4, Math.round((step.value / max) * 100)),
+    })),
+    metrics: [
+      {
+        id: "poolside-stage-click-rate",
+        label: "Click rate",
+        value: formatAnalyticsPercent(rate(clicked, shown)),
+        detail: "Clicked / shown",
+      },
+      {
+        id: "poolside-stage-handoff-rate",
+        label: "Handoff rate",
+        value: formatAnalyticsPercent(rate(handoff, clicked)),
+        detail: "Checkout handoff / clicked",
+      },
+      {
+        id: "poolside-stage-completion-rate",
+        label: "Completion rate",
+        value: formatAnalyticsPercent(rate(completed, handoff)),
+        detail: "Completed / handoff",
+      },
+      {
+        id: "poolside-stage-access-rate",
+        label: "Access rate",
+        value: formatAnalyticsPercent(rate(accessGranted, completed)),
+        detail: "Access / completed",
+      },
+    ],
+    detail: "Shows the approved saved-workout Poolside guide path from prompt view to app access.",
+    caveat:
+      shown === 0
+        ? "Stage rates are not counted until the Poolside guide prompt has been shown in this range."
+        : "Stage counts are selected-range logged actions, not unique people, revenue, Stripe reconciliation, or accounting records. Use the detailed panels for review-needed rows.",
+  };
+}
+
+function buildSchemaMissingWorkoutContextStageSummary(): AnalyticsDashboardWorkoutContextStageSummary {
+  const stages = [
+    "Shown",
+    "Clicked",
+    "Checkout handoff",
+    "Completed checkout",
+    "Access granted",
+  ].map((label, index) => ({
+    id: `poolside-stage-schema-missing-${index}`,
+    label,
+    count: "Not counted",
+    value: 0,
+    percentOfMax: 4,
+    detail: "Setup missing",
+  }));
+
+  return {
+    stages,
+    metrics: [
+      {
+        id: "poolside-stage-click-rate",
+        label: "Click rate",
+        value: "Not counted",
+        detail: "Clicked / shown",
+      },
+      {
+        id: "poolside-stage-handoff-rate",
+        label: "Handoff rate",
+        value: "Not counted",
+        detail: "Checkout handoff / clicked",
+      },
+      {
+        id: "poolside-stage-completion-rate",
+        label: "Completion rate",
+        value: "Not counted",
+        detail: "Completed / handoff",
+      },
+      {
+        id: "poolside-stage-access-rate",
+        label: "Access rate",
+        value: "Not counted",
+        detail: "Access / completed",
+      },
+    ],
+    detail: "Saved-workout Poolside guide stage counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading saved-workout Poolside guide stage counts.",
+  };
+}
+
 function buildWorkoutBuilderFunnel(
   payload: AnalyticsInsightsResponse
 ): AnalyticsDashboardWorkoutBuilderFunnel {
@@ -1181,6 +1320,7 @@ export function buildAnalyticsDashboardViewModel(
       ],
       funnel: [],
       existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
+      workoutContextStageSummary: buildSchemaMissingWorkoutContextStageSummary(),
       workoutContextCta: buildSchemaMissingWorkoutContextCta(),
       workoutContextCheckoutStarted: buildSchemaMissingWorkoutContextCheckoutStarted(),
       workoutContextCheckoutOutcome: buildSchemaMissingWorkoutContextCheckoutOutcome(),
@@ -1277,6 +1417,7 @@ export function buildAnalyticsDashboardViewModel(
     ],
     funnel: buildFunnel(payload),
     existingUpsellBaseline: buildExistingUpsellBaseline(payload),
+    workoutContextStageSummary: buildWorkoutContextStageSummary(payload),
     workoutContextCta: buildWorkoutContextCta(payload),
     workoutContextCheckoutStarted: buildWorkoutContextCheckoutStarted(payload),
     workoutContextCheckoutOutcome: buildWorkoutContextCheckoutOutcome(payload),
@@ -1294,6 +1435,7 @@ export function buildAnalyticsDashboardViewModel(
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} read limit.`,
       "Sales funnel counts are product signals only. They are not purchase or accounting records; use Stripe and accounting reports for money.",
       "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
+      "Saved-workout guide stage summary uses selected-range event counts only. It is not unique-user conversion, revenue, Stripe reconciliation, or finance reporting.",
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout completion and access counts show provider-backed completion and app-recognized access for the approved guide path only. They are not revenue, Stripe reconciliation, accounting records, or unique people.",

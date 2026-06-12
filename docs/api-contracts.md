@@ -470,6 +470,14 @@
   Unknown or unmapped checkout-start rows stay out of the dedicated count and may appear only as a
   bounded review-needed aggregate. These values are not purchase, access, revenue, accounting,
   Stripe reconciliation, finance reporting, or unique-user conversion.
+- Workout-context commercial stage-summary caveat: the Admin Analytics UI may derive a read-only
+  stage summary from existing mapped `workoutContextCta`, `workoutContextCheckoutStarted`, and
+  `workoutContextCheckoutOutcome` aggregate fields. The summary lines up shown, clicked, checkout
+  handoff, completed checkout, and access granted for the approved saved-workout Poolside guide
+  path. Stage rates are selected-range event-count ratios only, not unique-user conversion, deduped
+  sessions, revenue, provider failure, entitlement failure, Stripe reconciliation, accounting, or
+  finance reporting. Unknown or unmapped future products, placements, sources, or checkout paths
+  require explicit mapping before entering this dedicated summary.
 - Workout-context checkout completion and entitlement dashboard caveat:
   `workoutContextCheckoutOutcome` is derived only from mapped `checkout_completed` and
   `entitlement_granted` rows with `source=workout_context`,

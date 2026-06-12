@@ -238,6 +238,74 @@ function ExistingUpsellBaselinePanel({
   );
 }
 
+function WorkoutContextStageSummaryPanel({
+  summary,
+}: {
+  summary: AnalyticsDashboardViewModel["workoutContextStageSummary"];
+}) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-workout-context-stage-summary-heading"
+      className={panelClass}
+      data-testid="admin-analytics-workout-context-stage-summary"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Commerce</p>
+          <h3
+            id="admin-analytics-workout-context-stage-summary-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Poolside guide stage summary
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{summary.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+      </div>
+
+      <ol className="mt-4 space-y-3">
+        {summary.stages.map((stage) => (
+          <li key={stage.id}>
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                  {stage.label}
+                </p>
+                <p className="mt-0.5 text-xs text-[color:var(--fs-color-muted)]">{stage.detail}</p>
+              </div>
+              <p className="shrink-0 text-right text-sm font-semibold text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {stage.count}
+              </p>
+            </div>
+            <div className="mt-2 h-2 rounded-full bg-slate-100" aria-hidden="true">
+              <div
+                className="h-2 rounded-full bg-[color:var(--fs-color-brand-600)]"
+                style={{ width: `${stage.percentOfMax}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {summary.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <p className={cx("mt-4", mutedTextClass)}>{summary.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutContextCtaPanel({
   cta,
 }: {
@@ -781,6 +849,7 @@ export default function AdminAnalyticsDashboard() {
           </section>
 
           <ExistingUpsellBaselinePanel baseline={viewModel.existingUpsellBaseline} />
+          <WorkoutContextStageSummaryPanel summary={viewModel.workoutContextStageSummary} />
           <WorkoutContextCtaPanel cta={viewModel.workoutContextCta} />
           <WorkoutContextCheckoutStartedPanel
             checkoutStarted={viewModel.workoutContextCheckoutStarted}
