@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-12`
 - `updated`: `2026-06-12`
@@ -23,8 +23,8 @@
 - `last_audited`: `2026-06-12`
 - `base`: clean synced `main@59801c36` after PR `#1099` added the docs-only checkout-cancel / decline measurement contract, repo-managed closeout PR `#1100` moved the child to done, and post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Execute this bounded analytics child on branch `workout-context-checkout-cancel-runtime-attribution-v1`.
-- `reason`: The owner explicitly requested execution. The workout-context decline/cancel contract is complete, and current runtime evidence shows the saved-workout CTA reaches `/plans` with mapped workout-context query values while the checkout button still builds a cancel return with current-surface `source=plans`. This child preserves approved workout-context cancel attribution through the existing `/plans` checkout return before any Admin Analytics decline module or denominator includes decline.
+- `decision`: Completed by PR `#1101` / squash commit `cd769275`.
+- `reason`: The owner explicitly requested execution. The workout-context decline/cancel contract was complete, and runtime evidence showed the saved-workout CTA reached `/plans` with mapped workout-context query values while the checkout button still built a cancel return with current-surface `source=plans`. This child now preserves approved workout-context cancel attribution through the existing `/plans` checkout return before any Admin Analytics decline module or denominator includes decline.
 - `must_refresh_before_execution_if`: Refresh before execution if AGENTS.md, task brief template, scorecard categories, Codex skill/stack readiness radar, `components/analytics/TrackCheckoutCancel.tsx`, `components/my-library/CheckoutButton.tsx`, `app/plans/page.tsx`, `lib/commerce/checkout.ts`, `app/api/checkout/session/route.ts`, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe/entitlement/finance contracts, product catalog IDs, or route/label/support sweep rules change.
 
 ## Goal
@@ -362,7 +362,7 @@ Sweep checkpoint:
   decline module, Stripe/webhook/provider behavior, entitlement, finance/export/vendor,
   product/pricing, migration/RLS, visible UI, or builder/generator scope was found.
 - Follow-up stale-phrase sweep:
-  `rg -n "checkout-cancel.*future child|future child.*checkout-cancel|decline/cancel remains contract-only|checkout-cancel or explicit dismiss remains contract-only|future runtime child.*checkout-cancel|remains unmapped.*checkout" docs/api-contracts.md docs/architecture docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md docs/task-briefs/in-progress/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`
+  `rg -n "checkout-cancel.*future child|future child.*checkout-cancel|decline/cancel remains contract-only|checkout-cancel or explicit dismiss remains contract-only|future runtime child.*checkout-cancel|remains unmapped.*checkout" docs/api-contracts.md docs/architecture docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`
 - Result: corrected stale parent wording; remaining future-child references apply only to
   dashboard denominator/support copy, explicit dismiss, or later unmapped values.
 
@@ -403,6 +403,36 @@ Validation checkpoint:
 - `npm run lint:briefs:all` - pass, `484` briefs checked.
 - `git diff --check` - pass.
 - `npm run verify:pre-pr` - pass. Full lane selected because runtime/test/docs files changed; branch was current with `origin/main`. Gate included quality gates, admin audit, environment parity, PR body validation, lint/typecheck, unit tests (`241` files / `1544` tests), production build, performance budgets, and Playwright (`106` passed / `536` skipped).
+- PR CI for `#1101` - pass after one rerun of an unrelated Vitest timer flake in `PoolsidePreviewPageClient`; rerun passed `verify`, and all other checks were green.
+- `npm run verify:pre-merge` - pass; branch was current with `origin/main` and reused the full public verify PASS for the same HEAD.
+
+## Completion Record
+
+- `completed`: `2026-06-12`
+- `merged_pr`: `#1101`
+- `squash_commit`: `cd769275`
+- `result`: Closed Workout Context Checkout-Cancel Runtime Attribution V1. The existing saved-workout CTA -> `/plans` -> Poolside guide checkout-cancel path now carries bounded workout-context attribution for `upsell_declined`, while generic cancel telemetry, Admin Analytics decline denominator, Stripe/provider truth, entitlement truth, and finance reporting remain separate.
+- `validation`: Targeted Vitest (`4` files / `30` tests), `npm run typecheck`, `npm run lint:quality-gates`, `npm run lint:briefs:all`, `git diff --check`, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed. PR CI needed one rerun for an unrelated late Vitest timer after all unit tests had passed; rerun passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                 | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | PR `#1101`, checkout helper/component/page tests, API/architecture docs  | None         |
+| UX flow clarity                               | `5/5`          | No visible UI/copy/layout changed; existing checkout flows preserved     | None         |
+| Business logic correctness and data integrity | `5/5`          | Typed helper tests and cancel tracker negative-path coverage             | None         |
+| Data placement and sync boundaries            | `5/5`          | Browser telemetry kept separate from checkout/provider/entitlement truth | None         |
+| Reliability and failure handling              | `5/5`          | Missing/malformed/future/generic values fail closed in tests             | None         |
+| Security and authz                            | `5/5`          | No authz widening; checkout/admin truth remains server-owned             | None         |
+| Privacy and compliance                        | `5/5`          | Payload tests and docs exclude raw checkout/user/provider/finance IDs    | None         |
+| Content governance                            | `5/5`          | Parent, API contracts, architecture contracts, and support caveats align | None         |
+| Analytics and KPI observability               | `5/5`          | `upsell_declined` mapped only for exact source/placement/product/reason  | None         |
+| Commerce and revenue ops                      | `5/5`          | No Stripe/session/webhook/catalog/price/finance changes                  | None         |
+| Incident response and support operations      | `5/5`          | Support docs distinguish mapped cancel from generic/provider/finance     | None         |
+| Finance and reporting operations              | `5/5`          | Finance/revenue/export remains explicitly out of scope                   | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js components, TypeScript helpers, and tests        | None         |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full local gates, PR CI, and pre-merge gate passed       | None         |
+| Scalability and cost efficiency               | `5/5`          | Low-cardinality bounded payload; no storage/vendor/export expansion      | None         |
+| DevOps and rollback readiness                 | `5/5`          | Revert-only rollback; no migration/env/dependency cleanup needed         | None         |
 
 ## Rollback
 
@@ -415,3 +445,4 @@ Validation checkpoint:
 - `2026-06-12 | child in progress | owner requested execution on branch workout-context-checkout-cancel-runtime-attribution-v1; active child remains scoped to runtime attribution for the existing mapped workout-context checkout-cancel return only, with no Admin Analytics decline module, direct checkout, Stripe/webhook, entitlement-rule, finance/export/vendor/product/builder scope approved | next: implement typed attribution helpers/callsites/tests/docs and run validation`
 - `2026-06-12 | implementation checkpoint | implemented mapped checkout-cancel constants/helpers, cancelPath enrichment for the approved Poolside workout-context path, mapped cancel tracker parsing, focused tests, API/architecture/support docs, and route/label/support sweep evidence. Targeted Vitest passed for checkout payload, checkout button, plans page, and cancel tracker. No Admin Analytics decline module, direct checkout, Stripe/webhook, entitlement-rule, finance/export/vendor/product/builder scope was added | next: run typecheck, quality gates, brief lint, diff-check, verify:pre-pr, commit, push, PR, CI, and verify:pre-merge`
 - `2026-06-12 | pre-pr gate passed | npm run verify:pre-pr passed the full lane on branch workout-context-checkout-cancel-runtime-attribution-v1 after focused tests, typecheck, quality gates, all-brief lint, and diff-check also passed. No screenshot handoff was required because no rendered UI/copy/layout/style changed | next: commit, push, open PR, monitor CI, and run verify:pre-merge before merge readiness`
+- `2026-06-12 | merged | PR #1101 merged at squash commit cd769275 after green local pre-pr, PR CI, and pre-merge gates. The only CI rerun was for an unrelated Vitest late-timer flake after all unit tests passed; rerun passed. No rendered UI/copy/layout/style changed, so screenshot handoff remained N/A | next: repo-managed docs-only closeout`
