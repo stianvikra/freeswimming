@@ -1,5 +1,6 @@
 import type {
   AnalyticsInsightsResponse,
+  WorkoutContextCheckoutCancelDiagnosticKey,
   WorkoutContextCheckoutOutcomeDiagnosticKey,
 } from "@/lib/analytics/admin-insights";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
@@ -116,6 +117,14 @@ export type AnalyticsDashboardWorkoutContextCheckoutOutcome = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutContextCheckoutCancel = {
+  metrics: AnalyticsDashboardMetric[];
+  reviewItems: AnalyticsDashboardListItem[];
+  emptyReviewLabel: string;
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardWorkoutContextStageSummary = {
   stages: AnalyticsDashboardFunnelStep[];
   metrics: AnalyticsDashboardMetric[];
@@ -138,6 +147,7 @@ export type AnalyticsDashboardViewModel = {
   workoutContextCta: AnalyticsDashboardWorkoutContextCta;
   workoutContextCheckoutStarted: AnalyticsDashboardWorkoutContextCheckoutStarted;
   workoutContextCheckoutOutcome: AnalyticsDashboardWorkoutContextCheckoutOutcome;
+  workoutContextCheckoutCancel: AnalyticsDashboardWorkoutContextCheckoutCancel;
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
@@ -181,6 +191,41 @@ const WORKOUT_CONTEXT_CHECKOUT_OUTCOME_DIAGNOSTIC_LABELS: Record<
   other_review_needed: {
     label: "Other review needed",
     secondary: "The row looked related but did not fit a mapped support bucket.",
+  },
+};
+
+const WORKOUT_CONTEXT_CHECKOUT_CANCEL_DIAGNOSTIC_LABELS: Record<
+  WorkoutContextCheckoutCancelDiagnosticKey,
+  { label: string; secondary: string }
+> = {
+  source_not_mapped: {
+    label: "Source not mapped",
+    secondary: "A checkout-cancel return used a source that is not approved yet.",
+  },
+  placement_not_mapped: {
+    label: "Placement not mapped",
+    secondary: "The cancel return did not match the approved saved-workout placement.",
+  },
+  product_not_mapped: {
+    label: "Product not mapped",
+    secondary: "The product is outside the approved Poolside guide cancel mapping.",
+  },
+  surface_not_mapped: {
+    label: "Surface not mapped",
+    secondary: "The return surface is outside the approved plans checkout-cancel path.",
+  },
+  reason_not_mapped: {
+    label: "Reason not mapped",
+    secondary: "The decline reason is outside the approved checkout-cancel meaning.",
+  },
+  incomplete_attribution: {
+    label: "Missing attribution",
+    secondary:
+      "Source, placement, product, surface, or reason was missing or unsafe, so it stayed out of totals.",
+  },
+  other_review_needed: {
+    label: "Other review needed",
+    secondary: "The row looked related but did not fit a mapped cancel bucket.",
   },
 };
 
@@ -787,6 +832,85 @@ function buildSchemaMissingWorkoutContextCheckoutOutcome(): AnalyticsDashboardWo
   };
 }
 
+function buildWorkoutContextCheckoutCancel(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutContextCheckoutCancel {
+  const cancel = payload.workoutContextCheckoutCancel;
+  const cancelled = cancel?.cancelled ?? 0;
+  const unknownEvents = cancel?.unknownEvents ?? 0;
+  const diagnosticItems = (cancel?.reviewDiagnostics ?? [])
+    .filter((item) => item.count > 0)
+    .map((item) => {
+      const labels = WORKOUT_CONTEXT_CHECKOUT_CANCEL_DIAGNOSTIC_LABELS[item.key];
+      return {
+        key: item.key,
+        label: labels.label,
+        secondary: labels.secondary,
+        count: formatAnalyticsCount(item.count),
+      };
+    });
+  const reviewItems: AnalyticsDashboardListItem[] =
+    diagnosticItems.length === 0 && unknownEvents > 0
+      ? [
+          {
+            key: "review-details-unavailable",
+            label: "Review details unavailable",
+            secondary: "Reason buckets are missing, so these rows stay out of totals.",
+            count: formatAnalyticsCount(unknownEvents),
+          },
+        ]
+      : diagnosticItems;
+
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-cancelled",
+        label: "Checkout cancelled",
+        value: formatAnalyticsCount(cancelled),
+        detail: "Mapped returns",
+      },
+      {
+        id: "workout-context-checkout-cancel-unknown",
+        label: "Needs review",
+        value: formatAnalyticsCount(unknownEvents),
+        detail: "Kept out of totals",
+      },
+    ],
+    reviewItems,
+    emptyReviewLabel: "No review diagnostics in this range.",
+    detail: "Shows mapped checkout-cancel returns for the saved-workout Poolside guide path.",
+    caveat:
+      cancelled === 0
+        ? "Checkout cancel is not counted until the mapped guide checkout return is logged in this range."
+        : reviewItems.length > 0 || unknownEvents > 0
+          ? "Review signals stay out of totals until mapped. Cancel counts are return-from-checkout telemetry only, not payment failure, revenue, or unique people."
+          : "Checkout cancel means the mapped return-from-checkout path only. It is not ignored CTA, payment failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
+  };
+}
+
+function buildSchemaMissingWorkoutContextCheckoutCancel(): AnalyticsDashboardWorkoutContextCheckoutCancel {
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-cancelled",
+        label: "Checkout cancelled",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-checkout-cancel-unknown",
+        label: "Needs review",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+    ],
+    reviewItems: [],
+    emptyReviewLabel: "Setup missing",
+    detail: "Saved-workout checkout-cancel counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading saved-workout checkout-cancel counts.",
+  };
+}
+
 function buildWorkoutContextStageSummary(
   payload: AnalyticsInsightsResponse
 ): AnalyticsDashboardWorkoutContextStageSummary {
@@ -1324,6 +1448,7 @@ export function buildAnalyticsDashboardViewModel(
       workoutContextCta: buildSchemaMissingWorkoutContextCta(),
       workoutContextCheckoutStarted: buildSchemaMissingWorkoutContextCheckoutStarted(),
       workoutContextCheckoutOutcome: buildSchemaMissingWorkoutContextCheckoutOutcome(),
+      workoutContextCheckoutCancel: buildSchemaMissingWorkoutContextCheckoutCancel(),
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
@@ -1421,6 +1546,7 @@ export function buildAnalyticsDashboardViewModel(
     workoutContextCta: buildWorkoutContextCta(payload),
     workoutContextCheckoutStarted: buildWorkoutContextCheckoutStarted(payload),
     workoutContextCheckoutOutcome: buildWorkoutContextCheckoutOutcome(payload),
+    workoutContextCheckoutCancel: buildWorkoutContextCheckoutCancel(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
@@ -1439,6 +1565,7 @@ export function buildAnalyticsDashboardViewModel(
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout completion and access counts show provider-backed completion and app-recognized access for the approved guide path only. They are not revenue, Stripe reconciliation, accounting records, or unique people.",
+      "Saved-workout checkout-cancel counts show mapped return-from-checkout events only. They are not ignored CTAs, payment failures, revenue, Stripe reconciliation, finance reporting, or unique people.",
       "Builder save-rate shows product activity only. It is not unique people, checkout performance, purchases, or revenue.",
       "Manual/generated workout split shows product activity only. It is not export success, revenue attribution, or accounting evidence.",
       "Template starts count only the Use template action. Do not infer template use from nearby labels, saved workouts, or generated drafts.",

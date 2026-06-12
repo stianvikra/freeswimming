@@ -148,11 +148,11 @@ Forbidden values:
 
 ## Dashboard Interpretation
 
-A future Admin Analytics workout-context decline module may exist only after a dedicated mapping
-child ships:
+The Admin Analytics workout-context checkout-cancel module may count the mapped checkout-cancel
+return after the dedicated mapping child ships:
 
 - typed event and payload helper behavior,
-- exact source/placement/product/reason mapping,
+- exact source/placement/product/surface/reason mapping,
 - tests for eligible and ineligible rows,
 - unknown/unmapped diagnostics,
 - duplicate, zero, stale, capped, schema-missing, and failed-read behavior,
@@ -164,8 +164,8 @@ When it exists, it must say:
 - decline/cancel counts are selected-range event counts,
 - checkout-cancel means return-from-checkout only for the mapped path,
 - explicit dismiss means the mapped dismiss control was activated,
-- decline rate may use `declined / presented` only when the event meaning and denominator are
-  mapped,
+- decline rate may use `declined / presented` only after a later child maps the denominator, copy,
+  Help/Guide impact, zero behavior, and screenshot evidence,
 - counts are not unique-user conversion, purchase failure, provider failure, entitlement failure,
   revenue, refund, payout, invoice, accounting export, Stripe reconciliation, or finance reporting.
 

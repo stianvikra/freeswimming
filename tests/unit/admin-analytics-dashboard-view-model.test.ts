@@ -113,6 +113,24 @@ const basePayload: AnalyticsDashboardPayload = {
       { key: "other_review_needed", count: 0 },
     ],
   },
+  workoutContextCheckoutCancel: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    surface: "plans_checkout_return",
+    reason: "checkout_cancelled",
+    cancelled: 1,
+    unknownEvents: 1,
+    reviewDiagnostics: [
+      { key: "source_not_mapped", count: 0 },
+      { key: "placement_not_mapped", count: 0 },
+      { key: "product_not_mapped", count: 0 },
+      { key: "surface_not_mapped", count: 1 },
+      { key: "reason_not_mapped", count: 0 },
+      { key: "incomplete_attribution", count: 0 },
+      { key: "other_review_needed", count: 0 },
+    ],
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -387,6 +405,34 @@ describe("admin analytics dashboard view model", () => {
     expect(viewModel.workoutContextCheckoutOutcome.caveat).toContain(
       "aggregate support diagnostics only"
     );
+    expect(viewModel.workoutContextCheckoutCancel.metrics).toEqual([
+      {
+        id: "workout-context-checkout-cancelled",
+        label: "Checkout cancelled",
+        value: "1",
+        detail: "Mapped returns",
+      },
+      {
+        id: "workout-context-checkout-cancel-unknown",
+        label: "Needs review",
+        value: "1",
+        detail: "Kept out of totals",
+      },
+    ]);
+    expect(viewModel.workoutContextCheckoutCancel.detail).toContain(
+      "mapped checkout-cancel returns"
+    );
+    expect(viewModel.workoutContextCheckoutCancel.reviewItems).toEqual([
+      {
+        key: "surface_not_mapped",
+        label: "Surface not mapped",
+        secondary: "The return surface is outside the approved plans checkout-cancel path.",
+        count: "1",
+      },
+    ]);
+    expect(viewModel.workoutContextCheckoutCancel.caveat).toContain(
+      "return-from-checkout telemetry only"
+    );
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
       {
         id: "builder-started",
@@ -604,6 +650,16 @@ describe("admin analytics dashboard view model", () => {
             entitlementGrantRate: null,
             unknownEvents: 0,
           },
+          workoutContextCheckoutCancel: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            surface: "plans_checkout_return",
+            reason: "checkout_cancelled",
+            cancelled: 0,
+            unknownEvents: 0,
+            reviewDiagnostics: [],
+          },
           workoutBuilderFunnel: {
             started: 0,
             saved: 0,
@@ -688,6 +744,12 @@ describe("admin analytics dashboard view model", () => {
           { id: "workout-context-entitlement-granted", value: "Not counted" },
           { id: "workout-context-entitlement-rate", value: "Not counted" },
           { id: "workout-context-checkout-outcome-unknown", value: "Not counted" },
+        ],
+      },
+      workoutContextCheckoutCancel: {
+        metrics: [
+          { id: "workout-context-checkout-cancelled", value: "Not counted" },
+          { id: "workout-context-checkout-cancel-unknown", value: "Not counted" },
         ],
       },
       workoutBuilderSourceBreakdown: {
@@ -776,6 +838,24 @@ describe("admin analytics dashboard view model", () => {
           entitlementGrantRate: null,
           unknownEvents: 1,
         },
+        workoutContextCheckoutCancel: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          surface: "plans_checkout_return",
+          reason: "checkout_cancelled",
+          cancelled: 0,
+          unknownEvents: 1,
+          reviewDiagnostics: [
+            { key: "source_not_mapped", count: 0 },
+            { key: "placement_not_mapped", count: 0 },
+            { key: "product_not_mapped", count: 0 },
+            { key: "surface_not_mapped", count: 0 },
+            { key: "reason_not_mapped", count: 1 },
+            { key: "incomplete_attribution", count: 0 },
+            { key: "other_review_needed", count: 0 },
+          ],
+        },
         workoutBuilderSourceBreakdown: {
           manualStarts: 0,
           generatedDrafts: 1,
@@ -858,6 +938,21 @@ describe("admin analytics dashboard view model", () => {
     expect(zeroStarts.workoutContextCheckoutOutcome.caveat).toContain(
       "until this path completes checkout"
     );
+    expect(zeroStarts.workoutContextCheckoutCancel.metrics).toContainEqual({
+      id: "workout-context-checkout-cancelled",
+      label: "Checkout cancelled",
+      value: "0",
+      detail: "Mapped returns",
+    });
+    expect(zeroStarts.workoutContextCheckoutCancel.reviewItems).toContainEqual({
+      key: "reason_not_mapped",
+      label: "Reason not mapped",
+      secondary: "The decline reason is outside the approved checkout-cancel meaning.",
+      count: "1",
+    });
+    expect(zeroStarts.workoutContextCheckoutCancel.caveat).toContain(
+      "until the mapped guide checkout return is logged"
+    );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -931,6 +1026,24 @@ describe("admin analytics dashboard view model", () => {
           entitlementGranted: 3,
           entitlementGrantRate: 1.5,
           unknownEvents: 0,
+        },
+        workoutContextCheckoutCancel: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          surface: "plans_checkout_return",
+          reason: "checkout_cancelled",
+          cancelled: 3,
+          unknownEvents: 0,
+          reviewDiagnostics: [
+            { key: "source_not_mapped", count: 0 },
+            { key: "placement_not_mapped", count: 0 },
+            { key: "product_not_mapped", count: 0 },
+            { key: "surface_not_mapped", count: 0 },
+            { key: "reason_not_mapped", count: 0 },
+            { key: "incomplete_attribution", count: 0 },
+            { key: "other_review_needed", count: 0 },
+          ],
         },
         workoutBuilderSourceBreakdown: {
           manualStarts: 2,
@@ -1012,6 +1125,15 @@ describe("admin analytics dashboard view model", () => {
     });
     expect(duplicateTelemetry.workoutContextCheckoutOutcome.caveat).toContain(
       "aggregate support diagnostics"
+    );
+    expect(duplicateTelemetry.workoutContextCheckoutCancel.metrics).toContainEqual({
+      id: "workout-context-checkout-cancelled",
+      label: "Checkout cancelled",
+      value: "3",
+      detail: "Mapped returns",
+    });
+    expect(duplicateTelemetry.workoutContextCheckoutCancel.caveat).toContain(
+      "return-from-checkout path only"
     );
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
       "create more than one tracked action"
