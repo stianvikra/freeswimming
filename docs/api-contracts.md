@@ -152,10 +152,12 @@
 - Plans-surface client telemetry stays separate from server checkout-start attribution: a plans
   checkout button may still emit client `upsell_accepted` with `source=plans` while its
   `/api/checkout/session` request carries the approved workout-context checkout attribution.
-- Current checkout-cancel client telemetry remains current-surface telemetry unless a future
-  workout-context decline/cancel child explicitly maps the cancel return with approved source,
-  placement, product, and reason semantics. Checkout cancel is not payment failure, provider
-  failure, entitlement failure, non-buyer proof, or finance truth.
+- Checkout-cancel client telemetry remains current-surface telemetry for generic `/plans` and My
+  Library returns. The mapped workout-context `/plans` return may carry `source=workout_context`,
+  `placementId=workout_saved_post_success`, `productId=guide_poolside`,
+  `surface=plans_checkout_return`, and `reason=checkout_cancelled` only for the approved
+  saved-workout CTA -> Poolside guide checkout path. Checkout cancel is not payment failure,
+  provider failure, entitlement failure, non-buyer proof, or finance truth.
 - `cancelPath` must be a local path. Absolute URLs and protocol-relative URLs fall back to the
   server default.
 
@@ -431,8 +433,12 @@
   dismissed, or failed to convert. The current-surface totals count only approved existing sources
   such as `plans` and `library_explore`; unknown sources remain separate, and workout-context CTA
   rows are counted only in the dedicated `workoutContextCta` aggregate when explicitly mapped.
-  Workout-context checkout-cancel or explicit dismiss remains contract-only until a future child
-  maps exact source, placement, product, and reason semantics under
+  Workout-context checkout-cancel is mapped only for the approved saved-workout Poolside checkout
+  return with `source=workout_context`, `placementId=workout_saved_post_success`,
+  `productId=guide_poolside`, `surface=plans_checkout_return`, and
+  `reason=checkout_cancelled`; it remains outside dedicated Admin Analytics decline KPIs until a
+  future child maps denominator, copy, Help/Guide impact, and tests. Explicit dismiss remains
+  unmapped until a future child defines it under
   `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
@@ -485,8 +491,7 @@
   sessions, revenue, provider failure, entitlement failure, Stripe reconciliation, accounting, or
   finance reporting. Unknown or unmapped future products, placements, sources, or checkout paths
   require explicit mapping before entering this dedicated summary. Decline/cancel is not a stage in
-  this summary until a future child maps the signal, denominator, copy, Help/Guide impact, and
-  tests.
+  this summary until a future child maps denominator, copy, Help/Guide impact, and tests.
 - Workout-context checkout completion and entitlement dashboard caveat:
   `workoutContextCheckoutOutcome` is derived only from mapped `checkout_completed` and
   `entitlement_granted` rows with `source=workout_context`,

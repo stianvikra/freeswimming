@@ -4,10 +4,11 @@ Last updated: 2026-06-12
 
 ## Purpose
 
-This contract defines how FreeSwimming may later measure workout-context checkout cancel or decline
-behavior. It is intentionally a contract only. It does not add runtime event callsites, checkout
-behavior, Stripe behavior, entitlement logic, Admin Analytics UI, finance reporting, exports, raw
-drilldown, vendor analytics, product catalog changes, pricing, migrations, or RLS changes.
+This contract defines how FreeSwimming may measure workout-context checkout cancel or decline
+behavior. It started as a contract-only artifact and now permits the mapped checkout-cancel runtime
+signal described below. It does not add checkout behavior, Stripe behavior, entitlement logic, Admin
+Analytics UI, finance reporting, exports, raw drilldown, vendor analytics, product catalog changes,
+pricing, migrations, or RLS changes.
 
 Related contracts:
 
@@ -17,8 +18,14 @@ Related contracts:
 
 ## Current Decision
 
-Workout-context `upsell_declined` remains unmapped until a later runtime child implements one exact
-signal approved by this contract.
+Workout-context `upsell_declined` is mapped only for the exact checkout-cancel return signal
+approved by this contract:
+
+- `source=workout_context`,
+- `placementId=workout_saved_post_success`,
+- `productId=guide_poolside`,
+- `surface=plans_checkout_return`,
+- `reason=checkout_cancelled`.
 
 The current plans and My Library checkout-cancel tracker may continue to emit `upsell_declined` for
 existing commercial surfaces. That existing signal means a user returned from checkout with the
@@ -26,14 +33,13 @@ current `checkout=cancelled` flag for those surfaces. It does not mean all ignor
 non-buyers, failed checkout creation, provider failure, entitlement failure, refund state, revenue,
 or finance truth.
 
-Workout-context decline may become measurable only through a future owner-approved child that
-chooses one of these explicit signals:
+Additional workout-context decline meanings may become measurable only through a future
+owner-approved child that chooses one of these explicit signals:
 
-- checkout-cancel return from a mapped workout-context checkout path,
 - explicit CTA dismiss from a mapped workout-context CTA surface,
 - another named user action with a bounded reason key.
 
-Absence of a future event is unknown, not decline.
+Absence of an event is unknown, not decline.
 
 ## Eligible Signals
 
@@ -45,9 +51,11 @@ true:
 - `source=workout_context`,
 - `placementId=workout_saved_post_success`,
 - `productId=guide_poolside`,
+- `surface=plans_checkout_return`,
+- `reason=checkout_cancelled`,
 - the cancel return came from the same mapped saved-workout CTA -> `/plans` -> Poolside guide
   checkout path,
-- a future runtime child intentionally preserves those dimensions through the cancel path,
+- runtime intentionally preserves those dimensions through the cancel path,
 - tests prove generic plans traffic, other products, malformed values, and future placements stay
   out of dedicated workout-context decline counts.
 
@@ -88,13 +96,13 @@ These must not count as workout-context decline:
 
 ## Event Semantics
 
-`upsell_declined` may mean workout-context decline only after a future child defines the exact
-runtime signal and maps it here.
+`upsell_declined` may mean workout-context decline only for the exact runtime signal mapped here, or
+after a future child defines another exact signal and maps it here.
 
-Allowed future reason keys must be bounded machine values such as:
+Allowed reason keys must be bounded machine values such as:
 
 - `checkout_cancelled` for an approved mapped checkout-cancel return,
-- `cta_dismissed` for an approved explicit CTA dismiss.
+- future `cta_dismissed` for an approved explicit CTA dismiss.
 
 Reason keys are append-only after they appear in analytics, support docs, or tests. Changing
 meaning requires a new child and either a new key or an explicit alias/migration plan.
@@ -117,7 +125,7 @@ adds a deterministic dedupe contract. Dashboard copy must not describe them as u
 
 ## Allowed Payload Dimensions
 
-Future workout-context decline telemetry may include only low-cardinality, sanitized dimensions:
+Workout-context decline telemetry may include only low-cardinality, sanitized dimensions:
 
 - `source`: `workout_context`,
 - `placementId`: `workout_saved_post_success`,
@@ -252,9 +260,10 @@ Support may say:
 
 - current plans/My Library checkout-cancel telemetry means a checkout return flag was observed for
   those existing surfaces,
-- workout-context decline/cancel is not currently mapped as a dedicated KPI,
-- a future mapped checkout-cancel signal would mean a user returned from checkout on the approved
-  saved-workout Poolside path, not that payment failed,
+- workout-context checkout-cancel is mapped only for the approved saved-workout Poolside path and is
+  not currently mapped as a dedicated Admin Analytics KPI,
+- the mapped checkout-cancel signal means a user returned from checkout on the approved saved-workout
+  Poolside path, not that payment failed,
 - a future explicit dismiss signal would mean a mapped dismiss control was activated.
 
 Support must not say:
@@ -302,7 +311,7 @@ Unknown or deprecated values:
 
 ## Future Child Checklist
 
-Before workout-context decline/cancel implementation starts, the child must prove:
+Before additional workout-context decline/cancel implementation starts, the child must prove:
 
 - whether the signal is checkout-cancel, explicit dismiss, or another named action,
 - exact source/placement/product/reason mapping,

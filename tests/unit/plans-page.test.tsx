@@ -250,7 +250,8 @@ describe("PlansPage", () => {
 
     expect(requestBody).toMatchObject({
       productId: "guide_poolside",
-      cancelPath: "/plans?checkout=cancelled&product=guide_poolside&source=plans",
+      cancelPath:
+        "/plans?checkout=cancelled&product=guide_poolside&source=workout_context&placementId=workout_saved_post_success&productId=guide_poolside&surface=plans_checkout_return&reason=checkout_cancelled",
       source: "workout_context",
       placementId: "workout_saved_post_success",
     });
@@ -275,6 +276,7 @@ describe("PlansPage", () => {
 
     expect(guideRequestBody).toMatchObject({
       productId: "guide_0_1000m",
+      cancelPath: "/plans?checkout=cancelled&product=guide_0_1000m&source=plans",
       source: "plans",
     });
     expect(guideRequestBody).not.toHaveProperty("placementId");

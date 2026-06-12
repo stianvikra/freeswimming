@@ -19,8 +19,9 @@ attribution propagation and tests.
 
 Workout-context checkout-cancel and decline boundaries are defined in
 `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`. That contract
-keeps current `/plans` and My Library checkout-cancel telemetry separate from workout-context
-decline until a future child maps exact source, placement, product, and reason semantics.
+keeps current `/plans` and My Library checkout-cancel telemetry separate from the exact mapped
+workout-context checkout-cancel return with approved source, placement, product, surface, and reason
+semantics.
 
 ## Official Provider Baseline
 

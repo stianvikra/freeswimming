@@ -45,6 +45,64 @@ describe("TrackCheckoutCancel", () => {
     });
   });
 
+  it("tracks mapped workout-context checkout cancel only with approved dimensions", async () => {
+    navigationState.pathname = "/plans";
+    navigationState.searchParams = new URLSearchParams({
+      checkout: "cancelled",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+      productId: "guide_poolside",
+      surface: "plans_checkout_return",
+      reason: "checkout_cancelled",
+      rawUrl: "https://example.com/?email=user@example.com",
+    });
+
+    render(<TrackCheckoutCancel surface="plans" />);
+
+    await waitFor(() => {
+      expect(sendClientAnalyticsEvent).toHaveBeenCalledWith("upsell_declined", {
+        surface: "plans_checkout_return",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+        productId: "guide_poolside",
+        reason: "checkout_cancelled",
+      });
+    });
+    expect(JSON.stringify(vi.mocked(sendClientAnalyticsEvent).mock.calls)).not.toContain(
+      "user@example.com"
+    );
+  });
+
+  it("keeps incomplete workout-context cancel attribution out of the mapped payload", async () => {
+    navigationState.pathname = "/plans";
+    navigationState.searchParams = new URLSearchParams({
+      checkout: "cancelled",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+      product: "guide_poolside",
+      productId: "guide_poolside",
+      surface: "plans_checkout_return",
+    });
+
+    render(<TrackCheckoutCancel surface="plans" />);
+
+    await waitFor(() => {
+      expect(sendClientAnalyticsEvent).toHaveBeenCalledWith("upsell_declined", {
+        surface: "plans",
+        source: "workout_context",
+        productId: "guide_poolside",
+        reason: "checkout_cancelled",
+      });
+    });
+    expect(sendClientAnalyticsEvent).not.toHaveBeenCalledWith(
+      "upsell_declined",
+      expect.objectContaining({
+        placementId: "workout_saved_post_success",
+        surface: "plans_checkout_return",
+      })
+    );
+  });
+
   it("does not track when checkout query flag is missing", async () => {
     navigationState.pathname = "/plans";
     navigationState.searchParams = new URLSearchParams({

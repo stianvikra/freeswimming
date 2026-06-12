@@ -3,11 +3,13 @@ import type { CatalogProduct } from "@/lib/commerce/catalog";
 import {
   buildCheckoutAttributionAnalyticsPayload,
   buildCheckoutAttributionMetadata,
+  buildWorkoutContextCheckoutCancelAttribution,
   buildWorkoutContextPlansHref,
   buildMappedCheckoutAttribution,
   buildCheckoutSessionPayload,
   buildCheckoutStartedAnalyticsPayload,
   getMappedCheckoutAttributionFromMetadata,
+  parseWorkoutContextCheckoutCancelAttribution,
   resolvePlansCheckoutAttributionForProduct,
 } from "@/lib/commerce/checkout";
 
@@ -304,5 +306,75 @@ describe("workout-context plans checkout attribution bridge", () => {
       source: "workout_context",
       placementId: "workout_saved_post_success",
     });
+  });
+
+  it("builds mapped checkout-cancel attribution only for the approved workout-context path", () => {
+    expect(
+      buildWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+      })
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+      surface: "plans_checkout_return",
+      reason: "checkout_cancelled",
+    });
+
+    expect(
+      buildWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_0_1000m",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+      })
+    ).toBeNull();
+
+    expect(
+      buildWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_poolside",
+        source: "plans",
+        placementId: "workout_saved_post_success",
+      })
+    ).toBeNull();
+  });
+
+  it("parses mapped checkout-cancel attribution only with approved surface and reason", () => {
+    expect(
+      parseWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+        surface: "plans_checkout_return",
+        reason: "checkout_cancelled",
+      })
+    ).toEqual({
+      productId: "guide_poolside",
+      source: "workout_context",
+      placementId: "workout_saved_post_success",
+      surface: "plans_checkout_return",
+      reason: "checkout_cancelled",
+    });
+
+    expect(
+      parseWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+        surface: "future_surface",
+        reason: "checkout_cancelled",
+      })
+    ).toBeNull();
+
+    expect(
+      parseWorkoutContextCheckoutCancelAttribution({
+        productId: "guide_poolside",
+        source: "workout_context",
+        placementId: "workout_saved_post_success",
+        surface: "plans_checkout_return",
+        reason: "future_reason",
+      })
+    ).toBeNull();
   });
 });
