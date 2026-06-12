@@ -111,6 +111,15 @@ export type AnalyticsInsightsResponse = {
     started: number;
     unknownEvents: number;
   };
+  workoutContextCheckoutOutcome: {
+    placementId: string;
+    productId: string;
+    source: string;
+    completed: number;
+    entitlementGranted: number;
+    entitlementGrantRate: number | null;
+    unknownEvents: number;
+  };
   workoutBuilderFunnel: {
     started: number;
     saved: number;
@@ -153,6 +162,8 @@ const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
 const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
 const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
 const CHECKOUT_STARTED_EVENT = "checkout_started" satisfies AnalyticsEventName;
+const CHECKOUT_COMPLETED_EVENT = "checkout_completed" satisfies AnalyticsEventName;
+const ENTITLEMENT_GRANTED_EVENT = "entitlement_granted" satisfies AnalyticsEventName;
 const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
 const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
 const EXISTING_UPSELL_SOURCE_VALUES = new Set(["plans", "library_explore"]);
@@ -255,7 +266,7 @@ function isMappedWorkoutContextCtaRow(row: AnalyticsEventInsightRow): boolean {
   );
 }
 
-function isWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+function isWorkoutContextCheckoutAttributionRow(row: AnalyticsEventInsightRow): boolean {
   const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
   const placementId = getSafePayloadDimension(row.payload, "placementId");
   return (
@@ -264,7 +275,7 @@ function isWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): bool
   );
 }
 
-function isMappedWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+function isMappedWorkoutContextCheckoutAttributionRow(row: AnalyticsEventInsightRow): boolean {
   const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
   const placementId = getSafePayloadDimension(row.payload, "placementId");
   const productId = getSafeRowOrPayloadDimension(row.product_id, row.payload, "productId");
@@ -273,6 +284,14 @@ function isMappedWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow)
     placementId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId &&
     productId === WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId
   );
+}
+
+function isWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+  return isWorkoutContextCheckoutAttributionRow(row);
+}
+
+function isMappedWorkoutContextCheckoutStartedRow(row: AnalyticsEventInsightRow): boolean {
+  return isMappedWorkoutContextCheckoutAttributionRow(row);
 }
 
 function normalizeExistingUpsellSource(row: AnalyticsEventInsightRow): string {
@@ -379,6 +398,9 @@ export function buildAnalyticsInsights(input: {
   let workoutContextCtaUnknownEvents = 0;
   let workoutContextCheckoutStarted = 0;
   let workoutContextCheckoutStartedUnknownEvents = 0;
+  let workoutContextCheckoutCompleted = 0;
+  let workoutContextEntitlementGranted = 0;
+  let workoutContextCheckoutOutcomeUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
 
@@ -388,6 +410,21 @@ export function buildAnalyticsInsights(input: {
         workoutContextCheckoutStarted += 1;
       } else if (isWorkoutContextCheckoutStartedRow(row)) {
         workoutContextCheckoutStartedUnknownEvents += 1;
+      }
+    }
+
+    if (
+      row.event_name === CHECKOUT_COMPLETED_EVENT ||
+      row.event_name === ENTITLEMENT_GRANTED_EVENT
+    ) {
+      if (isMappedWorkoutContextCheckoutAttributionRow(row)) {
+        if (row.event_name === CHECKOUT_COMPLETED_EVENT) {
+          workoutContextCheckoutCompleted += 1;
+        } else {
+          workoutContextEntitlementGranted += 1;
+        }
+      } else if (isWorkoutContextCheckoutAttributionRow(row)) {
+        workoutContextCheckoutOutcomeUnknownEvents += 1;
       }
     }
 
@@ -535,6 +572,18 @@ export function buildAnalyticsInsights(input: {
       source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
       started: workoutContextCheckoutStarted,
       unknownEvents: workoutContextCheckoutStartedUnknownEvents,
+    },
+    workoutContextCheckoutOutcome: {
+      placementId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId,
+      productId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId,
+      source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
+      completed: workoutContextCheckoutCompleted,
+      entitlementGranted: workoutContextEntitlementGranted,
+      entitlementGrantRate: ratio(
+        workoutContextEntitlementGranted,
+        workoutContextCheckoutCompleted
+      ),
+      unknownEvents: workoutContextCheckoutOutcomeUnknownEvents,
     },
     workoutBuilderFunnel: {
       started: workoutBuilderStarted,

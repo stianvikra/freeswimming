@@ -95,6 +95,15 @@ const basePayload: AnalyticsDashboardPayload = {
     started: 2,
     unknownEvents: 1,
   },
+  workoutContextCheckoutOutcome: {
+    placementId: "workout_saved_post_success",
+    productId: "guide_poolside",
+    source: "workout_context",
+    completed: 1,
+    entitlementGranted: 1,
+    entitlementGrantRate: 1,
+    unknownEvents: 1,
+  },
   workoutBuilderFunnel: {
     started: 5,
     saved: 3,
@@ -256,6 +265,38 @@ describe("admin analytics dashboard view model", () => {
       "saved-workout guide path reached checkout handoff"
     );
     expect(viewModel.workoutContextCheckoutStarted.caveat).toContain(
+      "do not match the approved saved-workout guide path"
+    );
+    expect(viewModel.workoutContextCheckoutOutcome.metrics).toEqual([
+      {
+        id: "workout-context-checkout-completed",
+        label: "Completed checkout",
+        value: "1",
+        detail: "",
+      },
+      {
+        id: "workout-context-entitlement-granted",
+        label: "Access granted",
+        value: "1",
+        detail: "",
+      },
+      {
+        id: "workout-context-entitlement-rate",
+        label: "Access rate",
+        value: "100%",
+        detail: "Access / completed",
+      },
+      {
+        id: "workout-context-checkout-outcome-unknown",
+        label: "Needs review",
+        value: "1",
+        detail: "Kept out of totals",
+      },
+    ]);
+    expect(viewModel.workoutContextCheckoutOutcome.detail).toContain(
+      "completed checkout and got app access"
+    );
+    expect(viewModel.workoutContextCheckoutOutcome.caveat).toContain(
       "do not match the approved saved-workout guide path"
     );
     expect(viewModel.workoutBuilderFunnel.metrics).toEqual([
@@ -465,6 +506,15 @@ describe("admin analytics dashboard view model", () => {
             started: 0,
             unknownEvents: 0,
           },
+          workoutContextCheckoutOutcome: {
+            placementId: "workout_saved_post_success",
+            productId: "guide_poolside",
+            source: "workout_context",
+            completed: 0,
+            entitlementGranted: 0,
+            entitlementGrantRate: null,
+            unknownEvents: 0,
+          },
           workoutBuilderFunnel: {
             started: 0,
             saved: 0,
@@ -541,6 +591,14 @@ describe("admin analytics dashboard view model", () => {
         metrics: [
           { id: "workout-context-checkout-started", value: "Not counted" },
           { id: "workout-context-checkout-started-unknown", value: "Not counted" },
+        ],
+      },
+      workoutContextCheckoutOutcome: {
+        metrics: [
+          { id: "workout-context-checkout-completed", value: "Not counted" },
+          { id: "workout-context-entitlement-granted", value: "Not counted" },
+          { id: "workout-context-entitlement-rate", value: "Not counted" },
+          { id: "workout-context-checkout-outcome-unknown", value: "Not counted" },
         ],
       },
       workoutBuilderSourceBreakdown: {
@@ -620,6 +678,15 @@ describe("admin analytics dashboard view model", () => {
           started: 0,
           unknownEvents: 1,
         },
+        workoutContextCheckoutOutcome: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          completed: 0,
+          entitlementGranted: 1,
+          entitlementGrantRate: null,
+          unknownEvents: 1,
+        },
         workoutBuilderSourceBreakdown: {
           manualStarts: 0,
           generatedDrafts: 1,
@@ -693,6 +760,15 @@ describe("admin analytics dashboard view model", () => {
     expect(zeroStarts.workoutContextCheckoutStarted.caveat).toContain(
       "until this path starts checkout"
     );
+    expect(zeroStarts.workoutContextCheckoutOutcome.metrics).toContainEqual({
+      id: "workout-context-entitlement-rate",
+      label: "Access rate",
+      value: "Not counted",
+      detail: "Access / completed",
+    });
+    expect(zeroStarts.workoutContextCheckoutOutcome.caveat).toContain(
+      "until this path completes checkout"
+    );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
       label: "Manual save rate",
@@ -756,6 +832,15 @@ describe("admin analytics dashboard view model", () => {
           productId: "guide_poolside",
           source: "workout_context",
           started: 3,
+          unknownEvents: 0,
+        },
+        workoutContextCheckoutOutcome: {
+          placementId: "workout_saved_post_success",
+          productId: "guide_poolside",
+          source: "workout_context",
+          completed: 2,
+          entitlementGranted: 3,
+          entitlementGrantRate: 1.5,
           unknownEvents: 0,
         },
         workoutBuilderSourceBreakdown: {
@@ -823,6 +908,15 @@ describe("admin analytics dashboard view model", () => {
       detail: "",
     });
     expect(duplicateTelemetry.workoutContextCheckoutStarted.caveat).toContain("not a purchase");
+    expect(duplicateTelemetry.workoutContextCheckoutOutcome.metrics).toContainEqual({
+      id: "workout-context-entitlement-rate",
+      label: "Access rate",
+      value: "150%",
+      detail: "Access / completed",
+    });
+    expect(duplicateTelemetry.workoutContextCheckoutOutcome.caveat).toContain(
+      "product/support signals"
+    );
     expect(duplicateTelemetry.workoutBuilderFunnel.caveat).toContain(
       "create more than one tracked action"
     );

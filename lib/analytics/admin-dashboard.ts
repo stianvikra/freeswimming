@@ -105,6 +105,12 @@ export type AnalyticsDashboardWorkoutContextCheckoutStarted = {
   caveat: string;
 };
 
+export type AnalyticsDashboardWorkoutContextCheckoutOutcome = {
+  metrics: AnalyticsDashboardMetric[];
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardViewModel = {
   state: AnalyticsDashboardTrustState;
   stateLabel: string;
@@ -118,6 +124,7 @@ export type AnalyticsDashboardViewModel = {
   existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
   workoutContextCta: AnalyticsDashboardWorkoutContextCta;
   workoutContextCheckoutStarted: AnalyticsDashboardWorkoutContextCheckoutStarted;
+  workoutContextCheckoutOutcome: AnalyticsDashboardWorkoutContextCheckoutOutcome;
   workoutBuilderFunnel: AnalyticsDashboardWorkoutBuilderFunnel;
   workoutBuilderSourceBreakdown: AnalyticsDashboardWorkoutBuilderSourceBreakdown;
   workoutBuilderTemplateGeneratedCompletion: AnalyticsDashboardWorkoutBuilderTemplateGeneratedCompletion;
@@ -609,6 +616,85 @@ function buildSchemaMissingWorkoutContextCheckoutStarted(): AnalyticsDashboardWo
   };
 }
 
+function buildWorkoutContextCheckoutOutcome(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardWorkoutContextCheckoutOutcome {
+  const outcome = payload.workoutContextCheckoutOutcome;
+  const completed = outcome?.completed ?? 0;
+  const entitlementGranted = outcome?.entitlementGranted ?? 0;
+  const entitlementGrantRate = outcome?.entitlementGrantRate ?? rate(entitlementGranted, completed);
+  const unknownEvents = outcome?.unknownEvents ?? 0;
+
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-completed",
+        label: "Completed checkout",
+        value: formatAnalyticsCount(completed),
+        detail: "",
+      },
+      {
+        id: "workout-context-entitlement-granted",
+        label: "Access granted",
+        value: formatAnalyticsCount(entitlementGranted),
+        detail: "",
+      },
+      {
+        id: "workout-context-entitlement-rate",
+        label: "Access rate",
+        value: formatAnalyticsPercent(entitlementGrantRate),
+        detail: "Access / completed",
+      },
+      {
+        id: "workout-context-checkout-outcome-unknown",
+        label: "Needs review",
+        value: formatAnalyticsCount(unknownEvents),
+        detail: "Kept out of totals",
+      },
+    ],
+    detail: "Shows how often the saved-workout guide path completed checkout and got app access.",
+    caveat:
+      completed === 0
+        ? "Completion and access are not counted until this path completes checkout in the selected range."
+        : unknownEvents > 0
+          ? "Some completion or access actions do not match the approved saved-workout guide path. They stay out of the main numbers until reviewed."
+          : "Completion and access are product/support signals only. They are not revenue, accounting records, Stripe reconciliation, or unique people.",
+  };
+}
+
+function buildSchemaMissingWorkoutContextCheckoutOutcome(): AnalyticsDashboardWorkoutContextCheckoutOutcome {
+  return {
+    metrics: [
+      {
+        id: "workout-context-checkout-completed",
+        label: "Completed checkout",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-entitlement-granted",
+        label: "Access granted",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "workout-context-entitlement-rate",
+        label: "Access rate",
+        value: "Not counted",
+        detail: "Access / completed",
+      },
+      {
+        id: "workout-context-checkout-outcome-unknown",
+        label: "Needs review",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+    ],
+    detail: "Saved-workout completion and access counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading saved-workout completion and access counts.",
+  };
+}
+
 function buildWorkoutBuilderFunnel(
   payload: AnalyticsInsightsResponse
 ): AnalyticsDashboardWorkoutBuilderFunnel {
@@ -1013,6 +1099,7 @@ export function buildAnalyticsDashboardViewModel(
       existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
       workoutContextCta: buildSchemaMissingWorkoutContextCta(),
       workoutContextCheckoutStarted: buildSchemaMissingWorkoutContextCheckoutStarted(),
+      workoutContextCheckoutOutcome: buildSchemaMissingWorkoutContextCheckoutOutcome(),
       workoutBuilderFunnel: buildSchemaMissingWorkoutBuilderFunnel(),
       workoutBuilderSourceBreakdown: buildSchemaMissingWorkoutBuilderSourceBreakdown(),
       workoutBuilderTemplateGeneratedCompletion:
@@ -1108,6 +1195,7 @@ export function buildAnalyticsDashboardViewModel(
     existingUpsellBaseline: buildExistingUpsellBaseline(payload),
     workoutContextCta: buildWorkoutContextCta(payload),
     workoutContextCheckoutStarted: buildWorkoutContextCheckoutStarted(payload),
+    workoutContextCheckoutOutcome: buildWorkoutContextCheckoutOutcome(payload),
     workoutBuilderFunnel: buildWorkoutBuilderFunnel(payload),
     workoutBuilderSourceBreakdown: buildWorkoutBuilderSourceBreakdown(payload),
     workoutBuilderTemplateGeneratedCompletion:
@@ -1124,6 +1212,7 @@ export function buildAnalyticsDashboardViewModel(
       "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Saved-workout completion and access counts show provider-backed completion and app-recognized access for the approved guide path only. They are not revenue, Stripe reconciliation, accounting records, or unique people.",
       "Builder save-rate shows product activity only. It is not unique people, checkout performance, purchases, or revenue.",
       "Manual/generated workout split shows product activity only. It is not export success, revenue attribution, or accounting evidence.",
       "Template starts count only the Use template action. Do not infer template use from nearby labels, saved workouts, or generated drafts.",

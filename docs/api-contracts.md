@@ -470,13 +470,15 @@
   Unknown or unmapped checkout-start rows stay out of the dedicated count and may appear only as a
   bounded review-needed aggregate. These values are not purchase, access, revenue, accounting,
   Stripe reconciliation, finance reporting, or unique-user conversion.
-- Workout-context checkout completion and entitlement attribution caveat: `checkout_completed` and
-  `entitlement_granted` rows may carry approved backend-only workout-context attribution after
-  Stripe signature verification, paid/async-success handling, product resolution, and entitlement
-  fulfillment. They are still not counted as dedicated workout-context completion or entitlement
-  outcomes in the current Admin Analytics response. A future dashboard child must explicitly map
-  those rows, tests, support copy, and privacy boundaries before dedicated workout-context KPI
-  modules appear.
+- Workout-context checkout completion and entitlement dashboard caveat:
+  `workoutContextCheckoutOutcome` is derived only from mapped `checkout_completed` and
+  `entitlement_granted` rows with `source=workout_context`,
+  `placementId=workout_saved_post_success`, and `productId=guide_poolside`. Completion means a
+  supported Stripe checkout completion event was accepted by the webhook. Entitlement grant means
+  the app recognized access after fulfillment. Unknown or unmapped completion/access rows stay out
+  of the dedicated count and may appear only as a bounded review-needed aggregate. These values are
+  not revenue, refunds, payouts, invoices, accounting, Stripe reconciliation, finance reporting, or
+  unique-user conversion.
 - Privacy boundary: public aggregate events are not linked to user profiles and the dashboard must
   not display raw payload JSON, raw URLs, emails, IPs, user agents, visitor IDs, notes, cart details,
   shipping, or payment data.
@@ -578,6 +580,15 @@
     "productId": "guide_poolside",
     "source": "workout_context",
     "started": 2,
+    "unknownEvents": 1
+  },
+  "workoutContextCheckoutOutcome": {
+    "placementId": "workout_saved_post_success",
+    "productId": "guide_poolside",
+    "source": "workout_context",
+    "completed": 1,
+    "entitlementGranted": 1,
+    "entitlementGrantRate": 1,
     "unknownEvents": 1
   },
   "workoutBuilderFunnel": {
