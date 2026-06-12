@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildWorkoutBuilderTemplateSelectedPayload,
   buildWorkoutBuilderTemplateSelectedPayloadForTemplate,
-  buildWorkoutContextCtaPayload,
 } from "@/lib/analytics/workout-builder";
 
 describe("workout builder analytics", () => {
@@ -65,27 +64,5 @@ describe("workout builder analytics", () => {
     expect(JSON.stringify(activePayload)).not.toContain("Technique reset 900");
     expect(JSON.stringify(activePayload)).not.toContain("manual-template");
     expect(JSON.stringify(activePayload)).not.toContain("notes");
-  });
-
-  it("builds a bounded workout-context CTA payload without private workout identifiers", () => {
-    const payload = buildWorkoutContextCtaPayload({
-      draft: {
-        environment: "pool",
-      },
-      sourceKind: "manual",
-    });
-
-    expect(payload).toEqual({
-      source: "workout_context",
-      surface: "saved_workout_post_success",
-      placementId: "workout_saved_post_success",
-      productId: "guide_poolside",
-      sourceKind: "manual",
-      builderMode: "pool",
-    });
-    expect(JSON.stringify(payload)).not.toContain("workout-");
-    expect(JSON.stringify(payload)).not.toContain("title");
-    expect(JSON.stringify(payload)).not.toContain("notes");
-    expect(JSON.stringify(payload)).not.toContain("email");
   });
 });

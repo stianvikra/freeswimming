@@ -83,11 +83,13 @@ describe("AdminHelpCenter", () => {
     expect(
       screen.getByText(/Manual starts and saves show hands-on builder activity/i)
     ).toBeVisible();
-    expect(screen.getByText(/Shown means the Poolside guide prompt appeared/i)).toBeVisible();
     expect(
       screen.getByText(
-        /The stage summary lines up shown, clicked, checkout handoff, checkout cancelled/i
+        /Shown and clicked are historical saved-workout Poolside guide prompt events/i
       )
+    ).toBeVisible();
+    expect(
+      screen.getByText(/The stage summary lines up historical shown\/clicked prompt activity/i)
     ).toBeVisible();
     expect(screen.getAllByText(/Cancel rate is cancelled \/ shown/i)).toHaveLength(2);
     expect(

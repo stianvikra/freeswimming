@@ -619,7 +619,7 @@ describe("WorkoutBuilderHub", () => {
     expect(screen.getByTestId("session-draft-step-stroke-4")).toHaveValue("im_by_round");
   }, 30_000);
 
-  it("shows the workout-context CTA only after a successful save and tracks mapped events", async () => {
+  it("keeps the save success message free of Poolside guide upsell actions", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         draft: SessionDraft;
@@ -639,9 +639,7 @@ describe("WorkoutBuilderHub", () => {
       } as Response;
     });
 
-    render(
-      <WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} workoutContextCtaProductAvailable />
-    );
+    render(<WorkoutBuilderHub workoutLibrary={buildWorkoutLibrary()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("workout-builder-hub")).toHaveAttribute(
@@ -654,7 +652,7 @@ describe("WorkoutBuilderHub", () => {
 
     openWorkoutMetadataPanel();
     fireEvent.change(screen.getByTestId("session-draft-title"), {
-      target: { value: "Saved workout with CTA" },
+      target: { value: "Saved workout without upsell" },
     });
     fireEvent.click(screen.getByTestId("workout-builder-save"));
 
@@ -662,42 +660,29 @@ describe("WorkoutBuilderHub", () => {
       expect(screen.getByText("Changes saved to this session.")).toBeVisible();
     });
 
-    const expectedPayload = {
-      source: "workout_context",
-      surface: "saved_workout_post_success",
-      placementId: "workout_saved_post_success",
-      productId: "guide_poolside",
-      sourceKind: "ai_session_v1",
-      builderMode: "pool",
-    };
-
-    await waitFor(() => {
-      expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith(
-        "upsell_presented",
-        expectedPayload
-      );
-    });
-
-    const cta = screen.getByTestId("workout-context-cta-link");
-    expect(cta).toBeVisible();
-    expect(cta).toHaveAccessibleName("See Poolside guide");
-    expect(cta).toHaveAttribute(
-      "href",
-      "/plans?source=workout_context&placementId=workout_saved_post_success&productId=guide_poolside#plans-comparison-heading"
+    expect(screen.queryByRole("link", { name: "See Poolside guide" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Not now" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-context-cta-link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("workout-context-cta-dismiss")).not.toBeInTheDocument();
+    expect(sendClientAnalyticsEventMock).not.toHaveBeenCalledWith(
+      "upsell_presented",
+      expect.anything()
     );
-    expect(JSON.stringify(expectedPayload)).not.toContain("workout-1");
-    expect(JSON.stringify(expectedPayload)).not.toContain("Saved workout with CTA");
-
-    fireEvent.click(cta);
-
-    expect(sendClientAnalyticsEventMock).toHaveBeenCalledWith("upsell_accepted", expectedPayload);
+    expect(sendClientAnalyticsEventMock).not.toHaveBeenCalledWith(
+      "upsell_accepted",
+      expect.anything()
+    );
     expect(sendClientAnalyticsEventMock).not.toHaveBeenCalledWith(
       "upsell_declined",
       expect.anything()
     );
+    expect(JSON.stringify(sendClientAnalyticsEventMock.mock.calls)).not.toContain("workout-1");
+    expect(JSON.stringify(sendClientAnalyticsEventMock.mock.calls)).not.toContain(
+      "Saved workout without upsell"
+    );
   });
 
-  it("hides the workout-context CTA after save when the mapped product is unavailable", async () => {
+  it("does not add Poolside guide upsell actions when a saved workout is updated", async () => {
     vi.mocked(fetch).mockImplementation(async (_input, init) => {
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         draft: SessionDraft;

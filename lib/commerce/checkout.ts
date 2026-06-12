@@ -242,16 +242,6 @@ export function buildCheckoutAttributionAnalyticsPayload(
   };
 }
 
-export function buildWorkoutContextPlansHref() {
-  const params = new URLSearchParams({
-    source: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.source,
-    placementId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.placementId,
-    productId: WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION.productId,
-  });
-
-  return `/plans?${params.toString()}#plans-comparison-heading`;
-}
-
 export function resolvePlansCheckoutAttributionForProduct(input: {
   productId: CatalogProductId;
   searchParams?: CheckoutAttributionSearchParams;

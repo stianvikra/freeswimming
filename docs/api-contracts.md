@@ -156,8 +156,8 @@
   Library returns. The mapped workout-context `/plans` return may carry `source=workout_context`,
   `placementId=workout_saved_post_success`, `productId=guide_poolside`,
   `surface=plans_checkout_return`, and `reason=checkout_cancelled` only for the approved
-  saved-workout CTA -> Poolside guide checkout path. Checkout cancel is not payment failure,
-  provider failure, entitlement failure, non-buyer proof, or finance truth.
+  historical or externally linked saved-workout CTA -> Poolside guide checkout path. Checkout cancel
+  is not payment failure, provider failure, entitlement failure, non-buyer proof, or finance truth.
 - `cancelPath` must be a local path. Absolute URLs and protocol-relative URLs fall back to the
   server default.
 
@@ -440,7 +440,9 @@
   that exact return and bounded review-needed buckets. The Poolside guide stage summary may use
   this mapped cancel count with `cancelled / shown` as its denominator. Explicit dismiss remains
   unmapped until a future child defines it under
-  `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
+  `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`. The current
+  workout save success surface no longer renders the saved-workout Poolside guide prompt, so it
+  does not emit new prompt shown/clicked/declined events from that surface.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
@@ -466,11 +468,12 @@
 - Workout-context CTA caveat: `workoutContextCta` is product telemetry derived only from mapped
   `upsell_presented` and `upsell_accepted` rows with `source=workout_context`,
   `placementId=workout_saved_post_success`, and `productId=guide_poolside`. Presented means the
-  mapped saved-workout CTA rendered; accepted means clicked intent. Unknown or unmapped
-  workout-context rows stay out of KPI counts. These values are not checkout conversion,
-  entitlement truth, Stripe reconciliation, revenue attribution, finance reporting, or unique-user
-  conversion.
-- Checkout-start attribution caveat: the mapped saved-workout CTA may preserve
+  historical mapped saved-workout CTA rendered; accepted means clicked intent. The current workout
+  save success surface no longer renders that prompt. Unknown or unmapped workout-context rows stay
+  out of KPI counts. These values are not checkout conversion, entitlement truth, Stripe
+  reconciliation, revenue attribution, finance reporting, or unique-user conversion.
+- Checkout-start attribution caveat: historical or externally linked mapped saved-workout CTA paths
+  may preserve
   `source=workout_context`, `placementId=workout_saved_post_success`, and
   `productId=guide_poolside` through `/plans` into `checkout_started`. This remains checkout
   handoff/session creation only, not CTA conversion, checkout completion, entitlement, Stripe
