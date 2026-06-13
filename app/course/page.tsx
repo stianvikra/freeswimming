@@ -58,10 +58,13 @@ import {
 } from "@/lib/course/runtime-identity";
 import {
   buildCourseLessonProgressStatusMap,
-  getCourseLessonPassCriteria,
   normalizeCourseLessonCriteriaChecks,
   normalizeCourseLessonCriteriaCheckRecord,
 } from "@/lib/course/progress-status";
+import {
+  buildCourseLessonExperienceViewModel,
+  type CourseLessonExperienceViewPractice,
+} from "@/lib/course/lesson-experience";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 import {
@@ -178,6 +181,95 @@ type CourseNavButtonProps = {
   /** set false when you don't want flex-1 (desktop buttons) */
   grow?: boolean;
 };
+
+type CoursePracticeMediaFrameProps = {
+  practice: CourseLessonExperienceViewPractice;
+  tone: "land" | "water";
+};
+
+function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFrameProps) {
+  const image = practice.image;
+  const imageSrc = image?.src;
+  const fallbackLabel = tone === "land" ? "Land practice visual" : "Water practice visual";
+  const toneClass =
+    tone === "land"
+      ? "from-slate-100 via-white to-blue-50/70 text-slate-700"
+      : "from-blue-50 via-white to-cyan-50 text-blue-800";
+
+  return (
+    <div className="space-y-2">
+      <div
+        data-testid={`course-practice-${tone}-media`}
+        className={cx(
+          "relative aspect-[4/3] min-h-[190px] overflow-hidden rounded-[20px] border border-slate-200/74 bg-gradient-to-br ring-1 ring-white/80",
+          toneClass
+        )}
+        aria-label={imageSrc ? undefined : `${fallbackLabel} not available`}
+        role={imageSrc ? undefined : "img"}
+      >
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={image?.alt ?? `${practice.title} visual`}
+            fill
+            unoptimized
+            loading={tone === "land" ? "eager" : "lazy"}
+            sizes="(max-width: 640px) 86vw, (max-width: 1024px) 34vw, 300px"
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+            <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              {fallbackLabel}
+            </span>
+            <span className="text-[15px] font-semibold text-slate-800">Visual not added yet</span>
+          </div>
+        )}
+      </div>
+      {image?.caption ? (
+        <p className="text-[12px] leading-5 font-medium text-slate-500">{image.caption}</p>
+      ) : null}
+    </div>
+  );
+}
+
+type CoursePracticeStepsProps = {
+  steps: string[];
+  tone: "land" | "water";
+};
+
+function CoursePracticeSteps({ steps, tone }: CoursePracticeStepsProps) {
+  const stepClass =
+    tone === "land"
+      ? "border-slate-200/72 bg-slate-50/76 text-slate-800"
+      : "border-blue-100/80 bg-blue-50/58 text-slate-800";
+  const markerClass = tone === "land" ? "bg-slate-900 text-white" : "bg-blue-600 text-white";
+
+  return (
+    <ol className="mt-4 space-y-2 text-[14px] leading-6">
+      {steps.map((step, index) => (
+        <li
+          key={step}
+          className={cx(
+            "grid grid-cols-[28px_minmax(0,1fr)] items-start gap-3 rounded-2xl border px-3 py-2.5",
+            stepClass
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className={cx(
+              "mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold",
+              markerClass
+            )}
+          >
+            {index + 1}
+          </span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 function CourseNavButton({
   children,
@@ -1680,14 +1772,19 @@ function CoursePageClient() {
     if (!nextId) return null;
     return courseLessonsFlat.find((lesson) => lesson.id === nextId) ?? null;
   }, [courseLessonsFlat, nextId]);
+  const lessonExperience = useMemo(
+    () => buildCourseLessonExperienceViewModel(activeLesson),
+    [activeLesson]
+  );
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
   const lessonType = activeLesson.lessonType ?? "drill";
   const lessonNumberInModule =
     moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
   const lessonDisplay = activeLesson.display;
-  const commonMistakes = activeLesson.commonMistakes ?? [];
+  const commonMistakes = lessonExperience.commonMistakes;
   const showGoalSection = lessonDisplay?.goal !== false;
-  const showCuesSection = lessonDisplay?.cues !== false;
+  const showWhyThisMattersSection = Boolean(lessonExperience.whyThisMatters);
+  const showCuesSection = lessonDisplay?.cues !== false && lessonExperience.feelCues.length > 0;
   const showCommonMistakesSection =
     lessonDisplay?.commonMistakes !== false && commonMistakes.length > 0;
   const showDrillSection = lessonDisplay?.drill !== false;
@@ -1718,13 +1815,18 @@ function CoursePageClient() {
     () => `/course?lesson=${encodeURIComponent(activeLesson.id)}`,
     [activeLesson.id]
   );
-  const showLessonPrimaryColumn = showGoalSection || showCuesSection || showCommonMistakesSection;
-  const showLessonSecondaryColumn = showDrillSection || showPassOrNextCard || showExtraHelpCard;
+  const showLessonExperienceSections =
+    showGoalSection ||
+    showCuesSection ||
+    showCommonMistakesSection ||
+    showDrillSection ||
+    showPassOrNextCard ||
+    showExtraHelpCard;
   const lessonContentReady = courseContentLoadState !== "loading";
   const drillBadgeLabel =
     activeLesson.drillLabel?.trim() ||
     (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
-  const passCriteria = getCourseLessonPassCriteria(activeLesson);
+  const passCriteria = lessonExperience.masteryCriteria;
   const doneGateChecks = useMemo(
     () =>
       normalizeCourseLessonCriteriaChecks(
@@ -3086,232 +3188,354 @@ function CoursePageClient() {
             </section>
           </div>
 
-          {showLessonPrimaryColumn || showLessonSecondaryColumn ? (
-            <section className="mt-4 grid gap-3 lg:grid-cols-3">
-              {showLessonPrimaryColumn ? (
-                <div
-                  className={cx(
-                    "rounded-[24px] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.90))] p-6 shadow-[0_12px_30px_rgba(15,23,42,0.075)] lg:border-slate-300/70 lg:bg-white/95 lg:shadow-[0_18px_42px_rgba(15,23,42,0.08)]",
-                    showLessonSecondaryColumn ? "lg:col-span-2" : "lg:col-span-3"
-                  )}
+          {showLessonExperienceSections ? (
+            <section
+              data-testid="course-lesson-experience"
+              className="mt-4 space-y-3"
+              aria-labelledby="course-lesson-experience-heading"
+            >
+              <h2 id="course-lesson-experience-heading" className="sr-only">
+                Lesson practice
+              </h2>
+
+              <div className="grid gap-3 lg:grid-cols-2">
+                <article
+                  data-testid="course-lesson-focus"
+                  className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
                 >
-                  {showGoalSection ? (
-                    <>
-                      <h2 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                        Goal
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                        Lesson focus
+                      </p>
+                      <h2 className="mt-1 text-[20px] leading-7 font-semibold text-slate-950">
+                        {activeLesson.title}
                       </h2>
-                      <p className="mt-2 text-[15px] leading-7 text-slate-700">
-                        {activeLesson.goal}
-                      </p>
-                    </>
-                  ) : null}
-
-                  {showCuesSection ? (
-                    <div className={showGoalSection ? "mt-5" : ""}>
-                      <h3 className="text-[16px] font-semibold tracking-wide text-slate-900">
-                        Cues (pick one)
-                      </h3>
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
-                        {activeLesson.cues.map((c) => (
-                          <li key={c}>{c}</li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 text-[12px] font-medium text-slate-500">
-                        Keep it simple: choose one cue per session.
-                      </p>
                     </div>
-                  ) : null}
+                    <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[13px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
+                      {lessonExperience.primaryCue}
+                    </span>
+                  </div>
 
-                  {showCommonMistakesSection ? (
+                  <div className="mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)_minmax(0,1fr)] lg:divide-x lg:divide-slate-200/72 lg:border-t-0 lg:pt-0">
+                    {showGoalSection ? (
+                      <div className="lg:pr-4">
+                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                          Goal
+                        </p>
+                        <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
+                          {lessonExperience.goal}
+                        </h3>
+                      </div>
+                    ) : null}
+
                     <div
                       className={cx(
-                        "rounded-2xl border border-slate-200/72 bg-white/78 p-3 lg:border-slate-300/68 lg:bg-white/90",
-                        showGoalSection || showCuesSection ? "mt-5" : ""
+                        showGoalSection &&
+                          "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:px-4 lg:pt-0"
                       )}
                     >
-                      <PressButton
-                        tier="nav"
-                        onClick={toggleCommonMistakes}
-                        aria-expanded={commonMistakesExpanded}
-                        aria-controls="common-mistakes-list"
-                        className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
-                      >
-                        <span>Common mistakes</span>
-                        <span className="text-[12px] text-slate-600">
-                          {commonMistakesExpanded ? "Hide" : "Show"}
-                        </span>
-                      </PressButton>
+                      <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                        Quick explanation
+                      </p>
+                      <p className="mt-2 text-[15px] leading-7 text-slate-700">
+                        {lessonExperience.quickExplanation}
+                      </p>
+                    </div>
 
-                      {commonMistakesExpanded ? (
+                    {showWhyThisMattersSection ? (
+                      <div
+                        data-testid="course-lesson-why-this-matters"
+                        className="border-t border-blue-100/80 bg-blue-50/50 pt-4 lg:border-t-0 lg:bg-transparent lg:pt-0 lg:pl-4"
+                      >
+                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                          Why this matters
+                        </p>
+                        <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
+                          {lessonExperience.whyThisMatters}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+
+                {showDrillSection ? (
+                  <>
+                    <article className="overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2 lg:border-slate-300/68">
+                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                        <CoursePracticeMediaFrame
+                          practice={lessonExperience.landPractice}
+                          tone="land"
+                        />
+                        <div className="px-1 pb-2 sm:px-2 md:py-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                              Land practice
+                            </p>
+                            <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/72">
+                              Before water
+                            </span>
+                          </div>
+                          <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
+                            {lessonExperience.landPractice.title}
+                          </h3>
+                          <CoursePracticeSteps
+                            steps={lessonExperience.landPractice.steps}
+                            tone="land"
+                          />
+                        </div>
+                      </div>
+                    </article>
+
+                    <article className="overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2">
+                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                        <CoursePracticeMediaFrame
+                          practice={lessonExperience.waterPractice}
+                          tone="water"
+                        />
+                        <div className="px-1 pb-2 sm:px-2 md:py-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                              Water practice
+                            </p>
+                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
+                              {drillBadgeLabel}
+                            </span>
+                          </div>
+                          <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
+                            {lessonExperience.waterPractice.title}
+                          </h3>
+                          <CoursePracticeSteps
+                            steps={lessonExperience.waterPractice.steps}
+                            tone="water"
+                          />
+                          {lessonExperience.waterPractice.safetyNote ? (
+                            <p className="mt-4 rounded-2xl border border-amber-200/72 bg-amber-50/75 px-3 py-2 text-[13px] leading-6 font-medium text-amber-900">
+                              {lessonExperience.waterPractice.safetyNote}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  </>
+                ) : null}
+
+                {showCuesSection ? (
+                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                          Feel cues
+                        </p>
+                        <p className="mt-1 text-[12px] font-medium text-slate-500">
+                          Use these immediately after the water practice.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
+                        Choose one
+                      </span>
+                    </div>
+                    <ul className="mt-3 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-3">
+                      {lessonExperience.feelCues.map((cue) => (
+                        <li
+                          key={cue}
+                          className="rounded-2xl border border-slate-200/72 bg-slate-50/72 px-3 py-2"
+                        >
+                          {cue}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-3 text-[12px] font-medium text-slate-500">
+                      Keep it simple: choose one cue per session.
+                    </p>
+                  </article>
+                ) : null}
+
+                {showCommonMistakesSection ? (
+                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
+                    <PressButton
+                      tier="nav"
+                      onClick={toggleCommonMistakes}
+                      aria-expanded={commonMistakesExpanded}
+                      aria-controls="common-mistakes-list"
+                      className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
+                    >
+                      <span>Common mistakes</span>
+                      <span className="text-[12px] text-slate-600">
+                        {commonMistakesExpanded ? "Hide" : "Show"}
+                      </span>
+                    </PressButton>
+
+                    {commonMistakesExpanded ? (
+                      <div className="mt-3">
+                        <div
+                          aria-hidden="true"
+                          className="hidden grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 rounded-xl bg-slate-50/80 px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase ring-1 ring-slate-200/70 sm:grid"
+                        >
+                          <span>Common mistake</span>
+                          <span>Correction</span>
+                        </div>
                         <ul
                           id="common-mistakes-list"
-                          className="mt-2 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700"
+                          className="mt-2 space-y-2 text-[14px] leading-7 text-slate-800"
                         >
-                          {commonMistakes.map((m) => (
-                            <li key={m}>{m}</li>
+                          {commonMistakes.map((mistake) => (
+                            <li
+                              key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
+                              data-testid="course-common-mistake-row"
+                              className="grid gap-2 rounded-2xl border border-slate-200/72 bg-white/78 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+                            >
+                              <div>
+                                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
+                                  Common mistake
+                                </span>
+                                <span className="font-semibold text-slate-950">
+                                  {mistake.mistake}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
+                                  Correction
+                                </span>
+                                {mistake.fix ? (
+                                  <span className="text-slate-700">{mistake.fix}</span>
+                                ) : (
+                                  <span className="text-slate-500">Correction not added yet</span>
+                                )}
+                              </div>
+                            </li>
                           ))}
                         </ul>
-                      ) : (
-                        <p className="mt-2 text-[12px] font-medium text-slate-600">
-                          Expand to review common errors for this lesson.
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {showLessonSecondaryColumn ? (
-                <div
-                  className={cx(
-                    "rounded-[24px] border border-slate-200/72 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.92))] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/68 lg:bg-white/96 lg:shadow-[0_16px_36px_rgba(15,23,42,0.08)]",
-                    showLessonPrimaryColumn ? "" : "lg:col-span-3"
-                  )}
-                >
-                  {showDrillSection ? (
-                    <>
-                      <div className="inline-flex rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/72">
-                        {drillBadgeLabel}
                       </div>
-
-                      <h2 className="mt-3 text-[18px] font-semibold text-slate-900">
-                        {activeLesson.drill.title}
-                      </h2>
-
-                      <ol className="mt-3 list-decimal space-y-2 pl-5 text-[14px] leading-7 text-slate-800">
-                        {activeLesson.drill.steps.map((s) => (
-                          <li key={s}>{s}</li>
-                        ))}
-                      </ol>
-                    </>
-                  ) : null}
-
-                  {showPassOrNextCard ? (
-                    <div className={cx(showDrillSection ? "mt-5 p-4" : "p-4", supportCardClass)}>
-                      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                        <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          {showPassCriteria ? "Pass criteria" : "Next step"}
-                        </div>
-                        {showPassCriteria ? (
-                          <button
-                            type="button"
-                            onClick={toggleLessonDone}
-                            disabled={markDoneBlockedByGate}
-                            aria-pressed={isLessonDone}
-                            data-testid="course-pass-criteria-mark-done-button"
-                            className={cx(
-                              "mt-1 inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition",
-                              isLessonDone
-                                ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                                : markDoneBlockedByGate
-                                  ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                                  : "bg-white/92 text-slate-700 ring-slate-200/72 hover:bg-slate-50"
-                            )}
-                          >
-                            {isLessonDone ? "Done" : "Mark as done"}
-                          </button>
-                        ) : null}
-                      </div>
-                      {showPassCriteria ? (
-                        !lessonContentReady ? (
-                          <p className="mt-2 text-[13px] leading-6 text-slate-600">
-                            Loading pass criteria...
-                          </p>
-                        ) : doneGateRequired ? (
-                          <ul
-                            data-testid="course-done-gate-checklist"
-                            className="mt-2 space-y-2 text-[13px] leading-6 text-slate-800"
-                          >
-                            {passCriteria.map((criterion, index) => {
-                              const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
-                              const checked = doneGateChecksSet.has(criterion);
-                              return (
-                                <li key={criterionId}>
-                                  <label
-                                    htmlFor={criterionId}
-                                    className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
-                                  >
-                                    <input
-                                      id={criterionId}
-                                      type="checkbox"
-                                      checked={checked}
-                                      onChange={() => toggleDoneGateCriterion(criterion)}
-                                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span>{criterion}</span>
-                                  </label>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        ) : (
-                          <ul className="mt-1 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
-                            {passCriteria.map((criterion) => (
-                              <li key={criterion}>{criterion}</li>
-                            ))}
-                          </ul>
-                        )
-                      ) : (
-                        <div className="mt-1 text-[14px] leading-6 text-slate-800">
-                          {activeLesson.nextStep}
-                        </div>
-                      )}
-                      {showPassCriteria ? (
-                        <p className="mt-2 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500">
-                          {doneGateRequired
-                            ? activeLessonProgressStatus === "in_progress"
-                              ? "Keep checking off what feels true. When all items are true, mark the lesson done."
-                              : "Check off what feels true. When all items are true, mark the lesson done."
-                            : doneConfirmedLabel
-                              ? `Marked done after criteria check on ${doneConfirmedLabel}.`
-                              : "When these are met, mark lesson as done here or in overview."}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {showExtraHelpCard ? (
-                    <div
-                      data-testid="course-support-card"
-                      className={cx(
-                        COURSE_SUPPORT_HELP_CARD_CLASS,
-                        showDrillSection || showPassOrNextCard ? "mt-5" : ""
-                      )}
-                    >
-                      <h3 className="text-[15px] font-semibold text-slate-900">Need extra help?</h3>
-                      <p className="mt-1 text-[12px] leading-5 text-slate-600">
-                        If this doesn&apos;t click after 2-3 sessions, your #1 limiter may be
-                        elsewhere.
+                    ) : (
+                      <p className="mt-2 text-[12px] font-medium text-slate-600">
+                        Expand to review common errors for this lesson.
                       </p>
-                      <div className="mt-3 flex flex-col gap-2">
-                        {enabledSupportActions.map((action) => {
-                          const isPrimary =
-                            configuredPrimarySupportAction !== null &&
-                            configuredPrimarySupportAction === action.id;
+                    )}
+                  </article>
+                ) : null}
+
+                {showPassCriteria ? (
+                  <article className={cx("p-5", supportCardClass)}>
+                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                      <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                        Pass criteria
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleLessonDone}
+                        disabled={markDoneBlockedByGate}
+                        aria-pressed={isLessonDone}
+                        data-testid="course-pass-criteria-mark-done-button"
+                        className={cx(
+                          "mt-1 inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition",
+                          isLessonDone
+                            ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                            : markDoneBlockedByGate
+                              ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                              : "bg-white/92 text-slate-700 ring-slate-200/72 hover:bg-slate-50"
+                        )}
+                      >
+                        {isLessonDone ? "Done" : "Mark as done"}
+                      </button>
+                    </div>
+                    {!lessonContentReady ? (
+                      <p className="mt-2 text-[13px] leading-6 text-slate-600">
+                        Loading pass criteria...
+                      </p>
+                    ) : doneGateRequired ? (
+                      <ul
+                        data-testid="course-done-gate-checklist"
+                        className="mt-3 space-y-2 text-[13px] leading-6 text-slate-800"
+                      >
+                        {passCriteria.map((criterion, index) => {
+                          const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
+                          const checked = doneGateChecksSet.has(criterion);
                           return (
-                            <PressLink
-                              key={action.id}
-                              tier={isPrimary ? "cta" : "nav"}
-                              href={action.href}
-                              data-testid={`course-support-action-${action.id}`}
-                              className={
-                                isPrimary
-                                  ? COURSE_SUPPORT_PRIMARY_ACTION_CLASS
-                                  : COURSE_SUPPORT_SECONDARY_ACTION_CLASS
-                              }
-                            >
-                              {action.label}
-                            </PressLink>
+                            <li key={criterionId}>
+                              <label
+                                htmlFor={criterionId}
+                                className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                              >
+                                <input
+                                  id={criterionId}
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleDoneGateCriterion(criterion)}
+                                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>{criterion}</span>
+                              </label>
+                            </li>
                           );
                         })}
-                      </div>
-                      {showOpenOnPhoneCard ? (
-                        <CourseOpenOnPhoneCard
-                          lessonTitle={activeLesson.title}
-                          sharePath={openOnPhoneSharePath}
-                        />
-                      ) : null}
-                    </div>
+                      </ul>
+                    ) : (
+                      <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                        {passCriteria.map((criterion) => (
+                          <li key={criterion}>{criterion}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500">
+                      {doneGateRequired
+                        ? activeLessonProgressStatus === "in_progress"
+                          ? "Keep checking off what feels true. When all items are true, mark the lesson done."
+                          : "Check off what feels true. When all items are true, mark the lesson done."
+                        : doneConfirmedLabel
+                          ? `Marked done after criteria check on ${doneConfirmedLabel}.`
+                          : "When these are met, mark lesson as done here or in overview."}
+                    </p>
+                  </article>
+                ) : null}
+
+                {showNextStepSection ? (
+                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:border-slate-300/68 lg:bg-white">
+                    <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                      Next step
+                    </p>
+                    <p className="mt-2 text-[15px] leading-7 text-slate-800">
+                      {lessonExperience.nextStep}
+                    </p>
+                  </article>
+                ) : null}
+              </div>
+
+              {showExtraHelpCard ? (
+                <div data-testid="course-support-card" className={COURSE_SUPPORT_HELP_CARD_CLASS}>
+                  <h3 className="text-[15px] font-semibold text-slate-900">
+                    {lessonExperience.support.title}
+                  </h3>
+                  <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                    {lessonExperience.support.body}
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    {enabledSupportActions.map((action) => {
+                      const isPrimary =
+                        configuredPrimarySupportAction !== null &&
+                        configuredPrimarySupportAction === action.id;
+                      return (
+                        <PressLink
+                          key={action.id}
+                          tier={isPrimary ? "cta" : "nav"}
+                          href={action.href}
+                          data-testid={`course-support-action-${action.id}`}
+                          className={
+                            isPrimary
+                              ? COURSE_SUPPORT_PRIMARY_ACTION_CLASS
+                              : COURSE_SUPPORT_SECONDARY_ACTION_CLASS
+                          }
+                        >
+                          {action.label}
+                        </PressLink>
+                      );
+                    })}
+                  </div>
+                  {showOpenOnPhoneCard ? (
+                    <CourseOpenOnPhoneCard
+                      lessonTitle={activeLesson.title}
+                      sharePath={openOnPhoneSharePath}
+                    />
                   ) : null}
                 </div>
               ) : null}
