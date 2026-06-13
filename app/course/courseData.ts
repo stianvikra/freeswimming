@@ -14,6 +14,43 @@ export type CourseSupportCard = {
   primaryAction?: CourseSupportActionId;
 };
 
+export type CourseLessonExperienceImage = {
+  src?: string;
+  alt?: string;
+  caption?: string;
+};
+
+export type CourseLessonExperiencePractice = {
+  title?: string;
+  steps?: string[];
+  safetyNote?: string;
+  image?: CourseLessonExperienceImage;
+};
+
+export type CourseLessonExperienceMistake =
+  | string
+  | {
+      mistake?: string;
+      fix?: string;
+    };
+
+export type CourseLessonExperienceSupport = {
+  title?: string;
+  body?: string;
+};
+
+export type CourseLessonExperience = {
+  goal?: string;
+  quickExplanation?: string;
+  whyThisMatters?: string;
+  landPractice?: CourseLessonExperiencePractice;
+  waterPractice?: CourseLessonExperiencePractice;
+  commonMistakes?: CourseLessonExperienceMistake[];
+  feelCues?: string[];
+  nextStep?: string;
+  support?: CourseLessonExperienceSupport;
+};
+
 export type CourseLesson = {
   id: string; // used in URL: /course?lesson=<id>
   legacyIds?: string[];
@@ -35,6 +72,7 @@ export type CourseLesson = {
     nextStep?: boolean;
     support?: boolean;
   };
+  lessonExperience?: CourseLessonExperience;
 
   goal: string;
   cues: string[];
@@ -340,6 +378,60 @@ const COURSE_MODULES_BASE: CourseModule[] = [
         goal: "Learn to hold a long line face-down without lifting the head.",
         cues: ["Head neutral"],
         commonMistakes: ["Looking forward", "Holding breath", "Dropping hips"],
+        lessonExperience: {
+          quickExplanation:
+            "Front body position is the base for easy freestyle. Keep the head quiet, exhale gently, and let the water support a long line before adding more swimming.",
+          whyThisMatters:
+            "A quiet head helps the body float longer, keeps the hips closer to the surface, and makes breathing and kicking easier later.",
+          landPractice: {
+            title: "Wall line rehearsal",
+            steps: [
+              "Stand with your back to a wall and soften the neck.",
+              "Look slightly down, not forward, and feel the back of the head stay long.",
+              "Take three calm breaths while keeping ribs and hips stacked.",
+            ],
+            image: {
+              src: "/course/lesson-media/body-position-front-wall-line.jpg",
+              alt: "Swimmer standing with their back against a wall to rehearse a long neutral body line.",
+              caption: "Rehearse the same head and body line before entering the water.",
+            },
+          },
+          waterPractice: {
+            title: "Front glide + exhale: 6 x 6-10s",
+            steps: [
+              "Start in shallow water where you can stand easily.",
+              "Push off gently, look down, and exhale small bubbles.",
+              "Stop before you need to lift the head or kick hard to survive.",
+            ],
+            safetyNote:
+              "Use shallow water and reset on your feet between reps. Do not force breath holds.",
+            image: {
+              src: "/course/lesson-media/body-position-front-glide.jpg",
+              alt: "Swimmer gliding face-down with a long body line, neutral head, and small bubbles.",
+              caption: "Keep the head quiet and stop before the line feels forced.",
+            },
+          },
+          commonMistakes: [
+            {
+              mistake: "Looking forward",
+              fix: "Look down and let the water carry the head.",
+            },
+            {
+              mistake: "Holding breath",
+              fix: "Release small bubbles so the body stays calm.",
+            },
+            {
+              mistake: "Dropping hips",
+              fix: "Reset shorter reps before adding kick or distance.",
+            },
+          ],
+          feelCues: ["Back of head long", "Easy bubbles", "Hips close to the surface"],
+          nextStep:
+            "When the front line feels calm for a few short reps, continue to Body Position on the Side.",
+          support: {
+            body: "Free lesson first: learn the line, then use support only if you want structure or a second set of eyes.",
+          },
+        },
         drill: {
           title: "Front glide + exhale: 6 × 6–10s",
           steps: [

@@ -14,6 +14,7 @@ import {
   resolveCourseModuleRuntimeAliases,
   resolveCourseModuleRuntimeId,
 } from "@/lib/course/runtime-identity";
+import { normalizeCourseLessonExperienceInput } from "@/lib/course/lesson-experience";
 import type { CourseContentReadStatus } from "@/lib/course/preview";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
@@ -266,6 +267,9 @@ export function toPublishedCourseModules(
         ? getStringArray(body.passCriteria)
         : undefined,
       display: normalizeLessonDisplay(body.display),
+      lessonExperience:
+        normalizeCourseLessonExperienceInput(body.lessonExperience) ??
+        fallbackLesson?.lessonExperience,
       goal: getString(body.goal) ?? row.summary ?? "Refine your freestyle.",
       cues: cues.length > 0 ? cues : ["Swim relaxed and controlled."],
       commonMistakes:
@@ -432,7 +436,7 @@ export const loadPublishedCourseModulesCached = unstable_cache(
       fallback: COURSE_MODULES,
       autoSeedWhenEmpty: true,
     }),
-  ["published-course-modules-v1"],
+  ["published-course-modules-v4"],
   {
     revalidate: PUBLIC_COURSE_CONTENT_REVALIDATE_SECONDS,
     tags: ["published-course-content"],

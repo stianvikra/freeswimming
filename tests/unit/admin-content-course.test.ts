@@ -78,6 +78,33 @@ describe("toPublishedCourseModules", () => {
               nextStep: false,
               support: false,
             },
+            lessonExperience: {
+              quickExplanation: "DB quick explanation",
+              whyThisMatters: "DB why this matters",
+              landPractice: {
+                title: "DB land practice",
+                steps: ["Land step"],
+                image: {
+                  src: "/course/lesson-media/db-land.webp",
+                  alt: "DB land practice visual",
+                },
+              },
+              waterPractice: {
+                title: "DB water practice",
+                steps: ["Water step"],
+                safetyNote: "DB safety note",
+                image: {
+                  src: "https://example.com/not-allowed.jpg",
+                  alt: "DB water practice visual",
+                },
+              },
+              commonMistakes: [{ mistake: "DB mistake", fix: "DB fix" }],
+              feelCues: ["DB feel cue"],
+              nextStep: "DB experience next step",
+              support: {
+                body: "DB support body",
+              },
+            },
             nextStep: "Move to next lesson",
             tags: ["timing"],
           },
@@ -118,6 +145,32 @@ describe("toPublishedCourseModules", () => {
         checkpoint: true,
         nextStep: false,
         support: false,
+      },
+      lessonExperience: {
+        quickExplanation: "DB quick explanation",
+        whyThisMatters: "DB why this matters",
+        landPractice: {
+          title: "DB land practice",
+          steps: ["Land step"],
+          image: {
+            src: "/course/lesson-media/db-land.webp",
+            alt: "DB land practice visual",
+          },
+        },
+        waterPractice: {
+          title: "DB water practice",
+          steps: ["Water step"],
+          safetyNote: "DB safety note",
+          image: {
+            alt: "DB water practice visual",
+          },
+        },
+        commonMistakes: [{ mistake: "DB mistake", fix: "DB fix" }],
+        feelCues: ["DB feel cue"],
+        nextStep: "DB experience next step",
+        support: {
+          body: "DB support body",
+        },
       },
       nextStep: "Move to next lesson",
       tags: ["timing"],
@@ -246,5 +299,50 @@ describe("toPublishedCourseModules", () => {
     });
     expect(mappedLesson?.supportStartAtLessonInModule).toBeUndefined();
     expect(mappedLesson?.nextStep).toBe("Continue to the next lesson.");
+  });
+
+  it("keeps static lesson experience fallback for the representative V1 lesson", () => {
+    const modules = toPublishedCourseModules(
+      [
+        {
+          id: "module-row-4",
+          slug: "course-module-mod4",
+          title: "Body Position",
+          summary: "Hold the line",
+          sort_order: 0,
+          body: {
+            moduleId: "mod4",
+          },
+        },
+      ],
+      [
+        {
+          id: "lesson-row-4",
+          parent_id: "module-row-4",
+          slug: "course-lesson-mod4-l3",
+          title: "Body Position on the Front mapped",
+          summary: "Mapped summary fallback",
+          sort_order: 0,
+          body: {
+            lessonId: "mod4-l3",
+          },
+        },
+      ]
+    );
+
+    const mappedLesson = modules[0]?.lessons[0];
+
+    expect(mappedLesson?.id).toBe("body-position--body-position-front");
+    expect(mappedLesson?.lessonExperience?.quickExplanation).toContain("Front body position");
+    expect(mappedLesson?.lessonExperience?.whyThisMatters).toContain("A quiet head");
+    expect(mappedLesson?.lessonExperience?.waterPractice?.title).toBe(
+      "Front glide + exhale: 6 x 6-10s"
+    );
+    expect(mappedLesson?.lessonExperience?.landPractice?.image?.src).toBe(
+      "/course/lesson-media/body-position-front-wall-line.jpg"
+    );
+    expect(mappedLesson?.lessonExperience?.waterPractice?.image?.src).toBe(
+      "/course/lesson-media/body-position-front-glide.jpg"
+    );
   });
 });
