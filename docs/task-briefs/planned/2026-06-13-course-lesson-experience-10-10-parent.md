@@ -44,6 +44,46 @@ Vi lager først en styringsbrief for svømmeleksjonene, ikke kode. Den skal sikr
 
 Freeswimming should not try to beat hardware-first or social-tracking platforms first. The 10/10 wedge is clearer learning before the swim, better sensory cues during practice, and honest systemization after the free lesson value is delivered.
 
+## Commercial 10/10 Gap Ladder
+
+This parent should carry the full commercial direction, while each child remains small enough to execute safely.
+
+| Stage                                             | Expected Commercial Readiness | What Must Be True                                                                                                                                 |
+| ------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current app                                       | `6.5/10`                      | The app has strong engineering, progress, builder, admin, and commerce foundations, but the lesson page is not yet the unmistakable product core. |
+| After V1 lesson redesign                          | `7.5-8/10`                    | Representative lessons feel complete, simple, and useful for learning crawl before any payment ask.                                               |
+| After PRO systemization + proof + analytics + SEO | `9/10`                        | Users can turn lessons into habits/plans, trust the method through proof, discover the lessons organically, and see honest upgrade value.         |
+| 10/10 claim                                       | `10/10` only with evidence    | User data shows that people learn, return, complete lessons, engage with PRO after free value, and some pay without aggressive paywalling.        |
+
+10/10 is therefore not only a design claim. It requires evidence that the model works commercially and educationally.
+
+## Commercial Readiness Gates
+
+Future children should progressively prove these gates:
+
+1. Users start lessons after landing on the course.
+2. Users understand the lesson goal and cue within the first screen or first 30 seconds.
+3. Users complete or continue lessons without needing external explanation.
+4. Users return to the course after at least one lesson.
+5. Users click PRO/systemization CTAs only after free lesson value is visible.
+6. Some users pay for structure, personalization, plans, habits, or support without feeling the best learning is paywalled.
+7. Support/contact signals show that users understand the free-vs-PRO boundary.
+8. Course content can be improved repeatedly without code-only edits.
+
+## Distribution And Growth Risk
+
+Distribution is the highest commercial risk. A 10/10 product that nobody finds is not a 10/10 business.
+
+Required future distribution surfaces:
+
+- SEO and AI-discoverable lesson pages for learn-crawl intent.
+- YouTube/short-form clips that point back to the free lesson path.
+- Native/share-link behavior that makes individual lessons easy to send.
+- Email capture or follow-up path that does not interrupt learning.
+- Clear free `learn crawl` funnel that can be measured from first visit to lesson completion to PRO interest.
+
+Distribution work should be planned as its own child after V1 proves the lesson format, unless V1 reveals a blocking discoverability issue.
+
 ## Child Brief Plan
 
 | Child                                                                                                                                                                                                 | Status    | Purpose                                                                                                                              |
@@ -51,8 +91,10 @@ Freeswimming should not try to beat hardware-first or social-tracking platforms 
 | [Lesson Experience V1 Pedagogical Layout And Fallback Data](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-13-course-lesson-experience-v1-pedagogical-layout-fallback-data-10-10.md) | `planned` | Prove the new lesson structure with optional fields, old-field fallbacks, two representative lessons, tests, and screenshot handoff. |
 | Course Lesson Admin Content Governance                                                                                                                                                                | `future`  | Make the new pedagogical fields editable, governable, previewable, and rollback-safe in admin content workflows.                     |
 | Course Lesson PRO Systemization Bridge                                                                                                                                                                | `future`  | Add honest login/PRO routing for saving dryland, habits, micro-sessions, and programme entry without hiding free learning content.   |
+| Course Lesson Proof And Trust                                                                                                                                                                         | `future`  | Add method proof, sample outcomes, before/after examples, and trust copy without overstating results.                                |
 | Course Lesson Analytics And KPI Interpretation                                                                                                                                                        | `future`  | Add privacy-safe event mapping, dashboard interpretation, and support-safe diagnostics for lesson and PRO bridge behavior.           |
 | Course Lesson SEO And Canonical Route Upgrade                                                                                                                                                         | `future`  | Evaluate canonical lesson routes, metadata, structured data, sitemap behavior, and AI-discoverable lesson semantics.                 |
+| Course Lesson Distribution Funnel                                                                                                                                                                     | `future`  | Connect SEO, YouTube/shorts, share links, email capture, and free-course funnel measurement after V1 is stable.                      |
 | Course Lesson Visual Coaching Media Pilot                                                                                                                                                             | `future`  | Connect the lesson experience to the planned visual coaching production system after the page contract is stable.                    |
 
 ## Skill / Capability Audit
@@ -67,6 +109,8 @@ Freeswimming should not try to beat hardware-first or social-tracking platforms 
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Course lesson UI         | `/course` has a mature but compact video-plus-goal layout; the new pedagogy should reuse the route, player, progress, and token patterns instead of creating a new course app. | high     | bounded implementation child   | no                       | `docs/task-briefs/planned/2026-06-13-course-lesson-experience-v1-pedagogical-layout-fallback-data-10-10.md` |
 | Content/admin governance | Current admin course editor maps core fields only; new pedagogical fields need a separate admin governance child before a full platform 10/10 claim.                           | high     | bounded implementation child   | no                       | `planned` child to create before broad rollout                                                              |
+| Commercial proof         | The model can make money only if users finish free lesson value, return, and then want systemization; V1 must not overbuild PRO before lesson value is proven.                 | high     | bounded implementation child   | no                       | `planned` proof/analytics children after V1                                                                 |
+| Distribution             | Organic discovery and repeat contact are not solved by the lesson UI alone; SEO, YouTube/shorts, share links, and email follow-up need a separate growth child.                | high     | bounded implementation child   | yes, before growth spend | `planned` distribution child after V1                                                                       |
 | SEO and routes           | The current query-param lesson route can serve V1, but canonical lesson URLs and structured lesson semantics need a separate route/SEO decision before 10/10 discoverability.  | medium   | deferred architecture decision | yes, before route change | `planned` child to create after V1 evidence                                                                 |
 
 ## Platform 10/10 Scorecard Mapping
@@ -88,37 +132,39 @@ Critical target categories for the 10/10 claim gate:
 - AI discoverability
 - Analytics and KPI observability
 - Commerce and revenue ops
+- Incident response and support operations
+- i18n operational readiness
 - Stack-fit and dependency discipline
 - Testing and QA automation
 - Scalability and cost efficiency
 
-| Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                | Evidence                                          | Expected Closeout Score |
-| --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | Parent and children preserve the free lesson versus PRO systemization contract and define a simple default lesson path.                                           | child brief scope review + owner approval         | `5/5`                   |
-| UX flow clarity                               | `target`     | User can understand the lesson path as Lesson in 30 seconds, Watch, Remember, Try on land, Try in water, Check, Next step.                                        | V1 screenshots + e2e route smoke                  | `5/5`                   |
-| Visual design quality                         | `target`     | Lesson UI must be calmer and more polished than the current route without introducing card clutter or competing CTAs.                                             | screenshot handoff + design review                | `5/5`                   |
-| Business logic correctness and data integrity | `target`     | Existing lessons and progress behavior continue to work when new optional fields are absent.                                                                      | unit fallback tests + course e2e                  | `5/5`                   |
-| Admin editor ergonomics                       | `target`     | Before broad rollout, admin can create and revise the new pedagogical lesson fields without JSON-only editing.                                                    | future admin child + Help/Guide evidence          | `5/5`                   |
-| Accessibility (a11y)                          | `target`     | Changed lesson sections use semantic headings, keyboard-safe controls, valid labels, contrast, and non-color-only meaning.                                        | component/e2e checks + screenshot review          | `5/5`                   |
-| Performance (CWV + payloads)                  | `target`     | `/course` remains within route budgets and adds no unnecessary dependency or large client bundle.                                                                 | performance budget gate + bundle diff review      | `5/5`                   |
-| Data placement and sync boundaries            | `target`     | Free lesson content, PRO save state, local progress, and server-canonical admin content have explicit ownership boundaries.                                       | child data contract + tests                       | `5/5`                   |
-| Caching and invalidation strategy             | `target`     | Public course content keeps predictable published-content revalidation and admin preview behavior.                                                                | cache contract review + preview tests             | `5/5`                   |
-| Reliability and failure handling              | `target`     | Missing video, missing optional fields, unknown CTA routes, and partial content data render useful fallbacks, not broken pages.                                   | negative-path tests + manual QA                   | `5/5`                   |
-| Security and authz                            | `target`     | Educational content remains public, while PRO save and admin edit operations fail closed and keep protected APIs protected.                                       | negative-path tests in future protected children  | `5/5`                   |
-| Privacy and compliance                        | `target`     | Personal programme onboarding or profile saves require clear consent and avoid unnecessary sensitive data collection.                                             | PRO bridge child + copy review                    | `5/5`                   |
-| Content governance                            | `target`     | New lesson fields have a named source of truth, owner workflow, fallback rules, preview behavior, and rollback path before broad rollout.                         | admin governance child + brief evidence           | `5/5`                   |
-| Admin workflow and editability                | `target`     | Operators can update pedagogical content, support CTA settings, safety notes, and publish state without code edits.                                               | future admin UI tests + Help/Guide                | `5/5`                   |
-| SEO and crawlability                          | `target`     | Lesson title, description, headings, canonical links, sitemap behavior, and indexability are explicit for public lesson pages.                                    | SEO child tests + metadata review                 | `5/5`                   |
-| AI discoverability                            | `target`     | Public lessons expose stable semantic structure for goal, cue, practice, mistakes, mastery, and next lesson.                                                      | rendered markup review + structured-data decision | `5/5`                   |
-| Analytics and KPI observability               | `target`     | Lesson start, video, practice, next lesson, share, and PRO bridge events use existing first-party analytics with privacy-safe payloads.                           | analytics child tests + admin dashboard mapping   | `5/5`                   |
-| Commerce and revenue ops                      | `target`     | PRO, T-shirt, and support CTAs are honest, route correctly, and do not imply free lessons are incomplete.                                                         | commerce route tests + copy review                | `5/5`                   |
-| Incident response and support operations      | `supporting` | Supporting because this parent changes no live route, but future children must document video/content fallback and support diagnostics.                           | child acceptance criteria                         | `4/5`                   |
-| Finance and reporting operations              | `supporting` | Supporting because this parent changes no price, invoice, payout, refund, or entitlement truth; future commerce children must preserve reconciliation boundaries. | future commerce child rationale                   | `4/5`                   |
-| i18n operational readiness                    | `supporting` | Supporting because the field model and layouts must avoid English-only structure blockers, but this parent does not implement locale routing.                     | forward compatibility contract                    | `4/5`                   |
-| Stack-fit and dependency discipline           | `target`     | Reuse current Next.js route, TypeScript contracts, content loader, UI primitives, and tests before adding dependencies.                                           | diff review in children                           | `5/5`                   |
-| Testing and QA automation                     | `target`     | Each child ships targeted unit/e2e/screenshot coverage plus `npm run verify:pre-pr` and `npm run verify:pre-merge`.                                               | local gates + CI                                  | `5/5`                   |
-| Scalability and cost efficiency               | `target`     | Lesson fields and rendering support many future lessons without per-lesson code branches or asset bloat.                                                          | future-value fixtures + code review               | `5/5`                   |
-| DevOps and rollback readiness                 | `target`     | Children stay isolated, revertible, and documented with screenshot artifacts for visual changes.                                                                  | PR diff + rollback notes                          | `5/5`                   |
+| Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                                             | Evidence                                          | Expected Closeout Score |
+| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------- |
+| Product goals and IA                          | `target`     | Parent and children preserve the free lesson versus PRO systemization contract, define the simple default lesson path, and keep commercial proof as a staged requirement.                      | child brief scope review + owner approval         | `5/5`                   |
+| UX flow clarity                               | `target`     | User can understand the lesson path as Lesson in 30 seconds, Watch, Remember, Try on land, Try in water, Check, Next step, then optional PRO systemization.                                    | V1 screenshots + e2e route smoke                  | `5/5`                   |
+| Visual design quality                         | `target`     | Lesson UI must be calmer and more polished than the current route without introducing card clutter, competing CTAs, or generic SaaS marketing weight.                                          | screenshot handoff + design review                | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Existing lessons and progress behavior continue to work when new optional fields are absent.                                                                                                   | unit fallback tests + course e2e                  | `5/5`                   |
+| Admin editor ergonomics                       | `target`     | Before broad rollout, admin can create and revise the new pedagogical lesson fields without JSON-only editing.                                                                                 | future admin child + Help/Guide evidence          | `5/5`                   |
+| Accessibility (a11y)                          | `target`     | Changed lesson sections use semantic headings, keyboard-safe controls, valid labels, contrast, and non-color-only meaning.                                                                     | component/e2e checks + screenshot review          | `5/5`                   |
+| Performance (CWV + payloads)                  | `target`     | `/course` remains within route budgets and adds no unnecessary dependency or large client bundle.                                                                                              | performance budget gate + bundle diff review      | `5/5`                   |
+| Data placement and sync boundaries            | `target`     | Free lesson content, PRO save state, local progress, and server-canonical admin content have explicit ownership boundaries.                                                                    | child data contract + tests                       | `5/5`                   |
+| Caching and invalidation strategy             | `target`     | Public course content keeps predictable published-content revalidation and admin preview behavior.                                                                                             | cache contract review + preview tests             | `5/5`                   |
+| Reliability and failure handling              | `target`     | Missing video, missing optional fields, unknown CTA routes, and partial content data render useful fallbacks, not broken pages.                                                                | negative-path tests + manual QA                   | `5/5`                   |
+| Security and authz                            | `target`     | Educational content remains public, while PRO save and admin edit operations fail closed and keep protected APIs protected.                                                                    | negative-path tests in future protected children  | `5/5`                   |
+| Privacy and compliance                        | `target`     | Personal programme onboarding or profile saves require clear consent and avoid unnecessary sensitive data collection.                                                                          | PRO bridge child + copy review                    | `5/5`                   |
+| Content governance                            | `target`     | New lesson fields, proof examples, safety notes, and commercial claims have a named source of truth, owner workflow, fallback rules, preview behavior, and rollback path before broad rollout. | admin governance child + brief evidence           | `5/5`                   |
+| Admin workflow and editability                | `target`     | Operators can update pedagogical content, support CTA settings, safety notes, and publish state without code edits.                                                                            | future admin UI tests + Help/Guide                | `5/5`                   |
+| SEO and crawlability                          | `target`     | Lesson title, description, headings, canonical links, sitemap behavior, and indexability are explicit for public lesson pages.                                                                 | SEO child tests + metadata review                 | `5/5`                   |
+| AI discoverability                            | `target`     | Public lessons expose stable semantic structure for goal, cue, practice, mistakes, mastery, and next lesson.                                                                                   | rendered markup review + structured-data decision | `5/5`                   |
+| Analytics and KPI observability               | `target`     | Lesson start, completion/continue, return, share, PRO bridge, and payment-interest signals use existing first-party analytics with privacy-safe payloads and dashboard interpretation.         | analytics child tests + admin dashboard mapping   | `5/5`                   |
+| Commerce and revenue ops                      | `target`     | PRO, T-shirt, and support CTAs are honest, route correctly, appear after lesson value, and do not imply free lessons are incomplete.                                                           | commerce route tests + copy review                | `5/5`                   |
+| Incident response and support operations      | `target`     | Future support docs explain free-vs-PRO boundaries, missing/broken lesson media, safety-note handling, and misunderstood upgrade states.                                                       | child acceptance criteria + Help/Guide/runbook    | `5/5`                   |
+| Finance and reporting operations              | `supporting` | Supporting because this parent changes no price, invoice, payout, refund, or entitlement truth; future commerce children must preserve reconciliation boundaries.                              | future commerce child rationale                   | `4/5`                   |
+| i18n operational readiness                    | `target`     | Field structure, screenshots, and future admin/editing rules must avoid blocking later localization of lesson copy, cue cards, safety notes, CTAs, and SEO metadata.                           | forward compatibility contract + V1 layout review | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Reuse current Next.js route, TypeScript contracts, content loader, UI primitives, and tests before adding dependencies.                                                                        | diff review in children                           | `5/5`                   |
+| Testing and QA automation                     | `target`     | Each child ships targeted unit/e2e/screenshot coverage plus `npm run verify:pre-pr` and `npm run verify:pre-merge`.                                                                            | local gates + CI                                  | `5/5`                   |
+| Scalability and cost efficiency               | `target`     | Lesson fields and rendering support many future lessons without per-lesson code branches or asset bloat.                                                                                       | future-value fixtures + code review               | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | Children stay isolated, revertible, and documented with screenshot artifacts for visual changes.                                                                                               | PR diff + rollback notes                          | `5/5`                   |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -137,6 +183,26 @@ Critical target categories for the 10/10 claim gate:
   - Screenshot handoff is required for all lesson UI implementation children.
 - Testing:
   - V1 needs unit tests for mapping/fallback behavior, component or route tests for missing optional fields, and Playwright screenshots.
+
+## 10/10 Proof Contract
+
+Do not claim full platform 10/10 for the lesson business model until these evidence classes exist:
+
+- Learning proof:
+  - users complete lessons or can answer the cue/memory check,
+  - users report that they understand what to try in the water.
+- Return proof:
+  - users come back to continue the course or next lesson.
+- Commercial proof:
+  - PRO clicks happen after free value has been delivered,
+  - first payments happen without aggressive paywalls,
+  - support/contact questions show the free-vs-PRO boundary is clear.
+- Content operations proof:
+  - new lessons can be improved through governed content workflow, not code-only edits.
+- Distribution proof:
+  - at least one repeatable channel brings learners to the free lesson path.
+
+The parent can contain these requirements now; implementation must happen through explicit child briefs.
 
 ## Data Placement And Sync Contract
 
@@ -174,14 +240,14 @@ Critical target categories for the 10/10 claim gate:
 ## Forward Compatibility Contract
 
 - Extensibility surfaces:
-  - Lesson fields, modules, categories, levels, equipment labels, PRO CTA actions, support CTA actions, analytics event payloads, public routes, admin content fields, and future locales.
+  - Lesson fields, modules, categories, levels, equipment labels, proof examples, distribution channels, PRO CTA actions, support CTA actions, analytics event payloads, public routes, admin content fields, and future locales.
 - Source of truth:
   - Future lessons should render from canonical course content and optional lesson-experience fields, not route-local hardcoded lesson IDs.
 - Additive behavior:
   - New lessons should automatically inherit the layout, fallbacks, progress, navigation, and free/PRO rules.
   - Unknown optional sections should be omitted or rendered through safe generic fallback copy.
 - Explicit mapping requirements:
-  - New PRO actions, support actions, route families, locale workflows, analytics event names, or commerce destinations require code/copy/test/doc updates.
+  - New PRO actions, support actions, route families, distribution channels, proof-claim types, locale workflows, analytics event names, or commerce destinations require code/copy/test/doc updates.
 - Unknown or deprecated values:
   - Unknown category/level/equipment values render as plain text or generic labels.
   - Unknown protected actions fail closed and route to a safe explanatory state.
@@ -193,7 +259,7 @@ Critical target categories for the 10/10 claim gate:
 - Define the parent product, architecture, and quality contract for course lesson experience work.
 - Define child order and required quality gates.
 - Preserve the free-vs-PRO principle.
-- Document that broad 10/10 requires UI, content governance, admin editability, analytics, SEO, commerce honesty, and scalability.
+- Document that broad 10/10 requires UI, content governance, admin editability, analytics, SEO/distribution, commerce honesty, proof/trust, return behavior, user learning evidence, and scalability.
 
 ## Out Of Scope
 
@@ -207,10 +273,12 @@ Critical target categories for the 10/10 claim gate:
 ## Acceptance Criteria
 
 1. Parent brief names the product principle, competitor benchmark, and child execution plan.
-2. Parent brief maps every platform scorecard category with target/supporting/N/A status.
-3. First child brief exists and is linked.
-4. Parent defines data, identity, forward compatibility, stack, and screenshot requirements.
-5. Changed briefs pass `npm run lint:briefs:all`.
+2. Parent brief includes the commercial 10/10 gap ladder and readiness gates.
+3. Parent brief captures distribution as a first-class commercial risk.
+4. Parent brief maps every platform scorecard category with target/supporting/N/A status.
+5. First child brief exists and is linked.
+6. Parent defines data, identity, forward compatibility, stack, proof, and screenshot requirements.
+7. Changed briefs pass `npm run lint:briefs:all`.
 
 ## Validation
 
@@ -221,3 +289,4 @@ Critical target categories for the 10/10 claim gate:
 ## Checkpoint Log
 
 - `2026-06-13 | planned | created parent planning brief after PR #1111/#1112 closeout left no active child; next: validate docs-only PR and use V1 child as the first implementation slice when owner approves execution`
+- `2026-06-13 | planned | sharpened parent with full commercial 10/10 ladder, readiness gates, distribution risk, proof contract, and forward-compatible child sequencing; next: keep PR #1113 docs-only and use V1 child for the first implementation slice after merge approval`

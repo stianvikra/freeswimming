@@ -49,6 +49,30 @@ V1 must preserve the principle:
 - The page never requires both a short and long video.
 - Missing optional fields must not create empty UI.
 
+## V1 Commercial Proof Boundary
+
+V1 is not expected to prove the full business model, but it must make the first proof step possible.
+
+V1 must prove:
+
+- 2-5 representative lessons can become genuinely excellent without requiring a separate app or new backend.
+- Free learning feels complete before any PRO or support CTA appears.
+- The user can answer: what should I do, what should I feel, what mistake should I avoid, and what is next?
+- PRO/systemization CTAs appear after useful lesson value, not before.
+- The screenshot handoff explicitly evaluates whether the user understands what to try in the water.
+
+V1 must not try to prove yet:
+
+- paid conversion,
+- long-term retention,
+- AI plans,
+- habit/micro-session persistence,
+- canonical lesson SEO route performance,
+- full admin editorial workflow,
+- distribution channel performance.
+
+Those are parent-owned future children.
+
 ## Recommended Data Model Direction
 
 Do not add dozens of required top-level fields. Add either a nested optional `lessonExperience` object or a typed view-model that maps current fields into the new display contract.
@@ -166,6 +190,7 @@ Fallback mapping:
   - next lesson,
   - bottom support CTA with Share, T-shirt, and Go PRO using existing route constants or safe placeholders.
 - Add or adapt two representative lessons in fallback-safe data form for verification.
+- Prefer 2-5 representative lessons if the implementation remains small and safe; stop at two if broader content work would make the slice too large.
 - Keep existing lesson IDs, progress sync, pass criteria, preview mode, admin notes context, QR behavior, and support-card behavior intact.
 - Capture screenshot handoff before broad gates.
 
@@ -202,9 +227,9 @@ Critical target categories for the scoped V1 10/10 claim gate:
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                         | Evidence                                                           | Expected Closeout Score |
 | --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------- |
-| Product goals and IA                          | `target`     | V1 renders the free lesson path in the agreed order and keeps PRO as systemization, not hidden teaching.                                                                   | screenshots + copy review + tests                                  | `5/5`                   |
-| UX flow clarity                               | `target`     | A first-time user can identify goal, cue, video, land practice, water practice, check criteria, and next step without dead ends.                                           | screenshot handoff + Playwright smoke                              | `5/5`                   |
-| Visual design quality                         | `target`     | The route feels calmer and more premium than the current lesson page, with stable responsive layout and no nested-card clutter.                                            | before/after screenshot handoff                                    | `5/5`                   |
+| Product goals and IA                          | `target`     | V1 renders the free lesson path in the agreed order, proves the first 2-5 representative lessons can carry the model, and keeps PRO as systemization, not hidden teaching. | screenshots + copy review + tests                                  | `5/5`                   |
+| UX flow clarity                               | `target`     | A first-time user can identify goal, cue, video, land practice, water practice, check criteria, next step, and optional systemization without dead ends.                   | screenshot handoff + Playwright smoke                              | `5/5`                   |
+| Visual design quality                         | `target`     | The route feels calmer and more premium than the current lesson page, with stable responsive layout, no nested-card clutter, and no generic marketing weight.              | before/after screenshot handoff                                    | `5/5`                   |
 | Business logic correctness and data integrity | `target`     | Existing lessons load when all new fields are missing, and progress/pass-criteria/video behavior remains deterministic.                                                    | unit fallback tests + existing course e2e                          | `5/5`                   |
 | Admin editor ergonomics                       | `supporting` | Supporting only: V1 may read JSON/body fields or static fallback data, but full editor ergonomics is a separate admin governance child.                                    | explicit follow-up path + no admin behavior regression             | `4/5`                   |
 | Accessibility (a11y)                          | `target`     | New sections use semantic headings, accessible buttons/links, keyboard-safe disclosure controls, image alt rules, and non-color-only meaning.                              | component/e2e assertions + screenshot review                       | `5/5`                   |
@@ -219,7 +244,7 @@ Critical target categories for the scoped V1 10/10 claim gate:
 | SEO and crawlability                          | `supporting` | Supporting because V1 improves semantic headings on `/course`, but canonical lesson routes and sitemap behavior are deferred.                                              | markup review + deferred SEO child                                 | `4/5`                   |
 | AI discoverability                            | `supporting` | Supporting because V1 creates stable semantic lesson sections, while structured data and canonical route decisions are deferred.                                           | rendered section review                                            | `4/5`                   |
 | Analytics and KPI observability               | `supporting` | Supporting because V1 may add safe wrappers only if existing analytics conventions fit; full event taxonomy is a later child.                                              | no-new-dependency diff + analytics follow-up                       | `4/5`                   |
-| Commerce and revenue ops                      | `target`     | Bottom support and PRO CTAs route honestly to existing destinations or safe placeholders and never imply free lesson content is incomplete.                                | copy review + route assertions                                     | `5/5`                   |
+| Commerce and revenue ops                      | `target`     | Bottom support and PRO CTAs route honestly to existing destinations or safe placeholders, appear after lesson value, and never imply free lesson content is incomplete.    | copy review + route assertions                                     | `5/5`                   |
 | Incident response and support operations      | `supporting` | Supporting because V1 adds visible fallback behavior but no critical operator workflow; support diagnostics can stay in follow-up unless a new failure mode is introduced. | fallback QA + follow-up note                                       | `4/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A because V1 changes no payments, prices, invoices, refunds, payouts, entitlements, or finance reporting truth.                                                          | explicit non-commerce scope rationale                              | `N/A`                   |
 | i18n operational readiness                    | `supporting` | Supporting because V1 should avoid layout assumptions that block future locales, but no locale routing or translation workflow changes now.                                | responsive screenshot review + copy structure review               | `4/5`                   |
@@ -245,6 +270,7 @@ Critical target categories for the scoped V1 10/10 claim gate:
   - Reuse `PressButton`, `PressLink`, `cx`, existing token classes, and course visual language.
   - Do not add marketing-style hero bloat.
   - Screenshot handoff must include mobile and desktop, and should compare before/after on the same route where practical.
+  - Screenshot review must answer whether a learner understands what to try in the water without reading every detail.
 - Testing:
   - Unit tests for view-model fallback.
   - Unit/content-loader tests if body mapping changes.
@@ -287,7 +313,7 @@ Critical target categories for the scoped V1 10/10 claim gate:
 ## Forward Compatibility Contract
 
 - Extensibility surfaces:
-  - Lesson metadata, categories, levels, equipment values, optional sections, CTA destinations, next lesson references, and future analytics values.
+  - Lesson metadata, categories, levels, equipment values, optional sections, CTA destinations, next lesson references, proof/trust snippets, distribution entrypoints, and future analytics values.
 - Source of truth:
   - Render from current `CourseLesson` data plus optional normalized experience data.
   - Next lesson should derive from canonical course order when explicit next lesson data is missing.
@@ -295,8 +321,9 @@ Critical target categories for the scoped V1 10/10 claim gate:
   - New lessons with only current fields still render the V1 path.
   - New lessons with richer fields render richer sections without code changes.
   - New categories and levels render as plain display labels.
+  - Future proof/trust snippets and distribution entrypoints should not require reworking the V1 lesson layout; they require explicit mapped sections when introduced.
 - Explicit mapping requirements:
-  - New CTA action types, PRO save destinations, merch routes, canonical lesson routes, analytics event names, structured data types, and admin field editors require explicit code/copy/test updates.
+  - New CTA action types, PRO save destinations, merch routes, canonical lesson routes, analytics event names, structured data types, distribution channels, proof-claim types, and admin field editors require explicit code/copy/test updates.
 - Unknown or deprecated values:
   - Unknown optional fields are ignored.
   - Unknown CTA actions do not render.
@@ -343,6 +370,14 @@ Required screenshots:
 
 If direct before-state capture is not practical, use `after/reference` filenames and explain the comparison.
 
+Screenshot review questions:
+
+1. Can a learner understand the lesson goal and cue quickly?
+2. Is it clear what to try on land and in water?
+3. Does the page feel complete for free users before PRO/support CTAs?
+4. Are PRO/support CTAs useful and calm rather than intrusive?
+5. Does the page avoid clutter despite adding richer pedagogy?
+
 ## Acceptance Criteria
 
 1. Existing lesson pages still load with current course data only.
@@ -354,9 +389,11 @@ If direct before-state capture is not practical, use `after/reference` filenames
 7. No lesson requires two videos.
 8. Dryland, mistakes/fixes, good looks/feels/sounds, safety, mastery, easier/harder, and next step remain free.
 9. PRO/systemization CTA copy is honest and non-blocking.
-10. Existing course progress, pass criteria, navigation, preview mode, admin notes context, and support cards do not regress.
-11. Mobile and desktop screenshots are approved before PR gate.
-12. Targeted tests and `npm run verify:pre-pr` pass before PR handoff.
+10. PRO/support CTAs appear after free lesson value is visible.
+11. Screenshot handoff explicitly evaluates whether the user understands what to try in the water.
+12. Existing course progress, pass criteria, navigation, preview mode, admin notes context, and support cards do not regress.
+13. Mobile and desktop screenshots are approved before PR gate.
+14. Targeted tests and `npm run verify:pre-pr` pass before PR handoff.
 
 ## Validation
 
@@ -371,3 +408,4 @@ If direct before-state capture is not practical, use `after/reference` filenames
 ## Checkpoint Log
 
 - `2026-06-13 | planned | created first child brief for fallback-safe course lesson V1; next: move to in-progress only after owner approves implementation execution`
+- `2026-06-13 | planned | clarified that V1 proves the first commercial/pedagogical step only: 2-5 excellent representative lessons, complete free learning, post-value PRO CTAs, and screenshot review of whether learners understand what to do in the water; next: keep later PRO/admin/analytics/SEO/distribution work in parent-owned future children`
