@@ -57,6 +57,17 @@ describe("course lesson experience view model", () => {
     );
 
     expect(viewModel).toMatchObject({
+      variant: "water_drill",
+      display: {
+        quickExplanation: true,
+        whyThisMatters: true,
+        landPractice: true,
+        waterPractice: true,
+        feelCues: true,
+        commonMistakes: true,
+        nextStep: true,
+        support: true,
+      },
       goal: "Feel a longer line.",
       primaryCue: "Head quiet",
       quickExplanation: "Keep the head quiet before adding distance.",
@@ -107,6 +118,62 @@ describe("course lesson experience view model", () => {
     expect(viewModel.nextStep).toBe("Move to side balance.");
   });
 
+  it("defaults concept lessons to explanation-first containers", () => {
+    const viewModel = buildCourseLessonExperienceViewModel(
+      makeLesson({
+        lessonType: "learn",
+        lessonExperience: {
+          quickExplanation: "Understand the idea before practicing it.",
+        },
+      })
+    );
+
+    expect(viewModel.variant).toBe("concept");
+    expect(viewModel.display.landPractice).toBe(false);
+    expect(viewModel.display.waterPractice).toBe(false);
+    expect(viewModel.display.quickExplanation).toBe(true);
+  });
+
+  it("handles concept lessons without drill data", () => {
+    const viewModel = buildCourseLessonExperienceViewModel(
+      makeLesson({
+        lessonType: "learn",
+        drill: undefined as unknown as CourseLesson["drill"],
+        lessonExperience: {
+          variant: "concept",
+          quickExplanation: "Understand the course before choosing a pool drill.",
+        },
+      })
+    );
+
+    expect(viewModel.variant).toBe("concept");
+    expect(viewModel.waterPractice).toMatchObject({
+      title: "Water practice",
+      steps: ["Try one short repeat while keeping the cue: Head quiet."],
+    });
+    expect(viewModel.display.waterPractice).toBe(false);
+  });
+
+  it("respects explicit container display overrides", () => {
+    const viewModel = buildCourseLessonExperienceViewModel(
+      makeLesson({
+        lessonExperience: {
+          variant: "water_drill",
+          display: {
+            landPractice: false,
+            waterPractice: true,
+            commonMistakes: false,
+          },
+        },
+      })
+    );
+
+    expect(viewModel.variant).toBe("water_drill");
+    expect(viewModel.display.landPractice).toBe(false);
+    expect(viewModel.display.waterPractice).toBe(true);
+    expect(viewModel.display.commonMistakes).toBe(false);
+  });
+
   it("does not special-case today's representative lesson id", () => {
     const viewModel = buildCourseLessonExperienceViewModel(
       makeLesson({
@@ -129,6 +196,8 @@ describe("course lesson experience view model", () => {
   it("drops malformed optional fields instead of rendering empty sections", () => {
     expect(
       normalizeCourseLessonExperienceInput({
+        variant: "unknown",
+        display: { landPractice: "yes" },
         quickExplanation: "  ",
         whyThisMatters: " ",
         landPractice: { steps: ["  "], image: { src: "https://example.com/unsafe.jpg" } },

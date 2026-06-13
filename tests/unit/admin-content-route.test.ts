@@ -366,6 +366,113 @@ describe("/api/admin/content route", () => {
     );
   });
 
+  it("rejects lesson experience corrections without matching mistakes on create", async () => {
+    const parentModuleId = "123e4567-e89b-42d3-a456-426614174000";
+    const supabase = buildAdminContentSupabase({
+      insertData: null,
+      courseRows: [
+        {
+          id: parentModuleId,
+          content_type: "course_module",
+          parent_id: null,
+          slug: "breathing-and-floating",
+          body: {
+            moduleId: "breathing-and-floating",
+          },
+        },
+      ],
+      parentRow: {
+        id: parentModuleId,
+        content_type: "course_module",
+        parent_id: null,
+        slug: "breathing-and-floating",
+        body: {
+          moduleId: "breathing-and-floating",
+        },
+      },
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase,
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await POST(
+      new Request("http://127.0.0.1:3000/api/admin/content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contentType: "course_lesson",
+          title: "First breaths",
+          slug: "first-breaths",
+          summary: "Created by test",
+          status: "draft",
+          parentId: parentModuleId,
+          body: {
+            lessonExperience: {
+              commonMistakes: [{ fix: "Look down before breathing." }],
+            },
+          },
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Lesson experience correction requires a matching mistake.");
+    expect(supabase.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid lesson experience layout variants on create", async () => {
+    const parentModuleId = "11111111-1111-4111-8111-111111111111";
+    const supabase = buildAdminContentSupabase({
+      insertData: null,
+      parentRow: {
+        id: parentModuleId,
+        content_type: "course_module",
+        parent_id: null,
+        slug: "body-position",
+        body: { moduleId: "body-position" },
+      },
+    });
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase,
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await POST(
+      new Request("http://127.0.0.1:3000/api/admin/content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contentType: "course_lesson",
+          title: "First breaths",
+          slug: "first-breaths",
+          summary: "Created by test",
+          status: "draft",
+          parentId: parentModuleId,
+          body: {
+            lessonExperience: {
+              variant: "video",
+            },
+          },
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Lesson experience variant is invalid.");
+    expect(supabase.insert).not.toHaveBeenCalled();
+  });
+
   it("assigns guide runtime ids and next sort order when a guide session payload omits them", async () => {
     const supabase = buildAdminContentSupabase({
       insertData: {

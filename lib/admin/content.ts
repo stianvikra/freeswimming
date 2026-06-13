@@ -15,6 +15,25 @@ export const ADMIN_CONTENT_TYPE_VALUES = [
 
 export const ADMIN_CONTENT_STATUS_VALUES = ["draft", "review", "published", "archived"] as const;
 
+const COURSE_LESSON_EXPERIENCE_VARIANT_VALUES = [
+  "concept",
+  "dryland",
+  "water_drill",
+  "swim_set",
+  "custom",
+] as const;
+
+const COURSE_LESSON_EXPERIENCE_DISPLAY_KEYS = [
+  "quickExplanation",
+  "whyThisMatters",
+  "landPractice",
+  "waterPractice",
+  "feelCues",
+  "commonMistakes",
+  "nextStep",
+  "support",
+] as const;
+
 export type AdminContentType = (typeof ADMIN_CONTENT_TYPE_VALUES)[number];
 export type AdminContentStatus = (typeof ADMIN_CONTENT_STATUS_VALUES)[number];
 export type AdminContentItemRow = Database["public"]["Tables"]["admin_content_items"]["Row"];
@@ -371,6 +390,89 @@ export function preserveImmutableContentRuntimeIds(params: {
   }
 
   return { ok: true, body: nextBody };
+}
+
+export function validateCourseLessonExperienceBody(
+  body: unknown
+): { ok: true } | { ok: false; error: string } {
+  if (!isPlainObject(body)) return { ok: true };
+  const lessonExperience = body.lessonExperience;
+  if (lessonExperience === undefined || lessonExperience === null) return { ok: true };
+  if (!isPlainObject(lessonExperience)) {
+    return { ok: false, error: "Lesson experience must be a JSON object." };
+  }
+
+  const variant = lessonExperience.variant;
+  if (
+    variant !== undefined &&
+    variant !== null &&
+    !COURSE_LESSON_EXPERIENCE_VARIANT_VALUES.includes(
+      String(variant) as (typeof COURSE_LESSON_EXPERIENCE_VARIANT_VALUES)[number]
+    )
+  ) {
+    return { ok: false, error: "Lesson experience variant is invalid." };
+  }
+
+  const display = lessonExperience.display;
+  if (display !== undefined && display !== null && !isPlainObject(display)) {
+    return { ok: false, error: "Lesson experience display must be a JSON object." };
+  }
+  if (isPlainObject(display)) {
+    for (const key of COURSE_LESSON_EXPERIENCE_DISPLAY_KEYS) {
+      if (display[key] !== undefined && typeof display[key] !== "boolean") {
+        return { ok: false, error: "Lesson experience display values must be booleans." };
+      }
+    }
+  }
+
+  const landPractice = lessonExperience.landPractice;
+  if (isPlainObject(display) && display.landPractice === true && isPlainObject(landPractice)) {
+    const title = normalizeString(landPractice.title);
+    const steps = Array.isArray(landPractice.steps)
+      ? landPractice.steps.map((step) => normalizeString(step)).filter(Boolean)
+      : [];
+    if (steps.length > 0 && !title) {
+      return { ok: false, error: "Active land practice steps require a land practice title." };
+    }
+  }
+
+  const waterPractice = lessonExperience.waterPractice;
+  if (isPlainObject(display) && display.waterPractice === true && isPlainObject(waterPractice)) {
+    const title = normalizeString(waterPractice.title);
+    const steps = Array.isArray(waterPractice.steps)
+      ? waterPractice.steps.map((step) => normalizeString(step)).filter(Boolean)
+      : [];
+    if (steps.length > 0 && !title) {
+      return { ok: false, error: "Active water practice steps require a water practice title." };
+    }
+  }
+
+  const commonMistakes = lessonExperience.commonMistakes;
+  if (commonMistakes === undefined || commonMistakes === null) return { ok: true };
+  if (!Array.isArray(commonMistakes)) {
+    return { ok: false, error: "Lesson experience common mistakes must be an array." };
+  }
+
+  for (const row of commonMistakes) {
+    if (typeof row === "string") continue;
+    if (!isPlainObject(row)) {
+      return {
+        ok: false,
+        error: "Lesson experience common mistake rows must be text or JSON objects.",
+      };
+    }
+
+    const mistake = normalizeString(row.mistake);
+    const fix = normalizeString(row.fix);
+    if (fix && !mistake) {
+      return {
+        ok: false,
+        error: "Lesson experience correction requires a matching mistake.",
+      };
+    }
+  }
+
+  return { ok: true };
 }
 
 export function parseUpdateAdminContentPayload(

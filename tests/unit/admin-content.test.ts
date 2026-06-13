@@ -3,6 +3,7 @@ import {
   parseCreateAdminContentPayload,
   parseUpdateAdminContentPayload,
   preserveImmutableContentRuntimeIds,
+  validateCourseLessonExperienceBody,
 } from "@/lib/admin/content";
 
 describe("parseCreateAdminContentPayload", () => {
@@ -277,5 +278,81 @@ describe("preserveImmutableContentRuntimeIds", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("validateCourseLessonExperienceBody", () => {
+  it("accepts linked mistake and correction rows plus legacy mistake-only strings", () => {
+    const result = validateCourseLessonExperienceBody({
+      lessonExperience: {
+        variant: "water_drill",
+        display: {
+          quickExplanation: true,
+          landPractice: true,
+          waterPractice: true,
+        },
+        landPractice: {
+          title: "Wall line",
+          steps: ["Stand tall"],
+        },
+        commonMistakes: [
+          { mistake: "Lifting the head", fix: "Look down before breathing." },
+          "Holding breath",
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects correction rows without a matching mistake", () => {
+    const result = validateCourseLessonExperienceBody({
+      lessonExperience: {
+        commonMistakes: [{ mistake: " ", fix: "Look down before breathing." }],
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Lesson experience correction requires a matching mistake.");
+    }
+  });
+
+  it("rejects invalid layout variants and display value types", () => {
+    expect(
+      validateCourseLessonExperienceBody({
+        lessonExperience: {
+          variant: "video",
+        },
+      })
+    ).toEqual({ ok: false, error: "Lesson experience variant is invalid." });
+
+    expect(
+      validateCourseLessonExperienceBody({
+        lessonExperience: {
+          display: {
+            landPractice: "yes",
+          },
+        },
+      })
+    ).toEqual({ ok: false, error: "Lesson experience display values must be booleans." });
+  });
+
+  it("rejects active practice steps without a matching practice title", () => {
+    const result = validateCourseLessonExperienceBody({
+      lessonExperience: {
+        display: {
+          landPractice: true,
+        },
+        landPractice: {
+          steps: ["Stand tall"],
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Active land practice steps require a land practice title.",
+    });
   });
 });

@@ -1783,13 +1783,31 @@ function CoursePageClient() {
   const lessonDisplay = activeLesson.display;
   const commonMistakes = lessonExperience.commonMistakes;
   const showGoalSection = lessonDisplay?.goal !== false;
-  const showWhyThisMattersSection = Boolean(lessonExperience.whyThisMatters);
-  const showCuesSection = lessonDisplay?.cues !== false && lessonExperience.feelCues.length > 0;
+  const showQuickExplanationSection = lessonExperience.display.quickExplanation;
+  const showWhyThisMattersSection =
+    lessonExperience.display.whyThisMatters && Boolean(lessonExperience.whyThisMatters);
+  const showCuesSection =
+    lessonExperience.display.feelCues &&
+    lessonDisplay?.cues !== false &&
+    lessonExperience.feelCues.length > 0;
   const showCommonMistakesSection =
-    lessonDisplay?.commonMistakes !== false && commonMistakes.length > 0;
-  const showDrillSection = lessonDisplay?.drill !== false;
+    lessonExperience.display.commonMistakes &&
+    lessonDisplay?.commonMistakes !== false &&
+    commonMistakes.length > 0;
+  const showPracticeMasterSection = lessonDisplay?.drill !== false;
+  const showLandPracticeSection =
+    showPracticeMasterSection && lessonExperience.display.landPractice;
+  const showWaterPracticeSection =
+    showPracticeMasterSection && lessonExperience.display.waterPractice;
+  const showPracticeSections = showLandPracticeSection || showWaterPracticeSection;
+  const feelCuesHelperText = showWaterPracticeSection
+    ? "Use these immediately after the water practice."
+    : lessonExperience.feelCues.length === 1
+      ? "Use this as the lesson's one reminder."
+      : "Use these as the lesson's main reminders.";
   const showPassCriteria = lessonDisplay?.checkpoint !== false;
-  const showNextStepSection = lessonDisplay?.nextStep !== false;
+  const showNextStepSection =
+    lessonExperience.display.nextStep && lessonDisplay?.nextStep !== false;
   const showPassOrNextCard = showPassCriteria || showNextStepSection;
   const supportStartAtLessonInModule = activeLesson.supportStartAtLessonInModule;
   const supportStartReached =
@@ -1809,7 +1827,10 @@ function CoursePageClient() {
       ? activeLesson.supportCard.primaryAction
       : null;
   const showExtraHelpCard =
-    lessonDisplay?.support !== false && supportStartReached && enabledSupportActions.length > 0;
+    lessonExperience.display.support &&
+    lessonDisplay?.support !== false &&
+    supportStartReached &&
+    enabledSupportActions.length > 0;
   const showOpenOnPhoneCard = showExtraHelpCard && !previewEnabled;
   const openOnPhoneSharePath = useMemo(
     () => `/course?lesson=${encodeURIComponent(activeLesson.id)}`,
@@ -1817,9 +1838,11 @@ function CoursePageClient() {
   );
   const showLessonExperienceSections =
     showGoalSection ||
+    showQuickExplanationSection ||
+    showWhyThisMattersSection ||
+    showPracticeSections ||
     showCuesSection ||
     showCommonMistakesSection ||
-    showDrillSection ||
     showPassOrNextCard ||
     showExtraHelpCard;
   const lessonContentReady = courseContentLoadState !== "loading";
@@ -3199,124 +3222,133 @@ function CoursePageClient() {
               </h2>
 
               <div className="grid gap-3 lg:grid-cols-2">
-                <article
-                  data-testid="course-lesson-focus"
-                  className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                        Lesson focus
-                      </p>
-                      <h2 className="mt-1 text-[20px] leading-7 font-semibold text-slate-950">
-                        {activeLesson.title}
-                      </h2>
-                    </div>
-                    <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[13px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                      {lessonExperience.primaryCue}
-                    </span>
-                  </div>
-
-                  <div className="mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)_minmax(0,1fr)] lg:divide-x lg:divide-slate-200/72 lg:border-t-0 lg:pt-0">
-                    {showGoalSection ? (
-                      <div className="lg:pr-4">
+                {showGoalSection || showQuickExplanationSection || showWhyThisMattersSection ? (
+                  <article
+                    data-testid="course-lesson-focus"
+                    className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
                         <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          Goal
+                          Lesson focus
                         </p>
-                        <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
-                          {lessonExperience.goal}
-                        </h3>
+                        <h2 className="mt-1 text-[20px] leading-7 font-semibold text-slate-950">
+                          {activeLesson.title}
+                        </h2>
                       </div>
-                    ) : null}
-
-                    <div
-                      className={cx(
-                        showGoalSection &&
-                          "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:px-4 lg:pt-0"
-                      )}
-                    >
-                      <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                        Quick explanation
-                      </p>
-                      <p className="mt-2 text-[15px] leading-7 text-slate-700">
-                        {lessonExperience.quickExplanation}
-                      </p>
+                      <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[13px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
+                        {lessonExperience.primaryCue}
+                      </span>
                     </div>
 
-                    {showWhyThisMattersSection ? (
-                      <div
-                        data-testid="course-lesson-why-this-matters"
-                        className="border-t border-blue-100/80 bg-blue-50/50 pt-4 lg:border-t-0 lg:bg-transparent lg:pt-0 lg:pl-4"
-                      >
-                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
-                          Why this matters
-                        </p>
-                        <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
-                          {lessonExperience.whyThisMatters}
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </article>
-
-                {showDrillSection ? (
-                  <>
-                    <article className="overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2 lg:border-slate-300/68">
-                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                        <CoursePracticeMediaFrame
-                          practice={lessonExperience.landPractice}
-                          tone="land"
-                        />
-                        <div className="px-1 pb-2 sm:px-2 md:py-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                              Land practice
-                            </p>
-                            <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/72">
-                              Before water
-                            </span>
-                          </div>
-                          <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
-                            {lessonExperience.landPractice.title}
+                    <div className="mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-3 lg:divide-x lg:divide-slate-200/72 lg:border-t-0 lg:pt-0">
+                      {showGoalSection ? (
+                        <div className="lg:pr-4">
+                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                            Goal
+                          </p>
+                          <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
+                            {lessonExperience.goal}
                           </h3>
-                          <CoursePracticeSteps
-                            steps={lessonExperience.landPractice.steps}
+                        </div>
+                      ) : null}
+
+                      {showQuickExplanationSection ? (
+                        <div
+                          className={cx(
+                            showGoalSection &&
+                              "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:px-4 lg:pt-0",
+                            !showGoalSection && "lg:pr-4"
+                          )}
+                        >
+                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                            Quick explanation
+                          </p>
+                          <p className="mt-2 text-[15px] leading-7 text-slate-700">
+                            {lessonExperience.quickExplanation}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {showWhyThisMattersSection ? (
+                        <div
+                          data-testid="course-lesson-why-this-matters"
+                          className="border-t border-blue-100/80 bg-blue-50/50 pt-4 lg:border-t-0 lg:bg-transparent lg:pt-0 lg:pl-4"
+                        >
+                          <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                            Why this matters
+                          </p>
+                          <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
+                            {lessonExperience.whyThisMatters}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                ) : null}
+
+                {showPracticeSections ? (
+                  <>
+                    {showLandPracticeSection ? (
+                      <article className="overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2 lg:border-slate-300/68">
+                        <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                          <CoursePracticeMediaFrame
+                            practice={lessonExperience.landPractice}
                             tone="land"
                           />
-                        </div>
-                      </div>
-                    </article>
-
-                    <article className="overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2">
-                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                        <CoursePracticeMediaFrame
-                          practice={lessonExperience.waterPractice}
-                          tone="water"
-                        />
-                        <div className="px-1 pb-2 sm:px-2 md:py-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                              Water practice
-                            </p>
-                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                              {drillBadgeLabel}
-                            </span>
+                          <div className="px-1 pb-2 sm:px-2 md:py-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                Land practice
+                              </p>
+                              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/72">
+                                Dryland prep
+                              </span>
+                            </div>
+                            <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
+                              {lessonExperience.landPractice.title}
+                            </h3>
+                            <CoursePracticeSteps
+                              steps={lessonExperience.landPractice.steps}
+                              tone="land"
+                            />
                           </div>
-                          <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
-                            {lessonExperience.waterPractice.title}
-                          </h3>
-                          <CoursePracticeSteps
-                            steps={lessonExperience.waterPractice.steps}
+                        </div>
+                      </article>
+                    ) : null}
+
+                    {showWaterPracticeSection ? (
+                      <article className="overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2">
+                        <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                          <CoursePracticeMediaFrame
+                            practice={lessonExperience.waterPractice}
                             tone="water"
                           />
-                          {lessonExperience.waterPractice.safetyNote ? (
-                            <p className="mt-4 rounded-2xl border border-amber-200/72 bg-amber-50/75 px-3 py-2 text-[13px] leading-6 font-medium text-amber-900">
-                              {lessonExperience.waterPractice.safetyNote}
-                            </p>
-                          ) : null}
+                          <div className="px-1 pb-2 sm:px-2 md:py-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                Water practice
+                              </p>
+                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
+                                {drillBadgeLabel}
+                              </span>
+                            </div>
+                            <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
+                              {lessonExperience.waterPractice.title}
+                            </h3>
+                            <CoursePracticeSteps
+                              steps={lessonExperience.waterPractice.steps}
+                              tone="water"
+                            />
+                            {lessonExperience.waterPractice.safetyNote ? (
+                              <p className="mt-4 rounded-2xl border border-amber-200/72 bg-amber-50/75 px-3 py-2 text-[13px] leading-6 font-medium text-amber-900">
+                                {lessonExperience.waterPractice.safetyNote}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    </article>
+                      </article>
+                    ) : null}
                   </>
                 ) : null}
 
@@ -3328,11 +3360,11 @@ function CoursePageClient() {
                           Feel cues
                         </p>
                         <p className="mt-1 text-[12px] font-medium text-slate-500">
-                          Use these immediately after the water practice.
+                          {feelCuesHelperText}
                         </p>
                       </div>
                       <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                        Choose one
+                        One cue
                       </span>
                     </div>
                     <ul className="mt-3 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-3">
