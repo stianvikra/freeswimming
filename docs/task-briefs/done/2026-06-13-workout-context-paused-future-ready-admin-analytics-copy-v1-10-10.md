@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-13`
 - `updated`: `2026-06-13`
@@ -14,7 +14,7 @@
   - `docs/architecture/workout-context-cta-measurement-contract.md`
   - `docs/architecture/workout-checkout-attribution-finance-separation-contract.md`
 - `execution_mode`: `end-to-end-after-explicit-execute`
-- `branch`: `workout-context-historical-funnel-admin-copy-v1`
+- `branch`: `workout-context-paused-future-ready-admin-copy-v1`
 
 ## Brief Audit Record
 
@@ -308,3 +308,32 @@ Captured screenshot evidence:
 - `2026-06-13 | owner scope clarification pivot | owner confirmed the measurement setup should remain available for a possible future Poolside placement, but current Admin copy must not present it as active statistics because current rows are only test/readiness data. Pivoted labels/details/caveats/tests/brief from historical/deferred to paused/future-ready readiness language, with no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder behavior changed | next: recapture screenshots and stop for owner approval before verify:pre-pr`
 - `2026-06-13 | paused screenshot handoff ready | captured after/reference screenshots in output/playwright/workout-context-paused-future-ready-admin-copy-2026-06-13-085319 at 08:53 via temporary local visual harness with zero/readiness mock data; verified desktop, mobile, and Help/Guide reference images, then removed the temporary harness route and capture script. Targeted Vitest, npm run typecheck, npm run lint:briefs:all, npm run lint:quality-gates, and git diff --check passed before capture | next: owner screenshot approval, then run npm run verify:pre-pr`
 - `2026-06-13 | pre-pr passed | owner approved screenshots and merge on good tests; renamed the local branch to workout-context-paused-future-ready-admin-copy-v1 and passed npm run verify:pre-pr full lane with branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright E2E. No scoped product-rendering source changed after the final approved screenshot capture, and no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder behavior changed | next: commit, push, open/update PR, monitor CI, run verify:pre-merge, and merge if green`
+- `2026-06-13 | child merged | PR #1109 merged at squash commit 7b045a33 after owner-approved screenshots, green local pre-pr, green PR CI, and verify:pre-merge; child moved to done in repo-managed closeout, parent has no active child, and replacement prompt placement, dismiss mapping, direct checkout, finance/export/vendor/product/builder scope remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-13`
+- `merged_pr`: `#1109`
+- `squash_commit`: `7b045a33`
+- `result`: Admin Analytics now keeps the Poolside workout-context measurement path visible for future placement decisions while clearly saying today's data is paused/future-ready readiness telemetry, not active production funnel statistics.
+- `validation`: Targeted Vitest for Admin Analytics view-model/component/Help copy passed; `npm run typecheck`, `npm run lint:briefs:all`, `npm run lint:quality-gates`, `git diff --check`, `npm run verify:pre-pr` full lane, PR `#1109` CI, and `npm run verify:pre-merge` passed. Screenshot handoff was owner-approved at `output/playwright/workout-context-paused-future-ready-admin-copy-2026-06-13-085319`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no remaining gaps.
+
+| Target category                               | Achieved score | Evidence                                                                                   | Remaining gap |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------ | ------------- |
+| Product goals and IA                          | `5/5`          | Admin copy distinguishes paused/future-ready readiness from active funnel statistics.      | None          |
+| UX flow clarity                               | `5/5`          | Tests and screenshots cover the removed prompt and expected zero/readiness interpretation. | None          |
+| Visual design quality                         | `5/5`          | Owner-approved desktop/mobile screenshot handoff; no rendering files changed afterward.    | None          |
+| Business logic correctness and data integrity | `5/5`          | Counts, denominators, API shape, and events were unchanged; targeted tests passed.         | None          |
+| Accessibility (a11y)                          | `5/5`          | Existing semantic Admin panels and Help/Guide structure preserved; no new controls.        | None          |
+| Data placement and sync boundaries            | `5/5`          | Existing server-canonical read-only aggregates remain unchanged.                           | None          |
+| Reliability and failure handling              | `5/5`          | Zero/schema-missing/readiness states remain deterministic and tested.                      | None          |
+| Privacy and compliance                        | `5/5`          | Copy avoids raw payloads, user drilldown, revenue, provider IDs, and finance truth.        | None          |
+| Content governance                            | `5/5`          | Brief, Help/Guide, labels, tests, and parent status align on paused/future-ready wording.  | None          |
+| Analytics and KPI observability               | `5/5`          | KPI panels retain mapped counts with explicit readiness caveats.                           | None          |
+| Commerce and revenue ops                      | `5/5`          | Checkout, Stripe, entitlement, price, product, and revenue behavior stayed out of scope.   | None          |
+| Incident response and support operations      | `5/5`          | Support-facing Help/Guide language avoids treating readiness data as active production.    | None          |
+| Finance and reporting operations              | `5/5`          | No finance reporting interpretation or revenue reconciliation was introduced.              | None          |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Admin Analytics view-model/component/Help surfaces; no dependency added.   | None          |
+| Testing and QA automation                     | `5/5`          | Targeted tests, full pre-pr, PR CI, and pre-merge gates passed.                            | None          |
+| DevOps and rollback readiness                 | `5/5`          | Scoped copy-only runtime diff can roll back via PR `#1109`; closeout is docs-only.         | None          |
