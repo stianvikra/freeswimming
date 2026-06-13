@@ -1,20 +1,22 @@
 # Workout Context Upsell Placement Policy
 
-Last updated: 2026-06-10
+Last updated: 2026-06-13
 
 ## Purpose
 
 This contract defines when a commercial CTA may be considered in workout-builder or generator
 context.
 
-Current decision: runtime V1 approves only a non-blocking saved-workout post-success CTA for
-`placementId=workout_saved_post_success` and `productId=guide_poolside`. Existing commercial
-surfaces remain `/plans` and My Library explore. Existing `upsell_presented`, `upsell_accepted`,
-and `upsell_declined` events may continue to describe those current commerce surfaces. Workout-context
-V1 may use `upsell_presented` and `upsell_accepted` only under the measurement contract in
-`docs/architecture/workout-context-cta-measurement-contract.md`; `upsell_declined`, new placements,
-new products, checkout attribution, entitlement-aware targeting, finance reporting, and dashboard
-mapping still require later children.
+Current decision: no workout-context commercial CTA is active. The historical runtime V1 used a
+non-blocking saved-workout post-success CTA for `placementId=workout_saved_post_success` and
+`productId=guide_poolside`, but that save-success prompt is now removed/deferred. Existing
+commercial surfaces remain `/plans` and My Library explore. Existing `upsell_presented`,
+`upsell_accepted`, and `upsell_declined` events may continue to describe those current commerce
+surfaces. Historical workout-context rows may be interpreted only under the measurement contract in
+`docs/architecture/workout-context-cta-measurement-contract.md`; replacement placements,
+`upsell_declined` meanings beyond the mapped checkout-cancel return, new products, checkout
+attribution, entitlement-aware targeting, finance reporting, and dashboard mapping still require
+later children.
 
 ## Product Principle
 
@@ -22,9 +24,10 @@ A workout-context CTA must never interrupt the user's primary training job. The 
 create, generate, review, save, edit, export, or recover a workout. A CTA may be evaluated only
 after that job has reached a stable, non-error state.
 
-The first approved runtime candidate is a non-blocking post-success placement after the user has
-saved a workout. This is the least ambiguous moment because the user has completed the core action
-and the app can avoid implying that purchase is required to finish the workout.
+The first historical runtime candidate was a non-blocking post-success placement after the user had
+saved a workout. It is no longer active. Any replacement placement must be selected by a future
+child and must keep the completed workout action, recovery, edit, export, and review paths more
+prominent than the commercial action.
 
 ## Placement Matrix
 
@@ -51,7 +54,8 @@ Allowed as aggregate planning evidence only:
 - template selection from explicit `workout_builder_template_selected`,
 - safe route/product/catalog availability signals where already mapped.
 
-Conditionally allowed in a future runtime child, or in runtime V1 where explicitly mapped:
+Conditionally allowed in a future runtime child, or in historical runtime rows where explicitly
+mapped:
 
 - placement surface ID,
 - stable product ID from the catalog,
@@ -90,10 +94,10 @@ Before workout-context CTA performance can be measured, the measurement contract
 The first measurement contract is
 `docs/architecture/workout-context-cta-measurement-contract.md`.
 
-The Admin Analytics workout-context CTA module may count only the explicitly mapped
-`workout_saved_post_success` / `guide_poolside` runtime CTA events. It must not infer CTA
-performance from builder starts, saves, generated drafts, template selection, checkout starts,
-checkout completions, or entitlement grants.
+The Admin Analytics workout-context CTA module may count only the explicitly mapped historical
+`workout_saved_post_success` / `guide_poolside` runtime CTA events as paused or future-placement
+readiness telemetry. It must not infer active CTA performance from builder starts, saves, generated
+drafts, template selection, checkout starts, checkout completions, or entitlement grants.
 
 ## Commerce And Finance Boundary
 
