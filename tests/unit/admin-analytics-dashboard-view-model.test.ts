@@ -254,7 +254,7 @@ describe("admin analytics dashboard view model", () => {
         value: 4,
         count: "4",
         percentOfMax: 100,
-        detail: "Prompt views",
+        detail: "Paused prompt views",
       },
       {
         id: "poolside-stage-clicked",
@@ -262,7 +262,7 @@ describe("admin analytics dashboard view model", () => {
         value: 2,
         count: "2",
         percentOfMax: 50,
-        detail: "Clicked prompt",
+        detail: "Paused prompt clicks",
       },
       {
         id: "poolside-stage-checkout-handoff",
@@ -330,7 +330,7 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutContextStageSummary.caveat).toContain(
-      "cancel rate are selected-range logged actions"
+      "future-placement readiness counts"
     );
     expect(viewModel.workoutContextCta.metrics).toEqual([
       {
@@ -358,7 +358,12 @@ describe("admin analytics dashboard view model", () => {
         detail: "Kept out of totals",
       },
     ]);
-    expect(viewModel.workoutContextCta.caveat).toContain("do not match the approved prompt setup");
+    expect(viewModel.workoutContextCta.detail).toContain(
+      "paused saved-workout Poolside guide placement"
+    );
+    expect(viewModel.workoutContextCta.caveat).toContain(
+      "do not match the approved paused-placement setup"
+    );
     expect(viewModel.workoutContextCheckoutStarted.metrics).toEqual([
       {
         id: "workout-context-checkout-started",
@@ -374,10 +379,10 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutContextCheckoutStarted.detail).toContain(
-      "saved-workout guide path reached checkout handoff"
+      "paused or future-ready saved-workout Poolside guide path"
     );
     expect(viewModel.workoutContextCheckoutStarted.caveat).toContain(
-      "do not match the approved saved-workout guide path"
+      "do not match the approved paused or future-ready saved-workout guide path"
     );
     expect(viewModel.workoutContextCheckoutOutcome.metrics).toEqual([
       {
@@ -406,7 +411,7 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.workoutContextCheckoutOutcome.detail).toContain(
-      "completed checkout and got app access"
+      "mapped completion and access rows"
     );
     expect(viewModel.workoutContextCheckoutOutcome.reviewItems).toEqual([
       {
@@ -942,7 +947,9 @@ describe("admin analytics dashboard view model", () => {
       value: "Not counted",
       detail: "",
     });
-    expect(zeroStarts.workoutContextCta.caveat).toContain("until this prompt has been shown");
+    expect(zeroStarts.workoutContextCta.caveat).toContain(
+      "expected while the save-success placement is paused"
+    );
     expect(zeroStarts.workoutContextCheckoutStarted.metrics).toContainEqual({
       id: "workout-context-checkout-started",
       label: "Checkout handoffs",
@@ -950,7 +957,7 @@ describe("admin analytics dashboard view model", () => {
       detail: "",
     });
     expect(zeroStarts.workoutContextCheckoutStarted.caveat).toContain(
-      "until this path starts checkout"
+      "expected while the save-success placement is paused"
     );
     expect(zeroStarts.workoutContextCheckoutOutcome.metrics).toContainEqual({
       id: "workout-context-entitlement-rate",
@@ -959,7 +966,7 @@ describe("admin analytics dashboard view model", () => {
       detail: "Access / completed",
     });
     expect(zeroStarts.workoutContextCheckoutOutcome.caveat).toContain(
-      "until this path completes checkout"
+      "expected while the save-success placement is paused"
     );
     expect(zeroStarts.workoutContextCheckoutCancel.metrics).toContainEqual({
       id: "workout-context-checkout-cancelled",
@@ -974,7 +981,7 @@ describe("admin analytics dashboard view model", () => {
       count: "1",
     });
     expect(zeroStarts.workoutContextCheckoutCancel.caveat).toContain(
-      "until the mapped guide checkout return is logged"
+      "expected while the save-success placement is paused"
     );
     expect(zeroStarts.workoutContextStageSummary.metrics).toContainEqual({
       id: "poolside-stage-cancel-rate",
@@ -983,7 +990,7 @@ describe("admin analytics dashboard view model", () => {
       detail: "Cancelled / shown",
     });
     expect(zeroStarts.workoutContextStageSummary.caveat).toContain(
-      "until the Poolside guide prompt has been shown"
+      "expected while the save-success placement is paused"
     );
     expect(zeroStarts.workoutBuilderSourceBreakdown.metrics).toContainEqual({
       id: "source-manual-save-rate",
@@ -1134,7 +1141,9 @@ describe("admin analytics dashboard view model", () => {
       value: "150%",
       detail: "",
     });
-    expect(duplicateTelemetry.workoutContextCta.caveat).toContain("interest signals only");
+    expect(duplicateTelemetry.workoutContextCta.caveat).toContain(
+      "future-placement readiness counts only"
+    );
     expect(duplicateTelemetry.workoutContextCheckoutStarted.metrics).toContainEqual({
       id: "workout-context-checkout-started",
       label: "Checkout handoffs",
@@ -1165,7 +1174,7 @@ describe("admin analytics dashboard view model", () => {
       detail: "Mapped returns",
     });
     expect(duplicateTelemetry.workoutContextCheckoutCancel.caveat).toContain(
-      "return-from-checkout path only"
+      "mapped paused-path return telemetry only"
     );
     expect(duplicateTelemetry.workoutContextStageSummary.metrics).toContainEqual({
       id: "poolside-stage-cancel-rate",

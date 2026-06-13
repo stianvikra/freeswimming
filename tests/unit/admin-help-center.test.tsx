@@ -85,13 +85,13 @@ describe("AdminHelpCenter", () => {
     ).toBeVisible();
     expect(
       screen.getByText(
-        /Shown and clicked are historical saved-workout Poolside guide prompt events/i
+        /Shown and clicked are mapped rows for a saved-workout Poolside guide placement that is paused/i
       )
     ).toBeVisible();
+    expect(screen.getByText(/The stage summary lines up mapped prompt activity/i)).toBeVisible();
     expect(
-      screen.getByText(/The stage summary lines up historical shown\/clicked prompt activity/i)
-    ).toBeVisible();
-    expect(screen.getAllByText(/Cancel rate is cancelled \/ shown/i)).toHaveLength(2);
+      screen.getAllByText(/future-placement readiness until a new placement launches/i).length
+    ).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(/Checkout handoffs mean the approved saved-workout guide path/i)
     ).toBeVisible();
@@ -113,10 +113,11 @@ describe("AdminHelpCenter", () => {
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
-    expect(screen.getByText("Poolside guide stage summary:")).toBeVisible();
-    expect(screen.getByText("Poolside guide checkout:")).toBeVisible();
-    expect(screen.getByText("Poolside guide checkout cancel:")).toBeVisible();
-    expect(screen.getByText("Poolside guide access:")).toBeVisible();
+    expect(screen.getByText("Poolside guide paused funnel:")).toBeVisible();
+    expect(screen.getByText("Poolside guide prompt readiness:")).toBeVisible();
+    expect(screen.getByText("Poolside guide checkout readiness:")).toBeVisible();
+    expect(screen.getByText("Poolside guide checkout cancel readiness:")).toBeVisible();
+    expect(screen.getByText("Poolside guide access readiness:")).toBeVisible();
     expect(screen.getByText("Generated sessions / Template starts:")).toBeVisible();
     expect(screen.getByText(/not purchases, revenue, exports, or unique people/i)).toBeVisible();
     expect(screen.getByText(/Do not infer missing revenue, individual visitors/i)).toBeVisible();
