@@ -102,6 +102,39 @@ describe("course progress helpers", () => {
     ]);
   });
 
+  it("keeps the latest done confirmation when merging completed rows", () => {
+    const merged = mergeCourseProgressRows(
+      [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          doneConfirmedAt: "2026-02-16T09:00:00.000Z",
+          videoSeconds: 10,
+          updatedAt: "2026-02-16T09:00:00.000Z",
+        },
+      ],
+      [
+        {
+          lessonId: "mod1-l1",
+          done: true,
+          doneConfirmedAt: "2026-02-16T10:00:00.000Z",
+          videoSeconds: 8,
+          updatedAt: "2026-02-16T10:00:00.000Z",
+        },
+      ]
+    );
+
+    expect(merged).toEqual([
+      {
+        lessonId: "mod1-l1",
+        done: true,
+        doneConfirmedAt: "2026-02-16T10:00:00.000Z",
+        videoSeconds: 10,
+        updatedAt: "2026-02-16T10:00:00.000Z",
+      },
+    ]);
+  });
+
   it("includes known lesson ids when building local rows so reset values can sync", () => {
     const rows = buildCourseProgressRowsFromLocal(
       {

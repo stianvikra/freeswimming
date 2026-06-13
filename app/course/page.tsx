@@ -1885,6 +1885,12 @@ function CoursePageClient() {
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
   const markDoneBlockedByGate = !lessonContentReady || (!isLessonDone && !doneGateSatisfied);
+  const markDoneFeedbackId = "course-done-gate-feedback";
+  const passCriteriaHelpId = "course-pass-criteria-help";
+  const markDoneButtonDescribedBy =
+    !lessonContentReady || markDoneBlockedByGate || doneGateFeedback || isLessonDone
+      ? markDoneFeedbackId
+      : undefined;
   const activeLessonProgressStatus = lessonProgressStatusById[activeLesson.id] ?? "not_started";
   const activeLessonStatusMeta =
     activeLessonProgressStatus === "done"
@@ -2809,7 +2815,7 @@ function CoursePageClient() {
                       onClick={toggleLessonDone}
                       disabled={markDoneBlockedByGate}
                       aria-pressed={isLessonDone}
-                      aria-describedby={doneGateFeedback ? "course-done-gate-feedback" : undefined}
+                      aria-describedby={markDoneButtonDescribedBy}
                       data-testid="course-mark-done-button"
                       className={cx(
                         "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
@@ -2831,21 +2837,28 @@ function CoursePageClient() {
                   ) : null}
                   {!lessonContentReady ? (
                     <p
-                      id="course-done-gate-feedback"
+                      id={markDoneFeedbackId}
                       className="mt-1 text-[12px] font-medium text-slate-600"
                     >
                       Loading lesson details...
                     </p>
                   ) : markDoneBlockedByGate ? (
                     <p
-                      id="course-done-gate-feedback"
+                      id={markDoneFeedbackId}
                       className="mt-1 text-[12px] font-medium text-amber-700"
                     >
                       Check pass criteria below to unlock Mark as done.
                     </p>
+                  ) : isLessonDone ? (
+                    <p
+                      id={markDoneFeedbackId}
+                      className="mt-1 text-[12px] font-medium text-emerald-700"
+                    >
+                      Lesson done. Click Done again to return it to In progress.
+                    </p>
                   ) : doneGateFeedback ? (
                     <p
-                      id="course-done-gate-feedback"
+                      id={markDoneFeedbackId}
                       className="mt-1 text-[12px] font-medium text-amber-700"
                     >
                       {doneGateFeedback}
@@ -3540,7 +3553,7 @@ function CoursePageClient() {
 
                 {showPassCriteria ? (
                   <article className={cx("p-5", supportCardClass)}>
-                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                       <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
                         Pass criteria
                       </div>
@@ -3549,14 +3562,15 @@ function CoursePageClient() {
                         onClick={toggleLessonDone}
                         disabled={markDoneBlockedByGate}
                         aria-pressed={isLessonDone}
+                        aria-describedby={passCriteriaHelpId}
                         data-testid="course-pass-criteria-mark-done-button"
                         className={cx(
-                          "mt-1 inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition",
+                          "inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
                           isLessonDone
-                            ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                            ? "bg-blue-50 text-blue-700 ring-blue-100/80 hover:bg-blue-100"
                             : markDoneBlockedByGate
                               ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                              : "bg-white/92 text-slate-700 ring-slate-200/72 hover:bg-slate-50"
+                              : "bg-blue-600 text-white shadow-sm shadow-blue-600/20 ring-blue-600 hover:bg-blue-700 hover:ring-blue-700"
                         )}
                       >
                         {isLessonDone ? "Done" : "Mark as done"}
@@ -3600,13 +3614,21 @@ function CoursePageClient() {
                         ))}
                       </ul>
                     )}
-                    <p className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500">
+                    <p
+                      id={passCriteriaHelpId}
+                      data-testid="course-pass-criteria-help"
+                      className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500"
+                    >
                       {doneGateRequired
-                        ? activeLessonProgressStatus === "in_progress"
-                          ? "Keep checking off what feels true. When all items are true, mark the lesson done."
-                          : "Check off what feels true. When all items are true, mark the lesson done."
-                        : doneConfirmedLabel
-                          ? `Marked done after criteria check on ${doneConfirmedLabel}.`
+                        ? doneGateSatisfied
+                          ? "All pass criteria are checked. Mark this lesson as done when it feels complete."
+                          : activeLessonProgressStatus === "in_progress"
+                            ? "Keep checking off what feels true. When all items are true, mark the lesson done."
+                            : "Check off what feels true. When all items are true, mark the lesson done."
+                        : isLessonDone
+                          ? doneConfirmedLabel
+                            ? `Marked done after criteria check on ${doneConfirmedLabel}. Click Done again to return this lesson to In progress while keeping your checked criteria.`
+                            : "Marked done. Click Done again to return this lesson to In progress while keeping your checked criteria."
                           : "When these are met, mark lesson as done here or in overview."}
                     </p>
                   </article>
