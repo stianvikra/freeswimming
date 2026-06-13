@@ -241,9 +241,9 @@ describe("AdminAnalyticsDashboard", () => {
       "admin-analytics-workout-context-stage-summary"
     );
     expect(
-      within(workoutContextStageSummary).getByText("Poolside guide stage summary")
+      within(workoutContextStageSummary).getByText("Poolside guide paused funnel")
     ).toBeVisible();
-    expect(within(workoutContextStageSummary).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextStageSummary).getByText("Paused path")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Shown")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Clicked")).toBeVisible();
     expect(within(workoutContextStageSummary).getByText("Checkout handoff")).toBeVisible();
@@ -257,12 +257,12 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextStageSummary).getByText("Completion rate")).toBeVisible();
     expect(within(workoutContextStageSummary).getAllByText("100%")).toHaveLength(2);
     expect(
-      within(workoutContextStageSummary).getByText(/Cancelled means mapped return-from-checkout/i)
+      within(workoutContextStageSummary).getByText(/future-placement readiness counts/i)
     ).toBeVisible();
     expect(within(workoutContextStageSummary).queryByRole("button")).not.toBeInTheDocument();
     const workoutContextCta = screen.getByTestId("admin-analytics-workout-context-cta");
-    expect(within(workoutContextCta).getByText("Poolside guide prompt")).toBeVisible();
-    expect(within(workoutContextCta).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextCta).getByText("Poolside guide prompt readiness")).toBeVisible();
+    expect(within(workoutContextCta).getByText("Paused path")).toBeVisible();
     expect(within(workoutContextCta).getByText("Shown")).toBeVisible();
     expect(within(workoutContextCta).getByText("Clicked")).toBeVisible();
     expect(within(workoutContextCta).getByText("Click rate")).toBeVisible();
@@ -273,32 +273,32 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextCta).queryByText("Guide prompt shown after saving")).toBeNull();
     expect(within(workoutContextCta).queryByText("Clicked guide prompt")).toBeNull();
     expect(within(workoutContextCta).queryByText("Clicked / shown")).toBeNull();
-    expect(
-      within(workoutContextCta).getByText(/do not match the approved prompt setup/i)
-    ).toBeVisible();
+    expect(within(workoutContextCta).getByText(/approved paused-placement setup/i)).toBeVisible();
     expect(within(workoutContextCta).queryByRole("button")).not.toBeInTheDocument();
     const workoutContextCheckoutStarted = screen.getByTestId(
       "admin-analytics-workout-context-checkout-started"
     );
     expect(
-      within(workoutContextCheckoutStarted).getByText("Poolside guide checkout")
+      within(workoutContextCheckoutStarted).getByText("Poolside guide checkout readiness")
     ).toBeVisible();
-    expect(within(workoutContextCheckoutStarted).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextCheckoutStarted).getByText("Paused path")).toBeVisible();
     expect(within(workoutContextCheckoutStarted).getByText("Checkout handoffs")).toBeVisible();
     expect(within(workoutContextCheckoutStarted).getByText("Needs review")).toBeVisible();
     expect(within(workoutContextCheckoutStarted).getByText("2")).toBeVisible();
     expect(within(workoutContextCheckoutStarted).getByText("1")).toBeVisible();
     expect(
       within(workoutContextCheckoutStarted).getByText(
-        /do not match the approved saved-workout guide path/i
+        /approved paused or future-ready saved-workout guide path/i
       )
     ).toBeVisible();
     expect(within(workoutContextCheckoutStarted).queryByRole("button")).not.toBeInTheDocument();
     const workoutContextCheckoutOutcome = screen.getByTestId(
       "admin-analytics-workout-context-checkout-outcome"
     );
-    expect(within(workoutContextCheckoutOutcome).getByText("Poolside guide access")).toBeVisible();
-    expect(within(workoutContextCheckoutOutcome).getByText("Saved workout")).toBeVisible();
+    expect(
+      within(workoutContextCheckoutOutcome).getByText("Poolside guide access readiness")
+    ).toBeVisible();
+    expect(within(workoutContextCheckoutOutcome).getByText("Paused path")).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).getByText("Completed checkout")).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).getByText("Access granted")).toBeVisible();
     expect(within(workoutContextCheckoutOutcome).getByText("Access rate")).toBeVisible();
@@ -319,9 +319,9 @@ describe("AdminAnalyticsDashboard", () => {
       "admin-analytics-workout-context-checkout-cancel"
     );
     expect(
-      within(workoutContextCheckoutCancel).getByText("Poolside guide checkout cancel")
+      within(workoutContextCheckoutCancel).getByText("Poolside guide checkout cancel readiness")
     ).toBeVisible();
-    expect(within(workoutContextCheckoutCancel).getByText("Saved workout")).toBeVisible();
+    expect(within(workoutContextCheckoutCancel).getByText("Paused path")).toBeVisible();
     expect(within(workoutContextCheckoutCancel).getByText("Checkout cancelled")).toBeVisible();
     expect(within(workoutContextCheckoutCancel).getByText("Needs review")).toBeVisible();
     expect(within(workoutContextCheckoutCancel).getByText("Review signals")).toBeVisible();

@@ -256,11 +256,11 @@ function WorkoutContextStageSummaryPanel({
             id="admin-analytics-workout-context-stage-summary-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Poolside guide stage summary
+            Poolside guide paused funnel
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{summary.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Paused path</p>
       </div>
 
       <ol className="mt-4 space-y-3">
@@ -324,11 +324,11 @@ function WorkoutContextCtaPanel({
             id="admin-analytics-workout-context-cta-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Poolside guide prompt
+            Poolside guide prompt readiness
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{cta.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Paused path</p>
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -368,11 +368,11 @@ function WorkoutContextCheckoutStartedPanel({
             id="admin-analytics-workout-context-checkout-started-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Poolside guide checkout
+            Poolside guide checkout readiness
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{checkoutStarted.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Paused path</p>
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -412,11 +412,11 @@ function WorkoutContextCheckoutOutcomePanel({
             id="admin-analytics-workout-context-checkout-outcome-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Poolside guide access
+            Poolside guide access readiness
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{outcome.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Paused path</p>
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -486,11 +486,11 @@ function WorkoutContextCheckoutCancelPanel({
             id="admin-analytics-workout-context-checkout-cancel-heading"
             className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Poolside guide checkout cancel
+            Poolside guide checkout cancel readiness
           </h3>
           <p className={cx("mt-1", mutedTextClass)}>{cancel.detail}</p>
         </div>
-        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Saved workout</p>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Paused path</p>
       </div>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">

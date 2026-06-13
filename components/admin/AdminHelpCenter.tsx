@@ -19,7 +19,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-06-11";
+const LAST_UPDATED = "2026-06-13";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -63,7 +63,7 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Analytics",
     primaryJob:
-      "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, saved-workout guide prompt interest, saved-workout checkout handoffs, saved-workout completion/access signals, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
+      "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, paused/future-ready saved-workout guide measurement, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
     commonRisk:
       "Treating dashboard counts as purchases, accounting records, revenue, Stripe reconciliation, or unique people instead of product activity signals.",
   },
@@ -288,14 +288,14 @@ const ANALYTICS_WORKFLOW = [
       "Shown means a current sales prompt on Plans or My Library appeared. Clicked means someone clicked it. Checkout cancelled means someone returned from checkout. Clicks are not purchases, and checkout cancelled does not mean every other visitor declined.",
   },
   {
-    title: "Read the saved-workout guide prompt as interest",
+    title: "Read paused Poolside guide prompt data as readiness",
     detail:
-      "Shown and clicked are historical saved-workout Poolside guide prompt events. The current workout save success message no longer shows that prompt. Needs review means some logged actions do not match the approved prompt setup yet. These numbers are not purchases, access grants, revenue, accounting records, or unique people.",
+      "Shown and clicked are mapped rows for a saved-workout Poolside guide placement that is paused. The current workout save success message no longer shows that prompt. Treat these numbers as test or future-placement readiness until a new placement launches. They are not active production conversion, purchases, access grants, revenue, accounting records, or unique people.",
   },
   {
-    title: "Use Poolside guide stage summary as a quick path view",
+    title: "Use Poolside guide paused funnel as readiness",
     detail:
-      "The stage summary lines up historical shown/clicked prompt activity with checkout handoff, checkout cancelled, completed checkout, and access granted for the approved saved-workout guide path. The current workout save success message no longer shows the prompt. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are selected-range event counts, not unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
+      "The stage summary lines up mapped prompt activity with checkout handoff, checkout cancelled, completed checkout, and access granted for the paused saved-workout guide path. The current workout save success message no longer shows the prompt, so empty or low counts are expected until a new placement launches. Rates are readiness event counts, not active unique-user conversion, revenue, Stripe reconciliation, accounting records, or finance reporting. Use the detailed panels for rows that need review.",
   },
   {
     title: "Read saved-workout checkout handoffs as checkout start only",
@@ -572,29 +572,29 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Shows how often current sales prompts on Plans and My Library were shown, clicked, or returned from checkout. Use it as prompt activity only, not purchase, access, revenue, or accounting evidence.",
       },
       {
-        label: "Poolside guide stage summary",
+        label: "Poolside guide paused funnel",
         meaning:
-          "Shows historical shown/clicked prompt activity, checkout handoff, checkout cancelled, completed checkout, and access granted together for the approved saved-workout guide path. The current workout save success message no longer shows the prompt. Cancel rate is cancelled / shown for the mapped return-from-checkout signal. Rates are event-count ratios only, not unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
+          "Shows mapped prompt activity, checkout handoff, checkout cancelled, completed checkout, and access granted together for the paused saved-workout guide path. Use it as test or future-placement readiness until a new placement launches, not active conversion, unique people, revenue, Stripe reconciliation, accounting evidence, or finance reporting.",
       },
       {
-        label: "Poolside guide prompt",
+        label: "Poolside guide prompt readiness",
         meaning:
-          "Shows historical shown/clicked events for the saved-workout Poolside guide prompt. The current workout save success message no longer shows that prompt. Needs review stays out of the main numbers until reviewed, and none of these values mean purchase, access, revenue, or accounting evidence.",
+          "Shows mapped shown/clicked rows for the paused saved-workout Poolside guide prompt. The current workout save success message no longer shows that prompt. Needs review stays out of the main numbers until reviewed, and none of these values mean active conversion, purchase, access, revenue, or accounting evidence.",
       },
       {
-        label: "Poolside guide checkout",
+        label: "Poolside guide checkout readiness",
         meaning:
-          "Shows checkout handoffs from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean purchase, access, revenue, accounting evidence, or unique people.",
+          "Shows checkout handoffs from the paused saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean active checkout performance, purchase, access, revenue, accounting evidence, or unique people.",
       },
       {
-        label: "Poolside guide checkout cancel",
+        label: "Poolside guide checkout cancel readiness",
         meaning:
-          "Shows mapped checkout-cancel returns from the approved saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean ignored CTA, payment failure, entitlement failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
+          "Shows mapped checkout-cancel returns from the paused saved-workout guide path. Needs review stays out of the main number until reviewed, and these values do not mean ignored CTA, payment failure, entitlement failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
       },
       {
-        label: "Poolside guide access",
+        label: "Poolside guide access readiness",
         meaning:
-          "Shows completed checkout and app-recognized access for the approved saved-workout guide path. Needs review can show safe aggregate reasons such as product not mapped or access pending, and these values do not mean provider failure, entitlement failure, revenue, Stripe reconciliation, accounting evidence, refunds, payouts, invoices, or unique people.",
+          "Shows completed checkout and app-recognized access for the paused saved-workout guide path. Needs review can show safe aggregate reasons such as product not mapped or access pending, and these values do not mean provider failure, entitlement failure, revenue, Stripe reconciliation, accounting evidence, refunds, payouts, invoices, or unique people.",
       },
       {
         label: "Generated sessions / Template starts",
@@ -1050,8 +1050,8 @@ export default function AdminHelpCenter() {
               <li>Read, filter, status, archive, soft-delete, and restore stored messages.</li>
               <li>
                 Inspect privacy-safe analytics health, read-only funnel signals, and existing
-                upsell, saved-workout guide stage summary, prompt, checkout handoff, checkout
-                cancel, and access caveats.
+                upsell, saved-workout guide paused funnel, prompt readiness, checkout readiness,
+                checkout cancel readiness, and access readiness caveats.
               </li>
               <li>Maintain notes, categories, and commerce labels.</li>
               <li>Run revision restore and QR rollback operations.</li>

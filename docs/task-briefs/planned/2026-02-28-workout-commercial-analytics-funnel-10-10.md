@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-12`
+- `updated`: `2026-06-13`
 - `execution_mode`: `plan-only-parent`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-12`
-- `base`: clean synced `main@c7498c1b` after PR `#1105` implemented the workout-context stage-summary checkout-cancel denominator/rate child, repo-managed closeout PR `#1106` moved the child to done, and post-merge preflight was reported clean.
+- `last_audited`: `2026-06-13`
+- `base`: clean synced `main@33073499` after PR `#1107` removed the saved-workout Poolside guide success prompt, closeout PR `#1108` moved that child to done, and post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. Active child is `docs/task-briefs/in-progress/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1105`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics for the completion/access review-needed aggregate, the read-only stage summary over existing mapped workout-context CTA/checkout handoff/completion/access aggregates, the docs-only checkout-cancel / decline measurement contract, checkout-cancel runtime attribution, read-only checkout-cancel Admin Analytics mapping, and the stage-summary mapped checkout-cancel count plus `cancelled / shown` rate are all closed. The active child now removes/defers the saved-workout success Poolside guide prompt because the separate paid guide is unclear in that save-confirmation context; Admin Analytics mapping, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, vendor analytics, and any replacement prompt still require separate owner-approved children.
+- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. Active child is `docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1108`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics, stage summaries, checkout-cancel mapping/rates, and the saved-workout Poolside CTA removal are all closed. The active child keeps the Poolside workout-context measurement path future-ready while making Admin Analytics copy clear that it is paused/readiness telemetry, not active production funnel insight; new prompts, Admin Analytics dismiss mapping, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, vendor analytics, and replacement placement decisions still require separate owner-approved children.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, Codex skill/stack readiness radar, Codex local automation defaults, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -134,10 +134,14 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Closed by PR `#1105` / squash commit `c75aae55`.
   - Owns only the read-only Admin Analytics stage-summary addition of mapped checkout-cancel count plus `Cancel rate = cancelled / shown`.
   - Keeps explicit dismiss UI, new runtime callsites, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, visible redesign outside Admin Analytics, and builder/generator UX out of scope.
-- In-progress child: `docs/task-briefs/in-progress/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`
-  - Pivoted on 2026-06-12 from clean `main@c7498c1b` after owner reviewed screenshots and questioned the saved-workout Poolside guide prompt context.
+- Done child: `docs/task-briefs/done/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`
+  - Closed by PR `#1107` / squash commit `2f653a9a`; repo-managed closeout PR `#1108` / squash commit `33073499` moved the child to done and left post-merge preflight clean.
   - Owns only removing/defering the saved-workout success Poolside guide prompt and stopping new prompt shown/clicked/declined runtime events from that surface.
   - Keeps the Poolside guide product, `/guides/poolside`, Plans presentation, checkout, entitlement, historical Admin Analytics panels, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, direct checkout, persistent opt-out, replacement prompt placement, and builder/generator UX out of scope.
+- In-progress child: `docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`
+  - Started on 2026-06-13 from clean `main@33073499` after PR `#1107`, closeout PR `#1108`, and clean post-merge preflight.
+  - Owns only Admin Analytics copy/view-model/test/Help alignment so Poolside workout-context funnel panels read as paused/future-ready readiness telemetry for the removed save-success prompt.
+  - Keeps counts, API shape, runtime prompt, dismiss tracking, direct checkout, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, replacement placement, and builder/generator UX out of scope.
   - Screenshot approval is required before `npm run verify:pre-pr`.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
@@ -149,7 +153,7 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: `docs/task-briefs/in-progress/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`.
+Active child: `docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`.
 
 Planned child: none.
 
@@ -158,7 +162,8 @@ A separate future child must be explicitly selected before adding a replacement 
 Safe follow-up candidate families after the checkout-cancel / decline measurement contract:
 
 - Workout-context stage-summary decline denominator/rate: complete in `docs/task-briefs/done/2026-06-12-workout-context-stage-summary-decline-denominator-rate-v1-10-10.md`; explicit dismiss, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
-- Workout-context save-success Poolside CTA removal: active in `docs/task-briefs/in-progress/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`; any replacement prompt, Admin Analytics dismiss mapping, stage-summary denominator/rate changes, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
+- Workout-context save-success Poolside CTA removal: complete in `docs/task-briefs/done/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`; any replacement prompt, Admin Analytics dismiss mapping, stage-summary denominator/rate changes, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
+- Workout-context paused future-ready Admin Analytics copy: active in `docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`; counts/API shape/runtime prompt/dismiss/checkout/finance/export/vendor/product/builder behavior remain separate future decisions.
 - Workout-context checkout-cancel Admin Analytics mapping: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-admin-analytics-mapping-v1-10-10.md`; explicit dismiss, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
 - Workout-context checkout-cancel runtime attribution: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`; the active stage-summary denominator/rate child follows `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`.
 - Workout-context checkout-cancel / decline measurement contract: complete in `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-decline-measurement-contract-v1-10-10.md`; future explicit dismiss runtime callsites or Admin Analytics decline mapping require a new owner-approved child and must follow the contract before any dashboard denominator includes decline.
@@ -413,9 +418,9 @@ Future child implementation:
 ## Session Continuity And Recovery
 
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
-- Last completed child path: `docs/task-briefs/done/2026-06-12-workout-context-checkout-cancel-runtime-attribution-v1-10-10.md`
+- Last completed child path: `docs/task-briefs/done/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`
 - Planned child path: none
-- Active child path: none
+- Active child path: `docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -537,3 +542,5 @@ Future child implementation:
 - `2026-06-12 | stage-summary decline denominator/rate child merged | PR #1105 merged at squash commit c75aae55 after owner-approved screenshots, green local pre-pr, green PR CI, and verify:pre-merge; child moved to done in this repo-managed closeout, parent has no active child, and explicit dismiss, export/raw drilldown, finance, vendor analytics, direct checkout, product/pricing, visible redesign outside Admin Analytics, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
 - `2026-06-12 | save-success Poolside CTA removal child pivoted | after owner reviewed the explicit-dismiss screenshot and questioned why Poolside guide appears in the workout save success message, active child changed to docs/task-briefs/in-progress/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md. Scope is removal/defer of that prompt only, keeping Poolside guide product, Plans, checkout, entitlement, historical Admin Analytics, finance/export/vendor/product/pricing/direct-checkout, replacement prompt placement, and builder/generator UX out of scope | next: implement removal, docs/tests, targeted validation, screenshot handoff, and stop before verify:pre-pr`
 - `2026-06-12 | save-success Poolside CTA removal screenshot stop | active child removed the save-success Poolside guide CTA callsite, route availability loader/prop, dead CTA payload/link helpers, and explicit dismiss tests/docs, while preserving Poolside guide product, Plans, checkout, entitlement, and historical Admin Analytics. Targeted validation passed and after/reference screenshots were captured at output/workout-context-save-success-poolside-cta-removal-2026-06-12-231452; temporary capture files were removed after generation and no scoped product-rendering source changed after final capture | next: wait for owner screenshot approval before verify:pre-pr`
+- `2026-06-13 | paused future-ready Admin Analytics copy child in progress | after PR #1107 removed the saved-workout Poolside guide success prompt, closeout PR #1108 moved the child to done, and post-merge preflight was reported clean, owner approved the recommended bounded copy-alignment child on branch workout-context-historical-funnel-admin-copy-v1, then clarified that the measurement path should be kept for possible future placement but not presented as active statistics because current data is only test/readiness data. Active child is docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md and remains scoped to Admin Analytics paused/future-ready copy only, with no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder scope | next: implement copy/tests/docs, run targeted validation, capture screenshot handoff, and stop before verify:pre-pr`
+- `2026-06-13 | paused future-ready Admin Analytics copy pre-pr passed | owner approved screenshots and merge on good tests; active child passed npm run verify:pre-pr full lane with branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright E2E on branch workout-context-paused-future-ready-admin-copy-v1. No scoped product-rendering source changed after the final approved screenshot capture, and no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder scope was added | next: commit, push, open/update PR, monitor CI, run verify:pre-merge, and merge if green`

@@ -604,13 +604,13 @@ function buildWorkoutContextCta(
       },
     ],
     detail:
-      "Shows how often the Poolside guide prompt was shown and clicked after a workout was saved.",
+      "Shows mapped prompt rows for the paused saved-workout Poolside guide placement. Treat counts as test or future-placement readiness until a new placement is launched.",
     caveat:
       presented === 0
-        ? "Click rate is not counted until this prompt has been shown in the selected range."
+        ? "No mapped prompt views are counted in this range. This is expected while the save-success placement is paused."
         : unknownEvents > 0
-          ? "Some logged actions do not match the approved prompt setup. They stay out of the main numbers until reviewed."
-          : "Clicks are interest signals only. They are not purchases, access grants, revenue, or accounting records.",
+          ? "Some logged prompt actions do not match the approved paused-placement setup. They stay out of the main numbers until reviewed."
+          : "Use these as paused or future-placement readiness counts only. They are not active production conversion, purchases, access grants, revenue, or accounting records.",
   };
 }
 
@@ -642,8 +642,8 @@ function buildSchemaMissingWorkoutContextCta(): AnalyticsDashboardWorkoutContext
         detail: "Setup missing",
       },
     ],
-    detail: "Saved-workout guide prompt counts are hidden until analytics setup is ready.",
-    caveat: "Finish analytics setup before reading saved-workout guide prompt counts.",
+    detail: "Paused Poolside guide prompt counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading paused Poolside guide prompt counts.",
   };
 }
 
@@ -669,13 +669,14 @@ function buildWorkoutContextCheckoutStarted(
         detail: "Kept out of totals",
       },
     ],
-    detail: "Shows how often the saved-workout guide path reached checkout handoff.",
+    detail:
+      "Shows mapped checkout handoffs for the paused or future-ready saved-workout Poolside guide path.",
     caveat:
       started === 0
-        ? "Checkout handoff is not counted until this path starts checkout in the selected range."
+        ? "No mapped checkout handoff is counted in this range. This is expected while the save-success placement is paused."
         : unknownEvents > 0
-          ? "Some checkout-start actions do not match the approved saved-workout guide path. They stay out of the main number until reviewed."
-          : "Checkout handoff is not a purchase, access grant, revenue, accounting record, or unique person.",
+          ? "Some checkout-start actions do not match the approved paused or future-ready saved-workout guide path. They stay out of the main number until reviewed."
+          : "Checkout handoff is readiness telemetry only until a new placement launches. It is not a purchase, access grant, revenue, accounting record, or unique person.",
   };
 }
 
@@ -695,8 +696,9 @@ function buildSchemaMissingWorkoutContextCheckoutStarted(): AnalyticsDashboardWo
         detail: "Setup missing",
       },
     ],
-    detail: "Saved-workout checkout handoff counts are hidden until analytics setup is ready.",
-    caveat: "Finish analytics setup before reading saved-workout checkout handoff counts.",
+    detail:
+      "Paused Poolside guide checkout handoff counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading paused Poolside guide checkout handoff counts.",
   };
 }
 
@@ -787,13 +789,14 @@ function buildWorkoutContextCheckoutOutcome(
     ],
     reviewItems,
     emptyReviewLabel: "No review diagnostics in this range.",
-    detail: "Shows how often the saved-workout guide path completed checkout and got app access.",
+    detail:
+      "Shows mapped completion and access rows for the paused or future-ready saved-workout Poolside guide path.",
     caveat:
       completed === 0
-        ? "Completion and access are not counted until this path completes checkout in the selected range."
+        ? "No mapped completion or access is counted in this range. This is expected while the save-success placement is paused."
         : reviewItems.length > 0 || unknownEvents > 0
           ? "Review signals are aggregate support diagnostics only. They do not prove provider failure, entitlement failure, revenue, accounting, or unique people."
-          : "Completion and access are product/support signals only. They are not revenue, accounting records, Stripe reconciliation, or unique people.",
+          : "Completion and access are paused-path support signals only until a new placement launches. They are not revenue, accounting records, Stripe reconciliation, or unique people.",
   };
 }
 
@@ -827,8 +830,10 @@ function buildSchemaMissingWorkoutContextCheckoutOutcome(): AnalyticsDashboardWo
     ],
     reviewItems: [],
     emptyReviewLabel: "Setup missing",
-    detail: "Saved-workout completion and access counts are hidden until analytics setup is ready.",
-    caveat: "Finish analytics setup before reading saved-workout completion and access counts.",
+    detail:
+      "Paused Poolside guide completion and access counts are hidden until analytics setup is ready.",
+    caveat:
+      "Finish analytics setup before reading paused Poolside guide completion and access counts.",
   };
 }
 
@@ -878,13 +883,14 @@ function buildWorkoutContextCheckoutCancel(
     ],
     reviewItems,
     emptyReviewLabel: "No review diagnostics in this range.",
-    detail: "Shows mapped checkout-cancel returns for the saved-workout Poolside guide path.",
+    detail:
+      "Shows mapped checkout-cancel returns for the paused or future-ready saved-workout Poolside guide path.",
     caveat:
       cancelled === 0
-        ? "Checkout cancel is not counted until the mapped guide checkout return is logged in this range."
+        ? "No mapped checkout cancel is counted in this range. This is expected while the save-success placement is paused."
         : reviewItems.length > 0 || unknownEvents > 0
           ? "Review signals stay out of totals until mapped. Cancel counts are return-from-checkout telemetry only, not payment failure, revenue, or unique people."
-          : "Checkout cancel means the mapped return-from-checkout path only. It is not ignored CTA, payment failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
+          : "Checkout cancel means mapped paused-path return telemetry only. It is not ignored CTA, payment failure, revenue, Stripe reconciliation, finance reporting, or unique people.",
   };
 }
 
@@ -906,8 +912,9 @@ function buildSchemaMissingWorkoutContextCheckoutCancel(): AnalyticsDashboardWor
     ],
     reviewItems: [],
     emptyReviewLabel: "Setup missing",
-    detail: "Saved-workout checkout-cancel counts are hidden until analytics setup is ready.",
-    caveat: "Finish analytics setup before reading saved-workout checkout-cancel counts.",
+    detail:
+      "Paused Poolside guide checkout-cancel counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading paused Poolside guide checkout-cancel counts.",
   };
 }
 
@@ -925,13 +932,13 @@ function buildWorkoutContextStageSummary(
       id: "poolside-stage-shown",
       label: "Shown",
       value: shown,
-      detail: "Prompt views",
+      detail: "Paused prompt views",
     },
     {
       id: "poolside-stage-clicked",
       label: "Clicked",
       value: clicked,
-      detail: "Clicked prompt",
+      detail: "Paused prompt clicks",
     },
     {
       id: "poolside-stage-checkout-handoff",
@@ -998,11 +1005,12 @@ function buildWorkoutContextStageSummary(
         detail: "Access / completed",
       },
     ],
-    detail: "Shows the approved saved-workout Poolside guide path from prompt view to app access.",
+    detail:
+      "Shows the paused saved-workout Poolside guide measurement path from prompt view to app access when mapped rows exist.",
     caveat:
       shown === 0
-        ? "Stage rates are not counted until the Poolside guide prompt has been shown in this range."
-        : "Stage counts and cancel rate are selected-range logged actions, not unique people, revenue, Stripe reconciliation, or accounting records. Cancelled means mapped return-from-checkout only; use the detailed panels for review-needed rows.",
+        ? "Stage rates are not counted while no mapped prompt views exist. This is expected while the save-success placement is paused."
+        : "Use these as paused or future-placement readiness counts, not active production conversion, unique people, revenue, Stripe reconciliation, or accounting records. Cancelled means mapped return-from-checkout only; use the detailed panels for review-needed rows.",
   };
 }
 
@@ -1057,8 +1065,8 @@ function buildSchemaMissingWorkoutContextStageSummary(): AnalyticsDashboardWorko
         detail: "Access / completed",
       },
     ],
-    detail: "Saved-workout Poolside guide stage counts are hidden until analytics setup is ready.",
-    caveat: "Finish analytics setup before reading saved-workout Poolside guide stage counts.",
+    detail: "Paused Poolside guide stage counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading paused Poolside guide stage counts.",
   };
 }
 
