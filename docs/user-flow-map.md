@@ -53,7 +53,7 @@ flowchart LR
 - `Lesson X of Y`
 - `Module A of B`
 - `Current`
-- `Mark as done` -> `Done`
+- `Mark as done` -> `Done`; clicking `Done` again returns the lesson to `In progress` while keeping checked pass criteria so the learner can re-mark it later.
 - `Lessons` (for course drawer)
 - `Main` (for switching from Course menu to main drawer)
 

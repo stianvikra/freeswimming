@@ -25,6 +25,7 @@ vi.mock("@/lib/analytics/events", () => ({
 }));
 
 import { GET, POST } from "@/app/api/progress/course/route";
+import { MAX_COURSE_PROGRESS_ROWS } from "@/lib/course/progress";
 
 function buildAuthenticatedSupabaseClient(userId: string | null) {
   return {
@@ -231,5 +232,74 @@ describe("/api/progress/course route", () => {
     );
     expect(supabase.deleteFn).toHaveBeenCalled();
     expect(supabase.deleteIn).toHaveBeenCalledWith("lesson_id", ["mod1-l1"]);
+  });
+
+  it("fails closed for unauthenticated progress reads and writes", async () => {
+    createServerSupabaseClientMock.mockResolvedValue(buildAuthenticatedSupabaseClient(null));
+
+    const getResponse = await GET();
+    expect(getResponse.status).toBe(401);
+    expect(await getResponse.json()).toMatchObject({
+      ok: false,
+      error: "Unauthorized.",
+    });
+
+    const postResponse = await POST(
+      new Request("http://127.0.0.1:3000/api/progress/course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ rows: [] }),
+      })
+    );
+    expect(postResponse.status).toBe(401);
+    expect(await postResponse.json()).toMatchObject({
+      ok: false,
+      error: "Unauthorized.",
+    });
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed or oversized progress payloads without writing rows", async () => {
+    const supabase = buildPostSupabase();
+    createServerSupabaseClientMock.mockResolvedValue(supabase);
+
+    const malformedResponse = await POST(
+      new Request("http://127.0.0.1:3000/api/progress/course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ rows: "not-array" }),
+      })
+    );
+    expect(malformedResponse.status).toBe(400);
+    expect(await malformedResponse.json()).toMatchObject({
+      ok: false,
+      error: "rows must be an array.",
+    });
+
+    const oversizedResponse = await POST(
+      new Request("http://127.0.0.1:3000/api/progress/course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rows: Array.from({ length: MAX_COURSE_PROGRESS_ROWS + 1 }, (_, index) => ({
+            lessonId: `lesson-${index}`,
+          })),
+        }),
+      })
+    );
+    expect(oversizedResponse.status).toBe(413);
+    expect(await oversizedResponse.json()).toMatchObject({
+      ok: false,
+      error: `Too many rows. Max ${MAX_COURSE_PROGRESS_ROWS} rows per request.`,
+    });
+
+    expect(supabase.upsert).not.toHaveBeenCalled();
+    expect(trackAnalyticsEventMock).not.toHaveBeenCalled();
   });
 });
