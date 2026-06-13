@@ -1,16 +1,16 @@
 .playerStack {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-top: 0.5rem;
 }
 
 .overviewPanel {
-  order: 1;
+  order: 2;
 }
 
 .playerPanel {
-  order: 2;
+  order: 1;
 }
 
 .posterScrim {
@@ -68,14 +68,6 @@
 }
 
 @media (min-width: 1024px) {
-  .overviewPanel {
-    order: 2;
-  }
-
-  .playerPanel {
-    order: 1;
-  }
-
   .videoCopy {
     max-width: 560px;
     align-items: flex-start;

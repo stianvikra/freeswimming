@@ -190,7 +190,7 @@ type CoursePracticeMediaFrameProps = {
 function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFrameProps) {
   const image = practice.image;
   const imageSrc = image?.src;
-  const fallbackLabel = tone === "land" ? "Land practice visual" : "Water practice visual";
+  const fallbackLabel = tone === "land" ? "Dryland practice visual" : "Water practice visual";
   const toneClass =
     tone === "land"
       ? "from-slate-100 via-white to-blue-50/70 text-slate-700"
@@ -243,7 +243,8 @@ function CoursePracticeSteps({ steps, tone }: CoursePracticeStepsProps) {
     tone === "land"
       ? "border-slate-200/72 bg-slate-50/76 text-slate-800"
       : "border-blue-100/80 bg-blue-50/58 text-slate-800";
-  const markerClass = tone === "land" ? "bg-slate-900 text-white" : "bg-blue-600 text-white";
+  const markerClass =
+    tone === "land" ? "bg-white text-slate-700 ring-1 ring-slate-300/80" : "bg-blue-600 text-white";
 
   return (
     <ol className="mt-4 space-y-2 text-[14px] leading-6">
@@ -1789,7 +1790,12 @@ function CoursePageClient() {
   const showCuesSection =
     lessonExperience.display.feelCues &&
     lessonDisplay?.cues !== false &&
-    lessonExperience.feelCues.length > 0;
+    lessonExperience.feelCues.length > 0 &&
+    !(
+      lessonExperience.variant === "concept" &&
+      lessonExperience.feelCues.length === 1 &&
+      lessonExperience.feelCues[0] === lessonExperience.primaryCue
+    );
   const showCommonMistakesSection =
     lessonExperience.display.commonMistakes &&
     lessonDisplay?.commonMistakes !== false &&
@@ -1800,11 +1806,27 @@ function CoursePageClient() {
   const showWaterPracticeSection =
     showPracticeMasterSection && lessonExperience.display.waterPractice;
   const showPracticeSections = showLandPracticeSection || showWaterPracticeSection;
-  const feelCuesHelperText = showWaterPracticeSection
-    ? "Use these immediately after the water practice."
+  const lessonCueLabel = lessonExperience.variant === "concept" ? "Focus" : "One cue";
+  const feelCuesHeading = showWaterPracticeSection
+    ? "Feel cues"
     : lessonExperience.feelCues.length === 1
-      ? "Use this as the lesson's one reminder."
-      : "Use these as the lesson's main reminders.";
+      ? "Key reminder"
+      : "Key reminders";
+  const feelCueBadgeLabel = showWaterPracticeSection
+    ? "One cue"
+    : lessonExperience.feelCues.length === 1
+      ? "Reminder"
+      : "Reminders";
+  const feelCuesHelperText = showWaterPracticeSection
+    ? "What this should feel like in the water."
+    : lessonExperience.variant === "concept"
+      ? "The idea to remember before the next lesson."
+      : lessonExperience.feelCues.length === 1
+        ? "Use this as the lesson's one reminder."
+        : "Use these as the lesson's main reminders.";
+  const showPrimaryFocusBlocks = showGoalSection || showQuickExplanationSection;
+  const primaryFocusGridClass =
+    showGoalSection && showQuickExplanationSection ? "lg:grid-cols-2" : "lg:grid-cols-1";
   const showPassCriteria = lessonDisplay?.checkpoint !== false;
   const showNextStepSection =
     lessonExperience.display.nextStep && lessonDisplay?.nextStep !== false;
@@ -3208,6 +3230,61 @@ function CoursePageClient() {
                   </PressLink>
                 </div>
               ) : null}
+
+              <div
+                data-testid="course-lesson-info-strip"
+                className="mt-3 rounded-[20px] border border-slate-200/72 bg-slate-50/78 p-3 ring-1 ring-white/80 sm:p-4 lg:bg-slate-50/62"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                      Lesson info
+                    </p>
+                    <h2 className="mt-1 text-[17px] leading-6 font-semibold text-slate-950 sm:text-[18px]">
+                      {activeLesson.title}
+                    </h2>
+                    {activeLesson.goal ? (
+                      <p className="mt-1 max-w-[64ch] text-[13px] leading-6 font-medium text-slate-600">
+                        {activeLesson.goal}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2 text-[11px] font-semibold text-slate-700 sm:justify-end">
+                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
+                      {overviewLabel.lesson}
+                    </span>
+                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
+                      {overviewLabel.module}
+                    </span>
+                    {overviewLabel.duration ? (
+                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
+                        {overviewLabel.duration}
+                      </span>
+                    ) : null}
+                    <span
+                      className={cx(
+                        "rounded-full px-2.5 py-1 ring-1",
+                        activeLessonStatusMeta.className
+                      )}
+                    >
+                      {activeLessonStatusMeta.label}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-blue-100/80 bg-white/82 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
+                      {lessonCueLabel}
+                    </p>
+                    <p className="mt-0.5 text-[14px] leading-6 font-semibold text-slate-900">
+                      {lessonExperience.primaryCue}
+                    </p>
+                  </div>
+                  <p className="hidden text-[12px] leading-5 font-medium text-slate-500 sm:block sm:max-w-[28ch] sm:text-right">
+                    Use this to judge the video, practice, and pass criteria.
+                  </p>
+                </div>
+              </div>
             </section>
           </div>
 
@@ -3227,8 +3304,8 @@ function CoursePageClient() {
                     data-testid="course-lesson-focus"
                     className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
                           Lesson focus
                         </p>
@@ -3236,54 +3313,68 @@ function CoursePageClient() {
                           {activeLesson.title}
                         </h2>
                       </div>
-                      <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[13px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                        {lessonExperience.primaryCue}
-                      </span>
+                      <div className="rounded-2xl border border-blue-100/80 bg-blue-50/65 px-3 py-2 text-left sm:max-w-[260px] sm:text-right">
+                        <p className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
+                          {lessonCueLabel}
+                        </p>
+                        <p className="mt-1 text-[14px] leading-6 font-semibold text-slate-950">
+                          {lessonExperience.primaryCue}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-3 lg:divide-x lg:divide-slate-200/72 lg:border-t-0 lg:pt-0">
-                      {showGoalSection ? (
-                        <div className="lg:pr-4">
-                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                            Goal
-                          </p>
-                          <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
-                            {lessonExperience.goal}
-                          </h3>
-                        </div>
-                      ) : null}
+                    {showPrimaryFocusBlocks ? (
+                      <div
+                        className={cx(
+                          "mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0",
+                          showGoalSection &&
+                            showQuickExplanationSection &&
+                            "lg:divide-x lg:divide-slate-200/72",
+                          primaryFocusGridClass
+                        )}
+                      >
+                        {showGoalSection ? (
+                          <div className={cx(showQuickExplanationSection && "lg:pr-5")}>
+                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                              Goal
+                            </p>
+                            <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
+                              {lessonExperience.goal}
+                            </h3>
+                          </div>
+                        ) : null}
 
-                      {showQuickExplanationSection ? (
-                        <div
-                          className={cx(
-                            showGoalSection &&
-                              "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:px-4 lg:pt-0",
-                            !showGoalSection && "lg:pr-4"
-                          )}
-                        >
-                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                            Quick explanation
-                          </p>
-                          <p className="mt-2 text-[15px] leading-7 text-slate-700">
-                            {lessonExperience.quickExplanation}
-                          </p>
-                        </div>
-                      ) : null}
+                        {showQuickExplanationSection ? (
+                          <div
+                            className={cx(
+                              showGoalSection &&
+                                "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0 lg:pl-5"
+                            )}
+                          >
+                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                              Quick explanation
+                            </p>
+                            <p className="mt-2 text-[15px] leading-7 text-slate-700">
+                              {lessonExperience.quickExplanation}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
 
-                      {showWhyThisMattersSection ? (
-                        <div
-                          data-testid="course-lesson-why-this-matters"
-                          className="border-t border-blue-100/80 bg-blue-50/50 pt-4 lg:border-t-0 lg:bg-transparent lg:pt-0 lg:pl-4"
-                        >
-                          <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
-                            Why this matters
-                          </p>
-                          <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
-                            {lessonExperience.whyThisMatters}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                    {showWhyThisMattersSection ? (
+                      <div
+                        data-testid="course-lesson-why-this-matters"
+                        className="mt-4 rounded-2xl border border-blue-100/80 bg-blue-50/55 px-4 py-3"
+                      >
+                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                          Why this matters
+                        </p>
+                        <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
+                          {lessonExperience.whyThisMatters}
+                        </p>
+                      </div>
+                    ) : null}
                   </article>
                 ) : null}
 
@@ -3299,9 +3390,9 @@ function CoursePageClient() {
                           <div className="px-1 pb-2 sm:px-2 md:py-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                                Land practice
+                                Dryland practice
                               </p>
-                              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/72">
+                              <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80">
                                 Dryland prep
                               </span>
                             </div>
@@ -3327,7 +3418,7 @@ function CoursePageClient() {
                           <div className="px-1 pb-2 sm:px-2 md:py-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                                Water practice
+                                Pool drill
                               </p>
                               <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
                                 {drillBadgeLabel}
@@ -3357,14 +3448,14 @@ function CoursePageClient() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          Feel cues
+                          {feelCuesHeading}
                         </p>
                         <p className="mt-1 text-[12px] font-medium text-slate-500">
                           {feelCuesHelperText}
                         </p>
                       </div>
-                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                        One cue
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80">
+                        {feelCueBadgeLabel}
                       </span>
                     </div>
                     <ul className="mt-3 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-3">

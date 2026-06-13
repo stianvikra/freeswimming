@@ -61,7 +61,8 @@ test("capture mobile full-page screenshots for core app flow", async ({ page }, 
 
   await page.goto(`/course?lesson=${encodeURIComponent(DEFAULT_LESSON_ID)}`);
   await waitForStableUi(page);
-  await expect(page.getByText(/Lesson 1 of \d+/)).toBeVisible();
+  const courseOverviewMeta = page.getByTestId("course-lesson-status-chip").locator("xpath=..");
+  await expect(courseOverviewMeta.getByText(/Lesson 1 of \d+/)).toBeVisible();
   await saveFullPage(page, outputDir, "02-course");
 
   await page.getByTestId("course-nav-lessons").click();
