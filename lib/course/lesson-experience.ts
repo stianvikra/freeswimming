@@ -1,12 +1,16 @@
 import type {
   CourseLesson,
   CourseLessonExperience,
+  CourseLessonExperienceDisplay,
   CourseLessonExperienceImage,
   CourseLessonExperienceMistake,
   CourseLessonExperiencePractice,
   CourseLessonExperienceSupport,
+  CourseLessonExperienceVariant,
 } from "@/app/course/courseData";
 import { getCourseLessonPassCriteria } from "@/lib/course/progress-status";
+
+export type CourseLessonExperienceViewDisplay = Required<CourseLessonExperienceDisplay>;
 
 export type CourseLessonExperienceViewPractice = {
   title: string;
@@ -16,6 +20,8 @@ export type CourseLessonExperienceViewPractice = {
 };
 
 export type CourseLessonExperienceViewModel = {
+  variant: CourseLessonExperienceVariant;
+  display: CourseLessonExperienceViewDisplay;
   goal: string;
   primaryCue: string;
   quickExplanation: string;
@@ -35,6 +41,73 @@ export type CourseLessonExperienceViewModel = {
   };
 };
 
+const DISPLAY_KEYS = [
+  "quickExplanation",
+  "whyThisMatters",
+  "landPractice",
+  "waterPractice",
+  "feelCues",
+  "commonMistakes",
+  "nextStep",
+  "support",
+] as const;
+
+const DISPLAY_DEFAULTS_BY_VARIANT: Record<
+  CourseLessonExperienceVariant,
+  CourseLessonExperienceViewDisplay
+> = {
+  concept: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: false,
+    waterPractice: false,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  dryland: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: false,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  water_drill: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  swim_set: {
+    quickExplanation: true,
+    whyThisMatters: false,
+    landPractice: false,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: false,
+    nextStep: true,
+    support: true,
+  },
+  custom: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -48,6 +121,32 @@ function getString(value: unknown): string | null {
 function getStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((entry) => getString(entry)).filter((entry): entry is string => Boolean(entry));
+}
+
+function normalizeVariant(value: unknown): CourseLessonExperienceVariant | undefined {
+  if (
+    value === "concept" ||
+    value === "dryland" ||
+    value === "water_drill" ||
+    value === "swim_set" ||
+    value === "custom"
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function normalizeDisplay(value: unknown): CourseLessonExperienceDisplay | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const display: CourseLessonExperienceDisplay = {};
+  for (const key of DISPLAY_KEYS) {
+    if (typeof value[key] === "boolean") {
+      display[key] = value[key];
+    }
+  }
+
+  return Object.keys(display).length > 0 ? display : undefined;
 }
 
 function uniqueStrings(values: string[]): string[] {
@@ -134,6 +233,13 @@ export function normalizeCourseLessonExperienceInput(
   if (!isRecord(value)) return undefined;
 
   const experience: CourseLessonExperience = {};
+
+  const variant = normalizeVariant(value.variant);
+  if (variant) experience.variant = variant;
+
+  const display = normalizeDisplay(value.display);
+  if (display) experience.display = display;
+
   const goal = getString(value.goal);
   if (goal) experience.goal = goal;
 
@@ -162,6 +268,22 @@ export function normalizeCourseLessonExperienceInput(
   if (support) experience.support = support;
 
   return Object.keys(experience).length > 0 ? experience : undefined;
+}
+
+function resolveDefaultVariant(lesson: CourseLesson): CourseLessonExperienceVariant {
+  if (lesson.lessonType === "learn") return "concept";
+  if (lesson.lessonType === "swim") return "swim_set";
+  return "water_drill";
+}
+
+function resolveExperienceDisplay(
+  variant: CourseLessonExperienceVariant,
+  display: CourseLessonExperienceDisplay | undefined
+): CourseLessonExperienceViewDisplay {
+  return {
+    ...DISPLAY_DEFAULTS_BY_VARIANT[variant],
+    ...display,
+  };
 }
 
 function normalizeLessonExperienceMistake(
@@ -199,6 +321,8 @@ export function buildCourseLessonExperienceViewModel(
   lesson: CourseLesson
 ): CourseLessonExperienceViewModel {
   const experience = normalizeCourseLessonExperienceInput(lesson.lessonExperience);
+  const variant = normalizeVariant(experience?.variant) ?? resolveDefaultVariant(lesson);
+  const display = resolveExperienceDisplay(variant, experience?.display);
   const lessonCues = uniqueStrings(getStringArray(lesson.cues));
   const primaryCue = lessonCues[0] ?? "Swim relaxed and controlled.";
   const goal =
@@ -216,9 +340,10 @@ export function buildCourseLessonExperienceViewModel(
     ],
   });
 
-  const drillSteps = getStringArray(lesson.drill.steps);
+  const lessonDrill: Record<string, unknown> | null = isRecord(lesson.drill) ? lesson.drill : null;
+  const drillSteps = getStringArray(lessonDrill?.steps);
   const waterPractice = requirePractice(experience?.waterPractice, {
-    title: getString(lesson.drill.title) ?? "Water practice",
+    title: getString(lessonDrill?.title) ?? "Water practice",
     steps:
       drillSteps.length > 0
         ? drillSteps
@@ -237,6 +362,8 @@ export function buildCourseLessonExperienceViewModel(
   );
 
   return {
+    variant,
+    display,
     goal,
     primaryCue,
     quickExplanation,

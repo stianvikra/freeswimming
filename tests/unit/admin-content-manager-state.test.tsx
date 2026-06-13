@@ -849,6 +849,372 @@ describe("AdminContentManager state rendering", () => {
     expect(editError).toHaveTextContent("Could not save content changes.");
   });
 
+  it("saves structured course lesson experience fields without editing images", async () => {
+    useAllContentView();
+    const moduleItem = buildContentItem({
+      id: "module-1",
+      content_type: "course_module",
+      category: "Course modules",
+      slug: "course-module-body-position",
+      title: "Body Position",
+      body: { moduleId: "body-position" },
+      sort_order: 0,
+    });
+    const lessonItem = buildContentItem({
+      id: "lesson-1",
+      content_type: "course_lesson",
+      category: "Course lessons",
+      slug: "course-lesson-body-position-front",
+      title: "Body Position on the Front",
+      summary: "Hold the line.",
+      parent_id: "module-1",
+      body: {
+        moduleId: "body-position",
+        lessonId: "body-position--body-position-front",
+        goal: "Hold a calm body line.",
+        cues: ["Head quiet"],
+        commonMistakes: ["Looking forward"],
+        drill: {
+          title: "Front glide",
+          steps: ["Push off gently"],
+        },
+        nextStep: "Continue to side balance.",
+        lessonExperience: {
+          landPractice: {
+            image: {
+              src: "/course/lesson-media/body-position-front-wall-line.jpg",
+              alt: "Wall-line rehearsal",
+            },
+          },
+        },
+      },
+      sort_order: 1,
+    });
+    let savedBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/lesson-1" && init?.method === "PATCH") {
+        savedBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return okJson({
+          ok: true,
+          item: {
+            ...lessonItem,
+            body: (savedBody.body ?? lessonItem.body) as AdminContentItemRow["body"],
+          },
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem, lessonItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const rows = await screen.findAllByTestId("admin-content-item");
+    const lessonRow = rows.find((row) => within(row).queryByText("Body Position on the Front"));
+    expect(lessonRow).toBeDefined();
+    fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
+
+    const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
+    expect(within(editForm).getByTestId("admin-lesson-experience-editor")).toBeInTheDocument();
+    expect(within(editForm).getByLabelText("Lesson experience layout")).toHaveValue("water_drill");
+    expect(within(editForm).getByLabelText("Show lesson quick explanation")).toBeChecked();
+    expect(within(editForm).getByLabelText("Show lesson land practice")).toBeChecked();
+    expect(within(editForm).getByLabelText("Show lesson water practice")).toBeChecked();
+    expect(within(editForm).getByText("Show on public lesson")).toBeVisible();
+    expect(
+      within(editForm).getByTestId("admin-lesson-experience-image-placeholder-state")
+    ).toHaveTextContent("non-editable");
+
+    fireEvent.change(within(editForm).getByLabelText("Quick explanation"), {
+      target: { value: "Keep the head quiet before adding distance." },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Why this exercise matters"), {
+      target: { value: "A quiet head helps the body float longer." },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Land practice title"), {
+      target: { value: "Wall line rehearsal" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Land practice steps (one per line)"), {
+      target: { value: "Stand tall\nBreathe calmly" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Water practice title"), {
+      target: { value: "Front glide + exhale" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Water practice steps (one per line)"), {
+      target: { value: "Push off\nStop before tension" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Water practice safety note"), {
+      target: { value: "Use shallow water." },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Lesson experience correction 1"), {
+      target: { value: "Look down before breathing." },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Feel cues (one per line)"), {
+      target: { value: "Quiet head\nEasy bubbles" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Lesson experience next step"), {
+      target: { value: "Try side balance." },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Lesson experience support title"), {
+      target: { value: "Need extra help?" },
+    });
+    fireEvent.change(within(editForm).getByLabelText("Lesson experience support body"), {
+      target: { value: "Free lesson first, support after." },
+    });
+
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(savedBody).not.toBeNull());
+    const savedRequestBody = savedBody as unknown as Record<string, unknown>;
+    expect(savedRequestBody.body).toMatchObject({
+      moduleId: "body-position",
+      lessonId: "body-position--body-position-front",
+      lessonExperience: {
+        variant: "water_drill",
+        display: {
+          quickExplanation: true,
+          whyThisMatters: true,
+          landPractice: true,
+          waterPractice: true,
+          feelCues: true,
+          commonMistakes: true,
+          nextStep: true,
+          support: true,
+        },
+        quickExplanation: "Keep the head quiet before adding distance.",
+        whyThisMatters: "A quiet head helps the body float longer.",
+        landPractice: {
+          title: "Wall line rehearsal",
+          steps: ["Stand tall", "Breathe calmly"],
+          image: {
+            src: "/course/lesson-media/body-position-front-wall-line.jpg",
+            alt: "Wall-line rehearsal",
+          },
+        },
+        waterPractice: {
+          title: "Front glide + exhale",
+          steps: ["Push off", "Stop before tension"],
+          safetyNote: "Use shallow water.",
+        },
+        commonMistakes: [
+          {
+            mistake: "Looking forward",
+            fix: "Look down before breathing.",
+          },
+        ],
+        feelCues: ["Quiet head", "Easy bubbles"],
+        nextStep: "Try side balance.",
+        support: {
+          title: "Need extra help?",
+          body: "Free lesson first, support after.",
+        },
+      },
+    });
+  });
+
+  it("preserves inactive lesson experience container content when hidden", async () => {
+    useAllContentView();
+    const moduleItem = buildContentItem({
+      id: "module-1",
+      content_type: "course_module",
+      category: "Course modules",
+      slug: "course-module-body-position",
+      title: "Body Position",
+      body: { moduleId: "body-position" },
+      sort_order: 0,
+    });
+    const lessonItem = buildContentItem({
+      id: "lesson-1",
+      content_type: "course_lesson",
+      category: "Course lessons",
+      slug: "course-lesson-body-position-front",
+      title: "Body Position on the Front",
+      summary: "Hold the line.",
+      parent_id: "module-1",
+      body: {
+        moduleId: "body-position",
+        lessonId: "body-position--body-position-front",
+        goal: "Hold a calm body line.",
+        cues: ["Head quiet"],
+        drill: {
+          title: "Front glide",
+          steps: ["Push off gently"],
+        },
+        nextStep: "Continue to side balance.",
+        lessonExperience: {
+          variant: "water_drill",
+          display: {
+            quickExplanation: true,
+            whyThisMatters: true,
+            landPractice: true,
+            waterPractice: true,
+            feelCues: true,
+            commonMistakes: true,
+            nextStep: true,
+            support: true,
+          },
+          landPractice: {
+            title: "Wall line rehearsal",
+            steps: ["Stand tall", "Breathe calmly"],
+            image: {
+              src: "/course/lesson-media/body-position-front-wall-line.jpg",
+              alt: "Wall-line rehearsal",
+            },
+          },
+        },
+      },
+      sort_order: 1,
+    });
+    let savedBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/lesson-1" && init?.method === "PATCH") {
+        savedBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return okJson({
+          ok: true,
+          item: {
+            ...lessonItem,
+            body: (savedBody.body ?? lessonItem.body) as AdminContentItemRow["body"],
+          },
+        });
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem, lessonItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const rows = await screen.findAllByTestId("admin-content-item");
+    const lessonRow = rows.find((row) => within(row).queryByText("Body Position on the Front"));
+    expect(lessonRow).toBeDefined();
+    fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
+
+    const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
+    fireEvent.click(within(editForm).getByLabelText("Show lesson land practice"));
+
+    expect(within(editForm).getByLabelText("Show lesson land practice")).not.toBeChecked();
+    expect(within(editForm).queryByLabelText("Land practice title")).not.toBeInTheDocument();
+
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(savedBody).not.toBeNull());
+    const savedRequestBody = savedBody as unknown as Record<string, unknown>;
+    expect(savedRequestBody.body).toMatchObject({
+      lessonExperience: {
+        variant: "custom",
+        display: {
+          landPractice: false,
+          waterPractice: true,
+        },
+        landPractice: {
+          title: "Wall line rehearsal",
+          steps: ["Stand tall", "Breathe calmly"],
+          image: {
+            src: "/course/lesson-media/body-position-front-wall-line.jpg",
+            alt: "Wall-line rehearsal",
+          },
+        },
+      },
+    });
+  });
+
+  it("blocks lesson experience corrections without matching mistakes before save", async () => {
+    useAllContentView();
+    const moduleItem = buildContentItem({
+      id: "module-1",
+      content_type: "course_module",
+      category: "Course modules",
+      slug: "course-module-body-position",
+      title: "Body Position",
+      body: { moduleId: "body-position" },
+    });
+    const lessonItem = buildContentItem({
+      id: "lesson-1",
+      content_type: "course_lesson",
+      category: "Course lessons",
+      slug: "course-lesson-body-position-front",
+      title: "Body Position on the Front",
+      summary: "Hold the line.",
+      parent_id: "module-1",
+      body: {
+        moduleId: "body-position",
+        lessonId: "body-position--body-position-front",
+        goal: "Hold a calm body line.",
+        cues: ["Head quiet"],
+        drill: {
+          title: "Front glide",
+          steps: ["Push off gently"],
+        },
+        nextStep: "Continue to side balance.",
+      },
+    });
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url === "/api/admin/content/lesson-1" && init?.method === "PATCH") {
+        throw new Error("PATCH should not be called for invalid lesson experience rows.");
+      }
+
+      if (url === "/api/admin/content") {
+        return okJson(buildContentPayload({ items: [moduleItem, lessonItem] }));
+      }
+
+      if (url === "/api/admin/categories/content") {
+        return okJson(buildCategoriesPayload());
+      }
+
+      throw new Error(`Unexpected fetch: ${url} ${init?.method ?? "GET"}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminContentManager />);
+
+    const rows = await screen.findAllByTestId("admin-content-item");
+    const lessonRow = rows.find((row) => within(row).queryByText("Body Position on the Front"));
+    expect(lessonRow).toBeDefined();
+    fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
+
+    const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
+    fireEvent.change(within(editForm).getByLabelText("Lesson experience correction 1"), {
+      target: { value: "Look down before breathing." },
+    });
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    const editError = await screen.findByTestId("admin-content-edit-error-state");
+    expect(editError).toHaveTextContent(
+      "Lesson experience correction requires a matching mistake."
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input) === "/api/admin/content/lesson-1" && init?.method === "PATCH"
+      )
+    ).toBe(false);
+  });
+
   it("renders course-structure follow-up feedback through polite admin state feedback", async () => {
     useAllContentView();
     const moduleItem = buildContentItem({

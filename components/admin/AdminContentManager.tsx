@@ -333,6 +333,41 @@ type LessonTypeOption = "learn" | "drill" | "swim" | "";
 type SupportActionOption = "videoAnalysis" | "poolsideGuide" | "guide0To1000" | "contact";
 type SupportPrimaryActionOption = SupportActionOption | "";
 
+type LessonExperienceMistakeEditRow = {
+  mistake: string;
+  fix: string;
+};
+
+type LessonExperienceVariantOption = "concept" | "dryland" | "water_drill" | "swim_set" | "custom";
+type LessonExperienceDisplayKey =
+  | "quickExplanation"
+  | "whyThisMatters"
+  | "landPractice"
+  | "waterPractice"
+  | "feelCues"
+  | "commonMistakes"
+  | "nextStep"
+  | "support";
+
+type LessonExperienceDisplayState = Record<LessonExperienceDisplayKey, boolean>;
+
+type LessonExperienceEditState = {
+  variant: LessonExperienceVariantOption;
+  display: LessonExperienceDisplayState;
+  quickExplanation: string;
+  whyThisMatters: string;
+  landPracticeTitle: string;
+  landPracticeSteps: string;
+  waterPracticeTitle: string;
+  waterPracticeSteps: string;
+  waterPracticeSafetyNote: string;
+  commonMistakes: LessonExperienceMistakeEditRow[];
+  feelCues: string;
+  nextStep: string;
+  supportTitle: string;
+  supportBody: string;
+};
+
 type LessonBodyEditState = {
   lessonId: string;
   lessonType: LessonTypeOption;
@@ -357,7 +392,110 @@ type LessonBodyEditState = {
   drillSteps: string;
   nextStep: string;
   passCriteria: string;
+  lessonExperience: LessonExperienceEditState;
 };
+
+const LESSON_EXPERIENCE_VARIANT_OPTIONS: Array<{
+  value: LessonExperienceVariantOption;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "concept",
+    label: "Concept / intro",
+    description: "Use for explanation-first lessons without forced practice blocks.",
+  },
+  {
+    value: "dryland",
+    label: "Dryland practice",
+    description: "Use when the lesson mainly rehearses movement outside the pool.",
+  },
+  {
+    value: "water_drill",
+    label: "Water drill",
+    description: "Use for a normal swim drill with land prep and water practice.",
+  },
+  {
+    value: "swim_set",
+    label: "Swim set",
+    description: "Use for pool execution where water practice matters most.",
+  },
+  {
+    value: "custom",
+    label: "Custom",
+    description: "Use after manually choosing the exact visible containers.",
+  },
+];
+
+const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
+  LessonExperienceVariantOption,
+  LessonExperienceDisplayState
+> = {
+  concept: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: false,
+    waterPractice: false,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  dryland: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: false,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  water_drill: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+  swim_set: {
+    quickExplanation: true,
+    whyThisMatters: false,
+    landPractice: false,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: false,
+    nextStep: true,
+    support: true,
+  },
+  custom: {
+    quickExplanation: true,
+    whyThisMatters: true,
+    landPractice: true,
+    waterPractice: true,
+    feelCues: true,
+    commonMistakes: true,
+    nextStep: true,
+    support: true,
+  },
+};
+
+const LESSON_EXPERIENCE_DISPLAY_OPTIONS: Array<{
+  key: LessonExperienceDisplayKey;
+  label: string;
+}> = [
+  { key: "quickExplanation", label: "Show lesson quick explanation" },
+  { key: "whyThisMatters", label: "Show lesson why this matters" },
+  { key: "landPractice", label: "Show lesson land practice" },
+  { key: "waterPractice", label: "Show lesson water practice" },
+  { key: "feelCues", label: "Show lesson feel cues" },
+  { key: "commonMistakes", label: "Show lesson mistakes/corrections" },
+  { key: "nextStep", label: "Show lesson experience next step" },
+  { key: "support", label: "Show lesson support card" },
+];
 
 type CourseLessonWorkspaceItem = {
   id: string;
@@ -531,6 +669,49 @@ function resolveLessonType(value: string | null): LessonTypeOption {
   return "";
 }
 
+function resolveLessonExperienceVariant(
+  value: string | null,
+  lessonType: LessonTypeOption
+): LessonExperienceVariantOption {
+  if (
+    value === "concept" ||
+    value === "dryland" ||
+    value === "water_drill" ||
+    value === "swim_set" ||
+    value === "custom"
+  ) {
+    return value;
+  }
+  if (lessonType === "learn") return "concept";
+  if (lessonType === "swim") return "swim_set";
+  return "water_drill";
+}
+
+function parseLessonExperienceDisplayState(
+  lessonExperience: Record<string, unknown> | null,
+  variant: LessonExperienceVariantOption,
+  legacyDisplay: Record<string, unknown> | null
+): LessonExperienceDisplayState {
+  const displayRecord = parseNestedRecord(lessonExperience, "display");
+  const defaults = { ...LESSON_EXPERIENCE_DISPLAY_DEFAULTS[variant] };
+  if (!displayRecord && parseBodyBoolean(legacyDisplay, "drill") === false) {
+    defaults.landPractice = false;
+    defaults.waterPractice = false;
+  }
+
+  return {
+    quickExplanation:
+      parseBodyBoolean(displayRecord, "quickExplanation") ?? defaults.quickExplanation,
+    whyThisMatters: parseBodyBoolean(displayRecord, "whyThisMatters") ?? defaults.whyThisMatters,
+    landPractice: parseBodyBoolean(displayRecord, "landPractice") ?? defaults.landPractice,
+    waterPractice: parseBodyBoolean(displayRecord, "waterPractice") ?? defaults.waterPractice,
+    feelCues: parseBodyBoolean(displayRecord, "feelCues") ?? defaults.feelCues,
+    commonMistakes: parseBodyBoolean(displayRecord, "commonMistakes") ?? defaults.commonMistakes,
+    nextStep: parseBodyBoolean(displayRecord, "nextStep") ?? defaults.nextStep,
+    support: parseBodyBoolean(displayRecord, "support") ?? defaults.support,
+  };
+}
+
 function resolveSupportPrimaryAction(value: string | null): SupportPrimaryActionOption {
   if (
     value === "videoAnalysis" ||
@@ -541,6 +722,84 @@ function resolveSupportPrimaryAction(value: string | null): SupportPrimaryAction
     return value;
   }
   return "";
+}
+
+function parseLessonExperienceRecord(body: unknown): Record<string, unknown> | null {
+  return isRecord(body) && isRecord(body.lessonExperience) ? body.lessonExperience : null;
+}
+
+function parseNestedRecord(body: unknown, key: string): Record<string, unknown> | null {
+  return isRecord(body) && isRecord(body[key]) ? body[key] : null;
+}
+
+function ensureLessonExperienceMistakeRows(
+  rows: LessonExperienceMistakeEditRow[]
+): LessonExperienceMistakeEditRow[] {
+  return rows.length > 0 ? rows : [{ mistake: "", fix: "" }];
+}
+
+function parseLessonExperienceMistakeRows(
+  lessonExperience: Record<string, unknown> | null,
+  legacyMistakes: string[]
+): LessonExperienceMistakeEditRow[] {
+  const value = lessonExperience?.commonMistakes;
+  if (Array.isArray(value)) {
+    const rows = value
+      .map((entry) => {
+        if (typeof entry === "string") {
+          return {
+            mistake: entry.trim(),
+            fix: "",
+          };
+        }
+        if (!isRecord(entry)) return null;
+        const mistake = typeof entry.mistake === "string" ? entry.mistake.trim() : "";
+        const fix = typeof entry.fix === "string" ? entry.fix.trim() : "";
+        if (!mistake && !fix) return null;
+        return { mistake, fix };
+      })
+      .filter((entry): entry is LessonExperienceMistakeEditRow => Boolean(entry));
+    return ensureLessonExperienceMistakeRows(rows);
+  }
+
+  return ensureLessonExperienceMistakeRows(
+    legacyMistakes.map((mistake) => ({
+      mistake,
+      fix: "",
+    }))
+  );
+}
+
+function toLessonExperienceEditState(item: AdminContentItemRow): LessonExperienceEditState {
+  const lessonExperience = parseLessonExperienceRecord(item.body);
+  const landPractice = parseNestedRecord(lessonExperience, "landPractice");
+  const waterPractice = parseNestedRecord(lessonExperience, "waterPractice");
+  const lessonType = resolveLessonType(parseBodyString(item.body, "lessonType"));
+  const variant = resolveLessonExperienceVariant(
+    parseBodyString(lessonExperience, "variant"),
+    lessonType
+  );
+  const legacyDisplay = parseNestedRecord(item.body, "display");
+
+  return {
+    variant,
+    display: parseLessonExperienceDisplayState(lessonExperience, variant, legacyDisplay),
+    quickExplanation: parseBodyString(lessonExperience, "quickExplanation") ?? "",
+    whyThisMatters: parseBodyString(lessonExperience, "whyThisMatters") ?? "",
+    landPracticeTitle: parseBodyString(landPractice, "title") ?? "",
+    landPracticeSteps: joinLines(parseBodyStringArray(landPractice, "steps")),
+    waterPracticeTitle: parseBodyString(waterPractice, "title") ?? "",
+    waterPracticeSteps: joinLines(parseBodyStringArray(waterPractice, "steps")),
+    waterPracticeSafetyNote: parseBodyString(waterPractice, "safetyNote") ?? "",
+    commonMistakes: parseLessonExperienceMistakeRows(
+      lessonExperience,
+      parseBodyStringArray(item.body, "commonMistakes")
+    ),
+    feelCues: joinLines(parseBodyStringArray(lessonExperience, "feelCues")),
+    nextStep: parseBodyString(lessonExperience, "nextStep") ?? "",
+    supportTitle: parseBodyString(parseNestedRecord(lessonExperience, "support"), "title") ?? "",
+    supportBody: parseBodyString(parseNestedRecord(lessonExperience, "support"), "body") ?? "",
+  };
 }
 
 function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
@@ -589,7 +848,139 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
     drillSteps: joinLines(drillStepsRaw),
     nextStep: parseBodyString(item.body, "nextStep") ?? "",
     passCriteria: joinLines(parseBodyStringArray(item.body, "passCriteria")),
+    lessonExperience: toLessonExperienceEditState(item),
   };
+}
+
+function normalizeLessonExperienceForCompare(value: LessonExperienceEditState) {
+  return {
+    variant: value.variant,
+    display: { ...value.display },
+    quickExplanation: value.quickExplanation.trim(),
+    whyThisMatters: value.whyThisMatters.trim(),
+    landPracticeTitle: value.landPracticeTitle.trim(),
+    landPracticeSteps: normalizeLinesInput(value.landPracticeSteps),
+    waterPracticeTitle: value.waterPracticeTitle.trim(),
+    waterPracticeSteps: normalizeLinesInput(value.waterPracticeSteps),
+    waterPracticeSafetyNote: value.waterPracticeSafetyNote.trim(),
+    commonMistakes: value.commonMistakes
+      .map((row) => ({
+        mistake: row.mistake.trim(),
+        fix: row.fix.trim(),
+      }))
+      .filter((row) => row.mistake.length > 0 || row.fix.length > 0),
+    feelCues: normalizeLinesInput(value.feelCues),
+    nextStep: value.nextStep.trim(),
+    supportTitle: value.supportTitle.trim(),
+    supportBody: value.supportBody.trim(),
+  };
+}
+
+function setOptionalString(target: Record<string, unknown>, key: string, value: string): void {
+  if (value.length > 0) {
+    target[key] = value;
+  } else {
+    delete target[key];
+  }
+}
+
+function setOptionalStringArray(
+  target: Record<string, unknown>,
+  key: string,
+  value: string[]
+): void {
+  if (value.length > 0) {
+    target[key] = value;
+  } else {
+    delete target[key];
+  }
+}
+
+function hasObjectValues(value: Record<string, unknown>): boolean {
+  return Object.keys(value).length > 0;
+}
+
+function buildLessonExperiencePracticePayload(input: {
+  existingPractice: unknown;
+  title: string;
+  steps: string[];
+  safetyNote?: string;
+}): Record<string, unknown> | undefined {
+  const practice: Record<string, unknown> = isRecord(input.existingPractice)
+    ? { ...input.existingPractice }
+    : {};
+  setOptionalString(practice, "title", input.title);
+  setOptionalStringArray(practice, "steps", input.steps);
+  if (typeof input.safetyNote === "string") {
+    setOptionalString(practice, "safetyNote", input.safetyNote);
+  }
+  return hasObjectValues(practice) ? practice : undefined;
+}
+
+function buildLessonExperiencePayload(
+  existingExperience: unknown,
+  value: LessonExperienceEditState
+): Record<string, unknown> | undefined {
+  const lessonExperience: Record<string, unknown> = isRecord(existingExperience)
+    ? { ...existingExperience }
+    : {};
+  const normalized = normalizeLessonExperienceForCompare(value);
+
+  lessonExperience.variant = normalized.variant;
+  lessonExperience.display = normalized.display;
+
+  setOptionalString(lessonExperience, "quickExplanation", normalized.quickExplanation);
+  setOptionalString(lessonExperience, "whyThisMatters", normalized.whyThisMatters);
+
+  const existingLandPractice = parseNestedRecord(lessonExperience, "landPractice");
+  const landPractice = buildLessonExperiencePracticePayload({
+    existingPractice: existingLandPractice,
+    title: normalized.landPracticeTitle,
+    steps: normalized.landPracticeSteps,
+  });
+  if (landPractice) {
+    lessonExperience.landPractice = landPractice;
+  } else {
+    delete lessonExperience.landPractice;
+  }
+
+  const existingWaterPractice = parseNestedRecord(lessonExperience, "waterPractice");
+  const waterPractice = buildLessonExperiencePracticePayload({
+    existingPractice: existingWaterPractice,
+    title: normalized.waterPracticeTitle,
+    steps: normalized.waterPracticeSteps,
+    safetyNote: normalized.waterPracticeSafetyNote,
+  });
+  if (waterPractice) {
+    lessonExperience.waterPractice = waterPractice;
+  } else {
+    delete lessonExperience.waterPractice;
+  }
+
+  if (normalized.commonMistakes.length > 0) {
+    lessonExperience.commonMistakes = normalized.commonMistakes
+      .filter((row) => row.mistake.length > 0)
+      .map((row) => ({
+        mistake: row.mistake,
+        ...(row.fix ? { fix: row.fix } : {}),
+      }));
+  } else {
+    delete lessonExperience.commonMistakes;
+  }
+
+  setOptionalStringArray(lessonExperience, "feelCues", normalized.feelCues);
+  setOptionalString(lessonExperience, "nextStep", normalized.nextStep);
+
+  const support = isRecord(lessonExperience.support) ? { ...lessonExperience.support } : {};
+  setOptionalString(support, "title", normalized.supportTitle);
+  setOptionalString(support, "body", normalized.supportBody);
+  if (hasObjectValues(support)) {
+    lessonExperience.support = support;
+  } else {
+    delete lessonExperience.support;
+  }
+
+  return hasObjectValues(lessonExperience) ? lessonExperience : undefined;
 }
 
 function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
@@ -633,6 +1024,7 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
     drillSteps: normalizeLinesInput(value.drillSteps),
     nextStep: value.nextStep.trim(),
     passCriteria: normalizeLinesInput(value.passCriteria),
+    lessonExperience: normalizeLessonExperienceForCompare(value.lessonExperience),
   };
 }
 
@@ -691,6 +1083,15 @@ function buildLessonBodyPayload(
     nextBody.passCriteria = normalized.passCriteria;
   } else {
     delete nextBody.passCriteria;
+  }
+  const lessonExperience = buildLessonExperiencePayload(
+    nextBody.lessonExperience,
+    value.lessonExperience
+  );
+  if (lessonExperience) {
+    nextBody.lessonExperience = lessonExperience;
+  } else {
+    delete nextBody.lessonExperience;
   }
 
   return nextBody;
@@ -1546,6 +1947,83 @@ export default function AdminContentManager() {
     setActionNotice(null);
   }
 
+  function updateLessonExperience(
+    updater: (current: LessonExperienceEditState) => LessonExperienceEditState
+  ) {
+    setEditFormState((previous) =>
+      previous?.lessonBody
+        ? {
+            ...previous,
+            lessonBody: {
+              ...previous.lessonBody,
+              lessonExperience: updater(previous.lessonBody.lessonExperience),
+            },
+          }
+        : previous
+    );
+  }
+
+  function updateLessonExperienceField(
+    key: Exclude<keyof LessonExperienceEditState, "variant" | "display" | "commonMistakes">,
+    value: string
+  ) {
+    updateLessonExperience((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function updateLessonExperienceVariant(variant: LessonExperienceVariantOption) {
+    updateLessonExperience((current) => ({
+      ...current,
+      variant,
+      display:
+        variant === "custom" ? current.display : { ...LESSON_EXPERIENCE_DISPLAY_DEFAULTS[variant] },
+    }));
+  }
+
+  function updateLessonExperienceDisplay(key: LessonExperienceDisplayKey, value: boolean) {
+    updateLessonExperience((current) => ({
+      ...current,
+      variant: "custom",
+      display: {
+        ...current.display,
+        [key]: value,
+      },
+    }));
+  }
+
+  function updateLessonExperienceMistakeRow(
+    index: number,
+    key: keyof LessonExperienceMistakeEditRow,
+    value: string
+  ) {
+    updateLessonExperience((current) => ({
+      ...current,
+      commonMistakes: ensureLessonExperienceMistakeRows(
+        current.commonMistakes.map((row, rowIndex) =>
+          rowIndex === index ? { ...row, [key]: value } : row
+        )
+      ),
+    }));
+  }
+
+  function addLessonExperienceMistakeRow() {
+    updateLessonExperience((current) => ({
+      ...current,
+      commonMistakes: [...current.commonMistakes, { mistake: "", fix: "" }],
+    }));
+  }
+
+  function removeLessonExperienceMistakeRow(index: number) {
+    updateLessonExperience((current) => ({
+      ...current,
+      commonMistakes: ensureLessonExperienceMistakeRows(
+        current.commonMistakes.filter((_, rowIndex) => rowIndex !== index)
+      ),
+    }));
+  }
+
   function scrollToContentRow(itemId: string) {
     if (typeof document === "undefined") return;
     window.requestAnimationFrame(() => {
@@ -1887,6 +2365,60 @@ export default function AdminContentManager() {
         (normalizedBody.nextStep.length < 2 || normalizedBody.nextStep.length > 240)
       ) {
         return "Next step must be between 2 and 240 characters.";
+      }
+
+      const experience = normalizedBody.lessonExperience;
+      if (
+        experience.quickExplanation.length > 0 &&
+        (experience.quickExplanation.length < 5 || experience.quickExplanation.length > 700)
+      ) {
+        return "Lesson experience quick explanation must be between 5 and 700 characters.";
+      }
+      if (experience.whyThisMatters.length > 700) {
+        return "Why this exercise matters must be 700 characters or less.";
+      }
+      if (experience.landPracticeTitle.length > 120) {
+        return "Land practice title must be 120 characters or less.";
+      }
+      if (
+        experience.display.landPractice &&
+        experience.landPracticeSteps.length > 0 &&
+        experience.landPracticeTitle.length < 2
+      ) {
+        return "Add a land practice title when showing land practice steps.";
+      }
+      if (experience.waterPracticeTitle.length > 120) {
+        return "Water practice title must be 120 characters or less.";
+      }
+      if (
+        experience.display.waterPractice &&
+        experience.waterPracticeSteps.length > 0 &&
+        experience.waterPracticeTitle.length < 2
+      ) {
+        return "Add a water practice title when showing water practice steps.";
+      }
+      if (experience.waterPracticeSafetyNote.length > 240) {
+        return "Water practice safety note must be 240 characters or less.";
+      }
+      if (experience.nextStep.length > 240) {
+        return "Lesson experience next step must be 240 characters or less.";
+      }
+      if (experience.supportTitle.length > 100) {
+        return "Lesson experience support title must be 100 characters or less.";
+      }
+      if (experience.supportBody.length > 500) {
+        return "Lesson experience support body must be 500 characters or less.";
+      }
+      for (const row of experience.commonMistakes) {
+        if (row.fix.length > 0 && row.mistake.length === 0) {
+          return "Lesson experience correction requires a matching mistake.";
+        }
+        if (row.mistake.length > 180) {
+          return "Lesson experience mistake text must be 180 characters or less.";
+        }
+        if (row.fix.length > 240) {
+          return "Lesson experience correction must be 240 characters or less.";
+        }
       }
     }
 
@@ -4182,6 +4714,429 @@ export default function AdminContentManager() {
                                       className={textAreaClass}
                                     />
                                   </label>
+
+                                  <fieldset
+                                    className={["space-y-3 sm:col-span-2", nestedPanelClass].join(
+                                      " "
+                                    )}
+                                    data-testid="admin-lesson-experience-editor"
+                                  >
+                                    <legend className={metadataLabelClass}>
+                                      Lesson experience{" "}
+                                      <span className="ml-2 inline-flex h-5 items-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/80 px-2 text-[10px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                                        New field
+                                      </span>
+                                    </legend>
+                                    <p className={metadataClass}>
+                                      Structured fields for the public lesson experience. Images are
+                                      not editable in this slice; existing image metadata stays
+                                      pass-through, and missing media keeps the public fallback.
+                                    </p>
+
+                                    <div className="grid gap-3 sm:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+                                      <label className={compactLabelClass}>
+                                        <span>Lesson experience layout</span>
+                                        <select
+                                          aria-label="Lesson experience layout"
+                                          value={editFormState.lessonBody.lessonExperience.variant}
+                                          onChange={(event) =>
+                                            updateLessonExperienceVariant(
+                                              event.target.value as LessonExperienceVariantOption
+                                            )
+                                          }
+                                          className={compactFieldClass}
+                                        >
+                                          {LESSON_EXPERIENCE_VARIANT_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                              {option.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                          {
+                                            LESSON_EXPERIENCE_VARIANT_OPTIONS.find(
+                                              (option) =>
+                                                option.value ===
+                                                editFormState.lessonBody?.lessonExperience.variant
+                                            )?.description
+                                          }
+                                        </p>
+                                      </label>
+
+                                      <fieldset
+                                        className={["space-y-2", mutedPanelClass].join(" ")}
+                                      >
+                                        <legend className={metadataLabelClass}>
+                                          Show on public lesson
+                                        </legend>
+                                        <p className={metadataClass}>
+                                          Toggle each public container on the public lesson. Hidden
+                                          containers preserve their saved draft content for later.
+                                        </p>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                          {LESSON_EXPERIENCE_DISPLAY_OPTIONS.map((option) => (
+                                            <label
+                                              key={option.key}
+                                              className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]"
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={
+                                                  editFormState.lessonBody?.lessonExperience
+                                                    .display[option.key] ?? false
+                                                }
+                                                onChange={(event) =>
+                                                  updateLessonExperienceDisplay(
+                                                    option.key,
+                                                    event.target.checked
+                                                  )
+                                                }
+                                                className={compactCheckboxClass}
+                                              />
+                                              <span>{option.label}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </fieldset>
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .quickExplanation ? (
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Quick explanation</span>
+                                          <textarea
+                                            rows={3}
+                                            value={
+                                              editFormState.lessonBody.lessonExperience
+                                                .quickExplanation
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceField(
+                                                "quickExplanation",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                            placeholder="One plain-language explanation of what the swimmer should do."
+                                          />
+                                        </label>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .whyThisMatters ? (
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Why this exercise matters</span>
+                                          <textarea
+                                            rows={3}
+                                            value={
+                                              editFormState.lessonBody.lessonExperience
+                                                .whyThisMatters
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceField(
+                                                "whyThisMatters",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                            placeholder="Only appears publicly when authored."
+                                          />
+                                        </label>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .landPractice ? (
+                                        <fieldset
+                                          className={["space-y-3", mutedPanelClass].join(" ")}
+                                        >
+                                          <legend className={metadataLabelClass}>
+                                            Land practice
+                                          </legend>
+                                          <label className={compactLabelClass}>
+                                            <span>Land practice title</span>
+                                            <input
+                                              type="text"
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .landPracticeTitle
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "landPracticeTitle",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={compactFieldClass}
+                                            />
+                                          </label>
+                                          <label className={compactLabelClass}>
+                                            <span>Land practice steps (one per line)</span>
+                                            <textarea
+                                              rows={4}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .landPracticeSteps
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "landPracticeSteps",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                        </fieldset>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .waterPractice ? (
+                                        <fieldset
+                                          className={["space-y-3", mutedPanelClass].join(" ")}
+                                        >
+                                          <legend className={metadataLabelClass}>
+                                            Water practice
+                                          </legend>
+                                          <label className={compactLabelClass}>
+                                            <span>Water practice title</span>
+                                            <input
+                                              type="text"
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .waterPracticeTitle
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "waterPracticeTitle",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={compactFieldClass}
+                                            />
+                                          </label>
+                                          <label className={compactLabelClass}>
+                                            <span>Water practice steps (one per line)</span>
+                                            <textarea
+                                              rows={4}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .waterPracticeSteps
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "waterPracticeSteps",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                          <label className={compactLabelClass}>
+                                            <span>Water practice safety note</span>
+                                            <textarea
+                                              rows={2}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .waterPracticeSafetyNote
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "waterPracticeSafetyNote",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                        </fieldset>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .landPractice ||
+                                      editFormState.lessonBody.lessonExperience.display
+                                        .waterPractice ? (
+                                        <AdminManagerState
+                                          tone="empty"
+                                          density="compact"
+                                          className="!mt-0 sm:col-span-2"
+                                          testId="admin-lesson-experience-image-placeholder-state"
+                                        >
+                                          Practice images are intentionally non-editable in this
+                                          slice. Existing image metadata is preserved, and lessons
+                                          without images keep the public Visual not added yet
+                                          fallback.
+                                        </AdminManagerState>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .commonMistakes ? (
+                                        <fieldset
+                                          className={[
+                                            "space-y-3 sm:col-span-2",
+                                            mutedPanelClass,
+                                          ].join(" ")}
+                                        >
+                                          <legend className={metadataLabelClass}>
+                                            Common mistakes and corrections
+                                          </legend>
+                                          <p className={metadataClass}>
+                                            Keep each correction attached to its mistake. A
+                                            correction without a mistake cannot be saved.
+                                          </p>
+                                          <div className="space-y-2">
+                                            {editFormState.lessonBody.lessonExperience.commonMistakes.map(
+                                              (row, mistakeIndex) => (
+                                                <div
+                                                  key={mistakeIndex}
+                                                  className="grid gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                                                >
+                                                  <label className={compactLabelClass}>
+                                                    <span>
+                                                      Lesson experience mistake {mistakeIndex + 1}
+                                                    </span>
+                                                    <textarea
+                                                      rows={2}
+                                                      value={row.mistake}
+                                                      onChange={(event) =>
+                                                        updateLessonExperienceMistakeRow(
+                                                          mistakeIndex,
+                                                          "mistake",
+                                                          event.target.value
+                                                        )
+                                                      }
+                                                      className={textAreaClass}
+                                                    />
+                                                  </label>
+                                                  <label className={compactLabelClass}>
+                                                    <span>
+                                                      Lesson experience correction{" "}
+                                                      {mistakeIndex + 1}
+                                                    </span>
+                                                    <textarea
+                                                      rows={2}
+                                                      value={row.fix}
+                                                      onChange={(event) =>
+                                                        updateLessonExperienceMistakeRow(
+                                                          mistakeIndex,
+                                                          "fix",
+                                                          event.target.value
+                                                        )
+                                                      }
+                                                      className={textAreaClass}
+                                                    />
+                                                  </label>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      removeLessonExperienceMistakeRow(mistakeIndex)
+                                                    }
+                                                    className={[
+                                                      compactSecondaryActionClass,
+                                                      "self-end",
+                                                    ].join(" ")}
+                                                  >
+                                                    Remove row
+                                                  </button>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={addLessonExperienceMistakeRow}
+                                            className={compactSuccessActionClass}
+                                          >
+                                            Add mistake row
+                                          </button>
+                                        </fieldset>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .feelCues ? (
+                                        <label className={compactLabelClass}>
+                                          <span>Feel cues (one per line)</span>
+                                          <textarea
+                                            rows={4}
+                                            value={
+                                              editFormState.lessonBody.lessonExperience.feelCues
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceField(
+                                                "feelCues",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                        </label>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display
+                                        .nextStep ? (
+                                        <label className={compactLabelClass}>
+                                          <span>Lesson experience next step</span>
+                                          <textarea
+                                            rows={4}
+                                            value={
+                                              editFormState.lessonBody.lessonExperience.nextStep
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceField(
+                                                "nextStep",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                        </label>
+                                      ) : null}
+
+                                      {editFormState.lessonBody.lessonExperience.display.support ? (
+                                        <>
+                                          <label className={compactLabelClass}>
+                                            <span>Lesson experience support title</span>
+                                            <input
+                                              type="text"
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .supportTitle
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "supportTitle",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={compactFieldClass}
+                                            />
+                                          </label>
+
+                                          <label className={compactLabelClass}>
+                                            <span>Lesson experience support body</span>
+                                            <textarea
+                                              rows={4}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .supportBody
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "supportBody",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  </fieldset>
                                 </div>
                               </div>
                             ) : null}

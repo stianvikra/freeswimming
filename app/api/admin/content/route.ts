@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ensurePlatformContentSeeded } from "@/lib/admin/content-import-apply";
 import { buildAdminContentMirrorSnapshot } from "@/lib/admin/content-mirror";
-import { parseCreateAdminContentPayload } from "@/lib/admin/content";
+import {
+  parseCreateAdminContentPayload,
+  validateCourseLessonExperienceBody,
+} from "@/lib/admin/content";
 import {
   applyCourseLessonRuntimeIdDefaults,
   applyCourseModuleRuntimeIdDefaults,
@@ -383,6 +386,12 @@ export async function POST(request: Request) {
       }
 
       createBody = runtimeDefaults.body;
+      const lessonExperienceValidation = validateCourseLessonExperienceBody(createBody);
+      if (!lessonExperienceValidation.ok) {
+        return applySupabaseCookies(
+          noStoreJson({ ok: false, error: lessonExperienceValidation.error }, { status: 400 })
+        );
+      }
     }
   }
 

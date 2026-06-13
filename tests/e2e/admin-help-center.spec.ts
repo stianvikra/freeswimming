@@ -78,6 +78,12 @@ test.describe("admin help center", () => {
         "Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row."
       )
     ).toBeVisible();
+    await expect(page.getByText("Lesson experience editor")).toBeVisible();
+    await expect(page.getByText(/pick the layout first: Concept \/ intro/i)).toBeVisible();
+    await expect(page.getByText(/Then use the Show on public lesson toggles/i)).toBeVisible();
+    await expect(page.getByText(/Hidden containers do not render publicly/i)).toBeVisible();
+    await expect(page.getByText("Practice images are non-editable in this slice;")).toBeVisible();
+    await expect(page.getByText(/Layout, Show on public lesson toggles/i)).toBeVisible();
     await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
     await expect(page.getByText("Learner common mistakes visibility")).toBeVisible();
     await expect(

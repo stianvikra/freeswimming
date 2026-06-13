@@ -39,7 +39,27 @@ export type CourseLessonExperienceSupport = {
   body?: string;
 };
 
+export type CourseLessonExperienceVariant =
+  | "concept"
+  | "dryland"
+  | "water_drill"
+  | "swim_set"
+  | "custom";
+
+export type CourseLessonExperienceDisplay = {
+  quickExplanation?: boolean;
+  whyThisMatters?: boolean;
+  landPractice?: boolean;
+  waterPractice?: boolean;
+  feelCues?: boolean;
+  commonMistakes?: boolean;
+  nextStep?: boolean;
+  support?: boolean;
+};
+
 export type CourseLessonExperience = {
+  variant?: CourseLessonExperienceVariant;
+  display?: CourseLessonExperienceDisplay;
   goal?: string;
   quickExplanation?: string;
   whyThisMatters?: string;

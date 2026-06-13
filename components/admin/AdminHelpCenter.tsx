@@ -139,6 +139,11 @@ const CONTENT_PAGE_FLOW = [
       "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. The current `Module workspace` stays on top so active scope is always visible, and overview cards now also expose quick `Open lesson`, `Edit lesson`, `Delete lesson`, and `Delete module` actions. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview. Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row.",
   },
   {
+    title: "Lesson experience editor",
+    detail:
+      "Inside Edit lesson, use `Lesson experience` to pick the layout first: Concept / intro, Dryland practice, Water drill, Swim set, or Custom. Then use the Show on public lesson toggles to show or hide quick explanation, why the exercise matters, land practice, water practice, linked mistake/correction rows, feel cues, next step, and support text. Hidden containers do not render publicly, but their saved draft content is preserved for later. Each correction must stay in the same row as its mistake. Practice images are non-editable in this slice; existing image metadata is preserved, and active practice containers without images keep `Visual not added yet`. If a bad edit is saved or published, use revision history/status rollback before making more changes.",
+  },
+  {
     title: "Learner common mistakes visibility",
     detail:
       "When a lesson has authored `Common mistakes` and the section is enabled, learners see it by default. They can still hide it, and the hide/show choice is remembered locally per lesson in that browser.",
@@ -366,6 +371,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Save changes / Cancel",
         meaning:
           "Save refreshes the open editor from the saved server row without closing it. Cancel exits the editor; if you changed something, confirm before leaving.",
+      },
+      {
+        label: "Lesson experience / Save changes",
+        meaning:
+          "Layout, Show on public lesson toggles, and structured lesson experience fields save into the current content row, but do not auto-publish. Use preview and status workflow before treating changes as live.",
       },
       {
         label: "Open preview",

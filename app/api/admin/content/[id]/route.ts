@@ -3,6 +3,7 @@ import {
   isUuid,
   parseUpdateAdminContentPayload,
   preserveImmutableContentRuntimeIds,
+  validateCourseLessonExperienceBody,
 } from "@/lib/admin/content";
 import { getAdminSchemaSetupMessage, isAdminContentSchemaMissing } from "@/lib/admin/schema";
 import { requireAdminRoleFromSupabase } from "@/lib/admin/server";
@@ -170,6 +171,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     return applySupabaseCookies(
       noStoreJson({ ok: false, error: sanitizedBody.error }, { status: 400 })
     );
+  }
+
+  if (sanitizedBody && existingResult.data.content_type === "course_lesson") {
+    const lessonExperienceValidation = validateCourseLessonExperienceBody(sanitizedBody.body);
+    if (!lessonExperienceValidation.ok) {
+      return applySupabaseCookies(
+        noStoreJson({ ok: false, error: lessonExperienceValidation.error }, { status: 400 })
+      );
+    }
   }
 
   const updatePayload: Database["public"]["Tables"]["admin_content_items"]["Update"] = {

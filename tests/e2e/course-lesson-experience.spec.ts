@@ -1,6 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
 
+const fullLessonExperienceDisplay = {
+  quickExplanation: true,
+  whyThisMatters: true,
+  landPractice: true,
+  waterPractice: true,
+  feelCues: true,
+  commonMistakes: true,
+  nextStep: true,
+  support: true,
+};
+
 test("course lesson experience renders skeleton before support", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
@@ -32,6 +43,8 @@ test("course lesson experience renders skeleton before support", async ({ page }
                 },
                 nextStep: "Continue to side balance.",
                 lessonExperience: {
+                  variant: "water_drill",
+                  display: fullLessonExperienceDisplay,
                   quickExplanation: "Keep the head quiet before adding distance.",
                   whyThisMatters:
                     "A quiet head helps the body float longer before breathing gets harder.",
@@ -72,6 +85,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
   const lessonExperience = page.getByTestId("course-lesson-experience");
   await expect(page.getByTestId("course-lesson-quick-start")).toHaveCount(0);
   await expect(page.getByText("Lesson in 30 seconds")).toHaveCount(0);
+  await expect(page.getByText("New field")).toHaveCount(0);
   await expect(player).toBeVisible();
   await expect(lessonExperience).toContainText("Learn to hold a long line face-down");
 
@@ -80,6 +94,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
   expect(playerBox?.y ?? 0).toBeLessThan(lessonExperienceBox?.y ?? 0);
 
   await expect(lessonExperience).toContainText("Land practice");
+  await expect(lessonExperience).toContainText("Dryland prep");
   await expect(page.getByTestId("course-lesson-why-this-matters")).toContainText(
     "A quiet head helps the body float longer"
   );
@@ -101,6 +116,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
     hasText: "Losing balance",
   });
   await expect(mistakeOnlyRow).toContainText("Correction not added yet");
+  await expect(lessonExperience).toContainText("One cue");
   await expect(lessonExperience.getByText("Quiet head", { exact: true })).toBeVisible();
   await expect(page.getByText("Try side balance.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Need extra help?" })).toBeVisible();
@@ -115,4 +131,89 @@ test("course lesson experience renders skeleton before support", async ({ page }
   expect(landBox?.y ?? 0).toBeLessThan(waterBox?.y ?? 0);
   expect(waterBox?.y ?? 0).toBeLessThan(feelBox?.y ?? 0);
   expect(feelBox?.y ?? 0).toBeLessThan(mistakesBox?.y ?? 0);
+});
+
+test("course lesson experience hides inactive containers for concept lessons", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
+  test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: [
+          {
+            id: "intro-course",
+            title: "Introduction",
+            subtitle: "Start here",
+            lessons: [
+              {
+                id: "intro-course--how-to-use-course",
+                title: "How to Use the Course",
+                youtubeId: "Xh6OblO06LY",
+                estMinutes: 3,
+                lessonType: "learn",
+                goal: "Understand how to move through the course without rushing.",
+                lessonExperience: {
+                  variant: "concept",
+                  display: {
+                    quickExplanation: true,
+                    whyThisMatters: true,
+                    landPractice: false,
+                    waterPractice: false,
+                    feelCues: true,
+                    commonMistakes: false,
+                    nextStep: true,
+                    support: false,
+                  },
+                  quickExplanation: "Watch the lesson, then choose one small action.",
+                  whyThisMatters:
+                    "Intro lessons should explain the system without asking for a pool drill.",
+                  landPractice: {
+                    title: "Preserved draft practice",
+                    steps: ["This should not render"],
+                  },
+                  waterPractice: {
+                    title: "Preserved draft water practice",
+                    steps: ["This should not render"],
+                  },
+                  commonMistakes: [{ mistake: "Rushing", fix: "Take one lesson at a time." }],
+                  feelCues: ["Calm start"],
+                  nextStep: "Open the first water drill when ready.",
+                },
+              },
+            ],
+          },
+        ],
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
+
+  await page.goto("/course?lesson=intro-course--how-to-use-course");
+
+  const lessonExperience = page.getByTestId("course-lesson-experience");
+  await expect(lessonExperience).toBeVisible();
+  await expect(lessonExperience).toContainText("Watch the lesson, then choose one small action.");
+  await expect(page.getByTestId("course-lesson-why-this-matters")).toContainText(
+    "Intro lessons should explain the system"
+  );
+  await expect(lessonExperience).toContainText("Use this as the lesson's one reminder.");
+  await expect(lessonExperience).not.toContainText(
+    "Use these immediately after the water practice."
+  );
+  await expect(lessonExperience.getByText("Calm start", { exact: true })).toBeVisible();
+  await expect(page.getByText("Open the first water drill when ready.")).toBeVisible();
+  await expect(lessonExperience).not.toContainText("Land practice");
+  await expect(lessonExperience).not.toContainText("Water practice");
+  await expect(lessonExperience).not.toContainText("Common mistakes");
+  await expect(lessonExperience).not.toContainText("Need extra help?");
+  await expect(page.getByText("Visual not added yet")).toHaveCount(0);
 });
