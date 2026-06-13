@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-13`
-- `base`: clean synced `main@33073499` after PR `#1107` removed the saved-workout Poolside guide success prompt, closeout PR `#1108` moved that child to done, and post-merge preflight was reported clean.
+- `base`: clean synced `main@74e851bd` after PR `#1109` clarified paused/future-ready Admin Analytics copy, closeout PR `#1110` moved that child to done, and post-merge preflight was reported clean.
 - `audit_status`: `ready`
-- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. No active child is selected after PR `#1109` and its repo-managed closeout.
-- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1109`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics, stage summaries, checkout-cancel mapping/rates, saved-workout Poolside CTA removal, and paused/future-ready Admin Analytics copy are all closed. New prompts, Admin Analytics dismiss mapping, finance reporting, direct checkout, product expansion, export/raw drilldown, deeper drilldowns, vendor analytics, and replacement placement decisions still require separate owner-approved children.
+- `decision`: Use this as the refreshed parent for bounded child briefs only; do not execute this parent directly. Active docs-only child is selected only to park the track with a 10/10 pause/resume decision after PR `#1109` and closeout PR `#1110`.
+- `reason`: The first telemetry/dashboard/commercial-boundary children are complete through PR `#1109` and closeout `#1110`: workout builder start/save, Admin Analytics funnel visibility, source breakdowns, generated completion, template identity/runtime/instrumentation/mapping, workout-context placement policy, existing upsell baseline, workout-context CTA measurement/runtime/Admin Analytics mapping, checkout attribution/finance separation, checkout-start attribution hardening, the workout-context plans checkout attribution bridge, checkout-start Admin Analytics mapping, the checkout completion + entitlement attribution contract, server-owned completion/entitlement propagation, read-only completion/access Admin Analytics mapping, support-safe diagnostics, stage summaries, checkout-cancel mapping/rates, saved-workout Poolside CTA removal, and paused/future-ready Admin Analytics copy are all closed. The current app no longer renders the save-success Poolside prompt, and the remaining work is product/commerce expansion that requires separate owner-approved children.
 - `must_refresh_before_execution_if`: Refresh before any child starts if AGENTS.md, the task brief template, scorecard categories, Codex skill/stack readiness radar, Codex local automation defaults, analytics event taxonomy, `analytics_events` schema, `/api/admin/analytics/insights`, Admin Analytics UI, Help/Guide contracts, checkout/Stripe contracts, product catalog, workout builder save/generator routes, or route/label/support sweep rules change.
 
 ## Goal
@@ -143,6 +143,9 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
   - Owns only Admin Analytics copy/view-model/test/Help alignment so Poolside workout-context funnel panels read as paused/future-ready readiness telemetry for the removed save-success prompt.
   - Keeps counts, API shape, runtime prompt, dismiss tracking, direct checkout, checkout/Stripe/webhook changes, entitlement-rule changes, finance/revenue, export/raw drilldown, vendor analytics, migrations/RLS, product/pricing, replacement placement, and builder/generator UX out of scope.
   - Screenshot approval, local pre-pr, PR CI, and pre-merge gates passed before merge.
+- Active docs-only child: `docs/task-briefs/in-progress/2026-06-13-workout-commercial-funnel-park-resume-decision-v1-10-10.md`
+  - Owns only parking this parent with a 10/10 pause/resume decision, forwarding audit, parent base refresh, and support/contract wording clarification.
+  - Keeps runtime code, UI, tests, migrations, RLS, API shape, analytics counts, event taxonomy, checkout/Stripe/webhook behavior, entitlement rules, finance/revenue/reporting, export/raw drilldown, vendor analytics, product/pricing/catalog mutation, direct checkout, replacement prompt placement, `cta_dismissed`, persistent opt-out, and builder/generator UX out of scope.
 - Still deferred after the placement-policy child:
   - generated plan/completion definitions beyond existing `session_draft_generated`,
   - broader dedicated KPI modules,
@@ -153,14 +156,15 @@ Forward-compatibility-intent: nye builder-/generator-events skal enten flyte try
 
 ## Next Child
 
-Active child: none.
+Active child: `docs/task-briefs/in-progress/2026-06-13-workout-commercial-funnel-park-resume-decision-v1-10-10.md`.
 
 Planned child: none.
 
-A separate future child must be explicitly selected before adding a replacement Poolside guide prompt placement, Admin Analytics dismiss mapping, additional Admin Analytics drilldowns, direct workout-context checkout, additional decline mapping beyond existing approved checkout-cancel semantics, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
+After this docs-only park/resume child merges, the parent should return to no active child. A separate future child must be explicitly selected before adding a replacement Poolside guide prompt placement, Admin Analytics dismiss mapping, additional Admin Analytics drilldowns, direct workout-context checkout, additional decline mapping beyond existing approved checkout-cancel semantics, finance reconciliation scripts, vendor analytics, export, raw drilldown, migration, RLS, route creation, product catalog mutation, new pricing, visible redesign, shop/product expansion, or builder/generator algorithm changes.
 
 Safe follow-up candidate families after the checkout-cancel / decline measurement contract:
 
+- Workout commercial funnel park/resume decision: active in `docs/task-briefs/in-progress/2026-06-13-workout-commercial-funnel-park-resume-decision-v1-10-10.md`; this should leave the parent parked after merge with no runtime or product expansion approved.
 - Workout-context stage-summary decline denominator/rate: complete in `docs/task-briefs/done/2026-06-12-workout-context-stage-summary-decline-denominator-rate-v1-10-10.md`; explicit dismiss, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
 - Workout-context save-success Poolside CTA removal: complete in `docs/task-briefs/done/2026-06-12-workout-context-save-success-poolside-cta-removal-v1-10-10.md`; any replacement prompt, Admin Analytics dismiss mapping, stage-summary denominator/rate changes, export/raw drilldown, finance, vendor analytics, and direct checkout remain separate future decisions.
 - Workout-context paused future-ready Admin Analytics copy: complete in `docs/task-briefs/done/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`; counts/API shape/runtime prompt/dismiss/checkout/finance/export/vendor/product/builder behavior remain separate future decisions.
@@ -174,6 +178,8 @@ Safe follow-up candidate families after the checkout-cancel / decline measuremen
 
 Current guardrails:
 
+- Treat the current workout commercial funnel as parked after the park/resume child merges unless the owner explicitly selects a new child.
+- If the owner resumes this parent later, start with a docs-only replacement prompt placement contract before any runtime CTA, dismiss, checkout, finance, export, vendor, product/pricing, or builder/generator work.
 - Do not reopen the completed template usage mapping scope as the next child.
 - Do not reopen the completed checkout-started Admin Analytics mapping scope as the next child.
 - Do not infer revenue, unique-user conversion, checkout readiness, or finance truth from builder, generator, or template telemetry.
@@ -420,7 +426,7 @@ Future child implementation:
 - Canonical parent path: `docs/task-briefs/planned/2026-02-28-workout-commercial-analytics-funnel-10-10.md`
 - Last completed child path: `docs/task-briefs/done/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`
 - Planned child path: none
-- Active child path: none after PR `#1109`; completed child path: `docs/task-briefs/done/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md`
+- Active child path: `docs/task-briefs/in-progress/2026-06-13-workout-commercial-funnel-park-resume-decision-v1-10-10.md` until this docs-only park/resume PR merges; after merge, the repo-managed closeout should move it to done and leave this parent parked with no active child.
 - Done placement policy child path: `docs/task-briefs/done/2026-06-10-workout-context-upsell-placement-policy-v1-10-10.md`
 - Done unblock child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-identity-selection-contract-v1-10-10.md`
 - Done runtime source child path: `docs/task-briefs/done/2026-06-10-workout-builder-template-runtime-source-selection-surface-v1-10-10.md`
@@ -545,3 +551,4 @@ Future child implementation:
 - `2026-06-13 | paused future-ready Admin Analytics copy child in progress | after PR #1107 removed the saved-workout Poolside guide success prompt, closeout PR #1108 moved the child to done, and post-merge preflight was reported clean, owner approved the recommended bounded copy-alignment child on branch workout-context-historical-funnel-admin-copy-v1, then clarified that the measurement path should be kept for possible future placement but not presented as active statistics because current data is only test/readiness data. Active child is docs/task-briefs/in-progress/2026-06-13-workout-context-paused-future-ready-admin-analytics-copy-v1-10-10.md and remains scoped to Admin Analytics paused/future-ready copy only, with no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder scope | next: implement copy/tests/docs, run targeted validation, capture screenshot handoff, and stop before verify:pre-pr`
 - `2026-06-13 | paused future-ready Admin Analytics copy pre-pr passed | owner approved screenshots and merge on good tests; active child passed npm run verify:pre-pr full lane with branch-current, lint, quality gates, typecheck, unit, build, performance budgets, and Playwright E2E on branch workout-context-paused-future-ready-admin-copy-v1. No scoped product-rendering source changed after the final approved screenshot capture, and no count/API/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder scope was added | next: commit, push, open/update PR, monitor CI, run verify:pre-merge, and merge if green`
 - `2026-06-13 | paused future-ready Admin Analytics copy child merged | PR #1109 merged at squash commit 7b045a33 after owner-approved screenshots, green local pre-pr, green PR CI, and verify:pre-merge; child moved to done in this repo-managed closeout, parent has no active child, and replacement prompt placement, Admin Analytics dismiss mapping, direct checkout, finance/export/vendor analytics, product/pricing, raw drilldown, migration/RLS, and builder/generator UX remain deferred | next: finish docs-only closeout PR and rerun post-merge-preflight`
+- `2026-06-13 | park/resume child in progress | after closeout PR #1110 merged at 74e851bd and post-merge preflight was reported clean, owner approved a docs-only park/resume decision before switching tracks. Active child is docs/task-briefs/in-progress/2026-06-13-workout-commercial-funnel-park-resume-decision-v1-10-10.md on branch workout-commercial-funnel-park-resume-v1, scoped to parent base refresh, app/docs forwarding audit, resume checklist, and support/contract wording clarification only, with no runtime/UI/API/test/event/checkout/Stripe/entitlement/finance/export/vendor/product/builder scope | next: run docs validation, verify:pre-pr, commit, push, open PR, monitor CI, and run verify:pre-merge`

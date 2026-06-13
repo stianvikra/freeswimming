@@ -1,6 +1,6 @@
 # Workout Context CTA Measurement Contract
 
-Last updated: 2026-06-12
+Last updated: 2026-06-13
 
 ## Purpose
 
@@ -257,8 +257,12 @@ Repurpose requiring a new child:
 
 Support may say:
 
-- workout-context CTA V1 may appear only after a successful saved-workout post-success state,
-- `workout_saved_post_success` is the first approved runtime placement,
+- historical workout-context CTA V1 was scoped only to a successful saved-workout post-success
+  state,
+- the current saved-workout save-success surface is removed/deferred and does not show the
+  Poolside guide prompt,
+- `workout_saved_post_success` is the first historical mapped placement ID, not approval to reuse
+  that surface without a future child,
 - a presented event means the CTA rendered in that mapped placement,
 - an accepted event means clicked intent only,
 - product telemetry is not checkout, entitlement, Stripe, revenue, or finance evidence.
