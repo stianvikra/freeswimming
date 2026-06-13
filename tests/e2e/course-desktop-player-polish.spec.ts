@@ -87,3 +87,28 @@ test("course mobile intro keeps the title on one line", async ({ page }, testInf
     "course intro heading should not wrap on mobile"
   ).toBeLessThanOrEqual(headingMetrics.lineHeight * 1.25);
 });
+
+test("course mobile shows the player and lesson info before the progress overview", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isMobileProject(testInfo), "Runs on mobile profiles only.");
+  test.skip(testInfo.project.name !== "mobile-chromium", "Runs once on mobile Chromium.");
+
+  await gotoCourse(page);
+
+  const player = page.getByTestId("course-player-card");
+  const lessonInfo = page.getByTestId("course-lesson-info-strip");
+  const overviewStatus = page.getByTestId("course-lesson-status-chip");
+
+  await expect(player).toBeVisible();
+  await expect(lessonInfo).toBeVisible();
+  await expect(lessonInfo).toContainText("Lesson info");
+  await expect(overviewStatus).toBeVisible();
+
+  const playerBox = await player.boundingBox();
+  const lessonInfoBox = await lessonInfo.boundingBox();
+  const overviewBox = await overviewStatus.boundingBox();
+
+  expect(playerBox?.y ?? 0).toBeLessThan(lessonInfoBox?.y ?? 0);
+  expect(lessonInfoBox?.y ?? 0).toBeLessThan(overviewBox?.y ?? 0);
+});

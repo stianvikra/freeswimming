@@ -61,10 +61,27 @@ async function waitForCoursePageToSettle(page: Page) {
   );
 }
 
+async function getCourseLessonsToggle(page: Page) {
+  const byTestId = page.getByTestId("course-nav-lessons");
+  await expect(byTestId)
+    .toBeVisible({ timeout: 2_000 })
+    .catch(() => {});
+
+  if (await byTestId.isVisible().catch(() => false)) {
+    return byTestId;
+  }
+
+  const byAccessibleName = page
+    .getByRole("button", { name: /^(Open|Close) lessons menu$/ })
+    .first();
+  await expect(byAccessibleName).toBeVisible({ timeout: 8_000 });
+  return byAccessibleName;
+}
+
 async function openMainMenuFromCourse(page: Page) {
   await gotoInstallPromptLesson(page);
 
-  const lessonsToggle = page.getByTestId("course-nav-lessons");
+  const lessonsToggle = await getCourseLessonsToggle(page);
   const drawer = page.getByRole("dialog", { name: "Navigation menu" });
   const openCourseAttempts: Array<() => Promise<void>> = [
     async () => {

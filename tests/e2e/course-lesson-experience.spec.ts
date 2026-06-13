@@ -82,18 +82,25 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await page.goto("/course?lesson=body-position--body-position-front");
 
   const player = page.getByTestId("course-player-card");
+  const lessonInfoStrip = page.getByTestId("course-lesson-info-strip");
   const lessonExperience = page.getByTestId("course-lesson-experience");
   await expect(page.getByTestId("course-lesson-quick-start")).toHaveCount(0);
   await expect(page.getByText("Lesson in 30 seconds")).toHaveCount(0);
   await expect(page.getByText("New field")).toHaveCount(0);
   await expect(player).toBeVisible();
+  await expect(lessonInfoStrip).toBeVisible();
+  await expect(lessonInfoStrip).toContainText("Lesson info");
+  await expect(lessonInfoStrip).toContainText("Head neutral");
   await expect(lessonExperience).toContainText("Learn to hold a long line face-down");
 
   const playerBox = await player.boundingBox();
+  const lessonInfoBox = await lessonInfoStrip.boundingBox();
   const lessonExperienceBox = await lessonExperience.boundingBox();
   expect(playerBox?.y ?? 0).toBeLessThan(lessonExperienceBox?.y ?? 0);
+  expect(playerBox?.y ?? 0).toBeLessThan(lessonInfoBox?.y ?? 0);
+  expect(lessonInfoBox?.y ?? 0).toBeLessThan(lessonExperienceBox?.y ?? 0);
 
-  await expect(lessonExperience).toContainText("Land practice");
+  await expect(lessonExperience).toContainText("Dryland practice");
   await expect(lessonExperience).toContainText("Dryland prep");
   await expect(page.getByTestId("course-lesson-why-this-matters")).toContainText(
     "A quiet head helps the body float longer"
@@ -102,7 +109,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await expect(page.getByTestId("course-practice-land-media")).toContainText(
     "Visual not added yet"
   );
-  await expect(lessonExperience).toContainText("Water practice");
+  await expect(lessonExperience).toContainText("Pool drill");
   await expect(page.getByTestId("course-practice-water-media")).toContainText(
     "Visual not added yet"
   );
@@ -122,9 +129,9 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await expect(page.getByRole("heading", { name: "Need extra help?" })).toBeVisible();
   await expect(page.getByText("Free lesson first, support after.")).toBeVisible();
 
-  const waterBox = await page.getByText("Water practice", { exact: true }).boundingBox();
+  const waterBox = await page.getByText("Pool drill", { exact: true }).boundingBox();
   const whyBox = await page.getByText("Why this matters", { exact: true }).boundingBox();
-  const landBox = await page.getByText("Land practice", { exact: true }).boundingBox();
+  const landBox = await page.getByText("Dryland practice", { exact: true }).boundingBox();
   const feelBox = await page.getByText("Feel cues", { exact: true }).boundingBox();
   const mistakesBox = await page.getByRole("button", { name: /Common mistakes/i }).boundingBox();
   expect(whyBox?.y ?? 0).toBeLessThan(landBox?.y ?? 0);
@@ -205,14 +212,13 @@ test("course lesson experience hides inactive containers for concept lessons", a
   await expect(page.getByTestId("course-lesson-why-this-matters")).toContainText(
     "Intro lessons should explain the system"
   );
-  await expect(lessonExperience).toContainText("Use this as the lesson's one reminder.");
-  await expect(lessonExperience).not.toContainText(
-    "Use these immediately after the water practice."
-  );
+  await expect(lessonExperience).toContainText("Key reminder");
+  await expect(lessonExperience).toContainText("The idea to remember before the next lesson.");
+  await expect(lessonExperience).not.toContainText("What this should feel like in the water.");
   await expect(lessonExperience.getByText("Calm start", { exact: true })).toBeVisible();
   await expect(page.getByText("Open the first water drill when ready.")).toBeVisible();
-  await expect(lessonExperience).not.toContainText("Land practice");
-  await expect(lessonExperience).not.toContainText("Water practice");
+  await expect(lessonExperience).not.toContainText("Dryland practice");
+  await expect(lessonExperience).not.toContainText("Pool drill");
   await expect(lessonExperience).not.toContainText("Common mistakes");
   await expect(lessonExperience).not.toContainText("Need extra help?");
   await expect(page.getByText("Visual not added yet")).toHaveCount(0);
