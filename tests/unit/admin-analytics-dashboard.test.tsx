@@ -73,6 +73,28 @@ const basePayload: AnalyticsInsightsResponse = {
       },
     ],
   },
+  courseLessonKpi: {
+    viewed: 4,
+    completed: 2,
+    continued: 1,
+    supportInterest: 1,
+    completionRate: 0.5,
+    continuationRate: 0.25,
+    supportInterestRate: 0.25,
+    unknownEvents: 1,
+    lessonCounts: [
+      {
+        key: "body-position-front",
+        moduleId: "body-position",
+        viewed: 3,
+        completed: 2,
+        continued: 1,
+        supportInterest: 1,
+        total: 7,
+        completionRate: 0.667,
+      },
+    ],
+  },
   workoutContextCta: {
     placementId: "workout_saved_post_success",
     productId: "guide_poolside",
@@ -206,6 +228,7 @@ describe("AdminAnalyticsDashboard", () => {
     await screen.findByTestId("admin-analytics-health");
     expect(screen.getByTestId("admin-analytics-kpis")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-funnel")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-course-lesson-kpi")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-stage-summary")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toBeVisible();
@@ -225,6 +248,22 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       within(screen.getByTestId("admin-analytics-funnel")).getByText("Checkout completed")
     ).toBeVisible();
+    const courseLessonKpi = screen.getByTestId("admin-analytics-course-lesson-kpi");
+    expect(within(courseLessonKpi).getByText("Free lesson learning signals")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Public aggregate")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Viewed")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Marked done")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Done rate")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Continued")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Support interest")).toBeVisible();
+    expect(within(courseLessonKpi).getByText("Body Position Front")).toBeVisible();
+    expect(
+      within(courseLessonKpi).getByText(
+        "3 viewed / 2 marked done / 1 continued / 1 support interest"
+      )
+    ).toBeVisible();
+    expect(within(courseLessonKpi).getByText(/not proven technique mastery/i)).toBeVisible();
+    expect(within(courseLessonKpi).queryByRole("button")).not.toBeInTheDocument();
     const existingUpsell = screen.getByTestId("admin-analytics-existing-upsell-baseline");
     expect(within(existingUpsell).getByText("Current sales prompts")).toBeVisible();
     expect(within(existingUpsell).getByText("Shown")).toBeVisible();
@@ -463,6 +502,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toHaveTextContent(
       "Not counted"
     );
+    expect(screen.getByTestId("admin-analytics-course-lesson-kpi")).toHaveTextContent(
+      "Not counted"
+    );
     expect(screen.getByTestId("admin-analytics-workout-context-cta")).toHaveTextContent(
       "Not counted"
     );
@@ -519,6 +561,28 @@ describe("AdminAnalyticsDashboard", () => {
                 total: 1,
                 acceptedRate: null,
                 declineRate: null,
+              },
+            ],
+          },
+          courseLessonKpi: {
+            viewed: 0,
+            completed: 0,
+            continued: 0,
+            supportInterest: 0,
+            completionRate: null,
+            continuationRate: null,
+            supportInterestRate: null,
+            unknownEvents: 1,
+            lessonCounts: [
+              {
+                key: "customer@example.com",
+                moduleId: "body-position",
+                viewed: 1,
+                completed: 0,
+                continued: 0,
+                supportInterest: 0,
+                total: 1,
+                completionRate: null,
               },
             ],
           },
@@ -620,6 +684,9 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByText("Unknown product")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-existing-upsell-baseline")).toHaveTextContent(
       "Unknown source"
+    );
+    expect(screen.getByTestId("admin-analytics-course-lesson-kpi")).toHaveTextContent(
+      "Unknown lesson"
     );
     expect(screen.getByTestId("admin-analytics-workout-context-stage-summary")).toHaveTextContent(
       "Not counted"

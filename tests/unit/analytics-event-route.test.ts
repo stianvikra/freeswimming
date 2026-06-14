@@ -11,7 +11,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 vi.mock("@/lib/analytics/events", () => ({
-  isAnalyticsEventName: (value: string) => value === "plans_viewed" || value === "library_viewed",
+  isAnalyticsEventName: (value: string) =>
+    value === "plans_viewed" || value === "library_viewed" || value === "course_lesson_completed",
 }));
 
 vi.mock("@/lib/analytics/persistence", () => ({
@@ -96,6 +97,50 @@ describe("/api/analytics/event route", () => {
         source: "plans",
         routeTemplate: "/plans",
         productIds: "guide_poolside",
+      },
+    });
+  });
+
+  it("does not attach logged-in user id to course lesson KPI events", async () => {
+    getServerSupabaseUserIfAuthCookiePresentMock.mockResolvedValueOnce({
+      supabase: {},
+      user: { id: "user-123" },
+      error: null,
+      hasAuthCookie: true,
+    });
+
+    const response = await POST(
+      new Request("https://freeswimming.test/api/analytics/event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventName: "course_lesson_completed",
+          payload: {
+            source: "course",
+            surface: "course_lesson",
+            routeTemplate: "/course",
+            routeCategory: "course_landing",
+            lessonId: "body-position--body-position-front",
+            moduleId: "body-position",
+          },
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(trackAndPersistAnalyticsEventMock).toHaveBeenCalledWith({
+      eventName: "course_lesson_completed",
+      channel: "client",
+      userId: null,
+      payload: {
+        source: "course",
+        surface: "course_lesson",
+        routeTemplate: "/course",
+        routeCategory: "course_landing",
+        lessonId: "body-position--body-position-front",
+        moduleId: "body-position",
       },
     });
   });

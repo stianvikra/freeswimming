@@ -111,6 +111,8 @@ describe("AdminHelpCenter", () => {
     expect(
       screen.getByText(/Shown means a current sales prompt on Plans or My Library appeared/i)
     ).toBeVisible();
+    expect(screen.getByText(/Viewed, marked done, continued, and support interest/i)).toBeVisible();
+    expect(screen.getAllByText(/not proven technique mastery/i).length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(/Generated sessions show how often generated drafts became saved workouts/i)
     ).toBeVisible();
@@ -120,6 +122,7 @@ describe("AdminHelpCenter", () => {
       )
     ).toBeVisible();
     expect(screen.getByText("Started / Saved / Save rate:")).toBeVisible();
+    expect(screen.getByText("Free lesson learning signals:")).toBeVisible();
     expect(screen.getByText("Poolside guide paused funnel:")).toBeVisible();
     expect(screen.getByText("Poolside guide prompt readiness:")).toBeVisible();
     expect(screen.getByText("Poolside guide checkout readiness:")).toBeVisible();

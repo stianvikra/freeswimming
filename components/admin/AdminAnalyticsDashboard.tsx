@@ -238,6 +238,73 @@ function ExistingUpsellBaselinePanel({
   );
 }
 
+function CourseLessonKpiPanel({ kpi }: { kpi: AnalyticsDashboardViewModel["courseLessonKpi"] }) {
+  return (
+    <section
+      aria-labelledby="admin-analytics-course-lesson-kpi-heading"
+      className={panelClass}
+      data-testid="admin-analytics-course-lesson-kpi"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className={metadataLabelClass}>Course lessons</p>
+          <h3
+            id="admin-analytics-course-lesson-kpi-heading"
+            className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]"
+          >
+            Free lesson learning signals
+          </h3>
+          <p className={cx("mt-1", mutedTextClass)}>{kpi.detail}</p>
+        </div>
+        <p className="text-xs font-semibold text-[color:var(--fs-color-muted)]">Public aggregate</p>
+      </div>
+
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        {kpi.metrics.map((metric) => (
+          <div key={metric.id} className="min-w-0">
+            <dt className={metadataLabelClass}>{metric.label}</dt>
+            <dd className="mt-1">
+              <p className="text-xl font-semibold break-words text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {metric.value}
+              </p>
+              <p className={cx("mt-1", mutedTextClass)}>{metric.detail}</p>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {kpi.lessonItems.length === 0 ? (
+        <p className={cx("mt-4", mutedTextClass)}>{kpi.emptyLabel}</p>
+      ) : (
+        <ul className="mt-4 grid gap-2 lg:grid-cols-2">
+          {kpi.lessonItems.map((item, index) => (
+            <li
+              key={`course-lesson-kpi:${item.key}:${index}`}
+              className="flex min-w-0 items-start justify-between gap-3 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold break-words text-[color:var(--fs-color-ink-strong)]">
+                  {item.label}
+                </p>
+                {item.secondary ? (
+                  <p className="mt-0.5 text-xs break-words text-[color:var(--fs-color-muted)]">
+                    {item.secondary}
+                  </p>
+                ) : null}
+              </div>
+              <p className="shrink-0 text-right text-sm font-semibold text-[color:var(--fs-color-ink-strong)] tabular-nums">
+                {item.count}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className={cx("mt-4", mutedTextClass)}>{kpi.caveat}</p>
+    </section>
+  );
+}
+
 function WorkoutContextStageSummaryPanel({
   summary,
 }: {
@@ -922,6 +989,7 @@ export default function AdminAnalyticsDashboard() {
             )}
           </section>
 
+          <CourseLessonKpiPanel kpi={viewModel.courseLessonKpi} />
           <ExistingUpsellBaselinePanel baseline={viewModel.existingUpsellBaseline} />
           <WorkoutContextStageSummaryPanel summary={viewModel.workoutContextStageSummary} />
           <WorkoutContextCtaPanel cta={viewModel.workoutContextCta} />

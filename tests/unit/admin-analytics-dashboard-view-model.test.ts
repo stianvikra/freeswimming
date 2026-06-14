@@ -79,6 +79,28 @@ const basePayload: AnalyticsDashboardPayload = {
       },
     ],
   },
+  courseLessonKpi: {
+    viewed: 4,
+    completed: 2,
+    continued: 1,
+    supportInterest: 1,
+    completionRate: 0.5,
+    continuationRate: 0.25,
+    supportInterestRate: 0.25,
+    unknownEvents: 1,
+    lessonCounts: [
+      {
+        key: "body-position-front",
+        moduleId: "body-position",
+        viewed: 3,
+        completed: 2,
+        continued: 1,
+        supportInterest: 1,
+        total: 7,
+        completionRate: 0.667,
+      },
+    ],
+  },
   workoutContextCta: {
     placementId: "workout_saved_post_success",
     productId: "guide_poolside",
@@ -247,6 +269,53 @@ describe("admin analytics dashboard view model", () => {
       },
     ]);
     expect(viewModel.existingUpsellBaseline.caveat).toContain("Clicks are not purchases");
+    expect(viewModel.courseLessonKpi.metrics).toEqual([
+      {
+        id: "course-lesson-viewed",
+        label: "Viewed",
+        value: "4",
+        detail: "Lesson views",
+      },
+      {
+        id: "course-lesson-completed",
+        label: "Marked done",
+        value: "2",
+        detail: "After pass criteria",
+      },
+      {
+        id: "course-lesson-completion-rate",
+        label: "Done rate",
+        value: "50%",
+        detail: "Marked done / viewed",
+      },
+      {
+        id: "course-lesson-continued",
+        label: "Continued",
+        value: "1",
+        detail: "Opened another lesson",
+      },
+      {
+        id: "course-lesson-support-interest",
+        label: "Support interest",
+        value: "1",
+        detail: "Post-value clicks",
+      },
+      {
+        id: "course-lesson-unknown",
+        label: "Needs review",
+        value: "1",
+        detail: "Kept out of rates",
+      },
+    ]);
+    expect(viewModel.courseLessonKpi.lessonItems).toEqual([
+      {
+        key: "body-position-front",
+        label: "Body Position Front",
+        secondary: "3 viewed / 2 marked done / 1 continued / 1 support interest",
+        count: "7",
+      },
+    ]);
+    expect(viewModel.courseLessonKpi.caveat).toContain("not proven technique mastery");
     expect(viewModel.workoutContextStageSummary.stages).toEqual([
       {
         id: "poolside-stage-shown",
@@ -644,6 +713,17 @@ describe("admin analytics dashboard view model", () => {
             unknownSourceEvents: 0,
             sourceCounts: [],
           },
+          courseLessonKpi: {
+            viewed: 0,
+            completed: 0,
+            continued: 0,
+            supportInterest: 0,
+            completionRate: null,
+            continuationRate: null,
+            supportInterestRate: null,
+            unknownEvents: 0,
+            lessonCounts: [],
+          },
           workoutContextCta: {
             placementId: "workout_saved_post_success",
             productId: "guide_poolside",
@@ -741,6 +821,16 @@ describe("admin analytics dashboard view model", () => {
           { id: "upsell-accepted-rate", value: "Not counted" },
           { id: "upsell-declined", value: "Not counted" },
           { id: "upsell-decline-rate", value: "Not counted" },
+        ],
+      },
+      courseLessonKpi: {
+        metrics: [
+          { id: "course-lesson-viewed", value: "Not counted" },
+          { id: "course-lesson-completed", value: "Not counted" },
+          { id: "course-lesson-completion-rate", value: "Not counted" },
+          { id: "course-lesson-continued", value: "Not counted" },
+          { id: "course-lesson-support-interest", value: "Not counted" },
+          { id: "course-lesson-unknown", value: "Not counted" },
         ],
       },
       workoutContextCta: {

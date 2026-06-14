@@ -6,6 +6,12 @@ import {
 } from "@/lib/analytics/lifecycle";
 import type { AnalyticsEventName } from "@/lib/analytics/events";
 import {
+  COURSE_ANALYTICS_ROUTE_TEMPLATE,
+  COURSE_ANALYTICS_SOURCE,
+  COURSE_ANALYTICS_SURFACE,
+  COURSE_LESSON_SUPPORT_ACTION_IDS,
+} from "@/lib/analytics/course";
+import {
   CHECKOUT_CANCEL_REASON,
   WORKOUT_CONTEXT_CHECKOUT_CANCEL_SURFACE,
   WORKOUT_CONTEXT_PLANS_CHECKOUT_ATTRIBUTION,
@@ -49,6 +55,17 @@ export type WorkoutBuilderTemplateUsageCount = {
   label: string;
   status: WorkoutTemplateLifecycleStatus;
   count: number;
+};
+
+export type CourseLessonKpiCount = {
+  key: string;
+  moduleId: string;
+  viewed: number;
+  completed: number;
+  continued: number;
+  supportInterest: number;
+  total: number;
+  completionRate: number | null;
 };
 
 export type ExistingUpsellSourceCount = {
@@ -133,6 +150,17 @@ export type AnalyticsInsightsResponse = {
     unknownSourceEvents: number;
     sourceCounts: ExistingUpsellSourceCount[];
   };
+  courseLessonKpi: {
+    viewed: number;
+    completed: number;
+    continued: number;
+    supportInterest: number;
+    completionRate: number | null;
+    continuationRate: number | null;
+    supportInterestRate: number | null;
+    unknownEvents: number;
+    lessonCounts: CourseLessonKpiCount[];
+  };
   workoutContextCta: {
     placementId: string;
     productId: string;
@@ -212,12 +240,18 @@ const SESSION_DRAFT_GENERATED_EVENT = "session_draft_generated" satisfies Analyt
 const UPSELL_PRESENTED_EVENT = "upsell_presented" satisfies AnalyticsEventName;
 const UPSELL_ACCEPTED_EVENT = "upsell_accepted" satisfies AnalyticsEventName;
 const UPSELL_DECLINED_EVENT = "upsell_declined" satisfies AnalyticsEventName;
+const COURSE_LESSON_VIEWED_EVENT = "course_lesson_viewed" satisfies AnalyticsEventName;
+const COURSE_LESSON_COMPLETED_EVENT = "course_lesson_completed" satisfies AnalyticsEventName;
+const COURSE_LESSON_CONTINUED_EVENT = "course_lesson_continued" satisfies AnalyticsEventName;
+const COURSE_LESSON_SUPPORT_CLICKED_EVENT =
+  "course_lesson_support_clicked" satisfies AnalyticsEventName;
 const CHECKOUT_STARTED_EVENT = "checkout_started" satisfies AnalyticsEventName;
 const CHECKOUT_COMPLETED_EVENT = "checkout_completed" satisfies AnalyticsEventName;
 const ENTITLEMENT_GRANTED_EVENT = "entitlement_granted" satisfies AnalyticsEventName;
 const MANUAL_WORKOUT_SOURCE_KIND = "manual" satisfies WorkoutSourceKind;
 const AI_SESSION_WORKOUT_SOURCE_KIND = "ai_session_v1" satisfies WorkoutSourceKind;
 const EXISTING_UPSELL_SOURCE_VALUES = new Set(["plans", "library_explore"]);
+const COURSE_LESSON_SUPPORT_ACTION_VALUE_SET = new Set<string>(COURSE_LESSON_SUPPORT_ACTION_IDS);
 
 export function selectAnalyticsInsightFields() {
   return `
@@ -283,6 +317,17 @@ function getSafePayloadDimension(
   const value = (payload as Record<string, unknown>)[key];
   if (typeof value !== "string") return null;
   if (!/^[a-z][a-z0-9_:-]{0,80}$/.test(value)) return null;
+  return value;
+}
+
+function getSafeCoursePayloadDimension(
+  payload: AnalyticsEventInsightRow["payload"],
+  key: "lessonId" | "moduleId" | "lessonVariant" | "lessonStatus" | "actionId"
+): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const value = (payload as Record<string, unknown>)[key];
+  if (typeof value !== "string") return null;
+  if (!/^[a-z0-9][a-z0-9_:-]{0,120}$/.test(value)) return null;
   return value;
 }
 
@@ -445,6 +490,50 @@ function buildEmptyUpsellSourceCount(key: string): ExistingUpsellSourceCount {
   };
 }
 
+function isCourseLessonKpiRow(row: AnalyticsEventInsightRow): boolean {
+  if (
+    row.event_name !== COURSE_LESSON_VIEWED_EVENT &&
+    row.event_name !== COURSE_LESSON_COMPLETED_EVENT &&
+    row.event_name !== COURSE_LESSON_CONTINUED_EVENT &&
+    row.event_name !== COURSE_LESSON_SUPPORT_CLICKED_EVENT
+  ) {
+    return false;
+  }
+
+  const source = getSafeRowOrPayloadDimension(row.source, row.payload, "source");
+  const surface = getSafePayloadDimension(row.payload, "surface");
+  return (
+    row.route_template === COURSE_ANALYTICS_ROUTE_TEMPLATE ||
+    source === COURSE_ANALYTICS_SOURCE ||
+    surface === COURSE_ANALYTICS_SURFACE
+  );
+}
+
+function buildEmptyCourseLessonKpiCount(key: string, moduleId: string): CourseLessonKpiCount {
+  return {
+    key,
+    moduleId,
+    viewed: 0,
+    completed: 0,
+    continued: 0,
+    supportInterest: 0,
+    total: 0,
+    completionRate: null,
+  };
+}
+
+function getCourseLessonKpiCount(
+  map: Map<string, CourseLessonKpiCount>,
+  lessonId: string,
+  moduleId: string
+): CourseLessonKpiCount {
+  const existing = map.get(lessonId);
+  if (existing) return existing;
+  const next = buildEmptyCourseLessonKpiCount(lessonId, moduleId);
+  map.set(lessonId, next);
+  return next;
+}
+
 function getUpsellSourceCount(
   map: Map<string, ExistingUpsellSourceCount>,
   key: string
@@ -516,6 +605,11 @@ export function buildAnalyticsInsights(input: {
   let upsellAccepted = 0;
   let upsellDeclined = 0;
   let unknownUpsellSourceEvents = 0;
+  let courseLessonViewed = 0;
+  let courseLessonCompleted = 0;
+  let courseLessonContinued = 0;
+  let courseLessonSupportInterest = 0;
+  let courseLessonUnknownEvents = 0;
   let workoutContextCtaPresented = 0;
   let workoutContextCtaAccepted = 0;
   let workoutContextCtaUnknownEvents = 0;
@@ -528,6 +622,7 @@ export function buildAnalyticsInsights(input: {
   let workoutContextCheckoutCancelUnknownEvents = 0;
   const templateSelectionCounts = new Map<string, number>();
   const upsellSourceCounts = new Map<string, ExistingUpsellSourceCount>();
+  const courseLessonCounts = new Map<string, CourseLessonKpiCount>();
   const workoutContextCheckoutOutcomeDiagnostics = new Map<
     WorkoutContextCheckoutOutcomeDiagnosticKey,
     number
@@ -538,6 +633,39 @@ export function buildAnalyticsInsights(input: {
   >();
 
   for (const row of input.rows) {
+    if (isCourseLessonKpiRow(row)) {
+      const lessonId = getSafeCoursePayloadDimension(row.payload, "lessonId");
+      const moduleId = getSafeCoursePayloadDimension(row.payload, "moduleId");
+      const actionId = getSafeCoursePayloadDimension(row.payload, "actionId");
+      const isSupportActionMapped =
+        row.event_name !== COURSE_LESSON_SUPPORT_CLICKED_EVENT ||
+        COURSE_LESSON_SUPPORT_ACTION_VALUE_SET.has(actionId ?? "");
+
+      if (!lessonId || !moduleId || !isSupportActionMapped) {
+        courseLessonUnknownEvents += 1;
+      } else {
+        const lessonCount = getCourseLessonKpiCount(courseLessonCounts, lessonId, moduleId);
+        lessonCount.total += 1;
+
+        if (row.event_name === COURSE_LESSON_VIEWED_EVENT) {
+          courseLessonViewed += 1;
+          lessonCount.viewed += 1;
+        }
+        if (row.event_name === COURSE_LESSON_COMPLETED_EVENT) {
+          courseLessonCompleted += 1;
+          lessonCount.completed += 1;
+        }
+        if (row.event_name === COURSE_LESSON_CONTINUED_EVENT) {
+          courseLessonContinued += 1;
+          lessonCount.continued += 1;
+        }
+        if (row.event_name === COURSE_LESSON_SUPPORT_CLICKED_EVENT) {
+          courseLessonSupportInterest += 1;
+          lessonCount.supportInterest += 1;
+        }
+      }
+    }
+
     if (row.event_name === CHECKOUT_STARTED_EVENT) {
       if (isMappedWorkoutContextCheckoutStartedRow(row)) {
         workoutContextCheckoutStarted += 1;
@@ -660,6 +788,12 @@ export function buildAnalyticsInsights(input: {
       declineRate: ratio(item.declined, item.presented),
     }))
     .sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
+  const courseLessonCountItems = [...courseLessonCounts.values()]
+    .map((item) => ({
+      ...item,
+      completionRate: ratio(item.completed, item.viewed),
+    }))
+    .sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
 
   return {
     ok: true,
@@ -709,6 +843,17 @@ export function buildAnalyticsInsights(input: {
       declineRate: ratio(upsellDeclined, upsellPresented),
       unknownSourceEvents: unknownUpsellSourceEvents,
       sourceCounts: upsellSourceCountItems,
+    },
+    courseLessonKpi: {
+      viewed: courseLessonViewed,
+      completed: courseLessonCompleted,
+      continued: courseLessonContinued,
+      supportInterest: courseLessonSupportInterest,
+      completionRate: ratio(courseLessonCompleted, courseLessonViewed),
+      continuationRate: ratio(courseLessonContinued, courseLessonViewed),
+      supportInterestRate: ratio(courseLessonSupportInterest, courseLessonViewed),
+      unknownEvents: courseLessonUnknownEvents,
+      lessonCounts: courseLessonCountItems,
     },
     workoutContextCta: {
       placementId: WORKOUT_CONTEXT_CTA_PLACEMENT_ID,
