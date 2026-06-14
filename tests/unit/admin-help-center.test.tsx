@@ -66,13 +66,22 @@ describe("AdminHelpCenter", () => {
     );
 
     expect(screen.getByText("Course Workspace / All Content tabs:")).toBeVisible();
-    expect(screen.getByText("Lesson experience editor")).toBeVisible();
-    expect(screen.getByText(/pick the layout first: Concept \/ intro/i)).toBeVisible();
-    expect(screen.getByText(/Then use the Show on public lesson toggles/i)).toBeVisible();
-    expect(screen.getByText(/Hidden containers do not render publicly/i)).toBeVisible();
+    expect(screen.getByText("Lesson fields editor")).toBeVisible();
+    expect(
+      screen.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
+    ).toBeVisible();
+    expect(
+      screen.getAllByText(/Shown on lesson page.*Admin\/list only.*Advanced\/fallback/i).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Show section.*section itself/i)).toBeVisible();
+    expect(screen.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
+    expect(
+      screen.getAllByText(/Advanced\/fallback fields.*layout preset/i).length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Practice images are non-editable in this slice/i)).toBeVisible();
-    expect(screen.getByText("Lesson experience / Save changes:")).toBeVisible();
-    expect(screen.getByText(/Layout, Show on public lesson toggles/i)).toBeVisible();
+    expect(screen.getByText("Save changes / View changes / Cancel:")).toBeVisible();
+    expect(screen.getByText("Public lesson mirror / Advanced/fallback fields:")).toBeVisible();
+    expect(screen.getByText(/Use each section's Show section checkbox/i)).toBeVisible();
     expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();

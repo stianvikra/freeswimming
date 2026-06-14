@@ -681,18 +681,22 @@ test.describe("admin foundation", () => {
       await expect(listTypeFilter).toHaveValue("course_lesson");
       await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
       await expect(fixtureLessonEditForm).toBeVisible();
-      await expect(fixtureLessonEditForm.getByText("Lesson body editor")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Lesson fields")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Video / estimated time")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Advanced/fallback fields")).toBeVisible();
+      await fixtureLessonEditForm.getByText("Advanced/fallback fields").click();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
       await expect(
         fixtureLessonEditForm.getByText(
-          "Internal ID used by open lesson links, progress, notes, and previews."
+          "Internal stable ID for open lesson links, progress, notes, and previews."
         )
       ).toBeVisible();
-      const goalVisibilityToggle = fixtureLessonEditForm.getByLabel("Show goal section");
-      const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel("Show cues section");
-      const drillVisibilityToggle = fixtureLessonEditForm.getByLabel("Show drill section");
-      const supportVisibilityToggle = fixtureLessonEditForm.getByLabel("Show extra help card");
+      const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel("Show Feel cues section");
+      const drillVisibilityToggle = fixtureLessonEditForm.getByLabel(
+        "Show Pool drill / water practice section"
+      );
+      const supportVisibilityToggle = fixtureLessonEditForm.getByLabel("Show Support card section");
       const supportVideoToggle = fixtureLessonEditForm.getByLabel("Show Video Analysis");
       const supportPoolsideToggle = fixtureLessonEditForm.getByLabel("Show Poolside guide");
       const support0To1000Toggle = fixtureLessonEditForm.getByLabel("Show 0-1000 guide");
@@ -700,7 +704,6 @@ test.describe("admin foundation", () => {
       const supportPrimarySelect = fixtureLessonEditForm.getByLabel(
         "Primary highlighted action (optional)"
       );
-      await expect(goalVisibilityToggle).toBeVisible();
       await expect(cuesVisibilityToggle).toBeVisible();
       await expect(drillVisibilityToggle).toBeVisible();
       await expect(supportVisibilityToggle).toBeVisible();
@@ -717,10 +720,8 @@ test.describe("admin foundation", () => {
       await fixtureLessonEditForm
         .getByLabel("Extra help start lesson number in module (optional)")
         .fill(supportStartLessonInModule);
-      await goalVisibilityToggle.check();
       await fixtureLessonEditForm.getByLabel("Lesson type").selectOption("swim");
       await fixtureLessonEditForm.getByLabel("Lesson goal").fill(`Lesson goal update ${unique}`);
-      await cuesVisibilityToggle.uncheck();
       await drillVisibilityToggle.check();
       await supportVisibilityToggle.uncheck();
       await supportVideoToggle.check();
@@ -729,17 +730,17 @@ test.describe("admin foundation", () => {
       await supportContactToggle.check();
       await supportPrimarySelect.selectOption("contact");
       await fixtureLessonEditForm
-        .getByLabel("Cues (one per line)")
+        .getByLabel("Feel cues (one per line)")
         .fill("Relax shoulders\nLong line");
       await fixtureLessonEditForm
-        .getByLabel("Common mistakes (one per line)")
+        .getByLabel("Common mistake 1")
         .fill("Rushing the pull\nHolding breath");
-      await fixtureLessonEditForm.getByLabel("Drill title").fill("Relaxed 12.5m checkpoint");
+      await fixtureLessonEditForm.getByLabel("Pool drill title").fill("Relaxed 12.5m checkpoint");
       await fixtureLessonEditForm
-        .getByLabel("Drill steps (one per line)")
+        .getByLabel("Pool drill steps (one per line)")
         .fill("Push off calmly\nSwim 12.5m with long exhale");
       await fixtureLessonEditForm
-        .getByLabel("Checkpoint criteria (one per line)")
+        .getByLabel("Pass criteria (one per line)")
         .fill(checkpointCriteriaText);
       await fixtureLessonEditForm
         .getByRole("textbox", { name: "Next step" })
@@ -752,7 +753,7 @@ test.describe("admin foundation", () => {
       await expect(savedLessonEditForm.getByLabel("Lesson goal")).toHaveValue(
         `Lesson goal update ${unique}`
       );
-      await expect(savedLessonEditForm.getByLabel("Drill title")).toHaveValue(
+      await expect(savedLessonEditForm.getByLabel("Pool drill title")).toHaveValue(
         "Relaxed 12.5m checkpoint"
       );
       await expect(savedLessonEditForm.getByLabel("Section badge label (optional)")).toHaveValue(
@@ -765,13 +766,14 @@ test.describe("admin foundation", () => {
       await expect(savedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
         `Repeat drill quality x3 ${unique}`
       );
+      await expect(savedLessonEditForm.getByLabel("Pass criteria (one per line)")).toHaveValue(
+        checkpointCriteriaText
+      );
       await expect(
-        savedLessonEditForm.getByLabel("Checkpoint criteria (one per line)")
-      ).toHaveValue(checkpointCriteriaText);
-      await expect(savedLessonEditForm.getByLabel("Show goal section")).toBeChecked();
-      await expect(savedLessonEditForm.getByLabel("Show drill section")).toBeChecked();
-      await expect(savedLessonEditForm.getByLabel("Show cues section")).not.toBeChecked();
-      await expect(savedLessonEditForm.getByLabel("Show extra help card")).not.toBeChecked();
+        savedLessonEditForm.getByLabel("Show Pool drill / water practice section")
+      ).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show Feel cues section")).toBeChecked();
+      await expect(savedLessonEditForm.getByLabel("Show Support card section")).not.toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show Video Analysis")).toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show Poolside guide")).not.toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show 0-1000 guide")).toBeChecked();

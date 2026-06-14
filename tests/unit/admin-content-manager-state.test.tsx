@@ -926,50 +926,81 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
 
     const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
-    expect(within(editForm).getByTestId("admin-lesson-experience-editor")).toBeInTheDocument();
-    expect(within(editForm).getByLabelText("Lesson experience layout")).toHaveValue("water_drill");
-    expect(within(editForm).getByLabelText("Show lesson quick explanation")).toBeChecked();
-    expect(within(editForm).getByLabelText("Show lesson land practice")).toBeChecked();
-    expect(within(editForm).getByLabelText("Show lesson water practice")).toBeChecked();
-    expect(within(editForm).getByText("Show on public lesson")).toBeVisible();
+    const publicFieldEditor = within(editForm).getByTestId("admin-lesson-public-field-editor");
+    const lessonEditor = within(publicFieldEditor).getByTestId("admin-lesson-experience-editor");
+    expect(lessonEditor).toBeInTheDocument();
+    expect(within(publicFieldEditor).getByText("Public lesson mirror")).toBeVisible();
+    expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(4);
+    expect(within(lessonEditor).getByText("Video / estimated time")).toBeVisible();
+    expect(within(lessonEditor).getByText("Admin/list fallback")).toBeVisible();
+    expect(within(lessonEditor).getByText("Admin/list only")).toBeVisible();
+    expect(within(lessonEditor).getByText("Advanced/fallback fields")).toBeVisible();
+    expect(within(lessonEditor).getByText("Advanced/fallback")).toBeVisible();
+    expect(within(lessonEditor).getByLabelText("Lesson experience layout")).toHaveValue(
+      "water_drill"
+    );
+    expect(within(lessonEditor).getByLabelText("Show Quick explanation section")).toBeChecked();
+    expect(within(lessonEditor).getByLabelText("Show Dryland practice section")).toBeChecked();
     expect(
-      within(editForm).getByTestId("admin-lesson-experience-image-placeholder-state")
-    ).toHaveTextContent("non-editable");
+      within(lessonEditor).getByLabelText("Show Pool drill / water practice section")
+    ).toBeChecked();
+    expect(within(lessonEditor).queryByText("Show on public lesson")).not.toBeInTheDocument();
+    expect(within(lessonEditor).queryByText("Legacy section visibility")).not.toBeInTheDocument();
+    expect(
+      within(lessonEditor).getByTestId("admin-lesson-dryland-visual-placeholder")
+    ).toHaveTextContent("Visual not added yet");
+    expect(
+      within(lessonEditor).getByTestId("admin-lesson-water-visual-placeholder")
+    ).toHaveTextContent("Visual not added yet");
+    expect(within(lessonEditor).getAllByText("Not editable here").length).toBe(2);
+    expect(within(editForm).getByRole("link", { name: "View changes" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/course?")
+    );
 
-    fireEvent.change(within(editForm).getByLabelText("Quick explanation"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Video ID"), {
+      target: { value: "OWRzGHPRdmg" },
+    });
+    fireEvent.change(within(lessonEditor).getByLabelText("Estimated minutes"), {
+      target: { value: "5" },
+    });
+    fireEvent.change(within(lessonEditor).getByLabelText("Summary"), {
+      target: { value: "Admin fallback summary." },
+    });
+    fireEvent.change(within(lessonEditor).getByLabelText("Quick explanation"), {
       target: { value: "Keep the head quiet before adding distance." },
     });
-    fireEvent.change(within(editForm).getByLabelText("Why this exercise matters"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Why this matters"), {
       target: { value: "A quiet head helps the body float longer." },
     });
-    fireEvent.change(within(editForm).getByLabelText("Land practice title"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Dryland practice title"), {
       target: { value: "Wall line rehearsal" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Land practice steps (one per line)"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Dryland practice steps (one per line)"), {
       target: { value: "Stand tall\nBreathe calmly" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Water practice title"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Pool drill title"), {
       target: { value: "Front glide + exhale" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Water practice steps (one per line)"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Pool drill steps (one per line)"), {
       target: { value: "Push off\nStop before tension" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Water practice safety note"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Water practice safety note"), {
       target: { value: "Use shallow water." },
     });
-    fireEvent.change(within(editForm).getByLabelText("Lesson experience correction 1"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Correction 1"), {
       target: { value: "Look down before breathing." },
     });
-    fireEvent.change(within(editForm).getByLabelText("Feel cues (one per line)"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Feel cues (one per line)"), {
       target: { value: "Quiet head\nEasy bubbles" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Lesson experience next step"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Next step"), {
       target: { value: "Try side balance." },
     });
-    fireEvent.change(within(editForm).getByLabelText("Lesson experience support title"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Support card title"), {
       target: { value: "Need extra help?" },
     });
-    fireEvent.change(within(editForm).getByLabelText("Lesson experience support body"), {
+    fireEvent.change(within(lessonEditor).getByLabelText("Support card body"), {
       target: { value: "Free lesson first, support after." },
     });
 
@@ -977,9 +1008,12 @@ describe("AdminContentManager state rendering", () => {
 
     await waitFor(() => expect(savedBody).not.toBeNull());
     const savedRequestBody = savedBody as unknown as Record<string, unknown>;
+    expect(savedRequestBody.summary).toBe("Admin fallback summary.");
     expect(savedRequestBody.body).toMatchObject({
       moduleId: "body-position",
       lessonId: "body-position--body-position-front",
+      youtubeId: "OWRzGHPRdmg",
+      estMinutes: 5,
       lessonExperience: {
         variant: "water_drill",
         display: {
@@ -1112,10 +1146,12 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
 
     const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
-    fireEvent.click(within(editForm).getByLabelText("Show lesson land practice"));
+    const lessonEditor = within(editForm).getByTestId("admin-lesson-experience-editor");
+    fireEvent.click(within(lessonEditor).getByLabelText("Show Dryland practice section"));
 
-    expect(within(editForm).getByLabelText("Show lesson land practice")).not.toBeChecked();
-    expect(within(editForm).queryByLabelText("Land practice title")).not.toBeInTheDocument();
+    expect(within(lessonEditor).getByLabelText("Show Dryland practice section")).not.toBeChecked();
+    expect(within(lessonEditor).queryByLabelText("Dryland practice title")).not.toBeInTheDocument();
+    expect(within(lessonEditor).getByText(/Hidden on public lesson/i)).toBeVisible();
 
     fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
 
@@ -1198,15 +1234,14 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.click(within(lessonRow as HTMLElement).getByRole("button", { name: "Edit" }));
 
     const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
-    fireEvent.change(within(editForm).getByLabelText("Lesson experience correction 1"), {
+    const lessonEditor = within(editForm).getByTestId("admin-lesson-experience-editor");
+    fireEvent.change(within(lessonEditor).getByLabelText("Correction 1"), {
       target: { value: "Look down before breathing." },
     });
     fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
 
     const editError = await screen.findByTestId("admin-content-edit-error-state");
-    expect(editError).toHaveTextContent(
-      "Lesson experience correction requires a matching mistake."
-    );
+    expect(editError).toHaveTextContent("Correction requires a matching common mistake.");
     expect(
       fetchMock.mock.calls.some(
         ([input, init]) =>
