@@ -3,22 +3,22 @@
 ## Metadata
 
 - `id`: `2026-06-14-aw-006-habits-tracking-mode-catch-up-recovery-assistant-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-14`
-- `updated`: `2026-06-14`
+- `updated`: `2026-06-15`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_intake`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
-- `execution_mode`: `end-to-end after owner said "kjor Habits tracking mode catch-up brief"; screenshot approval stop required before verify:pre-pr`
+- `execution_mode`: `shipped in PR #1128`
 - `strict_10_10_mode`: `yes; all target categories must close at 5/5`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-14`
-- `base`: clean synced `main@84fbac62`
-- `audit_status`: `ready`
-- `decision`: Execute this bounded Habits child now after explicit owner approval.
-- `reason`: Current Habits already has server-canonical check-ins, rest days, quit slips, motivation reset boundaries, Micro Session source-backed credits, and the no-midnight-auto-write decision. The missing slice is user-facing clarity: which habits are manual, which are source-backed, how quit slips work, and what happens after several missed days without silently corrupting history.
+- `last_audited`: `2026-06-15`
+- `base`: clean synced `main@a350a4b6`
+- `audit_status`: `done`
+- `decision`: Closed this bounded Habits child after PR `#1128` shipped habit-first catch-up recovery and tracking-mode clarity.
+- `reason`: Current Habits now separates manual, quit/slip, and source-backed modes in the UI; catch-up writes explicit per-habit historical choices only; reset boundaries remain server-canonical; and setup-guide intent selection is preserved as planned Child T.
 - `must_refresh_before_execution_if`: Refresh if `AGENTS.md`, platform scorecard categories, Habits parent intake, `/my-library/habits`, `HabitPerfectDayHub`, `lib/habits/shared.ts`, habits API/storage contracts, `habit_check_ins`, `habit_motivation_resets`, Micro Session Habit linkage, Help/Guide content, screenshot handoff rules, or external habit-app benchmark assumptions change before execution.
 
 ## Goal
@@ -440,3 +440,50 @@ Payload rules:
 - `2026-06-15 | in-progress | owner screenshot review found the day-first catch-up actions ambiguous and the Quit card copy/action too duplicative. Updated scope to habit-first catch-up panels under each affected habit, card-level `Log slip` for editable Quit dates, no duplicate "days without" copy, and planned Child T for setup-guide mode intent clarity | next: update tests/docs, rerun targeted validation, regenerate screenshot handoff, and stop for visual approval`
 - `2026-06-15 | screenshot-approved | regenerated after/reference artifacts at output/habits-tracking-mode-catch-up-2026-06-15-010508 after habit-first catch-up and Quit-card corrections; owner approved the screenshot handoff in chat | next: run npm run verify:pre-pr, commit, push, open/update PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-15 | pre-pr-pass | npm run verify:pre-pr passed full lane after one controlled rerun. First run failed on a transient /course axe document-title timing issue; the focused reproduction passed and the full rerun passed lint, quality gates, typecheck, 1572 unit tests, build, perf budgets, and Playwright E2E (109 passed / 557 skipped) | next: commit, push, open/update PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-15 | merged | PR #1128 shipped as squash commit a350a4b6 after required CI checks and npm run verify:pre-merge passed; post-merge preflight requested repo-managed docs-only closeout | next: move this brief to done, add Completion Record, update parent/child references, run closeout gates, and merge closeout if green`
+
+## Completion Record
+
+- `completed`: `2026-06-15`
+- `merged_pr`: `#1128`
+- `squash_commit`: `a350a4b6`
+- `result`: Closed AW-006 Habits Tracking Mode Clarity + Catch-Up Recovery Assistant. Habits now show clear manual, quit/slip, and source-backed tracking semantics; catch-up recovery lives under the affected habit; historical recovery writes only explicit user choices; and reset/catch-up support copy preserves old history instead of faking local-only stats.
+- `validation`: Focused Vitest passed for Habit UI/routes/analytics (`5` files / `139` tests); `npm run typecheck`, `npm run lint:briefs:all`, and `git diff --check` passed; screenshot handoff approved at `output/habits-tracking-mode-catch-up-2026-06-15-010508`; `npm run verify:pre-pr` passed full lane for HEAD `7ba188fb`; PR CI run `27515596679` passed; `npm run verify:pre-merge` passed on branch current with `origin/main@84fbac62` before merge.
+- `10/10 claim`: yes - all critical target categories closed at `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Analytics and KPI observability
+- Incident response and support operations
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                            | Gaps / Notes |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Habit cards separate manual, quit/slip, and source-backed modes; catch-up appears only for relevant gaps.                           | None         |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshots show habit-first catch-up, direct Quit `Log slip`, reset confirmation, and source-backed reference.      | None         |
+| Visual design quality                         | `5/5`          | Screenshot artifacts at `output/habits-tracking-mode-catch-up-2026-06-15-010508`; no product rendering files changed after capture. | None         |
+| Business logic correctness and data integrity | `5/5`          | Route tests cover selected-date catch-up writes and reset action source behavior; no midnight auto-write introduced.                | None         |
+| Accessibility (a11y)                          | `5/5`          | `npm run verify:pre-pr` full lane passed Playwright/a11y coverage after targeted transient reproduction passed.                     | None         |
+| Performance (CWV + payloads)                  | `5/5`          | Full verify perf budgets passed; no new dependency or heavy dashboard payload was added.                                            | None         |
+| Data placement and sync boundaries            | `5/5`          | Server remains canonical for check-ins and reset boundaries; dismissed catch-up entries are local UI state only.                    | None         |
+| Caching and invalidation strategy             | `5/5`          | Mutations refresh the selected-date snapshot through existing Habits update flow; tests cover date-preserving writes.               | None         |
+| Reliability and failure handling              | `5/5`          | Catch-up dismisses only after successful writes; leave-missed writes nothing; reset confirmation stays explicit.                    | None         |
+| Security and authz                            | `5/5`          | Existing protected routes remain owner-scoped and fail closed; changed route tests passed.                                          | None         |
+| Privacy and compliance                        | `5/5`          | Analytics payloads use counts/modes/dates and do not add habit notes or free-text content.                                          | None         |
+| Content governance                            | `5/5`          | Help/Guide, API contract, user-flow map, and active briefs were updated with the same tracking-mode contract.                       | None         |
+| Analytics and KPI observability               | `5/5`          | `lib/analytics/events.ts` and analytics tests cover catch-up prompt/action/reset context without PII.                               | None         |
+| Incident response and support operations      | `5/5`          | Support runbook explains catch-up/reset history behavior and how to diagnose mode/source-backed writes.                             | None         |
+| i18n operational readiness                    | `5/5`          | Labels/copy are explicit and compact; future mode/source changes require typed mapping or fallback.                                 | None         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `HabitPerfectDayHub`, Habits APIs, route contracts, and TypeScript helpers; no dependency added.                    | None         |
+| Testing and QA automation                     | `5/5`          | Focused Vitest, typecheck, brief lint, full `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                     | None         |
+| Scalability and cost efficiency               | `5/5`          | Recovery derives from loaded bounded habit/check-in state and adds no unbounded queries or chart work.                              | None         |
+| DevOps and rollback readiness                 | `5/5`          | No migration or destructive data cleanup required; reverting PR #1128 removes the UI/API additions cleanly.                         | None         |

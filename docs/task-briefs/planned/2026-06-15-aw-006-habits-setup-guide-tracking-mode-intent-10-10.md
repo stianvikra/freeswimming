@@ -9,17 +9,17 @@
 - `updated`: `2026-06-15`
 - `parent_backlog`: `AW-006` in `docs/task-briefs/in-progress/2026-02-17-additional-work-backlog.md`
 - `parent_intake`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
-- `parent_child`: Child S, `docs/task-briefs/in-progress/2026-06-14-aw-006-habits-tracking-mode-catch-up-recovery-assistant-10-10.md`
+- `parent_child`: Child S, `docs/task-briefs/done/2026-06-14-aw-006-habits-tracking-mode-catch-up-recovery-assistant-10-10.md`
 - `execution_mode`: `planned follow-up; do not implement until owner explicitly says to execute Child T`
 - `strict_10_10_mode`: `yes; all target categories must close at 5/5`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-15`
-- `base`: `main@84fbac62` plus active Child S branch context
+- `base`: `main@a350a4b6` after Child S shipped
 - `audit_status`: `ready`
 - `decision`: Keep this as the planned follow-up that turns tracking-mode clarity into guided habit setup.
-- `reason`: Child S clarifies runtime tracking and catch-up recovery, but setup still lets users choose modes directly. The owner specifically wants the guide to make Quit/slip-only versus Manual daily explicit rather than exposing a vague auto on/off choice.
+- `reason`: Child S shipped runtime tracking and catch-up recovery, but setup still lets users choose modes directly. The owner specifically wants the guide to make Quit/slip-only versus Manual daily explicit rather than exposing a vague auto on/off choice.
 - `must_refresh_before_execution_if`: Refresh if Child S ships with different labels/actions, Habits create/edit fields change, Micro Session source-backed linking changes, setup guide scope moves into another child, platform scorecard categories change, or Help/Guide requirements change.
 
 ## Goal
