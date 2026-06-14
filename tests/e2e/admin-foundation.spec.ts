@@ -692,11 +692,15 @@ test.describe("admin foundation", () => {
           "Internal stable ID for open lesson links, progress, notes, and previews."
         )
       ).toBeVisible();
-      const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel("Show Feel cues section");
-      const drillVisibilityToggle = fixtureLessonEditForm.getByLabel(
-        "Show Pool drill / water practice section"
+      const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel(
+        "Show What good looks and feels like on lesson page"
       );
-      const supportVisibilityToggle = fixtureLessonEditForm.getByLabel("Show Support card section");
+      const drillVisibilityToggle = fixtureLessonEditForm.getByLabel(
+        "Show Pool drill / water practice on lesson page"
+      );
+      const supportVisibilityToggle = fixtureLessonEditForm.getByLabel(
+        "Show Support card on lesson page"
+      );
       const supportVideoToggle = fixtureLessonEditForm.getByLabel("Show Video Analysis");
       const supportPoolsideToggle = fixtureLessonEditForm.getByLabel("Show Poolside guide");
       const support0To1000Toggle = fixtureLessonEditForm.getByLabel("Show 0-1000 guide");
@@ -730,7 +734,7 @@ test.describe("admin foundation", () => {
       await supportContactToggle.check();
       await supportPrimarySelect.selectOption("contact");
       await fixtureLessonEditForm
-        .getByLabel("Feel cues (one per line)")
+        .getByLabel("What good looks and feels like (one per line)")
         .fill("Relax shoulders\nLong line");
       await fixtureLessonEditForm
         .getByLabel("Common mistake 1")
@@ -770,10 +774,14 @@ test.describe("admin foundation", () => {
         checkpointCriteriaText
       );
       await expect(
-        savedLessonEditForm.getByLabel("Show Pool drill / water practice section")
+        savedLessonEditForm.getByLabel("Show Pool drill / water practice on lesson page")
       ).toBeChecked();
-      await expect(savedLessonEditForm.getByLabel("Show Feel cues section")).toBeChecked();
-      await expect(savedLessonEditForm.getByLabel("Show Support card section")).not.toBeChecked();
+      await expect(
+        savedLessonEditForm.getByLabel("Show What good looks and feels like on lesson page")
+      ).toBeChecked();
+      await expect(
+        savedLessonEditForm.getByLabel("Show Support card on lesson page")
+      ).not.toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show Video Analysis")).toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show Poolside guide")).not.toBeChecked();
       await expect(savedLessonEditForm.getByLabel("Show 0-1000 guide")).toBeChecked();

@@ -71,17 +71,19 @@ describe("AdminHelpCenter", () => {
       screen.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
     ).toBeVisible();
     expect(
-      screen.getAllByText(/Shown on lesson page.*Admin\/list only.*Advanced\/fallback/i).length
+      screen.getAllByText(/Shown on lesson page.*Hidden from lesson page.*Admin\/list only/i).length
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Show section.*section itself/i)).toBeVisible();
+    expect(screen.getAllByText(/inline `Show safety note` control/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
     expect(
       screen.getAllByText(/Advanced\/fallback fields.*layout preset/i).length
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/Practice images are non-editable in this slice/i)).toBeVisible();
+    expect(
+      screen.getByText(/Practice images are non-editable in this slice.*calm fallback/i)
+    ).toBeVisible();
     expect(screen.getByText("Save changes / View changes / Cancel:")).toBeVisible();
     expect(screen.getByText("Public lesson mirror / Advanced/fallback fields:")).toBeVisible();
-    expect(screen.getByText(/Use each section's Show section checkbox/i)).toBeVisible();
+    expect(screen.getByText(/Use each section's single visibility control/i)).toBeVisible();
     expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();

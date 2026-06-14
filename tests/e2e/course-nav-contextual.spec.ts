@@ -120,7 +120,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const headerMenu = page.getByTestId("header-menu-toggle");
 
   await expect(headerMenu).toBeVisible();
-  await expect(leftFirst).toHaveText("Prev");
+  await expect(leftFirst).toHaveText("Previous");
   await expect(leftFirst).toBeVisible();
   await expect(leftFirst).toBeDisabled();
   await expect(middleFirst).toHaveText("Lessons");
@@ -162,7 +162,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
   const leftLast = page.getByTestId("course-nav-left");
   const rightLast = page.getByTestId("course-nav-right");
 
-  await expect(leftLast).toHaveText("Prev", { timeout: 15_000 });
+  await expect(leftLast).toHaveText("Previous", { timeout: 15_000 });
   await expect(rightLast).toBeVisible({ timeout: 15_000 });
   await expect(rightLast).toHaveText("Programs", { timeout: 15_000 });
 

@@ -1,7 +1,7 @@
 // app/course/page.tsx
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Ref } from "react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -62,6 +62,7 @@ import {
   buildCourseLessonProgressStatusMap,
   normalizeCourseLessonCriteriaChecks,
   normalizeCourseLessonCriteriaCheckRecord,
+  type CourseLessonProgressStatus,
 } from "@/lib/course/progress-status";
 import {
   buildCourseLessonExperienceViewModel,
@@ -84,7 +85,6 @@ const AdminContextNotesPanel = dynamic(() => import("@/components/admin/AdminCon
 });
 
 const OVERVIEW_STORAGE_KEY = "fs_course_overview_expanded";
-const COMMON_MISTAKES_STORAGE_KEY_PREFIX = "fs_course_common_mistakes_expanded:";
 const SWIPE_NUX_STORAGE_KEY = "fs_course_swipe_nux_seen";
 const SWIPE_ZONE_INSET_PX = 12;
 const SWIPE_SIDE_ZONE_RATIO = 0.31;
@@ -192,11 +192,13 @@ type CoursePracticeMediaFrameProps = {
 function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFrameProps) {
   const image = practice.image;
   const imageSrc = image?.src;
-  const fallbackLabel = tone === "land" ? "Dryland practice visual" : "Water practice visual";
+
   const toneClass =
     tone === "land"
       ? "from-slate-100 via-white to-blue-50/70 text-slate-700"
       : "from-blue-50 via-white to-cyan-50 text-blue-800";
+  const fallbackLabel = tone === "land" ? "Dryland practice visual" : "Pool drill visual";
+  const fallbackText = tone === "land" ? "See the movement before water" : "Preview the pool drill";
 
   return (
     <div className="space-y-2">
@@ -206,8 +208,8 @@ function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFramePr
           "relative aspect-[4/3] min-h-[190px] overflow-hidden rounded-[20px] border border-slate-200/74 bg-gradient-to-br ring-1 ring-white/80",
           toneClass
         )}
-        aria-label={imageSrc ? undefined : `${fallbackLabel} not available`}
         role={imageSrc ? undefined : "img"}
+        aria-label={imageSrc ? undefined : `${fallbackLabel}: visual coming soon`}
       >
         {imageSrc ? (
           <Image
@@ -220,11 +222,25 @@ function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFramePr
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-              {fallbackLabel}
-            </span>
-            <span className="text-[15px] font-semibold text-slate-800">Visual not added yet</span>
+          <div className="absolute inset-0 flex flex-col justify-end p-4">
+            <div
+              className={cx(
+                "absolute inset-x-4 top-4 h-14 rounded-full blur-2xl",
+                tone === "land" ? "bg-blue-100/70" : "bg-cyan-100/80"
+              )}
+              aria-hidden="true"
+            />
+            <div className="relative">
+              <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                {fallbackLabel}
+              </p>
+              <p className="mt-1 text-[16px] leading-6 font-semibold text-slate-900">
+                {fallbackText}
+              </p>
+              <p className="mt-2 text-[12px] leading-5 font-medium text-slate-600">
+                Visual coming soon
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -235,28 +251,96 @@ function CoursePracticeMediaFrame({ practice, tone }: CoursePracticeMediaFramePr
   );
 }
 
+function getYoutubeThumbnailUrl(videoId: string | null | undefined) {
+  const normalized = videoId?.trim();
+  if (!normalized) return null;
+  return `https://img.youtube.com/vi/${encodeURIComponent(normalized)}/hqdefault.jpg`;
+}
+
+function CourseNextLessonPreviewVisual({ lesson }: { lesson: CourseLesson }) {
+  const thumbnailUrl = getYoutubeThumbnailUrl(lesson.youtubeId);
+
+  return (
+    <div
+      data-testid="course-next-lesson-preview-visual"
+      className={cx(
+        "relative aspect-video overflow-hidden rounded-[18px] border border-slate-200/76 bg-gradient-to-br from-blue-50 via-white to-slate-100 ring-1 ring-white/80",
+        thumbnailUrl && "bg-slate-900"
+      )}
+      role={thumbnailUrl ? "img" : undefined}
+      aria-label={thumbnailUrl ? `${lesson.title} video preview` : undefined}
+    >
+      {!thumbnailUrl ? (
+        <div className="absolute inset-0 flex flex-col justify-end p-4">
+          <p className="text-[11px] font-semibold tracking-[0.08em] text-blue-600 uppercase">
+            Lesson preview
+          </p>
+          <p className="mt-1 text-[16px] leading-6 font-semibold text-slate-950">{lesson.title}</p>
+        </div>
+      ) : null}
+      {thumbnailUrl ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${thumbnailUrl})` }}
+          aria-hidden="true"
+        />
+      ) : null}
+      {thumbnailUrl ? (
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-slate-950/58 via-slate-950/8 to-transparent"
+          aria-hidden="true"
+        />
+      ) : null}
+      <div className="absolute right-3 bottom-3 left-3 flex items-end justify-between gap-3">
+        <span className="rounded-full bg-white/92 px-2.5 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
+          Next lesson
+        </span>
+        <span className="rounded-full bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
+          Preview
+        </span>
+      </div>
+    </div>
+  );
+}
+
 type CoursePracticeStepsProps = {
   steps: string[];
   tone: "land" | "water";
+  startIndex?: number;
+  listRef?: Ref<HTMLOListElement>;
+  className?: string;
+  ariaHidden?: boolean;
+  testId?: string;
 };
 
-function CoursePracticeSteps({ steps, tone }: CoursePracticeStepsProps) {
-  const stepClass =
-    tone === "land"
-      ? "border-slate-200/72 bg-slate-50/76 text-slate-800"
-      : "border-blue-100/80 bg-blue-50/58 text-slate-800";
+function CoursePracticeSteps({
+  steps,
+  tone,
+  startIndex = 0,
+  listRef,
+  className,
+  ariaHidden,
+  testId,
+}: CoursePracticeStepsProps) {
   const markerClass =
-    tone === "land" ? "bg-white text-slate-700 ring-1 ring-slate-300/80" : "bg-blue-600 text-white";
+    tone === "land"
+      ? "bg-slate-100 text-slate-700 ring-1 ring-slate-300/80"
+      : "bg-blue-50 text-blue-700 ring-1 ring-blue-200/80";
 
   return (
-    <ol className="mt-4 space-y-2 text-[14px] leading-6">
+    <ol
+      ref={listRef}
+      aria-hidden={ariaHidden}
+      data-testid={testId}
+      className={cx(
+        "divide-y divide-slate-200/72 rounded-2xl border border-slate-200/72 bg-white/72 text-[14px] leading-6",
+        className
+      )}
+    >
       {steps.map((step, index) => (
         <li
-          key={step}
-          className={cx(
-            "grid grid-cols-[28px_minmax(0,1fr)] items-start gap-3 rounded-2xl border px-3 py-2.5",
-            stepClass
-          )}
+          key={`${startIndex + index}-${step}`}
+          className="grid grid-cols-[30px_minmax(0,1fr)] items-start gap-3 px-3 py-3"
         >
           <span
             aria-hidden="true"
@@ -265,12 +349,171 @@ function CoursePracticeSteps({ steps, tone }: CoursePracticeStepsProps) {
               markerClass
             )}
           >
-            {index + 1}
+            {startIndex + index + 1}
           </span>
           <span>{step}</span>
         </li>
       ))}
     </ol>
+  );
+}
+
+type CoursePracticeSectionProps = {
+  practice: CourseLessonExperienceViewPractice;
+  tone: "land" | "water";
+  heading: string;
+  showSafetyNote: boolean;
+  className: string;
+};
+
+function CoursePracticeSection({
+  practice,
+  tone,
+  heading,
+  showSafetyNote,
+  className,
+}: CoursePracticeSectionProps) {
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLDivElement>(null);
+  const measurementListRef = useRef<HTMLOListElement>(null);
+  const [sideStepCount, setSideStepCount] = useState(practice.steps.length);
+
+  const recalculateSideStepCount = useCallback(() => {
+    const mediaElement = mediaRef.current;
+    const headingElement = headingRef.current;
+    const measurementListElement = measurementListRef.current;
+
+    if (!mediaElement || !headingElement || !measurementListElement) return;
+
+    const desktopSplitEnabled = window.matchMedia("(min-width: 768px)").matches;
+    if (!desktopSplitEnabled) {
+      setSideStepCount(practice.steps.length);
+      return;
+    }
+
+    const mediaHeight = mediaElement.getBoundingClientRect().height;
+    const headingHeight = headingElement.getBoundingClientRect().height;
+    const rowHeights = Array.from(measurementListElement.querySelectorAll("li")).map(
+      (row) => row.getBoundingClientRect().height
+    );
+
+    if (mediaHeight <= 0 || rowHeights.length === 0) {
+      setSideStepCount(practice.steps.length);
+      return;
+    }
+
+    const listMarginPx = 20;
+    const listBorderPx = 2;
+    const availableHeight = Math.max(0, mediaHeight - headingHeight - listMarginPx - listBorderPx);
+    let usedHeight = listBorderPx;
+    let nextCount = 0;
+
+    for (const rowHeight of rowHeights) {
+      if (nextCount > 0 && usedHeight + rowHeight > availableHeight) break;
+      if (nextCount === 0 && rowHeight > availableHeight) {
+        nextCount = 1;
+        break;
+      }
+      usedHeight += rowHeight;
+      nextCount += 1;
+    }
+
+    setSideStepCount(Math.min(practice.steps.length, Math.max(1, nextCount)));
+  }, [practice.steps.length]);
+
+  useEffect(() => {
+    let frameId = 0;
+    const scheduleRecalculateSideStepCount = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(recalculateSideStepCount);
+    };
+
+    scheduleRecalculateSideStepCount();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", scheduleRecalculateSideStepCount);
+      return () => {
+        window.cancelAnimationFrame(frameId);
+        window.removeEventListener("resize", scheduleRecalculateSideStepCount);
+      };
+    }
+
+    const observer = new ResizeObserver(scheduleRecalculateSideStepCount);
+    if (mediaRef.current) observer.observe(mediaRef.current);
+    if (headingRef.current) observer.observe(headingRef.current);
+    if (measurementListRef.current) observer.observe(measurementListRef.current);
+    window.addEventListener("resize", scheduleRecalculateSideStepCount);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      observer.disconnect();
+      window.removeEventListener("resize", scheduleRecalculateSideStepCount);
+    };
+  }, [recalculateSideStepCount]);
+
+  const safeSideStepCount = Math.min(practice.steps.length, Math.max(0, sideStepCount));
+  const sideSteps = practice.steps.slice(0, safeSideStepCount);
+  const fullWidthSteps = practice.steps.slice(safeSideStepCount);
+  const practiceTestId = tone === "land" ? "course-practice-land" : "course-practice-water";
+
+  return (
+    <article className={className} data-testid={`${practiceTestId}-section`}>
+      <div className="grid gap-5 md:grid-cols-2 md:items-start">
+        <div ref={mediaRef}>
+          <CoursePracticeMediaFrame practice={practice} tone={tone} />
+        </div>
+        <div className="relative px-1 pb-2 sm:px-2 md:py-3">
+          <div ref={headingRef}>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                {heading}
+              </p>
+            </div>
+            <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
+              {practice.title}
+            </h3>
+          </div>
+          {sideSteps.length > 0 ? (
+            <div className="mt-5">
+              <CoursePracticeSteps
+                steps={sideSteps}
+                tone={tone}
+                testId={`${practiceTestId}-steps-side`}
+              />
+            </div>
+          ) : null}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none invisible absolute inset-x-1 top-0"
+          >
+            <CoursePracticeSteps
+              steps={practice.steps}
+              tone={tone}
+              listRef={measurementListRef}
+              ariaHidden
+              testId={`${practiceTestId}-steps-measure`}
+            />
+          </div>
+        </div>
+      </div>
+      {fullWidthSteps.length > 0 ? (
+        <div className="mt-5 px-1 sm:px-2">
+          <CoursePracticeSteps
+            steps={fullWidthSteps}
+            tone={tone}
+            startIndex={safeSideStepCount}
+            testId={`${practiceTestId}-steps-full`}
+          />
+        </div>
+      ) : null}
+      {showSafetyNote ? (
+        <div className="mt-5 px-1 pb-2 sm:px-2">
+          <p className="rounded-2xl border border-amber-200/72 bg-amber-50/75 px-3 py-2 text-[13px] leading-6 font-medium text-amber-900">
+            {practice.safetyNote}
+          </p>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -303,10 +546,177 @@ function CourseNavButton({
   );
 }
 
+function CourseDesktopOutline({
+  modules,
+  activeLessonId,
+  progressStatusByLessonId,
+  onSelectLesson,
+}: {
+  modules: CourseModule[];
+  activeLessonId: string;
+  progressStatusByLessonId: Record<string, CourseLessonProgressStatus>;
+  onSelectLesson: (lessonId: string, options?: { scrollToPlayer?: boolean }) => void;
+}) {
+  const lessonCount = modules.reduce((sum, module) => sum + module.lessons.length, 0);
+  const doneLessonCount = modules.reduce(
+    (sum, module) =>
+      sum +
+      module.lessons.filter((lesson) => progressStatusByLessonId[lesson.id] === "done").length,
+    0
+  );
+  const progressPercent = lessonCount > 0 ? Math.round((doneLessonCount / lessonCount) * 100) : 0;
+
+  return (
+    <aside
+      className="sticky top-20 hidden max-h-[calc(100vh-6rem)] overflow-y-auto rounded-[20px] border border-slate-200/80 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.08)] xl:block"
+      aria-label="Course outline"
+      data-testid="course-desktop-outline"
+    >
+      <div className="border-b border-slate-200/80 px-1.5 pb-3">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+              Course outline
+            </p>
+            <p className="mt-2 text-[10px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+              Total progress
+            </p>
+            <p className="mt-1 text-[13px] font-semibold text-slate-900">
+              {doneLessonCount} of {lessonCount} lessons complete
+            </p>
+          </div>
+          <span className="text-[12px] font-semibold text-slate-500">{progressPercent}%</span>
+        </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-blue-600 transition-[width]"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+      <nav className="mt-4 space-y-5" aria-label="Course lessons">
+        {modules.map((module, moduleIndex) => {
+          const isActiveModule = module.lessons.some((lesson) => lesson.id === activeLessonId);
+          const moduleDoneCount = module.lessons.filter(
+            (lesson) => progressStatusByLessonId[lesson.id] === "done"
+          ).length;
+
+          return (
+            <section key={module.id} aria-labelledby={`course-outline-module-${module.id}`}>
+              <div id={`course-outline-module-${module.id}`} className="px-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span
+                      className={cx(
+                        "block text-[10px] font-semibold tracking-[0.08em] uppercase",
+                        isActiveModule ? "text-blue-600" : "text-slate-400"
+                      )}
+                    >
+                      Module {moduleIndex + 1}
+                    </span>
+                  </div>
+                  <span className="shrink-0 text-right text-[11px] font-semibold text-slate-500">
+                    {moduleDoneCount === module.lessons.length
+                      ? `${module.lessons.length} of ${module.lessons.length} lessons complete`
+                      : `${moduleDoneCount} of ${module.lessons.length} lessons done`}
+                  </span>
+                </div>
+                <p
+                  className={cx(
+                    "mt-1 text-[14px] leading-5 font-semibold",
+                    isActiveModule ? "text-blue-900" : "text-slate-900"
+                  )}
+                >
+                  {module.title}
+                </p>
+              </div>
+              <ol className="mt-2 ml-3 space-y-1 border-l border-slate-200/80 pl-3">
+                {module.lessons.map((lesson, lessonIndex) => {
+                  const active = lesson.id === activeLessonId;
+                  const progressStatus = progressStatusByLessonId[lesson.id] ?? "not_started";
+                  const statusLabel =
+                    progressStatus === "done"
+                      ? "Done"
+                      : progressStatus === "in_progress"
+                        ? "In progress"
+                        : active
+                          ? "Current lesson"
+                          : null;
+                  const markerClass =
+                    progressStatus === "done"
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      : progressStatus === "in_progress"
+                        ? "border-amber-300 bg-amber-50 text-amber-800"
+                        : active
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-slate-200 bg-white text-slate-500";
+
+                  return (
+                    <li key={lesson.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectLesson(lesson.id, { scrollToPlayer: false })}
+                        aria-current={active ? "page" : undefined}
+                        data-testid={`course-outline-lesson-${lesson.id}`}
+                        className={cx(
+                          "relative grid w-full grid-cols-[28px_minmax(0,1fr)] gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                          active
+                            ? "bg-white text-slate-950 shadow-[0_8px_22px_rgba(37,99,235,0.12)] ring-1 ring-blue-200/90"
+                            : "text-slate-700 hover:bg-white/80 hover:shadow-[0_6px_16px_rgba(15,23,42,0.06)]"
+                        )}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cx(
+                            "absolute top-2 bottom-2 left-0 w-1 rounded-full",
+                            active ? "bg-blue-600" : "bg-transparent"
+                          )}
+                        />
+                        <span
+                          aria-hidden="true"
+                          className={cx(
+                            "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-bold",
+                            markerClass
+                          )}
+                        >
+                          {lessonIndex + 1}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="line-clamp-2 block leading-5 font-semibold">
+                            {lesson.title}
+                          </span>
+                          {statusLabel ? (
+                            <span
+                              className={cx(
+                                "mt-1 block text-[11px] leading-4 font-semibold",
+                                progressStatus === "done"
+                                  ? "text-emerald-700"
+                                  : progressStatus === "in_progress"
+                                    ? "text-amber-700"
+                                    : "text-blue-700"
+                              )}
+                            >
+                              {statusLabel}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+}
+
 function CoursePageFallback() {
   return (
     <SiteChrome>
-      <PageTemplate size="wide" showBack={false}>
+      <PageTemplate size="course" showBack={false}>
         <div className="space-y-3" aria-label="Loading course content">
           <div className="h-16 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
           <div className="h-20 animate-pulse rounded-2xl border border-slate-200/70 bg-white/80" />
@@ -441,7 +851,6 @@ function CoursePageClient() {
   const [drawerView, setDrawerView] = useState<DrawerView>("course");
   const [closeDrawerOnLessonChange, setCloseDrawerOnLessonChange] = useState(false);
   const [overviewExpanded, setOverviewExpanded] = useState(false);
-  const [commonMistakesExpanded, setCommonMistakesExpanded] = useState(true);
   const [doneLessonIds, setDoneLessonIds] = useState<string[]>([]);
   const [doneLessonIdsLoaded, setDoneLessonIdsLoaded] = useState(false);
   const [doneConfirmationByLessonId, setDoneConfirmationByLessonId] = useState<
@@ -931,17 +1340,6 @@ function CoursePageClient() {
   }, []);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`${COMMON_MISTAKES_STORAGE_KEY_PREFIX}${activeLesson.id}`);
-      if (saved === "0") {
-        setCommonMistakesExpanded(false);
-        return;
-      }
-    } catch {}
-    setCommonMistakesExpanded(true);
-  }, [activeLesson.id]);
-
-  useEffect(() => {
     setDoneGateChecksByLessonId((prev) => {
       const normalized = normalizeCourseLessonCriteriaCheckRecord(prev, {
         resolveLessonId: resolveCanonicalLessonId,
@@ -1370,19 +1768,6 @@ function CoursePageClient() {
       const next = !prev;
       try {
         localStorage.setItem(OVERVIEW_STORAGE_KEY, next ? "1" : "0");
-      } catch {}
-      return next;
-    });
-  }
-
-  function toggleCommonMistakes() {
-    setCommonMistakesExpanded((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(
-          `${COMMON_MISTAKES_STORAGE_KEY_PREFIX}${activeLesson.id}`,
-          next ? "1" : "0"
-        );
       } catch {}
       return next;
     });
@@ -1827,12 +2212,19 @@ function CoursePageClient() {
     if (!nextId) return null;
     return courseLessonsFlat.find((lesson) => lesson.id === nextId) ?? null;
   }, [courseLessonsFlat, nextId]);
+  const nextLessonModule = useMemo(() => {
+    if (!nextLesson) return null;
+    return (
+      courseModules.find((module) =>
+        module.lessons.some((lesson) => lesson.id === nextLesson.id)
+      ) ?? null
+    );
+  }, [courseModules, nextLesson]);
   const lessonExperience = useMemo(
     () => buildCourseLessonExperienceViewModel(activeLesson),
     [activeLesson]
   );
   const isLessonDone = doneLessonIds.includes(activeLesson.id);
-  const lessonType = activeLesson.lessonType ?? "drill";
   const lessonNumberInModule =
     moduleInfo.lessonIndexInModule >= 0 ? moduleInfo.lessonIndexInModule + 1 : 1;
   const lessonDisplay = activeLesson.display;
@@ -1859,25 +2251,17 @@ function CoursePageClient() {
     showPracticeMasterSection && lessonExperience.display.landPractice;
   const showWaterPracticeSection =
     showPracticeMasterSection && lessonExperience.display.waterPractice;
+  const showLandSafetyNote =
+    showLandPracticeSection &&
+    lessonExperience.display.landSafetyNote &&
+    Boolean(lessonExperience.landPractice.safetyNote);
+  const showWaterSafetyNote =
+    showWaterPracticeSection &&
+    lessonExperience.display.waterSafetyNote &&
+    Boolean(lessonExperience.waterPractice.safetyNote);
   const showPracticeSections = showLandPracticeSection || showWaterPracticeSection;
-  const lessonCueLabel = lessonExperience.variant === "concept" ? "Focus" : "One cue";
-  const feelCuesHeading = showWaterPracticeSection
-    ? "Feel cues"
-    : lessonExperience.feelCues.length === 1
-      ? "Key reminder"
-      : "Key reminders";
-  const feelCueBadgeLabel = showWaterPracticeSection
-    ? "One cue"
-    : lessonExperience.feelCues.length === 1
-      ? "Reminder"
-      : "Reminders";
-  const feelCuesHelperText = showWaterPracticeSection
-    ? "What this should feel like in the water."
-    : lessonExperience.variant === "concept"
-      ? "The idea to remember before the next lesson."
-      : lessonExperience.feelCues.length === 1
-        ? "Use this as the lesson's one reminder."
-        : "Use these as the lesson's main reminders.";
+  const feelCuesHeading = "What good looks and feels like";
+  const feelCuesHelperText = "Use these points to check whether the movement feels right.";
   const showPrimaryFocusBlocks = showGoalSection || showQuickExplanationSection;
   const primaryFocusGridClass =
     showGoalSection && showQuickExplanationSection ? "lg:grid-cols-2" : "lg:grid-cols-1";
@@ -1922,9 +2306,6 @@ function CoursePageClient() {
     showPassOrNextCard ||
     showExtraHelpCard;
   const lessonContentReady = courseContentLoadState !== "loading";
-  const drillBadgeLabel =
-    activeLesson.drillLabel?.trim() ||
-    (lessonType === "learn" ? "Learn" : lessonType === "swim" ? "Swim" : "Drill");
   const passCriteria = lessonExperience.masteryCriteria;
   const doneGateChecks = useMemo(
     () =>
@@ -1952,15 +2333,20 @@ function CoursePageClient() {
           label: "Done",
           className: "bg-emerald-50 text-emerald-700 ring-emerald-200/75",
         }
-      : activeLessonProgressStatus === "in_progress"
+      : doneGateRequired && doneGateSatisfied
         ? {
-            label: "In progress",
-            className: "bg-amber-50 text-amber-700 ring-amber-200/75",
+            label: "Ready to complete",
+            className: "bg-blue-50 text-blue-700 ring-blue-100/80",
           }
-        : {
-            label: "Ready to start",
-            className: "bg-slate-50 text-slate-700 ring-slate-200/75",
-          };
+        : activeLessonProgressStatus === "in_progress"
+          ? {
+              label: "In progress",
+              className: "bg-amber-50 text-amber-700 ring-amber-200/75",
+            }
+          : {
+              label: "Not started",
+              className: "bg-slate-50 text-slate-700 ring-slate-200/75",
+            };
   const doneConfirmedAt = doneConfirmationByLessonId[activeLesson.id] ?? null;
 
   useEffect(() => {
@@ -2308,7 +2694,7 @@ function CoursePageClient() {
     bottomNavItems.push({
       id: "course-prev",
       kind: "button",
-      label: "Prev",
+      label: "Previous",
       testId: "course-nav-left",
       disabled: true,
       skin: "muted",
@@ -2318,7 +2704,7 @@ function CoursePageClient() {
     bottomNavItems.push({
       id: "course-prev",
       kind: "button",
-      label: "Prev",
+      label: "Previous",
       testId: "course-nav-left",
       onClick: () => prevId && goToLesson(prevId),
       skin: "muted",
@@ -2451,7 +2837,7 @@ function CoursePageClient() {
             <p className="flex-1 text-[12px] leading-5 font-medium text-slate-700">
               Swipe from either side to switch lessons, or use{" "}
               <span className="font-semibold">Lessons</span> and{" "}
-              <span className="font-semibold">Next/Prev</span>.
+              <span className="font-semibold">Next/Previous</span>.
             </p>
             <PressButton
               tier="nav"
@@ -2752,7 +3138,7 @@ function CoursePageClient() {
         }}
         bottomBar={bottomBar}
       >
-        <PageTemplate size="wide" showBack={false}>
+        <PageTemplate size="course" showBack={false}>
           <PageIntro
             title="Free Course"
             subtitle="Learn. Drill. Swim."
@@ -2825,7 +3211,7 @@ function CoursePageClient() {
       }}
       bottomBar={bottomBar}
     >
-      <PageTemplate size="wide" showBack={false}>
+      <PageTemplate size="course" showBack={false}>
         <div
           data-testid="course-page"
           data-course-content-state={courseContentLoadState}
@@ -2858,6 +3244,7 @@ function CoursePageClient() {
                 skin="neutral"
                 onClick={() => toggleDrawer("course")}
                 ariaLabel={isCourseDrawerOpen ? "Close lessons" : "Open lessons"}
+                className="xl:hidden"
               >
                 {isCourseDrawerOpen ? "Close" : "Lessons"}
               </CourseNavButton>
@@ -2865,922 +3252,859 @@ function CoursePageClient() {
           />
           {previewBanner}
 
-          <div className={styles.playerStack}>
-            <section
-              className={cx(
-                styles.overviewPanel,
-                "rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]"
-              )}
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900">
-                      <span>{overviewLabel.lesson}</span>
-                      <span className="text-slate-300">•</span>
-                      <span>{overviewLabel.module}</span>
-                      <span className="text-slate-300">•</span>
-                      <span
-                        data-testid="course-lesson-status-chip"
-                        className={cx(
-                          "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
-                          activeLessonStatusMeta.className
-                        )}
-                      >
-                        {activeLessonStatusMeta.label}
-                      </span>
-                    </div>
-                    <PressButton
-                      tier="nav"
-                      onClick={toggleLessonDone}
-                      disabled={markDoneBlockedByGate}
-                      aria-pressed={isLessonDone}
-                      aria-describedby={markDoneButtonDescribedBy}
-                      data-testid="course-mark-done-button"
-                      className={cx(
-                        "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
-                        isLessonDone
-                          ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                          : markDoneBlockedByGate
-                            ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                            : "bg-white/92 text-slate-700 ring-slate-200/72"
-                      )}
-                    >
-                      {isLessonDone ? "Done" : "Mark as done"}
-                    </PressButton>
-                  </div>
-                  {overviewExpanded ? (
-                    <div className="mt-1 text-[13px] font-medium text-slate-700">
-                      {overviewLabel.moduleName}
-                      {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
-                    </div>
-                  ) : null}
-                  {!lessonContentReady ? (
-                    <p
-                      id={markDoneFeedbackId}
-                      className="mt-1 text-[12px] font-medium text-slate-600"
-                    >
-                      Loading lesson details...
-                    </p>
-                  ) : markDoneBlockedByGate ? (
-                    <p
-                      id={markDoneFeedbackId}
-                      className="mt-1 text-[12px] font-medium text-amber-700"
-                    >
-                      Check pass criteria below to unlock Mark as done.
-                    </p>
-                  ) : isLessonDone ? (
-                    <p
-                      id={markDoneFeedbackId}
-                      className="mt-1 text-[12px] font-medium text-emerald-700"
-                    >
-                      Lesson done. Click Done again to return it to In progress.
-                    </p>
-                  ) : doneGateFeedback ? (
-                    <p
-                      id={markDoneFeedbackId}
-                      className="mt-1 text-[12px] font-medium text-amber-700"
-                    >
-                      {doneGateFeedback}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="hidden gap-2 sm:flex sm:pt-1">
-                  {isFirstLesson ? (
-                    <CourseNavButton
-                      grow={false}
-                      disabled
-                      skin="muted"
-                      className="px-4 py-2"
-                      ariaLabel="No previous lesson"
-                    >
-                      Prev
-                    </CourseNavButton>
-                  ) : (
-                    <CourseNavButton
-                      grow={false}
-                      onClick={() => prevId && goToLesson(prevId)}
-                      skin="muted"
-                      className="px-4 py-2"
-                    >
-                      Prev
-                    </CourseNavButton>
+          <div className="mt-3 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start">
+            <CourseDesktopOutline
+              modules={courseModules}
+              activeLessonId={activeLesson.id}
+              progressStatusByLessonId={lessonProgressStatusById}
+              onSelectLesson={goToLesson}
+            />
+            <div className="min-w-0">
+              <div className={styles.playerStack}>
+                <section
+                  className={cx(
+                    styles.overviewPanel,
+                    "rounded-[20px] border border-slate-200/65 bg-white/90 p-3 shadow-[0_5px_14px_rgba(15,23,42,0.045)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_10px_26px_rgba(15,23,42,0.08)]"
                   )}
-
-                  {isLastLesson ? (
-                    <CourseNavButton
-                      grow={false}
-                      onClick={() => router.push("/programs")}
-                      skin="primary"
-                      className="px-4 py-2"
-                    >
-                      Programs
-                    </CourseNavButton>
-                  ) : (
-                    <CourseNavButton
-                      grow={false}
-                      onClick={() => nextId && goToLesson(nextId)}
-                      skin="primary"
-                      className="px-4 py-2"
-                    >
-                      Next
-                    </CourseNavButton>
-                  )}
-
-                  <PressButton
-                    tier="nav"
-                    onClick={toggleOverview}
-                    aria-expanded={overviewExpanded}
-                    aria-controls="course-overview-details"
-                    className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
-                  >
-                    {overviewExpanded ? "Hide details" : "Overview details"}
-                  </PressButton>
-                </div>
-              </div>
-
-              <div className="mt-2 flex items-center gap-3">
-                <div
-                  className="flex-1 overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] ring-1 ring-slate-200/75"
-                  role="progressbar"
-                  aria-label="Course progress"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={donePct}
-                  aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%), ${inProgressLessonsCount} in progress. Current: ${overviewLabel.lesson}.`}
                 >
-                  <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
-                    {courseLessonsFlat.map((lesson, index) => {
-                      const isCurrentSegment = index === currentLessonIndex;
-                      const lessonProgressStatus =
-                        lessonProgressStatusById[lesson.id] ?? "not_started";
-                      const isDoneSegment = lessonProgressStatus === "done";
-                      const isInProgressSegment = lessonProgressStatus === "in_progress";
-                      const isFirstSegment = index === 0;
-                      const isLastSegment = index === totalLessons - 1;
-
-                      return (
-                        <span
-                          key={lesson.id}
-                          aria-hidden
-                          className={cx(
-                            "h-full min-w-0 flex-1 transition-colors duration-200",
-                            !isLastSegment && "border-r border-slate-100/70",
-                            isFirstSegment && "rounded-l-full",
-                            isLastSegment && "rounded-r-full",
-                            isCurrentSegment
-                              ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
-                              : isDoneSegment
-                                ? "bg-blue-500"
-                                : isInProgressSegment
-                                  ? "bg-amber-400/90"
-                                  : "bg-slate-300/78"
-                          )}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
-                  {donePct}%
-                </div>
-              </div>
-
-              {isSignedIn && courseProgressStatusCopy ? (
-                <CourseProgressSyncStatus
-                  state={courseSyncStatus}
-                  label={courseProgressStatusCopy}
-                  onRetry={() => void syncCourseProgressNow({ force: true })}
-                  className="mt-2"
-                />
-              ) : null}
-
-              <div className="mt-2 sm:hidden">
-                <PressButton
-                  tier="nav"
-                  onClick={toggleOverview}
-                  aria-expanded={overviewExpanded}
-                  aria-controls="course-overview-details"
-                  className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65 lg:bg-white lg:ring-slate-300/70"
-                >
-                  {overviewExpanded ? "Hide details" : "Overview details"}
-                </PressButton>
-              </div>
-
-              {overviewExpanded ? (
-                <div
-                  id="course-overview-details"
-                  className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3 lg:border-slate-300/65 lg:bg-white/92"
-                >
-                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
-                    <div className="text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-                      Jump to lesson
-                    </div>
-                    {previewLessonMeta ? (
-                      <>
-                        <div className="mt-1 flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="truncate text-[13px] font-semibold text-slate-900">
-                              {previewLessonMeta.lesson.title}
-                            </div>
-                            <div className="truncate text-[12px] font-medium text-slate-600">
-                              {previewLessonMeta.moduleTitle}
-                            </div>
-                          </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-semibold text-slate-900 xl:hidden">
+                          <span>{overviewLabel.lesson}</span>
+                          <span className="text-slate-300">•</span>
+                          <span>{overviewLabel.module}</span>
+                          <span className="text-slate-300">•</span>
                           <span
+                            data-testid="course-lesson-status-chip"
                             className={cx(
-                              "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
-                              previewLessonMeta.lesson.id === activeLesson.id
-                                ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                                : lessonProgressStatusById[previewLessonMeta.lesson.id] === "done"
-                                  ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
-                                  : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
-                                      "in_progress"
-                                    ? "bg-amber-50 text-amber-700 ring-amber-200/80"
-                                    : "bg-white text-slate-700 ring-slate-200/75",
-                              isOverviewJumpDragging &&
-                                "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
+                              "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
+                              activeLessonStatusMeta.className
                             )}
                           >
-                            <span className="block leading-[1.15]">
-                              Module {previewLessonMeta.moduleIndex} of{" "}
-                              {previewLessonMeta.moduleCount}
-                            </span>
-                            <span className="mt-0.5 block text-[10px] leading-[1.15] font-medium text-slate-600">
-                              Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
-                            </span>
+                            {activeLessonStatusMeta.label}
                           </span>
                         </div>
-
-                        <input
-                          type="range"
-                          min={1}
-                          max={Math.max(1, totalLessons)}
-                          value={safePreviewLessonIndex + 1}
-                          onChange={(event) => {
-                            const next = Number(event.target.value);
-                            if (Number.isNaN(next)) return;
-                            setOverviewJumpIndex(next - 1);
-                          }}
-                          onPointerDown={handleOverviewSliderPointerDown}
-                          onPointerUp={() => {
-                            if (!overviewJumpDraggingRef.current) return;
-                            commitOverviewJump();
-                          }}
-                          onPointerCancel={() => setOverviewDragging(false)}
-                          onBlur={() => {
-                            if (!overviewJumpDraggingRef.current) return;
-                            if (overviewJumpIndex == null) {
-                              setOverviewDragging(false);
-                              return;
-                            }
-                            commitOverviewJump();
-                          }}
-                          aria-label="Jump to lesson"
-                          aria-valuetext={`${previewLessonMeta.lesson.title}. Lesson ${safePreviewLessonIndex + 1} of ${totalLessons}.`}
+                        <PressButton
+                          tier="nav"
+                          onClick={toggleLessonDone}
+                          disabled={markDoneBlockedByGate}
+                          aria-pressed={isLessonDone}
+                          aria-describedby={markDoneButtonDescribedBy}
+                          data-testid="course-mark-done-button"
                           className={cx(
-                            "lesson-jump-slider mt-2 h-2.5 w-full cursor-pointer appearance-none rounded-full",
-                            isOverviewJumpDragging && "is-dragging"
+                            "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
+                            isLessonDone
+                              ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                              : markDoneBlockedByGate
+                                ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                                : "bg-white/92 text-slate-700 ring-slate-200/72"
                           )}
-                          style={{ background: sliderTrackBackground }}
+                        >
+                          {isLessonDone ? "Done" : "Mark as done"}
+                        </PressButton>
+                      </div>
+                      {overviewExpanded ? (
+                        <div className="mt-1 text-[13px] font-medium text-slate-700">
+                          {overviewLabel.moduleName}
+                          {overviewLabel.duration ? ` • ${overviewLabel.duration}` : ""}
+                        </div>
+                      ) : null}
+                      {!lessonContentReady ? (
+                        <p
+                          id={markDoneFeedbackId}
+                          className="mt-1 text-[12px] font-medium text-slate-600"
+                        >
+                          Loading lesson details...
+                        </p>
+                      ) : markDoneBlockedByGate ? (
+                        <p
+                          id={markDoneFeedbackId}
+                          className="mt-1 text-[12px] font-medium text-amber-700"
+                        >
+                          Check pass criteria below to unlock Mark as done.
+                        </p>
+                      ) : isLessonDone ? (
+                        <p
+                          id={markDoneFeedbackId}
+                          className="mt-1 text-[12px] font-medium text-emerald-700"
+                        >
+                          Lesson done. Click Done again to return it to In progress.
+                        </p>
+                      ) : doneGateFeedback ? (
+                        <p
+                          id={markDoneFeedbackId}
+                          className="mt-1 text-[12px] font-medium text-amber-700"
+                        >
+                          {doneGateFeedback}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="hidden gap-2 sm:flex sm:pt-1">
+                      {isFirstLesson ? (
+                        <CourseNavButton
+                          grow={false}
+                          disabled
+                          skin="muted"
+                          className="px-4 py-2"
+                          ariaLabel="No previous lesson"
+                        >
+                          Previous
+                        </CourseNavButton>
+                      ) : (
+                        <CourseNavButton
+                          grow={false}
+                          onClick={() => prevId && goToLesson(prevId)}
+                          skin="muted"
+                          className="px-4 py-2"
+                        >
+                          Previous
+                        </CourseNavButton>
+                      )}
+
+                      {isLastLesson ? (
+                        <CourseNavButton
+                          grow={false}
+                          onClick={() => router.push("/programs")}
+                          skin="primary"
+                          className="px-4 py-2"
+                        >
+                          Programs
+                        </CourseNavButton>
+                      ) : (
+                        <CourseNavButton
+                          grow={false}
+                          onClick={() => nextId && goToLesson(nextId)}
+                          skin="primary"
+                          className="px-4 py-2"
+                        >
+                          Next
+                        </CourseNavButton>
+                      )}
+
+                      <PressButton
+                        tier="nav"
+                        onClick={toggleOverview}
+                        aria-expanded={overviewExpanded}
+                        aria-controls="course-overview-details"
+                        className="inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-white/92 px-3 py-2 text-[13px] font-semibold text-slate-800 ring-1 ring-slate-200/70 lg:bg-white lg:ring-slate-300/70"
+                      >
+                        {overviewExpanded ? "Hide details" : "Overview details"}
+                      </PressButton>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-3">
+                    <div
+                      className="flex-1 overflow-hidden rounded-full bg-slate-100 shadow-[inset_0_1px_1px_rgba(255,255,255,0.45)] ring-1 ring-slate-200/75"
+                      role="progressbar"
+                      aria-label="Course progress"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={donePct}
+                      aria-valuetext={`${doneLessonsCount} of ${totalLessons} lessons marked done (${donePct}%), ${inProgressLessonsCount} in progress. Current: ${overviewLabel.lesson}.`}
+                    >
+                      <div className="flex h-[10px] w-full overflow-hidden rounded-full bg-slate-200/95">
+                        {courseLessonsFlat.map((lesson, index) => {
+                          const isCurrentSegment = index === currentLessonIndex;
+                          const lessonProgressStatus =
+                            lessonProgressStatusById[lesson.id] ?? "not_started";
+                          const isDoneSegment = lessonProgressStatus === "done";
+                          const isInProgressSegment = lessonProgressStatus === "in_progress";
+                          const isFirstSegment = index === 0;
+                          const isLastSegment = index === totalLessons - 1;
+
+                          return (
+                            <span
+                              key={lesson.id}
+                              aria-hidden
+                              className={cx(
+                                "h-full min-w-0 flex-1 transition-colors duration-200",
+                                !isLastSegment && "border-r border-slate-100/70",
+                                isFirstSegment && "rounded-l-full",
+                                isLastSegment && "rounded-r-full",
+                                isCurrentSegment
+                                  ? "bg-white shadow-[inset_0_0_0_1px_rgba(147,197,253,0.95)]"
+                                  : isDoneSegment
+                                    ? "bg-blue-500"
+                                    : isInProgressSegment
+                                      ? "bg-amber-400/90"
+                                      : "bg-slate-300/78"
+                              )}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="shrink-0 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-slate-200/75">
+                      {donePct}%
+                    </div>
+                  </div>
+
+                  {isSignedIn && courseProgressStatusCopy ? (
+                    <CourseProgressSyncStatus
+                      state={courseSyncStatus}
+                      label={courseProgressStatusCopy}
+                      onRetry={() => void syncCourseProgressNow({ force: true })}
+                      className="mt-2"
+                    />
+                  ) : null}
+
+                  <div className="mt-2 sm:hidden">
+                    <PressButton
+                      tier="nav"
+                      onClick={toggleOverview}
+                      aria-expanded={overviewExpanded}
+                      aria-controls="course-overview-details"
+                      className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl bg-white/90 px-3 py-2 text-[13px] font-semibold text-slate-700 ring-1 ring-slate-200/65 lg:bg-white lg:ring-slate-300/70"
+                    >
+                      {overviewExpanded ? "Hide details" : "Overview details"}
+                    </PressButton>
+                  </div>
+
+                  {overviewExpanded ? (
+                    <div
+                      id="course-overview-details"
+                      className="mt-2 rounded-2xl border border-slate-200/68 bg-white/78 p-3 lg:border-slate-300/65 lg:bg-white/92"
+                    >
+                      <div className="rounded-2xl border border-slate-200/70 bg-slate-50/72 p-3">
+                        <div className="text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                          Jump to lesson
+                        </div>
+                        {previewLessonMeta ? (
+                          <>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="truncate text-[13px] font-semibold text-slate-900">
+                                  {previewLessonMeta.lesson.title}
+                                </div>
+                                <div className="truncate text-[12px] font-medium text-slate-600">
+                                  {previewLessonMeta.moduleTitle}
+                                </div>
+                              </div>
+                              <span
+                                className={cx(
+                                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 transition-all duration-150",
+                                  previewLessonMeta.lesson.id === activeLesson.id
+                                    ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+                                    : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
+                                        "done"
+                                      ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
+                                      : lessonProgressStatusById[previewLessonMeta.lesson.id] ===
+                                          "in_progress"
+                                        ? "bg-amber-50 text-amber-700 ring-amber-200/80"
+                                        : "bg-white text-slate-700 ring-slate-200/75",
+                                  isOverviewJumpDragging &&
+                                    "scale-[1.03] shadow-[0_8px_20px_rgba(37,99,235,0.16)]"
+                                )}
+                              >
+                                <span className="block leading-[1.15]">
+                                  Module {previewLessonMeta.moduleIndex} of{" "}
+                                  {previewLessonMeta.moduleCount}
+                                </span>
+                                <span className="mt-0.5 block text-[10px] leading-[1.15] font-medium text-slate-600">
+                                  Lesson {previewLessonMeta.globalLessonIndex} of {totalLessons}
+                                </span>
+                              </span>
+                            </div>
+
+                            <input
+                              type="range"
+                              min={1}
+                              max={Math.max(1, totalLessons)}
+                              value={safePreviewLessonIndex + 1}
+                              onChange={(event) => {
+                                const next = Number(event.target.value);
+                                if (Number.isNaN(next)) return;
+                                setOverviewJumpIndex(next - 1);
+                              }}
+                              onPointerDown={handleOverviewSliderPointerDown}
+                              onPointerUp={() => {
+                                if (!overviewJumpDraggingRef.current) return;
+                                commitOverviewJump();
+                              }}
+                              onPointerCancel={() => setOverviewDragging(false)}
+                              onBlur={() => {
+                                if (!overviewJumpDraggingRef.current) return;
+                                if (overviewJumpIndex == null) {
+                                  setOverviewDragging(false);
+                                  return;
+                                }
+                                commitOverviewJump();
+                              }}
+                              aria-label="Jump to lesson"
+                              aria-valuetext={`${previewLessonMeta.lesson.title}. Lesson ${safePreviewLessonIndex + 1} of ${totalLessons}.`}
+                              className={cx(
+                                "lesson-jump-slider mt-2 h-2.5 w-full cursor-pointer appearance-none rounded-full",
+                                isOverviewJumpDragging && "is-dragging"
+                              )}
+                              style={{ background: sliderTrackBackground }}
+                            />
+                          </>
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="mt-3 text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                          Additional information
+                        </div>
+                      </div>
+                      <div className="mt-1 text-[12px] font-medium text-slate-600">
+                        {isLastLesson
+                          ? "Last lesson in this course."
+                          : "Use Lessons to jump to any module or lesson."}
+                        {previewEnabled && courseProgressStatusCopy ? (
+                          <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+
+                <section
+                  data-testid="course-player-card"
+                  className={cx(
+                    styles.playerPanel,
+                    "rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white lg:p-4"
+                  )}
+                >
+                  <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
+                    {!showVideoOverlay ? (
+                      <>
+                        <div
+                          aria-hidden
+                          className="absolute inset-y-0 left-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
+                          onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
+                          onTouchMove={(event) => {
+                            event.stopPropagation();
+                            handleSwipeMove(event);
+                          }}
+                          onTouchEnd={(event) => {
+                            event.stopPropagation();
+                            handleSwipeEnd(event);
+                          }}
+                          onTouchCancel={(event) => {
+                            event.stopPropagation();
+                            resetSwipeGesture();
+                          }}
+                        />
+                        <div
+                          aria-hidden
+                          className="absolute inset-y-0 right-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
+                          onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
+                          onTouchMove={(event) => {
+                            event.stopPropagation();
+                            handleSwipeMove(event);
+                          }}
+                          onTouchEnd={(event) => {
+                            event.stopPropagation();
+                            handleSwipeEnd(event);
+                          }}
+                          onTouchCancel={(event) => {
+                            event.stopPropagation();
+                            resetSwipeGesture();
+                          }}
                         />
                       </>
                     ) : null}
-                  </div>
 
-                  <div className="min-w-0">
-                    <div className="mt-3 text-[12px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-                      Additional information
+                    <div className="aspect-video w-full bg-slate-950">
+                      <div ref={videoFrameRef} className="h-full w-full" />
                     </div>
-                  </div>
-                  <div className="mt-1 text-[12px] font-medium text-slate-600">
-                    {isLastLesson
-                      ? "Last lesson in this course."
-                      : "Use Lessons to jump to any module or lesson."}
-                    {previewEnabled && courseProgressStatusCopy ? (
-                      <span className="ml-2 text-slate-500">{courseProgressStatusCopy}</span>
+
+                    {showVideoOverlay ? (
+                      <PressButton
+                        tier="card"
+                        onClick={videoStarted ? resumePlayback : startVideoPlayback}
+                        data-testid="course-video-overlay"
+                        className="absolute inset-0 z-[2] w-full overflow-hidden bg-slate-950 p-4 text-left sm:p-5 lg:p-7"
+                        aria-label={
+                          showResumeCta
+                            ? `Resume lesson: ${activeLesson.title}`
+                            : `Play lesson: ${activeLesson.title}`
+                        }
+                      >
+                        <Image
+                          data-testid="course-video-poster"
+                          src={activeLessonPosterUrl}
+                          alt=""
+                          aria-hidden="true"
+                          fill
+                          priority
+                          unoptimized
+                          sizes="(max-width: 640px) 282px, 880px"
+                          className="object-cover opacity-[0.82] saturate-[0.92]"
+                        />
+                        <div className={styles.posterScrim} />
+                        <div className={styles.overlayLayout}>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <BrandImage
+                                asset={BRAND_USAGE.compactSymbol}
+                                decorative
+                                className="h-8 w-auto shrink-0 drop-shadow-[0_2px_8px_rgba(15,23,42,0.35)]"
+                                sizes="32px"
+                              />
+                              <span className="truncate rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-slate-700 uppercase ring-1 ring-white/50">
+                                {overviewLabel.moduleName}
+                              </span>
+                            </span>
+                            {overviewLabel.duration ? (
+                              <span className="shrink-0 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-white/50">
+                                {overviewLabel.duration}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className={styles.videoCopy}>
+                            <div data-testid="course-video-title" className={styles.videoTitle}>
+                              {activeLesson.title}
+                            </div>
+                            {activeLesson.goal ? (
+                              <p className={styles.videoGoal}>{activeLesson.goal}</p>
+                            ) : null}
+                            <div className="mt-3 flex items-center justify-center lg:justify-start">
+                              <span
+                                data-testid="course-video-play-cta"
+                                className={cx(
+                                  "inline-flex min-h-[38px] w-full max-w-[250px] items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.30)] ring-1 ring-white/25 transition-colors duration-200 sm:min-h-[40px] sm:text-[14px] lg:min-h-[46px] lg:max-w-[180px] lg:px-5 lg:text-[15px]",
+                                  showResumeCta
+                                    ? "bg-gradient-to-b from-blue-400 to-blue-500"
+                                    : "bg-gradient-to-b from-blue-500 to-blue-600"
+                                )}
+                              >
+                                <span
+                                  aria-hidden
+                                  className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-white"
+                                />
+                                {showResumeCta ? "Resume" : "Play"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </PressButton>
                     ) : null}
                   </div>
-                </div>
-              ) : null}
-            </section>
 
-            <section
-              data-testid="course-player-card"
-              className={cx(
-                styles.playerPanel,
-                "rounded-[24px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_32px_rgba(15,23,42,0.08)] lg:border-slate-300/70 lg:bg-white lg:p-4"
-              )}
-            >
-              <div className="relative overflow-hidden rounded-[20px] shadow-[0_12px_28px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/75">
-                {!showVideoOverlay ? (
-                  <>
-                    <div
-                      aria-hidden
-                      className="absolute inset-y-0 left-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
-                      onTouchStart={(event) => beginSwipeFromVideoEdge("prev", event)}
-                      onTouchMove={(event) => {
-                        event.stopPropagation();
-                        handleSwipeMove(event);
-                      }}
-                      onTouchEnd={(event) => {
-                        event.stopPropagation();
-                        handleSwipeEnd(event);
-                      }}
-                      onTouchCancel={(event) => {
-                        event.stopPropagation();
-                        resetSwipeGesture();
-                      }}
-                    />
-                    <div
-                      aria-hidden
-                      className="absolute inset-y-0 right-0 z-[3] w-[22%] max-w-[112px] min-w-[68px] touch-pan-y"
-                      onTouchStart={(event) => beginSwipeFromVideoEdge("next", event)}
-                      onTouchMove={(event) => {
-                        event.stopPropagation();
-                        handleSwipeMove(event);
-                      }}
-                      onTouchEnd={(event) => {
-                        event.stopPropagation();
-                        handleSwipeEnd(event);
-                      }}
-                      onTouchCancel={(event) => {
-                        event.stopPropagation();
-                        resetSwipeGesture();
-                      }}
-                    />
-                  </>
-                ) : null}
-
-                <div className="aspect-video w-full bg-slate-950">
-                  <div ref={videoFrameRef} className="h-full w-full" />
-                </div>
-
-                {showVideoOverlay ? (
-                  <PressButton
-                    tier="card"
-                    onClick={videoStarted ? resumePlayback : startVideoPlayback}
-                    data-testid="course-video-overlay"
-                    className="absolute inset-0 z-[2] w-full overflow-hidden bg-slate-950 p-4 text-left sm:p-5 lg:p-7"
-                    aria-label={
-                      showResumeCta
-                        ? `Resume lesson: ${activeLesson.title}`
-                        : `Play lesson: ${activeLesson.title}`
-                    }
-                  >
-                    <Image
-                      data-testid="course-video-poster"
-                      src={activeLessonPosterUrl}
-                      alt=""
-                      aria-hidden="true"
-                      fill
-                      priority
-                      unoptimized
-                      sizes="(max-width: 640px) 282px, 880px"
-                      className="object-cover opacity-[0.82] saturate-[0.92]"
-                    />
-                    <div className={styles.posterScrim} />
-                    <div className={styles.overlayLayout}>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <BrandImage
-                            asset={BRAND_USAGE.compactSymbol}
-                            decorative
-                            className="h-8 w-auto shrink-0 drop-shadow-[0_2px_8px_rgba(15,23,42,0.35)]"
-                            sizes="32px"
-                          />
-                          <span className="truncate rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] text-slate-700 uppercase ring-1 ring-white/50">
-                            {overviewLabel.moduleName}
+                  {videoStarted && !videoPaused ? (
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12px] font-medium text-slate-700">
+                      <div className="min-w-0">
+                        {nextLesson ? (
+                          <>
+                            Up next:{" "}
+                            <span className="font-semibold text-slate-800">{nextLesson.title}</span>
+                          </>
+                        ) : (
+                          <span className="font-semibold text-slate-800">
+                            Last lesson in this course
                           </span>
-                        </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {videoLoadState === "failed" ? (
+                    <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
+                      Video did not load.{" "}
+                      <PressLink
+                        tier="nav"
+                        href={youtubeWatchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-slate-800 underline"
+                        aria-label="Open video on YouTube"
+                      >
+                        Open on YouTube
+                      </PressLink>
+                    </div>
+                  ) : null}
+
+                  <div
+                    data-testid="course-lesson-info-strip"
+                    className="mt-3 rounded-[20px] border border-slate-200/72 bg-slate-50/78 p-3 ring-1 ring-white/80 sm:p-4 lg:bg-slate-50/62"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+                          Lesson info
+                        </p>
+                        <h2 className="mt-1 text-[17px] leading-6 font-semibold text-slate-950 sm:text-[18px]">
+                          {activeLesson.title}
+                        </h2>
+                        {activeLesson.goal ? (
+                          <p className="mt-1 max-w-[64ch] text-[13px] leading-6 font-medium text-slate-600">
+                            {activeLesson.goal}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2 text-[11px] font-semibold text-slate-700 sm:justify-end">
                         {overviewLabel.duration ? (
-                          <span className="shrink-0 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-white/50">
+                          <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
                             {overviewLabel.duration}
                           </span>
                         ) : null}
                       </div>
-
-                      <div className={styles.videoCopy}>
-                        <div data-testid="course-video-title" className={styles.videoTitle}>
-                          {activeLesson.title}
-                        </div>
-                        {activeLesson.goal ? (
-                          <p className={styles.videoGoal}>{activeLesson.goal}</p>
-                        ) : null}
-                        <div className="mt-3 flex items-center justify-center lg:justify-start">
-                          <span
-                            data-testid="course-video-play-cta"
-                            className={cx(
-                              "inline-flex min-h-[38px] w-full max-w-[250px] items-center justify-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.30)] ring-1 ring-white/25 transition-colors duration-200 sm:min-h-[40px] sm:text-[14px] lg:min-h-[46px] lg:max-w-[180px] lg:px-5 lg:text-[15px]",
-                              showResumeCta
-                                ? "bg-gradient-to-b from-blue-400 to-blue-500"
-                                : "bg-gradient-to-b from-blue-500 to-blue-600"
-                            )}
-                          >
-                            <span
-                              aria-hidden
-                              className="ml-0.5 h-0 w-0 border-y-[7px] border-l-[11px] border-y-transparent border-l-white"
-                            />
-                            {showResumeCta ? "Resume" : "Play"}
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                  </PressButton>
-                ) : null}
+                  </div>
+                </section>
               </div>
 
-              {videoStarted && !videoPaused ? (
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-[12px] font-medium text-slate-700">
-                  <div className="min-w-0">
-                    {nextLesson ? (
-                      <>
-                        Up next:{" "}
-                        <span className="font-semibold text-slate-800">{nextLesson.title}</span>
-                      </>
-                    ) : (
-                      <span className="font-semibold text-slate-800">
-                        Last lesson in this course
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : null}
+              {showLessonExperienceSections ? (
+                <section
+                  data-testid="course-lesson-experience"
+                  className="mt-4 space-y-3"
+                  aria-labelledby="course-lesson-experience-heading"
+                >
+                  <h2 id="course-lesson-experience-heading" className="sr-only">
+                    Lesson practice
+                  </h2>
 
-              {videoLoadState === "failed" ? (
-                <div className="mt-2 rounded-2xl border border-slate-200/70 bg-white/82 px-3 py-2 text-[12px] font-medium text-slate-600">
-                  Video did not load.{" "}
-                  <PressLink
-                    tier="nav"
-                    href={youtubeWatchUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-slate-800 underline"
-                    aria-label="Open video on YouTube"
-                  >
-                    Open on YouTube
-                  </PressLink>
-                </div>
-              ) : null}
-
-              <div
-                data-testid="course-lesson-info-strip"
-                className="mt-3 rounded-[20px] border border-slate-200/72 bg-slate-50/78 p-3 ring-1 ring-white/80 sm:p-4 lg:bg-slate-50/62"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-                      Lesson info
-                    </p>
-                    <h2 className="mt-1 text-[17px] leading-6 font-semibold text-slate-950 sm:text-[18px]">
-                      {activeLesson.title}
-                    </h2>
-                    {activeLesson.goal ? (
-                      <p className="mt-1 max-w-[64ch] text-[13px] leading-6 font-medium text-slate-600">
-                        {activeLesson.goal}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 flex-wrap gap-2 text-[11px] font-semibold text-slate-700 sm:justify-end">
-                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
-                      {overviewLabel.lesson}
-                    </span>
-                    <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
-                      {overviewLabel.module}
-                    </span>
-                    {overviewLabel.duration ? (
-                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-slate-200/80">
-                        {overviewLabel.duration}
-                      </span>
-                    ) : null}
-                    <span
-                      className={cx(
-                        "rounded-full px-2.5 py-1 ring-1",
-                        activeLessonStatusMeta.className
-                      )}
-                    >
-                      {activeLessonStatusMeta.label}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-blue-100/80 bg-white/82 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
-                      {lessonCueLabel}
-                    </p>
-                    <p className="mt-0.5 text-[14px] leading-6 font-semibold text-slate-900">
-                      {lessonExperience.primaryCue}
-                    </p>
-                  </div>
-                  <p className="hidden text-[12px] leading-5 font-medium text-slate-500 sm:block sm:max-w-[28ch] sm:text-right">
-                    Use this to judge the video, practice, and pass criteria.
-                  </p>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {showLessonExperienceSections ? (
-            <section
-              data-testid="course-lesson-experience"
-              className="mt-4 space-y-3"
-              aria-labelledby="course-lesson-experience-heading"
-            >
-              <h2 id="course-lesson-experience-heading" className="sr-only">
-                Lesson practice
-              </h2>
-
-              <div className="grid gap-3 lg:grid-cols-2">
-                {showGoalSection || showQuickExplanationSection || showWhyThisMattersSection ? (
-                  <article
-                    data-testid="course-lesson-focus"
-                    className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          Lesson focus
-                        </p>
-                        <h2 className="mt-1 text-[20px] leading-7 font-semibold text-slate-950">
-                          {activeLesson.title}
-                        </h2>
-                      </div>
-                      <div className="rounded-2xl border border-blue-100/80 bg-blue-50/65 px-3 py-2 text-left sm:max-w-[260px] sm:text-right">
-                        <p className="text-[11px] font-semibold tracking-[0.08em] text-blue-700 uppercase">
-                          {lessonCueLabel}
-                        </p>
-                        <p className="mt-1 text-[14px] leading-6 font-semibold text-slate-950">
-                          {lessonExperience.primaryCue}
-                        </p>
-                      </div>
-                    </div>
-
-                    {showPrimaryFocusBlocks ? (
-                      <div
-                        className={cx(
-                          "mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0",
-                          showGoalSection &&
-                            showQuickExplanationSection &&
-                            "lg:divide-x lg:divide-slate-200/72",
-                          primaryFocusGridClass
-                        )}
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {showGoalSection || showQuickExplanationSection || showWhyThisMattersSection ? (
+                      <article
+                        data-testid="course-lesson-focus"
+                        className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
                       >
-                        {showGoalSection ? (
-                          <div className={cx(showQuickExplanationSection && "lg:pr-5")}>
-                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                              Goal
-                            </p>
-                            <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
-                              {lessonExperience.goal}
-                            </h3>
-                          </div>
-                        ) : null}
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                            Lesson
+                          </p>
+                          <h2 className="mt-1 text-[20px] leading-7 font-semibold text-slate-950">
+                            {activeLesson.title}
+                          </h2>
+                        </div>
 
-                        {showQuickExplanationSection ? (
+                        {showPrimaryFocusBlocks ? (
                           <div
                             className={cx(
+                              "mt-5 grid gap-4 border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0",
                               showGoalSection &&
-                                "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0 lg:pl-5"
+                                showQuickExplanationSection &&
+                                "lg:divide-x lg:divide-slate-200/72",
+                              primaryFocusGridClass
                             )}
                           >
-                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                              Quick explanation
+                            {showGoalSection ? (
+                              <div className={cx(showQuickExplanationSection && "lg:pr-5")}>
+                                <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                  Goal
+                                </p>
+                                <h3 className="mt-2 text-[17px] leading-7 font-semibold text-slate-950">
+                                  {lessonExperience.goal}
+                                </h3>
+                              </div>
+                            ) : null}
+
+                            {showQuickExplanationSection ? (
+                              <div
+                                className={cx(
+                                  showGoalSection &&
+                                    "border-t border-slate-200/72 pt-4 lg:border-t-0 lg:pt-0 lg:pl-5"
+                                )}
+                              >
+                                <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                  Quick explanation
+                                </p>
+                                <p className="mt-2 text-[15px] leading-7 text-slate-700">
+                                  {lessonExperience.quickExplanation}
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {showWhyThisMattersSection ? (
+                          <div
+                            data-testid="course-lesson-why-this-matters"
+                            className="mt-4 rounded-2xl border border-blue-100/80 bg-blue-50/55 px-4 py-3"
+                          >
+                            <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                              Why this matters
                             </p>
-                            <p className="mt-2 text-[15px] leading-7 text-slate-700">
-                              {lessonExperience.quickExplanation}
+                            <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
+                              {lessonExperience.whyThisMatters}
                             </p>
                           </div>
                         ) : null}
-                      </div>
+                      </article>
                     ) : null}
 
-                    {showWhyThisMattersSection ? (
-                      <div
-                        data-testid="course-lesson-why-this-matters"
-                        className="mt-4 rounded-2xl border border-blue-100/80 bg-blue-50/55 px-4 py-3"
-                      >
-                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
-                          Why this matters
-                        </p>
-                        <p className="mt-2 text-[15px] leading-7 font-medium text-slate-800">
-                          {lessonExperience.whyThisMatters}
-                        </p>
-                      </div>
-                    ) : null}
-                  </article>
-                ) : null}
-
-                {showPracticeSections ? (
-                  <>
-                    {showLandPracticeSection ? (
-                      <article className="overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2 lg:border-slate-300/68">
-                        <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                          <CoursePracticeMediaFrame
+                    {showPracticeSections ? (
+                      <>
+                        {showLandPracticeSection ? (
+                          <CoursePracticeSection
                             practice={lessonExperience.landPractice}
                             tone="land"
+                            heading="Dryland practice"
+                            showSafetyNote={showLandSafetyNote}
+                            className="overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2 lg:border-slate-300/68"
                           />
-                          <div className="px-1 pb-2 sm:px-2 md:py-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                                Dryland practice
-                              </p>
-                              <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80">
-                                Dryland prep
-                              </span>
-                            </div>
-                            <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
-                              {lessonExperience.landPractice.title}
-                            </h3>
-                            <CoursePracticeSteps
-                              steps={lessonExperience.landPractice.steps}
-                              tone="land"
-                            />
-                          </div>
-                        </div>
-                      </article>
-                    ) : null}
+                        ) : null}
 
-                    {showWaterPracticeSection ? (
-                      <article className="overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2">
-                        <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                          <CoursePracticeMediaFrame
+                        {showWaterPracticeSection ? (
+                          <CoursePracticeSection
                             practice={lessonExperience.waterPractice}
                             tone="water"
+                            heading="Pool drill"
+                            showSafetyNote={showWaterSafetyNote}
+                            className="overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:col-span-2"
                           />
-                          <div className="px-1 pb-2 sm:px-2 md:py-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                                Pool drill
-                              </p>
-                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100/80">
-                                {drillBadgeLabel}
-                              </span>
-                            </div>
-                            <h3 className="mt-3 text-[18px] leading-7 font-semibold text-slate-950">
-                              {lessonExperience.waterPractice.title}
-                            </h3>
-                            <CoursePracticeSteps
-                              steps={lessonExperience.waterPractice.steps}
-                              tone="water"
-                            />
-                            {lessonExperience.waterPractice.safetyNote ? (
-                              <p className="mt-4 rounded-2xl border border-amber-200/72 bg-amber-50/75 px-3 py-2 text-[13px] leading-6 font-medium text-amber-900">
-                                {lessonExperience.waterPractice.safetyNote}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </article>
+                        ) : null}
+                      </>
                     ) : null}
-                  </>
-                ) : null}
 
-                {showCuesSection ? (
-                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          {feelCuesHeading}
-                        </p>
-                        <p className="mt-1 text-[12px] font-medium text-slate-500">
-                          {feelCuesHelperText}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80">
-                        {feelCueBadgeLabel}
-                      </span>
-                    </div>
-                    <ul className="mt-3 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-3">
-                      {lessonExperience.feelCues.map((cue) => (
-                        <li
-                          key={cue}
-                          className="rounded-2xl border border-slate-200/72 bg-slate-50/72 px-3 py-2"
-                        >
-                          {cue}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-3 text-[12px] font-medium text-slate-500">
-                      Keep it simple: choose one cue per session.
-                    </p>
-                  </article>
-                ) : null}
-
-                {showCommonMistakesSection ? (
-                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
-                    <PressButton
-                      tier="nav"
-                      onClick={toggleCommonMistakes}
-                      aria-expanded={commonMistakesExpanded}
-                      aria-controls="common-mistakes-list"
-                      className="inline-flex min-h-[40px] w-full items-center justify-between rounded-xl bg-white/85 px-3 py-2 text-left text-[14px] font-semibold text-slate-900 ring-1 ring-slate-200/70"
-                    >
-                      <span>Common mistakes</span>
-                      <span className="text-[12px] text-slate-600">
-                        {commonMistakesExpanded ? "Hide" : "Show"}
-                      </span>
-                    </PressButton>
-
-                    {commonMistakesExpanded ? (
-                      <div className="mt-3">
-                        <div
-                          aria-hidden="true"
-                          className="hidden grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 rounded-xl bg-slate-50/80 px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase ring-1 ring-slate-200/70 sm:grid"
-                        >
-                          <span>Common mistake</span>
-                          <span>Correction</span>
+                    {showCuesSection ? (
+                      <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
+                        <div>
+                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                            {feelCuesHeading}
+                          </p>
+                          <p className="mt-1 text-[12px] font-medium text-slate-500">
+                            {feelCuesHelperText}
+                          </p>
                         </div>
-                        <ul
-                          id="common-mistakes-list"
-                          className="mt-2 space-y-2 text-[14px] leading-7 text-slate-800"
-                        >
-                          {commonMistakes.map((mistake) => (
-                            <li
-                              key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
-                              data-testid="course-common-mistake-row"
-                              className="grid gap-2 rounded-2xl border border-slate-200/72 bg-white/78 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
-                            >
-                              <div>
-                                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
-                                  Common mistake
-                                </span>
-                                <span className="font-semibold text-slate-950">
-                                  {mistake.mistake}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
-                                  Correction
-                                </span>
-                                {mistake.fix ? (
-                                  <span className="text-slate-700">{mistake.fix}</span>
-                                ) : (
-                                  <span className="text-slate-500">Correction not added yet</span>
-                                )}
-                              </div>
+                        <ul className="mt-3 divide-y divide-slate-200/72 rounded-2xl border border-slate-200/72 bg-white/72 text-[14px] leading-6 text-slate-800">
+                          {lessonExperience.feelCues.map((cue) => (
+                            <li key={cue} className="px-3 py-3">
+                              {cue}
                             </li>
                           ))}
                         </ul>
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-[12px] font-medium text-slate-600">
-                        Expand to review common errors for this lesson.
-                      </p>
-                    )}
-                  </article>
-                ) : null}
+                      </article>
+                    ) : null}
 
-                {showPassCriteria ? (
-                  <article className={cx("p-5", supportCardClass)}>
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                      <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                        Pass criteria
-                      </div>
-                      <button
-                        type="button"
-                        onClick={toggleLessonDone}
-                        disabled={markDoneBlockedByGate}
-                        aria-pressed={isLessonDone}
-                        aria-describedby={passCriteriaHelpId}
-                        data-testid="course-pass-criteria-mark-done-button"
-                        className={cx(
-                          "inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-                          isLessonDone
-                            ? "bg-blue-50 text-blue-700 ring-blue-100/80 hover:bg-blue-100"
-                            : markDoneBlockedByGate
-                              ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                              : "bg-blue-600 text-white shadow-sm shadow-blue-600/20 ring-blue-600 hover:bg-blue-700 hover:ring-blue-700"
-                        )}
-                      >
-                        {isLessonDone ? "Done" : "Mark as done"}
-                      </button>
-                    </div>
-                    {!lessonContentReady ? (
-                      <p className="mt-2 text-[13px] leading-6 text-slate-600">
-                        Loading pass criteria...
-                      </p>
-                    ) : doneGateRequired ? (
-                      <ul
-                        data-testid="course-done-gate-checklist"
-                        className="mt-3 space-y-2 text-[13px] leading-6 text-slate-800"
-                      >
-                        {passCriteria.map((criterion, index) => {
-                          const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
-                          const checked = doneGateChecksSet.has(criterion);
-                          return (
-                            <li key={criterionId}>
-                              <label
-                                htmlFor={criterionId}
-                                className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                    {showCommonMistakesSection ? (
+                      <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
+                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                          Common mistakes
+                        </p>
+                        <div className="mt-3">
+                          <div
+                            aria-hidden="true"
+                            className="hidden grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 rounded-xl bg-slate-50/80 px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase ring-1 ring-slate-200/70 sm:grid"
+                          >
+                            <span>Common mistake</span>
+                            <span>Correction</span>
+                          </div>
+                          <ul className="mt-2 space-y-2 text-[14px] leading-7 text-slate-800">
+                            {commonMistakes.map((mistake) => (
+                              <li
+                                key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
+                                data-testid="course-common-mistake-row"
+                                className="grid gap-2 rounded-2xl border border-slate-200/72 bg-white/78 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
                               >
-                                <input
-                                  id={criterionId}
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleDoneGateCriterion(criterion)}
-                                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span>{criterion}</span>
-                              </label>
-                            </li>
+                                <div>
+                                  <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
+                                    Common mistake
+                                  </span>
+                                  <span className="font-semibold text-slate-950">
+                                    {mistake.mistake}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
+                                    Correction
+                                  </span>
+                                  {mistake.fix ? (
+                                    <span className="text-slate-700">{mistake.fix}</span>
+                                  ) : (
+                                    <span className="text-slate-500">Correction not added yet</span>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </article>
+                    ) : null}
+
+                    {showPassCriteria ? (
+                      <article className={cx("p-5", supportCardClass)}>
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                          <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                            Pass criteria
+                          </div>
+                          <button
+                            type="button"
+                            onClick={toggleLessonDone}
+                            disabled={markDoneBlockedByGate}
+                            aria-pressed={isLessonDone}
+                            aria-describedby={passCriteriaHelpId}
+                            data-testid="course-pass-criteria-mark-done-button"
+                            className={cx(
+                              "inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                              isLessonDone
+                                ? "bg-blue-50 text-blue-700 ring-blue-100/80 hover:bg-blue-100"
+                                : markDoneBlockedByGate
+                                  ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
+                                  : "bg-blue-600 text-white shadow-sm shadow-blue-600/20 ring-blue-600 hover:bg-blue-700 hover:ring-blue-700"
+                            )}
+                          >
+                            {isLessonDone ? "Done" : "Mark as done"}
+                          </button>
+                        </div>
+                        {!lessonContentReady ? (
+                          <p className="mt-2 text-[13px] leading-6 text-slate-600">
+                            Loading pass criteria...
+                          </p>
+                        ) : doneGateRequired ? (
+                          <ul
+                            data-testid="course-done-gate-checklist"
+                            className="mt-3 space-y-2 text-[13px] leading-6 text-slate-800"
+                          >
+                            {passCriteria.map((criterion, index) => {
+                              const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
+                              const checked = doneGateChecksSet.has(criterion);
+                              return (
+                                <li key={criterionId}>
+                                  <label
+                                    htmlFor={criterionId}
+                                    className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                                  >
+                                    <input
+                                      id={criterionId}
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleDoneGateCriterion(criterion)}
+                                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{criterion}</span>
+                                  </label>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                            {passCriteria.map((criterion) => (
+                              <li key={criterion}>{criterion}</li>
+                            ))}
+                          </ul>
+                        )}
+                        <p
+                          id={passCriteriaHelpId}
+                          data-testid="course-pass-criteria-help"
+                          className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500"
+                        >
+                          {doneGateRequired
+                            ? doneGateSatisfied
+                              ? "All pass criteria are checked. Mark this lesson as done when it feels complete."
+                              : activeLessonProgressStatus === "in_progress"
+                                ? "Keep checking off what feels true. When all items are true, mark the lesson done."
+                                : "Check off what feels true. When all items are true, mark the lesson done."
+                            : isLessonDone
+                              ? doneConfirmedLabel
+                                ? `Marked done after criteria check on ${doneConfirmedLabel}. Click Done again to return this lesson to In progress while keeping your checked criteria.`
+                                : "Marked done. Click Done again to return this lesson to In progress while keeping your checked criteria."
+                              : "When these are met, mark lesson as done here or in overview."}
+                        </p>
+                      </article>
+                    ) : null}
+                    {showNextStepSection ? (
+                      <article className="overflow-hidden rounded-[24px] border border-slate-200/72 bg-white/94 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:border-slate-300/68 lg:bg-white">
+                        {nextLesson ? (
+                          <div className="space-y-4">
+                            <CourseNextLessonPreviewVisual lesson={nextLesson} />
+                            <div className="px-2 pb-2">
+                              <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                Next lesson
+                              </p>
+                              <h3 className="mt-2 text-[18px] leading-7 font-semibold text-slate-950">
+                                {nextLesson.title}
+                              </h3>
+                              <p className="mt-1 text-[14px] leading-6 text-slate-700">
+                                {nextLesson.goal || lessonExperience.nextStep}
+                              </p>
+                              {nextLessonModule ? (
+                                <p className="mt-2 text-[12px] font-semibold text-slate-500">
+                                  {nextLessonModule.title}
+                                </p>
+                              ) : null}
+                              <CourseNavButton
+                                grow={false}
+                                skin="primary"
+                                onClick={() => goToLesson(nextLesson.id)}
+                                className="mt-4 w-full px-4 py-2"
+                              >
+                                Continue to next lesson
+                              </CourseNavButton>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                              Next step
+                            </p>
+                            <p className="mt-2 text-[15px] leading-7 text-slate-800">
+                              {lessonExperience.nextStep}
+                            </p>
+                          </>
+                        )}
+                      </article>
+                    ) : null}
+                  </div>
+
+                  {showExtraHelpCard ? (
+                    <div
+                      data-testid="course-support-card"
+                      className={COURSE_SUPPORT_HELP_CARD_CLASS}
+                    >
+                      <h3 className="text-[15px] font-semibold text-slate-900">
+                        {lessonExperience.support.title}
+                      </h3>
+                      <p className="mt-1 text-[12px] leading-5 text-slate-600">
+                        {lessonExperience.support.body}
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2">
+                        {enabledSupportActions.map((action) => {
+                          const isPrimary =
+                            configuredPrimarySupportAction !== null &&
+                            configuredPrimarySupportAction === action.id;
+                          return (
+                            <PressLink
+                              key={action.id}
+                              tier={isPrimary ? "cta" : "nav"}
+                              href={action.href}
+                              onClick={() => {
+                                if (previewEnabled) return;
+                                void sendClientAnalyticsEvent(
+                                  "course_lesson_support_clicked",
+                                  buildCourseLessonAnalyticsPayloadFor(activeLesson.id, {
+                                    lessonStatus:
+                                      activeLessonProgressStatus === "done"
+                                        ? "done"
+                                        : activeLessonProgressStatus === "in_progress"
+                                          ? "in_progress"
+                                          : "ready",
+                                    actionId: action.id,
+                                  })
+                                );
+                              }}
+                              data-testid={`course-support-action-${action.id}`}
+                              className={
+                                isPrimary
+                                  ? COURSE_SUPPORT_PRIMARY_ACTION_CLASS
+                                  : COURSE_SUPPORT_SECONDARY_ACTION_CLASS
+                              }
+                            >
+                              {action.label}
+                            </PressLink>
                           );
                         })}
-                      </ul>
-                    ) : (
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
-                        {passCriteria.map((criterion) => (
-                          <li key={criterion}>{criterion}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <p
-                      id={passCriteriaHelpId}
-                      data-testid="course-pass-criteria-help"
-                      className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500"
-                    >
-                      {doneGateRequired
-                        ? doneGateSatisfied
-                          ? "All pass criteria are checked. Mark this lesson as done when it feels complete."
-                          : activeLessonProgressStatus === "in_progress"
-                            ? "Keep checking off what feels true. When all items are true, mark the lesson done."
-                            : "Check off what feels true. When all items are true, mark the lesson done."
-                        : isLessonDone
-                          ? doneConfirmedLabel
-                            ? `Marked done after criteria check on ${doneConfirmedLabel}. Click Done again to return this lesson to In progress while keeping your checked criteria.`
-                            : "Marked done. Click Done again to return this lesson to In progress while keeping your checked criteria."
-                          : "When these are met, mark lesson as done here or in overview."}
-                    </p>
-                  </article>
-                ) : null}
-
-                {showNextStepSection ? (
-                  <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:border-slate-300/68 lg:bg-white">
-                    <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                      Next step
-                    </p>
-                    <p className="mt-2 text-[15px] leading-7 text-slate-800">
-                      {lessonExperience.nextStep}
-                    </p>
-                  </article>
-                ) : null}
-              </div>
-
-              {showExtraHelpCard ? (
-                <div data-testid="course-support-card" className={COURSE_SUPPORT_HELP_CARD_CLASS}>
-                  <h3 className="text-[15px] font-semibold text-slate-900">
-                    {lessonExperience.support.title}
-                  </h3>
-                  <p className="mt-1 text-[12px] leading-5 text-slate-600">
-                    {lessonExperience.support.body}
-                  </p>
-                  <div className="mt-3 flex flex-col gap-2">
-                    {enabledSupportActions.map((action) => {
-                      const isPrimary =
-                        configuredPrimarySupportAction !== null &&
-                        configuredPrimarySupportAction === action.id;
-                      return (
-                        <PressLink
-                          key={action.id}
-                          tier={isPrimary ? "cta" : "nav"}
-                          href={action.href}
-                          onClick={() => {
-                            if (previewEnabled) return;
-                            void sendClientAnalyticsEvent(
-                              "course_lesson_support_clicked",
-                              buildCourseLessonAnalyticsPayloadFor(activeLesson.id, {
-                                lessonStatus:
-                                  activeLessonProgressStatus === "done"
-                                    ? "done"
-                                    : activeLessonProgressStatus === "in_progress"
-                                      ? "in_progress"
-                                      : "ready",
-                                actionId: action.id,
-                              })
-                            );
-                          }}
-                          data-testid={`course-support-action-${action.id}`}
-                          className={
-                            isPrimary
-                              ? COURSE_SUPPORT_PRIMARY_ACTION_CLASS
-                              : COURSE_SUPPORT_SECONDARY_ACTION_CLASS
-                          }
-                        >
-                          {action.label}
-                        </PressLink>
-                      );
-                    })}
-                  </div>
-                  {showOpenOnPhoneCard ? (
-                    <CourseOpenOnPhoneCard
-                      lessonTitle={activeLesson.title}
-                      sharePath={openOnPhoneSharePath}
-                    />
+                      </div>
+                      {showOpenOnPhoneCard ? (
+                        <CourseOpenOnPhoneCard
+                          lessonTitle={activeLesson.title}
+                          sharePath={openOnPhoneSharePath}
+                        />
+                      ) : null}
+                    </div>
                   ) : null}
-                </div>
+                </section>
               ) : null}
-            </section>
-          ) : null}
+            </div>
+          </div>
 
           {dashboardVisible ? (
             <AdminContextNotesPanel
