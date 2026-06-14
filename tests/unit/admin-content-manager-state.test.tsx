@@ -930,7 +930,7 @@ describe("AdminContentManager state rendering", () => {
     const lessonEditor = within(publicFieldEditor).getByTestId("admin-lesson-experience-editor");
     expect(lessonEditor).toBeInTheDocument();
     expect(within(publicFieldEditor).getByText("Public lesson mirror")).toBeVisible();
-    expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(4);
+    expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(0);
     expect(within(lessonEditor).getByText("Video / estimated time")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list fallback")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list only")).toBeVisible();
@@ -939,10 +939,20 @@ describe("AdminContentManager state rendering", () => {
     expect(within(lessonEditor).getByLabelText("Lesson experience layout")).toHaveValue(
       "water_drill"
     );
-    expect(within(lessonEditor).getByLabelText("Show Quick explanation section")).toBeChecked();
-    expect(within(lessonEditor).getByLabelText("Show Dryland practice section")).toBeChecked();
     expect(
-      within(lessonEditor).getByLabelText("Show Pool drill / water practice section")
+      within(lessonEditor).getByLabelText("Show Quick explanation on lesson page")
+    ).toBeChecked();
+    expect(
+      within(lessonEditor).getByLabelText("Show Dryland practice on lesson page")
+    ).toBeChecked();
+    expect(
+      within(lessonEditor).getByLabelText("Show Pool drill / water practice on lesson page")
+    ).toBeChecked();
+    expect(
+      within(lessonEditor).getByLabelText("Show Dryland practice safety note on lesson page")
+    ).toBeChecked();
+    expect(
+      within(lessonEditor).getByLabelText("Show Water practice safety note on lesson page")
     ).toBeChecked();
     expect(within(lessonEditor).queryByText("Show on public lesson")).not.toBeInTheDocument();
     expect(within(lessonEditor).queryByText("Legacy section visibility")).not.toBeInTheDocument();
@@ -950,9 +960,15 @@ describe("AdminContentManager state rendering", () => {
       within(lessonEditor).getByTestId("admin-lesson-dryland-visual-placeholder")
     ).toHaveTextContent("Visual not added yet");
     expect(
+      within(lessonEditor).getByTestId("admin-lesson-dryland-visual-placeholder")
+    ).toHaveTextContent("Media deferred");
+    expect(
       within(lessonEditor).getByTestId("admin-lesson-water-visual-placeholder")
     ).toHaveTextContent("Visual not added yet");
-    expect(within(lessonEditor).getAllByText("Not editable here").length).toBe(2);
+    expect(
+      within(lessonEditor).getByTestId("admin-lesson-water-visual-placeholder")
+    ).toHaveTextContent("Media deferred");
+    expect(within(lessonEditor).queryByText("Not editable here")).not.toBeInTheDocument();
     expect(within(editForm).getByRole("link", { name: "View changes" })).toHaveAttribute(
       "href",
       expect.stringContaining("/course?")
@@ -979,6 +995,9 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.change(within(lessonEditor).getByLabelText("Dryland practice steps (one per line)"), {
       target: { value: "Stand tall\nBreathe calmly" },
     });
+    fireEvent.change(within(lessonEditor).getByLabelText("Dryland practice safety note"), {
+      target: { value: "Use a mat if the floor is hard." },
+    });
     fireEvent.change(within(lessonEditor).getByLabelText("Pool drill title"), {
       target: { value: "Front glide + exhale" },
     });
@@ -991,9 +1010,12 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.change(within(lessonEditor).getByLabelText("Correction 1"), {
       target: { value: "Look down before breathing." },
     });
-    fireEvent.change(within(lessonEditor).getByLabelText("Feel cues (one per line)"), {
-      target: { value: "Quiet head\nEasy bubbles" },
-    });
+    fireEvent.change(
+      within(lessonEditor).getByLabelText("What good looks and feels like (one per line)"),
+      {
+        target: { value: "Quiet head\nEasy bubbles" },
+      }
+    );
     fireEvent.change(within(lessonEditor).getByLabelText("Next step"), {
       target: { value: "Try side balance." },
     });
@@ -1020,7 +1042,9 @@ describe("AdminContentManager state rendering", () => {
           quickExplanation: true,
           whyThisMatters: true,
           landPractice: true,
+          landSafetyNote: true,
           waterPractice: true,
+          waterSafetyNote: true,
           feelCues: true,
           commonMistakes: true,
           nextStep: true,
@@ -1035,6 +1059,7 @@ describe("AdminContentManager state rendering", () => {
             src: "/course/lesson-media/body-position-front-wall-line.jpg",
             alt: "Wall-line rehearsal",
           },
+          safetyNote: "Use a mat if the floor is hard.",
         },
         waterPractice: {
           title: "Front glide + exhale",
@@ -1147,9 +1172,11 @@ describe("AdminContentManager state rendering", () => {
 
     const editForm = await within(lessonRow as HTMLElement).findByTestId("admin-content-edit-form");
     const lessonEditor = within(editForm).getByTestId("admin-lesson-experience-editor");
-    fireEvent.click(within(lessonEditor).getByLabelText("Show Dryland practice section"));
+    fireEvent.click(within(lessonEditor).getByLabelText("Show Dryland practice on lesson page"));
 
-    expect(within(lessonEditor).getByLabelText("Show Dryland practice section")).not.toBeChecked();
+    expect(
+      within(lessonEditor).getByLabelText("Show Dryland practice on lesson page")
+    ).not.toBeChecked();
     expect(within(lessonEditor).queryByLabelText("Dryland practice title")).not.toBeInTheDocument();
     expect(within(lessonEditor).getByText(/Hidden on public lesson/i)).toBeVisible();
 

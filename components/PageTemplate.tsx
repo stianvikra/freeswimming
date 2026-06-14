@@ -5,7 +5,7 @@ import BackButton from "@/components/BackButton";
 
 type Props = {
   children: React.ReactNode;
-  size?: "default" | "wide";
+  size?: "default" | "wide" | "course";
   surfaceTone?: "default" | "brand";
   showBack?: boolean;
   topInset?: "default" | "compact" | "tight" | "flush";
@@ -35,7 +35,11 @@ export default function PageTemplate({
 }: Props) {
   const showBackOnMobile = backVisibility === "all";
   const maxW =
-    size === "wide" ? "max-w-[720px] lg:max-w-[860px] xl:max-w-[980px]" : "max-w-[520px]";
+    size === "course"
+      ? "max-w-[720px] lg:max-w-[980px] xl:max-w-[1180px]"
+      : size === "wide"
+        ? "max-w-[720px] lg:max-w-[860px] xl:max-w-[980px]"
+        : "max-w-[520px]";
   const surfaceClass =
     surfaceTone === "brand"
       ? [

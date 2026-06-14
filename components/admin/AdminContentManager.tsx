@@ -121,12 +121,12 @@ const inlineFieldClass =
 const compactFieldClass =
   "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
 const textAreaClass =
-  "w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+  "admin-auto-grow-textarea min-h-20 w-full resize-y overflow-hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
 const readOnlyValueClass =
   "min-h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)]";
 const compactCheckboxClass =
   "h-4 w-4 rounded border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
-const lessonMirrorShellClass = "mx-auto mt-4 w-full max-w-[980px] space-y-3";
+const lessonMirrorShellClass = "mx-auto mt-4 w-full max-w-[1180px] space-y-3";
 const lessonMirrorCardClass =
   "rounded-[24px] border border-slate-200/72 bg-white/94 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)] sm:p-5 lg:border-slate-300/68 lg:bg-white";
 const lessonMirrorLargeCardClass =
@@ -356,7 +356,9 @@ type LessonExperienceDisplayKey =
   | "quickExplanation"
   | "whyThisMatters"
   | "landPractice"
+  | "landSafetyNote"
   | "waterPractice"
+  | "waterSafetyNote"
   | "feelCues"
   | "commonMistakes"
   | "nextStep"
@@ -371,6 +373,7 @@ type LessonExperienceEditState = {
   whyThisMatters: string;
   landPracticeTitle: string;
   landPracticeSteps: string;
+  landPracticeSafetyNote: string;
   waterPracticeTitle: string;
   waterPracticeSteps: string;
   waterPracticeSafetyNote: string;
@@ -450,7 +453,9 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     quickExplanation: true,
     whyThisMatters: true,
     landPractice: false,
+    landSafetyNote: true,
     waterPractice: false,
+    waterSafetyNote: true,
     feelCues: true,
     commonMistakes: true,
     nextStep: true,
@@ -460,7 +465,9 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     quickExplanation: true,
     whyThisMatters: true,
     landPractice: true,
+    landSafetyNote: true,
     waterPractice: false,
+    waterSafetyNote: true,
     feelCues: true,
     commonMistakes: true,
     nextStep: true,
@@ -470,7 +477,9 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     quickExplanation: true,
     whyThisMatters: true,
     landPractice: true,
+    landSafetyNote: true,
     waterPractice: true,
+    waterSafetyNote: true,
     feelCues: true,
     commonMistakes: true,
     nextStep: true,
@@ -480,7 +489,9 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     quickExplanation: true,
     whyThisMatters: false,
     landPractice: false,
+    landSafetyNote: true,
     waterPractice: true,
+    waterSafetyNote: true,
     feelCues: true,
     commonMistakes: false,
     nextStep: true,
@@ -490,7 +501,9 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     quickExplanation: true,
     whyThisMatters: true,
     landPractice: true,
+    landSafetyNote: true,
     waterPractice: true,
+    waterSafetyNote: true,
     feelCues: true,
     commonMistakes: true,
     nextStep: true,
@@ -705,7 +718,9 @@ function parseLessonExperienceDisplayState(
       parseBodyBoolean(displayRecord, "quickExplanation") ?? defaults.quickExplanation,
     whyThisMatters: parseBodyBoolean(displayRecord, "whyThisMatters") ?? defaults.whyThisMatters,
     landPractice: parseBodyBoolean(displayRecord, "landPractice") ?? defaults.landPractice,
+    landSafetyNote: parseBodyBoolean(displayRecord, "landSafetyNote") ?? defaults.landSafetyNote,
     waterPractice: parseBodyBoolean(displayRecord, "waterPractice") ?? defaults.waterPractice,
+    waterSafetyNote: parseBodyBoolean(displayRecord, "waterSafetyNote") ?? defaults.waterSafetyNote,
     feelCues: parseBodyBoolean(displayRecord, "feelCues") ?? defaults.feelCues,
     commonMistakes: parseBodyBoolean(displayRecord, "commonMistakes") ?? defaults.commonMistakes,
     nextStep: parseBodyBoolean(displayRecord, "nextStep") ?? defaults.nextStep,
@@ -789,6 +804,7 @@ function toLessonExperienceEditState(item: AdminContentItemRow): LessonExperienc
     whyThisMatters: parseBodyString(lessonExperience, "whyThisMatters") ?? "",
     landPracticeTitle: parseBodyString(landPractice, "title") ?? "",
     landPracticeSteps: joinLines(parseBodyStringArray(landPractice, "steps")),
+    landPracticeSafetyNote: parseBodyString(landPractice, "safetyNote") ?? "",
     waterPracticeTitle: parseBodyString(waterPractice, "title") ?? "",
     waterPracticeSteps: joinLines(parseBodyStringArray(waterPractice, "steps")),
     waterPracticeSafetyNote: parseBodyString(waterPractice, "safetyNote") ?? "",
@@ -866,6 +882,7 @@ function normalizeLessonExperienceForCompare(value: LessonExperienceEditState) {
     whyThisMatters: value.whyThisMatters.trim(),
     landPracticeTitle: value.landPracticeTitle.trim(),
     landPracticeSteps: normalizeLinesInput(value.landPracticeSteps),
+    landPracticeSafetyNote: value.landPracticeSafetyNote.trim(),
     waterPracticeTitle: value.waterPracticeTitle.trim(),
     waterPracticeSteps: normalizeLinesInput(value.waterPracticeSteps),
     waterPracticeSafetyNote: value.waterPracticeSafetyNote.trim(),
@@ -947,6 +964,7 @@ function buildLessonExperiencePayload(
     existingPractice: existingLandPractice,
     title: normalized.landPracticeTitle,
     steps: normalized.landPracticeSteps,
+    safetyNote: normalized.landPracticeSafetyNote,
   });
   if (landPractice) {
     lessonExperience.landPractice = landPractice;
@@ -1171,6 +1189,11 @@ function toEditFormState(item: AdminContentItemRow): EditFormState {
   };
 }
 
+function resizeAdminTextarea(textarea: HTMLTextAreaElement) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
 export default function AdminContentManager() {
   const [items, setItems] = useState<AdminContentItemRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1235,6 +1258,24 @@ export default function AdminContentManager() {
   );
   const [moduleDeleteSubmitting, setModuleDeleteSubmitting] = useState(false);
   const [cleanupSubmitting, setCleanupSubmitting] = useState(false);
+
+  useEffect(() => {
+    document
+      .querySelectorAll<HTMLTextAreaElement>("textarea.admin-auto-grow-textarea")
+      .forEach(resizeAdminTextarea);
+  }, [editingItemId, editFormState, formState]);
+
+  useEffect(() => {
+    function handleTextareaInput(event: Event) {
+      const target = event.target;
+      if (!(target instanceof HTMLTextAreaElement)) return;
+      if (!target.classList.contains("admin-auto-grow-textarea")) return;
+      resizeAdminTextarea(target);
+    }
+
+    document.addEventListener("input", handleTextareaInput);
+    return () => document.removeEventListener("input", handleTextareaInput);
+  }, []);
 
   const moduleOptions = useMemo(
     () =>
@@ -2037,17 +2078,11 @@ export default function AdminContentManager() {
     }));
   }
 
-  function renderLessonContentScopeBadge(
-    label: "Shown on lesson page" | "Admin/list only" | "Advanced/fallback" | "Not editable here"
-  ) {
+  function renderLessonContentScopeBadge(label: "Admin/list only" | "Advanced/fallback") {
     const className =
-      label === "Shown on lesson page"
-        ? "border-blue-100 bg-blue-50 text-blue-700"
-        : label === "Admin/list only"
-          ? "border-amber-200 bg-amber-50 text-amber-800"
-          : label === "Not editable here"
-            ? "border-slate-200 bg-slate-50 text-slate-600"
-            : "border-slate-200 bg-white text-slate-700";
+      label === "Admin/list only"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-slate-200 bg-white text-slate-700";
 
     return (
       <span
@@ -2068,15 +2103,42 @@ export default function AdminContentManager() {
     const checked = editFormState?.lessonBody?.lessonExperience.display[key] ?? false;
 
     return (
-      <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-slate-200 bg-white/88 px-2.5 py-1 text-xs font-semibold text-slate-800">
+      <label
+        className={[
+          "inline-flex min-h-8 cursor-pointer items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+          checked
+            ? "border-blue-100 bg-blue-50 text-blue-700 hover:border-blue-200 hover:bg-blue-100/70"
+            : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white",
+        ].join(" ")}
+      >
         <input
           type="checkbox"
-          aria-label={`Show ${sectionLabel} section`}
+          aria-label={`Show ${sectionLabel} on lesson page`}
           checked={checked}
           onChange={(event) => updateLessonExperienceDisplay(key, event.target.checked)}
           className={compactCheckboxClass}
         />
-        <span>Show section</span>
+        <span>{checked ? "Shown on lesson page" : "Hidden from lesson page"}</span>
+      </label>
+    );
+  }
+
+  function renderLessonSafetyNoteVisibilityToggle(
+    key: Extract<LessonExperienceDisplayKey, "landSafetyNote" | "waterSafetyNote">,
+    sectionLabel: string
+  ) {
+    const checked = editFormState?.lessonBody?.lessonExperience.display[key] ?? false;
+
+    return (
+      <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold text-slate-600">
+        <input
+          type="checkbox"
+          aria-label={`Show ${sectionLabel} safety note on lesson page`}
+          checked={checked}
+          onChange={(event) => updateLessonExperienceDisplay(key, event.target.checked)}
+          className={compactCheckboxClass}
+        />
+        <span>Show safety note</span>
       </label>
     );
   }
@@ -2091,35 +2153,38 @@ export default function AdminContentManager() {
 
   function renderLessonPracticeVisualPlaceholder(tone: "land" | "water") {
     const label = tone === "land" ? "Dryland practice visual" : "Water practice visual";
-    const toneClass =
+    const helper =
       tone === "land"
-        ? "from-slate-100 via-white to-blue-50/70 text-slate-700"
-        : "from-blue-50 via-white to-cyan-50 text-blue-800";
+        ? "Add or preserve a dryland visual when the media workflow is available."
+        : "Add or preserve a pool drill visual when the media workflow is available.";
     const testId =
       tone === "land"
         ? "admin-lesson-dryland-visual-placeholder"
         : "admin-lesson-water-visual-placeholder";
 
     return (
-      <div className="space-y-2">
+      <div className="rounded-[var(--fs-radius-control)] border border-slate-200/80 bg-slate-50/75 p-3 sm:p-4">
         <div
           data-testid={testId}
-          className={[
-            "relative flex aspect-[4/3] min-h-[190px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[20px] border border-slate-200/74 bg-gradient-to-br px-4 text-center ring-1 ring-white/80",
-            toneClass,
-          ].join(" ")}
+          className="flex items-start justify-between gap-3"
           role="img"
           aria-label={`${label} not editable in this slice`}
         >
-          <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-            {label}
+          <span className="min-w-0">
+            <span className="block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+              {label}
+            </span>
+            <span className="mt-1 block text-[14px] font-semibold text-slate-800">
+              Visual not added yet
+            </span>
+            <span className="mt-1 block text-[12px] leading-5 font-medium text-slate-500">
+              {helper}
+            </span>
           </span>
-          <span className="text-[15px] font-semibold text-slate-800">Visual not added yet</span>
-          {renderLessonContentScopeBadge("Not editable here")}
+          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600">
+            Media deferred
+          </span>
         </div>
-        <p className="text-[12px] leading-5 font-medium text-slate-500">
-          Media selection is deferred; existing image metadata is preserved.
-        </p>
       </div>
     );
   }
@@ -2526,6 +2591,9 @@ export default function AdminContentManager() {
         experience.landPracticeTitle.length < 2
       ) {
         return "Add a land practice title when showing land practice steps.";
+      }
+      if (experience.landPracticeSafetyNote.length > 240) {
+        return "Dryland practice safety note must be 240 characters or less.";
       }
       if (experience.waterPracticeTitle.length > 120) {
         return "Pool drill title must be 120 characters or less.";
@@ -4313,7 +4381,6 @@ export default function AdminContentManager() {
                                         Public lesson mirror
                                       </p>
                                     </div>
-                                    {renderLessonContentScopeBadge("Shown on lesson page")}
                                   </div>
                                   <p className={["mt-1", metadataClass].join(" ")}>
                                     Edit these in the same order, width, and section rhythm swimmers
@@ -4333,7 +4400,6 @@ export default function AdminContentManager() {
                                           <span className={lessonMirrorSectionEyebrowClass}>
                                             Video / estimated time
                                           </span>
-                                          {renderLessonContentScopeBadge("Shown on lesson page")}
                                         </span>
                                       </legend>
                                       <p className={metadataClass}>
@@ -4390,19 +4456,16 @@ export default function AdminContentManager() {
                                       className={["space-y-4", lessonMirrorLargeCardClass].join(
                                         " "
                                       )}
-                                      aria-label="Lesson focus"
+                                      aria-label="Lesson"
                                     >
                                       <div className="flex flex-wrap items-start justify-between gap-2">
                                         <div>
-                                          <p className={lessonMirrorSectionEyebrowClass}>
-                                            Lesson focus
-                                          </p>
+                                          <p className={lessonMirrorSectionEyebrowClass}>Lesson</p>
                                           <p className={metadataClass}>
-                                            Mirrors the public Lesson focus card: goal, quick
+                                            Mirrors the public Lesson section: goal, quick
                                             explanation, and the coaching reason.
                                           </p>
                                         </div>
-                                        {renderLessonContentScopeBadge("Shown on lesson page")}
                                       </div>
 
                                       <div className="grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-2 lg:divide-x lg:divide-slate-200/72">
@@ -4435,9 +4498,6 @@ export default function AdminContentManager() {
                                               </p>
                                             </div>
                                             <div className="flex flex-wrap items-center gap-2">
-                                              {renderLessonContentScopeBadge(
-                                                "Shown on lesson page"
-                                              )}
                                               {renderLessonSectionVisibilityToggle(
                                                 "quickExplanation",
                                                 "Quick explanation"
@@ -4487,7 +4547,6 @@ export default function AdminContentManager() {
                                             </p>
                                           </div>
                                           <div className="flex flex-wrap items-center gap-2">
-                                            {renderLessonContentScopeBadge("Shown on lesson page")}
                                             {renderLessonSectionVisibilityToggle(
                                               "whyThisMatters",
                                               "Why this matters"
@@ -4526,35 +4585,29 @@ export default function AdminContentManager() {
                                       )}
                                     >
                                       <legend className="sr-only">Dryland practice</legend>
-                                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                                        {editFormState.lessonBody.lessonExperience.display
-                                          .landPractice
-                                          ? renderLessonPracticeVisualPlaceholder("land")
-                                          : null}
-                                        <div className="space-y-3 px-1 pb-2 sm:px-2 md:py-3">
-                                          <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div>
-                                              <p className={lessonMirrorSectionEyebrowClass}>
-                                                Dryland practice
-                                              </p>
-                                              <p className={metadataClass}>
-                                                Appears before pool work so the swimmer can rehearse
-                                                the movement outside the water.
-                                              </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              {renderLessonContentScopeBadge(
-                                                "Shown on lesson page"
-                                              )}
-                                              {renderLessonSectionVisibilityToggle(
-                                                "landPractice",
-                                                "Dryland practice"
-                                              )}
-                                            </div>
+                                      <div className="space-y-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-2 px-1 sm:px-2">
+                                          <div>
+                                            <p className={lessonMirrorSectionEyebrowClass}>
+                                              Dryland practice
+                                            </p>
+                                            <p className={metadataClass}>
+                                              Appears before pool work so the swimmer can rehearse
+                                              the movement outside the water.
+                                            </p>
                                           </div>
-                                          {editFormState.lessonBody.lessonExperience.display
-                                            .landPractice ? (
-                                            <>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            {renderLessonSectionVisibilityToggle(
+                                              "landPractice",
+                                              "Dryland practice"
+                                            )}
+                                          </div>
+                                        </div>
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .landPractice ? (
+                                          <>
+                                            {renderLessonPracticeVisualPlaceholder("land")}
+                                            <div className="space-y-3 px-1 pb-2 sm:px-2">
                                               <label className={compactLabelClass}>
                                                 <span>Dryland practice title</span>
                                                 <input
@@ -4591,11 +4644,39 @@ export default function AdminContentManager() {
                                                   className={textAreaClass}
                                                 />
                                               </label>
-                                            </>
-                                          ) : (
-                                            renderHiddenLessonSectionNotice("Dryland practice")
-                                          )}
-                                        </div>
+                                              <label className={compactLabelClass}>
+                                                <span className="flex flex-wrap items-center justify-between gap-2">
+                                                  <span>Dryland practice safety note</span>
+                                                  {renderLessonSafetyNoteVisibilityToggle(
+                                                    "landSafetyNote",
+                                                    "Dryland practice"
+                                                  )}
+                                                </span>
+                                                <textarea
+                                                  aria-label="Dryland practice safety note"
+                                                  rows={2}
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .landPracticeSafetyNote
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "landPracticeSafetyNote",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={textAreaClass}
+                                                />
+                                                <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                                  Optional safety or reset note for the dryland
+                                                  practice.
+                                                </p>
+                                              </label>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          renderHiddenLessonSectionNotice("Dryland practice")
+                                        )}
                                       </div>
                                     </fieldset>
 
@@ -4608,35 +4689,29 @@ export default function AdminContentManager() {
                                       <legend className="sr-only">
                                         Pool drill / water practice
                                       </legend>
-                                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
-                                        {editFormState.lessonBody.lessonExperience.display
-                                          .waterPractice
-                                          ? renderLessonPracticeVisualPlaceholder("water")
-                                          : null}
-                                        <div className="space-y-3 px-1 pb-2 sm:px-2 md:py-3">
-                                          <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div>
-                                              <p className={lessonMirrorSectionEyebrowClass}>
-                                                Pool drill
-                                              </p>
-                                              <p className={metadataClass}>
-                                                Appears as the in-water practice block and tells the
-                                                swimmer exactly what to try in the pool.
-                                              </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              {renderLessonContentScopeBadge(
-                                                "Shown on lesson page"
-                                              )}
-                                              {renderLessonSectionVisibilityToggle(
-                                                "waterPractice",
-                                                "Pool drill / water practice"
-                                              )}
-                                            </div>
+                                      <div className="space-y-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-2 px-1 sm:px-2">
+                                          <div>
+                                            <p className={lessonMirrorSectionEyebrowClass}>
+                                              Pool drill
+                                            </p>
+                                            <p className={metadataClass}>
+                                              Appears as the in-water practice block and tells the
+                                              swimmer exactly what to try in the pool.
+                                            </p>
                                           </div>
-                                          {editFormState.lessonBody.lessonExperience.display
-                                            .waterPractice ? (
-                                            <>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            {renderLessonSectionVisibilityToggle(
+                                              "waterPractice",
+                                              "Pool drill / water practice"
+                                            )}
+                                          </div>
+                                        </div>
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .waterPractice ? (
+                                          <>
+                                            {renderLessonPracticeVisualPlaceholder("water")}
+                                            <div className="space-y-3 px-1 pb-2 sm:px-2">
                                               <label className={compactLabelClass}>
                                                 <span>Pool drill title</span>
                                                 <input
@@ -4674,7 +4749,13 @@ export default function AdminContentManager() {
                                                 />
                                               </label>
                                               <label className={compactLabelClass}>
-                                                <span>Water practice safety note</span>
+                                                <span className="flex flex-wrap items-center justify-between gap-2">
+                                                  <span>Water practice safety note</span>
+                                                  {renderLessonSafetyNoteVisibilityToggle(
+                                                    "waterSafetyNote",
+                                                    "Water practice"
+                                                  )}
+                                                </span>
                                                 <textarea
                                                   aria-label="Water practice safety note"
                                                   rows={2}
@@ -4695,13 +4776,13 @@ export default function AdminContentManager() {
                                                   needs a specific safety or reset note.
                                                 </p>
                                               </label>
-                                            </>
-                                          ) : (
-                                            renderHiddenLessonSectionNotice(
-                                              "Pool drill / water practice"
-                                            )
-                                          )}
-                                        </div>
+                                            </div>
+                                          </>
+                                        ) : (
+                                          renderHiddenLessonSectionNotice(
+                                            "Pool drill / water practice"
+                                          )
+                                        )}
                                       </div>
                                     </fieldset>
 
@@ -4709,25 +4790,24 @@ export default function AdminContentManager() {
                                       className={["space-y-3", lessonMirrorCardClass].join(" ")}
                                     >
                                       <legend className={lessonMirrorSectionEyebrowClass}>
-                                        Feel cues
+                                        What good looks and feels like
                                       </legend>
                                       <div className="flex flex-wrap items-start justify-between gap-2">
                                         <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
-                                          Appears under Feel cues so the swimmer can self-check the
-                                          movement.
+                                          Appears as What good looks and feels like so the swimmer
+                                          can self-check the movement.
                                         </p>
-                                        {renderLessonContentScopeBadge("Shown on lesson page")}
                                         {renderLessonSectionVisibilityToggle(
                                           "feelCues",
-                                          "Feel cues"
+                                          "What good looks and feels like"
                                         )}
                                       </div>
                                       {editFormState.lessonBody.lessonExperience.display
                                         .feelCues ? (
                                         <label className={compactLabelClass}>
-                                          <span>Feel cues (one per line)</span>
+                                          <span>What good looks and feels like (one per line)</span>
                                           <textarea
-                                            aria-label="Feel cues (one per line)"
+                                            aria-label="What good looks and feels like (one per line)"
                                             rows={4}
                                             value={
                                               editFormState.lessonBody.lessonExperience.feelCues
@@ -4742,7 +4822,9 @@ export default function AdminContentManager() {
                                           />
                                         </label>
                                       ) : (
-                                        renderHiddenLessonSectionNotice("Feel cues")
+                                        renderHiddenLessonSectionNotice(
+                                          "What good looks and feels like"
+                                        )
                                       )}
                                     </fieldset>
 
@@ -4757,7 +4839,6 @@ export default function AdminContentManager() {
                                           Appears under Common mistakes. Keep each correction
                                           attached to its matching mistake.
                                         </p>
-                                        {renderLessonContentScopeBadge("Shown on lesson page")}
                                         {renderLessonSectionVisibilityToggle(
                                           "commonMistakes",
                                           "Common mistakes"
@@ -4846,7 +4927,6 @@ export default function AdminContentManager() {
                                           <span className={lessonMirrorSectionEyebrowClass}>
                                             Pass criteria
                                           </span>
-                                          {renderLessonContentScopeBadge("Shown on lesson page")}
                                         </span>
                                         <textarea
                                           aria-label="Pass criteria (one per line)"
@@ -4880,7 +4960,6 @@ export default function AdminContentManager() {
                                             Appears under Next step and points the swimmer toward
                                             the next action after this lesson.
                                           </p>
-                                          {renderLessonContentScopeBadge("Shown on lesson page")}
                                           {renderLessonSectionVisibilityToggle(
                                             "nextStep",
                                             "Next step"
@@ -4922,7 +5001,6 @@ export default function AdminContentManager() {
                                           Appears in the public support card when the swimmer needs
                                           more help.
                                         </p>
-                                        {renderLessonContentScopeBadge("Shown on lesson page")}
                                         {renderLessonSectionVisibilityToggle(
                                           "support",
                                           "Support card"
@@ -5214,8 +5292,8 @@ export default function AdminContentManager() {
                                             className={textAreaClass}
                                           />
                                           <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Fallback source for Feel cues when structured cues are
-                                            missing.
+                                            Fallback source for What good looks and feels like when
+                                            structured cues are missing.
                                           </p>
                                         </label>
 

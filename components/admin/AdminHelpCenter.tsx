@@ -141,12 +141,12 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Lesson fields editor",
     detail:
-      "Inside Edit lesson, `Public lesson mirror` uses the same order, width, and section rhythm swimmers see on the public lesson page: Video / estimated time, Lesson goal, Quick explanation, Why this matters, Dryland practice, Pool drill / water practice, Feel cues, Common mistakes, Pass criteria, Next step, and Support card. `Shown on lesson page` marks public content, `Admin/list only` marks fallback/search/list content, and `Advanced/fallback` marks older technical fields. Optional structured sections have a `Show section` checkbox on the section itself; hiding a section preserves saved draft content. `Summary` is the admin/list fallback for search, lists, and older content, not the main public lesson explanation when structured fields are present. Practice images are non-editable in this slice; existing image metadata is preserved, and active practice containers without images keep `Visual not added yet`. After saving, use `View changes` to open preview in a new tab before publishing.",
+      "Inside Edit lesson, `Public lesson mirror` uses the same order, width, and section rhythm swimmers see on the public lesson page: Video / estimated time, Lesson goal, Quick explanation, Why this matters, Dryland practice, Pool drill / water practice, What good looks and feels like, Common mistakes, Pass criteria, Next lesson, and Support card. Each public section has one visibility control that reads `Shown on lesson page` or `Hidden from lesson page`; there is no separate passive badge. Dryland and Pool drill safety notes are editable, use an inline `Show safety note` control, and long text boxes grow to fit content so authors do not have to stretch fields manually. `Admin/list only` marks fallback/search/list content, and `Advanced/fallback` marks older technical fields. `Summary` is the admin/list fallback for search, lists, and older content, not the main public lesson explanation when structured fields are present. Practice images are non-editable in this slice; existing image metadata is preserved, missing media uses a compact admin status, and the public lesson keeps a visual slot with a calm fallback instead of dropping the preview entirely. After saving, use `View changes` to open preview in a new tab before publishing.",
   },
   {
     title: "Learner common mistakes visibility",
     detail:
-      "When a lesson has authored `Common mistakes` and the section is enabled, learners see it by default. They can still hide it, and the hide/show choice is remembered locally per lesson in that browser.",
+      "When a lesson has authored `Common mistakes` and the section is enabled, learners see it by default without an in-lesson hide control. Hide or show the whole section from the lesson editor when the content is not useful for that lesson.",
   },
   {
     title: "Course identity: slug vs runtime ID",
@@ -380,7 +380,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Public lesson mirror / Advanced/fallback fields",
         meaning:
-          "`Shown on lesson page` fields follow the public lesson order and wording. Use each section's Show section checkbox for public visibility. `Admin/list only` keeps Summary separate for search and lists. Advanced/fallback fields keep the layout preset, stable IDs, support actions, and older technical fallback content separate from the main authoring flow.",
+          "`Shown on lesson page` fields follow the public lesson order and wording. Use each section's single visibility control for public visibility, and use inline `Show safety note` controls to hide caution copy without deleting it. `Admin/list only` keeps Summary separate for search and lists. Advanced/fallback fields keep the layout preset, stable IDs, support actions, and older technical fallback content separate from the main authoring flow.",
       },
       {
         label: "Open preview",

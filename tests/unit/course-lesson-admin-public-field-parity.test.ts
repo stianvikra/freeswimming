@@ -61,6 +61,13 @@ const COURSE_LESSON_FIELD_MAPPING: LessonFieldMapping[] = [
     reasonIfNo: null,
   },
   {
+    publicSection: "Dryland practice safety note",
+    adminFieldLabel: "Dryland practice safety note",
+    dataKey: "body.lessonExperience.landPractice.safetyNote",
+    editable: true,
+    reasonIfNo: null,
+  },
+  {
     publicSection: "Pool drill / water practice",
     adminFieldLabel: "Pool drill title",
     dataKey: "body.lessonExperience.waterPractice.title",
@@ -75,8 +82,15 @@ const COURSE_LESSON_FIELD_MAPPING: LessonFieldMapping[] = [
     reasonIfNo: null,
   },
   {
-    publicSection: "Feel cues",
-    adminFieldLabel: "Feel cues (one per line)",
+    publicSection: "Pool drill / water practice safety note",
+    adminFieldLabel: "Water practice safety note",
+    dataKey: "body.lessonExperience.waterPractice.safetyNote",
+    editable: true,
+    reasonIfNo: null,
+  },
+  {
+    publicSection: "What good looks and feels like",
+    adminFieldLabel: "What good looks and feels like (one per line)",
     dataKey: "body.lessonExperience.feelCues",
     editable: true,
     reasonIfNo: null,
@@ -146,8 +160,10 @@ describe("course lesson admin/public field parity audit", () => {
       "Quick explanation",
       "Why this matters",
       "Dryland practice",
+      "Dryland practice safety note",
       "Pool drill / water practice",
-      "Feel cues",
+      "Pool drill / water practice safety note",
+      "What good looks and feels like",
       "Common mistakes",
       "Pass criteria",
       "Next step",
@@ -179,11 +195,12 @@ describe("course lesson admin/public field parity audit", () => {
     expect(adminSource).toContain("Admin/list only");
     expect(adminSource).toContain("Advanced/fallback fields");
     expect(adminSource).toContain("Advanced/fallback");
-    expect(adminSource).toContain("Not editable here");
+    expect(adminSource).toContain("Hidden from lesson page");
+    expect(adminSource).toContain("Show safety note");
+    expect(adminSource).toContain("admin-auto-grow-textarea");
     expect(adminSource).toContain("admin-lesson-dryland-visual-placeholder");
     expect(adminSource).toContain("admin-lesson-water-visual-placeholder");
-    expect(adminSource).toContain("Media selection is deferred");
-    expect(adminSource).toContain("Show section");
+    expect(adminSource).toContain("Media deferred");
     expect(adminSource).toContain("View changes");
     expect(adminSource).not.toContain("Checkpoint criteria (one per line)");
     expect(adminSource).not.toContain("Show on public lesson");

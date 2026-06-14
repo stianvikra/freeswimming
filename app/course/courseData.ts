@@ -50,7 +50,9 @@ export type CourseLessonExperienceDisplay = {
   quickExplanation?: boolean;
   whyThisMatters?: boolean;
   landPractice?: boolean;
+  landSafetyNote?: boolean;
   waterPractice?: boolean;
+  waterSafetyNote?: boolean;
   feelCues?: boolean;
   commonMistakes?: boolean;
   nextStep?: boolean;

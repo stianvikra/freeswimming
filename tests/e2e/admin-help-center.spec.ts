@@ -83,14 +83,16 @@ test.describe("admin help center", () => {
       page.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
     ).toBeVisible();
     await expect(
-      page.getByText(/Shown on lesson page.*Admin\/list only.*Advanced\/fallback/i).first()
+      page.getByText(/Shown on lesson page.*Hidden from lesson page.*Admin\/list only/i).first()
     ).toBeVisible();
-    await expect(page.getByText(/Show section.*section itself/i)).toBeVisible();
+    await expect(page.getByText(/Shown\/Hidden control.*section itself/i)).toBeVisible();
     await expect(page.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
     await expect(page.getByText(/Advanced\/fallback fields.*layout preset/i).first()).toBeVisible();
-    await expect(page.getByText("Practice images are non-editable in this slice;")).toBeVisible();
+    await expect(
+      page.getByText(/Practice images are non-editable in this slice.*calm fallback/i)
+    ).toBeVisible();
     await expect(page.getByText("Public lesson mirror / Advanced/fallback fields:")).toBeVisible();
-    await expect(page.getByText(/Use each section's Show section checkbox/i)).toBeVisible();
+    await expect(page.getByText(/Use each section's Shown\/Hidden control/i)).toBeVisible();
     await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
     await expect(page.getByText("Learner common mistakes visibility")).toBeVisible();
     await expect(
