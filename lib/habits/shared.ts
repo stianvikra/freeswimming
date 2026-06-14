@@ -323,6 +323,7 @@ export type HabitUpdateRequestBody = Partial<HabitCreateRequestBody> & {
 export type HabitCheckInRequestBody = {
   habitId?: unknown;
   checkInDate?: unknown;
+  selectedDate?: unknown;
   timezone?: unknown;
   valueNumeric?: unknown;
   valueBoolean?: unknown;
@@ -333,11 +334,13 @@ export type HabitCheckInRequestBody = {
   status?: unknown;
   clear?: unknown;
   clearTimedCompletion?: unknown;
+  actionSource?: unknown;
 };
 
 export type HabitMotivationResetRequestBody = {
   effectiveDate?: unknown;
   selectedDate?: unknown;
+  actionSource?: unknown;
 };
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

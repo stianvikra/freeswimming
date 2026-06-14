@@ -900,6 +900,69 @@ describe("habits routes", () => {
     );
   });
 
+  it("keeps the selected snapshot date after a catch-up check-in writes a past day", async () => {
+    const habitMaybeSingle = vi.fn().mockResolvedValue({
+      data: {
+        id: "11111111-1111-4111-8111-111111111111",
+        habit_mode: "build",
+        start_date: "2026-05-01",
+      },
+      error: null,
+    });
+    const habitEqId = vi.fn(() => ({ maybeSingle: habitMaybeSingle }));
+    const habitEqUser = vi.fn(() => ({ eq: habitEqId }));
+    const habitSelect = vi.fn(() => ({ eq: habitEqUser }));
+    const upsertSingle = vi.fn().mockResolvedValue({
+      data: { id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
+    const upsertSelect = vi.fn(() => ({ single: upsertSingle }));
+    const upsert = vi.fn(() => ({ select: upsertSelect }));
+    const from = vi.fn((table: string) =>
+      table === "habit_check_ins" ? { upsert } : { select: habitSelect }
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2026-05-08",
+          selectedDate: "2026-05-10",
+          valueBoolean: true,
+          actionSource: "catch_up",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_check_in_logged",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          checkInDate: "2026-05-08",
+          selectedDate: "2026-05-10",
+          actionSource: "catch_up",
+        }),
+      })
+    );
+  });
+
   it("upserts timed check-ins with separate timer and manual sources", async () => {
     const habitMaybeSingle = vi.fn().mockResolvedValue({
       data: {

@@ -44,6 +44,7 @@ import {
   type HabitCadenceDayPolicy,
   type HabitCadencePeriod,
   type HabitDayItem,
+  type HabitDaySummary,
   type HabitMode,
   type HabitMotivationItem,
   type HabitMotivationRange,
@@ -66,6 +67,7 @@ import {
 } from "@/lib/my-library/calendar";
 import { readNavigatorOnlineState } from "@/lib/utils/navigator-online";
 import { playAppSoundProfile, type AppSoundPlaybackResult } from "@/lib/audio/client-sound";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
   initialSnapshot: HabitSnapshot;
@@ -106,6 +108,22 @@ type SaveTimedSourcesInput = {
   manualMinutes: number;
   successNotice: string;
   clearLocalTimerOnSuccess: boolean;
+};
+
+type CatchUpEntry = {
+  date: string;
+  item: HabitDayItem;
+};
+
+type CatchUpHabitGroup = {
+  habit: HabitDefinitionView;
+  entries: CatchUpEntry[];
+};
+
+type HabitTrackingModeView = {
+  label: "Manual" | "Manual timed" | "Quit" | "Source-backed";
+  summary: string;
+  details: string;
 };
 
 type HabitFeedbackTone = "warning" | "error" | "success" | "empty";
@@ -717,14 +735,6 @@ function getBuildCompletionMotivationLabel(item: HabitDayItem) {
   return motivationLabel?.startsWith("Streak:") ? motivationLabel : null;
 }
 
-function formatQuitProgressLabel(label: string) {
-  const clearDaysMatch = label.match(/^(\d+)\/(\d+) days clear$/);
-  if (clearDaysMatch?.[1] && clearDaysMatch[2]) {
-    return `${clearDaysMatch[1]}/${clearDaysMatch[2]} days clear`;
-  }
-  return label;
-}
-
 function shouldShowStatusChipOnMobile(statusLabel: string) {
   return (
     statusLabel === "Done today" ||
@@ -763,11 +773,32 @@ function getStartStreakPrompt(period: HabitCadencePeriod) {
   }
 }
 
+function normalizeQuitClearDaysLabel(label: string) {
+  const daysWithoutMatch = label.match(/^(\d+) days? without$/);
+  if (daysWithoutMatch?.[1]) {
+    const count = Number(daysWithoutMatch[1]);
+    return `${count} clear ${count === 1 ? "day" : "days"}`;
+  }
+
+  if (/^\d+\/\d+ days clear$/.test(label)) return label;
+  return null;
+}
+
 function getClosedCardMotivationLabel(
-  habit: HabitDefinitionView,
+  item: HabitDayItem,
   motivationItem: HabitMotivationItem | undefined
 ) {
+  const habit = item.habit;
   const currentStreak = motivationItem?.currentStreakDays ?? 0;
+  if (habit.habitMode === "quit") {
+    const quitEvaluationLabel = normalizeQuitClearDaysLabel(item.evaluation.valueLabel);
+    if (motivationItem && motivationItem.slipCount > 0 && motivationItem.eligibleDayCount > 0) {
+      return `${motivationItem.onTrackDayCount}/${motivationItem.eligibleDayCount} days clear`;
+    }
+    if (quitEvaluationLabel) return quitEvaluationLabel;
+    if (currentStreak > 0) return `${currentStreak} clear days`;
+    return "No slips logged in this range";
+  }
   if (currentStreak > 0) return formatCadenceStreak(currentStreak, habit.cadencePeriod);
   return getStartStreakPrompt(habit.cadencePeriod);
 }
@@ -806,6 +837,153 @@ function getMicroSessionHabitCardLabel(item: HabitDayItem) {
     return "Micro Sessions are linked, but Habit counting is paused.";
   }
   return "Auto-completes when every Micro Session unit is done.";
+}
+
+function getHabitTrackingModeView(item: HabitDayItem): HabitTrackingModeView {
+  if (isMicroSessionBackedHabit(item)) {
+    return {
+      label: "Source-backed",
+      summary: "Completed by Micro Sessions when every linked unit is done.",
+      details:
+        "Habits does not show Mark done for this source-backed habit. Use Micro Sessions to complete, pause, or resume the linked source.",
+    };
+  }
+
+  if (item.habit.habitMode === "quit") {
+    return {
+      label: "Quit",
+      summary: "Counts clear days until you log a slip.",
+      details:
+        "No slip is logged automatically at day change. Use Log slip only on the date where the slip happened.",
+    };
+  }
+
+  if (item.habit.habitMode === "timed") {
+    return {
+      label: "Manual timed",
+      summary: "Use the timer, Finish, or Save manual time.",
+      details:
+        "Timed habits do not complete just because the timer reaches target. Save with Finish or Save manual time when the work is done.",
+    };
+  }
+
+  return {
+    label: "Manual",
+    summary: "Use Mark done or Save when this is completed.",
+    details:
+      "There is no automatic daily increment. Missed days stay derived until you backfill, mark Rest day, or leave them missed.",
+  };
+}
+
+function isCatchUpCandidateItem(item: HabitDayItem) {
+  if (item.habit.status !== "active") return false;
+  if (!item.habit.isPerfectDayItem) return false;
+  if (item.habit.habitMode === "quit") return false;
+  if (isMicroSessionBackedHabit(item)) return false;
+  if (!item.isScheduledForDate || !item.cadenceProgress.isDueToday) return false;
+  if (item.checkIn?.status === "skipped") return false;
+  return !item.evaluation.isSatisfied;
+}
+
+function getCatchUpCandidateItems(day: HabitDaySummary) {
+  return day.items.filter(isCatchUpCandidateItem);
+}
+
+function getCatchUpEntryKey(habitId: string, date: string) {
+  return `${habitId}:${date}`;
+}
+
+function canMarkCatchUpEntryDone(entry: CatchUpEntry) {
+  const item = entry.item;
+  return (
+    item.habit.habitMode === "build" &&
+    item.habit.habitType === "binary" &&
+    !isMicroSessionBackedHabit(item) &&
+    !item.checkIn
+  );
+}
+
+function getCatchUpEntryActionSummary(entry: CatchUpEntry) {
+  if (canMarkCatchUpEntryDone(entry)) {
+    return "Mark done, rest, leave missed, or review the date.";
+  }
+
+  if (entry.item.habit.habitMode === "timed") {
+    return "Use Review day to save timed work, or mark rest/leave missed here.";
+  }
+
+  return "Use Review day to save the value, or mark rest/leave missed here.";
+}
+
+function hasCatchUpRecoveryHistory(snapshot: HabitSnapshot, todayDate: string) {
+  const lastTrackedDate =
+    snapshot.motivationSummaries?.all?.lastTrackedDate ??
+    snapshot.motivationSummary?.lastTrackedDate ??
+    null;
+  if (lastTrackedDate && lastTrackedDate < todayDate) return true;
+
+  return snapshot.weekSummary.days.some(
+    (day) => day.date < todayDate && day.items.some((item) => item.checkIn !== null)
+  );
+}
+
+function getCatchUpEntries(
+  snapshot: HabitSnapshot,
+  todayDate: string,
+  dismissedKeys: string[]
+): CatchUpEntry[] {
+  if (snapshot.selectedDate !== todayDate) return [];
+  if (!hasCatchUpRecoveryHistory(snapshot, todayDate)) return [];
+
+  const dismissed = new Set(dismissedKeys);
+  return snapshot.weekSummary.days
+    .filter((day) => day.date < todayDate && day.perfectDayItemCount > 0)
+    .flatMap((day) =>
+      getCatchUpCandidateItems(day)
+        .map((item) => ({
+          date: day.date,
+          item,
+        }))
+        .filter((entry) => !dismissed.has(getCatchUpEntryKey(entry.item.habit.id, entry.date)))
+    );
+}
+
+function getCatchUpHabitGroups(
+  snapshot: HabitSnapshot,
+  todayDate: string,
+  dismissedKeys: string[]
+): CatchUpHabitGroup[] {
+  const entries = getCatchUpEntries(snapshot, todayDate, dismissedKeys);
+  const entriesByHabitId = new Map<string, CatchUpEntry[]>();
+
+  for (const entry of entries) {
+    const current = entriesByHabitId.get(entry.item.habit.id) ?? [];
+    current.push(entry);
+    entriesByHabitId.set(entry.item.habit.id, current);
+  }
+
+  return snapshot.activeHabits
+    .map((habit) => {
+      const habitEntries = entriesByHabitId.get(habit.id) ?? [];
+      return {
+        habit,
+        entries: habitEntries.sort((left, right) => left.date.localeCompare(right.date)),
+      };
+    })
+    .filter((group) => group.entries.length > 0);
+}
+
+function getCatchUpDateSummary(entries: CatchUpEntry[]) {
+  const uniqueDates = [...new Set(entries.map((entry) => entry.date))];
+  const count = uniqueDates.length;
+  if (count === 0) return "No dates";
+  return `${count} ${count === 1 ? "date" : "dates"}`;
+}
+
+function getSortedCatchUpDates(entries: CatchUpEntry[]) {
+  return [...new Set(entries.map((entry) => entry.date))].sort((left, right) =>
+    left.localeCompare(right)
+  );
 }
 
 function getPriorityGroupLabel(item: HabitDayItem) {
@@ -1260,6 +1438,8 @@ export default function HabitPerfectDayHub({
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
   const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
   const [confirmResetStatsHabitId, setConfirmResetStatsHabitId] = useState<string | null>(null);
+  const [confirmCatchUpReset, setConfirmCatchUpReset] = useState(false);
+  const [dismissedCatchUpKeys, setDismissedCatchUpKeys] = useState<string[]>([]);
   const [confirmEndHabitId, setConfirmEndHabitId] = useState<string | null>(null);
   const [confirmRestoreHabitId, setConfirmRestoreHabitId] = useState<string | null>(null);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
@@ -1276,6 +1456,7 @@ export default function HabitPerfectDayHub({
   const hasHydratedTimersRef = useRef(false);
   const timedTargetProgressRef = useRef<Record<string, number>>({});
   const timedTargetSignalKeysRef = useRef<Set<string>>(new Set());
+  const catchUpAssistantShownKeysRef = useRef<Set<string>>(new Set());
   const saveTimedSourcesRef = useRef<
     ((item: HabitDayItem, input: SaveTimedSourcesInput) => Promise<void>) | null
   >(null);
@@ -1356,6 +1537,8 @@ export default function HabitPerfectDayHub({
     setEditingHabitId(null);
     setEditDraft(null);
     setConfirmResetStatsHabitId(null);
+    setConfirmCatchUpReset(false);
+    setDismissedCatchUpKeys([]);
     setConfirmEndHabitId(null);
     setConfirmRestoreHabitId(null);
     setRecentlyCreatedHabitId(null);
@@ -1565,6 +1748,49 @@ export default function HabitPerfectDayHub({
     const items = selectedMotivationSummary?.items ?? [];
     return new Map(items.map((item) => [item.habitId, item]));
   }, [selectedMotivationSummary]);
+  const catchUpHabitGroups = useMemo(
+    () => getCatchUpHabitGroups(snapshot, safeTodayDate, dismissedCatchUpKeys),
+    [dismissedCatchUpKeys, safeTodayDate, snapshot]
+  );
+  const catchUpEntries = useMemo(
+    () => catchUpHabitGroups.flatMap((group) => group.entries),
+    [catchUpHabitGroups]
+  );
+  const catchUpGroupsByHabitId = useMemo(
+    () => new Map(catchUpHabitGroups.map((group) => [group.habit.id, group])),
+    [catchUpHabitGroups]
+  );
+  const catchUpDates = useMemo(() => getSortedCatchUpDates(catchUpEntries), [catchUpEntries]);
+  const catchUpDateCount = catchUpDates.length;
+  const shouldShowCatchUpAssistant = isSelectedToday && catchUpEntries.length >= 2;
+  const catchUpEntryKey = catchUpEntries
+    .map((entry) => getCatchUpEntryKey(entry.item.habit.id, entry.date))
+    .join(",");
+
+  useEffect(() => {
+    if (!shouldShowCatchUpAssistant) return;
+    const analyticsKey = `${snapshot.selectedDate}:${catchUpEntryKey}`;
+    if (catchUpAssistantShownKeysRef.current.has(analyticsKey)) return;
+
+    catchUpAssistantShownKeysRef.current.add(analyticsKey);
+    void sendClientAnalyticsEvent("habit_catch_up_assistant_shown", {
+      selectedDate: snapshot.selectedDate,
+      catchUpDayCount: catchUpDateCount,
+      catchUpEntryCount: catchUpEntries.length,
+      catchUpHabitCount: catchUpHabitGroups.length,
+      oldestCatchUpDate: catchUpDates[0] ?? null,
+      newestCatchUpDate: catchUpDates[catchUpDates.length - 1] ?? null,
+      markDoneEntryCount: catchUpEntries.filter(canMarkCatchUpEntryDone).length,
+    });
+  }, [
+    catchUpDateCount,
+    catchUpDates,
+    catchUpEntries,
+    catchUpEntryKey,
+    catchUpHabitGroups.length,
+    shouldShowCatchUpAssistant,
+    snapshot.selectedDate,
+  ]);
 
   function openAddHabitForm() {
     if (!canManageHabitSetup) {
@@ -1908,6 +2134,7 @@ export default function HabitPerfectDayHub({
     const body: Record<string, unknown> = {
       habitId: habit.id,
       checkInDate: snapshot.selectedDate,
+      selectedDate: snapshot.selectedDate,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     };
 
@@ -1958,6 +2185,7 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           habitId: habit.id,
           checkInDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
           timerSeconds: input.timerSeconds,
           manualMinutes: input.manualMinutes,
@@ -1995,6 +2223,7 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
           valueBoolean: false,
         }),
@@ -2021,6 +2250,7 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
           status: "skipped",
         }),
@@ -2093,6 +2323,7 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           habitId: habit.id,
           checkInDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
           clearTimedCompletion: true,
         }),
       });
@@ -2181,6 +2412,7 @@ export default function HabitPerfectDayHub({
         body: JSON.stringify({
           habitId: item.habit.id,
           checkInDate: snapshot.selectedDate,
+          selectedDate: snapshot.selectedDate,
           clear: true,
         }),
       });
@@ -2219,6 +2451,339 @@ export default function HabitPerfectDayHub({
     } finally {
       setPendingKey(null);
     }
+  }
+
+  function leaveCatchUpEntryMissed(entry: CatchUpEntry) {
+    void sendClientAnalyticsEvent("habit_catch_up_day_left_missed", {
+      selectedDate: snapshot.selectedDate,
+      catchUpDate: entry.date,
+      habitMode: entry.item.habit.habitMode,
+      habitType: entry.item.habit.habitType,
+      canMarkDone: canMarkCatchUpEntryDone(entry),
+    });
+    setDismissedCatchUpKeys((current) => [
+      ...new Set([...current, getCatchUpEntryKey(entry.item.habit.id, entry.date)]),
+    ]);
+    setConfirmCatchUpReset(false);
+    setNotice(
+      `Left ${entry.item.habit.title} missed for ${getLongDateLabel(
+        entry.date
+      )}. No history was changed.`
+    );
+    setError(null);
+  }
+
+  function reviewCatchUpDay(
+    event: ReactMouseEvent<HTMLAnchorElement>,
+    href: string,
+    entry: CatchUpEntry
+  ) {
+    void sendClientAnalyticsEvent("habit_catch_up_day_reviewed", {
+      selectedDate: snapshot.selectedDate,
+      catchUpDate: entry.date,
+      habitMode: entry.item.habit.habitMode,
+      habitType: entry.item.habit.habitType,
+      canMarkDone: canMarkCatchUpEntryDone(entry),
+    });
+    handleCalendarLinkClick(event, href, entry.date);
+  }
+
+  async function saveCatchUpEntry(entry: CatchUpEntry, action: "done" | "rest") {
+    if (action === "done" && !canMarkCatchUpEntryDone(entry)) {
+      setError("Review this habit date to save values or timed minutes.");
+      setNotice(null);
+      return;
+    }
+
+    const entryKey = getCatchUpEntryKey(entry.item.habit.id, entry.date);
+    setPendingKey(`catch-up-${action}-${entryKey}`);
+    setNotice(null);
+    setError(null);
+    try {
+      const response = await fetch("/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: entry.item.habit.id,
+          checkInDate: entry.date,
+          selectedDate: snapshot.selectedDate,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          actionSource: "catch_up",
+          ...(action === "done" ? { valueBoolean: true } : { status: "skipped" }),
+        }),
+      });
+      await applyResponse(
+        response,
+        action === "done"
+          ? "Could not save catch-up completion right now."
+          : "Could not save that rest day right now."
+      );
+
+      setDismissedCatchUpKeys((current) => [...new Set([...current, entryKey])]);
+      setConfirmCatchUpReset(false);
+      setNotice(
+        action === "done"
+          ? `${entry.item.habit.title} marked done for ${getLongDateLabel(entry.date)}.`
+          : `Rest day saved for ${entry.item.habit.title} on ${getLongDateLabel(entry.date)}.`
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : action === "done"
+            ? "Could not save catch-up completion right now."
+            : "Could not save that rest day right now."
+      );
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  async function resetAllActiveHabitStatsFromCatchUp() {
+    if (snapshot.resetEventsReady === false) {
+      setError("Habit stats reset is not available in this environment yet.");
+      setNotice(null);
+      return;
+    }
+    if (snapshot.activeHabits.length === 0) {
+      setError("No active habits are available to reset.");
+      setNotice(null);
+      return;
+    }
+
+    setPendingKey("catch-up-reset-stats");
+    setNotice(null);
+    setError(null);
+    try {
+      for (const habit of snapshot.activeHabits) {
+        const response = await fetch(`/api/my-library/habits/${habit.id}/reset-stats`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            effectiveDate: snapshot.selectedDate,
+            selectedDate: snapshot.selectedDate,
+            actionSource: "catch_up",
+          }),
+        });
+        await applyResponse(response, "Could not reset habit stats right now.");
+      }
+
+      setConfirmCatchUpReset(false);
+      setDismissedCatchUpKeys(
+        catchUpEntries.map((entry) => getCatchUpEntryKey(entry.item.habit.id, entry.date))
+      );
+      setNotice(
+        `Habit stats restarted from ${getLongDateLabel(
+          snapshot.selectedDate
+        )}. Earlier check-ins stayed saved.`
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not reset habit stats right now.");
+    } finally {
+      setPendingKey(null);
+    }
+  }
+
+  function renderCatchUpAssistant() {
+    if (!shouldShowCatchUpAssistant) return null;
+
+    const disabled = pendingKey !== null;
+    const confirmTitleId = "habits-catch-up-reset-title";
+
+    return (
+      <section
+        aria-labelledby="habits-catch-up-title"
+        data-testid="habits-catch-up-assistant"
+        className="mt-4 rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50/60 p-4"
+      >
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className={habitLabelClass}>Recovery</p>
+            <h3 id="habits-catch-up-title" className="text-base font-bold text-amber-950">
+              Catch up missed days
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-amber-900">
+              No automatic failures were saved. Each habit below shows its own missed dates. Fix
+              them there, leave them missed, or restart Motivation stats from today.
+            </p>
+          </div>
+          <span className={habitWarningChipClass}>{getCatchUpDateSummary(catchUpEntries)}</span>
+        </div>
+
+        <p className="mt-3 text-sm leading-6 text-amber-900">
+          {catchUpEntries.length} missed habit{" "}
+          {catchUpEntries.length === 1 ? "date needs" : "dates need"} review across{" "}
+          {catchUpHabitGroups.length} {catchUpHabitGroups.length === 1 ? "habit" : "habits"}. Manual
+          done-only habits can be marked done from their card. Timed, value, source-backed, and Quit
+          habits keep their own tracking rules.
+        </p>
+
+        <div className="mt-4 border-t border-amber-200/80 pt-3">
+          {confirmCatchUpReset ? (
+            <div
+              role="alertdialog"
+              aria-labelledby={confirmTitleId}
+              data-testid="habits-catch-up-reset-confirm"
+              className="text-sm text-amber-950"
+            >
+              <p id={confirmTitleId} className="font-semibold">
+                Restart Motivation stats from today?
+              </p>
+              <p className="mt-1">
+                This creates one reset boundary per active habit. Earlier check-ins stay saved and
+                remain visible in Calendar Comparison.
+              </p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void sendClientAnalyticsEvent("habit_catch_up_reset_cancelled", {
+                      selectedDate: snapshot.selectedDate,
+                      catchUpDayCount: catchUpDateCount,
+                      catchUpEntryCount: catchUpEntries.length,
+                      catchUpHabitCount: catchUpHabitGroups.length,
+                      activeHabitCount: snapshot.activeHabits.length,
+                    });
+                    setConfirmCatchUpReset(false);
+                  }}
+                  disabled={disabled}
+                  className={habitMobileSecondaryActionClass}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={resetAllActiveHabitStatsFromCatchUp}
+                  disabled={disabled}
+                  className={habitMobilePrimaryActionClass}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  {pendingKey === "catch-up-reset-stats" ? "Resetting..." : "Reset stats"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                void sendClientAnalyticsEvent("habit_catch_up_reset_started", {
+                  selectedDate: snapshot.selectedDate,
+                  catchUpDayCount: catchUpDateCount,
+                  catchUpEntryCount: catchUpEntries.length,
+                  catchUpHabitCount: catchUpHabitGroups.length,
+                  activeHabitCount: snapshot.activeHabits.length,
+                });
+                setConfirmCatchUpReset(true);
+                setNotice(null);
+                setError(null);
+              }}
+              disabled={disabled || snapshot.resetEventsReady === false}
+              className={habitMobileSecondaryActionClass}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Restart stats from today
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  function renderHabitCatchUpPanel(group: CatchUpHabitGroup | undefined) {
+    if (!group || group.entries.length === 0) return null;
+
+    const disabled = pendingKey !== null;
+
+    return (
+      <div
+        data-testid={`habit-catch-up-${group.habit.id}`}
+        className="mt-3 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50/60 p-3"
+      >
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className={habitLabelClass}>Catch up</p>
+            <p className="text-sm font-bold text-amber-950">
+              {getCatchUpDateSummary(group.entries)} need review
+            </p>
+          </div>
+          <span className={habitWarningChipClass}>
+            {group.entries.length} {group.entries.length === 1 ? "item" : "items"}
+          </span>
+        </div>
+
+        <div className="mt-3 space-y-3">
+          {group.entries.map((entry) => {
+            const entryKey = getCatchUpEntryKey(entry.item.habit.id, entry.date);
+            const canMarkDone = canMarkCatchUpEntryDone(entry);
+            const isPending =
+              pendingKey === `catch-up-done-${entryKey}` ||
+              pendingKey === `catch-up-rest-${entryKey}`;
+            const reviewHref = buildMyLibraryCalendarHref({
+              path: "/my-library/habits",
+              selectedDate: entry.date,
+              view: calendarViewParam,
+            });
+
+            return (
+              <div
+                key={entryKey}
+                className="border-t border-amber-200/80 pt-3 first:border-t-0 first:pt-0"
+              >
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-amber-950">
+                      {getLongDateLabel(entry.date)}
+                    </p>
+                    <p className="mt-1 text-sm leading-5 text-amber-900">
+                      {getCatchUpEntryActionSummary(entry)}
+                    </p>
+                  </div>
+                  <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:justify-end">
+                    <Link
+                      href={reviewHref}
+                      onClick={(event) => reviewCatchUpDay(event, reviewHref, entry)}
+                      className={cx(habitMobileSecondaryActionClass, habitPeerActionWidthClass)}
+                    >
+                      <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                      Review day
+                    </Link>
+                    {canMarkDone ? (
+                      <button
+                        type="button"
+                        onClick={() => saveCatchUpEntry(entry, "done")}
+                        disabled={disabled}
+                        className={cx(habitMobilePrimaryActionClass, habitPeerActionWidthClass)}
+                      >
+                        <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                        {pendingKey === `catch-up-done-${entryKey}` ? "Saving..." : "Mark done"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => saveCatchUpEntry(entry, "rest")}
+                      disabled={disabled}
+                      className={cx(habitMobileSecondaryActionClass, habitPeerActionWidthClass)}
+                    >
+                      <Pause className="h-4 w-4" aria-hidden="true" />
+                      {pendingKey === `catch-up-rest-${entryKey}` ? "Saving..." : "Rest day"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => leaveCatchUpEntryMissed(entry)}
+                      disabled={disabled || isPending}
+                      className={cx(habitMobileSecondaryActionClass, habitPeerActionWidthClass)}
+                    >
+                      <Minus className="h-4 w-4" aria-hidden="true" />
+                      Leave missed
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   function renderBuildTargetControls(
@@ -3280,6 +3845,8 @@ export default function HabitPerfectDayHub({
           </div>
         ) : null}
 
+        {renderCatchUpAssistant()}
+
         <section
           id="add-habit"
           ref={addHabitSectionRef}
@@ -3472,10 +4039,12 @@ export default function HabitPerfectDayHub({
                 item.priorityGroup === "done_today" || item.priorityGroup === "done_period";
               const isRestDay = item.checkIn?.status === "skipped";
               const isMicroSessionBacked = isMicroSessionBackedHabit(item);
+              const trackingModeView = getHabitTrackingModeView(item);
+              const habitCatchUpGroup = catchUpGroupsByHabitId.get(habit.id);
               const microSessionProgress = getMicroSessionProgress(item);
               const closedCardMotivationLabel = isMicroSessionBacked
                 ? getMicroSessionHabitCardLabel(item)
-                : getClosedCardMotivationLabel(habit, motivationItem);
+                : getClosedCardMotivationLabel(item, motivationItem);
               const timerSeconds = getTimerSeconds(habit.id);
               const timedProgressSeconds = getTimedProgressSeconds(item, timerSeconds);
               const timedProgressLabel = formatTimer(timedProgressSeconds);
@@ -3550,12 +4119,7 @@ export default function HabitPerfectDayHub({
                   : !canEditSelectedCheckIn && item.priorityGroup === "not_due"
                     ? "Not due today"
                     : isQuit
-                      ? [
-                          formatQuitProgressLabel(item.evaluation.valueLabel),
-                          item.evaluation.supportingLabel,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")
+                      ? null
                       : isTimed
                         ? getTimedStatusLabel(item, timerSeconds)
                         : habit.habitType === "count"
@@ -3599,11 +4163,9 @@ export default function HabitPerfectDayHub({
                             {habit.title}
                           </h3>
                           <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            {showTimedProgressModule ? null : (
-                              <span className={cx(habitBrandChipClass, "shrink-0 max-sm:hidden")}>
-                                {getHabitModeLabel(habit.habitMode)}
-                              </span>
-                            )}
+                            <span className={cx(habitBrandChipClass, "shrink-0")}>
+                              {trackingModeView.label}
+                            </span>
                             <span className={cx(habitChipClass, "shrink-0")}>{cadenceLabel}</span>
                             {showTimedProgressModule && isCompletionGroup ? (
                               <span className={cx(habitSuccessChipClass, "shrink-0")}>
@@ -3632,6 +4194,13 @@ export default function HabitPerfectDayHub({
                         >
                           {closedCardMotivationLabel}
                         </p>
+                        <p
+                          data-testid={`habit-tracking-mode-copy-${habit.id}`}
+                          className="mt-1 text-sm leading-5 text-slate-500"
+                        >
+                          {trackingModeView.summary}
+                        </p>
+                        {renderHabitCatchUpPanel(habitCatchUpGroup)}
                         {isMicroSessionBacked ? (
                           <div
                             data-testid={`habit-micro-session-progress-${habit.id}`}
@@ -3696,6 +4265,21 @@ export default function HabitPerfectDayHub({
                       </div>
 
                       <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:grid-cols-none sm:flex-wrap sm:items-center sm:justify-end">
+                        {canEditSelectedCheckIn && isQuit && !item.checkIn ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearCreatedHabitNotice();
+                              return logLapse(item);
+                            }}
+                            disabled={disabled}
+                            className={cx(habitMobileDangerActionClass, habitPeerActionWidthClass)}
+                          >
+                            <Flag className="h-4 w-4" aria-hidden="true" />
+                            Log slip
+                          </button>
+                        ) : null}
+
                         {canEditSelectedCheckIn &&
                         habit.habitType === "binary" &&
                         !isQuit &&
@@ -4080,6 +4664,13 @@ export default function HabitPerfectDayHub({
                           {cadenceLabel} · Started {getFullDateLabel(habit.startDate)}
                         </p>
 
+                        <div className="mt-3 border-l-4 border-[color:var(--fs-border-brand)] pl-3 text-sm text-slate-600">
+                          <p className="font-semibold text-slate-900">
+                            {trackingModeView.label} tracking
+                          </p>
+                          <p className="mt-1 leading-5">{trackingModeView.details}</p>
+                        </div>
+
                         {habit.notes ? (
                           <p className="mt-3 text-sm text-slate-500">{habit.notes}</p>
                         ) : null}
@@ -4180,21 +4771,6 @@ export default function HabitPerfectDayHub({
                           data-testid={`habit-details-actions-${habit.id}`}
                           className="mt-4 grid grid-cols-1 items-end gap-2 sm:flex sm:flex-wrap"
                         >
-                          {isQuit ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                clearCreatedHabitNotice();
-                                return logLapse(item);
-                              }}
-                              disabled={disabled || item.checkIn !== null}
-                              className={habitMobileDangerActionClass}
-                            >
-                              <Flag className="h-4 w-4" aria-hidden="true" />
-                              Log slip
-                            </button>
-                          ) : null}
-
                           {canEditSelectedCheckIn && !isRestDay && isTimed ? (
                             <>
                               <NumberStepperField

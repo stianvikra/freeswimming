@@ -906,6 +906,50 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
 - `404`: micro plan, linked Habit, or linked source session not found for this user
 - `503`: micro-plan, linkage, or Habit schema not live in the environment
 
+## Habits Tracking And Recovery
+
+### Check-In Request
+
+`POST /api/my-library/habits/check-ins`
+
+- Auth: signed-in user session required.
+- Body:
+
+```json
+{
+  "habitId": "11111111-1111-4111-8111-111111111111",
+  "checkInDate": "2026-06-10",
+  "selectedDate": "2026-06-14",
+  "timezone": "Europe/Oslo",
+  "valueBoolean": true,
+  "actionSource": "catch_up"
+}
+```
+
+- `checkInDate` is the habit history date being written.
+- `selectedDate` is optional and controls which snapshot the route returns after the write; catch-up writes past days with `checkInDate` while keeping the UI on Today with `selectedDate`.
+- `actionSource` is optional and currently supports `catch_up` for privacy-safe diagnostics; unknown values are treated as normal Habits writes.
+- `status: "skipped"` stores an intentional `Rest day`; it is not counted as done or missed.
+- Quit slips are explicit `valueBoolean: false` writes for `habit_mode = quit`; no slip or miss row is written automatically at day change.
+- Timed source updates use `timerSeconds` and/or `manualMinutes` and cannot be mixed with legacy `valueNumeric`.
+
+### Reset Stats Request
+
+`POST /api/my-library/habits/[habitId]/reset-stats`
+
+```json
+{
+  "effectiveDate": "2026-06-14",
+  "selectedDate": "2026-06-14",
+  "actionSource": "catch_up"
+}
+```
+
+- Reset stats creates a server-canonical `habit_motivation_resets` boundary for one active habit and never deletes `habit_check_ins`.
+- Catch-up all-habit recovery calls this route once per active habit so Motivation can restart from Today while complete history remains available in Calendar Comparison.
+- Source-backed Micro Session Habits still receive Habit credit only from the Micro Session owner-scoped source path; Habits does not expose manual `Mark done` for those linked rows.
+- Catch-up client analytics use `habit_catch_up_assistant_shown`, `habit_catch_up_day_reviewed`, `habit_catch_up_day_left_missed`, `habit_catch_up_reset_started`, and `habit_catch_up_reset_cancelled`; the prompt summary includes habit/date counts, and each habit card owns its own catch-up date actions. Saved done/rest/slip/reset writes continue through the existing server events with `actionSource: "catch_up"` when recovery initiated them.
+
 ## `GET|POST /api/progress/guide`
 
 ### Request

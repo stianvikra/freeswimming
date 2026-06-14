@@ -4,10 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const navigationState = vi.hoisted(() => ({
   push: vi.fn(),
 }));
+const analyticsState = vi.hoisted(() => ({
+  sendClientAnalyticsEvent: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => navigationState,
 }));
+vi.mock("@/lib/analytics/client", () => analyticsState);
 
 import HabitPerfectDayHub from "@/components/my-library/habits/HabitPerfectDayHub";
 import { APP_SOUND_ASSETS } from "@/lib/audio/client-sound";
@@ -221,6 +225,47 @@ function buildOpenBuildShortStreakSnapshot(): HabitSnapshot {
     archivedHabits: [],
     daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+  };
+}
+
+function buildCatchUpRecoverySnapshot(options?: { secondHabit?: boolean }): HabitSnapshot {
+  const primaryHabit = buildHabitDefinitionView(
+    buildHabitRow({
+      title: "Read 10 pages",
+      start_date: "2026-05-04",
+    })
+  );
+  const secondaryHabit = options?.secondHabit
+    ? buildHabitDefinitionView(
+        buildHabitRow({
+          id: "99999999-9999-4999-8999-999999999999",
+          title: "Mobility",
+          start_date: "2026-05-04",
+          sort_order: 2,
+        })
+      )
+    : null;
+  const activeHabits = secondaryHabit ? [primaryHabit, secondaryHabit] : [primaryHabit];
+  const checkIns = [
+    buildHabitCheckInView(
+      buildCheckInRow({
+        habit_id: primaryHabit.id,
+        check_in_date: "2026-05-04",
+      })
+    ),
+  ];
+
+  return {
+    schemaReady: true,
+    resetEventsReady: true,
+    loadError: null,
+    selectedDate: "2026-05-10",
+    activeHabits,
+    archivedHabits: [],
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+    motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
+    motivationSummaries: buildMotivationRangeSummaries(activeHabits, checkIns, "2026-05-10"),
   };
 }
 
@@ -841,6 +886,7 @@ describe("HabitPerfectDayHub", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
     navigationState.push.mockClear();
+    analyticsState.sendClientAnalyticsEvent.mockClear();
     window.localStorage.clear();
   });
 
@@ -897,13 +943,20 @@ describe("HabitPerfectDayHub", () => {
     expect(headingRow).toHaveClass("justify-start");
     expect(headingRow).toHaveClass("flex-wrap");
     expect(headingRow).not.toHaveClass("justify-between");
+    const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    expect(within(card).getByText("Manual")).toBeVisible();
+    expect(within(card).getByText("Use Mark done or Save when this is completed.")).toBeVisible();
   });
 
   it("routes micro-backed Habits to Micro Sessions instead of manual completion", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildMicroSessionHabitSnapshot()} />);
 
     expect(screen.queryByRole("button", { name: "Mark done" })).toBeNull();
+    expect(screen.getByText("Source-backed")).toBeVisible();
     expect(screen.getByText("Auto-completes when every Micro Session unit is done.")).toBeVisible();
+    expect(
+      screen.getByText("Completed by Micro Sessions when every linked unit is done.")
+    ).toBeVisible();
 
     const progress = screen.getByTestId(
       "habit-micro-session-progress-11111111-1111-4111-8111-111111111111"
@@ -1343,6 +1396,158 @@ describe("HabitPerfectDayHub", () => {
         })
       );
     });
+  });
+
+  it("shows catch-up recovery only for stale tracked days and can leave missed without writes", async () => {
+    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
+
+    const assistant = screen.getByTestId("habits-catch-up-assistant");
+    expect(within(assistant).getByRole("heading", { name: "Catch up missed days" })).toBeVisible();
+    expect(
+      within(assistant).getByText(
+        "No automatic failures were saved. Each habit below shows its own missed dates. Fix them there, leave them missed, or restart Motivation stats from today."
+      )
+    ).toBeVisible();
+    expect(within(assistant).getByText("5 dates")).toBeVisible();
+    expect(
+      within(assistant).getByText(/5 missed habit dates need review across 1 habit/)
+    ).toBeVisible();
+    expect(within(assistant).queryByRole("button", { name: "Mark done" })).toBeNull();
+
+    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
+    const habitCard = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    expect(habitCard.contains(habitPanel)).toBe(true);
+    expect(within(habitPanel).getByText("5 dates need review")).toBeVisible();
+    expect(within(habitPanel).getByText("May 5")).toBeVisible();
+    expect(within(habitPanel).getAllByRole("link", { name: "Review day" })[0]).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-05"
+    );
+    await waitFor(() => {
+      expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
+        "habit_catch_up_assistant_shown",
+        expect.objectContaining({
+          selectedDate: "2026-05-10",
+          catchUpDayCount: 5,
+          catchUpEntryCount: 5,
+          catchUpHabitCount: 1,
+          oldestCatchUpDate: "2026-05-05",
+          newestCatchUpDate: "2026-05-09",
+          markDoneEntryCount: 5,
+        })
+      );
+    });
+
+    fireEvent.click(within(habitPanel).getAllByRole("button", { name: "Leave missed" })[0]!);
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
+      "habit_catch_up_day_left_missed",
+      expect.objectContaining({
+        selectedDate: "2026-05-10",
+        catchUpDate: "2026-05-05",
+        habitMode: "build",
+        habitType: "binary",
+        canMarkDone: true,
+      })
+    );
+    expect(await screen.findByTestId("habits-action-success")).toHaveTextContent(
+      "Left Read 10 pages missed for May 5. No history was changed."
+    );
+    expect(within(habitPanel).queryByText("May 5")).toBeNull();
+  });
+
+  it("saves catch-up Mark done against the missed day while keeping Today selected", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true, completed: true }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
+
+    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(habitPanel).getAllByRole("button", { name: "Mark done" })[0]!);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/my-library/habits/check-ins",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      habitId: string;
+      checkInDate: string;
+      selectedDate: string;
+      actionSource: string;
+      valueBoolean: boolean;
+    };
+    expect(body).toMatchObject({
+      habitId: "11111111-1111-4111-8111-111111111111",
+      checkInDate: "2026-05-05",
+      selectedDate: "2026-05-10",
+      actionSource: "catch_up",
+      valueBoolean: true,
+    });
+  });
+
+  it("restarts catch-up Motivation stats with one server reset per active habit", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildCatchUpRecoverySnapshot({ secondHabit: true }),
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot({ secondHabit: true })} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Restart stats from today" }));
+    expect(screen.getByTestId("habits-catch-up-reset-confirm")).toHaveTextContent(
+      "Earlier check-ins stay saved"
+    );
+    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
+      "habit_catch_up_reset_started",
+      expect.objectContaining({
+        selectedDate: "2026-05-10",
+        catchUpDayCount: 6,
+        catchUpEntryCount: 11,
+        catchUpHabitCount: 2,
+        activeHabitCount: 2,
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
+      "habit_catch_up_reset_cancelled",
+      expect.objectContaining({
+        selectedDate: "2026-05-10",
+        catchUpDayCount: 6,
+        catchUpEntryCount: 11,
+        catchUpHabitCount: 2,
+        activeHabitCount: 2,
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Restart stats from today" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset stats" }));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
+      "/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
+      "/api/my-library/habits/99999999-9999-4999-8999-999999999999/reset-stats",
+    ]);
+    for (const [, init] of vi.mocked(fetch).mock.calls) {
+      expect(JSON.parse(init?.body as string)).toMatchObject({
+        effectiveDate: "2026-05-10",
+        selectedDate: "2026-05-10",
+        actionSource: "catch_up",
+      });
+    }
   });
 
   it("uses My Library token fields and choices in the Add habit form", () => {
@@ -2046,12 +2251,13 @@ describe("HabitPerfectDayHub", () => {
   it("keeps setup labels out of open details while showing dated metadata", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildSnapshot({ withHabit: true })} />);
 
-    expect(screen.getByText("Do")).toBeVisible();
+    expect(screen.getByText("Manual")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Details" }));
 
     const details = document.getElementById("habit-details-11111111-1111-4111-8111-111111111111");
     expect(details).not.toBeNull();
     expect(within(details as HTMLElement).getByText("Daily · Started May 4, 2026")).toBeVisible();
+    expect(within(details as HTMLElement).getByText("Manual tracking")).toBeVisible();
     expect(within(details as HTMLElement).queryByText("Do")).toBeNull();
     expect(within(details as HTMLElement).queryByText("Open")).toBeNull();
     expect(within(details as HTMLElement).queryByText("Other")).toBeNull();
@@ -2156,7 +2362,6 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildQuitOpenSnapshot()} />);
 
     const card = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
-    fireEvent.click(within(card).getByRole("button", { name: "Details" }));
     fireEvent.click(within(card).getByRole("button", { name: "Log slip" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -2793,16 +2998,17 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildOpenBuildStreakSnapshot()} />);
 
     const card = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
-    expect(within(card).getByText("Do")).toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Manual")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Open")).toHaveClass("max-sm:hidden");
   });
 
-  it("keeps slip state visible on mobile while moving quit mode to details", () => {
+  it("keeps quit mode and slip state visible on mobile", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildQuitSlipSnapshot()} />);
 
     const card = screen.getByTestId("habit-card-88888888-8888-4888-8888-888888888888");
-    expect(within(card).getByText("Quit")).toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Quit")).not.toHaveClass("max-sm:hidden");
+    expect(within(card).getByText("Counts clear days until you log a slip.")).toBeVisible();
     expect(within(card).getByText("Daily")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Slip logged today")).not.toHaveClass("max-sm:hidden");
     expect(within(card).getByText("Slip logged today")).toHaveClass("bg-amber-50/90");
@@ -2817,6 +3023,10 @@ describe("HabitPerfectDayHub", () => {
     const details = document.getElementById("habit-details-11111111-1111-4111-8111-111111111111");
     expect(details).not.toBeNull();
     expect(within(details as HTMLElement).queryByText("Open")).toBeNull();
+    expect(within(details as HTMLElement).getByText("Manual tracking")).toBeVisible();
+    expect(
+      within(details as HTMLElement).getByText(/There is no automatic daily increment/i)
+    ).toBeVisible();
   });
 
   it("keeps Home mobile habit entry focused on collapsed active habits", async () => {
