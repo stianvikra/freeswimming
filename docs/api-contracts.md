@@ -443,6 +443,15 @@
   `docs/architecture/workout-context-checkout-cancel-decline-measurement-contract.md`. The current
   workout save success surface no longer renders the saved-workout Poolside guide prompt, so it
   does not emit new prompt shown/clicked/declined events from that surface.
+- Course lesson KPI caveat: `courseLessonKpi` is public aggregate product telemetry derived only
+  from mapped Course lesson events: `course_lesson_viewed`, `course_lesson_completed`,
+  `course_lesson_continued`, and `course_lesson_support_clicked` for route template `/course`,
+  source `course`, or surface `course_lesson`. Lesson/module/action identifiers must be safe
+  dimension values before they enter dedicated totals. Unknown, malformed, deprecated, or unmapped
+  lesson/module/action values stay out of rates and are exposed only as a bounded
+  `unknownEvents` count. `completed` means the learner used the pass-criteria marked-done action,
+  not proven technique mastery. `supportInterest` is a post-value click signal only, not checkout,
+  entitlement, access, revenue, Stripe reconciliation, finance reporting, or a unique person.
 - Workout builder caveat: `workoutBuilderFunnel` is product telemetry derived from
   `workout_builder_started` and `workout_builder_saved`. Save rate is saved/start count for the
   selected range, not unique-user conversion, checkout performance, Stripe reconciliation, export,
@@ -603,6 +612,28 @@
         "total": 1,
         "acceptedRate": null,
         "declineRate": null
+      }
+    ]
+  },
+  "courseLessonKpi": {
+    "viewed": 4,
+    "completed": 2,
+    "continued": 1,
+    "supportInterest": 1,
+    "completionRate": 0.5,
+    "continuationRate": 0.25,
+    "supportInterestRate": 0.25,
+    "unknownEvents": 1,
+    "lessonCounts": [
+      {
+        "key": "body-position-front",
+        "moduleId": "body-position",
+        "viewed": 3,
+        "completed": 2,
+        "continued": 1,
+        "supportInterest": 1,
+        "total": 7,
+        "completionRate": 0.667
       }
     ]
   },

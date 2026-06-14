@@ -114,9 +114,13 @@ const PUBLIC_CLIENT_AGGREGATE_EVENTS = new Set<AnalyticsEventName>([
   "public_cta_clicked",
   "product_viewed",
   "plans_viewed",
+  "course_lesson_viewed",
+  "course_lesson_completed",
+  "course_lesson_continued",
+  "course_lesson_support_clicked",
 ]);
 
-const PUBLIC_SOURCE_VALUES = new Set(["public", "landing", "plans", "checkout_success"]);
+const PUBLIC_SOURCE_VALUES = new Set(["public", "landing", "plans", "course", "checkout_success"]);
 const ALLOWED_QUERY_KEYS = [
   "utm_source",
   "utm_medium",

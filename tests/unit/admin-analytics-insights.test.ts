@@ -318,6 +318,102 @@ describe("admin analytics insights", () => {
     });
   });
 
+  it("maps course lesson KPI events without exposing raw payload values", () => {
+    const courseRow = {
+      ...baseRow,
+      source: "course",
+      route_template: "/course",
+      route_category: "course_landing",
+      product_id: null,
+      product_type: null,
+      payload: {
+        source: "course",
+        surface: "course_lesson",
+        routeTemplate: "/course",
+        lessonId: "body-position-front",
+        moduleId: "body-position",
+        lessonVariant: "concept",
+        lessonStatus: "in_progress",
+      },
+    } satisfies AnalyticsEventInsightRow;
+
+    const insights = buildAnalyticsInsights({
+      rows: [
+        {
+          ...courseRow,
+          event_name: "course_lesson_viewed",
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_viewed",
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_completed",
+          payload: {
+            ...courseRow.payload,
+            lessonStatus: "done",
+          },
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_continued",
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_support_clicked",
+          payload: {
+            ...courseRow.payload,
+            actionId: "poolside_guide",
+          },
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_support_clicked",
+          payload: {
+            ...courseRow.payload,
+            actionId: "future_support",
+          },
+        },
+        {
+          ...courseRow,
+          event_name: "course_lesson_viewed",
+          payload: {
+            ...courseRow.payload,
+            lessonId: "https://example.com/?email=user@example.com",
+          },
+        },
+      ],
+      generatedAt: new Date("2026-06-09T11:00:00.000Z"),
+      rangeDays: 30,
+    });
+
+    expect(insights.courseLessonKpi).toEqual({
+      viewed: 2,
+      completed: 1,
+      continued: 1,
+      supportInterest: 1,
+      completionRate: 0.5,
+      continuationRate: 0.5,
+      supportInterestRate: 0.5,
+      unknownEvents: 2,
+      lessonCounts: [
+        {
+          key: "body-position-front",
+          moduleId: "body-position",
+          viewed: 2,
+          completed: 1,
+          continued: 1,
+          supportInterest: 1,
+          total: 5,
+          completionRate: 0.5,
+        },
+      ],
+    });
+    expect(JSON.stringify(insights.courseLessonKpi)).not.toContain("future_support");
+    expect(JSON.stringify(insights.courseLessonKpi)).not.toContain("user@example.com");
+  });
+
   it("keeps workout builder save-rate not counted when starts are missing", () => {
     const insights = buildAnalyticsInsights({
       rows: [

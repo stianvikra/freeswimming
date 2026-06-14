@@ -27,6 +27,8 @@ import { cx } from "@/components/ui/cx";
 import { getMainMenuItems } from "@/components/navigation/mainMenuItems";
 import { useInstallContext } from "@/components/install/install-context";
 import InstallFeedback, { type InstallFeedbackMessage } from "@/components/install/InstallFeedback";
+import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import { buildCourseLessonAnalyticsPayload } from "@/lib/analytics/course";
 import { BRAND_USAGE } from "@/lib/brand";
 import {
   A2HS_AUTO_PROMPT_DELAY_MS,
@@ -506,6 +508,7 @@ function CoursePageClient() {
   const doneLessonIdsRef = useRef<string[]>([]);
   const doneConfirmationByLessonIdRef = useRef<Record<string, string>>({});
   const hydratedProgressUserIdRef = useRef<string | null>(null);
+  const courseLessonViewEventKeysRef = useRef<Set<string>>(new Set());
   const swipeTouchIdRef = useRef<number | null>(null);
   const swipeDirectionRef = useRef<SwipeDirection | null>(null);
   const swipeStartXRef = useRef(0);
@@ -540,6 +543,32 @@ function CoursePageClient() {
       totalLessons: courseLessonsFlat.length,
     };
   }, [activeLesson.id, courseLessonsFlat, courseModules]);
+
+  const buildCourseLessonAnalyticsPayloadFor = useCallback(
+    (
+      lessonId: string,
+      options?: {
+        lessonStatus?: "ready" | "in_progress" | "done";
+        actionId?: string | null;
+      }
+    ) => {
+      const nextLessonId = resolveCanonicalLessonId(lessonId) ?? lessonId;
+      const lesson = courseLessonById.get(nextLessonId) ?? activeLesson;
+      const courseModule =
+        courseModules.find((module) => module.lessons.some((item) => item.id === lesson.id)) ??
+        null;
+      const lessonExperienceForAnalytics = buildCourseLessonExperienceViewModel(lesson);
+
+      return buildCourseLessonAnalyticsPayload({
+        lessonId: lesson.id,
+        moduleId: courseModule?.id,
+        lessonVariant: lessonExperienceForAnalytics.variant,
+        lessonStatus: options?.lessonStatus,
+        actionId: options?.actionId,
+      });
+    },
+    [activeLesson, courseLessonById, courseModules, resolveCanonicalLessonId]
+  );
 
   const lessonJumpMeta = useMemo(() => {
     let globalIndex = 0;
@@ -1299,6 +1328,15 @@ function CoursePageClient() {
         setCloseDrawerOnLessonChange(true);
       }
 
+      if (!previewEnabled) {
+        void sendClientAnalyticsEvent(
+          "course_lesson_continued",
+          buildCourseLessonAnalyticsPayloadFor(nextLessonId, {
+            lessonStatus: "ready",
+          })
+        );
+      }
+
       router.push(`${pathname}?lesson=${encodeURIComponent(nextLessonId)}`, { scroll: false });
       const shouldScrollToPlayer = options?.scrollToPlayer ?? true;
       if (!drawerOpen && shouldScrollToPlayer) {
@@ -1307,7 +1345,15 @@ function CoursePageClient() {
         playerTopRef.current?.scrollIntoView({ behavior, block: "start" });
       }
     },
-    [activeLesson.id, drawerOpen, pathname, resolveCanonicalLessonId, router]
+    [
+      activeLesson.id,
+      buildCourseLessonAnalyticsPayloadFor,
+      drawerOpen,
+      pathname,
+      previewEnabled,
+      resolveCanonicalLessonId,
+      router,
+    ]
   );
 
   function toggleDrawer(view: DrawerView) {
@@ -1569,6 +1615,14 @@ function CoursePageClient() {
           ...prev,
           [activeLesson.id]: new Date().toISOString(),
         }));
+      }
+      if (!previewEnabled) {
+        void sendClientAnalyticsEvent(
+          "course_lesson_completed",
+          buildCourseLessonAnalyticsPayloadFor(activeLesson.id, {
+            lessonStatus: "done",
+          })
+        );
       }
       setAutoInstallPromptArmed(true);
       return;
@@ -1908,6 +1962,32 @@ function CoursePageClient() {
             className: "bg-slate-50 text-slate-700 ring-slate-200/75",
           };
   const doneConfirmedAt = doneConfirmationByLessonId[activeLesson.id] ?? null;
+
+  useEffect(() => {
+    if (previewEnabled) return;
+
+    const eventKey = `${activeLesson.id}:${moduleInfo.module?.id ?? "unknown"}`;
+    if (courseLessonViewEventKeysRef.current.has(eventKey)) return;
+    courseLessonViewEventKeysRef.current.add(eventKey);
+
+    void sendClientAnalyticsEvent(
+      "course_lesson_viewed",
+      buildCourseLessonAnalyticsPayloadFor(activeLesson.id, {
+        lessonStatus:
+          activeLessonProgressStatus === "done"
+            ? "done"
+            : activeLessonProgressStatus === "in_progress"
+              ? "in_progress"
+              : "ready",
+      })
+    );
+  }, [
+    activeLesson.id,
+    activeLessonProgressStatus,
+    buildCourseLessonAnalyticsPayloadFor,
+    moduleInfo.module?.id,
+    previewEnabled,
+  ]);
   const doneConfirmedLabel = useMemo(() => {
     if (!doneConfirmedAt) return null;
     const parsed = Date.parse(doneConfirmedAt);
@@ -3664,6 +3744,21 @@ function CoursePageClient() {
                           key={action.id}
                           tier={isPrimary ? "cta" : "nav"}
                           href={action.href}
+                          onClick={() => {
+                            if (previewEnabled) return;
+                            void sendClientAnalyticsEvent(
+                              "course_lesson_support_clicked",
+                              buildCourseLessonAnalyticsPayloadFor(activeLesson.id, {
+                                lessonStatus:
+                                  activeLessonProgressStatus === "done"
+                                    ? "done"
+                                    : activeLessonProgressStatus === "in_progress"
+                                      ? "in_progress"
+                                      : "ready",
+                                actionId: action.id,
+                              })
+                            );
+                          }}
                           data-testid={`course-support-action-${action.id}`}
                           className={
                             isPrimary

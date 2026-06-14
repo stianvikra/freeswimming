@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { isDesktopProject, isMobileProject } from "./project-guards";
 
+type AnalyticsEventRequest = {
+  eventName?: string;
+  payload?: Record<string, unknown>;
+};
+
 function buildDeterministicCourseModules(lessonOverrides: Record<string, unknown> = {}) {
   return [
     {
@@ -27,6 +32,14 @@ function buildDeterministicCourseModules(lessonOverrides: Record<string, unknown
       ],
     },
   ];
+}
+
+function findAnalyticsEvent(events: AnalyticsEventRequest[], eventName: string) {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (event?.eventName === eventName) return event;
+  }
+  return undefined;
 }
 
 test("course support card defaults to video analysis and poolside actions", async ({
@@ -107,6 +120,68 @@ test("course support card honors configured primary support action", async ({ pa
   await expect(page.getByTestId("course-support-action-poolsideGuide")).toHaveClass(
     /fs-cta-secondary/
   );
+});
+
+test("course support card emits public course lesson analytics", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
+  test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+
+  const analyticsEvents: AnalyticsEventRequest[] = [];
+
+  await page.route("**/api/analytics/event", async (route) => {
+    analyticsEvents.push(route.request().postDataJSON() as AnalyticsEventRequest);
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: buildDeterministicCourseModules(),
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
+
+  await page.goto("/course?lesson=mod1-l1");
+
+  await expect
+    .poll(() => findAnalyticsEvent(analyticsEvents, "course_lesson_viewed"))
+    .toMatchObject({
+      eventName: "course_lesson_viewed",
+      payload: {
+        source: "course",
+        surface: "course_lesson",
+        routeTemplate: "/course",
+        lessonId: "mod1-l1",
+        moduleId: "mod1",
+      },
+    });
+
+  await page.getByTestId("course-support-action-poolsideGuide").click();
+
+  await expect
+    .poll(() => findAnalyticsEvent(analyticsEvents, "course_lesson_support_clicked"))
+    .toMatchObject({
+      eventName: "course_lesson_support_clicked",
+      payload: {
+        source: "course",
+        surface: "course_lesson",
+        routeTemplate: "/course",
+        lessonId: "mod1-l1",
+        moduleId: "mod1",
+        actionId: "poolside_guide",
+      },
+    });
 });
 
 test("course support card hides static QR on mobile and keeps share actions", async ({

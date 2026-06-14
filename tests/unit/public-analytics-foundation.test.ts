@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildCourseLessonAnalyticsPayload,
+  normalizeCourseLessonSupportActionId,
+} from "@/lib/analytics/course";
+import {
   buildPublicProductPayload,
   buildPublicRoutePayload,
   DISALLOWED_PUBLIC_ANALYTICS_VENDORS,
@@ -57,6 +61,42 @@ describe("public analytics foundation", () => {
       routeCountable: true,
       utm_source: "mail",
     });
+  });
+
+  it("builds privacy-safe course lesson payloads from runtime IDs and mapped actions", () => {
+    expect(
+      buildCourseLessonAnalyticsPayload({
+        lessonId: "body-position--body-position-front",
+        moduleId: "body-position",
+        lessonVariant: "water-drill",
+        lessonStatus: "done",
+        actionId: "poolsideGuide",
+      })
+    ).toMatchObject({
+      source: "course",
+      surface: "course_lesson",
+      routeTemplate: "/course",
+      routeCategory: "course_landing",
+      routeCountable: true,
+      lessonId: "body-position--body-position-front",
+      moduleId: "body-position",
+      lessonVariant: "water-drill",
+      lessonStatus: "done",
+      actionId: "poolside_guide",
+    });
+
+    expect(
+      buildCourseLessonAnalyticsPayload({
+        lessonId: "https://example.com/?email=user@example.com",
+        moduleId: "body-position",
+        lessonVariant: "concept",
+        actionId: "futureAction",
+      })
+    ).toMatchObject({
+      lessonId: undefined,
+      actionId: undefined,
+    });
+    expect(normalizeCourseLessonSupportActionId("guide0To1000")).toBe("guide_0_to_1000");
   });
 
   it("counts future products only through canonical safe dimensions", () => {

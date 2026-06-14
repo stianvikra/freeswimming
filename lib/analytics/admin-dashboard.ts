@@ -97,6 +97,14 @@ export type AnalyticsDashboardExistingUpsellBaseline = {
   caveat: string;
 };
 
+export type AnalyticsDashboardCourseLessonKpi = {
+  metrics: AnalyticsDashboardMetric[];
+  lessonItems: AnalyticsDashboardListItem[];
+  emptyLabel: string;
+  detail: string;
+  caveat: string;
+};
+
 export type AnalyticsDashboardWorkoutContextCta = {
   metrics: AnalyticsDashboardMetric[];
   detail: string;
@@ -143,6 +151,7 @@ export type AnalyticsDashboardViewModel = {
   metrics: AnalyticsDashboardMetric[];
   funnel: AnalyticsDashboardFunnelStep[];
   existingUpsellBaseline: AnalyticsDashboardExistingUpsellBaseline;
+  courseLessonKpi: AnalyticsDashboardCourseLessonKpi;
   workoutContextStageSummary: AnalyticsDashboardWorkoutContextStageSummary;
   workoutContextCta: AnalyticsDashboardWorkoutContextCta;
   workoutContextCheckoutStarted: AnalyticsDashboardWorkoutContextCheckoutStarted;
@@ -237,6 +246,10 @@ const EVENT_LABELS: Record<string, string> = {
   product_viewed: "Product viewed",
   public_cta_clicked: "Public CTA clicked",
   public_page_viewed: "Public page viewed",
+  course_lesson_completed: "Course lesson completed",
+  course_lesson_continued: "Course lesson continued",
+  course_lesson_support_clicked: "Course lesson support clicked",
+  course_lesson_viewed: "Course lesson viewed",
   session_draft_generated: "Session draft generated",
   upsell_accepted: "Upsell accepted",
   upsell_declined: "Upsell declined",
@@ -564,6 +577,135 @@ function buildSchemaMissingExistingUpsellBaseline(): AnalyticsDashboardExistingU
     emptyLabel: "Current sales prompt counts are hidden until analytics setup is ready.",
     detail: "Current sales prompt counts are hidden until analytics setup is ready.",
     caveat: "Finish analytics setup before reading current sales prompt counts.",
+  };
+}
+
+function formatCourseLessonKpiLabel(key: string | null | undefined): string {
+  if (!isSafeAnalyticsIdentifier(key)) return "Unknown lesson";
+  return titleCaseWords(key.replace(/--+/g, " "));
+}
+
+function buildCourseLessonKpi(
+  payload: AnalyticsInsightsResponse
+): AnalyticsDashboardCourseLessonKpi {
+  const kpi = payload.courseLessonKpi;
+  const viewed = kpi?.viewed ?? 0;
+  const completed = kpi?.completed ?? 0;
+  const continued = kpi?.continued ?? 0;
+  const supportInterest = kpi?.supportInterest ?? 0;
+  const unknownEvents = kpi?.unknownEvents ?? 0;
+  const meaningCaveat =
+    "Marked done means the learner used the pass-criteria completion action, not proven technique mastery. Support interest is a click signal, not checkout, access, revenue, Stripe reconciliation, finance reporting, or a unique person.";
+  const lessonItems =
+    kpi?.lessonCounts?.slice(0, 6).map(
+      (item): AnalyticsDashboardListItem => ({
+        key: item.key,
+        label: formatCourseLessonKpiLabel(item.key),
+        secondary: `${formatAnalyticsCount(item.viewed)} viewed / ${formatAnalyticsCount(
+          item.completed
+        )} marked done / ${formatAnalyticsCount(item.continued)} continued / ${formatAnalyticsCount(
+          item.supportInterest
+        )} support interest`,
+        count: formatAnalyticsCount(item.total),
+      })
+    ) ?? [];
+
+  return {
+    metrics: [
+      {
+        id: "course-lesson-viewed",
+        label: "Viewed",
+        value: formatAnalyticsCount(viewed),
+        detail: "Lesson views",
+      },
+      {
+        id: "course-lesson-completed",
+        label: "Marked done",
+        value: formatAnalyticsCount(completed),
+        detail: "After pass criteria",
+      },
+      {
+        id: "course-lesson-completion-rate",
+        label: "Done rate",
+        value: formatAnalyticsPercent(kpi?.completionRate ?? rate(completed, viewed)),
+        detail: "Marked done / viewed",
+      },
+      {
+        id: "course-lesson-continued",
+        label: "Continued",
+        value: formatAnalyticsCount(continued),
+        detail: "Opened another lesson",
+      },
+      {
+        id: "course-lesson-support-interest",
+        label: "Support interest",
+        value: formatAnalyticsCount(supportInterest),
+        detail: "Post-value clicks",
+      },
+      {
+        id: "course-lesson-unknown",
+        label: "Needs review",
+        value: formatAnalyticsCount(unknownEvents),
+        detail: "Kept out of rates",
+      },
+    ],
+    lessonItems,
+    emptyLabel: "No course lesson activity in this range.",
+    detail:
+      "Shows public aggregate lesson views, marked-done actions, continued lessons, and post-value support or PRO interest.",
+    caveat:
+      viewed === 0
+        ? `Rates are not counted until at least one course lesson view exists in this range. ${meaningCaveat}`
+        : unknownEvents > 0
+          ? `Some course lesson activity is missing an approved lesson, module, or action value. It stays out of rates until reviewed. ${meaningCaveat}`
+          : meaningCaveat,
+  };
+}
+
+function buildSchemaMissingCourseLessonKpi(): AnalyticsDashboardCourseLessonKpi {
+  return {
+    metrics: [
+      {
+        id: "course-lesson-viewed",
+        label: "Viewed",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "course-lesson-completed",
+        label: "Marked done",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "course-lesson-completion-rate",
+        label: "Done rate",
+        value: "Not counted",
+        detail: "Marked done / viewed",
+      },
+      {
+        id: "course-lesson-continued",
+        label: "Continued",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "course-lesson-support-interest",
+        label: "Support interest",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+      {
+        id: "course-lesson-unknown",
+        label: "Needs review",
+        value: "Not counted",
+        detail: "Setup missing",
+      },
+    ],
+    lessonItems: [],
+    emptyLabel: "Course lesson counts are hidden until analytics setup is ready.",
+    detail: "Course lesson counts are hidden until analytics setup is ready.",
+    caveat: "Finish analytics setup before reading course lesson KPI counts.",
   };
 }
 
@@ -1472,6 +1614,7 @@ export function buildAnalyticsDashboardViewModel(
       ],
       funnel: [],
       existingUpsellBaseline: buildSchemaMissingExistingUpsellBaseline(),
+      courseLessonKpi: buildSchemaMissingCourseLessonKpi(),
       workoutContextStageSummary: buildSchemaMissingWorkoutContextStageSummary(),
       workoutContextCta: buildSchemaMissingWorkoutContextCta(),
       workoutContextCheckoutStarted: buildSchemaMissingWorkoutContextCheckoutStarted(),
@@ -1570,6 +1713,7 @@ export function buildAnalyticsDashboardViewModel(
     ],
     funnel: buildFunnel(payload),
     existingUpsellBaseline: buildExistingUpsellBaseline(payload),
+    courseLessonKpi: buildCourseLessonKpi(payload),
     workoutContextStageSummary: buildWorkoutContextStageSummary(payload),
     workoutContextCta: buildWorkoutContextCta(payload),
     workoutContextCheckoutStarted: buildWorkoutContextCheckoutStarted(payload),
@@ -1589,6 +1733,7 @@ export function buildAnalyticsDashboardViewModel(
         : `This range is below the ${formatAnalyticsCount(payload.rowCap)} read limit.`,
       "Sales funnel counts are product signals only. They are not purchase or accounting records; use Stripe and accounting reports for money.",
       "Current sales prompt counts show views, clicks, and checkout-cancel returns only. Clicks are not purchases, and checkout-cancel returns are not every non-buyer.",
+      "Course lesson counts are public aggregate activity only. Marked done is not proven technique mastery, and support interest is not checkout, entitlement, revenue, finance reporting, or unique people.",
       "Saved-workout guide stage summary uses selected-range event counts only; cancel rate is cancelled / shown for the mapped return-from-checkout signal. It is not unique-user conversion, revenue, Stripe reconciliation, or finance reporting.",
       "Saved-workout guide prompt counts show views and clicks only. Clicks are not purchases, access grants, revenue, accounting records, or unique people.",
       "Saved-workout checkout handoff counts show checkout starts for the approved guide path only. They are not purchases, access grants, revenue, accounting records, or unique people.",

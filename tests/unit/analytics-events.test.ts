@@ -30,6 +30,10 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("habit_lapse_logged")).toBe(true);
     expect(isAnalyticsEventName("habit_rest_day_logged")).toBe(true);
     expect(isAnalyticsEventName("habit_timer_saved")).toBe(true);
+    expect(isAnalyticsEventName("course_lesson_viewed")).toBe(true);
+    expect(isAnalyticsEventName("course_lesson_completed")).toBe(true);
+    expect(isAnalyticsEventName("course_lesson_continued")).toBe(true);
+    expect(isAnalyticsEventName("course_lesson_support_clicked")).toBe(true);
     expect(isAnalyticsEventName("workout_builder_started")).toBe(true);
     expect(isAnalyticsEventName("workout_builder_template_selected")).toBe(true);
     expect(isAnalyticsEventName("workout_builder_saved")).toBe(true);

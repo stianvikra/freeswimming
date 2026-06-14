@@ -293,6 +293,11 @@ const ANALYTICS_WORKFLOW = [
       "Shown means a current sales prompt on Plans or My Library appeared. Clicked means someone clicked it. Checkout cancelled means someone returned from checkout. Clicks are not purchases, and checkout cancelled does not mean every other visitor declined.",
   },
   {
+    title: "Read free lesson learning signals as aggregate lesson activity",
+    detail:
+      "Viewed, marked done, continued, and support interest are public aggregate rows from the free Course lesson experience. Marked done means the learner used the pass-criteria completion action, not proven technique mastery. Support interest means a post-value support or PRO click, not checkout, access, revenue, finance reporting, or a unique person.",
+  },
+  {
     title: "Read paused Poolside guide prompt data as readiness",
     detail:
       "Shown and clicked are mapped rows for a saved-workout Poolside guide placement that is paused. The current workout save success message no longer shows that prompt. Treat these numbers as test or future-placement readiness until a new placement launches. They are not active production conversion, purchases, access grants, revenue, accounting records, or unique people.",
@@ -580,6 +585,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Current sales prompts",
         meaning:
           "Shows how often current sales prompts on Plans and My Library were shown, clicked, or returned from checkout. Use it as prompt activity only, not purchase, access, revenue, or accounting evidence.",
+      },
+      {
+        label: "Free lesson learning signals",
+        meaning:
+          "Shows public aggregate Course lesson views, marked-done actions, continued lessons, and support interest. Marked done is completion-action use, not proven technique mastery, and support interest is not checkout, access, revenue, finance reporting, or unique people.",
       },
       {
         label: "Poolside guide paused funnel",
