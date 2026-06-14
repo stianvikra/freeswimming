@@ -422,7 +422,7 @@ describe("/api/admin/content route", () => {
 
     expect(response.status).toBe(400);
     expect(payload.ok).toBe(false);
-    expect(payload.error).toBe("Lesson experience correction requires a matching mistake.");
+    expect(payload.error).toBe("Correction requires a matching common mistake.");
     expect(supabase.insert).not.toHaveBeenCalled();
   });
 

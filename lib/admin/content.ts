@@ -467,7 +467,7 @@ export function validateCourseLessonExperienceBody(
     if (fix && !mistake) {
       return {
         ok: false,
-        error: "Lesson experience correction requires a matching mistake.",
+        error: "Correction requires a matching common mistake.",
       };
     }
   }

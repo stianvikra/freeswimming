@@ -139,9 +139,9 @@ const CONTENT_PAGE_FLOW = [
       "Use this first for day-to-day course production. Overview mode shows all modules with compact lesson previews. The current `Module workspace` stays on top so active scope is always visible, and overview cards now also expose quick `Open lesson`, `Edit lesson`, `Delete lesson`, and `Delete module` actions. `Open module scope` switches to focus mode, where the selected module becomes the one primary lesson workspace below. Use `Show all modules` to return to overview. Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row.",
   },
   {
-    title: "Lesson experience editor",
+    title: "Lesson fields editor",
     detail:
-      "Inside Edit lesson, use `Lesson experience` to pick the layout first: Concept / intro, Dryland practice, Water drill, Swim set, or Custom. Then use the Show on public lesson toggles to show or hide quick explanation, why the exercise matters, land practice, water practice, linked mistake/correction rows, feel cues, next step, and support text. Hidden containers do not render publicly, but their saved draft content is preserved for later. Each correction must stay in the same row as its mistake. Practice images are non-editable in this slice; existing image metadata is preserved, and active practice containers without images keep `Visual not added yet`. If a bad edit is saved or published, use revision history/status rollback before making more changes.",
+      "Inside Edit lesson, `Public lesson mirror` uses the same order, width, and section rhythm swimmers see on the public lesson page: Video / estimated time, Lesson goal, Quick explanation, Why this matters, Dryland practice, Pool drill / water practice, Feel cues, Common mistakes, Pass criteria, Next step, and Support card. `Shown on lesson page` marks public content, `Admin/list only` marks fallback/search/list content, and `Advanced/fallback` marks older technical fields. Optional structured sections have a `Show section` checkbox on the section itself; hiding a section preserves saved draft content. `Summary` is the admin/list fallback for search, lists, and older content, not the main public lesson explanation when structured fields are present. Practice images are non-editable in this slice; existing image metadata is preserved, and active practice containers without images keep `Visual not added yet`. After saving, use `View changes` to open preview in a new tab before publishing.",
   },
   {
     title: "Learner common mistakes visibility",
@@ -373,18 +373,19 @@ const BUTTON_GUIDE: ActionGroup[] = [
           "Overview mode now supports quick lesson open/edit/delete actions inside each module card, plus module delete. Use focused module workspace when you need ordering, move controls, preview, or create in one place.",
       },
       {
-        label: "Save changes / Cancel",
+        label: "Save changes / View changes / Cancel",
         meaning:
-          "Save refreshes the open editor from the saved server row without closing it. Cancel exits the editor; if you changed something, confirm before leaving.",
+          "Save refreshes the open editor from the saved server row without closing it. View changes opens admin preview in a new tab for the edited lesson/module. Cancel exits the editor; if you changed something, confirm before leaving.",
       },
       {
-        label: "Lesson experience / Save changes",
+        label: "Public lesson mirror / Advanced/fallback fields",
         meaning:
-          "Layout, Show on public lesson toggles, and structured lesson experience fields save into the current content row, but do not auto-publish. Use preview and status workflow before treating changes as live.",
+          "`Shown on lesson page` fields follow the public lesson order and wording. Use each section's Show section checkbox for public visibility. `Admin/list only` keeps Summary separate for search and lists. Advanced/fallback fields keep the layout preset, stable IDs, support actions, and older technical fallback content separate from the main authoring flow.",
       },
       {
         label: "Open preview",
-        meaning: "Opens admin preview mode with clear preview banner and status context.",
+        meaning:
+          "Opens admin preview mode with clear preview banner and status context. Use View changes from an open editor when reviewing the row you just saved.",
       },
       {
         label: "Open lesson",
@@ -792,7 +793,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
     steps: [
       "Create/edit in draft first.",
       "Move to review and validate copy, status, and ordering.",
-      "Open preview and verify key lesson/module pages.",
+      "Use View changes or Open preview and verify key lesson/module pages.",
       "Publish only when checks are green.",
     ],
   },

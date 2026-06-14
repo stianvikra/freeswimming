@@ -126,6 +126,19 @@ const readOnlyValueClass =
   "min-h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)]";
 const compactCheckboxClass =
   "h-4 w-4 rounded border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
+const lessonMirrorShellClass = "mx-auto mt-4 w-full max-w-[980px] space-y-3";
+const lessonMirrorCardClass =
+  "rounded-[24px] border border-slate-200/72 bg-white/94 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)] sm:p-5 lg:border-slate-300/68 lg:bg-white";
+const lessonMirrorLargeCardClass =
+  "rounded-[28px] border border-slate-200/72 bg-white/96 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-5 lg:border-slate-300/68 lg:bg-white";
+const lessonMirrorPracticeCardClass =
+  "overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:border-slate-300/68";
+const lessonMirrorWaterPracticeCardClass =
+  "overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4";
+const lessonMirrorSoftCalloutClass =
+  "rounded-2xl border border-blue-100/80 bg-blue-50/55 px-4 py-3";
+const lessonMirrorSectionEyebrowClass =
+  "text-[12px] font-semibold tracking-wide text-slate-500 uppercase";
 const secondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const compactPrimaryActionClass =
@@ -370,6 +383,8 @@ type LessonExperienceEditState = {
 
 type LessonBodyEditState = {
   lessonId: string;
+  youtubeId: string;
+  estMinutes: string;
   lessonType: LessonTypeOption;
   drillLabel: string;
   supportStartAtLessonInModule: string;
@@ -482,20 +497,6 @@ const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
     support: true,
   },
 };
-
-const LESSON_EXPERIENCE_DISPLAY_OPTIONS: Array<{
-  key: LessonExperienceDisplayKey;
-  label: string;
-}> = [
-  { key: "quickExplanation", label: "Show lesson quick explanation" },
-  { key: "whyThisMatters", label: "Show lesson why this matters" },
-  { key: "landPractice", label: "Show lesson land practice" },
-  { key: "waterPractice", label: "Show lesson water practice" },
-  { key: "feelCues", label: "Show lesson feel cues" },
-  { key: "commonMistakes", label: "Show lesson mistakes/corrections" },
-  { key: "nextStep", label: "Show lesson experience next step" },
-  { key: "support", label: "Show lesson support card" },
-];
 
 type CourseLessonWorkspaceItem = {
   id: string;
@@ -821,6 +822,11 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
 
   return {
     lessonId,
+    youtubeId: parseBodyString(item.body, "youtubeId") ?? "",
+    estMinutes: (() => {
+      const value = parseBodyNumber(item.body, "estMinutes");
+      return value && value >= 1 ? String(Math.floor(value)) : "";
+    })(),
     lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
     drillLabel: parseBodyString(item.body, "drillLabel") ?? "",
     supportStartAtLessonInModule: (() => {
@@ -898,6 +904,10 @@ function setOptionalStringArray(
 
 function hasObjectValues(value: Record<string, unknown>): boolean {
   return Object.keys(value).length > 0;
+}
+
+function isValidYouTubeVideoId(value: string): boolean {
+  return /^[A-Za-z0-9_-]{11}$/.test(value);
 }
 
 function buildLessonExperiencePracticePayload(input: {
@@ -997,6 +1007,13 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
       : "";
 
   return {
+    youtubeId: value.youtubeId.trim(),
+    estMinutes: (() => {
+      const raw = value.estMinutes.trim();
+      if (!raw) return null;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) && parsed >= 1 ? parsed : Number.NaN;
+    })(),
     lessonType: value.lessonType,
     drillLabel: value.drillLabel.trim(),
     supportStartAtLessonInModule: (() => {
@@ -1035,6 +1052,16 @@ function buildLessonBodyPayload(
   const nextBody: Record<string, unknown> = isRecord(existingBody) ? { ...existingBody } : {};
   const normalized = normalizeLessonBodyForCompare(value);
 
+  if (normalized.youtubeId.length > 0) {
+    nextBody.youtubeId = normalized.youtubeId;
+  } else {
+    delete nextBody.youtubeId;
+  }
+  if (typeof normalized.estMinutes === "number" && Number.isFinite(normalized.estMinutes)) {
+    nextBody.estMinutes = normalized.estMinutes;
+  } else {
+    delete nextBody.estMinutes;
+  }
   if (normalized.lessonType) {
     nextBody.lessonType = normalized.lessonType;
   } else {
@@ -1963,6 +1990,23 @@ export default function AdminContentManager() {
     );
   }
 
+  function updateLessonBodyField<K extends keyof LessonBodyEditState>(
+    key: K,
+    value: LessonBodyEditState[K]
+  ) {
+    setEditFormState((previous) =>
+      previous?.lessonBody
+        ? {
+            ...previous,
+            lessonBody: {
+              ...previous.lessonBody,
+              [key]: value,
+            },
+          }
+        : previous
+    );
+  }
+
   function updateLessonExperienceField(
     key: Exclude<keyof LessonExperienceEditState, "variant" | "display" | "commonMistakes">,
     value: string
@@ -1991,6 +2035,93 @@ export default function AdminContentManager() {
         [key]: value,
       },
     }));
+  }
+
+  function renderLessonContentScopeBadge(
+    label: "Shown on lesson page" | "Admin/list only" | "Advanced/fallback" | "Not editable here"
+  ) {
+    const className =
+      label === "Shown on lesson page"
+        ? "border-blue-100 bg-blue-50 text-blue-700"
+        : label === "Admin/list only"
+          ? "border-amber-200 bg-amber-50 text-amber-800"
+          : label === "Not editable here"
+            ? "border-slate-200 bg-slate-50 text-slate-600"
+            : "border-slate-200 bg-white text-slate-700";
+
+    return (
+      <span
+        className={[
+          "inline-flex min-h-6 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+          className,
+        ].join(" ")}
+      >
+        {label}
+      </span>
+    );
+  }
+
+  function renderLessonSectionVisibilityToggle(
+    key: LessonExperienceDisplayKey,
+    sectionLabel: string
+  ) {
+    const checked = editFormState?.lessonBody?.lessonExperience.display[key] ?? false;
+
+    return (
+      <label className="inline-flex min-h-8 items-center gap-2 rounded-full border border-slate-200 bg-white/88 px-2.5 py-1 text-xs font-semibold text-slate-800">
+        <input
+          type="checkbox"
+          aria-label={`Show ${sectionLabel} section`}
+          checked={checked}
+          onChange={(event) => updateLessonExperienceDisplay(key, event.target.checked)}
+          className={compactCheckboxClass}
+        />
+        <span>Show section</span>
+      </label>
+    );
+  }
+
+  function renderHiddenLessonSectionNotice(sectionLabel: string) {
+    return (
+      <AdminManagerState tone="empty" density="compact" className="!mt-0">
+        Hidden on public lesson. Saved {sectionLabel.toLowerCase()} content is preserved.
+      </AdminManagerState>
+    );
+  }
+
+  function renderLessonPracticeVisualPlaceholder(tone: "land" | "water") {
+    const label = tone === "land" ? "Dryland practice visual" : "Water practice visual";
+    const toneClass =
+      tone === "land"
+        ? "from-slate-100 via-white to-blue-50/70 text-slate-700"
+        : "from-blue-50 via-white to-cyan-50 text-blue-800";
+    const testId =
+      tone === "land"
+        ? "admin-lesson-dryland-visual-placeholder"
+        : "admin-lesson-water-visual-placeholder";
+
+    return (
+      <div className="space-y-2">
+        <div
+          data-testid={testId}
+          className={[
+            "relative flex aspect-[4/3] min-h-[190px] flex-col items-center justify-center gap-2 overflow-hidden rounded-[20px] border border-slate-200/74 bg-gradient-to-br px-4 text-center ring-1 ring-white/80",
+            toneClass,
+          ].join(" ")}
+          role="img"
+          aria-label={`${label} not editable in this slice`}
+        >
+          <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
+            {label}
+          </span>
+          <span className="text-[15px] font-semibold text-slate-800">Visual not added yet</span>
+          {renderLessonContentScopeBadge("Not editable here")}
+        </div>
+        <p className="text-[12px] leading-5 font-medium text-slate-500">
+          Media selection is deferred; existing image metadata is preserved.
+        </p>
+      </div>
+    );
   }
 
   function updateLessonExperienceMistakeRow(
@@ -2338,6 +2469,15 @@ export default function AdminContentManager() {
       if (normalizedBody.goal.length < 5 || normalizedBody.goal.length > 500) {
         return "Lesson goal must be between 5 and 500 characters.";
       }
+      if (normalizedBody.youtubeId.length > 0 && !isValidYouTubeVideoId(normalizedBody.youtubeId)) {
+        return "Video ID must be the 11-character YouTube video ID, not a full URL.";
+      }
+      if (
+        Number.isNaN(normalizedBody.estMinutes) ||
+        (typeof normalizedBody.estMinutes === "number" && normalizedBody.estMinutes > 240)
+      ) {
+        return "Estimated minutes must be an integer between 1 and 240.";
+      }
       if (normalizedBody.drillLabel.length > 40) {
         return "Section badge label must be 40 characters or less.";
       }
@@ -2361,10 +2501,10 @@ export default function AdminContentManager() {
         return "Add at least one drill step (one line per step).";
       }
       if (
-        normalizedBody.displayNextStep &&
+        normalizedBody.nextStep.length > 0 &&
         (normalizedBody.nextStep.length < 2 || normalizedBody.nextStep.length > 240)
       ) {
-        return "Next step must be between 2 and 240 characters.";
+        return "Legacy next step fallback must be between 2 and 240 characters.";
       }
 
       const experience = normalizedBody.lessonExperience;
@@ -2375,10 +2515,10 @@ export default function AdminContentManager() {
         return "Lesson experience quick explanation must be between 5 and 700 characters.";
       }
       if (experience.whyThisMatters.length > 700) {
-        return "Why this exercise matters must be 700 characters or less.";
+        return "Why this matters must be 700 characters or less.";
       }
       if (experience.landPracticeTitle.length > 120) {
-        return "Land practice title must be 120 characters or less.";
+        return "Dryland practice title must be 120 characters or less.";
       }
       if (
         experience.display.landPractice &&
@@ -2388,7 +2528,7 @@ export default function AdminContentManager() {
         return "Add a land practice title when showing land practice steps.";
       }
       if (experience.waterPracticeTitle.length > 120) {
-        return "Water practice title must be 120 characters or less.";
+        return "Pool drill title must be 120 characters or less.";
       }
       if (
         experience.display.waterPractice &&
@@ -2400,24 +2540,27 @@ export default function AdminContentManager() {
       if (experience.waterPracticeSafetyNote.length > 240) {
         return "Water practice safety note must be 240 characters or less.";
       }
-      if (experience.nextStep.length > 240) {
-        return "Lesson experience next step must be 240 characters or less.";
+      if (
+        experience.nextStep.length > 0 &&
+        (experience.nextStep.length < 2 || experience.nextStep.length > 240)
+      ) {
+        return "Next step must be between 2 and 240 characters.";
       }
       if (experience.supportTitle.length > 100) {
-        return "Lesson experience support title must be 100 characters or less.";
+        return "Support card title must be 100 characters or less.";
       }
       if (experience.supportBody.length > 500) {
-        return "Lesson experience support body must be 500 characters or less.";
+        return "Support card body must be 500 characters or less.";
       }
       for (const row of experience.commonMistakes) {
         if (row.fix.length > 0 && row.mistake.length === 0) {
-          return "Lesson experience correction requires a matching mistake.";
+          return "Correction requires a matching common mistake.";
         }
         if (row.mistake.length > 180) {
-          return "Lesson experience mistake text must be 180 characters or less.";
+          return "Common mistake text must be 180 characters or less.";
         }
         if (row.fix.length > 240) {
-          return "Lesson experience correction must be 240 characters or less.";
+          return "Correction must be 240 characters or less.";
         }
       }
     }
@@ -4141,853 +4284,488 @@ export default function AdminContentManager() {
                               </label>
                             ) : null}
 
-                            <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                              <span>Summary</span>
-                              <textarea
-                                rows={3}
-                                value={editFormState.summary}
-                                onChange={(event) =>
-                                  setEditFormState((prev) =>
-                                    prev ? { ...prev, summary: event.target.value } : prev
-                                  )
-                                }
-                                className={textAreaClass}
-                              />
-                            </label>
+                            {item.content_type !== "course_lesson" ? (
+                              <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
+                                <span>Summary</span>
+                                <textarea
+                                  rows={3}
+                                  value={editFormState.summary}
+                                  onChange={(event) =>
+                                    setEditFormState((prev) =>
+                                      prev ? { ...prev, summary: event.target.value } : prev
+                                    )
+                                  }
+                                  className={textAreaClass}
+                                />
+                              </label>
+                            ) : null}
 
                             {item.content_type === "course_lesson" && editFormState.lessonBody ? (
-                              <div className={["sm:col-span-2", mutedPanelClass].join(" ")}>
-                                <h4 className={metadataLabelClass}>Lesson body editor</h4>
-                                <p className={["mt-1", metadataClass].join(" ")}>
-                                  This controls what appears in the lesson page (goal, cues, drill,
-                                  checkpoint criteria, next step, support card, and section label).
-                                </p>
-
-                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  <div className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Lesson runtime ID</span>
-                                    <div className={readOnlyValueClass}>
-                                      <code>{editFormState.lessonBody.lessonId}</code>
+                              <>
+                                <div
+                                  className={["sm:col-span-2", mutedPanelClass].join(" ")}
+                                  data-testid="admin-lesson-public-field-editor"
+                                >
+                                  <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                      <h4 className={metadataLabelClass}>Lesson fields</h4>
+                                      <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                                        Public lesson mirror
+                                      </p>
                                     </div>
-                                    <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                      Internal ID used by open lesson links, progress, notes, and
-                                      previews. It is locked after creation. Rename in place only
-                                      when this is still the same learning object; if the lesson is
-                                      materially different, create a new lesson instead of
-                                      repurposing this one.
-                                    </p>
+                                    {renderLessonContentScopeBadge("Shown on lesson page")}
                                   </div>
+                                  <p className={["mt-1", metadataClass].join(" ")}>
+                                    Edit these in the same order, width, and section rhythm swimmers
+                                    see on the public lesson page. Admin/list and Advanced/fallback
+                                    fields are kept separate below.
+                                  </p>
 
-                                  <label className={compactLabelClass}>
-                                    <span>Lesson type</span>
-                                    <select
-                                      value={editFormState.lessonBody.lessonType}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  lessonType: event.target
-                                                    .value as LessonTypeOption,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={compactFieldClass}
-                                    >
-                                      {LESSON_TYPE_OPTIONS.map((option) => (
-                                        <option key={option.value || "empty"} value={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Section badge label (optional)</span>
-                                    <input
-                                      type="text"
-                                      value={editFormState.lessonBody.drillLabel}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  drillLabel: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={compactFieldClass}
-                                      placeholder="Defaults to Learn / Drill / Swim"
-                                    />
-                                  </label>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Extra help start lesson number in module (optional)</span>
-                                    <input
-                                      type="number"
-                                      min={1}
-                                      max={200}
-                                      step={1}
-                                      value={editFormState.lessonBody.supportStartAtLessonInModule}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  supportStartAtLessonInModule: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={compactFieldClass}
-                                      placeholder="Example: 4"
-                                    />
-                                    <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                      Leave empty to show extra help on all lessons where it is
-                                      enabled.
-                                    </p>
-                                  </label>
-
-                                  <fieldset
-                                    className={["space-y-2 sm:col-span-2", nestedPanelClass].join(
-                                      " "
-                                    )}
-                                  >
-                                    <legend className={metadataLabelClass}>
-                                      Extra help actions
-                                    </legend>
-                                    <p className={metadataClass}>
-                                      Choose which actions appear inside the extra help card and
-                                      which one (if any) should be highlighted.
-                                    </p>
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={
-                                            editFormState.lessonBody.supportActionVideoAnalysis
-                                          }
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      supportActionVideoAnalysis:
-                                                        event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show Video Analysis</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={
-                                            editFormState.lessonBody.supportActionPoolsideGuide
-                                          }
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      supportActionPoolsideGuide:
-                                                        event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show Poolside guide</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={
-                                            editFormState.lessonBody.supportActionGuide0To1000
-                                          }
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      supportActionGuide0To1000:
-                                                        event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show 0-1000 guide</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.supportActionContact}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      supportActionContact: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show Contact</span>
-                                      </label>
-                                    </div>
-
-                                    <label className={compactLabelClass}>
-                                      <span>Primary highlighted action (optional)</span>
-                                      <select
-                                        value={editFormState.lessonBody.supportPrimaryAction}
-                                        onChange={(event) =>
-                                          setEditFormState((prev) =>
-                                            prev?.lessonBody
-                                              ? {
-                                                  ...prev,
-                                                  lessonBody: {
-                                                    ...prev.lessonBody,
-                                                    supportPrimaryAction: event.target
-                                                      .value as SupportPrimaryActionOption,
-                                                  },
-                                                }
-                                              : prev
-                                          )
-                                        }
-                                        className={compactFieldClass}
-                                      >
-                                        <option value="">None (all neutral)</option>
-                                        {SUPPORT_ACTION_OPTIONS.map((option) => (
-                                          <option key={option.value} value={option.value}>
-                                            {option.label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </label>
-                                  </fieldset>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Lesson goal</span>
-                                    <textarea
-                                      rows={3}
-                                      value={editFormState.lessonBody.goal}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  goal: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                    />
-                                  </label>
-
-                                  <fieldset
-                                    className={["space-y-2 sm:col-span-2", nestedPanelClass].join(
-                                      " "
-                                    )}
-                                  >
-                                    <legend className={metadataLabelClass}>
-                                      Section visibility
-                                    </legend>
-                                    <p className={metadataClass}>
-                                      Use these toggles to show or hide sections on the lesson page.
-                                    </p>
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayGoal}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayGoal: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show goal section</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayCues}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayCues: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show cues section</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayCommonMistakes}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayCommonMistakes: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show common mistakes</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayDrill}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayDrill: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show drill section</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayCheckpoint}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayCheckpoint: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show pass criteria</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displayNextStep}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displayNextStep: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show next step</span>
-                                      </label>
-                                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]">
-                                        <input
-                                          type="checkbox"
-                                          checked={editFormState.lessonBody.displaySupport}
-                                          onChange={(event) =>
-                                            setEditFormState((prev) =>
-                                              prev?.lessonBody
-                                                ? {
-                                                    ...prev,
-                                                    lessonBody: {
-                                                      ...prev.lessonBody,
-                                                      displaySupport: event.target.checked,
-                                                    },
-                                                  }
-                                                : prev
-                                            )
-                                          }
-                                          className={compactCheckboxClass}
-                                        />
-                                        <span>Show extra help card</span>
-                                      </label>
-                                    </div>
-                                  </fieldset>
-
-                                  <label className={compactLabelClass}>
-                                    <span>Cues (one per line)</span>
-                                    <textarea
-                                      rows={4}
-                                      value={editFormState.lessonBody.cues}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  cues: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                      placeholder="One focus at a time"
-                                    />
-                                  </label>
-
-                                  <label className={compactLabelClass}>
-                                    <span>Common mistakes (one per line)</span>
-                                    <textarea
-                                      rows={4}
-                                      value={editFormState.lessonBody.commonMistakes}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  commonMistakes: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                    />
-                                  </label>
-
-                                  <label className={compactLabelClass}>
-                                    <span>Drill title</span>
-                                    <input
-                                      type="text"
-                                      value={editFormState.lessonBody.drillTitle}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  drillTitle: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={compactFieldClass}
-                                    />
-                                  </label>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Drill steps (one per line)</span>
-                                    <textarea
-                                      rows={4}
-                                      value={editFormState.lessonBody.drillSteps}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  drillSteps: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                    />
-                                  </label>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Checkpoint criteria (one per line)</span>
-                                    <textarea
-                                      rows={3}
-                                      value={editFormState.lessonBody.passCriteria}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  passCriteria: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                      placeholder="Do not mark done before you can swim 12.5m relaxed."
-                                    />
-                                  </label>
-
-                                  <label className={[compactLabelClass, "sm:col-span-2"].join(" ")}>
-                                    <span>Next step</span>
-                                    <textarea
-                                      rows={3}
-                                      value={editFormState.lessonBody.nextStep}
-                                      onChange={(event) =>
-                                        setEditFormState((prev) =>
-                                          prev?.lessonBody
-                                            ? {
-                                                ...prev,
-                                                lessonBody: {
-                                                  ...prev.lessonBody,
-                                                  nextStep: event.target.value,
-                                                },
-                                              }
-                                            : prev
-                                        )
-                                      }
-                                      className={textAreaClass}
-                                    />
-                                  </label>
-
-                                  <fieldset
-                                    className={["space-y-3 sm:col-span-2", nestedPanelClass].join(
-                                      " "
-                                    )}
+                                  <div
+                                    className={lessonMirrorShellClass}
                                     data-testid="admin-lesson-experience-editor"
                                   >
-                                    <legend className={metadataLabelClass}>
-                                      Lesson experience{" "}
-                                      <span className="ml-2 inline-flex h-5 items-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/80 px-2 text-[10px] font-semibold text-[color:var(--fs-color-brand-700)]">
-                                        New field
-                                      </span>
-                                    </legend>
-                                    <p className={metadataClass}>
-                                      Structured fields for the public lesson experience. Images are
-                                      not editable in this slice; existing image metadata stays
-                                      pass-through, and missing media keeps the public fallback.
-                                    </p>
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    >
+                                      <legend className="w-full">
+                                        <span className="flex flex-wrap items-center justify-between gap-2">
+                                          <span className={lessonMirrorSectionEyebrowClass}>
+                                            Video / estimated time
+                                          </span>
+                                          {renderLessonContentScopeBadge("Shown on lesson page")}
+                                        </span>
+                                      </legend>
+                                      <p className={metadataClass}>
+                                        Appears in the lesson video area and lesson metadata so the
+                                        swimmer knows what to watch and how long the lesson should
+                                        take.
+                                      </p>
+                                      <div className="grid gap-3 sm:grid-cols-2">
+                                        <label className={compactLabelClass}>
+                                          <span>Video ID</span>
+                                          <input
+                                            aria-label="Video ID"
+                                            type="text"
+                                            value={editFormState.lessonBody.youtubeId}
+                                            onChange={(event) =>
+                                              updateLessonBodyField("youtubeId", event.target.value)
+                                            }
+                                            className={compactFieldClass}
+                                            placeholder="Xh6OblO06LY"
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Use only the YouTube video ID from the public lesson
+                                            video, not a full URL.
+                                          </p>
+                                        </label>
 
-                                    <div className="grid gap-3 sm:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-                                      <label className={compactLabelClass}>
-                                        <span>Lesson experience layout</span>
-                                        <select
-                                          aria-label="Lesson experience layout"
-                                          value={editFormState.lessonBody.lessonExperience.variant}
-                                          onChange={(event) =>
-                                            updateLessonExperienceVariant(
-                                              event.target.value as LessonExperienceVariantOption
-                                            )
-                                          }
-                                          className={compactFieldClass}
-                                        >
-                                          {LESSON_EXPERIENCE_VARIANT_OPTIONS.map((option) => (
-                                            <option key={option.value} value={option.value}>
-                                              {option.label}
-                                            </option>
-                                          ))}
-                                        </select>
-                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                          {
-                                            LESSON_EXPERIENCE_VARIANT_OPTIONS.find(
-                                              (option) =>
-                                                option.value ===
-                                                editFormState.lessonBody?.lessonExperience.variant
-                                            )?.description
-                                          }
-                                        </p>
-                                      </label>
+                                        <label className={compactLabelClass}>
+                                          <span>Estimated minutes</span>
+                                          <input
+                                            aria-label="Estimated minutes"
+                                            type="number"
+                                            min={1}
+                                            max={240}
+                                            step={1}
+                                            value={editFormState.lessonBody.estMinutes}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "estMinutes",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                            placeholder="3"
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Shown beside the video as the public time estimate for
+                                            this lesson.
+                                          </p>
+                                        </label>
+                                      </div>
+                                    </fieldset>
 
-                                      <fieldset
-                                        className={["space-y-2", mutedPanelClass].join(" ")}
-                                      >
-                                        <legend className={metadataLabelClass}>
-                                          Show on public lesson
-                                        </legend>
-                                        <p className={metadataClass}>
-                                          Toggle each public container on the public lesson. Hidden
-                                          containers preserve their saved draft content for later.
-                                        </p>
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                          {LESSON_EXPERIENCE_DISPLAY_OPTIONS.map((option) => (
-                                            <label
-                                              key={option.key}
-                                              className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]"
-                                            >
-                                              <input
-                                                type="checkbox"
-                                                checked={
-                                                  editFormState.lessonBody?.lessonExperience
-                                                    .display[option.key] ?? false
+                                    <section
+                                      className={["space-y-4", lessonMirrorLargeCardClass].join(
+                                        " "
+                                      )}
+                                      aria-label="Lesson focus"
+                                    >
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <div>
+                                          <p className={lessonMirrorSectionEyebrowClass}>
+                                            Lesson focus
+                                          </p>
+                                          <p className={metadataClass}>
+                                            Mirrors the public Lesson focus card: goal, quick
+                                            explanation, and the coaching reason.
+                                          </p>
+                                        </div>
+                                        {renderLessonContentScopeBadge("Shown on lesson page")}
+                                      </div>
+
+                                      <div className="grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-2 lg:divide-x lg:divide-slate-200/72">
+                                        <label className={compactLabelClass}>
+                                          <span>Goal</span>
+                                          <textarea
+                                            aria-label="Lesson goal"
+                                            rows={3}
+                                            value={editFormState.lessonBody.goal}
+                                            onChange={(event) =>
+                                              updateLessonBodyField("goal", event.target.value)
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Appears as Goal on the public lesson page and gives the
+                                            swimmer the single outcome to focus on.
+                                          </p>
+                                        </label>
+
+                                        <div className="space-y-3 lg:pl-5">
+                                          <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div>
+                                              <p className={lessonMirrorSectionEyebrowClass}>
+                                                Quick explanation
+                                              </p>
+                                              <p className={metadataClass}>
+                                                Appears under Quick explanation and turns the goal
+                                                into a short, practical instruction.
+                                              </p>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              {renderLessonContentScopeBadge(
+                                                "Shown on lesson page"
+                                              )}
+                                              {renderLessonSectionVisibilityToggle(
+                                                "quickExplanation",
+                                                "Quick explanation"
+                                              )}
+                                            </div>
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .quickExplanation ? (
+                                            <label className={compactLabelClass}>
+                                              <span>Quick explanation</span>
+                                              <textarea
+                                                aria-label="Quick explanation"
+                                                rows={3}
+                                                value={
+                                                  editFormState.lessonBody.lessonExperience
+                                                    .quickExplanation
                                                 }
                                                 onChange={(event) =>
-                                                  updateLessonExperienceDisplay(
-                                                    option.key,
-                                                    event.target.checked
+                                                  updateLessonExperienceField(
+                                                    "quickExplanation",
+                                                    event.target.value
                                                   )
                                                 }
-                                                className={compactCheckboxClass}
+                                                className={textAreaClass}
+                                                placeholder="One plain-language explanation of what the swimmer should do."
                                               />
-                                              <span>{option.label}</span>
                                             </label>
-                                          ))}
+                                          ) : (
+                                            renderHiddenLessonSectionNotice("Quick explanation")
+                                          )}
                                         </div>
-                                      </fieldset>
-                                    </div>
+                                      </div>
 
-                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      <div
+                                        className={["space-y-3", lessonMirrorSoftCalloutClass].join(
+                                          " "
+                                        )}
+                                      >
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                          <div>
+                                            <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                                              Why this matters
+                                            </p>
+                                            <p className={metadataClass}>
+                                              Appears under Why this matters and explains the
+                                              coaching reason behind the lesson.
+                                            </p>
+                                          </div>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            {renderLessonContentScopeBadge("Shown on lesson page")}
+                                            {renderLessonSectionVisibilityToggle(
+                                              "whyThisMatters",
+                                              "Why this matters"
+                                            )}
+                                          </div>
+                                        </div>
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .whyThisMatters ? (
+                                          <label className={compactLabelClass}>
+                                            <span>Why this matters</span>
+                                            <textarea
+                                              aria-label="Why this matters"
+                                              rows={3}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience
+                                                  .whyThisMatters
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "whyThisMatters",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                        ) : (
+                                          renderHiddenLessonSectionNotice("Why this matters")
+                                        )}
+                                      </div>
+                                    </section>
+
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorPracticeCardClass].join(
+                                        " "
+                                      )}
+                                    >
+                                      <legend className="sr-only">Dryland practice</legend>
+                                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .landPractice
+                                          ? renderLessonPracticeVisualPlaceholder("land")
+                                          : null}
+                                        <div className="space-y-3 px-1 pb-2 sm:px-2 md:py-3">
+                                          <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div>
+                                              <p className={lessonMirrorSectionEyebrowClass}>
+                                                Dryland practice
+                                              </p>
+                                              <p className={metadataClass}>
+                                                Appears before pool work so the swimmer can rehearse
+                                                the movement outside the water.
+                                              </p>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              {renderLessonContentScopeBadge(
+                                                "Shown on lesson page"
+                                              )}
+                                              {renderLessonSectionVisibilityToggle(
+                                                "landPractice",
+                                                "Dryland practice"
+                                              )}
+                                            </div>
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .landPractice ? (
+                                            <>
+                                              <label className={compactLabelClass}>
+                                                <span>Dryland practice title</span>
+                                                <input
+                                                  aria-label="Dryland practice title"
+                                                  type="text"
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .landPracticeTitle
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "landPracticeTitle",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={compactFieldClass}
+                                                />
+                                              </label>
+                                              <label className={compactLabelClass}>
+                                                <span>Dryland practice steps (one per line)</span>
+                                                <textarea
+                                                  aria-label="Dryland practice steps (one per line)"
+                                                  rows={4}
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .landPracticeSteps
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "landPracticeSteps",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={textAreaClass}
+                                                />
+                                              </label>
+                                            </>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice("Dryland practice")
+                                          )}
+                                        </div>
+                                      </div>
+                                    </fieldset>
+
+                                    <fieldset
+                                      className={[
+                                        "space-y-3",
+                                        lessonMirrorWaterPracticeCardClass,
+                                      ].join(" ")}
+                                    >
+                                      <legend className="sr-only">
+                                        Pool drill / water practice
+                                      </legend>
+                                      <div className="grid gap-5 md:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] md:items-start">
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .waterPractice
+                                          ? renderLessonPracticeVisualPlaceholder("water")
+                                          : null}
+                                        <div className="space-y-3 px-1 pb-2 sm:px-2 md:py-3">
+                                          <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div>
+                                              <p className={lessonMirrorSectionEyebrowClass}>
+                                                Pool drill
+                                              </p>
+                                              <p className={metadataClass}>
+                                                Appears as the in-water practice block and tells the
+                                                swimmer exactly what to try in the pool.
+                                              </p>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              {renderLessonContentScopeBadge(
+                                                "Shown on lesson page"
+                                              )}
+                                              {renderLessonSectionVisibilityToggle(
+                                                "waterPractice",
+                                                "Pool drill / water practice"
+                                              )}
+                                            </div>
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .waterPractice ? (
+                                            <>
+                                              <label className={compactLabelClass}>
+                                                <span>Pool drill title</span>
+                                                <input
+                                                  aria-label="Pool drill title"
+                                                  type="text"
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .waterPracticeTitle
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "waterPracticeTitle",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={compactFieldClass}
+                                                />
+                                              </label>
+                                              <label className={compactLabelClass}>
+                                                <span>Pool drill steps (one per line)</span>
+                                                <textarea
+                                                  aria-label="Pool drill steps (one per line)"
+                                                  rows={4}
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .waterPracticeSteps
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "waterPracticeSteps",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={textAreaClass}
+                                                />
+                                              </label>
+                                              <label className={compactLabelClass}>
+                                                <span>Water practice safety note</span>
+                                                <textarea
+                                                  aria-label="Water practice safety note"
+                                                  rows={2}
+                                                  value={
+                                                    editFormState.lessonBody.lessonExperience
+                                                      .waterPracticeSafetyNote
+                                                  }
+                                                  onChange={(event) =>
+                                                    updateLessonExperienceField(
+                                                      "waterPracticeSafetyNote",
+                                                      event.target.value
+                                                    )
+                                                  }
+                                                  className={textAreaClass}
+                                                />
+                                                <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                                  Appears with the water practice when the lesson
+                                                  needs a specific safety or reset note.
+                                                </p>
+                                              </label>
+                                            </>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice(
+                                              "Pool drill / water practice"
+                                            )
+                                          )}
+                                        </div>
+                                      </div>
+                                    </fieldset>
+
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    >
+                                      <legend className={lessonMirrorSectionEyebrowClass}>
+                                        Feel cues
+                                      </legend>
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
+                                          Appears under Feel cues so the swimmer can self-check the
+                                          movement.
+                                        </p>
+                                        {renderLessonContentScopeBadge("Shown on lesson page")}
+                                        {renderLessonSectionVisibilityToggle(
+                                          "feelCues",
+                                          "Feel cues"
+                                        )}
+                                      </div>
                                       {editFormState.lessonBody.lessonExperience.display
-                                        .quickExplanation ? (
-                                        <label
-                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
-                                        >
-                                          <span>Quick explanation</span>
+                                        .feelCues ? (
+                                        <label className={compactLabelClass}>
+                                          <span>Feel cues (one per line)</span>
                                           <textarea
-                                            rows={3}
+                                            aria-label="Feel cues (one per line)"
+                                            rows={4}
                                             value={
-                                              editFormState.lessonBody.lessonExperience
-                                                .quickExplanation
+                                              editFormState.lessonBody.lessonExperience.feelCues
                                             }
                                             onChange={(event) =>
                                               updateLessonExperienceField(
-                                                "quickExplanation",
+                                                "feelCues",
                                                 event.target.value
                                               )
                                             }
                                             className={textAreaClass}
-                                            placeholder="One plain-language explanation of what the swimmer should do."
                                           />
                                         </label>
-                                      ) : null}
+                                      ) : (
+                                        renderHiddenLessonSectionNotice("Feel cues")
+                                      )}
+                                    </fieldset>
 
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .whyThisMatters ? (
-                                        <label
-                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
-                                        >
-                                          <span>Why this exercise matters</span>
-                                          <textarea
-                                            rows={3}
-                                            value={
-                                              editFormState.lessonBody.lessonExperience
-                                                .whyThisMatters
-                                            }
-                                            onChange={(event) =>
-                                              updateLessonExperienceField(
-                                                "whyThisMatters",
-                                                event.target.value
-                                              )
-                                            }
-                                            className={textAreaClass}
-                                            placeholder="Only appears publicly when authored."
-                                          />
-                                        </label>
-                                      ) : null}
-
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .landPractice ? (
-                                        <fieldset
-                                          className={["space-y-3", mutedPanelClass].join(" ")}
-                                        >
-                                          <legend className={metadataLabelClass}>
-                                            Land practice
-                                          </legend>
-                                          <label className={compactLabelClass}>
-                                            <span>Land practice title</span>
-                                            <input
-                                              type="text"
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .landPracticeTitle
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "landPracticeTitle",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={compactFieldClass}
-                                            />
-                                          </label>
-                                          <label className={compactLabelClass}>
-                                            <span>Land practice steps (one per line)</span>
-                                            <textarea
-                                              rows={4}
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .landPracticeSteps
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "landPracticeSteps",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={textAreaClass}
-                                            />
-                                          </label>
-                                        </fieldset>
-                                      ) : null}
-
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .waterPractice ? (
-                                        <fieldset
-                                          className={["space-y-3", mutedPanelClass].join(" ")}
-                                        >
-                                          <legend className={metadataLabelClass}>
-                                            Water practice
-                                          </legend>
-                                          <label className={compactLabelClass}>
-                                            <span>Water practice title</span>
-                                            <input
-                                              type="text"
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .waterPracticeTitle
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "waterPracticeTitle",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={compactFieldClass}
-                                            />
-                                          </label>
-                                          <label className={compactLabelClass}>
-                                            <span>Water practice steps (one per line)</span>
-                                            <textarea
-                                              rows={4}
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .waterPracticeSteps
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "waterPracticeSteps",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={textAreaClass}
-                                            />
-                                          </label>
-                                          <label className={compactLabelClass}>
-                                            <span>Water practice safety note</span>
-                                            <textarea
-                                              rows={2}
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .waterPracticeSafetyNote
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "waterPracticeSafetyNote",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={textAreaClass}
-                                            />
-                                          </label>
-                                        </fieldset>
-                                      ) : null}
-
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .landPractice ||
-                                      editFormState.lessonBody.lessonExperience.display
-                                        .waterPractice ? (
-                                        <AdminManagerState
-                                          tone="empty"
-                                          density="compact"
-                                          className="!mt-0 sm:col-span-2"
-                                          testId="admin-lesson-experience-image-placeholder-state"
-                                        >
-                                          Practice images are intentionally non-editable in this
-                                          slice. Existing image metadata is preserved, and lessons
-                                          without images keep the public Visual not added yet
-                                          fallback.
-                                        </AdminManagerState>
-                                      ) : null}
-
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    >
+                                      <legend className={lessonMirrorSectionEyebrowClass}>
+                                        Common mistakes
+                                      </legend>
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
+                                          Appears under Common mistakes. Keep each correction
+                                          attached to its matching mistake.
+                                        </p>
+                                        {renderLessonContentScopeBadge("Shown on lesson page")}
+                                        {renderLessonSectionVisibilityToggle(
+                                          "commonMistakes",
+                                          "Common mistakes"
+                                        )}
+                                      </div>
                                       {editFormState.lessonBody.lessonExperience.display
                                         .commonMistakes ? (
-                                        <fieldset
-                                          className={[
-                                            "space-y-3 sm:col-span-2",
-                                            mutedPanelClass,
-                                          ].join(" ")}
-                                        >
-                                          <legend className={metadataLabelClass}>
-                                            Common mistakes and corrections
-                                          </legend>
-                                          <p className={metadataClass}>
-                                            Keep each correction attached to its mistake. A
-                                            correction without a mistake cannot be saved.
-                                          </p>
+                                        <>
                                           <div className="space-y-2">
                                             {editFormState.lessonBody.lessonExperience.commonMistakes.map(
                                               (row, mistakeIndex) => (
@@ -4996,10 +4774,9 @@ export default function AdminContentManager() {
                                                   className="grid gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                                                 >
                                                   <label className={compactLabelClass}>
-                                                    <span>
-                                                      Lesson experience mistake {mistakeIndex + 1}
-                                                    </span>
+                                                    <span>Common mistake {mistakeIndex + 1}</span>
                                                     <textarea
+                                                      aria-label={`Common mistake ${mistakeIndex + 1}`}
                                                       rows={2}
                                                       value={row.mistake}
                                                       onChange={(event) =>
@@ -5013,11 +4790,9 @@ export default function AdminContentManager() {
                                                     />
                                                   </label>
                                                   <label className={compactLabelClass}>
-                                                    <span>
-                                                      Lesson experience correction{" "}
-                                                      {mistakeIndex + 1}
-                                                    </span>
+                                                    <span>Correction {mistakeIndex + 1}</span>
                                                     <textarea
+                                                      aria-label={`Correction ${mistakeIndex + 1}`}
                                                       rows={2}
                                                       value={row.fix}
                                                       onChange={(event) =>
@@ -5053,54 +4828,112 @@ export default function AdminContentManager() {
                                           >
                                             Add mistake row
                                           </button>
-                                        </fieldset>
-                                      ) : null}
+                                        </>
+                                      ) : (
+                                        renderHiddenLessonSectionNotice("Common mistakes")
+                                      )}
+                                    </fieldset>
 
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .feelCues ? (
-                                        <label className={compactLabelClass}>
-                                          <span>Feel cues (one per line)</span>
-                                          <textarea
-                                            rows={4}
-                                            value={
-                                              editFormState.lessonBody.lessonExperience.feelCues
-                                            }
-                                            onChange={(event) =>
-                                              updateLessonExperienceField(
-                                                "feelCues",
-                                                event.target.value
-                                              )
-                                            }
-                                            className={textAreaClass}
-                                          />
-                                        </label>
-                                      ) : null}
+                                    <div className="grid gap-3 lg:grid-cols-2">
+                                      <label
+                                        className={[
+                                          compactLabelClass,
+                                          "block",
+                                          lessonMirrorCardClass,
+                                        ].join(" ")}
+                                      >
+                                        <span className="flex flex-wrap items-center justify-between gap-2">
+                                          <span className={lessonMirrorSectionEyebrowClass}>
+                                            Pass criteria
+                                          </span>
+                                          {renderLessonContentScopeBadge("Shown on lesson page")}
+                                        </span>
+                                        <textarea
+                                          aria-label="Pass criteria (one per line)"
+                                          rows={3}
+                                          value={editFormState.lessonBody.passCriteria}
+                                          onChange={(event) =>
+                                            updateLessonBodyField(
+                                              "passCriteria",
+                                              event.target.value
+                                            )
+                                          }
+                                          className={textAreaClass}
+                                          placeholder="Do not mark done before you can swim 12.5m relaxed."
+                                        />
+                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                          Appears as Pass criteria and defines when the swimmer
+                                          should mark the lesson complete.
+                                        </p>
+                                      </label>
 
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .nextStep ? (
-                                        <label className={compactLabelClass}>
-                                          <span>Lesson experience next step</span>
-                                          <textarea
-                                            rows={4}
-                                            value={
-                                              editFormState.lessonBody.lessonExperience.nextStep
-                                            }
-                                            onChange={(event) =>
-                                              updateLessonExperienceField(
-                                                "nextStep",
-                                                event.target.value
-                                              )
-                                            }
-                                            className={textAreaClass}
-                                          />
-                                        </label>
-                                      ) : null}
+                                      <fieldset
+                                        className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                      >
+                                        <legend className={lessonMirrorSectionEyebrowClass}>
+                                          Next step
+                                        </legend>
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                          <p
+                                            className={["min-w-0 flex-1", metadataClass].join(" ")}
+                                          >
+                                            Appears under Next step and points the swimmer toward
+                                            the next action after this lesson.
+                                          </p>
+                                          {renderLessonContentScopeBadge("Shown on lesson page")}
+                                          {renderLessonSectionVisibilityToggle(
+                                            "nextStep",
+                                            "Next step"
+                                          )}
+                                        </div>
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .nextStep ? (
+                                          <label className={compactLabelClass}>
+                                            <span>Next step</span>
+                                            <textarea
+                                              aria-label="Next step"
+                                              rows={4}
+                                              value={
+                                                editFormState.lessonBody.lessonExperience.nextStep
+                                              }
+                                              onChange={(event) =>
+                                                updateLessonExperienceField(
+                                                  "nextStep",
+                                                  event.target.value
+                                                )
+                                              }
+                                              className={textAreaClass}
+                                            />
+                                          </label>
+                                        ) : (
+                                          renderHiddenLessonSectionNotice("Next step")
+                                        )}
+                                      </fieldset>
+                                    </div>
 
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    >
+                                      <legend className={lessonMirrorSectionEyebrowClass}>
+                                        Support card
+                                      </legend>
+                                      <div className="flex flex-wrap items-start justify-between gap-2">
+                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
+                                          Appears in the public support card when the swimmer needs
+                                          more help.
+                                        </p>
+                                        {renderLessonContentScopeBadge("Shown on lesson page")}
+                                        {renderLessonSectionVisibilityToggle(
+                                          "support",
+                                          "Support card"
+                                        )}
+                                      </div>
                                       {editFormState.lessonBody.lessonExperience.display.support ? (
                                         <>
                                           <label className={compactLabelClass}>
-                                            <span>Lesson experience support title</span>
+                                            <span>Support card title</span>
                                             <input
+                                              aria-label="Support card title"
                                               type="text"
                                               value={
                                                 editFormState.lessonBody.lessonExperience
@@ -5115,10 +4948,10 @@ export default function AdminContentManager() {
                                               className={compactFieldClass}
                                             />
                                           </label>
-
                                           <label className={compactLabelClass}>
-                                            <span>Lesson experience support body</span>
+                                            <span>Support card body</span>
                                             <textarea
+                                              aria-label="Support card body"
                                               rows={4}
                                               value={
                                                 editFormState.lessonBody.lessonExperience
@@ -5134,11 +4967,338 @@ export default function AdminContentManager() {
                                             />
                                           </label>
                                         </>
-                                      ) : null}
-                                    </div>
-                                  </fieldset>
+                                      ) : (
+                                        renderHiddenLessonSectionNotice("Support card")
+                                      )}
+                                    </fieldset>
+
+                                    <fieldset className={["space-y-3", nestedPanelClass].join(" ")}>
+                                      <legend className="w-full">
+                                        <span className="flex flex-wrap items-center justify-between gap-2">
+                                          <span className={metadataLabelClass}>
+                                            Admin/list fallback
+                                          </span>
+                                          {renderLessonContentScopeBadge("Admin/list only")}
+                                        </span>
+                                      </legend>
+                                      <label className={compactLabelClass}>
+                                        <span>Summary</span>
+                                        <textarea
+                                          aria-label="Summary"
+                                          rows={3}
+                                          value={editFormState.summary}
+                                          onChange={(event) =>
+                                            setEditFormState((prev) =>
+                                              prev ? { ...prev, summary: event.target.value } : prev
+                                            )
+                                          }
+                                          className={textAreaClass}
+                                        />
+                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                          Used for admin lists, search, and legacy fallback. It is
+                                          not the main public lesson explanation when structured
+                                          fields are present.
+                                        </p>
+                                      </label>
+                                    </fieldset>
+
+                                    <details className={["space-y-3", nestedPanelClass].join(" ")}>
+                                      <summary className={metadataLabelClass}>
+                                        <span className="inline-flex flex-wrap items-center gap-2">
+                                          <span>Advanced/fallback fields</span>
+                                          {renderLessonContentScopeBadge("Advanced/fallback")}
+                                        </span>
+                                      </summary>
+                                      <p className={["mt-2", metadataClass].join(" ")}>
+                                        Technical controls and older draft fallback fields are kept
+                                        here so they do not interrupt the main public lesson flow.
+                                      </p>
+
+                                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                        <div
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Lesson runtime ID</span>
+                                          <div className={readOnlyValueClass}>
+                                            <code>{editFormState.lessonBody.lessonId}</code>
+                                          </div>
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Internal stable ID for open lesson links, progress,
+                                            notes, and previews. It is locked after creation.
+                                          </p>
+                                        </div>
+
+                                        <label className={compactLabelClass}>
+                                          <span>Lesson type</span>
+                                          <select
+                                            aria-label="Lesson type"
+                                            value={editFormState.lessonBody.lessonType}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "lessonType",
+                                                event.target.value as LessonTypeOption
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                          >
+                                            {LESSON_TYPE_OPTIONS.map((option) => (
+                                              <option
+                                                key={option.value || "empty"}
+                                                value={option.value}
+                                              >
+                                                {option.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Technical lesson category used for badge defaults and
+                                            fallback layout behavior.
+                                          </p>
+                                        </label>
+
+                                        <label className={compactLabelClass}>
+                                          <span>Lesson experience layout</span>
+                                          <select
+                                            aria-label="Lesson experience layout"
+                                            value={
+                                              editFormState.lessonBody.lessonExperience.variant
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceVariant(
+                                                event.target.value as LessonExperienceVariantOption
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                          >
+                                            {LESSON_EXPERIENCE_VARIANT_OPTIONS.map((option) => (
+                                              <option key={option.value} value={option.value}>
+                                                {option.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Preset for which public containers are visible. Use
+                                            Custom after manual display changes.
+                                          </p>
+                                        </label>
+
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Section badge label (optional)</span>
+                                          <input
+                                            aria-label="Section badge label (optional)"
+                                            type="text"
+                                            value={editFormState.lessonBody.drillLabel}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "drillLabel",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                            placeholder="Defaults to Learn / Drill / Swim"
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Optional fallback label for the public lesson badge when
+                                            the type default is not specific enough.
+                                          </p>
+                                        </label>
+
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>
+                                            Extra help start lesson number in module (optional)
+                                          </span>
+                                          <input
+                                            aria-label="Extra help start lesson number in module (optional)"
+                                            type="number"
+                                            min={1}
+                                            max={200}
+                                            step={1}
+                                            value={
+                                              editFormState.lessonBody.supportStartAtLessonInModule
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "supportStartAtLessonInModule",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                            placeholder="Example: 4"
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Leave empty to show extra help on all lessons where it
+                                            is enabled.
+                                          </p>
+                                        </label>
+
+                                        <fieldset
+                                          className={[
+                                            "space-y-2 sm:col-span-2",
+                                            mutedPanelClass,
+                                          ].join(" ")}
+                                        >
+                                          <legend className={metadataLabelClass}>
+                                            Extra help actions
+                                          </legend>
+                                          <p className={metadataClass}>
+                                            Controls which support actions appear inside the
+                                            fallback extra help card.
+                                          </p>
+                                          <div className="grid gap-2 sm:grid-cols-2">
+                                            {[
+                                              ["supportActionVideoAnalysis", "Show Video Analysis"],
+                                              ["supportActionPoolsideGuide", "Show Poolside guide"],
+                                              ["supportActionGuide0To1000", "Show 0-1000 guide"],
+                                              ["supportActionContact", "Show Contact"],
+                                            ].map(([key, label]) => (
+                                              <label
+                                                key={key}
+                                                className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--fs-color-ink)]"
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={Boolean(
+                                                    editFormState.lessonBody?.[
+                                                      key as keyof LessonBodyEditState
+                                                    ]
+                                                  )}
+                                                  onChange={(event) =>
+                                                    updateLessonBodyField(
+                                                      key as keyof LessonBodyEditState,
+                                                      event.target
+                                                        .checked as LessonBodyEditState[keyof LessonBodyEditState]
+                                                    )
+                                                  }
+                                                  className={compactCheckboxClass}
+                                                />
+                                                <span>{label}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+
+                                          <label className={compactLabelClass}>
+                                            <span>Primary highlighted action (optional)</span>
+                                            <select
+                                              value={editFormState.lessonBody.supportPrimaryAction}
+                                              onChange={(event) =>
+                                                updateLessonBodyField(
+                                                  "supportPrimaryAction",
+                                                  event.target.value as SupportPrimaryActionOption
+                                                )
+                                              }
+                                              className={compactFieldClass}
+                                            >
+                                              <option value="">None (all neutral)</option>
+                                              {SUPPORT_ACTION_OPTIONS.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                  {option.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </label>
+                                        </fieldset>
+
+                                        <label className={compactLabelClass}>
+                                          <span>Legacy cues (one per line)</span>
+                                          <textarea
+                                            aria-label="Legacy cues (one per line)"
+                                            rows={4}
+                                            value={editFormState.lessonBody.cues}
+                                            onChange={(event) =>
+                                              updateLessonBodyField("cues", event.target.value)
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Fallback source for Feel cues when structured cues are
+                                            missing.
+                                          </p>
+                                        </label>
+
+                                        <label className={compactLabelClass}>
+                                          <span>Legacy common mistakes (one per line)</span>
+                                          <textarea
+                                            aria-label="Legacy common mistakes (one per line)"
+                                            rows={4}
+                                            value={editFormState.lessonBody.commonMistakes}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "commonMistakes",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Fallback source when structured mistakes are absent.
+                                          </p>
+                                        </label>
+
+                                        <label className={compactLabelClass}>
+                                          <span>Legacy drill title</span>
+                                          <input
+                                            aria-label="Legacy drill title"
+                                            type="text"
+                                            value={editFormState.lessonBody.drillTitle}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "drillTitle",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                          />
+                                        </label>
+
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Legacy drill steps (one per line)</span>
+                                          <textarea
+                                            aria-label="Legacy drill steps (one per line)"
+                                            rows={4}
+                                            value={editFormState.lessonBody.drillSteps}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "drillSteps",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Fallback source for Pool drill / water practice when
+                                            structured water practice steps are missing.
+                                          </p>
+                                        </label>
+
+                                        <label
+                                          className={[compactLabelClass, "sm:col-span-2"].join(" ")}
+                                        >
+                                          <span>Legacy next step fallback</span>
+                                          <textarea
+                                            aria-label="Legacy next step fallback"
+                                            rows={3}
+                                            value={editFormState.lessonBody.nextStep}
+                                            onChange={(event) =>
+                                              updateLessonBodyField("nextStep", event.target.value)
+                                            }
+                                            className={textAreaClass}
+                                          />
+                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                                            Only used when the structured Next step field above is
+                                            empty.
+                                          </p>
+                                        </label>
+                                      </div>
+                                    </details>
+                                  </div>
                                 </div>
-                              </div>
+                              </>
                             ) : null}
                           </div>
 
@@ -5199,6 +5359,16 @@ export default function AdminContentManager() {
                             >
                               {savingEditId === item.id ? "Saving…" : "Save changes"}
                             </button>
+                            {rowPreviewHref ? (
+                              <a
+                                href={rowPreviewHref}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={compactWarningActionClass}
+                              >
+                                View changes
+                              </a>
+                            ) : null}
                             <button
                               type="button"
                               onClick={() => {

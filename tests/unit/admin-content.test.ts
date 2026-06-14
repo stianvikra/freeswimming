@@ -314,7 +314,7 @@ describe("validateCourseLessonExperienceBody", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toBe("Lesson experience correction requires a matching mistake.");
+      expect(result.error).toBe("Correction requires a matching common mistake.");
     }
   });
 

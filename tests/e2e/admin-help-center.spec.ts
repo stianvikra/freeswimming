@@ -78,12 +78,19 @@ test.describe("admin help center", () => {
         "Lesson edits stay open after save so small follow-up fixes can be made without reopening the same row."
       )
     ).toBeVisible();
-    await expect(page.getByText("Lesson experience editor")).toBeVisible();
-    await expect(page.getByText(/pick the layout first: Concept \/ intro/i)).toBeVisible();
-    await expect(page.getByText(/Then use the Show on public lesson toggles/i)).toBeVisible();
-    await expect(page.getByText(/Hidden containers do not render publicly/i)).toBeVisible();
+    await expect(page.getByText("Lesson fields editor")).toBeVisible();
+    await expect(
+      page.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Shown on lesson page.*Admin\/list only.*Advanced\/fallback/i).first()
+    ).toBeVisible();
+    await expect(page.getByText(/Show section.*section itself/i)).toBeVisible();
+    await expect(page.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
+    await expect(page.getByText(/Advanced\/fallback fields.*layout preset/i).first()).toBeVisible();
     await expect(page.getByText("Practice images are non-editable in this slice;")).toBeVisible();
-    await expect(page.getByText(/Layout, Show on public lesson toggles/i)).toBeVisible();
+    await expect(page.getByText("Public lesson mirror / Advanced/fallback fields:")).toBeVisible();
+    await expect(page.getByText(/Use each section's Show section checkbox/i)).toBeVisible();
     await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
     await expect(page.getByText("Learner common mistakes visibility")).toBeVisible();
     await expect(
@@ -152,7 +159,7 @@ test.describe("admin help center", () => {
     await expect(
       page.getByText("Dashboard reply compose/outbound log is deferred in v1.")
     ).toBeVisible();
-    await expect(page.getByText("Save changes / Cancel:")).toBeVisible();
+    await expect(page.getByText("Save changes / View changes / Cancel:")).toBeVisible();
     await expect(
       page.getByText(
         "Every new/updated brief must declare Help/Guide impact as: required update or explicit N/A with reason."
