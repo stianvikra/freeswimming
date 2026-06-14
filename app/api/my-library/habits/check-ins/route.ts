@@ -21,6 +21,10 @@ function noStoreJson(body: Record<string, unknown>, init?: { status?: number }) 
   });
 }
 
+function getHabitMutationActionSource(value: unknown) {
+  return value === "catch_up" ? "catch_up" : "habits";
+}
+
 async function refreshQuitLastLapseDate(
   supabase: Awaited<ReturnType<typeof createRouteHandlerSupabaseClient>>["supabase"],
   userId: string,
@@ -75,6 +79,11 @@ export async function POST(request: Request) {
   }
 
   const checkInDate = normalizeHabitDate(body.checkInDate);
+  const snapshotDate = normalizeHabitDate(
+    body.selectedDate,
+    new Date(`${checkInDate}T00:00:00.000Z`)
+  );
+  const actionSource = getHabitMutationActionSource(body.actionSource);
   const habitResult = await supabase
     .from("habit_definitions")
     .select("id, habit_mode, start_date")
@@ -197,7 +206,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const snapshot = await loadHabitSnapshot(supabase, user.id, checkInDate);
+    const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
     trackAnalyticsEvent({
       eventName: "habit_check_in_reset",
       channel: "server",
@@ -205,6 +214,8 @@ export async function POST(request: Request) {
       payload: {
         habitMode,
         checkInDate,
+        selectedDate: snapshotDate,
+        actionSource,
       },
     });
     return applySupabaseCookies(noStoreJson({ ok: true, snapshot }));
@@ -329,7 +340,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const snapshot = await loadHabitSnapshot(supabase, user.id, checkInDate);
+    const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
     trackAnalyticsEvent({
       eventName: "habit_check_in_reset",
       channel: "server",
@@ -337,6 +348,8 @@ export async function POST(request: Request) {
       payload: {
         habitMode,
         checkInDate,
+        selectedDate: snapshotDate,
+        actionSource,
         resetKind: "timed_completion_source",
         hadManualMinutes: manualMinutes > 0,
         timedSourceKind: "timer",
@@ -441,7 +454,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const snapshot = await loadHabitSnapshot(supabase, user.id, checkInDate);
+  const snapshot = await loadHabitSnapshot(supabase, user.id, snapshotDate);
   trackAnalyticsEvent({
     eventName:
       upsertPayload.status === "skipped"
@@ -456,6 +469,8 @@ export async function POST(request: Request) {
     payload: {
       habitMode,
       checkInDate,
+      selectedDate: snapshotDate,
+      actionSource,
       hasNumericValue: upsertPayload.value_numeric !== null,
       hasBooleanValue: upsertPayload.value_boolean !== null,
       hasTimeValue: upsertPayload.value_time !== null,

@@ -26,6 +26,10 @@ function noStoreJson(body: Record<string, unknown>, init?: { status?: number }) 
   });
 }
 
+function getHabitMutationActionSource(value: unknown) {
+  return value === "catch_up" ? "catch_up" : "habits";
+}
+
 export async function POST(request: Request, { params }: Props) {
   const { habitId } = await params;
   if (!UUID_PATTERN.test(habitId)) {
@@ -127,6 +131,7 @@ export async function POST(request: Request, { params }: Props) {
   }
 
   const selectedDate = normalizeHabitDate(body.selectedDate ?? insertPayload.effective_date);
+  const actionSource = getHabitMutationActionSource(body.actionSource);
   const snapshot = await loadHabitSnapshot(supabase, user.id, selectedDate);
   trackAnalyticsEvent({
     eventName: "habit_stats_reset_created",
@@ -135,6 +140,8 @@ export async function POST(request: Request, { params }: Props) {
     payload: {
       habitMode: habitResult.data.habit_mode ?? "build",
       effectiveDate: insertPayload.effective_date,
+      selectedDate,
+      actionSource,
     },
   });
 
