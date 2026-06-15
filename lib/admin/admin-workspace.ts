@@ -4,6 +4,7 @@ export const ADMIN_TAB_VALUES = [
   "commerce",
   "operations",
   "analytics",
+  "users",
   "email-templates",
   "messages",
   "notes",
@@ -75,8 +76,32 @@ export const ADMIN_ANALYTICS_WORKSPACE_BOUNDARY = {
     "docs/task-briefs/in-progress/2026-06-10-workout-builder-funnel-dashboard-v1-10-10.md",
 } as const satisfies AdminWorkspaceModuleBoundary;
 
+export const ADMIN_USERS_WORKSPACE_BOUNDARY = {
+  id: "users",
+  status: "active",
+  label: "Users",
+  routePath: "/admin",
+  tabQueryValue: "users",
+  orchestrationBoundary:
+    "Admin Users owns read-only filters, pagination, selection, and retry state over minimized account/access summaries.",
+  mutationBoundary:
+    "Admin Users v1 does not mutate users; reads go through the admin users overview route after an admin viewer+ gate.",
+  viewBoundary:
+    "Admin user list, summary metrics, privacy boundary, and minimized detail panel live under a dedicated admin users component boundary.",
+  serverCanonicalData: [
+    "profiles",
+    "admin roles",
+    "entitlements",
+    "product labels",
+    "minimized last-activity timestamps",
+  ],
+  localOnlyState: ["search draft", "role filter", "sort choice", "current page", "selected user"],
+  activationBrief: "docs/task-briefs/in-progress/2026-06-15-admin-users-overview-v1-10-10.md",
+} as const satisfies AdminWorkspaceModuleBoundary;
+
 export const ADMIN_WORKSPACE_MODULE_BOUNDARIES = [
   ADMIN_ANALYTICS_WORKSPACE_BOUNDARY,
+  ADMIN_USERS_WORKSPACE_BOUNDARY,
   ADMIN_MESSAGES_WORKSPACE_BOUNDARY,
 ] as const satisfies readonly AdminWorkspaceModuleBoundary[];
 

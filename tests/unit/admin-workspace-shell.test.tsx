@@ -55,6 +55,7 @@ vi.mock("@/components/admin/AdminMessagesManager", () => mockManager("admin-mana
 vi.mock("@/components/admin/AdminNotesManager", () => mockManager("admin-manager-notes"));
 vi.mock("@/components/admin/AdminOperationsManager", () => mockManager("admin-manager-operations"));
 vi.mock("@/components/admin/AdminQrLinksManager", () => mockManager("admin-manager-qr-links"));
+vi.mock("@/components/admin/AdminUsersManager", () => mockManager("admin-manager-users"));
 
 describe("AdminWorkspace shell", () => {
   beforeEach(() => {
@@ -118,13 +119,14 @@ describe("AdminWorkspace shell", () => {
 
     const adminSections = screen.getByRole("navigation", { name: "Admin sections" });
     const sectionButtons = within(adminSections).getAllByRole("button");
-    expect(sectionButtons).toHaveLength(10);
+    expect(sectionButtons).toHaveLength(11);
     expect(sectionButtons.map((button) => button.textContent)).toEqual([
       "ContentLessons, guides, and publish state",
       "QR LinksStable redirect registry and ownership",
       "CommerceProducts, titles, and active sales status",
       "OperationsRuntime flags and private-access status",
       "AnalyticsSafe event dashboard, funnel, and data health",
+      "UsersRead-only accounts, access, and support status",
       "Email templatesDraft, review, publish, and rollback-safe message copy",
       "MessagesStored intake, triage status, and notification diagnostics",
       "NotesInternal tasks, categories, and completion status",
@@ -142,7 +144,17 @@ describe("AdminWorkspace shell", () => {
     ).toHaveLength(1);
     expect(
       sectionButtons.filter((button) => button.getAttribute("aria-pressed") === "false")
-    ).toHaveLength(9);
+    ).toHaveLength(10);
+  });
+
+  it("renders the Users workspace from typed tab state", () => {
+    searchParamsValue.current = "tab=users";
+
+    render(<AdminWorkspace role="viewer" />);
+
+    expect(screen.getByTestId("admin-tab-users")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Users");
+    expect(screen.getByTestId("admin-manager-users")).toBeVisible();
   });
 
   it("renders the Analytics workspace from typed tab state", () => {

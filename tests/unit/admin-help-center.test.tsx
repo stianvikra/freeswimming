@@ -48,6 +48,7 @@ describe("AdminHelpCenter", () => {
     expect(
       screen.getByRole("heading", { name: "Dashboard tabs and when to use them" })
     ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "How Users works" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Buttons and what they do" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "How Analytics works" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Troubleshoot fast" })).toBeVisible();
@@ -64,6 +65,7 @@ describe("AdminHelpCenter", () => {
       "href",
       "#analytics"
     );
+    expect(screen.getByTestId("admin-help-quick-action-users")).toHaveAttribute("href", "#users");
 
     expect(screen.getByText("Course Workspace / All Content tabs:")).toBeVisible();
     expect(screen.getByText("Lesson fields editor")).toBeVisible();
@@ -87,6 +89,11 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();
+    expect(screen.getByText("Search / Role / Sort:")).toBeVisible();
+    expect(screen.getByText("User summary:")).toBeVisible();
+    expect(screen.getByText("Read access as entitlement summary")).toBeVisible();
+    expect(screen.getByText(/Users is a read-only account and access overview/i)).toBeVisible();
+    expect(screen.getByText(/does not show private training notes/i)).toBeVisible();
     expect(
       screen.getByText(/not money records or tracking individual public visitors/i)
     ).toBeVisible();

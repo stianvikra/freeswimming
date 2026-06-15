@@ -13,6 +13,7 @@ import AdminMessagesManager from "@/components/admin/AdminMessagesManager";
 import AdminNotesManager from "@/components/admin/AdminNotesManager";
 import AdminOperationsManager from "@/components/admin/AdminOperationsManager";
 import AdminQrLinksManager from "@/components/admin/AdminQrLinksManager";
+import AdminUsersManager from "@/components/admin/AdminUsersManager";
 import { cx } from "@/components/ui/cx";
 import type { AdminRole } from "@/lib/admin/access";
 import {
@@ -46,6 +47,11 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
     id: "analytics",
     label: "Analytics",
     subtitle: "Safe event dashboard, funnel, and data health",
+  },
+  {
+    id: "users",
+    label: "Users",
+    subtitle: "Read-only accounts, access, and support status",
   },
   {
     id: "email-templates",
@@ -215,6 +221,7 @@ export default function AdminWorkspace({ role }: Props) {
           {activeTab === "commerce" ? <AdminCommerceManager /> : null}
           {activeTab === "operations" ? <AdminOperationsManager /> : null}
           {activeTab === "analytics" ? <AdminAnalyticsDashboard /> : null}
+          {activeTab === "users" ? <AdminUsersManager /> : null}
           {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
           {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
           {activeTab === "notes" ? <AdminNotesManager /> : null}

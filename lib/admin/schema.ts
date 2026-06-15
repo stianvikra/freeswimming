@@ -92,6 +92,17 @@ export function isAdminCommerceSchemaMissing(
   return includesAnyMarker(blob, ["products", "profiles", "role"]);
 }
 
+export function isAdminUsersSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {
+  if (!error) return false;
+  if (hasMissingSchemaCode(error)) return true;
+  if (hasLikelySetupCode(error)) return true;
+
+  const blob = buildErrorBlob(error);
+  if (hasSetupBlockedCode(error) || includesAnyMarker(blob, SETUP_BLOCKED_MARKERS)) return true;
+
+  return includesAnyMarker(blob, ["profiles", "entitlements", "products", "analytics_events"]);
+}
+
 export function isAdminCategoriesSchemaMissing(
   error: PostgrestLikeError | null | undefined
 ): boolean {
@@ -138,6 +149,7 @@ export function isAdminMessagesSchemaMissing(
 export function getAdminSchemaSetupMessage(
   section:
     | "content"
+    | "users"
     | "operations"
     | "notes"
     | "commerce"
@@ -148,17 +160,19 @@ export function getAdminSchemaSetupMessage(
   const area =
     section === "content"
       ? "Admin content"
-      : section === "operations"
-        ? "Admin operations"
-        : section === "notes"
-          ? "Admin notes"
-          : section === "commerce"
-            ? "Admin commerce"
-            : section === "categories"
-              ? "Admin categories"
-              : section === "emailTemplates"
-                ? "Admin email templates"
-                : "Admin messages";
+      : section === "users"
+        ? "Admin users"
+        : section === "operations"
+          ? "Admin operations"
+          : section === "notes"
+            ? "Admin notes"
+            : section === "commerce"
+              ? "Admin commerce"
+              : section === "categories"
+                ? "Admin categories"
+                : section === "emailTemplates"
+                  ? "Admin email templates"
+                  : "Admin messages";
 
   return `${area} setup is not ready in this environment yet. Apply latest Supabase migrations (tables + grants + RLS policies), then refresh.`;
 }

@@ -155,11 +155,14 @@ function buildHabitLinkRow(
 
 describe("dryland micro plan routes", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T09:00:00.000Z"));
     createRouteHandlerSupabaseClientMock.mockReset();
     trackAnalyticsEventMock.mockReset();
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
