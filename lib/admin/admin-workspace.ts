@@ -83,20 +83,31 @@ export const ADMIN_USERS_WORKSPACE_BOUNDARY = {
   routePath: "/admin",
   tabQueryValue: "users",
   orchestrationBoundary:
-    "Admin Users owns read-only filters, pagination, selection, and retry state over minimized account/access summaries.",
+    "Admin Users owns filters, pagination, selection, retry state, and role-change confirmation over Auth-canonical account/access summaries.",
   mutationBoundary:
-    "Admin Users v1 does not mutate users; reads go through the admin users overview route after an admin viewer+ gate.",
+    "Admin Users reads go through the admin users overview route after an admin viewer+ gate; role changes use an admin-only route and audited server transaction.",
   viewBoundary:
-    "Admin user list, summary metrics, privacy boundary, and minimized detail panel live under a dedicated admin users component boundary.",
+    "Admin user list, summary metrics, role controls, privacy boundary, and minimized detail panel live under a dedicated admin users component boundary.",
   serverCanonicalData: [
+    "Supabase Auth users",
     "profiles",
     "admin roles",
+    "athlete profile display identity",
     "entitlements",
     "product labels",
+    "admin audit logs",
     "minimized last-activity timestamps",
   ],
-  localOnlyState: ["search draft", "role filter", "sort choice", "current page", "selected user"],
-  activationBrief: "docs/task-briefs/in-progress/2026-06-15-admin-users-overview-v1-10-10.md",
+  localOnlyState: [
+    "search draft",
+    "role filter",
+    "sort choice",
+    "current page",
+    "selected user",
+    "pending role selection",
+    "role confirmation state",
+  ],
+  activationBrief: "docs/task-briefs/in-progress/2026-06-15-admin-users-10-10-foundation-repair.md",
 } as const satisfies AdminWorkspaceModuleBoundary;
 
 export const ADMIN_WORKSPACE_MODULE_BOUNDARIES = [

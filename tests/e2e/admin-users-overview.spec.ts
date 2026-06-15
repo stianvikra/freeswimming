@@ -41,7 +41,9 @@ test.describe("admin users overview", () => {
     runOnceOnDesktopChromium(testInfo.project.name);
   });
 
-  test("renders mocked read-only users overview without private details", async ({ page }) => {
+  test("renders mocked auth-canonical users directory without private details", async ({
+    page,
+  }) => {
     await page.route("**/api/admin/users/overview**", async (route) => {
       await route.fulfill({
         status: 200,
@@ -65,6 +67,9 @@ test.describe("admin users overview", () => {
             editorUsers: 0,
             viewerUsers: 1,
             unknownRoleUsers: 0,
+            missingProfileUsers: 0,
+            unconfirmedUsers: 0,
+            testerUsers: 0,
             partialSummary: false,
           },
           pageInfo: {
@@ -76,11 +81,20 @@ test.describe("admin users overview", () => {
           },
           items: [
             {
-              id: "user-1",
+              id: "11111111-1111-4111-8111-111111111111",
               email: "swimmer@example.com",
+              displayName: "Fast Freestyler",
+              displayNameSource: "athlete_profile",
               role: "viewer",
+              roleSource: "profile",
+              profileStatus: "complete",
+              authStatus: "confirmed",
+              testerStatus: "not_configured",
               createdAt: "2026-06-01T08:00:00.000Z",
               updatedAt: "2026-06-10T08:00:00.000Z",
+              profileUpdatedAt: "2026-06-10T08:00:00.000Z",
+              emailConfirmedAt: "2026-06-01T08:05:00.000Z",
+              lastSignInAt: "2026-06-12T09:30:00.000Z",
               accessStatus: "active",
               entitlementCount: 1,
               products: [
@@ -107,8 +121,11 @@ test.describe("admin users overview", () => {
 
     await expect(page.getByTestId("admin-tab-users")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("admin-users-manager")).toBeVisible();
-    await expect(page.getByTestId("admin-users-row-user-1")).toContainText("swimmer@example.com");
+    await expect(
+      page.getByTestId("admin-users-row-11111111-1111-4111-8111-111111111111")
+    ).toContainText("swimmer@example.com");
     await expect(page.getByTestId("admin-users-detail-panel")).toContainText("Poolside Guide");
+    await expect(page.getByTestId("admin-users-detail-panel")).toContainText("Role management");
     await expect(page.getByTestId("admin-users-privacy-boundary")).toContainText(
       "raw analytics payloads"
     );

@@ -221,7 +221,7 @@ export default function AdminWorkspace({ role }: Props) {
           {activeTab === "commerce" ? <AdminCommerceManager /> : null}
           {activeTab === "operations" ? <AdminOperationsManager /> : null}
           {activeTab === "analytics" ? <AdminAnalyticsDashboard /> : null}
-          {activeTab === "users" ? <AdminUsersManager /> : null}
+          {activeTab === "users" ? <AdminUsersManager adminRole={role} /> : null}
           {activeTab === "email-templates" ? <AdminEmailTemplatesManager /> : null}
           {activeTab === "messages" ? <AdminMessagesManager adminRole={role} /> : null}
           {activeTab === "notes" ? <AdminNotesManager /> : null}

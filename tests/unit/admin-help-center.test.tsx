@@ -91,8 +91,11 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();
     expect(screen.getByText("Search / Role / Sort:")).toBeVisible();
     expect(screen.getByText("User summary:")).toBeVisible();
+    expect(screen.getByText("Change role:")).toBeVisible();
+    expect(screen.getByText("Start from Auth users")).toBeVisible();
     expect(screen.getByText("Read access as entitlement summary")).toBeVisible();
-    expect(screen.getByText(/Users is a read-only account and access overview/i)).toBeVisible();
+    expect(screen.getByText(/Users is an Auth-canonical account/i)).toBeVisible();
+    expect(screen.getByText(/blocks last-admin lockout/i)).toBeVisible();
     expect(screen.getByText(/does not show private training notes/i)).toBeVisible();
     expect(
       screen.getByText(/not money records or tracking individual public visitors/i)
