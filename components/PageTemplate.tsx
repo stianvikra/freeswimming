@@ -36,7 +36,7 @@ export default function PageTemplate({
   const showBackOnMobile = backVisibility === "all";
   const maxW =
     size === "course"
-      ? "max-w-[720px] lg:max-w-[980px] xl:max-w-[1180px]"
+      ? "max-w-[720px] lg:max-w-[1080px] xl:max-w-[1420px] 2xl:max-w-[1560px]"
       : size === "wide"
         ? "max-w-[720px] lg:max-w-[860px] xl:max-w-[980px]"
         : "max-w-[520px]";

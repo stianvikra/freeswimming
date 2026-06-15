@@ -60,6 +60,7 @@ test("course desktop player pre-play state shows title, CTA, poster, and no gues
   await expect(poster).toHaveAttribute("src", /https:\/\/i\.ytimg\.com\/vi\/.+\/hqdefault\.jpg/);
   await expect(poster).toHaveAttribute("alt", "");
   await expect(poster).toHaveAttribute("aria-hidden", "true");
+  await expect(page.getByTestId("course-admin-edit-link")).toHaveCount(0);
   expect(backgroundApiRequests).toEqual([]);
   await page.getByRole("button", { name: "Overview details" }).click();
   await expect(page.getByText("Lesson and playback progress saved on this device.")).toHaveCount(0);

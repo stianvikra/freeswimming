@@ -445,6 +445,13 @@ const LESSON_EXPERIENCE_VARIANT_OPTIONS: Array<{
   },
 ];
 
+function getLessonExperienceVariantOption(value: LessonExperienceVariantOption) {
+  return (
+    LESSON_EXPERIENCE_VARIANT_OPTIONS.find((option) => option.value === value) ??
+    LESSON_EXPERIENCE_VARIANT_OPTIONS[0]
+  );
+}
+
 const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
   LessonExperienceVariantOption,
   LessonExperienceDisplayState
@@ -4392,6 +4399,55 @@ export default function AdminContentManager() {
                                     className={lessonMirrorShellClass}
                                     data-testid="admin-lesson-experience-editor"
                                   >
+                                    <section
+                                      className={["space-y-3", activePanelClass].join(" ")}
+                                      aria-label="Lesson container layout"
+                                    >
+                                      <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                          <p className={lessonMirrorSectionEyebrowClass}>
+                                            Lesson containers
+                                          </p>
+                                          <p className={["mt-1", metadataClass].join(" ")}>
+                                            Choose the public section preset for this lesson.
+                                            Concept is the explanation-first layout for
+                                            introduction-style lessons. Manual section toggles
+                                            switch the lesson to Custom.
+                                          </p>
+                                        </div>
+                                        <label
+                                          className={[compactLabelClass, "min-w-[240px]"].join(" ")}
+                                        >
+                                          <span>Lesson experience layout</span>
+                                          <select
+                                            aria-label="Lesson experience layout"
+                                            value={
+                                              editFormState.lessonBody.lessonExperience.variant
+                                            }
+                                            onChange={(event) =>
+                                              updateLessonExperienceVariant(
+                                                event.target.value as LessonExperienceVariantOption
+                                              )
+                                            }
+                                            className={compactFieldClass}
+                                          >
+                                            {LESSON_EXPERIENCE_VARIANT_OPTIONS.map((option) => (
+                                              <option key={option.value} value={option.value}>
+                                                {option.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </label>
+                                      </div>
+                                      <p className="rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-3 py-2 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+                                        {
+                                          getLessonExperienceVariantOption(
+                                            editFormState.lessonBody.lessonExperience.variant
+                                          ).description
+                                        }
+                                      </p>
+                                    </section>
+
                                     <fieldset
                                       className={["space-y-3", lessonMirrorCardClass].join(" ")}
                                     >
@@ -5131,32 +5187,6 @@ export default function AdminContentManager() {
                                           <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
                                             Technical lesson category used for badge defaults and
                                             fallback layout behavior.
-                                          </p>
-                                        </label>
-
-                                        <label className={compactLabelClass}>
-                                          <span>Lesson experience layout</span>
-                                          <select
-                                            aria-label="Lesson experience layout"
-                                            value={
-                                              editFormState.lessonBody.lessonExperience.variant
-                                            }
-                                            onChange={(event) =>
-                                              updateLessonExperienceVariant(
-                                                event.target.value as LessonExperienceVariantOption
-                                              )
-                                            }
-                                            className={compactFieldClass}
-                                          >
-                                            {LESSON_EXPERIENCE_VARIANT_OPTIONS.map((option) => (
-                                              <option key={option.value} value={option.value}>
-                                                {option.label}
-                                              </option>
-                                            ))}
-                                          </select>
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Preset for which public containers are visible. Use
-                                            Custom after manual display changes.
                                           </p>
                                         </label>
 

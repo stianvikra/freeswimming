@@ -203,7 +203,8 @@ test("signed-in course progress status is visible near the progress bar", async 
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   await seedSignedInCourseSession(context, baseURL ?? "http://127.0.0.1:3100");
-  await page.route("**/api/progress/course", async (route) => {
+  await page.route("**/api/progress/course**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -221,6 +222,8 @@ test("signed-in course progress status is visible near the progress bar", async 
   await expect(syncStatus.getByRole("button", { name: "Retry course progress sync" })).toHaveCount(
     0
   );
+  await expect(syncStatus).toHaveAttribute("data-sync-state", "synced", { timeout: 10_000 });
+  await expect(syncStatus).toBeHidden({ timeout: 6_000 });
 });
 
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {

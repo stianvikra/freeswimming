@@ -73,12 +73,15 @@ describe("AdminHelpCenter", () => {
       screen.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
     ).toBeVisible();
     expect(
+      screen.getAllByText(/Lesson experience layout.*all-lesson container preset/i).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(
       screen.getAllByText(/Shown on lesson page.*Hidden from lesson page.*Admin\/list only/i).length
     ).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/inline `Show safety note` control/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
     expect(
-      screen.getAllByText(/Advanced\/fallback fields.*layout preset/i).length
+      screen.getAllByText(/Advanced\/fallback fields.*stable IDs/i).length
     ).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(/Practice images are non-editable in this slice.*calm fallback/i)

@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Ref }
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { CheckCircle2, ChevronDown, ChevronRight, PencilLine } from "lucide-react";
 
 import SiteChrome from "@/components/SiteChrome";
 import PageTemplate from "@/components/PageTemplate";
@@ -96,6 +97,7 @@ const SWIPE_HINT_REVEAL_PX = 18;
 const A2HS_AUTO_PROMPT_ENABLED = process.env.NEXT_PUBLIC_FS_A2HS_AUTO_PROMPT_ENABLED !== "0";
 const COURSE_PROGRESS_SYNC_API_PATH = "/api/progress/course";
 const COURSE_PROGRESS_SYNC_INTERVAL_MS = 10_000;
+const COURSE_SYNC_SUCCESS_VISIBLE_MS = 3_000;
 const BACKUP_PROMPT_DISMISSED_AT_KEY = "fs_course_backup_prompt_dismissed_at";
 const BACKUP_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 const BACKUP_PROMPT_MIN_DONE_LESSONS = 3;
@@ -565,149 +567,229 @@ function CourseDesktopOutline({
     0
   );
   const progressPercent = lessonCount > 0 ? Math.round((doneLessonCount / lessonCount) * 100) : 0;
+  const activeModuleIndex = modules.findIndex((module) =>
+    module.lessons.some((lesson) => lesson.id === activeLessonId)
+  );
+  const activeModule = activeModuleIndex >= 0 ? modules[activeModuleIndex] : null;
+  const activeModuleDoneCount =
+    activeModule?.lessons.filter((lesson) => progressStatusByLessonId[lesson.id] === "done")
+      .length ?? 0;
+  const [expandedModuleIds, setExpandedModuleIds] = useState<Set<string>>(() => new Set());
+
+  function toggleModule(moduleId: string) {
+    setExpandedModuleIds((current) => {
+      const next = new Set(current);
+      if (next.has(moduleId)) {
+        next.delete(moduleId);
+      } else {
+        next.add(moduleId);
+      }
+      return next;
+    });
+  }
 
   return (
     <aside
-      className="sticky top-20 hidden max-h-[calc(100vh-6rem)] overflow-y-auto rounded-[20px] border border-slate-200/80 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.08)] xl:block"
-      aria-label="Course outline"
+      className="sticky top-20 hidden max-h-[calc(100vh-6rem)] overflow-y-auto border-l border-slate-200 bg-[#f7f9fd]/95 px-5 py-1 xl:block"
+      aria-label="Course navigation"
       data-testid="course-desktop-outline"
     >
-      <div className="border-b border-slate-200/80 px-1.5 pb-3">
-        <div className="flex items-end justify-between gap-3">
+      <section
+        className="rounded-[18px] border border-blue-100 bg-white/80 p-4"
+        aria-label="Course progress"
+        data-testid="course-desktop-progress-card"
+      >
+        <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-              Course outline
-            </p>
-            <p className="mt-2 text-[10px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
-              Total progress
+              Course progress
             </p>
             <p className="mt-1 text-[13px] font-semibold text-slate-900">
               {doneLessonCount} of {lessonCount} lessons complete
             </p>
           </div>
-          <span className="text-[12px] font-semibold text-slate-500">{progressPercent}%</span>
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[12px] font-bold text-blue-700 ring-1 ring-blue-100">
+            {progressPercent}%
+          </span>
         </div>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
           <div
             className="h-full rounded-full bg-blue-600 transition-[width]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-      </div>
-      <nav className="mt-4 space-y-5" aria-label="Course lessons">
-        {modules.map((module, moduleIndex) => {
-          const isActiveModule = module.lessons.some((lesson) => lesson.id === activeLessonId);
-          const moduleDoneCount = module.lessons.filter(
-            (lesson) => progressStatusByLessonId[lesson.id] === "done"
-          ).length;
+        {activeModule ? (
+          <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2">
+            <p className="text-[10px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+              Current module
+            </p>
+            <p className="mt-0.5 line-clamp-1 text-[12px] font-semibold text-slate-900">
+              Module {activeModuleIndex + 1}: {activeModule.title}
+            </p>
+            <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
+              {activeModuleDoneCount} of {activeModule.lessons.length} lessons done
+            </p>
+          </div>
+        ) : null}
+      </section>
+      <nav className="pt-5" aria-label="Course outline" data-testid="course-desktop-lesson-menu">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">
+            Course outline
+          </p>
+          <span className="text-[11px] font-semibold text-slate-500">{lessonCount} lessons</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {modules.map((module, moduleIndex) => {
+            const isActiveModule = module.lessons.some((lesson) => lesson.id === activeLessonId);
+            const moduleExpanded = isActiveModule || expandedModuleIds.has(module.id);
+            const moduleDoneCount = module.lessons.filter(
+              (lesson) => progressStatusByLessonId[lesson.id] === "done"
+            ).length;
+            const ModuleChevron = moduleExpanded ? ChevronDown : ChevronRight;
 
-          return (
-            <section key={module.id} aria-labelledby={`course-outline-module-${module.id}`}>
-              <div id={`course-outline-module-${module.id}`} className="px-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+            return (
+              <section
+                key={module.id}
+                className={cx(
+                  "rounded-2xl",
+                  isActiveModule ? "bg-white/75 p-2 ring-1 ring-blue-100" : "border-slate-200"
+                )}
+                aria-labelledby={`course-outline-module-${module.id}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleModule(module.id)}
+                  aria-expanded={moduleExpanded}
+                  aria-controls={`course-outline-lessons-${module.id}`}
+                  className="group flex w-full items-start justify-between gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
+                  <span id={`course-outline-module-${module.id}`} className="min-w-0">
                     <span
                       className={cx(
                         "block text-[10px] font-semibold tracking-[0.08em] uppercase",
-                        isActiveModule ? "text-blue-600" : "text-slate-400"
+                        isActiveModule ? "text-blue-700" : "text-slate-500"
                       )}
                     >
                       Module {moduleIndex + 1}
                     </span>
-                  </div>
-                  <span className="shrink-0 text-right text-[11px] font-semibold text-slate-500">
-                    {moduleDoneCount === module.lessons.length
-                      ? `${module.lessons.length} of ${module.lessons.length} lessons complete`
-                      : `${moduleDoneCount} of ${module.lessons.length} lessons done`}
+                    <span
+                      className={cx(
+                        "mt-1 block text-[14px] leading-5 font-semibold",
+                        isActiveModule ? "text-slate-950" : "text-slate-700"
+                      )}
+                    >
+                      {module.title}
+                    </span>
                   </span>
-                </div>
-                <p
-                  className={cx(
-                    "mt-1 text-[14px] leading-5 font-semibold",
-                    isActiveModule ? "text-blue-900" : "text-slate-900"
-                  )}
-                >
-                  {module.title}
-                </p>
-              </div>
-              <ol className="mt-2 ml-3 space-y-1 border-l border-slate-200/80 pl-3">
-                {module.lessons.map((lesson, lessonIndex) => {
-                  const active = lesson.id === activeLessonId;
-                  const progressStatus = progressStatusByLessonId[lesson.id] ?? "not_started";
-                  const statusLabel =
-                    progressStatus === "done"
-                      ? "Done"
-                      : progressStatus === "in_progress"
-                        ? "In progress"
-                        : active
-                          ? "Current lesson"
-                          : null;
-                  const markerClass =
-                    progressStatus === "done"
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                      : progressStatus === "in_progress"
-                        ? "border-amber-300 bg-amber-50 text-amber-800"
-                        : active
-                          ? "border-blue-600 bg-blue-600 text-white"
-                          : "border-slate-200 bg-white text-slate-500";
+                  <span className="flex shrink-0 items-center gap-2 pt-0.5">
+                    <span className="text-right text-[11px] font-semibold text-slate-500">
+                      {moduleDoneCount}/{module.lessons.length}
+                    </span>
+                    <ModuleChevron
+                      aria-hidden="true"
+                      className={cx(
+                        "h-4 w-4 transition",
+                        isActiveModule ? "text-blue-600" : "text-slate-400"
+                      )}
+                    />
+                  </span>
+                </button>
+                {moduleExpanded ? (
+                  <ol id={`course-outline-lessons-${module.id}`} className="mt-1 space-y-0.5">
+                    {module.lessons.map((lesson, lessonIndex) => {
+                      const active = lesson.id === activeLessonId;
+                      const progressStatus = progressStatusByLessonId[lesson.id] ?? "not_started";
+                      const statusLabel =
+                        progressStatus === "done"
+                          ? "Done"
+                          : progressStatus === "in_progress"
+                            ? "In progress"
+                            : active
+                              ? "Current lesson"
+                              : null;
 
-                  return (
-                    <li key={lesson.id}>
-                      <button
-                        type="button"
-                        onClick={() => onSelectLesson(lesson.id, { scrollToPlayer: false })}
-                        aria-current={active ? "page" : undefined}
-                        data-testid={`course-outline-lesson-${lesson.id}`}
-                        className={cx(
-                          "relative grid w-full grid-cols-[28px_minmax(0,1fr)] gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-                          active
-                            ? "bg-white text-slate-950 shadow-[0_8px_22px_rgba(37,99,235,0.12)] ring-1 ring-blue-200/90"
-                            : "text-slate-700 hover:bg-white/80 hover:shadow-[0_6px_16px_rgba(15,23,42,0.06)]"
-                        )}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={cx(
-                            "absolute top-2 bottom-2 left-0 w-1 rounded-full",
-                            active ? "bg-blue-600" : "bg-transparent"
-                          )}
-                        />
-                        <span
-                          aria-hidden="true"
-                          className={cx(
-                            "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-bold",
-                            markerClass
-                          )}
-                        >
-                          {lessonIndex + 1}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="line-clamp-2 block leading-5 font-semibold">
-                            {lesson.title}
-                          </span>
-                          {statusLabel ? (
+                      return (
+                        <li key={lesson.id}>
+                          <button
+                            type="button"
+                            onClick={() => onSelectLesson(lesson.id, { scrollToPlayer: false })}
+                            aria-current={active ? "page" : undefined}
+                            data-testid={`course-outline-lesson-${lesson.id}`}
+                            aria-label={`${lesson.title}, module ${moduleIndex + 1}, lesson ${
+                              lessonIndex + 1
+                            }, ${statusLabel ?? "Not started"}${
+                              lesson.estMinutes ? `, ${lesson.estMinutes} minutes` : ""
+                            }`}
+                            className={cx(
+                              "relative grid w-full grid-cols-[24px_minmax(0,1fr)_auto] gap-2.5 rounded-xl px-2 py-2 text-left text-[13px] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                              active
+                                ? "bg-blue-50 text-slate-950 ring-1 ring-blue-100"
+                                : "text-slate-600 hover:bg-white/80 hover:text-slate-950"
+                            )}
+                          >
                             <span
+                              aria-hidden="true"
                               className={cx(
-                                "mt-1 block text-[11px] leading-4 font-semibold",
-                                progressStatus === "done"
-                                  ? "text-emerald-700"
-                                  : progressStatus === "in_progress"
-                                    ? "text-amber-700"
-                                    : "text-blue-700"
+                                "absolute top-2 bottom-2 left-0 w-1 rounded-full",
+                                active ? "bg-blue-600" : "bg-transparent"
                               )}
-                            >
-                              {statusLabel}
+                            />
+                            {progressStatus === "done" ? (
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mt-0.5 h-5 w-5 text-emerald-600"
+                                strokeWidth={2.4}
+                              />
+                            ) : (
+                              <span
+                                aria-hidden="true"
+                                className={cx(
+                                  "mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold",
+                                  progressStatus === "in_progress"
+                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                    : active
+                                      ? "border-blue-300 bg-white text-blue-700"
+                                      : "border-slate-200 bg-white text-slate-500"
+                                )}
+                              >
+                                {lessonIndex + 1}
+                              </span>
+                            )}
+                            <span className="min-w-0">
+                              <span className="line-clamp-2 block leading-5 font-semibold">
+                                {lesson.title}
+                              </span>
+                              {statusLabel ? (
+                                <span
+                                  className={cx(
+                                    "mt-0.5 block text-[11px] leading-4 font-semibold",
+                                    progressStatus === "done"
+                                      ? "sr-only"
+                                      : progressStatus === "in_progress"
+                                        ? "text-amber-600"
+                                        : "text-blue-600"
+                                  )}
+                                >
+                                  {statusLabel}
+                                </span>
+                              ) : null}
                             </span>
-                          ) : null}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          );
-        })}
+                            {lesson.estMinutes ? (
+                              <span className="mt-0.5 inline-flex h-6 min-w-8 items-center justify-center self-start justify-self-end rounded-full bg-white px-2 text-[10px] leading-none font-semibold whitespace-nowrap text-slate-500 ring-1 ring-slate-200">
+                                {lesson.estMinutes}m
+                              </span>
+                            ) : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : null}
+              </section>
+            );
+          })}
+        </div>
       </nav>
     </aside>
   );
@@ -889,6 +971,7 @@ function CoursePageClient() {
     "idle"
   );
   const [lastCourseSyncAtMs, setLastCourseSyncAtMs] = useState<number | null>(null);
+  const [showCourseSyncSavedNotice, setShowCourseSyncSavedNotice] = useState(false);
   const [showBackupPrompt, setShowBackupPrompt] = useState(false);
   const [swipeHint, setSwipeHint] = useState<{
     direction: SwipeDirection;
@@ -1487,7 +1570,22 @@ function CoursePageClient() {
     courseSyncInFlightRef.current = false;
     setCourseSyncStatus("idle");
     setLastCourseSyncAtMs(null);
+    setShowCourseSyncSavedNotice(false);
   }, [clearCourseSyncTimer, courseProgressSyncEnabled, signedInUserId]);
+
+  useEffect(() => {
+    if (courseSyncStatus !== "synced") {
+      setShowCourseSyncSavedNotice(false);
+      return;
+    }
+
+    setShowCourseSyncSavedNotice(true);
+    const timer = window.setTimeout(() => {
+      setShowCourseSyncSavedNotice(false);
+    }, COURSE_SYNC_SUCCESS_VISIBLE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [courseSyncStatus, lastCourseSyncAtMs]);
 
   useEffect(() => {
     if (
@@ -2264,7 +2362,9 @@ function CoursePageClient() {
   const feelCuesHelperText = "Use these points to check whether the movement feels right.";
   const showPrimaryFocusBlocks = showGoalSection || showQuickExplanationSection;
   const primaryFocusGridClass =
-    showGoalSection && showQuickExplanationSection ? "lg:grid-cols-2" : "lg:grid-cols-1";
+    showGoalSection && showQuickExplanationSection
+      ? "lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
+      : "lg:grid-cols-1";
   const showPassCriteria = lessonDisplay?.checkpoint !== false;
   const showNextStepSection =
     lessonExperience.display.nextStep && lessonDisplay?.nextStep !== false;
@@ -2397,6 +2497,11 @@ function CoursePageClient() {
           ? "Syncing lesson progress to your account..."
           : formatSyncStatusAgeLabel(lastCourseSyncAtMs)
       : null;
+  const showCourseProgressSyncStatus =
+    isSignedIn &&
+    Boolean(courseProgressStatusCopy) &&
+    (courseSyncStatus !== "synced" || showCourseSyncSavedNotice);
+  const adminLessonEditHref = `/admin?tab=content&lesson=${encodeURIComponent(activeLesson.id)}`;
 
   const supportCardClass =
     "rounded-2xl border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.92))] shadow-[0_10px_24px_rgba(15,23,42,0.065)] lg:border-slate-300/70 lg:bg-white/96 lg:shadow-[0_14px_34px_rgba(15,23,42,0.08)]";
@@ -3252,13 +3357,7 @@ function CoursePageClient() {
           />
           {previewBanner}
 
-          <div className="mt-3 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start">
-            <CourseDesktopOutline
-              modules={courseModules}
-              activeLessonId={activeLesson.id}
-              progressStatusByLessonId={lessonProgressStatusById}
-              onSelectLesson={goToLesson}
-            />
+          <div className="mt-3 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="min-w-0">
               <div className={styles.playerStack}>
                 <section
@@ -3275,15 +3374,17 @@ function CoursePageClient() {
                           <span className="text-slate-300">•</span>
                           <span>{overviewLabel.module}</span>
                           <span className="text-slate-300">•</span>
-                          <span
-                            data-testid="course-lesson-status-chip"
-                            className={cx(
-                              "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
-                              activeLessonStatusMeta.className
-                            )}
-                          >
-                            {activeLessonStatusMeta.label}
-                          </span>
+                          {!isLessonDone ? (
+                            <span
+                              data-testid="course-lesson-status-chip"
+                              className={cx(
+                                "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
+                                activeLessonStatusMeta.className
+                              )}
+                            >
+                              {activeLessonStatusMeta.label}
+                            </span>
+                          ) : null}
                         </div>
                         <PressButton
                           tier="nav"
@@ -3325,11 +3426,8 @@ function CoursePageClient() {
                           Check pass criteria below to unlock Mark as done.
                         </p>
                       ) : isLessonDone ? (
-                        <p
-                          id={markDoneFeedbackId}
-                          className="mt-1 text-[12px] font-medium text-emerald-700"
-                        >
-                          Lesson done. Click Done again to return it to In progress.
+                        <p id={markDoneFeedbackId} className="sr-only">
+                          Lesson is done. Press Done again to return it to In progress.
                         </p>
                       ) : doneGateFeedback ? (
                         <p
@@ -3442,7 +3540,7 @@ function CoursePageClient() {
                     </div>
                   </div>
 
-                  {isSignedIn && courseProgressStatusCopy ? (
+                  {showCourseProgressSyncStatus && courseProgressStatusCopy ? (
                     <CourseProgressSyncStatus
                       state={courseSyncStatus}
                       label={courseProgressStatusCopy}
@@ -3733,7 +3831,7 @@ function CoursePageClient() {
                           {activeLesson.title}
                         </h2>
                         {activeLesson.goal ? (
-                          <p className="mt-1 max-w-[64ch] text-[13px] leading-6 font-medium text-slate-600">
+                          <p className="mt-1 max-w-[82ch] text-[13px] leading-6 font-medium text-slate-600">
                             {activeLesson.goal}
                           </p>
                         ) : null}
@@ -3744,6 +3842,17 @@ function CoursePageClient() {
                             {overviewLabel.duration}
                           </span>
                         ) : null}
+                        {dashboardVisible ? (
+                          <PressLink
+                            tier="nav"
+                            href={adminLessonEditHref}
+                            data-testid="course-admin-edit-link"
+                            className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+                          >
+                            <PencilLine className="h-3.5 w-3.5" aria-hidden="true" />
+                            Admin edit
+                          </PressLink>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -3753,7 +3862,7 @@ function CoursePageClient() {
               {showLessonExperienceSections ? (
                 <section
                   data-testid="course-lesson-experience"
-                  className="mt-4 space-y-3"
+                  className="mt-5 space-y-4 lg:space-y-5"
                   aria-labelledby="course-lesson-experience-heading"
                 >
                   <h2 id="course-lesson-experience-heading" className="sr-only">
@@ -3764,7 +3873,7 @@ function CoursePageClient() {
                     {showGoalSection || showQuickExplanationSection || showWhyThisMattersSection ? (
                       <article
                         data-testid="course-lesson-focus"
-                        className="rounded-[28px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_14px_34px_rgba(15,23,42,0.075)] lg:col-span-2 lg:border-slate-300/68 lg:p-6"
+                        className="rounded-[24px] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] p-5 shadow-[0_16px_36px_rgba(15,23,42,0.08)] lg:col-span-2 lg:border-blue-200/68 lg:p-6"
                       >
                         <div className="min-w-0">
                           <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
@@ -3855,7 +3964,7 @@ function CoursePageClient() {
                     ) : null}
 
                     {showCuesSection ? (
-                      <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
+                      <article className="rounded-[24px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.065)] lg:col-span-2 lg:border-slate-300/68">
                         <div>
                           <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
                             {feelCuesHeading}
@@ -3864,10 +3973,19 @@ function CoursePageClient() {
                             {feelCuesHelperText}
                           </p>
                         </div>
-                        <ul className="mt-3 divide-y divide-slate-200/72 rounded-2xl border border-slate-200/72 bg-white/72 text-[14px] leading-6 text-slate-800">
-                          {lessonExperience.feelCues.map((cue) => (
-                            <li key={cue} className="px-3 py-3">
-                              {cue}
+                        <ul className="mt-4 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-2">
+                          {lessonExperience.feelCues.map((cue, index) => (
+                            <li
+                              key={cue}
+                              className="grid grid-cols-[30px_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-slate-200/72 bg-slate-50/68 px-3 py-3"
+                            >
+                              <span
+                                aria-hidden="true"
+                                className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[12px] font-bold text-blue-700 ring-1 ring-blue-100"
+                              >
+                                {index + 1}
+                              </span>
+                              <span>{cue}</span>
                             </li>
                           ))}
                         </ul>
@@ -4104,6 +4222,12 @@ function CoursePageClient() {
                 </section>
               ) : null}
             </div>
+            <CourseDesktopOutline
+              modules={courseModules}
+              activeLessonId={activeLesson.id}
+              progressStatusByLessonId={lessonProgressStatusById}
+              onSelectLesson={goToLesson}
+            />
           </div>
 
           {dashboardVisible ? (

@@ -932,10 +932,15 @@ describe("AdminContentManager state rendering", () => {
     expect(within(publicFieldEditor).getByText("Public lesson mirror")).toBeVisible();
     expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(0);
     expect(within(lessonEditor).getByText("Video / estimated time")).toBeVisible();
+    expect(within(lessonEditor).getByText("Lesson containers")).toBeVisible();
+    expect(
+      within(lessonEditor).getByText(/Concept is the explanation-first layout/i)
+    ).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list fallback")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list only")).toBeVisible();
     expect(within(lessonEditor).getByText("Advanced/fallback fields")).toBeVisible();
     expect(within(lessonEditor).getByText("Advanced/fallback")).toBeVisible();
+    expect(within(lessonEditor).getAllByLabelText("Lesson experience layout")).toHaveLength(1);
     expect(within(lessonEditor).getByLabelText("Lesson experience layout")).toHaveValue(
       "water_drill"
     );
