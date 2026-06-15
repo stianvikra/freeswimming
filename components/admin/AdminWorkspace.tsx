@@ -2,7 +2,20 @@
 
 import { startTransition, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import AdminNoteQuickCaptureLauncher from "@/components/admin/AdminNoteQuickCaptureLauncher";
+import {
+  BarChart3,
+  CircleHelp,
+  CreditCard,
+  Flag,
+  FolderTree,
+  Inbox,
+  Mail,
+  MessageSquareText,
+  QrCode,
+  Tags,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import AdminAnalyticsDashboard from "@/components/admin/AdminAnalyticsDashboard";
 import AdminCommerceManager from "@/components/admin/AdminCommerceManager";
 import AdminContentManager from "@/components/admin/AdminContentManager";
@@ -22,76 +35,84 @@ import {
   type AdminTab,
 } from "@/lib/admin/admin-workspace";
 
-const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string }> = [
+const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string; icon: LucideIcon }> = [
   {
     id: "content",
     label: "Content",
     subtitle: "Lessons, guides, and publish state",
+    icon: FolderTree,
   },
   {
     id: "qr-links",
     label: "QR Links",
     subtitle: "Stable redirect registry and ownership",
+    icon: QrCode,
   },
   {
     id: "commerce",
     label: "Commerce",
     subtitle: "Products, titles, and active sales status",
+    icon: CreditCard,
   },
   {
     id: "operations",
     label: "Operations",
     subtitle: "Runtime flags and private-access status",
+    icon: Flag,
   },
   {
     id: "analytics",
     label: "Analytics",
     subtitle: "Safe event dashboard, funnel, and data health",
+    icon: BarChart3,
   },
   {
     id: "users",
     label: "Users",
     subtitle: "Read-only accounts, access, and support status",
+    icon: Users,
   },
   {
     id: "email-templates",
     label: "Email templates",
     subtitle: "Draft, review, publish, and rollback-safe message copy",
+    icon: Mail,
   },
   {
     id: "messages",
     label: "Messages",
     subtitle: "Stored intake, triage status, and notification diagnostics",
+    icon: Inbox,
   },
   {
     id: "notes",
     label: "Notes",
     subtitle: "Internal tasks, categories, and completion status",
+    icon: MessageSquareText,
   },
   {
     id: "categories",
     label: "Categories",
     subtitle: "Manage note/content taxonomy for dashboard workflows",
+    icon: Tags,
   },
   {
     id: "help",
     label: "Help/Guide",
     subtitle: "How admin works, what each service does, and recovery playbooks",
+    icon: CircleHelp,
   },
 ];
 
 const adminTabButtonBaseClass =
-  "fs-library-card w-full p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
-const adminTabActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
-const adminTabInactiveClass = "hover:border-[color:var(--fs-border-brand)] hover:bg-white";
+  "fs-library-card flex min-h-11 w-max shrink-0 items-center gap-2.5 !border-transparent !bg-transparent px-2.5 py-2 text-left !shadow-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 lg:w-full lg:shrink";
+const adminTabActiveClass =
+  "fs-library-card-accent !border-[color:var(--fs-border-brand)] !bg-white/86 !shadow-[0_6px_18px_rgba(15,23,42,0.055)]";
+const adminTabInactiveClass = "hover:!border-[color:var(--fs-border-brand)] hover:!bg-white/72";
 const adminHelpSubnavClass =
   "hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 p-3 lg:block";
 const adminHelpSubnavLinkClass =
   "block rounded-[var(--fs-radius-control)] px-3 py-2 text-xs font-semibold text-[color:var(--fs-color-muted)] transition-colors hover:bg-white hover:text-[color:var(--fs-color-brand-700)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700";
-const adminShellActionClass =
-  "fs-cta-secondary inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
-const adminCardHeadingClass = "text-base font-semibold text-[color:var(--fs-color-ink-strong)]";
-const adminMutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
 
 type Props = {
   role: AdminRole | null;
@@ -110,7 +131,6 @@ export default function AdminWorkspace({ role }: Props) {
     () => TAB_LABELS.find((tab) => tab.id === activeTab) ?? TAB_LABELS[0],
     [activeTab]
   );
-
   function selectTab(tab: AdminTab) {
     const nextParams = applyAdminTabToSearchParams(
       new URLSearchParams(searchParams?.toString() ?? ""),
@@ -126,7 +146,7 @@ export default function AdminWorkspace({ role }: Props) {
     <div className="contents" data-testid="admin-workspace-shell">
       <nav
         aria-label="Admin sections"
-        className="mt-6 grid gap-3 sm:grid-cols-2 lg:sticky lg:top-28 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:pr-1"
+        className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:grid lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-x-visible lg:overflow-y-auto lg:rounded-[var(--fs-radius-card)] lg:border lg:border-[color:var(--fs-border-soft)] lg:bg-white/42 lg:p-2 lg:shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
         data-testid="admin-tab-grid"
       >
         {activeTab === "help" ? (
@@ -155,28 +175,34 @@ export default function AdminWorkspace({ role }: Props) {
 
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
+          const TabIcon = tab.icon;
           return (
-            <div key={tab.id}>
+            <div key={tab.id} className="shrink-0 lg:shrink">
               <button
                 type="button"
                 onClick={() => selectTab(tab.id)}
                 data-testid={`admin-tab-${tab.id}`}
+                title={tab.subtitle}
                 className={cx(
                   adminTabButtonBaseClass,
                   isActive ? adminTabActiveClass : adminTabInactiveClass
                 )}
                 aria-pressed={isActive}
               >
+                <TabIcon
+                  className={cx(
+                    "h-4 w-4 shrink-0",
+                    isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-500"
+                  )}
+                  aria-hidden="true"
+                />
                 <p
                   className={cx(
-                    "text-sm font-semibold",
+                    "text-sm font-semibold whitespace-nowrap",
                     isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-900"
                   )}
                 >
                   {tab.label}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-[color:var(--fs-color-muted)]">
-                  {tab.subtitle}
                 </p>
               </button>
             </div>
@@ -184,38 +210,11 @@ export default function AdminWorkspace({ role }: Props) {
         })}
       </nav>
 
-      <div className="mt-6 min-w-0 lg:col-start-2" data-testid="admin-workspace-main">
-        <div
-          className="fs-library-card fs-library-card-muted p-4 sm:p-5"
-          data-testid="admin-active-section-panel"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
-                Active section
-              </p>
-              <p
-                className={`mt-1 ${adminCardHeadingClass}`}
-                data-testid="admin-active-section-label"
-              >
-                {activeMeta.label}
-              </p>
-              <p className={`mt-1 ${adminMutedTextClass}`}>{activeMeta.subtitle}</p>
-            </div>
-            <AdminNoteQuickCaptureLauncher
-              adminRole={role}
-              contextType="page"
-              contextRef="/admin"
-              contextLabel="Admin dashboard"
-              triggerLabel="Quick note"
-              triggerTestId="admin-workspace-quick-note-trigger"
-              triggerClassName={adminShellActionClass}
-              description="Capture a page-level admin note from the dashboard without switching to the Notes tab first."
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-6">
+      <div className="mt-5 min-w-0 lg:col-start-1" data-testid="admin-workspace-main">
+        <span className="sr-only" data-testid="admin-active-section-label">
+          {activeMeta.label}
+        </span>
+        <div className="space-y-5">
           {activeTab === "content" ? <AdminContentManager /> : null}
           {activeTab === "qr-links" ? <AdminQrLinksManager /> : null}
           {activeTab === "commerce" ? <AdminCommerceManager /> : null}

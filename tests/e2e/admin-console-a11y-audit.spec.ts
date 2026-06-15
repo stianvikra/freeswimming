@@ -11,7 +11,7 @@ type AdminTabAuditTarget = {
 };
 
 const ADMIN_TAB_AUDIT_TARGETS: AdminTabAuditTarget[] = [
-  { id: "content", label: "Content", heading: "Content items" },
+  { id: "content", label: "Content", heading: "Content" },
   { id: "qr-links", label: "QR Links", heading: "QR registry" },
   { id: "commerce", label: "Commerce", heading: "Commerce" },
   { id: "operations", label: "Operations", heading: "Operations" },

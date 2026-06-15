@@ -100,17 +100,17 @@ const STATUS_CHIP_CLASS_BY_VALUE: Record<AdminContentStatus, string> = {
   archived: "border-slate-300 bg-slate-200 text-slate-700",
 };
 
-const managerHeaderClass = "fs-library-card fs-library-card-accent p-4 sm:p-5";
-const workspacePanelClass = "fs-library-card fs-library-card-muted p-4 sm:p-5";
-const rowCardClass = "fs-library-card p-4 sm:p-5";
-const nestedPanelClass =
-  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/86 p-3";
-const mutedPanelClass =
-  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-[rgba(255,255,255,0.68)] p-3";
+const managerHeaderClass =
+  "fs-library-card fs-library-card-accent !rounded-none !border-x-0 !border-t-0 !bg-transparent p-0 pb-4 !shadow-none";
+const workspacePanelClass =
+  "fs-library-card fs-library-card-muted !bg-white/82 p-4 !shadow-[0_6px_18px_rgba(15,23,42,0.045)] sm:p-5";
+const rowCardClass =
+  "fs-library-card !bg-white/88 p-4 !shadow-[0_6px_18px_rgba(15,23,42,0.045)] sm:p-5";
+const nestedPanelClass = "rounded-[var(--fs-radius-control)] bg-slate-50/72 p-3";
+const mutedPanelClass = "rounded-[var(--fs-radius-control)] bg-slate-50/58 p-3";
 const activePanelClass =
-  "rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] p-3";
+  "rounded-[var(--fs-radius-control)] border-l-4 border-[color:var(--fs-color-brand-600)] bg-[color:var(--fs-color-brand-50)] p-3";
 const mutedTextClass = "text-sm leading-6 text-[color:var(--fs-color-muted)]";
-const eyebrowClass = "text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]";
 const headingClass = "text-lg font-semibold text-[color:var(--fs-color-ink-strong)]";
 const smallHeadingClass = "text-sm font-semibold text-[color:var(--fs-color-ink-strong)]";
 const metadataClass = "text-xs text-[color:var(--fs-color-muted)]";
@@ -126,17 +126,17 @@ const readOnlyValueClass =
   "min-h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)]";
 const compactCheckboxClass =
   "h-4 w-4 rounded border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
-const lessonMirrorShellClass = "mx-auto mt-4 w-full max-w-[1180px] space-y-3";
+const lessonMirrorShellClass = "mt-4 w-full space-y-3";
 const lessonMirrorCardClass =
-  "rounded-[24px] border border-slate-200/72 bg-white/94 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)] sm:p-5 lg:border-slate-300/68 lg:bg-white";
+  "rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/76 p-3 sm:p-4";
 const lessonMirrorLargeCardClass =
-  "rounded-[28px] border border-slate-200/72 bg-white/96 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-5 lg:border-slate-300/68 lg:bg-white";
+  "rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/78 p-3 sm:p-4";
 const lessonMirrorPracticeCardClass =
-  "overflow-hidden rounded-[28px] border border-slate-200/72 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4 lg:border-slate-300/68";
+  "overflow-hidden rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/78 p-3 sm:p-4";
 const lessonMirrorWaterPracticeCardClass =
-  "overflow-hidden rounded-[28px] border border-blue-100/90 bg-white/96 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.075)] sm:p-4";
+  "overflow-hidden rounded-[var(--fs-radius-control)] border border-blue-100/90 bg-white/78 p-3 sm:p-4";
 const lessonMirrorSoftCalloutClass =
-  "rounded-2xl border border-blue-100/80 bg-blue-50/55 px-4 py-3";
+  "rounded-[var(--fs-radius-control)] border-l-4 border-blue-200 bg-blue-50/50 px-3 py-3";
 const lessonMirrorSectionEyebrowClass =
   "text-[12px] font-semibold tracking-wide text-slate-500 uppercase";
 const secondaryActionClass =
@@ -153,6 +153,10 @@ const compactWarningActionClass =
   "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const compactDangerActionClass =
   "inline-flex min-h-9 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-rose-200 bg-white/85 px-3 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const compactDetailsSummaryClass =
+  "inline-flex min-h-9 cursor-pointer list-none items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-3 text-xs font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden";
+const compactActionRailClass =
+  "mt-2 flex flex-wrap items-center gap-2 border-t border-[color:var(--fs-border-soft)] pt-2";
 const tabButtonClass =
   "inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const tabButtonActiveClass = "bg-white text-[color:var(--fs-color-brand-700)] shadow-sm";
@@ -388,6 +392,7 @@ type LessonBodyEditState = {
   lessonId: string;
   youtubeId: string;
   estMinutes: string;
+  videoPlanningNotes: string;
   lessonType: LessonTypeOption;
   drillLabel: string;
   supportStartAtLessonInModule: string;
@@ -829,6 +834,7 @@ function toLessonExperienceEditState(item: AdminContentItemRow): LessonExperienc
 function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
   const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
   const drillBody = isRecord(item.body) && isRecord(item.body.drill) ? item.body.drill : null;
+  const videoPlanningBody = parseNestedRecord(item.body, "videoPlanning");
   const displayBody = isRecord(item.body) && isRecord(item.body.display) ? item.body.display : null;
   const supportCardBody =
     isRecord(item.body) && isRecord(item.body.supportCard) ? item.body.supportCard : null;
@@ -850,6 +856,7 @@ function toLessonBodyEditState(item: AdminContentItemRow): LessonBodyEditState {
       const value = parseBodyNumber(item.body, "estMinutes");
       return value && value >= 1 ? String(Math.floor(value)) : "";
     })(),
+    videoPlanningNotes: parseBodyString(videoPlanningBody, "notes") ?? "",
     lessonType: resolveLessonType(parseBodyString(item.body, "lessonType")),
     drillLabel: parseBodyString(item.body, "drillLabel") ?? "",
     supportStartAtLessonInModule: (() => {
@@ -1039,6 +1046,7 @@ function normalizeLessonBodyForCompare(value: LessonBodyEditState) {
       const parsed = Number.parseInt(raw, 10);
       return Number.isFinite(parsed) && parsed >= 1 ? parsed : Number.NaN;
     })(),
+    videoPlanningNotes: value.videoPlanningNotes.trim(),
     lessonType: value.lessonType,
     drillLabel: value.drillLabel.trim(),
     supportStartAtLessonInModule: (() => {
@@ -1086,6 +1094,13 @@ function buildLessonBodyPayload(
     nextBody.estMinutes = normalized.estMinutes;
   } else {
     delete nextBody.estMinutes;
+  }
+  const videoPlanning = isRecord(nextBody.videoPlanning) ? { ...nextBody.videoPlanning } : {};
+  setOptionalString(videoPlanning, "notes", normalized.videoPlanningNotes);
+  if (hasObjectValues(videoPlanning)) {
+    nextBody.videoPlanning = videoPlanning;
+  } else {
+    delete nextBody.videoPlanning;
   }
   if (normalized.lessonType) {
     nextBody.lessonType = normalized.lessonType;
@@ -2085,7 +2100,7 @@ export default function AdminContentManager() {
     }));
   }
 
-  function renderLessonContentScopeBadge(label: "Admin/list only" | "Advanced/fallback") {
+  function renderLessonContentScopeBadge(label: "Admin/list only" | "Technical fallback") {
     const className =
       label === "Admin/list only"
         ? "border-amber-200 bg-amber-50 text-amber-800"
@@ -2549,6 +2564,9 @@ export default function AdminContentManager() {
         (typeof normalizedBody.estMinutes === "number" && normalizedBody.estMinutes > 240)
       ) {
         return "Estimated minutes must be an integer between 1 and 240.";
+      }
+      if (normalizedBody.videoPlanningNotes.length > 4000) {
+        return "Video planning notes must be 4000 characters or less.";
       }
       if (normalizedBody.drillLabel.length > 40) {
         return "Section badge label must be 40 characters or less.";
@@ -3112,9 +3130,8 @@ export default function AdminContentManager() {
       <section className={managerHeaderClass} data-testid="admin-content-manager-header">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={eyebrowClass}>Content workflow</p>
             <h2 id="admin-content-list-anchor" className={headingClass}>
-              Content items
+              Content
             </h2>
             <p className={["mt-2", mutedTextClass].join(" ")}>{groupedCountLabel}</p>
             {isAllContentView && filteredCountLabel ? (
@@ -3130,11 +3147,6 @@ export default function AdminContentManager() {
                 {shouldHideCourseRowsInCatalog
                   ? "Course module/lesson rows are hidden in full catalog by default. Use workspace or enable full list visibility."
                   : "Course module/lesson rows are visible in full catalog."}
-              </p>
-            ) : null}
-            {isCourseWorkspaceView ? (
-              <p className={["mt-1", metadataClass].join(" ")}>
-                Workspace-first mode for course modules and lessons.
               </p>
             ) : null}
           </div>
@@ -3253,11 +3265,6 @@ export default function AdminContentManager() {
 
         {isAllContentView ? (
           <div className="mt-4 space-y-2">
-            <p className={metadataClass}>
-              Content scope: choose one group to avoid long mixed scrolling. Use{" "}
-              <span className="font-semibold">All content (audit)</span> only when you need full
-              cross-type review.
-            </p>
             <div className="flex flex-wrap items-center gap-2">
               {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
                 <button
@@ -3489,8 +3496,8 @@ export default function AdminContentManager() {
             </div>
             <p className={["mt-2", metadataClass].join(" ")}>
               {isFocusedCourseWorkspace
-                ? "Overview stays compact while the selected module becomes the primary lesson workspace below."
-                : "Scan modules here first, then open one module when you are ready to edit or reorder its lessons."}
+                ? "Selected module is open below."
+                : "Open a module when you need ordering, moves, or deeper edits."}
             </p>
 
             <div
@@ -3518,10 +3525,7 @@ export default function AdminContentManager() {
             </div>
 
             {courseModuleWorkspaceItems.length > 0 ? (
-              <ul
-                className="mt-3 grid gap-2 lg:grid-cols-2"
-                data-testid="admin-course-module-status-list"
-              >
+              <ul className="mt-3 grid gap-2" data-testid="admin-course-module-status-list">
                 {courseModuleWorkspaceItems.map((moduleItem) => {
                   const moduleLessonCounts =
                     lessonStatusCountsByModuleId.get(moduleItem.id) ?? createStatusCountByState();
@@ -3581,16 +3585,9 @@ export default function AdminContentManager() {
                         <button
                           type="button"
                           onClick={() => handleWorkspaceFocusModule(moduleItem.id)}
-                          className={compactSecondaryActionClass}
-                        >
-                          Open module scope
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleWorkspaceEditModule(moduleItem.id)}
                           className={compactPrimaryActionClass}
                         >
-                          Edit module
+                          Open module scope
                         </button>
                         <button
                           type="button"
@@ -3599,31 +3596,43 @@ export default function AdminContentManager() {
                         >
                           Add lesson
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!moduleRecord) return;
-                            void handleDelete(moduleRecord);
-                          }}
-                          disabled={!moduleRecord}
-                          className={compactDangerActionClass}
-                        >
-                          Delete module
-                        </button>
-                        {modulePreviewUrl ? (
-                          <a
-                            href={modulePreviewUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={compactWarningActionClass}
-                          >
-                            Open module preview
-                          </a>
-                        ) : (
-                          <span className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)]">
-                            Open module preview (no lessons)
-                          </span>
-                        )}
+                        <details>
+                          <summary className={compactDetailsSummaryClass}>More actions</summary>
+                          <div className={compactActionRailClass}>
+                            <button
+                              type="button"
+                              onClick={() => handleWorkspaceEditModule(moduleItem.id)}
+                              className={compactSecondaryActionClass}
+                            >
+                              Edit module
+                            </button>
+                            {modulePreviewUrl ? (
+                              <a
+                                href={modulePreviewUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={compactWarningActionClass}
+                              >
+                                Open module preview
+                              </a>
+                            ) : (
+                              <span className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)]">
+                                Open module preview (no lessons)
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!moduleRecord) return;
+                                void handleDelete(moduleRecord);
+                              }}
+                              disabled={!moduleRecord}
+                              className={compactDangerActionClass}
+                            >
+                              Delete module
+                            </button>
+                          </div>
+                        </details>
                       </div>
                       {isFocusedCourseWorkspace ? (
                         <p className="mt-3 text-[11px] text-[color:var(--fs-color-muted)]">
@@ -3635,11 +3644,6 @@ export default function AdminContentManager() {
                         <div className={["mt-3", mutedPanelClass].join(" ")}>
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className={metadataLabelClass}>Lesson preview</p>
-                            {moduleLessonCount > 0 ? (
-                              <span className="text-[11px] text-[color:var(--fs-color-muted)]">
-                                Use module scope for reordering and full lesson workspace
-                              </span>
-                            ) : null}
                           </div>
                           {moduleLessons.length === 0 ? (
                             <AdminManagerState
@@ -3686,17 +3690,24 @@ export default function AdminContentManager() {
                                           >
                                             Edit lesson
                                           </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              if (!lessonRecord) return;
-                                              void handleDelete(lessonRecord);
-                                            }}
-                                            disabled={!lessonRecord}
-                                            className={compactDangerActionClass}
-                                          >
-                                            Delete lesson
-                                          </button>
+                                          <details>
+                                            <summary className={compactDetailsSummaryClass}>
+                                              More
+                                            </summary>
+                                            <div className={compactActionRailClass}>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  if (!lessonRecord) return;
+                                                  void handleDelete(lessonRecord);
+                                                }}
+                                                disabled={!lessonRecord}
+                                                className={compactDangerActionClass}
+                                              >
+                                                Delete lesson
+                                              </button>
+                                            </div>
+                                          </details>
                                         </div>
                                       </div>
                                     </li>
@@ -3945,9 +3956,7 @@ export default function AdminContentManager() {
                   className="mt-3 rounded-[var(--fs-radius-control)] border border-dashed border-[color:var(--fs-border-soft)] bg-white/62 px-3 py-2 text-xs text-[color:var(--fs-color-muted)]"
                   data-testid="admin-course-workspace-overview-guidance"
                 >
-                  Overview mode now supports quick lesson open/edit/delete from each module card.
-                  Choose a module above only when you need the full ordered workspace for move
-                  controls, create, and deeper lesson edits.
+                  Overview shows open/edit actions. Use module scope for ordering and moves.
                 </p>
               ) : workspaceLessons.length === 0 ? (
                 <AdminManagerState
@@ -4003,72 +4012,11 @@ export default function AdminContentManager() {
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => void handleMoveLesson(lesson.id, "up")}
-                            disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
-                            className={compactSecondaryActionClass}
-                          >
-                            Move up
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleMoveLesson(lesson.id, "down")}
-                            disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
-                            className={compactSecondaryActionClass}
-                          >
-                            Move down
-                          </button>
-                          <label className="sr-only" htmlFor={`workspace-move-target-${lesson.id}`}>
-                            Move lesson to module
-                          </label>
-                          <select
-                            id={`workspace-move-target-${lesson.id}`}
-                            value={selectedTargetModuleId}
-                            onChange={(event) =>
-                              setLessonMoveTargetById((previous) => ({
-                                ...previous,
-                                [lesson.id]: event.target.value,
-                              }))
-                            }
-                            disabled={workspaceActionBusy || moduleOptions.length === 0}
-                            className={[compactFieldClass, "min-w-[170px] text-xs"].join(" ")}
-                          >
-                            <option value="">Select module</option>
-                            {moduleOptions.map((option) => (
-                              <option key={option.id} value={option.id}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
-                            }
-                            disabled={workspaceActionBusy || !canMoveToTargetModule}
-                            className={compactQuietActionClass}
-                          >
-                            Move to module
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => handleWorkspaceEditLesson(lesson.id)}
                             className={compactPrimaryActionClass}
                           >
                             Edit lesson
                           </button>
-                          <a
-                            href={buildCoursePreviewHref({
-                              lessonId: lesson.runtimeLessonId,
-                              mode: resolveCoursePreviewModeFromStatus(lesson.status),
-                              previewType: "lesson",
-                              previewRef: lesson.slug,
-                            })}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={compactWarningActionClass}
-                          >
-                            Open preview
-                          </a>
                           <a
                             href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
                             target="_blank"
@@ -4077,6 +4025,75 @@ export default function AdminContentManager() {
                           >
                             Open lesson
                           </a>
+                          <details>
+                            <summary className={compactDetailsSummaryClass}>Reorder / move</summary>
+                            <div className={compactActionRailClass}>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveLesson(lesson.id, "up")}
+                                disabled={workspaceActionBusy || !moveBounds?.canMoveUp}
+                                className={compactSecondaryActionClass}
+                              >
+                                Move up
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleMoveLesson(lesson.id, "down")}
+                                disabled={workspaceActionBusy || !moveBounds?.canMoveDown}
+                                className={compactSecondaryActionClass}
+                              >
+                                Move down
+                              </button>
+                              <label
+                                className="sr-only"
+                                htmlFor={`workspace-move-target-${lesson.id}`}
+                              >
+                                Move lesson to module
+                              </label>
+                              <select
+                                id={`workspace-move-target-${lesson.id}`}
+                                value={selectedTargetModuleId}
+                                onChange={(event) =>
+                                  setLessonMoveTargetById((previous) => ({
+                                    ...previous,
+                                    [lesson.id]: event.target.value,
+                                  }))
+                                }
+                                disabled={workspaceActionBusy || moduleOptions.length === 0}
+                                className={[compactFieldClass, "min-w-[170px] text-xs"].join(" ")}
+                              >
+                                <option value="">Select module</option>
+                                {moduleOptions.map((option) => (
+                                  <option key={option.id} value={option.id}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleMoveLessonToModule(lesson.id, selectedTargetModuleId)
+                                }
+                                disabled={workspaceActionBusy || !canMoveToTargetModule}
+                                className={compactQuietActionClass}
+                              >
+                                Move to module
+                              </button>
+                              <a
+                                href={buildCoursePreviewHref({
+                                  lessonId: lesson.runtimeLessonId,
+                                  mode: resolveCoursePreviewModeFromStatus(lesson.status),
+                                  previewType: "lesson",
+                                  previewRef: lesson.slug,
+                                })}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={compactWarningActionClass}
+                              >
+                                Open preview
+                              </a>
+                            </div>
+                          </details>
                         </div>
                       </li>
                     );
@@ -4391,7 +4408,7 @@ export default function AdminContentManager() {
                                   </div>
                                   <p className={["mt-1", metadataClass].join(" ")}>
                                     Edit these in the same order, width, and section rhythm swimmers
-                                    see on the public lesson page. Admin/list and Advanced/fallback
+                                    see on the public lesson page. Admin/list and technical fallback
                                     fields are kept separate below.
                                   </p>
 
@@ -4506,6 +4523,34 @@ export default function AdminContentManager() {
                                           </p>
                                         </label>
                                       </div>
+                                    </fieldset>
+
+                                    <fieldset
+                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    >
+                                      <legend className={lessonMirrorSectionEyebrowClass}>
+                                        Video planning notes
+                                      </legend>
+                                      <p className={metadataClass}>
+                                        Admin-only script notes, shot plan, retake ideas, or
+                                        recording reminders. Not shown on the lesson page.
+                                      </p>
+                                      <label className={compactLabelClass}>
+                                        <span>Video script notes</span>
+                                        <textarea
+                                          aria-label="Video script notes"
+                                          rows={5}
+                                          value={editFormState.lessonBody.videoPlanningNotes}
+                                          onChange={(event) =>
+                                            updateLessonBodyField(
+                                              "videoPlanningNotes",
+                                              event.target.value
+                                            )
+                                          }
+                                          className={textAreaClass}
+                                          placeholder="Opening line, key demo shots, camera notes, retake reminders..."
+                                        />
+                                      </label>
                                     </fieldset>
 
                                     <section
@@ -5139,13 +5184,12 @@ export default function AdminContentManager() {
                                     <details className={["space-y-3", nestedPanelClass].join(" ")}>
                                       <summary className={metadataLabelClass}>
                                         <span className="inline-flex flex-wrap items-center gap-2">
-                                          <span>Advanced/fallback fields</span>
-                                          {renderLessonContentScopeBadge("Advanced/fallback")}
+                                          <span>Technical fallback fields</span>
+                                          {renderLessonContentScopeBadge("Technical fallback")}
                                         </span>
                                       </summary>
                                       <p className={["mt-2", metadataClass].join(" ")}>
-                                        Technical controls and older draft fallback fields are kept
-                                        here so they do not interrupt the main public lesson flow.
+                                        Stable IDs, support defaults, and legacy fallback content.
                                       </p>
 
                                       <div className="mt-3 grid gap-3 sm:grid-cols-2">

@@ -339,10 +339,11 @@ describe("AdminContentManager state rendering", () => {
     expect(screen.getByTestId("admin-course-module-status-row")).toHaveClass("fs-library-card");
     const moduleRow = screen.getByTestId("admin-course-module-status-row");
     expect(within(moduleRow).getByRole("button", { name: "Open module scope" })).toHaveClass(
-      "fs-cta-secondary"
-    );
-    expect(within(moduleRow).getByRole("button", { name: "Edit module" })).toHaveClass(
       "fs-cta-primary"
+    );
+    expect(within(moduleRow).getByText("More actions")).toBeVisible();
+    expect(within(moduleRow).getByRole("button", { name: "Edit module" })).toHaveClass(
+      "fs-cta-secondary"
     );
     expect(within(moduleRow).getByRole("button", { name: "Add lesson" }).className).toContain(
       "border-emerald-200"
@@ -442,7 +443,10 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.click(within(moduleRow).getByRole("button", { name: "Add lesson" }));
 
     const workspaceCreateForm = await screen.findByTestId("admin-workspace-lesson-create-form");
-    expect(workspaceCreateForm).toHaveClass("border-[color:var(--fs-border-brand)]");
+    expect(workspaceCreateForm).toHaveClass(
+      "border-l-4",
+      "border-[color:var(--fs-color-brand-600)]"
+    );
     expect(
       within(workspaceCreateForm).getByRole("button", { name: "Create lesson" }).className
     ).toContain("border-emerald-200");
@@ -932,14 +936,16 @@ describe("AdminContentManager state rendering", () => {
     expect(within(publicFieldEditor).getByText("Public lesson mirror")).toBeVisible();
     expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(0);
     expect(within(lessonEditor).getByText("Video / estimated time")).toBeVisible();
+    expect(within(lessonEditor).getByText("Video planning notes")).toBeVisible();
+    expect(within(lessonEditor).getByText(/Admin-only script notes/i)).toBeVisible();
     expect(within(lessonEditor).getByText("Lesson containers")).toBeVisible();
     expect(
       within(lessonEditor).getByText(/Concept is the explanation-first layout/i)
     ).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list fallback")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list only")).toBeVisible();
-    expect(within(lessonEditor).getByText("Advanced/fallback fields")).toBeVisible();
-    expect(within(lessonEditor).getByText("Advanced/fallback")).toBeVisible();
+    expect(within(lessonEditor).getByText("Technical fallback fields")).toBeVisible();
+    expect(within(lessonEditor).getByText("Technical fallback")).toBeVisible();
     expect(within(lessonEditor).getAllByLabelText("Lesson experience layout")).toHaveLength(1);
     expect(within(lessonEditor).getByLabelText("Lesson experience layout")).toHaveValue(
       "water_drill"
@@ -984,6 +990,11 @@ describe("AdminContentManager state rendering", () => {
     });
     fireEvent.change(within(lessonEditor).getByLabelText("Estimated minutes"), {
       target: { value: "5" },
+    });
+    fireEvent.change(within(lessonEditor).getByLabelText("Video script notes"), {
+      target: {
+        value: "Open with the breath cue. Capture side angle and one close-up retake.",
+      },
     });
     fireEvent.change(within(lessonEditor).getByLabelText("Summary"), {
       target: { value: "Admin fallback summary." },
@@ -1041,6 +1052,9 @@ describe("AdminContentManager state rendering", () => {
       lessonId: "body-position--body-position-front",
       youtubeId: "OWRzGHPRdmg",
       estMinutes: 5,
+      videoPlanning: {
+        notes: "Open with the breath cue. Capture side angle and one close-up retake.",
+      },
       lessonExperience: {
         variant: "water_drill",
         display: {

@@ -310,7 +310,7 @@ async function exerciseFoundationNavigation(page: Page) {
   await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
 
   await openTabWithFallback(tabContent, "Content", "content");
-  await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
   const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
   const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
   await expect(courseWorkspaceTab).toBeVisible();
@@ -401,7 +401,7 @@ test.describe("admin foundation", () => {
       const activeSectionLabel = page.getByTestId("admin-active-section-label");
       await expect(activeSectionLabel).toHaveText("Content");
       const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
-      await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
       const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
       await expect(allContentTab).toBeVisible();
       await allContentTab.click();
@@ -578,7 +578,9 @@ test.describe("admin foundation", () => {
         .filter({ hasText: lessonFixtureTitle })
         .first();
       await expect(overviewLessonRow.getByRole("button", { name: "Edit lesson" })).toBeVisible();
+      await overviewLessonRow.getByText("More", { exact: true }).click();
       await expect(overviewLessonRow.getByRole("button", { name: "Delete lesson" })).toBeVisible();
+      await overviewModuleRow.getByText("More actions").click();
       await expect(overviewModuleRow.getByRole("button", { name: "Delete module" })).toBeVisible();
       await expect(overviewLessonRow.getByRole("link", { name: "Open lesson" })).toHaveAttribute(
         "href",
@@ -641,6 +643,7 @@ test.describe("admin foundation", () => {
         .first();
       await expect(workspaceLessonRow).toBeVisible();
       await expect(workspaceLessonRow.getByText("Draft")).toBeVisible();
+      await workspaceLessonRow.getByText("Reorder / move").click();
       await expect(workspaceLessonRow.getByRole("button", { name: "Move up" })).toBeVisible();
       await expect(workspaceLessonRow.getByRole("button", { name: "Move down" })).toBeVisible();
       await expect(
@@ -683,8 +686,9 @@ test.describe("admin foundation", () => {
       await expect(fixtureLessonEditForm).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson fields")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Video / estimated time")).toBeVisible();
-      await expect(fixtureLessonEditForm.getByText("Advanced/fallback fields")).toBeVisible();
-      await fixtureLessonEditForm.getByText("Advanced/fallback fields").click();
+      await expect(fixtureLessonEditForm.getByText("Video planning notes")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Technical fallback fields")).toBeVisible();
+      await fixtureLessonEditForm.getByText("Technical fallback fields").click();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
       await expect(
@@ -717,7 +721,9 @@ test.describe("admin foundation", () => {
       await expect(supportContactToggle).toBeVisible();
 
       const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
+      const videoPlanningNotes = `Opening breath cue, side angle, and retake marker ${unique}`;
       const supportStartLessonInModule = "3";
+      await fixtureLessonEditForm.getByLabel("Video script notes").fill(videoPlanningNotes);
       await fixtureLessonEditForm
         .getByLabel("Section badge label (optional)")
         .fill(`Focus ${unique}`);
@@ -772,6 +778,9 @@ test.describe("admin foundation", () => {
       );
       await expect(savedLessonEditForm.getByLabel("Pass criteria (one per line)")).toHaveValue(
         checkpointCriteriaText
+      );
+      await expect(savedLessonEditForm.getByLabel("Video script notes")).toHaveValue(
+        videoPlanningNotes
       );
       await expect(
         savedLessonEditForm.getByLabel("Show Pool drill / water practice on lesson page")

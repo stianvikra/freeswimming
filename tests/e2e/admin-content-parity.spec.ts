@@ -52,7 +52,7 @@ test.describe("admin content parity", () => {
     }
 
     await page.getByTestId("admin-tab-content").click();
-    await expect(page.getByRole("heading", { name: "Content items" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
     const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
     await expect(allContentTab).toBeVisible();
     await allContentTab.click();

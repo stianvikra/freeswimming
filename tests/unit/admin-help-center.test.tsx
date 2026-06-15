@@ -72,6 +72,9 @@ describe("AdminHelpCenter", () => {
     expect(
       screen.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
     ).toBeVisible();
+    expect(screen.getAllByText(/Video planning notes.*admin-only/i).length).toBeGreaterThanOrEqual(
+      1
+    );
     expect(
       screen.getAllByText(/Lesson experience layout.*all-lesson container preset/i).length
     ).toBeGreaterThanOrEqual(1);
@@ -81,14 +84,16 @@ describe("AdminHelpCenter", () => {
     expect(screen.getAllByText(/inline `Show safety note` control/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
     expect(
-      screen.getAllByText(/Advanced\/fallback fields.*stable IDs/i).length
+      screen.getAllByText(/Technical fallback fields.*stable IDs/i).length
     ).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText(/Practice images are non-editable in this slice.*calm fallback/i)
     ).toBeVisible();
     expect(screen.getByText("Save changes / View changes / Cancel:")).toBeVisible();
-    expect(screen.getByText("Public lesson mirror / Advanced/fallback fields:")).toBeVisible();
+    expect(screen.getByText("Public lesson mirror / Technical fallback fields:")).toBeVisible();
     expect(screen.getByText(/Use each section's single visibility control/i)).toBeVisible();
+    expect(screen.getByText(/Video planning notes.*script and recording planning/i)).toBeVisible();
+    expect(screen.queryByText(/Advanced\/fallback/i)).not.toBeInTheDocument();
     expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();
     expect(screen.getByText("Move to deleted / Confirm delete:")).toBeVisible();

@@ -157,7 +157,7 @@ async function waitForDashboardQuickCaptureTrigger(page: Page) {
   await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible({
     timeout: 15_000,
   });
-  await expect(activeSectionLabel).toBeVisible({ timeout: 15_000 });
+  await expect(activeSectionLabel).toHaveText(/Content|Notes|Help\/Guide/, { timeout: 15_000 });
 
   const triggerVisible = await expect(trigger)
     .toBeVisible({ timeout: 10_000 })
@@ -174,7 +174,7 @@ async function waitForDashboardQuickCaptureTrigger(page: Page) {
   await expect(page.getByRole("heading", { name: "Admin console" })).toBeVisible({
     timeout: 15_000,
   });
-  await expect(activeSectionLabel).toBeVisible({ timeout: 15_000 });
+  await expect(activeSectionLabel).toHaveText(/Content|Notes|Help\/Guide/, { timeout: 15_000 });
   await expect(trigger).toBeVisible({ timeout: 15_000 });
 }
 

@@ -14,22 +14,6 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(searchParamsValue.current),
 }));
 
-vi.mock("@/components/admin/AdminNoteQuickCaptureLauncher", () => ({
-  default: ({
-    triggerClassName,
-    triggerLabel,
-    triggerTestId,
-  }: {
-    triggerClassName?: string;
-    triggerLabel?: string;
-    triggerTestId?: string;
-  }) => (
-    <button type="button" data-testid={triggerTestId} className={triggerClassName}>
-      {triggerLabel}
-    </button>
-  ),
-}));
-
 function mockManager(testId: string) {
   return {
     default: () => <section data-testid={testId} />,
@@ -69,16 +53,17 @@ describe("AdminWorkspace shell", () => {
     vi.clearAllMocks();
   });
 
-  it("uses the AW-006 token shell for tabs, active context, and quick note", () => {
+  it("uses the AW-006 token shell for tabs and active context", () => {
     render(<AdminWorkspace role="admin" />);
 
     expect(screen.getByTestId("admin-workspace-shell")).toHaveClass("contents");
     expect(screen.getByTestId("admin-tab-grid")).toHaveClass(
       "lg:sticky",
-      "lg:col-start-1",
-      "lg:grid-cols-1"
+      "lg:col-start-2",
+      "lg:grid-cols-1",
+      "overflow-x-auto"
     );
-    expect(screen.getByTestId("admin-workspace-main")).toHaveClass("lg:col-start-2", "min-w-0");
+    expect(screen.getByTestId("admin-workspace-main")).toHaveClass("lg:col-start-1", "min-w-0");
 
     const contentTab = screen.getByTestId("admin-tab-content");
     expect(contentTab).toHaveClass("fs-library-card", "fs-library-card-accent");
@@ -88,15 +73,8 @@ describe("AdminWorkspace shell", () => {
     expect(notesTab).toHaveClass("fs-library-card");
     expect(notesTab).not.toHaveClass("fs-library-card-accent");
 
-    expect(screen.getByTestId("admin-active-section-panel")).toHaveClass(
-      "fs-library-card",
-      "fs-library-card-muted"
-    );
+    expect(screen.queryByTestId("admin-active-section-panel")).not.toBeInTheDocument();
     expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Content");
-    expect(screen.getByTestId("admin-workspace-quick-note-trigger")).toHaveClass(
-      "fs-cta-secondary",
-      "min-h-11"
-    );
     expect(screen.getByTestId("admin-manager-content")).toBeVisible();
   });
 
@@ -121,17 +99,17 @@ describe("AdminWorkspace shell", () => {
     const sectionButtons = within(adminSections).getAllByRole("button");
     expect(sectionButtons).toHaveLength(11);
     expect(sectionButtons.map((button) => button.textContent)).toEqual([
-      "ContentLessons, guides, and publish state",
-      "QR LinksStable redirect registry and ownership",
-      "CommerceProducts, titles, and active sales status",
-      "OperationsRuntime flags and private-access status",
-      "AnalyticsSafe event dashboard, funnel, and data health",
-      "UsersRead-only accounts, access, and support status",
-      "Email templatesDraft, review, publish, and rollback-safe message copy",
-      "MessagesStored intake, triage status, and notification diagnostics",
-      "NotesInternal tasks, categories, and completion status",
-      "CategoriesManage note/content taxonomy for dashboard workflows",
-      "Help/GuideHow admin works, what each service does, and recovery playbooks",
+      "Content",
+      "QR Links",
+      "Commerce",
+      "Operations",
+      "Analytics",
+      "Users",
+      "Email templates",
+      "Messages",
+      "Notes",
+      "Categories",
+      "Help/Guide",
     ]);
 
     for (const button of sectionButtons) {

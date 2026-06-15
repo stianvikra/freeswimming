@@ -191,10 +191,14 @@ describe("course lesson admin/public field parity audit", () => {
 
     expect(adminSource).toContain("Public lesson mirror");
     expect(adminSource).toContain("Shown on lesson page");
+    expect(adminSource).toContain("Video planning notes");
+    expect(adminSource).toContain("Video script notes");
+    expect(adminSource).toContain("videoPlanning");
     expect(adminSource).toContain("Admin/list fallback");
     expect(adminSource).toContain("Admin/list only");
-    expect(adminSource).toContain("Advanced/fallback fields");
-    expect(adminSource).toContain("Advanced/fallback");
+    expect(adminSource).toContain("Technical fallback fields");
+    expect(adminSource).toContain("Technical fallback");
+    expect(adminSource).not.toContain("Advanced/fallback");
     expect(adminSource).toContain("Hidden from lesson page");
     expect(adminSource).toContain("Show safety note");
     expect(adminSource).toContain("admin-auto-grow-textarea");
