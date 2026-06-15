@@ -751,6 +751,102 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
 - `403`: forbidden
 - `500`: analytics insights could not be loaded
 
+## `GET /api/admin/users/overview`
+
+### Request
+
+- Auth: admin viewer, editor, or admin session required.
+- Query:
+  - `q`: optional email search string; trimmed and bounded to 80 characters.
+  - `role`: optional `admin`, `editor`, `viewer`, or `all`; defaults to `all`.
+  - `sort`: optional `updated_desc`, `created_desc`, or `email_asc`; defaults to `updated_desc`.
+  - `page`: optional positive integer; defaults to `1`.
+  - `pageSize`: optional positive integer; max is `50`, default is `25`.
+- Data source:
+  - `profiles` provides account email, role, and account timestamps.
+  - `entitlements` and `products` provide minimized product/access summaries.
+  - `analytics_events` may provide only non-public `user_id` + `occurred_at` timestamps for the
+    listed users.
+- Cache: `no-store`.
+- Admin UI: the read-only `Users` tab in `/admin?tab=users` renders this response.
+- Privacy boundary: the response must not expose private habit/training/note/workout content, raw
+  analytics payloads, IPs, User-Agent strings, payment provider IDs, invoices, refunds, payouts, or
+  anonymous public aggregate activity joined to profiles.
+- Commerce caveat: product/access summaries are support signals only. They are not Stripe
+  reconciliation, revenue recognition, invoices, refunds, payouts, or finance reporting.
+
+### Response
+
+```json
+{
+  "ok": true,
+  "generatedAt": "2026-06-15T12:00:00.000Z",
+  "query": {
+    "search": "",
+    "role": "all",
+    "sort": "updated_desc",
+    "page": 1,
+    "pageSize": 25
+  },
+  "summary": {
+    "totalUsers": 1,
+    "visibleUsers": 1,
+    "usersWithAccess": 1,
+    "usersWithoutAccess": 0,
+    "adminUsers": 0,
+    "editorUsers": 0,
+    "viewerUsers": 1,
+    "unknownRoleUsers": 0,
+    "partialSummary": false
+  },
+  "pageInfo": {
+    "page": 1,
+    "pageSize": 25,
+    "totalCount": 1,
+    "hasPreviousPage": false,
+    "hasNextPage": false
+  },
+  "items": [
+    {
+      "id": "user-id",
+      "email": "swimmer@example.com",
+      "role": "viewer",
+      "createdAt": "2026-06-01T08:00:00.000Z",
+      "updatedAt": "2026-06-10T08:00:00.000Z",
+      "accessStatus": "active",
+      "entitlementCount": 1,
+      "products": [
+        {
+          "id": "guide_poolside",
+          "title": "Poolside Guide",
+          "kind": "guide",
+          "active": true,
+          "known": true
+        }
+      ],
+      "latestGrantedAt": "2026-06-11T09:00:00.000Z",
+      "lastActivityAt": "2026-06-12T10:00:00.000Z",
+      "lastActivitySource": "product_activity",
+      "supportCodes": []
+    }
+  ],
+  "warnings": []
+}
+```
+
+If the overview can load profiles but cannot load optional entitlement/product/activity summaries,
+the route returns `200` with safe `warnings`, `summary.partialSummary = true`, and bounded support
+codes. If the core profile schema is missing, the route returns `200` with empty `items` and setup
+guidance.
+
+### Status Codes
+
+- `200`: overview loaded, partial overview loaded, or schema setup guidance returned
+- `401`: unauthenticated
+- `403`: forbidden
+- `500`: overview could not be loaded because required server configuration or an unexpected read
+  failed
+
 ## `POST /api/my-library/dryland/micro-plans`
 
 ### Request

@@ -19,7 +19,7 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-06-13";
+const LAST_UPDATED = "2026-06-15";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -29,6 +29,7 @@ export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "qr-links", label: "QR workflow" },
   { id: "email-templates", label: "Email templates" },
   { id: "messages", label: "Messages" },
+  { id: "users", label: "Users" },
   { id: "analytics", label: "Analytics" },
   { id: "buttons", label: "Buttons explained" },
   { id: "quality-matrix", label: "10/10 matrix" },
@@ -66,6 +67,13 @@ const DASHBOARD_TABS: TabGuide[] = [
       "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, paused/future-ready saved-workout guide measurement, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
     commonRisk:
       "Treating dashboard counts as purchases, accounting records, revenue, Stripe reconciliation, or unique people instead of product activity signals.",
+  },
+  {
+    name: "Users",
+    primaryJob:
+      "Scan known platform accounts, role/access state, product entitlement summaries, and safe support signals.",
+    commonRisk:
+      "Treating the read-only overview as permission to inspect private training, habit, note, payment, or raw analytics content.",
   },
   {
     name: "Email templates",
@@ -263,6 +271,29 @@ const MESSAGE_WORKFLOW = [
     title: "Diagnose notification issues",
     detail:
       "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed. A failed notification never means the stored request is lost.",
+  },
+];
+
+const USERS_WORKFLOW = [
+  {
+    title: "Start with search and role filters",
+    detail:
+      "Use email search, role filter, and sort before opening a user summary. The list is read-only and should answer account/access/support triage questions without raw database access.",
+  },
+  {
+    title: "Read access as entitlement summary",
+    detail:
+      "Access means the account has at least one linked entitlement row. Product labels are display summaries only; do not treat this page as Stripe reconciliation, invoice history, refunds, payouts, or finance reporting.",
+  },
+  {
+    title: "Use support signals as bounded hints",
+    detail:
+      "Signals such as no entitlement, no product activity yet, unknown role, or partial summary are diagnostic hints. They are not automatic user actions, not proof of churn, and not permission to inspect private content.",
+  },
+  {
+    title: "Respect the privacy boundary",
+    detail:
+      "Users does not show private training notes, habit names, workout free text, raw analytics payloads, IP addresses, User-Agent strings, provider IDs, invoices, refunds, payouts, or anonymous public analytics joined to profiles.",
   },
 ];
 
@@ -556,6 +587,31 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Refresh",
         meaning: "Reloads operations snapshot and runtime flags from server.",
+      },
+    ],
+  },
+  {
+    section: "Users tab",
+    actions: [
+      {
+        label: "Search / Role / Sort",
+        meaning:
+          "Narrows the read-only account list by safe fields. Search uses email only; role filter uses the typed admin role values.",
+      },
+      {
+        label: "Refresh / Retry",
+        meaning:
+          "Reloads the minimized user overview from the admin endpoint. It does not change user data or access.",
+      },
+      {
+        label: "Previous / Next",
+        meaning:
+          "Moves through bounded pages of matching users instead of loading the full user table at once.",
+      },
+      {
+        label: "User summary",
+        meaning:
+          "Shows safe account/access/support status for the selected row. It does not open private profile, habit, training, payment, or raw analytics details.",
       },
     ],
   },
@@ -1004,6 +1060,23 @@ export default function AdminHelpCenter() {
         </p>
         <div className="mt-3 space-y-3">
           {MESSAGE_WORKFLOW.map((item) => (
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="users" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>How Users works</h3>
+        <p className={helpBodyClass}>
+          Users is a read-only account and access overview for support triage. It is intentionally
+          minimized and does not replace user data export, deletion, finance reporting, or private
+          profile inspection.
+        </p>
+        <div className="mt-3 space-y-3">
+          {USERS_WORKFLOW.map((item) => (
             <article key={item.title} className={helpItemClass}>
               <p className={helpItemTitleClass}>{item.title}</p>
               <p className={helpItemBodyClass}>{item.detail}</p>
