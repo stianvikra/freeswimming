@@ -98,7 +98,7 @@ export default function ActionButton({
   // Link variant (only when enabled)
   if (href && !disabled) {
     return (
-      <PressLink tier="cta" className={cx(base, skin)} href={href}>
+      <PressLink tier="cta" className={cx(base, skin)} href={href} prefetch={false}>
         {content}
       </PressLink>
     );
