@@ -15,8 +15,8 @@
 - `last_audited`: `2026-06-15`
 - `base`: clean synced `main@816ed7b4`
 - `audit_status`: `ready`
-- `decision`: Use this as the durable intake/disposition brief for the 36 open live admin notes found on `2026-06-15`; Package B is done and Package A is now the selected next child.
-- `reason`: The open notes clustered into admin dashboard/editor clutter, public course lesson design/readability/completion friction, and separate future/decision items. Package B shipped via PR `#1136` and closeout PR `#1137`; Package A remains the next bounded admin/UI child.
+- `decision`: Use this as the durable intake/disposition brief for the 36 open live admin notes found on `2026-06-15`; Package B and Package A are now shipped and closed, while Package C items remain deferred until an owner priority decision.
+- `reason`: The open notes clustered into admin dashboard/editor clutter, public course lesson design/readability/completion friction, and separate future/decision items. Package B shipped via PR `#1136` and closeout PR `#1137`; Package A shipped via PR `#1138`; remaining Package C items are separate product/ops/commercial decisions.
 - `must_refresh_before_execution_if`: Refresh if `AGENTS.md`, scorecard categories, admin notes schema/status behavior, `AdminWorkspace`, `AdminContentManager`, course lesson public renderer, course progress/done gating, Help/Guide contracts, screenshot handoff rules, or verification lanes change before a child implementation starts.
 
 ## Goal
@@ -43,16 +43,16 @@ Capability audit:
 
 Systemic findings:
 
-| Surface                           | Finding                                                                                                                                                | Severity | Recommended Type                 | Owner Decision Needed                                                           | Follow-Up Brief Path                                                                        |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Admin dashboard and course editor | Many notes point to repeated helper copy, button sprawl, dropdown/action hierarchy, auto-expanding text boxes, and unclear advanced/fallback fields.   | `high`   | `bounded implementation child`   | `no`, cleanup direction is clear; design judgment happens in screenshot review. | `docs/task-briefs/planned/2026-06-15-admin-dashboard-editor-simplification-10-10.md`        |
-| Public course lesson page         | Package B notes around desktop readability, mark-done/pass-criteria hierarchy, visual interest, and admin edit entry are already shipped and closed.   | `info`   | `do not do`                      | `no`, shipped via PR `#1136` and closeout PR `#1137`.                           | `docs/task-briefs/done/2026-06-15-course-lesson-design-readability-and-completion-10-10.md` |
-| Future product/backlog items      | Split-screen training, duplicate-tab favicon, bulk workout deletion, habits history editing, and subscription pricing are not the same PR-sized slice. | `medium` | `deferred architecture decision` | `yes`, each needs product priority before implementation.                       | `TBD after owner decision`                                                                  |
+| Surface                           | Finding                                                                                                                                                | Severity | Recommended Type                 | Owner Decision Needed                                      | Follow-Up Brief Path                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Admin dashboard and course editor | Many notes pointed to repeated helper copy, button sprawl, dropdown/action hierarchy, auto-expanding text boxes, and unclear advanced/fallback fields. | `info`   | `do not do`                      | `no`, shipped via PR `#1138` and closed in the done child. | `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`           |
+| Public course lesson page         | Package B notes around desktop readability, mark-done/pass-criteria hierarchy, visual interest, and admin edit entry are already shipped and closed.   | `info`   | `do not do`                      | `no`, shipped via PR `#1136` and closeout PR `#1137`.      | `docs/task-briefs/done/2026-06-15-course-lesson-design-readability-and-completion-10-10.md` |
+| Future product/backlog items      | Split-screen training, duplicate-tab favicon, bulk workout deletion, habits history editing, and subscription pricing are not the same PR-sized slice. | `medium` | `deferred architecture decision` | `yes`, each needs product priority before implementation.  | `TBD after owner decision`                                                                  |
 
 Return path:
 
 - Last completed workstream: Admin Users PR `#1134` / `f78aff1c` and closeout PR `#1135` / `43cd34ce`.
-- Current active child: `docs/task-briefs/in-progress/2026-06-15-admin-dashboard-editor-simplification-10-10.md`.
+- Completed Package A child: `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`.
 - Deferred child already present: `docs/task-briefs/deferred/2026-06-15-aw-006-habits-setup-guide-tracking-mode-intent-10-10.md`.
 - Next planning step: choose exactly one child from this intake before any implementation branch.
 
@@ -62,7 +62,7 @@ All source notes below are moved from live admin-note queue into this durable br
 
 ### Package A: Admin Dashboard And Course Editor Simplification
 
-Active child: `docs/task-briefs/in-progress/2026-06-15-admin-dashboard-editor-simplification-10-10.md`.
+Completed child: `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`.
 
 | Note ID                                | Title                                        | Context  | Disposition                                                                                   |
 | -------------------------------------- | -------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@ These should not be mixed into Package A or B unless the owner explicitly change
 ## Recommended Execution Order
 
 1. Package B is done: public lesson page polish shipped via PR `#1136` and closeout PR `#1137`.
-2. Package A next: admin/editor simplification is high leverage, should reuse existing admin primitives, and requires screenshot handoff.
+2. Package A is done: admin/editor simplification shipped via PR `#1138`.
 3. Package C only after owner priority decision, because it mixes feature, ops, commerce, and member-data scopes.
 
 ## Platform 10/10 Scorecard Mapping
@@ -259,7 +259,7 @@ Critical target categories for `10/10` claim:
 1. The 36 audited open admin notes are listed with IDs, titles, context, and disposition.
 2. Notes moved into this brief are marked done/completed in live admin notes after the brief exists.
 3. No implementation branch is created by this intake.
-4. The next implementation decision is narrowed to one child: Package A is selected next after Package B shipped.
+4. Package B and Package A lifecycle state stays current after their shipped PRs, with only deferred Package C items left for a future owner priority decision.
 5. `npm run lint:briefs` passes for the changed brief.
 
 ## Validation
@@ -274,3 +274,4 @@ Critical target categories for `10/10` claim:
 - `2026-06-15 | main@43cd34ce | Owner confirmed Package B scope with introduction-container proposal included and final intro content decision deferred until review | next: wait for explicit execute/build/implement instruction before creating implementation branch`
 - `2026-06-15 | main@816ed7b4 | Course Lesson Design Readability And Completion PR #1136 and closeout PR #1137 are merged; refreshed intake so Package B is done and Package A is selected as next child; created planned Package A brief at docs/task-briefs/planned/2026-06-15-admin-dashboard-editor-simplification-10-10.md; no implementation branch started | next: run brief validation, then wait for explicit owner execute/build/implement instruction before implementation branch`
 - `2026-06-15 | branch codex/admin-dashboard-editor-simplification @ main@816ed7b4 | Owner explicitly authorized Package A implementation; moved active child to docs/task-briefs/in-progress/2026-06-15-admin-dashboard-editor-simplification-10-10.md | next: complete scoped admin/dashboard/editor implementation and screenshot approval before PR gates`
+- `2026-06-15 | main@3854678a | Package A admin/dashboard/editor simplification shipped via PR #1138 and closeout moved the child brief to done. Intake now has no active Package A/B child; Package C remains deferred until owner chooses a specific next priority. | next: choose next goal before any new implementation branch`
