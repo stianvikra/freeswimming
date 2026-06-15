@@ -71,9 +71,9 @@ const DASHBOARD_TABS: TabGuide[] = [
   {
     name: "Users",
     primaryJob:
-      "Scan known platform accounts, role/access state, product entitlement summaries, and safe support signals.",
+      "Scan canonical Auth users, profile/linkage state, role/access state, product entitlement summaries, and safe support signals.",
     commonRisk:
-      "Treating the read-only overview as permission to inspect private training, habit, note, payment, or raw analytics content.",
+      "Treating account support data or role controls as permission to inspect private training, habit, note, payment, or raw analytics content.",
   },
   {
     name: "Email templates",
@@ -276,9 +276,14 @@ const MESSAGE_WORKFLOW = [
 
 const USERS_WORKFLOW = [
   {
-    title: "Start with search and role filters",
+    title: "Start from Auth users",
     detail:
-      "Use email search, role filter, and sort before opening a user summary. The list is read-only and should answer account/access/support triage questions without raw database access.",
+      "Users starts from canonical Supabase Auth accounts, then adds profile, athlete display name, role, entitlement, tester, and activity support signals. Missing profile is a visible repair state, not a hidden user.",
+  },
+  {
+    title: "Use search and role filters",
+    detail:
+      "Use email, display-name, or auth-id search plus the role filter before opening a user summary. Role filter uses the typed admin role values.",
   },
   {
     title: "Read access as entitlement summary",
@@ -286,9 +291,14 @@ const USERS_WORKFLOW = [
       "Access means the account has at least one linked entitlement row. Product labels are display summaries only; do not treat this page as Stripe reconciliation, invoice history, refunds, payouts, or finance reporting.",
   },
   {
+    title: "Change roles only with a reason",
+    detail:
+      "Only Admin can change roles. The panel requires confirmation and a reason, checks the expected current role, blocks last-admin lockout, and writes an audit log through the server.",
+  },
+  {
     title: "Use support signals as bounded hints",
     detail:
-      "Signals such as no entitlement, no product activity yet, unknown role, or partial summary are diagnostic hints. They are not automatic user actions, not proof of churn, and not permission to inspect private content.",
+      "Signals such as missing profile, profile email mismatch, unconfirmed email, no entitlement, no product activity yet, unknown role, or partial summary are diagnostic hints. They are not automatic user actions, not proof of churn, and not permission to inspect private content.",
   },
   {
     title: "Respect the privacy boundary",
@@ -596,7 +606,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Search / Role / Sort",
         meaning:
-          "Narrows the read-only account list by safe fields. Search uses email only; role filter uses the typed admin role values.",
+          "Narrows the Auth user list by safe fields. Search uses email, display name, or auth id; role filter uses the typed admin role values.",
       },
       {
         label: "Refresh / Retry",
@@ -612,6 +622,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "User summary",
         meaning:
           "Shows safe account/access/support status for the selected row. It does not open private profile, habit, training, payment, or raw analytics details.",
+      },
+      {
+        label: "Change role",
+        meaning:
+          "Admin-only role mutation with confirmation, reason code, expected-role conflict check, last-admin protection, and audit logging.",
       },
     ],
   },
@@ -1071,9 +1086,9 @@ export default function AdminHelpCenter() {
       <section id="users" className={helpSectionClass}>
         <h3 className={helpHeadingClass}>How Users works</h3>
         <p className={helpBodyClass}>
-          Users is a read-only account and access overview for support triage. It is intentionally
-          minimized and does not replace user data export, deletion, finance reporting, or private
-          profile inspection.
+          Users is an Auth-canonical account, role, access, and support surface. It is purpose-bound
+          and does not replace user data export, deletion, finance reporting, or private profile
+          inspection.
         </p>
         <div className="mt-3 space-y-3">
           {USERS_WORKFLOW.map((item) => (

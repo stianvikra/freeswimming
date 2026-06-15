@@ -757,18 +757,22 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
 
 - Auth: admin viewer, editor, or admin session required.
 - Query:
-  - `q`: optional email search string; trimmed and bounded to 80 characters.
+  - `q`: optional email, display-name, or Auth ID search string; trimmed and bounded to 80
+    characters.
   - `role`: optional `admin`, `editor`, `viewer`, or `all`; defaults to `all`.
   - `sort`: optional `updated_desc`, `created_desc`, or `email_asc`; defaults to `updated_desc`.
   - `page`: optional positive integer; defaults to `1`.
   - `pageSize`: optional positive integer; max is `50`, default is `25`.
 - Data source:
-  - `profiles` provides account email, role, and account timestamps.
+  - Supabase Auth Admin API provides canonical user IDs, email/auth status, created timestamp, and
+    last sign-in metadata.
+  - `profiles` provides role/profile mirror state and may be missing for a visible Auth user.
+  - `athlete_profiles` may provide display-name support identity only.
   - `entitlements` and `products` provide minimized product/access summaries.
   - `analytics_events` may provide only non-public `user_id` + `occurred_at` timestamps for the
     listed users.
 - Cache: `no-store`.
-- Admin UI: the read-only `Users` tab in `/admin?tab=users` renders this response.
+- Admin UI: the `Users` tab in `/admin?tab=users` renders this response.
 - Privacy boundary: the response must not expose private habit/training/note/workout content, raw
   analytics payloads, IPs, User-Agent strings, payment provider IDs, invoices, refunds, payouts, or
   anonymous public aggregate activity joined to profiles.
@@ -797,6 +801,9 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
     "editorUsers": 0,
     "viewerUsers": 1,
     "unknownRoleUsers": 0,
+    "missingProfileUsers": 0,
+    "unconfirmedUsers": 0,
+    "testerUsers": 0,
     "partialSummary": false
   },
   "pageInfo": {
@@ -810,9 +817,18 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
     {
       "id": "user-id",
       "email": "swimmer@example.com",
+      "displayName": "Fast Freestyler",
+      "displayNameSource": "athlete_profile",
       "role": "viewer",
+      "roleSource": "profile",
+      "profileStatus": "complete",
+      "authStatus": "confirmed",
+      "testerStatus": "not_configured",
       "createdAt": "2026-06-01T08:00:00.000Z",
       "updatedAt": "2026-06-10T08:00:00.000Z",
+      "profileUpdatedAt": "2026-06-10T08:00:00.000Z",
+      "emailConfirmedAt": "2026-06-01T08:05:00.000Z",
+      "lastSignInAt": "2026-06-12T09:30:00.000Z",
       "accessStatus": "active",
       "entitlementCount": 1,
       "products": [
@@ -834,10 +850,12 @@ have daily rollup coverage. Unauthenticated or non-admin callers receive `401`/`
 }
 ```
 
-If the overview can load profiles but cannot load optional entitlement/product/activity summaries,
-the route returns `200` with safe `warnings`, `summary.partialSummary = true`, and bounded support
-codes. If the core profile schema is missing, the route returns `200` with empty `items` and setup
-guidance.
+If the overview can load Auth users but cannot load optional profile/athlete-profile/entitlement/
+product/activity summaries, the route returns `200` with safe `warnings`,
+`summary.partialSummary = true`, and bounded support codes. Auth users without profile rows remain
+visible with `profileStatus = "missing_profile"` and `supportCodes` including `missing_profile`.
+Allowlisted admins include `supportCodes` with `allowlist_override` so support can distinguish an
+environment allowlist role from a profile-backed role.
 
 ### Status Codes
 
@@ -846,6 +864,58 @@ guidance.
 - `403`: forbidden
 - `500`: overview could not be loaded because required server configuration or an unexpected read
   failed
+
+## `PATCH /api/admin/users/{userId}/role`
+
+### Request
+
+- Auth: admin role required.
+- Path:
+  - `userId`: Supabase Auth user ID.
+- Body:
+
+```json
+{
+  "role": "editor",
+  "expectedRole": "viewer",
+  "reason": "owner_request"
+}
+```
+
+- `role`: required `admin`, `editor`, or `viewer`.
+- `expectedRole`: required current role from the loaded panel, or `unknown`/`null` for repair flow.
+- `reason`: required `support_access`, `operator_change`, `owner_request`, or `repair`.
+- Behavior:
+  - verifies the target Auth user server-side;
+  - checks expected current role before mutation;
+  - writes through service-role-only `admin_set_user_role`, which updates `profiles` and inserts
+    `admin_audit_logs` in one transaction;
+  - blocks last-admin demotion through the database function;
+  - returns no private user content or raw provider data.
+- Cache: `no-store`.
+
+### Response
+
+```json
+{
+  "ok": true,
+  "userId": "user-id",
+  "role": "editor",
+  "auditLogged": true
+}
+```
+
+### Status Codes
+
+- `200`: role updated and audit logged
+- `400`: invalid JSON, invalid user ID, or invalid role payload
+- `401`: unauthenticated
+- `403`: forbidden / not admin
+- `404`: target Auth user not found
+- `409`: expected-role conflict, no email for profile-backed role, or last-admin guard
+- `415`: unsupported content type
+- `500`: service-role/RPC/audit/update failure
+- `503`: users schema not live in the environment
 
 ## `POST /api/my-library/dryland/micro-plans`
 

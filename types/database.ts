@@ -1866,6 +1866,25 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_set_user_role: {
+        Args: {
+          p_actor_email: string;
+          p_actor_user_id: string;
+          p_after: Json;
+          p_before: Json;
+          p_next_role: Database["public"]["Enums"]["admin_role"];
+          p_reason: string;
+          p_target_email: string;
+          p_target_user_id: string;
+        };
+        Returns: {
+          created_at: string;
+          email: string;
+          id: string;
+          role: Database["public"]["Enums"]["admin_role"];
+          updated_at: string;
+        };
+      };
       prune_analytics_events: {
         Args: { p_before?: string };
         Returns: number;
