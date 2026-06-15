@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-15-admin-users-overview-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-15`
 - `updated`: `2026-06-15`
@@ -374,3 +374,35 @@ Screenshot evidence checkpoint:
 - `2026-06-15 | screenshot-approved | owner approved screenshot handoff in chat; no product-rendering files changed after capture | next: stage diff and run npm run verify:pre-pr before commit/PR`
 - `2026-06-15 | gate-stabilization | first npm run verify:pre-pr failed in existing dryland micro-plan route unit tests because hardcoded 2026-06-08 fixture week had become stale relative to current date; added test-only system-time freeze to that test file and verified it passes standalone | next: rerun npm run verify:pre-pr`
 - `2026-06-15 | pre-pr-pass | npm run verify:pre-pr passed full lane after gate stabilization; e2e summary 109 passed / 563 skipped in local dev-login-limited environment | next: commit, push, open PR`
+- `2026-06-15 | merged | PR #1132 merged to main as squash commit 2fc49811; CI and npm run verify:pre-merge passed before merge; post-merge preflight requested this docs-only closeout | next: closeout PR validation`
+
+## Completion Record
+
+- `completed`: `2026-06-15`
+- `merged_pr`: `#1132`
+- `squash_commit`: `2fc49811`
+- `result`: Closed Admin Users Overview V1. Admin now has a read-only `Users` tab with privacy-safe account, role, access, activity, and support summaries, plus bounded filters and a minimized detail panel.
+- `validation`: targeted unit/route/component tests passed; screenshot handoff captured and owner-approved; `npm run verify:pre-pr` passed; PR CI passed; `npm run verify:pre-merge` passed with `109 passed / 563 skipped` in the local dev-login-limited e2e environment.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- `known local caveat`: auth-backed local e2e scenarios were skipped where dev-login/Supabase returned an HTML response in this environment; API, unit, component, screenshot-harness, CI, and pre-merge evidence covered the active slice.
+
+| Category                                      | Achieved Score | Evidence                                                                                                              | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Admin `Users` tab shipped in PR `#1132`; screenshot handoff approved.                                                 | None.        |
+| UX flow clarity                               | `5/5`          | Component tests cover loading, empty, error, retry, warnings, filters, and selection states.                          | None.        |
+| Visual design quality                         | `5/5`          | `after/reference` screenshots captured in `output/admin-users-overview-v1-2026-06-15-084856` and approved.            | None.        |
+| Business logic correctness and data integrity | `5/5`          | Domain and route tests cover bounded parsing, summary derivation, pagination caps, and read-only behavior.            | None.        |
+| Admin editor ergonomics                       | `5/5`          | UI supports search, role filter, sort, refresh, row selection, and no misleading mutation affordances.                | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role assertions and admin e2e coverage protect labels, controls, status output, and navigation.       | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | Bounded reads, capped summaries, build/perf budgets, and `npm run verify:pre-merge` passed.                           | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical user summaries and local-only filter/selection/retry state documented and tested.                    | None.        |
+| Caching and invalidation strategy             | `5/5`          | Admin users API is `no-store`; route registry and route tests cover cache boundary.                                   | None.        |
+| Reliability and failure handling              | `5/5`          | Tests cover `401/403`, missing schema setup warning, partial summary warnings, empty states, and generic server 500.  | None.        |
+| Security and authz                            | `5/5`          | Service-role reads occur only after admin viewer gate; negative-path tests and CI passed.                             | None.        |
+| Privacy and compliance                        | `5/5`          | Payload tests and Help/Guide copy confirm no raw private training, habit, analytics, IP, User-Agent, or provider IDs. | None.        |
+| Admin workflow and editability                | `5/5`          | V1 is explicitly read-only; mutation/export/delete/message/access-grant controls are absent.                          | None.        |
+| Incident response and support operations      | `5/5`          | Help/Guide updated with support use, reason codes, privacy boundary, and incomplete-state handling.                   | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Next.js App Router, existing admin shell patterns, Supabase helpers, TypeScript contracts, and no dependency.  | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed.                                   | None.        |
+| Scalability and cost efficiency               | `5/5`          | API uses pagination/caps and avoids raw private fan-out; fixtures cover capped/unknown values.                        | None.        |
+| DevOps and rollback readiness                 | `5/5`          | No migration or data mutation; rollback can remove the tab/API without changing user-owned data.                      | None.        |
