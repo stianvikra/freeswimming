@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-15-admin-users-10-10-foundation-repair`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-15`
 - `updated`: `2026-06-15`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-15`
 - `base`: clean synced `main@7b77220a` after PR `#1132` / `2fc49811` and closeout PR `#1133` / `7b77220a`
-- `audit_status`: `in-progress`
+- `audit_status`: `complete`
 - `decision`: Execute this broad Admin Users 10/10 child brief now because the owner explicitly said `implementer docs/task-briefs/planned/2026-06-15-admin-users-10-10-foundation-repair.md`.
 - `reason`: Admin Users V1 reads `public.profiles`, so Supabase Auth users without profile rows are invisible. A true user admin panel must use Supabase Auth users as the canonical identity source, reconcile missing/partial public profile data, support safe role changes, and define exactly which personal data may be shown for support/admin purposes under GDPR principles.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `lib/admin/access.ts`, `lib/admin/server.ts`, `components/admin/AdminUsersManager.tsx`, `app/api/admin/users/overview/route.ts`, Supabase Auth Admin API behavior, `profiles`, `athlete_profiles`, `entitlements`, analytics schema, admin audit log schema, Help/Guide rules, screenshot handoff rules, or verification lanes change.
@@ -422,3 +422,70 @@ Validate each with targeted logs/tests that do not expose secrets or raw private
 - `2026-06-15 | screenshot approved and merge authorized | owner approved screenshot handoff and explicitly approved merge when tests/gates are good; no product rendering files changed after screenshot capture, only this brief checkpoint changed | next: run npm run verify:pre-pr, commit/push/PR, monitor CI, run npm run verify:pre-merge, then merge if all required gates are green`
 - `2026-06-15 | remote migration applied | first npm run verify:pre-pr failed on expected Supabase migration drift for 20260615130000_admin_user_role_management.sql; Supabase projects list confirmed linked project freeswimming-org-prod/sazgjhgxvmxcyowovond; migration list showed exactly one local-only migration, dry-run showed only that migration, npx supabase db push --linked applied it, and post-apply migration list showed local and remote both at 20260615130000; a parallel post-apply dry-run hit Supabase pooler auth circuit-breaker, so remaining Supabase checks should run sequentially | next: rerun npm run verify:pre-pr`
 - `2026-06-15 | pre-pr gate passed | npm run verify:pre-pr passed in full lane after the remote migration was applied; evidence log artifacts/test-runs/20260615-114153/verify.log recorded branch-current PASS, Supabase migration drift PASS, quality gates PASS, unit tests PASS (246 + 1596 passed across the two Vitest phases), build PASS, perf PASS with hold recommendation, Playwright PASS (109 passed, 563 skipped), and verify-open PASS; no product rendering files changed after the approved screenshot handoff | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if all required gates are green`
+- `2026-06-15 | merged | PR #1134 merged as squash commit f78aff1c after CI was green and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: move brief to done, add completion record, validate docs-only closeout, and merge the closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-15`
+- `merged_pr`: `#1134`
+- `squash_commit`: `f78aff1c719b0cdd425097cd1d612098eb39509d`
+- `result`: Admin Users now uses Supabase Auth users as the canonical user directory, shows users even when profile rows are missing, separates tester/access/support signals from admin roles, and lets admin-level operators change roles through an audited fail-closed route with last-admin protection.
+- `validation`: targeted unit/component/route tests passed; screenshot handoff approved from `output/admin-users-10-10-foundation-repair-2026-06-15-111248`; `npm run verify:pre-pr` passed in full lane with evidence log `artifacts/test-runs/20260615-114153/verify.log`; PR #1134 CI passed including `verify`; `npm run verify:pre-merge` passed with evidence log `artifacts/test-runs/20260615-120107/verify.log` and PASS marker `artifacts/verify-pre-merge/20260615-100830.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories for a `10/10` claim:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Admin editor ergonomics`
+- `Data placement and sync boundaries`
+- `Caching and invalidation strategy`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Privacy and compliance`
+- `Content governance`
+- `Admin workflow and editability`
+- `SEO and crawlability`
+- `AI discoverability`
+- `Analytics and KPI observability`
+- `Commerce and revenue ops`
+- `Incident response and support operations`
+- `Finance and reporting operations`
+- `i18n operational readiness`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `Scalability and cost efficiency`
+- `DevOps and rollback readiness`
+
+Canonical parenthetical targets also confirmed in the score table: `Accessibility (a11y)` is
+`5/5`, and `Performance (CWV + payloads)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                         | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Auth-canonical directory implemented in PR #1134; unit, route, UI, screenshot, CI, and pre-merge evidence passed.                                                | None.        |
+| UX flow clarity                               | `5/5`          | Loading, empty, warning, missing-profile, detail, disabled-role, success, retry, and role-change states covered by component tests and screenshots.              | None.        |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshots cover desktop and mobile Admin Users surfaces; no rendering files changed after approval.                             | None.        |
+| Business logic correctness and data integrity | `5/5`          | Auth users are canonical; role mutation uses typed validation, expected-role conflict handling, audited RPC, missing-profile repair, and last-admin guard tests. | None.        |
+| Admin editor ergonomics                       | `5/5`          | Search/filter/detail and role-change workflows are covered by component tests and admin UI screenshots.                                                          | None.        |
+| Accessibility (a11y)                          | `5/5`          | Testing Library role assertions, stable form/control semantics, and Playwright smoke/a11y coverage passed.                                                       | None.        |
+| Performance (CWV + payloads)                  | `5/5`          | Bounded Auth pagination/enrichment, no new heavy dependency, build passed, and perf budgets passed with hold recommendation.                                     | None.        |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical Auth/profile/access data, local-only UI state, and refetch-after-mutation contract documented and tested.                                       | None.        |
+| Caching and invalidation strategy             | `5/5`          | Admin user APIs are no-store and route tests cover cache headers and refetch behavior.                                                                           | None.        |
+| Reliability and failure handling              | `5/5`          | Negative tests cover Auth Admin listing failure, target Auth lookup failure, partial enrichment warnings, stale conflicts, and RPC guard failures.               | None.        |
+| Security and authz                            | `5/5`          | Anonymous/non-admin/viewer mutation paths fail closed; service-role stays server-only; route and RPC tests cover negative paths.                                 | None.        |
+| Privacy and compliance                        | `5/5`          | Payload minimization tests, Help/Guide copy, API docs, and data visibility matrix exclude raw private/provider/finance data.                                     | None.        |
+| Content governance                            | `5/5`          | Help Center, API contracts, cache registry, support runbook, and stale read-only e2e label were updated together.                                                | None.        |
+| Admin workflow and editability                | `5/5`          | Admin role workflow is confirmation-based, reason-coded, audited, conflict-aware, and covered by UI and route tests.                                             | None.        |
+| SEO and crawlability                          | `5/5`          | Admin Users remains private/dynamic/no-store with no public metadata, sitemap, or AI surface changes.                                                            | None.        |
+| AI discoverability                            | `5/5`          | No private user data was added to public crawlable, sitemap, metadata, or AI-discoverable surfaces.                                                              | None.        |
+| Analytics and KPI observability               | `5/5`          | User admin signals are operational/support-only; no raw analytics payloads or anonymous-to-identity joins are exposed.                                           | None.        |
+| Commerce and revenue ops                      | `5/5`          | Entitlements are support signals only; no Stripe/provider/finance mutation or revenue truth was added.                                                           | None.        |
+| Incident response and support operations      | `5/5`          | Support codes and runbook guidance cover missing profile, mismatch, unconfirmed email, no entitlement, allowlist override, and partial summary.                  | None.        |
+| Finance and reporting operations              | `5/5`          | Finance-sensitive fields remain excluded; docs state that user admin does not change revenue, payout, refund, invoice, or accounting reports.                    | None.        |
+| i18n operational readiness                    | `5/5`          | Role/status/support signals use stable machine keys with layout-safe display copy and future locale mapping path.                                                | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Next.js App Router, existing admin components, typed Supabase contracts, additive migration/RPC, and no new dependencies were used.                              | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest suites, Playwright smoke, `npm run verify:pre-pr`, CI `verify`, and `npm run verify:pre-merge` passed.                                           | None.        |
+| Scalability and cost efficiency               | `5/5`          | Auth listing is paginated with bounded chunked enrichment and no unbounded client fan-out.                                                                       | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Additive migration was applied with drift checks; rollback is roll-forward safe through role/profile repair and audited operations.                              | None.        |
