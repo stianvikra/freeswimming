@@ -140,7 +140,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await expect(page.getByTestId("course-practice-water-media")).toBeVisible();
   await expect(page.getByTestId("course-practice-water-media")).toContainText("Visual coming soon");
   await expect(page.getByText("Use shallow water.")).toBeVisible();
-  await expect(page.getByText("Correction").first()).toBeVisible();
+  await expect(page.getByText("Do instead").first()).toBeVisible();
   const mistakeRow = page.getByTestId("course-common-mistake-row").filter({
     hasText: "Looking forward",
   });
@@ -163,14 +163,10 @@ test("course lesson experience renders skeleton before support", async ({ page }
   const waterBox = await page.getByText("Pool drill", { exact: true }).boundingBox();
   const whyBox = await page.getByText("Why this matters", { exact: true }).boundingBox();
   const landBox = await page.getByText("Dryland practice", { exact: true }).boundingBox();
-  const feelBox = await page
-    .getByText("What good looks and feels like", { exact: true })
-    .boundingBox();
-  const mistakesBox = await page.getByText("Common mistakes", { exact: true }).boundingBox();
+  const coachCheckBox = await page.getByTestId("course-coach-check").boundingBox();
   expect(whyBox?.y ?? 0).toBeLessThan(landBox?.y ?? 0);
   expect(landBox?.y ?? 0).toBeLessThan(waterBox?.y ?? 0);
-  expect(waterBox?.y ?? 0).toBeLessThan(feelBox?.y ?? 0);
-  expect(feelBox?.y ?? 0).toBeLessThan(mistakesBox?.y ?? 0);
+  expect(waterBox?.y ?? 0).toBeLessThan(coachCheckBox?.y ?? 0);
 });
 
 test("course lesson experience hides inactive containers for concept lessons", async ({
@@ -260,4 +256,26 @@ test("course lesson experience hides inactive containers for concept lessons", a
   await expect(lessonExperience).not.toContainText("Common mistakes");
   await expect(lessonExperience).not.toContainText("Need extra help?");
   await expect(page.getByText("Visual not added yet")).toHaveCount(0);
+});
+
+test("course browser metadata follows canonical lesson identity", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
+  test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
+
+  await page.goto("/course?lesson=mod1-l1");
+
+  await expect(page).toHaveTitle("Welcome & Course Structure - Freestyle Course");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /\/course\?lesson=intro-course--welcome-course-structure$/
+  );
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    "Welcome & Course Structure - Freestyle Course"
+  );
+
+  await page.goto("/course?lesson=unknown-future-lesson");
+
+  await expect(page).toHaveTitle("Freestyle Course");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/course$/);
 });

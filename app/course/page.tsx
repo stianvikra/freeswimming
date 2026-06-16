@@ -1,4 +1,3 @@
-// app/course/page.tsx
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Ref } from "react";
@@ -79,6 +78,7 @@ import {
   type CourseModule,
   type CourseLesson,
 } from "./courseData";
+import { resolveCoursePageMetadata } from "./metadata";
 import styles from "./coursePlayerPolish.module.css";
 
 const AdminContextNotesPanel = dynamic(() => import("@/components/admin/AdminContextNotesPanel"), {
@@ -164,6 +164,51 @@ const FALLBACK_LESSON: CourseLesson = COURSE_LESSONS_FLAT[0] ?? {
   },
   nextStep: "Continue to the next lesson.",
 };
+
+type CourseBrowserMetadata = ReturnType<typeof resolveCoursePageMetadata>;
+
+function upsertCourseMeta(attribute: "name" | "property", value: string, content: string): void {
+  let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${value}"]`);
+  if (!element) {
+    element = document.createElement("meta");
+    element.setAttribute(attribute, value);
+    element.dataset.courseMetadata = "true";
+    document.head.appendChild(element);
+  }
+  element.setAttribute("content", content);
+}
+
+function syncCourseBrowserMetadata(metadata: CourseBrowserMetadata): void {
+  document.title = metadata.title;
+  upsertCourseMeta("name", "description", metadata.description);
+  upsertCourseMeta("property", "og:title", metadata.title);
+  upsertCourseMeta("property", "og:description", metadata.description);
+  upsertCourseMeta("property", "og:url", metadata.canonicalPath);
+  upsertCourseMeta("name", "twitter:title", metadata.title);
+  upsertCourseMeta("name", "twitter:description", metadata.description);
+
+  let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    canonical.dataset.courseMetadata = "true";
+    document.head.appendChild(canonical);
+  }
+  canonical.href = new URL(metadata.canonicalPath, window.location.origin).href;
+
+  const courseRobots = document.head.querySelector<HTMLMetaElement>(
+    'meta[name="robots"][data-course-metadata="true"]'
+  );
+  if (metadata.previewEnabled) {
+    const robots = courseRobots ?? document.createElement("meta");
+    robots.name = "robots";
+    robots.dataset.courseMetadata = "true";
+    robots.content = "noindex,nofollow";
+    if (!robots.parentElement) document.head.appendChild(robots);
+  } else {
+    courseRobots?.remove();
+  }
+}
 
 const PREVIEW_MODE_COPY: Record<CoursePreviewMode, string> = {
   published: "Published only",
@@ -917,6 +962,19 @@ function CoursePageClient() {
     if (!requestedLessonId) return firstLesson;
     return courseLessonsFlat.find((lesson) => lesson.id === requestedLessonId) ?? firstLesson;
   }, [courseLessonsFlat, requestedLessonId]);
+
+  const browserMetadata = useMemo(
+    () =>
+      resolveCoursePageMetadata({
+        lessonParam,
+        previewParam: previewEnabled ? "1" : null,
+      }),
+    [lessonParam, previewEnabled]
+  );
+
+  useEffect(() => {
+    syncCourseBrowserMetadata(browserMetadata);
+  }, [browserMetadata]);
 
   const { prevId, nextId } = useMemo(() => {
     const index = courseLessonsFlat.findIndex((lesson) => lesson.id === activeLesson.id);
@@ -2420,6 +2478,16 @@ function CoursePageClient() {
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
   const markDoneBlockedByGate = !lessonContentReady || (!isLessonDone && !doneGateSatisfied);
+  const passCriteriaStatusLabel = isLessonDone
+    ? "Done"
+    : doneGateSatisfied
+      ? "Ready to complete"
+      : "Not ready yet";
+  const passCriteriaStatusClass = isLessonDone
+    ? "bg-blue-50 text-blue-700 ring-blue-100/80"
+    : doneGateSatisfied
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
+      : "bg-amber-50 text-amber-700 ring-amber-100/80";
   const markDoneFeedbackId = "course-done-gate-feedback";
   const passCriteriaHelpId = "course-pass-criteria-help";
   const markDoneButtonDescribedBy =
@@ -3963,85 +4031,131 @@ function CoursePageClient() {
                       </>
                     ) : null}
 
-                    {showCuesSection ? (
-                      <article className="rounded-[24px] border border-slate-200/72 bg-white/96 p-5 shadow-[0_12px_28px_rgba(15,23,42,0.065)] lg:col-span-2 lg:border-slate-300/68">
-                        <div>
-                          <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                            {feelCuesHeading}
-                          </p>
-                          <p className="mt-1 text-[12px] font-medium text-slate-500">
-                            {feelCuesHelperText}
-                          </p>
-                        </div>
-                        <ul className="mt-4 grid gap-2 text-[14px] leading-6 text-slate-800 sm:grid-cols-2">
-                          {lessonExperience.feelCues.map((cue, index) => (
-                            <li
-                              key={cue}
-                              className="grid grid-cols-[30px_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-slate-200/72 bg-slate-50/68 px-3 py-3"
-                            >
-                              <span
-                                aria-hidden="true"
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[12px] font-bold text-blue-700 ring-1 ring-blue-100"
-                              >
-                                {index + 1}
-                              </span>
-                              <span>{cue}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </article>
-                    ) : null}
+                    {showCuesSection || showCommonMistakesSection ? (
+                      <article
+                        data-testid="course-coach-check"
+                        className="rounded-[28px] border border-blue-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,250,255,0.94)_48%,rgba(240,253,250,0.82))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)] lg:col-span-2 lg:border-blue-200/70 lg:p-6"
+                      >
+                        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+                          {showCuesSection ? (
+                            <section aria-labelledby="course-feel-check-heading">
+                              <div className="max-w-[44rem]">
+                                <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                                  Coach check
+                                </p>
+                                <h3
+                                  id="course-feel-check-heading"
+                                  className="mt-1 text-[18px] leading-7 font-semibold text-slate-950"
+                                >
+                                  {feelCuesHeading}
+                                </h3>
+                                <p className="mt-1 text-[13px] leading-6 font-medium text-slate-600">
+                                  {feelCuesHelperText}
+                                </p>
+                              </div>
+                              <ul className="mt-4 grid gap-2.5 text-[14px] leading-6 text-slate-800 sm:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] lg:grid-cols-1">
+                                {lessonExperience.feelCues.map((cue, index) => (
+                                  <li
+                                    key={cue}
+                                    className="relative overflow-hidden rounded-[18px] bg-white/82 px-4 py-3 ring-1 ring-blue-100/80"
+                                  >
+                                    <span className="flex items-center gap-3">
+                                      <span
+                                        aria-hidden="true"
+                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[12px] font-bold text-white shadow-sm shadow-blue-600/20"
+                                      >
+                                        {index + 1}
+                                      </span>
+                                      <span className="text-[15px] leading-6 font-semibold text-slate-900">
+                                        {cue}
+                                      </span>
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          ) : null}
 
-                    {showCommonMistakesSection ? (
-                      <article className="rounded-[24px] border border-slate-200/72 bg-white/94 p-5 shadow-[0_10px_24px_rgba(15,23,42,0.06)] lg:col-span-2 lg:border-slate-300/68 lg:bg-white">
-                        <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                          Common mistakes
-                        </p>
-                        <div className="mt-3">
-                          <div
-                            aria-hidden="true"
-                            className="hidden grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 rounded-xl bg-slate-50/80 px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-500 uppercase ring-1 ring-slate-200/70 sm:grid"
-                          >
-                            <span>Common mistake</span>
-                            <span>Correction</span>
-                          </div>
-                          <ul className="mt-2 space-y-2 text-[14px] leading-7 text-slate-800">
-                            {commonMistakes.map((mistake) => (
-                              <li
-                                key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
-                                data-testid="course-common-mistake-row"
-                                className="grid gap-2 rounded-2xl border border-slate-200/72 bg-white/78 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
-                              >
-                                <div>
-                                  <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
-                                    Common mistake
-                                  </span>
-                                  <span className="font-semibold text-slate-950">
-                                    {mistake.mistake}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="mb-1 block text-[11px] font-semibold tracking-wide text-slate-500 uppercase sm:hidden">
-                                    Correction
-                                  </span>
-                                  {mistake.fix ? (
-                                    <span className="text-slate-700">{mistake.fix}</span>
-                                  ) : (
-                                    <span className="text-slate-500">Correction not added yet</span>
-                                  )}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
+                          {showCommonMistakesSection ? (
+                            <section aria-labelledby="course-correction-heading">
+                              <div className="max-w-[48rem]">
+                                <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
+                                  Common mistakes
+                                </p>
+                                <h3
+                                  id="course-correction-heading"
+                                  className="mt-1 text-[18px] leading-7 font-semibold text-slate-950"
+                                >
+                                  Catch it early, then switch cues.
+                                </h3>
+                              </div>
+                              <ul className="mt-4 space-y-2.5 text-[14px] leading-7 text-slate-800">
+                                {commonMistakes.map((mistake) => (
+                                  <li
+                                    key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
+                                    data-testid="course-common-mistake-row"
+                                    className="grid gap-3 rounded-[18px] bg-white/82 p-3 ring-1 ring-slate-200/76 sm:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] sm:items-stretch"
+                                  >
+                                    <div className="rounded-2xl bg-amber-50/72 px-3 py-3 ring-1 ring-amber-100/80">
+                                      <span className="text-[11px] font-semibold tracking-wide text-amber-700 uppercase">
+                                        Avoid
+                                      </span>
+                                      <p className="mt-1 text-[15px] leading-6 font-semibold text-slate-950">
+                                        {mistake.mistake}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-2xl bg-blue-50/72 px-3 py-3 ring-1 ring-blue-100/80">
+                                      <span className="text-[11px] font-semibold tracking-wide text-blue-700 uppercase">
+                                        Do instead
+                                      </span>
+                                      {mistake.fix ? (
+                                        <p className="mt-1 text-[14px] leading-6 font-medium text-slate-800">
+                                          {mistake.fix}
+                                        </p>
+                                      ) : (
+                                        <p className="mt-1 text-[14px] leading-6 font-medium text-slate-500">
+                                          Correction not added yet
+                                        </p>
+                                      )}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          ) : null}
                         </div>
                       </article>
                     ) : null}
 
                     {showPassCriteria ? (
-                      <article className={cx("p-5", supportCardClass)}>
-                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                          <div className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                            Pass criteria
+                      <article
+                        className={cx(
+                          "p-5",
+                          supportCardClass,
+                          "border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] lg:min-h-[320px] lg:border-blue-200/70"
+                        )}
+                        aria-busy={!lessonContentReady}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-3">
+                          <div>
+                            <div className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                              Ready check
+                            </div>
+                            <h3 className="mt-1 text-[18px] leading-7 font-semibold text-slate-950">
+                              Pass criteria
+                            </h3>
+                            <p className="mt-1 max-w-[34rem] text-[13px] leading-6 font-medium text-slate-600">
+                              Check what feels true, then complete the lesson when all criteria
+                              match.
+                            </p>
+                            <span
+                              className={cx(
+                                "mt-3 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
+                                passCriteriaStatusClass
+                              )}
+                            >
+                              {passCriteriaStatusLabel}
+                            </span>
                           </div>
                           <button
                             type="button"
@@ -4051,7 +4165,7 @@ function CoursePageClient() {
                             aria-describedby={passCriteriaHelpId}
                             data-testid="course-pass-criteria-mark-done-button"
                             className={cx(
-                              "inline-flex min-h-[30px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                              "inline-flex min-h-10 items-center justify-center rounded-full px-4 py-2 text-[12px] font-semibold ring-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
                               isLessonDone
                                 ? "bg-blue-50 text-blue-700 ring-blue-100/80 hover:bg-blue-100"
                                 : markDoneBlockedByGate
@@ -4063,13 +4177,12 @@ function CoursePageClient() {
                           </button>
                         </div>
                         {!lessonContentReady ? (
-                          <p className="mt-2 text-[13px] leading-6 text-slate-600">
-                            Loading pass criteria...
-                          </p>
-                        ) : doneGateRequired ? (
+                          <span className="sr-only">Pass criteria are refreshing.</span>
+                        ) : null}
+                        {doneGateRequired ? (
                           <ul
                             data-testid="course-done-gate-checklist"
-                            className="mt-3 space-y-2 text-[13px] leading-6 text-slate-800"
+                            className="mt-5 space-y-2 text-[13px] leading-6 text-slate-800"
                           >
                             {passCriteria.map((criterion, index) => {
                               const criterionId = `course-done-gate-${activeLesson.id}-${index}`;
@@ -4078,7 +4191,7 @@ function CoursePageClient() {
                                 <li key={criterionId}>
                                   <label
                                     htmlFor={criterionId}
-                                    className="flex cursor-pointer items-start gap-2 rounded-xl bg-white/76 px-2 py-1.5 ring-1 ring-slate-200/70 lg:bg-white/90 lg:ring-slate-300/65"
+                                    className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white/88 px-3 py-3 ring-1 ring-blue-100/78 transition hover:bg-blue-50/44"
                                   >
                                     <input
                                       id={criterionId}
@@ -4087,16 +4200,21 @@ function CoursePageClient() {
                                       onChange={() => toggleDoneGateCriterion(criterion)}
                                       className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>{criterion}</span>
+                                    <span className="font-medium text-slate-800">{criterion}</span>
                                   </label>
                                 </li>
                               );
                             })}
                           </ul>
                         ) : (
-                          <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] leading-6 text-slate-800">
+                          <ul className="mt-5 space-y-2 text-[13px] leading-6 text-slate-800">
                             {passCriteria.map((criterion) => (
-                              <li key={criterion}>{criterion}</li>
+                              <li
+                                key={criterion}
+                                className="rounded-2xl bg-white/88 px-3 py-3 font-medium text-slate-800 ring-1 ring-blue-100/78"
+                              >
+                                {criterion}
+                              </li>
                             ))}
                           </ul>
                         )}

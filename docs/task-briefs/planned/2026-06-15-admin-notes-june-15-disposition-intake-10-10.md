@@ -15,8 +15,8 @@
 - `last_audited`: `2026-06-15`
 - `base`: clean synced `main@816ed7b4`
 - `audit_status`: `ready`
-- `decision`: Use this as the durable intake/disposition brief for the 36 open live admin notes found on `2026-06-15`; Package B and Package A are now shipped and closed, while Package C items remain deferred until an owner priority decision.
-- `reason`: The open notes clustered into admin dashboard/editor clutter, public course lesson design/readability/completion friction, and separate future/decision items. Package B shipped via PR `#1136` and closeout PR `#1137`; Package A shipped via PR `#1138`; remaining Package C items are separate product/ops/commercial decisions.
+- `decision`: Use this as the durable intake/disposition brief for the 36 open live admin notes found on `2026-06-15`; Package B and Package A are shipped and closed, and the duplicate-tab/browser metadata Package C item is promoted into an active child.
+- `reason`: The open notes clustered into admin dashboard/editor clutter, public course lesson design/readability/completion friction, and separate future/decision items. Package B shipped via PR `#1136` and closeout PR `#1137`; Package A shipped via PR `#1138`; the browser-tab metadata item is now selected as a bounded low-risk child, while the remaining Package C items stay deferred.
 - `must_refresh_before_execution_if`: Refresh if `AGENTS.md`, scorecard categories, admin notes schema/status behavior, `AdminWorkspace`, `AdminContentManager`, course lesson public renderer, course progress/done gating, Help/Guide contracts, screenshot handoff rules, or verification lanes change before a child implementation starts.
 
 ## Goal
@@ -43,18 +43,19 @@ Capability audit:
 
 Systemic findings:
 
-| Surface                           | Finding                                                                                                                                                | Severity | Recommended Type                 | Owner Decision Needed                                      | Follow-Up Brief Path                                                                        |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Admin dashboard and course editor | Many notes pointed to repeated helper copy, button sprawl, dropdown/action hierarchy, auto-expanding text boxes, and unclear advanced/fallback fields. | `info`   | `do not do`                      | `no`, shipped via PR `#1138` and closed in the done child. | `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`           |
-| Public course lesson page         | Package B notes around desktop readability, mark-done/pass-criteria hierarchy, visual interest, and admin edit entry are already shipped and closed.   | `info`   | `do not do`                      | `no`, shipped via PR `#1136` and closeout PR `#1137`.      | `docs/task-briefs/done/2026-06-15-course-lesson-design-readability-and-completion-10-10.md` |
-| Future product/backlog items      | Split-screen training, duplicate-tab favicon, bulk workout deletion, habits history editing, and subscription pricing are not the same PR-sized slice. | `medium` | `deferred architecture decision` | `yes`, each needs product priority before implementation.  | `TBD after owner decision`                                                                  |
+| Surface                           | Finding                                                                                                                                                                                | Severity | Recommended Type                 | Owner Decision Needed                                                    | Follow-Up Brief Path                                                                        |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Admin dashboard and course editor | Many notes pointed to repeated helper copy, button sprawl, dropdown/action hierarchy, auto-expanding text boxes, and unclear advanced/fallback fields.                                 | `info`   | `do not do`                      | `no`, shipped via PR `#1138` and closed in the done child.               | `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`           |
+| Public course lesson page         | Package B notes around desktop readability, mark-done/pass-criteria hierarchy, visual interest, and admin edit entry are already shipped and closed.                                   | `info`   | `do not do`                      | `no`, shipped via PR `#1136` and closeout PR `#1137`.                    | `docs/task-briefs/done/2026-06-15-course-lesson-design-readability-and-completion-10-10.md` |
+| Future product/backlog items      | Split-screen training, bulk workout deletion, habits history editing, and subscription pricing are not the same PR-sized slice; duplicate-tab/browser metadata is promoted separately. | `medium` | `deferred architecture decision` | `yes`, each remaining item needs product priority before implementation. | `TBD after owner decision`                                                                  |
+| Browser tab identity metadata     | Duplicate-tab/favicon finding can be handled as a bounded metadata, canonical URL, and app-icon consistency sweep.                                                                     | `medium` | `bounded implementation child`   | `no`, owner approved execution on `2026-06-16`.                          | `docs/task-briefs/in-progress/2026-06-16-browser-tab-identity-metadata-sweep-10-10.md`      |
 
 Return path:
 
 - Last completed workstream: Admin Users PR `#1134` / `f78aff1c` and closeout PR `#1135` / `43cd34ce`.
 - Completed Package A child: `docs/task-briefs/done/2026-06-15-admin-dashboard-editor-simplification-10-10.md`.
 - Deferred child already present: `docs/task-briefs/deferred/2026-06-15-aw-006-habits-setup-guide-tracking-mode-intent-10-10.md`.
-- Next planning step: choose exactly one child from this intake before any implementation branch.
+- Next planning step: execute the active browser-tab identity child; after that, choose whether to keep Package C idle or promote one remaining Package C item.
 
 ## Source Note Disposition
 
@@ -110,18 +111,19 @@ Completed child: `docs/task-briefs/done/2026-06-15-course-lesson-design-readabil
 
 These should not be mixed into Package A or B unless the owner explicitly changes priority.
 
-| Note ID                                | Title                         | Context                                                | Disposition                                                                                                 |
-| -------------------------------------- | ----------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `089310a1-bd63-4642-9487-9440cc5f6e1c` | Dulictae tab - miming icon?   | `course_lesson: breathing-and-floating--floating-back` | Separate favicon/browser metadata audit; likely small technical child.                                      |
-| `d286e94e-20c4-4177-a2e1-28b9612907e9` | History habits micro sessions | `/my-library/habits`                                   | Defer under Habits parent; do not mix with admin/course UI.                                                 |
-| `a175f6bc-6814-4010-9f4a-e6620fb9f5dc` | My Swim Sessions              | `/my-library/workouts/[workoutId]`                     | Separate My Swim Sessions bulk-delete UX/data-safety child.                                                 |
-| `e27aae0e-0eb1-4830-8cde-daf8fe63a995` | Subscription prices - Thoughs | no context                                             | Already classified as commercial decision-only in the April umbrella; keep deferred until pricing decision. |
+| Note ID                                | Title                         | Context                                                | Disposition                                                                                                      |
+| -------------------------------------- | ----------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `089310a1-bd63-4642-9487-9440cc5f6e1c` | Dulictae tab - miming icon?   | `course_lesson: breathing-and-floating--floating-back` | Promoted to active child `docs/task-briefs/in-progress/2026-06-16-browser-tab-identity-metadata-sweep-10-10.md`. |
+| `d286e94e-20c4-4177-a2e1-28b9612907e9` | History habits micro sessions | `/my-library/habits`                                   | Defer under Habits parent; do not mix with admin/course UI.                                                      |
+| `a175f6bc-6814-4010-9f4a-e6620fb9f5dc` | My Swim Sessions              | `/my-library/workouts/[workoutId]`                     | Separate My Swim Sessions bulk-delete UX/data-safety child.                                                      |
+| `e27aae0e-0eb1-4830-8cde-daf8fe63a995` | Subscription prices - Thoughs | no context                                             | Already classified as commercial decision-only in the April umbrella; keep deferred until pricing decision.      |
 
 ## Recommended Execution Order
 
 1. Package B is done: public lesson page polish shipped via PR `#1136` and closeout PR `#1137`.
 2. Package A is done: admin/editor simplification shipped via PR `#1138`.
-3. Package C only after owner priority decision, because it mixes feature, ops, commerce, and member-data scopes.
+3. Package C browser-tab metadata child is now active because it is a bounded technical sweep.
+4. Remaining Package C items only after owner priority decision, because they mix feature, ops, commerce, and member-data scopes.
 
 ## Platform 10/10 Scorecard Mapping
 
