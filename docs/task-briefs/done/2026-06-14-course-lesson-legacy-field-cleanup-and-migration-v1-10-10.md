@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-14-course-lesson-legacy-field-cleanup-and-migration-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-14`
 - `updated`: `2026-06-16`
@@ -296,3 +296,30 @@ Implementation validation when selected:
 - `2026-06-16 | implementation checkpoint | consolidated legacy course lesson fallback reads into a typed lessonExperience resolver, mapped DB course rows to the resolved read model without a live write, added old-shape and mixed-shape fixtures, and confirmed focused unit tests pass | next: run broader targeted admin/content tests, lint briefs, pre-PR verification, then commit/push/PR`
 - `2026-06-16 | regression checkpoint | first pre-PR verification found one concept lesson cue-section regression; fixed primaryCue fallback semantics, added unit coverage, and confirmed the affected Playwright spec passes | next: rerun full pre-PR verification`
 - `2026-06-16 | pre-pr checkpoint | full npm run verify:pre-pr passed; performance budget trend recommended future stretch-target tightening but no budget change is included in this scoped cleanup PR | next: commit, push, open PR, and monitor CI`
+- `2026-06-16 | merged | PR #1142 merged as squash commit c7715650 after local pre-merge and green CI; repo post-merge preflight opened this docs-only closeout | next: validate closeout PR and sync main`
+
+## Completion Record
+
+- `completed`: `2026-06-16`
+- `merged_pr`: `#1142`
+- `squash_commit`: `c7715650`
+- `result`: Closed Course Lesson Legacy Field Cleanup And Migration V1. Legacy course lesson body fields now normalize through a typed `lessonExperience` read-model path, old course rows continue to render without a live database rewrite, and structured `lessonExperience` stays authoritative when present.
+- `validation`: targeted Vitest course/admin mapper tests passed; targeted Playwright course lesson experience spec passed; `npm run verify:pre-pr` passed on commit `5ab1001e`; PR CI passed including `verify`; `npm run verify:pre-merge` passed before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                             | Gaps / Notes                                                                  |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Scope kept to the lesson field model and preserved public/admin course behavior through mapper tests and full gates. | No remaining active-scope gap.                                                |
+| Business logic correctness and data integrity | `5/5`          | Legacy fields normalize deterministically into `lessonExperience`; mixed old/new fixtures prove structured override. | No live DB rewrite was needed; rollback is code revert.                       |
+| Admin editor ergonomics                       | `5/5`          | Admin content mapper now resolves the same read model without changing visible labels or edit workflow.              | Help/Guide update remains `N/A` because no operator-visible workflow changed. |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical course JSON remains unchanged; normalization happens at the TypeScript read-model boundary.         | No local-only or hidden migration state added.                                |
+| Caching and invalidation strategy             | `5/5`          | No cache key, route, or invalidation behavior changed; public/admin readers receive normalized data consistently.    | No remaining active-scope gap.                                                |
+| Reliability and failure handling              | `5/5`          | Old-shape, mixed-shape, and concept-lesson regression fixtures cover safe fallback rendering.                        | No remaining active-scope gap.                                                |
+| Security and authz                            | `5/5`          | No new route, write operation, credential, RLS, or auth boundary introduced.                                         | No remaining active-scope gap.                                                |
+| Content governance                            | `5/5`          | Brief records the keep/normalize/no-live-write decision and the future structured-field policy.                      | Future real DB migration would need a separate owner-approved brief.          |
+| Admin workflow and editability                | `5/5`          | Existing admin content course mapper keeps lessons editable while resolving normalized `lessonExperience`.           | No visible admin UI change in this slice.                                     |
+| Incident response and support operations      | `5/5`          | Rollback note documents code-revert recovery; no Help/Guide surface changed.                                         | No support workflow update required for internal-only normalization.          |
+| Stack-fit and dependency discipline           | `5/5`          | Used existing TypeScript mapper/admin content surfaces; no dependency or SDK added.                                  | No remaining active-scope gap.                                                |
+| Testing and QA automation                     | `5/5`          | Targeted unit tests, targeted Playwright, `verify:pre-pr`, CI, and `verify:pre-merge` all passed.                    | No remaining active-scope gap.                                                |
+| Scalability and cost efficiency               | `5/5`          | Future fields can extend the structured contract without duplicating legacy read branches.                           | Performance stretch-target tightening deferred to a dedicated perf decision.  |
+| DevOps and rollback readiness                 | `5/5`          | PR #1142 was green and clean before merge; rollback is reverting squash commit `c7715650`.                           | No remaining active-scope gap.                                                |
