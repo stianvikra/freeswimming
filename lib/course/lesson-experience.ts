@@ -135,6 +135,10 @@ function getStringArray(value: unknown): string[] {
   return value.map((entry) => getString(entry)).filter((entry): entry is string => Boolean(entry));
 }
 
+function getBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
 function normalizeVariant(value: unknown): CourseLessonExperienceVariant | undefined {
   if (
     value === "concept" ||
@@ -298,6 +302,104 @@ function resolveExperienceDisplay(
   };
 }
 
+function mapLegacyDisplayToLessonExperienceDisplay(
+  display: CourseLesson["display"]
+): CourseLessonExperienceDisplay | undefined {
+  if (!isRecord(display)) return undefined;
+
+  const mappedDisplay: CourseLessonExperienceDisplay = {};
+  const cues = getBoolean(display.cues);
+  if (typeof cues === "boolean") mappedDisplay.feelCues = cues;
+
+  const commonMistakes = getBoolean(display.commonMistakes);
+  if (typeof commonMistakes === "boolean") mappedDisplay.commonMistakes = commonMistakes;
+
+  const drill = getBoolean(display.drill);
+  if (drill === false) {
+    mappedDisplay.landPractice = false;
+    mappedDisplay.waterPractice = false;
+  }
+
+  const nextStep = getBoolean(display.nextStep);
+  if (typeof nextStep === "boolean") mappedDisplay.nextStep = nextStep;
+
+  const support = getBoolean(display.support);
+  if (typeof support === "boolean") mappedDisplay.support = support;
+
+  return Object.keys(mappedDisplay).length > 0 ? mappedDisplay : undefined;
+}
+
+export function buildCourseLessonExperienceFromLegacyLessonFields(
+  lesson: CourseLesson
+): CourseLessonExperience | undefined {
+  const experience: CourseLessonExperience = {};
+
+  const display = mapLegacyDisplayToLessonExperienceDisplay(lesson.display);
+  if (display) experience.display = display;
+
+  const goal = getString(lesson.goal);
+  if (goal) experience.goal = goal;
+
+  const lessonCues = uniqueStrings(getStringArray(lesson.cues));
+  if (lessonCues.length > 0) experience.feelCues = lessonCues;
+
+  const legacyMistakes = getStringArray(lesson.commonMistakes);
+  if (legacyMistakes.length > 0) experience.commonMistakes = legacyMistakes;
+
+  const lessonDrill: Record<string, unknown> | null = isRecord(lesson.drill) ? lesson.drill : null;
+  const waterPractice = normalizePractice({
+    title: lessonDrill?.title,
+    steps: lessonDrill?.steps,
+  });
+  if (waterPractice) experience.waterPractice = waterPractice;
+
+  const nextStep = getString(lesson.nextStep);
+  if (nextStep) experience.nextStep = nextStep;
+
+  return Object.keys(experience).length > 0 ? experience : undefined;
+}
+
+function mergeObjects<T extends object>(
+  fallback: T | undefined,
+  preferred: T | undefined
+): T | undefined {
+  if (!fallback) return preferred;
+  if (!preferred) return fallback;
+  const merged = { ...fallback } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(preferred)) {
+    if (typeof value !== "undefined") {
+      merged[key] = value;
+    }
+  }
+  return merged as T;
+}
+
+function mergeCourseLessonExperience(
+  fallback: CourseLessonExperience | undefined,
+  preferred: CourseLessonExperience | undefined
+): CourseLessonExperience | undefined {
+  if (!fallback) return preferred;
+  if (!preferred) return fallback;
+
+  return {
+    ...fallback,
+    ...preferred,
+    display: mergeObjects(fallback.display, preferred.display),
+    landPractice: mergeObjects(fallback.landPractice, preferred.landPractice),
+    waterPractice: mergeObjects(fallback.waterPractice, preferred.waterPractice),
+    support: mergeObjects(fallback.support, preferred.support),
+  };
+}
+
+export function resolveCourseLessonExperience(
+  lesson: CourseLesson
+): CourseLessonExperience | undefined {
+  return mergeCourseLessonExperience(
+    buildCourseLessonExperienceFromLegacyLessonFields(lesson),
+    normalizeCourseLessonExperienceInput(lesson.lessonExperience)
+  );
+}
+
 function normalizeLessonExperienceMistake(
   mistake: CourseLessonExperienceMistake
 ): { mistake: string; fix?: string } | null {
@@ -332,13 +434,14 @@ function requirePractice(
 export function buildCourseLessonExperienceViewModel(
   lesson: CourseLesson
 ): CourseLessonExperienceViewModel {
-  const experience = normalizeCourseLessonExperienceInput(lesson.lessonExperience);
+  const legacyExperience = buildCourseLessonExperienceFromLegacyLessonFields(lesson);
+  const experience = resolveCourseLessonExperience(lesson);
   const variant = normalizeVariant(experience?.variant) ?? resolveDefaultVariant(lesson);
   const display = resolveExperienceDisplay(variant, experience?.display);
-  const lessonCues = uniqueStrings(getStringArray(lesson.cues));
-  const primaryCue = lessonCues[0] ?? "Swim relaxed and controlled.";
-  const goal =
-    getString(experience?.goal) ?? getString(lesson.goal) ?? "Start with one clear focus.";
+  const experienceFeelCues = getStringArray(experience?.feelCues);
+  const legacyFeelCues = getStringArray(legacyExperience?.feelCues);
+  const primaryCue = legacyFeelCues[0] ?? "Swim relaxed and controlled.";
+  const goal = getString(experience?.goal) ?? "Start with one clear focus.";
   const quickExplanation =
     getString(experience?.quickExplanation) ??
     `${goal} Keep the cue simple: ${primaryCue}. Add effort only after the movement feels calm.`;
@@ -352,26 +455,17 @@ export function buildCourseLessonExperienceViewModel(
     ],
   });
 
-  const lessonDrill: Record<string, unknown> | null = isRecord(lesson.drill) ? lesson.drill : null;
-  const drillSteps = getStringArray(lessonDrill?.steps);
   const waterPractice = requirePractice(experience?.waterPractice, {
-    title: getString(lessonDrill?.title) ?? "Water practice",
-    steps:
-      drillSteps.length > 0
-        ? drillSteps
-        : [`Try one short repeat while keeping the cue: ${primaryCue}.`],
+    title: "Water practice",
+    steps: [`Try one short repeat while keeping the cue: ${primaryCue}.`],
     safetyNote: "Reset before quality drops. Use shallow water when you need a calm restart.",
   });
 
   const authoredMistakes = (experience?.commonMistakes ?? [])
     .map((mistake) => normalizeLessonExperienceMistake(mistake))
     .filter((mistake): mistake is { mistake: string; fix?: string } => Boolean(mistake));
-  const fallbackMistakes = getStringArray(lesson.commonMistakes).map((mistake) => ({ mistake }));
-  const commonMistakes = authoredMistakes.length > 0 ? authoredMistakes : fallbackMistakes;
-  const experienceFeelCues = getStringArray(experience?.feelCues);
-  const feelCues = uniqueStrings(
-    experienceFeelCues.length > 0 ? experienceFeelCues : [primaryCue, ...lessonCues.slice(1)]
-  );
+  const commonMistakes = authoredMistakes;
+  const feelCues = uniqueStrings(experienceFeelCues.length > 0 ? experienceFeelCues : [primaryCue]);
 
   return {
     variant,
@@ -385,10 +479,7 @@ export function buildCourseLessonExperienceViewModel(
     commonMistakes,
     feelCues: feelCues.length > 0 ? feelCues : ["Calm, easy, repeatable."],
     masteryCriteria: getCourseLessonPassCriteria(lesson),
-    nextStep:
-      getString(experience?.nextStep) ??
-      getString(lesson.nextStep) ??
-      "Continue to the next lesson.",
+    nextStep: getString(experience?.nextStep) ?? "Continue to the next lesson.",
     support: {
       title: getString(experience?.support?.title) ?? "Need extra help?",
       body:

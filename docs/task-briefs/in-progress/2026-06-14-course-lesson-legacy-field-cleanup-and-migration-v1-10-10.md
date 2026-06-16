@@ -3,23 +3,46 @@
 ## Metadata
 
 - `id`: `2026-06-14-course-lesson-legacy-field-cleanup-and-migration-v1-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-14`
-- `updated`: `2026-06-14`
+- `updated`: `2026-06-16`
 - `parent_brief`: [Course Lesson Experience 10/10 Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-13-course-lesson-experience-10-10-parent.md)
-- `source_brief`: [Course Lesson Admin/Public Field Parity And View Changes V1](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-06-14-course-lesson-admin-public-field-parity-and-view-changes-v1-10-10.md)
-- `execution_mode`: `planned-follow-up-only`
-- `branch`: `TBD`
+- `source_brief`: [Course Lesson Admin/Public Field Parity And View Changes V1](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-06-14-course-lesson-admin-public-field-parity-and-view-changes-v1-10-10.md)
+- `execution_mode`: `implementation`
+- `branch`: `task/course-lesson-legacy-field-cleanup-v1`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-14`
-- `base`: planned from `task/course-lesson-admin-public-field-parity-v1` after owner clarified that legacy lesson-field deletion/migration must be a separate slice, not hidden inside the active admin parity PR.
+- `last_audited`: `2026-06-16`
+- `base`: clean synced `main@b48a7712` with unrelated untracked local `Ja.docx` intentionally left untouched; execution branch `task/course-lesson-legacy-field-cleanup-v1`.
 - `audit_status`: `ready`
-- `decision`: Keep this as a future cleanup/migration brief; do not execute it inside the active admin/public parity slice.
-- `reason`: The active slice should simplify admin by moving current `Show section` controls onto each section and by hiding legacy visibility toggles from the UI, while preserving existing public fallback reads and legacy JSON keys until a dedicated data cleanup can prove migration safety.
+- `decision`: Execute this as the next bounded course/data cleanup child after PR `#1140` and closeout PR `#1141`; inventory legacy course lesson body fields first, then keep, migrate, or remove only with deterministic fixture evidence.
+- `reason`: Recent course lesson work stabilized the public/admin structured `lessonExperience` flow, but legacy fallback keys still need an explicit decision so future lesson authoring is not coupled to hidden old body shapes.
 - `must_refresh_before_execution_if`: Refresh before execution if course content rows, `app/course/courseData.ts`, `lib/course/lesson-experience.ts`, `lib/admin/content-course.ts`, `components/admin/AdminContentManager.tsx`, admin content migrations, public course tests, scorecard categories, or owner content-production status change.
+
+## Codex Skill + Stack Readiness Radar
+
+Skill/capability audit:
+
+- Available now: repo runbooks, current TypeScript/Vitest/Playwright tooling, `playwright` skill if visible admin/public screenshots become necessary.
+- Evaluate later: `imagegen` is not needed; Stripe plugin skills are not needed because this slice changes no pricing, checkout, entitlement, invoice, payout, or revenue behavior.
+- Install/config changes: none.
+
+Systemic findings:
+
+| Surface                           | Finding                                                                                                                          | Severity | Recommended Type                 | Owner Decision Needed                                      | Follow-Up Brief Path                                                                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course lesson body contract       | Legacy and structured lesson fields can coexist, but cleanup must prove every fallback branch is still needed or safe to remove. | `high`   | `bounded implementation child`   | `no`, owner executed this named brief on `2026-06-16`.     | this brief                                                                                                                                                |
+| Admin/public field parity         | The prior admin/public parity child is done; this slice must not reopen broad UI redesign or lesson-production scope.            | `medium` | `do not do`                      | `no`, keep scope to field contract and tests.              | [done source brief](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-06-14-course-lesson-admin-public-field-parity-and-view-changes-v1-10-10.md) |
+| Database migration/write behavior | A live data rewrite should happen only if local fixture evidence proves the mapper cannot safely preserve content.               | `high`   | `deferred architecture decision` | `yes` only if the audit discovers a required live rewrite. | `TBD only if migration becomes necessary`                                                                                                                 |
+
+Return path:
+
+- Parent: [Course Lesson Experience 10/10 Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-13-course-lesson-experience-10-10-parent.md).
+- Last merged workstream: PR `#1140` `Polish course metadata and lesson cards`, closeout PR `#1141`.
+- Current selected child: this in-progress legacy field cleanup branch.
+- Next planning step after closeout: choose the next course child only after this cleanup is merged and post-merge preflight/chat-handoff are complete.
 
 ## Goal
 
@@ -56,6 +79,48 @@ Forward-compatibility-intent: nye leksjonsfelt skal enten ligge i den strukturer
 | `body.nextStep`                       | Legacy next-step fallback             | Migrate to `body.lessonExperience.nextStep` where possible.                    |
 | Support action booleans               | Support-card action fallback controls | Decide whether these remain active support configuration or become legacy.     |
 | Public fallback renderer branches     | Read-through for old body shapes      | Remove only after fixture/migration proves structured data covers active rows. |
+
+## Legacy Field Cleanup Decision
+
+Decision after implementation audit on `2026-06-16`: do not run a live database rewrite in this slice. Instead, normalize legacy body fields into a structured `lessonExperience` read model at the TypeScript mapper boundary, then let explicitly authored `body.lessonExperience` fields override legacy-derived values while carrying safe fallback branches for missing nested fields.
+
+| Field / surface                       | Decision             | Rationale / Evidence                                                                                                                   |
+| ------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `body.displayGoal`                    | `retain active`      | Still controls whether the public Goal block appears; there is no one-to-one structured replacement without changing visible behavior. |
+| `body.displayCues`                    | `normalize + retain` | Normalized to `lessonExperience.display.feelCues` for read-model parity; retained for current public section gating.                   |
+| `body.displayCommonMistakes`          | `normalize + retain` | Normalized to `lessonExperience.display.commonMistakes`; retained for current public section gating.                                   |
+| `body.displayDrill`                   | `normalize + retain` | `false` normalizes to both `landPractice: false` and `waterPractice: false`; retained as public practice-section gate.                 |
+| `body.displayCheckpoint`              | `retain active`      | Still controls pass-criteria visibility and done-gate UI; no structured lessonExperience equivalent in this slice.                     |
+| `body.displayNextStep`                | `normalize + retain` | Normalized to `lessonExperience.display.nextStep`; retained for current public next-step gating.                                       |
+| `body.displaySupport`                 | `normalize + retain` | Normalized to `lessonExperience.display.support`; retained for current extra-help gating.                                              |
+| `body.cues[]`                         | `normalize + retain` | Normalized to `lessonExperience.feelCues`; retained as technical fallback/admin recovery field.                                        |
+| `body.commonMistakes[]`               | `normalize + retain` | Normalized to `lessonExperience.commonMistakes`; authored structured mistake/fix rows override it.                                     |
+| `body.drillTitle` / `body.drillSteps` | `normalize + retain` | Normalized to `lessonExperience.waterPractice`; authored structured title can override while legacy steps remain fallback.             |
+| `body.nextStep`                       | `normalize + retain` | Normalized to `lessonExperience.nextStep`; authored structured next step overrides it.                                                 |
+| Support action booleans               | `retain active`      | `supportCard.actions`, `supportCard.primaryAction`, and support start lesson are active extra-help routing/config, not obsolete data.  |
+| Public fallback renderer branches     | `consolidated`       | Legacy field reads now flow through `resolveCourseLessonExperience` / `buildCourseLessonExperienceFromLegacyLessonFields`.             |
+
+No field is hard-deleted in this slice because static course rows, draft/admin rows, and public display gates still depend on these keys. The cleanup outcome is a safer read-model contract with deterministic fixture evidence, not a destructive data migration.
+
+## Implementation Evidence
+
+- Added `buildCourseLessonExperienceFromLegacyLessonFields` and `resolveCourseLessonExperience` in `lib/course/lesson-experience.ts`.
+- `buildCourseLessonExperienceViewModel` now consumes the resolved structured contract instead of reading each legacy fallback branch ad hoc.
+- `toPublishedCourseModules` now stores the resolved lesson experience on mapped course lessons, so DB rows without `body.lessonExperience` still expose a canonical structured read model.
+- Added old-shape and mixed-shape unit fixtures:
+  - `tests/unit/course-lesson-experience.test.ts` covers legacy normalization and structured-over-legacy merge behavior.
+  - `tests/unit/admin-content-course.test.ts` covers DB read-model normalization without a database rewrite and authored structured fields winning while missing nested branches fall back.
+- Focused validation: `./node_modules/.bin/vitest run tests/unit/course-lesson-experience.test.ts tests/unit/admin-content-course.test.ts` passed with `19` tests on `2026-06-16`.
+- First `npm run verify:pre-pr` attempt found one concept-lesson cue rendering regression in `tests/e2e/course-lesson-experience.spec.ts`; fixed by keeping structured `lessonExperience.feelCues` separate from the legacy `primaryCue` fallback.
+- Regression validation: `npx playwright test tests/e2e/course-lesson-experience.spec.ts --project=desktop-chromium` passed with `3` tests on `2026-06-16`.
+- Pre-PR validation: `npm run verify:pre-pr` passed on `2026-06-16` with full lane, including `247` unit files, production build, performance budgets, and `110` E2E passed / `568` skipped.
+- Performance budget note: the gate recommended tightening one stretch target after `10` consecutive weekly green runs with `18.4%` margin; this PR records the signal but intentionally does not change budgets because the active scope is course lesson data cleanup.
+
+## Rollback And Recovery Note
+
+- No live database rewrite is included in this slice; rollback is a normal code revert of the mapper/read-model change.
+- If an older lesson row renders missing public lesson copy after deployment, diagnose by checking the row body for legacy `display*`, `cues`, `commonMistakes`, `drill*`, and `nextStep` fields, then confirm `resolveCourseLessonExperience` maps them into the structured read model.
+- Unknown legacy keys remain pass-through and are not deleted by this slice.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -175,6 +240,8 @@ Required if cleanup changes admin labels, removed fields, repair flow, preview b
 
 If cleanup is internal-only and no admin workflow changes, record explicit `N/A` rationale in closeout.
 
+Current impact: `N/A` for product Help/Guide because this slice changes no visible admin labels, no public lesson copy, no route, no recovery action, and no operator workflow. Existing admin technical fallback fields remain visible under the same labels.
+
 ## Scope
 
 - Audit every legacy course lesson field currently read or saved by public/admin lesson code.
@@ -225,3 +292,7 @@ Implementation validation when selected:
 ## Checkpoint Log
 
 - `2026-06-14 | planned | created from owner clarification during Course Lesson Admin/Public Field Parity And View Changes V1: do not delete legacy course lesson datakontrakt in the active UI slice; keep public fallback reads/old keys until this dedicated cleanup/migration brief is explicitly selected | next: continue active admin parity slice; execute this cleanup only as a future approved slice`
+- `2026-06-16 | in-progress | owner explicitly requested execution; branch task/course-lesson-legacy-field-cleanup-v1 created from main@b48a7712, source brief link refreshed to done, and radar run with no new skill/plugin install or live migration decision authorized yet | next: audit legacy field usage across app/lib/components/tests/docs, then implement the smallest mapper/test cleanup that proves old, structured, and unknown body shapes render safely`
+- `2026-06-16 | implementation checkpoint | consolidated legacy course lesson fallback reads into a typed lessonExperience resolver, mapped DB course rows to the resolved read model without a live write, added old-shape and mixed-shape fixtures, and confirmed focused unit tests pass | next: run broader targeted admin/content tests, lint briefs, pre-PR verification, then commit/push/PR`
+- `2026-06-16 | regression checkpoint | first pre-PR verification found one concept lesson cue-section regression; fixed primaryCue fallback semantics, added unit coverage, and confirmed the affected Playwright spec passes | next: rerun full pre-PR verification`
+- `2026-06-16 | pre-pr checkpoint | full npm run verify:pre-pr passed; performance budget trend recommended future stretch-target tightening but no budget change is included in this scoped cleanup PR | next: commit, push, open PR, and monitor CI`
