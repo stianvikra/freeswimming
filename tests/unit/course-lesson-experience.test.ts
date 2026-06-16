@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CourseLesson } from "@/app/course/courseData";
 import {
   buildCourseLessonExperienceViewModel,
+  resolveCourseLessonExperience,
   normalizeCourseLessonExperienceInput,
 } from "@/lib/course/lesson-experience";
 
@@ -118,6 +119,68 @@ describe("course lesson experience view model", () => {
     expect(viewModel.nextStep).toBe("Move to side balance.");
   });
 
+  it("normalizes legacy lesson fields into the structured lesson experience contract", () => {
+    const experience = resolveCourseLessonExperience(
+      makeLesson({
+        display: {
+          cues: false,
+          commonMistakes: true,
+          drill: false,
+          nextStep: false,
+          support: false,
+        },
+      })
+    );
+
+    expect(experience).toMatchObject({
+      display: {
+        feelCues: false,
+        commonMistakes: true,
+        landPractice: false,
+        waterPractice: false,
+        nextStep: false,
+        support: false,
+      },
+      goal: "Hold a calm body line.",
+      feelCues: ["Head quiet", "Easy bubbles"],
+      commonMistakes: ["Looking forward", "Holding breath"],
+      waterPractice: {
+        title: "Front glide",
+        steps: ["Push off gently", "Exhale bubbles"],
+      },
+      nextStep: "Move to side balance.",
+    });
+  });
+
+  it("lets structured lesson experience fields override legacy fallbacks without losing missing branches", () => {
+    const experience = resolveCourseLessonExperience(
+      makeLesson({
+        lessonExperience: {
+          display: {
+            waterPractice: true,
+          },
+          quickExplanation: "Use the authored explanation.",
+          waterPractice: {
+            title: "Authored water title",
+          },
+          commonMistakes: [{ mistake: "Authored mistake", fix: "Authored correction." }],
+        },
+      })
+    );
+
+    expect(experience).toMatchObject({
+      goal: "Hold a calm body line.",
+      quickExplanation: "Use the authored explanation.",
+      waterPractice: {
+        title: "Authored water title",
+        steps: ["Push off gently", "Exhale bubbles"],
+      },
+      commonMistakes: [{ mistake: "Authored mistake", fix: "Authored correction." }],
+      feelCues: ["Head quiet", "Easy bubbles"],
+      nextStep: "Move to side balance.",
+    });
+  });
+
   it("defaults concept lessons to explanation-first containers", () => {
     const viewModel = buildCourseLessonExperienceViewModel(
       makeLesson({
@@ -152,6 +215,25 @@ describe("course lesson experience view model", () => {
       steps: ["Try one short repeat while keeping the cue: Head quiet."],
     });
     expect(viewModel.display.waterPractice).toBe(false);
+  });
+
+  it("does not collapse structured concept feel cues into the primary cue fallback", () => {
+    const viewModel = buildCourseLessonExperienceViewModel(
+      makeLesson({
+        lessonType: "learn",
+        cues: undefined,
+        lessonExperience: {
+          variant: "concept",
+          display: {
+            feelCues: true,
+          },
+          feelCues: ["Calm start"],
+        },
+      })
+    );
+
+    expect(viewModel.primaryCue).toBe("Swim relaxed and controlled.");
+    expect(viewModel.feelCues).toEqual(["Calm start"]);
   });
 
   it("respects explicit container display overrides", () => {

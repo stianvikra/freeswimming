@@ -14,7 +14,10 @@ import {
   resolveCourseModuleRuntimeAliases,
   resolveCourseModuleRuntimeId,
 } from "@/lib/course/runtime-identity";
-import { normalizeCourseLessonExperienceInput } from "@/lib/course/lesson-experience";
+import {
+  normalizeCourseLessonExperienceInput,
+  resolveCourseLessonExperience,
+} from "@/lib/course/lesson-experience";
 import type { CourseContentReadStatus } from "@/lib/course/preview";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database, Json } from "@/types/database";
@@ -278,6 +281,12 @@ export function toPublishedCourseModules(
       nextStep: getString(body.nextStep) ?? "Continue to the next lesson.",
       tags: tags.length > 0 ? tags : undefined,
     };
+    const resolvedLessonExperience = resolveCourseLessonExperience(lesson);
+    if (resolvedLessonExperience) {
+      lesson.lessonExperience = resolvedLessonExperience;
+    } else {
+      delete lesson.lessonExperience;
+    }
 
     targetModule.lessons.push(lesson);
     seenLessonIds.add(lessonId);

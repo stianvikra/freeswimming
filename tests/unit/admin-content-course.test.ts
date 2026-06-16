@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { COURSE_MODULES } from "@/app/course/courseData";
 import { toPublishedCourseModules } from "@/lib/admin/content-course";
+import { buildCourseLessonExperienceViewModel } from "@/lib/course/lesson-experience";
 
 describe("toPublishedCourseModules", () => {
   it("returns fallback modules when published rows are missing", () => {
@@ -299,6 +300,151 @@ describe("toPublishedCourseModules", () => {
     });
     expect(mappedLesson?.supportStartAtLessonInModule).toBeUndefined();
     expect(mappedLesson?.nextStep).toBe("Continue to the next lesson.");
+  });
+
+  it("normalizes legacy lesson body fields into lessonExperience without a database rewrite", () => {
+    const modules = toPublishedCourseModules(
+      [
+        {
+          id: "module-row-legacy",
+          slug: "course-module-legacy",
+          title: "Legacy Module",
+          summary: "Legacy module summary",
+          sort_order: 0,
+          body: {
+            moduleId: "legacy-module",
+          },
+        },
+      ],
+      [
+        {
+          id: "lesson-row-legacy",
+          parent_id: "module-row-legacy",
+          slug: "course-lesson-legacy",
+          title: "Legacy Lesson",
+          summary: "Legacy summary",
+          sort_order: 0,
+          body: {
+            moduleId: "legacy-module",
+            lessonId: "legacy-module--legacy-lesson",
+            goal: "Keep the line calm.",
+            cues: ["Quiet head", "Easy bubbles"],
+            commonMistakes: ["Looking forward"],
+            drill: {
+              title: "Legacy front glide",
+              steps: ["Push off gently", "Stop before tension"],
+            },
+            display: {
+              cues: false,
+              commonMistakes: true,
+              drill: false,
+              nextStep: true,
+              support: false,
+            },
+            nextStep: "Move to the next calm repeat.",
+          },
+        },
+      ],
+      []
+    );
+
+    const lesson = modules[0]?.lessons[0];
+
+    expect(lesson?.lessonExperience).toMatchObject({
+      display: {
+        feelCues: false,
+        commonMistakes: true,
+        landPractice: false,
+        waterPractice: false,
+        nextStep: true,
+        support: false,
+      },
+      goal: "Keep the line calm.",
+      feelCues: ["Quiet head", "Easy bubbles"],
+      commonMistakes: ["Looking forward"],
+      waterPractice: {
+        title: "Legacy front glide",
+        steps: ["Push off gently", "Stop before tension"],
+      },
+      nextStep: "Move to the next calm repeat.",
+    });
+    expect(lesson?.display).toMatchObject({
+      cues: false,
+      commonMistakes: true,
+      drill: false,
+      nextStep: true,
+      support: false,
+    });
+  });
+
+  it("keeps structured lessonExperience authoritative while carrying legacy fallback branches", () => {
+    const modules = toPublishedCourseModules(
+      [
+        {
+          id: "module-row-mixed",
+          slug: "course-module-mixed",
+          title: "Mixed Module",
+          summary: "Mixed module summary",
+          sort_order: 0,
+          body: {
+            moduleId: "mixed-module",
+          },
+        },
+      ],
+      [
+        {
+          id: "lesson-row-mixed",
+          parent_id: "module-row-mixed",
+          slug: "course-lesson-mixed",
+          title: "Mixed Lesson",
+          summary: "Mixed summary",
+          sort_order: 0,
+          body: {
+            moduleId: "mixed-module",
+            lessonId: "mixed-module--mixed-lesson",
+            goal: "Hold rhythm.",
+            cues: ["Soft kick"],
+            commonMistakes: ["Kicking too hard"],
+            drill: {
+              title: "Legacy kick repeat",
+              steps: ["Kick easy", "Reset early"],
+            },
+            lessonExperience: {
+              quickExplanation: "Authored explanation wins.",
+              waterPractice: {
+                title: "Authored pool title",
+              },
+              commonMistakes: [{ mistake: "Authored miss", fix: "Use the authored fix." }],
+            },
+            nextStep: "Legacy next step.",
+          },
+        },
+      ],
+      []
+    );
+
+    const lesson = modules[0]?.lessons[0];
+    const viewModel = lesson ? buildCourseLessonExperienceViewModel(lesson) : null;
+
+    expect(lesson?.lessonExperience).toMatchObject({
+      goal: "Hold rhythm.",
+      quickExplanation: "Authored explanation wins.",
+      feelCues: ["Soft kick"],
+      waterPractice: {
+        title: "Authored pool title",
+        steps: ["Kick easy", "Reset early"],
+      },
+      commonMistakes: [{ mistake: "Authored miss", fix: "Use the authored fix." }],
+      nextStep: "Legacy next step.",
+    });
+    expect(viewModel?.quickExplanation).toBe("Authored explanation wins.");
+    expect(viewModel?.waterPractice).toMatchObject({
+      title: "Authored pool title",
+      steps: ["Kick easy", "Reset early"],
+    });
+    expect(viewModel?.commonMistakes).toEqual([
+      { mistake: "Authored miss", fix: "Use the authored fix." },
+    ]);
   });
 
   it("keeps static lesson experience fallback for the representative V1 lesson", () => {
