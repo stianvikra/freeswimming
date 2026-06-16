@@ -41,6 +41,7 @@ test("course lesson pass criteria drive header and menu progress state", async (
   });
 
   await expect(page.getByText("Pass criteria", { exact: true })).toBeVisible();
+  await expect(page.getByText("Loading pass criteria...")).toHaveCount(0);
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
   await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeVisible();
