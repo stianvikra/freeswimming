@@ -76,7 +76,7 @@ test("mobile fixed nav uses contextual links and header menu toggles with Escape
   const menu = page.getByTestId("header-menu-toggle");
 
   await expect(home).toHaveAttribute("href", "/");
-  await expect(course).toHaveAttribute("href", "/course");
+  await expect(course).toHaveAttribute("href", "/en/course");
   await expect(programs).toHaveAttribute("href", "/programs");
   await expect(page.getByTestId("mobile-nav-menu")).toHaveCount(0);
   await expect(menu).toBeVisible();

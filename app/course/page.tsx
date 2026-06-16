@@ -59,6 +59,14 @@ import {
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
 import {
+  COURSE_DEFAULT_LOCALE,
+  buildCourseLessonHref,
+  buildCourseOverviewPath,
+  normalizeIndexableCourseLocale,
+  resolveCourseLessonRouteBySlugs,
+  type CourseIndexableLocale,
+} from "@/lib/course/canonical-routes";
+import {
   buildCourseLessonProgressStatusMap,
   normalizeCourseLessonCriteriaChecks,
   normalizeCourseLessonCriteriaCheckRecord,
@@ -887,6 +895,48 @@ export default function CoursePage() {
   );
 }
 
+type CourseRouteContext = {
+  canonicalLocale: CourseIndexableLocale;
+  initialLessonId: string | null;
+  overviewPath?: string;
+};
+
+function resolveCourseRouteContext(pathname: string | null | undefined): CourseRouteContext {
+  const segments = pathname?.split("/").filter(Boolean) ?? [];
+  const locale = normalizeIndexableCourseLocale(segments[0] ?? null);
+
+  if (!locale || segments[1] !== "course") {
+    return {
+      canonicalLocale: COURSE_DEFAULT_LOCALE,
+      initialLessonId: null,
+    };
+  }
+
+  const overviewPath = buildCourseOverviewPath(locale);
+  const moduleSlug = segments[2];
+  const lessonSlug = segments[3];
+
+  if (!moduleSlug || !lessonSlug) {
+    return {
+      canonicalLocale: locale,
+      initialLessonId: null,
+      overviewPath,
+    };
+  }
+
+  const resolution = resolveCourseLessonRouteBySlugs(COURSE_MODULES, {
+    locale,
+    moduleSlug,
+    lessonSlug,
+  });
+
+  return {
+    canonicalLocale: locale,
+    initialLessonId: resolution.status === "not-found" ? null : resolution.route.lesson.id,
+    overviewPath,
+  };
+}
+
 function CoursePageClient() {
   type DrawerView = "main" | "course";
 
@@ -894,8 +944,11 @@ function CoursePageClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const install = useInstallContext();
+  const routeContext = useMemo(() => resolveCourseRouteContext(pathname), [pathname]);
+  const { canonicalLocale, initialLessonId, overviewPath } = routeContext;
 
   const lessonParam = searchParams?.get("lesson") ?? null;
+  const routeLessonParam = lessonParam ?? initialLessonId;
   const previewEnabled = searchParams?.get("preview") === "1";
   const previewModeParam = searchParams?.get("previewMode") ?? null;
   const parsedPreviewMode = parseCoursePreviewMode(previewModeParam);
@@ -945,10 +998,10 @@ function CoursePageClient() {
     [canonicalLessonIdByAlias]
   );
   const canonicalLessonParam = useMemo(
-    () => (lessonParam ? resolveCanonicalLessonId(lessonParam) : null),
-    [lessonParam, resolveCanonicalLessonId]
+    () => (routeLessonParam ? resolveCanonicalLessonId(routeLessonParam) : null),
+    [routeLessonParam, resolveCanonicalLessonId]
   );
-  const requestedLessonId = canonicalLessonParam ?? lessonParam;
+  const requestedLessonId = canonicalLessonParam ?? routeLessonParam;
   const defaultLessonId = courseLessonsFlat[0]?.id ?? DEFAULT_LESSON_ID;
   const hasResolvedRequestedLesson = useMemo(
     () =>
@@ -966,15 +1019,34 @@ function CoursePageClient() {
   const browserMetadata = useMemo(
     () =>
       resolveCoursePageMetadata({
-        lessonParam,
+        lessonParam: routeLessonParam,
         previewParam: previewEnabled ? "1" : null,
+        locale: canonicalLocale,
       }),
-    [lessonParam, previewEnabled]
+    [canonicalLocale, previewEnabled, routeLessonParam]
   );
 
   useEffect(() => {
     syncCourseBrowserMetadata(browserMetadata);
   }, [browserMetadata]);
+
+  const buildLearnerLessonHref = useCallback(
+    (lessonId: string) => buildCourseLessonHref(courseModules, lessonId, canonicalLocale),
+    [canonicalLocale, courseModules]
+  );
+
+  const buildCurrentModeLessonHref = useCallback(
+    (lessonId: string) => {
+      if (!previewEnabled) {
+        return buildLearnerLessonHref(lessonId);
+      }
+
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("lesson", lessonId);
+      return `${pathname}?${params.toString()}`;
+    },
+    [buildLearnerLessonHref, pathname, previewEnabled, searchParams]
+  );
 
   const { prevId, nextId } = useMemo(() => {
     const index = courseLessonsFlat.findIndex((lesson) => lesson.id === activeLesson.id);
@@ -1336,32 +1408,47 @@ function CoursePageClient() {
   ]);
 
   useEffect(() => {
-    if (!lessonParam || !canonicalLessonParam || lessonParam === canonicalLessonParam) {
+    if (!routeLessonParam || !canonicalLessonParam || routeLessonParam === canonicalLessonParam) {
       canonicalLessonReplaceHrefRef.current = null;
       return;
     }
 
-    const nextCanonicalHref = `${pathname}?lesson=${encodeURIComponent(canonicalLessonParam)}`;
+    const nextCanonicalHref = previewEnabled
+      ? buildCurrentModeLessonHref(canonicalLessonParam)
+      : buildLearnerLessonHref(canonicalLessonParam);
     if (canonicalLessonReplaceHrefRef.current === nextCanonicalHref) {
       return;
     }
 
     canonicalLessonReplaceHrefRef.current = nextCanonicalHref;
     router.replace(nextCanonicalHref);
-  }, [canonicalLessonParam, lessonParam, pathname, router]);
+  }, [
+    buildCurrentModeLessonHref,
+    buildLearnerLessonHref,
+    canonicalLessonParam,
+    previewEnabled,
+    routeLessonParam,
+    router,
+  ]);
 
   useEffect(() => {
-    if (lessonParam) return;
+    if (routeLessonParam) return;
 
     try {
       const last = localStorage.getItem(previewStorageKeys.lastLesson);
       const next = (last ? resolveCanonicalLessonId(last) : null) ?? defaultLessonId;
-      router.replace(`${pathname}?lesson=${encodeURIComponent(next)}`);
+      router.replace(buildCurrentModeLessonHref(next));
     } catch {
-      router.replace(`${pathname}?lesson=${encodeURIComponent(defaultLessonId)}`);
+      router.replace(buildCurrentModeLessonHref(defaultLessonId));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultLessonId, pathname, previewStorageKeys.lastLesson, resolveCanonicalLessonId, router]);
+  }, [
+    buildCurrentModeLessonHref,
+    defaultLessonId,
+    previewStorageKeys.lastLesson,
+    resolveCanonicalLessonId,
+    routeLessonParam,
+    router,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1891,7 +1978,7 @@ function CoursePageClient() {
         );
       }
 
-      router.push(`${pathname}?lesson=${encodeURIComponent(nextLessonId)}`, { scroll: false });
+      router.push(buildCurrentModeLessonHref(nextLessonId), { scroll: false });
       const shouldScrollToPlayer = options?.scrollToPlayer ?? true;
       if (!drawerOpen && shouldScrollToPlayer) {
         const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -1902,8 +1989,8 @@ function CoursePageClient() {
     [
       activeLesson.id,
       buildCourseLessonAnalyticsPayloadFor,
+      buildCurrentModeLessonHref,
       drawerOpen,
-      pathname,
       previewEnabled,
       resolveCanonicalLessonId,
       router,
@@ -2451,8 +2538,8 @@ function CoursePageClient() {
     enabledSupportActions.length > 0;
   const showOpenOnPhoneCard = showExtraHelpCard && !previewEnabled;
   const openOnPhoneSharePath = useMemo(
-    () => `/course?lesson=${encodeURIComponent(activeLesson.id)}`,
-    [activeLesson.id]
+    () => buildLearnerLessonHref(activeLesson.id),
+    [activeLesson.id, buildLearnerLessonHref]
   );
   const showLessonExperienceSections =
     showGoalSection ||
@@ -2554,7 +2641,7 @@ function CoursePageClient() {
   const isSignedIn = courseProgressSyncEnabled && Boolean(signedInUserId);
   const isGuest = courseProgressSyncEnabled && authStateLoaded && !signedInUserId;
   const backupSignInHref = `/auth/sign-in?next=${encodeURIComponent(
-    `${pathname}?lesson=${encodeURIComponent(activeLesson.id)}`
+    buildLearnerLessonHref(activeLesson.id)
   )}`;
   const courseProgressStatusCopy = previewEnabled
     ? "Preview progress is local only and isolated from learner progress."
@@ -3354,8 +3441,8 @@ function CoursePageClient() {
                     tier="nav"
                     href={
                       requestedLessonId
-                        ? `/course?lesson=${encodeURIComponent(requestedLessonId)}`
-                        : "/course"
+                        ? buildLearnerLessonHref(requestedLessonId)
+                        : (overviewPath ?? "/course")
                     }
                     className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
                   >

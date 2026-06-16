@@ -1,3 +1,5 @@
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
+
 export type MainMenuItem = {
   href: string;
   title: string;
@@ -6,7 +8,7 @@ export type MainMenuItem = {
 
 const BASE_MAIN_MENU_ITEMS: MainMenuItem[] = [
   { href: "/", title: "Home", subtitle: "Back to start" },
-  { href: "/course", title: "Free Course", subtitle: "Modules & lessons" },
+  { href: buildCourseOverviewPath(), title: "Free Course", subtitle: "Modules & lessons" },
   { href: "/my-library", title: "My Library", subtitle: "Owned content & resume" },
   { href: "/plans", title: "Plans", subtitle: "Paid guides & feedback" },
   { href: "/programs", title: "Swim Programs", subtitle: "Structured plans & PDFs" },

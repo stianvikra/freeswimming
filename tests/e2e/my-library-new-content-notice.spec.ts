@@ -94,7 +94,7 @@ async function openExpandedNewLessonFromNotice(page: Page, lessonId: string) {
     .getByTestId("my-library-new-content-notice")
     .getByTestId(`my-library-new-content-item-${lessonId}`);
   await expect(openLink).toBeVisible();
-  await expect(openLink).toHaveAttribute("href", /\/course\?lesson=/);
+  await expect(openLink).toHaveAttribute("href", /\/(?:en\/)?course(?:\/|\?lesson=)/);
   const href = await openLink.getAttribute("href");
   expect(href).toBeTruthy();
 
@@ -102,11 +102,11 @@ async function openExpandedNewLessonFromNotice(page: Page, lessonId: string) {
     page,
     trigger: openLink,
     href: href!,
-    expectedUrl: /\/course(\?|$)/,
+    expectedUrl: /\/(?:en\/)?course(?:\/|\?|$)/,
     clickNavigationTimeoutMs: 10_000,
   });
   await waitForRouteToSettle(page);
-  await expect(page).toHaveURL(/\/course(\?|$)/);
+  await expect(page).toHaveURL(/\/(?:en\/)?course(?:\/|\?|$)/);
 }
 
 test.describe("my library new content notice", () => {

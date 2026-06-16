@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
 
   onClose: () => void;
   ariaLabel?: string;
+  restoreFocusSelector?: string;
   children: React.ReactNode;
 };
 
@@ -24,12 +25,50 @@ const FOCUSABLE_SELECTOR = [
 
 type InertNode = HTMLElement & { inert?: boolean };
 
-export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", children }: Props) {
+function isUnavailableForFocus(element: HTMLElement) {
+  let current: HTMLElement | null = element;
+  while (current) {
+    if ((current as InertNode).inert) return true;
+    if (current.getAttribute("aria-hidden") === "true") return true;
+    current = current.parentElement;
+  }
+  return false;
+}
+
+function focusWithoutScroll(element: HTMLElement) {
+  try {
+    element.focus({ preventScroll: true });
+  } catch {
+    element.focus();
+  }
+}
+
+export default function Modal({
+  open,
+  isOpen,
+  onClose,
+  ariaLabel = "Dialog",
+  restoreFocusSelector,
+  children,
+}: Props) {
   const visible = Boolean(open ?? isOpen);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const restoreFocusTimeoutsRef = useRef<number[]>([]);
+  const restoreFocusAnimationFrameRef = useRef<number | null>(null);
   const handleClose = useEffectEvent(onClose);
+
+  const clearScheduledRestoreFocus = useCallback(() => {
+    if (restoreFocusAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(restoreFocusAnimationFrameRef.current);
+      restoreFocusAnimationFrameRef.current = null;
+    }
+    for (const timeoutId of restoreFocusTimeoutsRef.current) {
+      window.clearTimeout(timeoutId);
+    }
+    restoreFocusTimeoutsRef.current = [];
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -47,6 +86,7 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
   }, [visible]);
 
   useEffect(() => {
+    clearScheduledRestoreFocus();
     if (!visible) return;
 
     const panel = panelRef.current;
@@ -101,17 +141,28 @@ export default function Modal({ open, isOpen, onClose, ariaLabel = "Dialog", chi
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       const lastFocused = lastFocusedRef.current;
-      requestAnimationFrame(() => {
-        if (!lastFocused) return;
-        if (!document.contains(lastFocused)) return;
-        try {
-          lastFocused.focus({ preventScroll: true });
-        } catch {
-          lastFocused.focus();
-        }
+      const restoreFocus = () => {
+        const explicitTarget = restoreFocusSelector
+          ? document.querySelector<HTMLElement>(restoreFocusSelector)
+          : null;
+        const target = explicitTarget ?? lastFocused;
+        if (!target) return false;
+        if (!document.contains(target)) return false;
+        if (isUnavailableForFocus(target)) return false;
+
+        focusWithoutScroll(target);
+        return document.activeElement === target;
+      };
+
+      clearScheduledRestoreFocus();
+      restoreFocusAnimationFrameRef.current = requestAnimationFrame(() => {
+        if (restoreFocus()) return;
+        restoreFocusTimeoutsRef.current = [0, 50, 150].map((delay) =>
+          window.setTimeout(restoreFocus, delay)
+        );
       });
     };
-  }, [visible]);
+  }, [clearScheduledRestoreFocus, visible, restoreFocusSelector]);
 
   useEffect(() => {
     if (!visible) return;

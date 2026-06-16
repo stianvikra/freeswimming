@@ -1,4 +1,6 @@
+import { COURSE_MODULES } from "@/app/course/courseData";
 import type { AdminContentItemRow } from "@/lib/admin/content";
+import { buildCourseLessonHref } from "@/lib/course/canonical-routes";
 import {
   getAdminPageContextLabel,
   normalizeAdminPageContextRef,
@@ -108,7 +110,7 @@ export function resolveAdminContentEditQrContext(
       contentItemId: item.id,
       contentLabel: item.title,
       slugHint: lessonId,
-      destinationPath: `/course?lesson=${encodeURIComponent(lessonId)}`,
+      destinationPath: buildCourseLessonHref(COURSE_MODULES, lessonId),
       placementKey: "course.lesson.share",
     };
   }

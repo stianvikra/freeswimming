@@ -1,4 +1,5 @@
 import { GUIDE_POOLSIDE_DRILLS } from "@/lib/guides/guide-poolside";
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 import type { Database } from "@/types/database";
 
 export const GOALS_ACTIVE_LIMIT = 3;
@@ -274,7 +275,7 @@ function getPrimaryAction(goal: GoalRow): GoalPrimaryAction {
       return {
         kind: "link",
         label: "Open next session",
-        href: "/course",
+        href: buildCourseOverviewPath(),
       };
     case "distance_time":
       return {

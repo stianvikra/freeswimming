@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { COURSE_MODULES } from "@/app/course/courseData";
 import { buildAdminNoteTestArtifactTitle } from "@/lib/admin/admin-note-test-artifacts";
+import { buildCourseLessonHref } from "@/lib/course/canonical-routes";
 import { resolveCanonicalCourseLessonRuntimeId } from "@/lib/course/runtime-id-manifest";
 import { buildManualDrylandStarterDraft } from "@/lib/dryland/manual";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
@@ -392,14 +394,10 @@ test.describe("admin contextual notes", () => {
     test.slow();
 
     const canonicalLessonContextRef = resolveCanonicalCourseLessonRuntimeId("mod3-l1") ?? "mod3-l1";
-    await loginAsAdminViaDevBypass(
-      page,
-      `/course?lesson=${encodeURIComponent(canonicalLessonContextRef)}`
-    );
+    const canonicalLessonHref = buildCourseLessonHref(COURSE_MODULES, canonicalLessonContextRef);
+    await loginAsAdminViaDevBypass(page, canonicalLessonHref);
     await expect(page.getByRole("heading", { name: "Free Course" })).toBeVisible();
-    await expect
-      .poll(() => page.url(), { timeout: 15_000 })
-      .toContain(`lesson=${encodeURIComponent(canonicalLessonContextRef)}`);
+    await expect.poll(() => page.url(), { timeout: 15_000 }).toContain(canonicalLessonHref);
     await waitForCourseLessonContext(page, canonicalLessonContextRef);
 
     await ensureContextNotesApiAvailable(
@@ -407,10 +405,7 @@ test.describe("admin contextual notes", () => {
       `/api/admin/notes?contextType=course_lesson&contextRef=${encodeURIComponent(canonicalLessonContextRef)}`
     );
 
-    const panel = await ensureAdminContextPanelLoaded(
-      page,
-      `/course?lesson=${encodeURIComponent(canonicalLessonContextRef)}`
-    );
+    const panel = await ensureAdminContextPanelLoaded(page, canonicalLessonHref);
 
     const unique = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const title = buildAdminNoteTestArtifactTitle({

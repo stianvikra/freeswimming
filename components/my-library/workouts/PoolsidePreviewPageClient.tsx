@@ -78,6 +78,8 @@ export default function PoolsidePreviewPageClient() {
   const searchSignature = searchParams.toString();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const previewViewportRef = useRef<HTMLDivElement | null>(null);
+  const embeddedPreviewMetricsCleanupRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
   const previewSource = useMemo(() => {
     const params = new URLSearchParams(searchSignature);
     return {
@@ -111,6 +113,14 @@ export default function PoolsidePreviewPageClient() {
   const [saveImagePending, setSaveImagePending] = useState(false);
   const [saveImageError, setSaveImageError] = useState("");
   const [saveImageNotice, setSaveImageNotice] = useState("");
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      embeddedPreviewMetricsCleanupRef.current?.();
+      embeddedPreviewMetricsCleanupRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(searchSignature);
@@ -251,6 +261,8 @@ export default function PoolsidePreviewPageClient() {
   );
 
   useLayoutEffect(() => {
+    embeddedPreviewMetricsCleanupRef.current?.();
+    embeddedPreviewMetricsCleanupRef.current = null;
     setEmbeddedNoteReady(false);
     setEmbeddedPreviewHeight(EMBEDDED_PREVIEW_MIN_READY_HEIGHT);
     setEmbeddedPreviewViewportWidth(getEmbeddedPreviewFallbackWidth(settings.printLayout));
@@ -305,6 +317,9 @@ export default function PoolsidePreviewPageClient() {
   }
 
   function syncEmbeddedPreviewMetrics() {
+    embeddedPreviewMetricsCleanupRef.current?.();
+    embeddedPreviewMetricsCleanupRef.current = null;
+
     const frame = iframeRef.current;
     const frameWindow = frame?.contentWindow;
     const frameDocument = frameWindow?.document;
@@ -313,7 +328,15 @@ export default function PoolsidePreviewPageClient() {
       return;
     }
 
+    let isCancelled = false;
+    const timeoutIds: number[] = [];
+    const rafIds: Array<{ frameWindow: Window; id: number }> = [];
+
     const measure = () => {
+      if (isCancelled || !isMountedRef.current) {
+        return false;
+      }
+
       const article = frameDocument.querySelector<HTMLElement>(
         '[data-testid="workout-pdf-print-view"]'
       );
@@ -349,11 +372,24 @@ export default function PoolsidePreviewPageClient() {
     };
 
     measure();
-    frameWindow.requestAnimationFrame?.(() => {
+    const rafId = frameWindow.requestAnimationFrame?.(() => {
       measure();
     });
-    frameWindow.setTimeout(measure, 160);
-    frameWindow.setTimeout(measure, 420);
+
+    if (typeof rafId === "number" && typeof frameWindow.cancelAnimationFrame === "function") {
+      rafIds.push({ frameWindow, id: rafId });
+    }
+
+    timeoutIds.push(window.setTimeout(measure, 160));
+    timeoutIds.push(window.setTimeout(measure, 420));
+
+    embeddedPreviewMetricsCleanupRef.current = () => {
+      isCancelled = true;
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      rafIds.forEach(({ frameWindow: targetWindow, id }) => {
+        targetWindow.cancelAnimationFrame(id);
+      });
+    };
   }
 
   async function resolvePreviewNoteForExport() {

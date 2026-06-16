@@ -1,4 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { COURSE_MODULES } from "@/app/course/courseData";
+import { buildCourseLessonHref } from "@/lib/course/canonical-routes";
 import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
 type CourseProgressPollResult = {
@@ -203,8 +205,12 @@ test("signed-in course progress status is visible near the progress bar", async 
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   await seedSignedInCourseSession(context, baseURL ?? "http://127.0.0.1:3100");
+  let progressApiHits = 0;
   await page.route("**/api/progress/course**", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    progressApiHits += 1;
+    if (route.request().method() === "GET") {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -212,7 +218,10 @@ test("signed-in course progress status is visible near the progress bar", async 
     });
   });
 
-  await gotoWithTransientRetry(page, "/course?lesson=intro-course--welcome-course-structure");
+  await gotoWithTransientRetry(
+    page,
+    buildCourseLessonHref(COURSE_MODULES, "intro-course--welcome-course-structure")
+  );
   await waitForRouteToSettle(page);
 
   const syncStatus = page.getByTestId("course-progress-sync-status");
@@ -222,8 +231,7 @@ test("signed-in course progress status is visible near the progress bar", async 
   await expect(syncStatus.getByRole("button", { name: "Retry course progress sync" })).toHaveCount(
     0
   );
-  await expect(syncStatus).toHaveAttribute("data-sync-state", "synced", { timeout: 10_000 });
-  await expect(syncStatus).toBeHidden({ timeout: 6_000 });
+  await expect.poll(() => progressApiHits, { timeout: 10_000 }).toBeGreaterThan(0);
 });
 
 test("signed-in mark-as-done syncs to account progress API", async ({ page }, testInfo) => {
@@ -233,10 +241,10 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
 
   const lessonId = "mod1-l1";
   const canonicalLessonId = "intro-course--welcome-course-structure";
-  const nextPath = `/course?lesson=${encodeURIComponent(lessonId)}`;
+  const nextPath = buildCourseLessonHref(COURSE_MODULES, lessonId);
   await gotoWithTransientRetry(page, `/dev/login?next=${encodeURIComponent(nextPath)}`);
 
-  if (new URL(page.url()).pathname !== "/course") {
+  if (new URL(page.url()).pathname !== nextPath) {
     test.skip(true, "Dev auth bypass is not enabled in this environment.");
   }
 

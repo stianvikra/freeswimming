@@ -45,14 +45,14 @@ describe("ContinueCourseCard", () => {
     );
 
     const link = screen.getByRole("link", { name: "Start" });
-    expect(link).toHaveAttribute("href", "/course");
+    expect(link).toHaveAttribute("href", "/en/course");
     expect(link).toHaveClass("fs-cta-primary");
 
     fireEvent.click(link);
 
     expect(sendClientAnalyticsEvent).toHaveBeenCalledWith("resume_clicked", {
       hasSavedProgress: false,
-      destination: "/course",
+      destination: "/en/course",
     });
   });
 
@@ -66,13 +66,17 @@ describe("ContinueCourseCard", () => {
     });
 
     const link = screen.getByRole("link", { name: "Continue" });
-    expect(link).toHaveAttribute("href", "/course?lesson=mod1-l2");
+    expect(link).toHaveAttribute(
+      "href",
+      "/en/course/course-module-introduction-to-the-course/course-lesson-introduction-to-the-course-course-navigation-basics"
+    );
 
     fireEvent.click(link);
 
     expect(sendClientAnalyticsEvent).toHaveBeenCalledWith("resume_clicked", {
       hasSavedProgress: true,
-      destination: "/course?lesson=mod1-l2",
+      destination:
+        "/en/course/course-module-introduction-to-the-course/course-lesson-introduction-to-the-course-course-navigation-basics",
     });
   });
 });

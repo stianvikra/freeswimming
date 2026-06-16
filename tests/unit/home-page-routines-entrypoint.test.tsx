@@ -117,7 +117,7 @@ describe("HomePage routines entrypoint", () => {
     expect(screen.queryByRole("link", { name: /My Routines/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Micro Sessions/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Habits/i })).not.toBeInTheDocument();
-    expect(actionHrefs()).toEqual(["/course", "/programs", "/analysis", "/contact"]);
+    expect(actionHrefs()).toEqual(["/en/course", "/programs", "/analysis", "/contact"]);
     expect(screen.getByRole("link", { name: /Free course/i })).toHaveClass("fs-cta-primary");
     expect(screen.getByRole("link", { name: /Swim programs/i })).toHaveClass("fs-library-card");
     expect(screen.getByRole("link", { name: /Video analysis/i })).toHaveClass("fs-library-card");
@@ -154,7 +154,7 @@ describe("HomePage routines entrypoint", () => {
     expect(habitsLink).toHaveClass("fs-library-card", "fs-library-card-muted");
     expect(screen.getByTestId("home-auth-link")).toHaveClass("fs-cta-secondary");
     expect(actionHrefs()).toEqual([
-      "/course",
+      "/en/course",
       "/my-library/dryland?micro=setup#micro-sessions",
       "/my-library/habits?view=active#add-habit",
       "/programs",

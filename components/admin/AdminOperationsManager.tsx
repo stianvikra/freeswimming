@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import { cx } from "@/components/ui/cx";
 import type { AdminRuntimeFlagRow } from "@/lib/admin/runtime-flags";
@@ -257,12 +258,15 @@ export default function AdminOperationsManager() {
             >
               Open lock operations workflow
             </a>
-            <a href="/preview-access?next=%2Fadmin" className={compactSecondaryActionClass}>
+            <Link href="/preview-access?next=%2Fadmin" className={compactSecondaryActionClass}>
               Open unlock page
-            </a>
-            <a href="/preview-access/clear?next=%2Fadmin" className={compactSecondaryActionClass}>
+            </Link>
+            <Link
+              href="/preview-access/clear?next=%2Fadmin"
+              className={compactSecondaryActionClass}
+            >
               Sign out this browser
-            </a>
+            </Link>
           </div>
           <p className="mt-4 text-xs text-[color:var(--fs-color-muted)]">
             Operator runbook:{" "}

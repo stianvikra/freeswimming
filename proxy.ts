@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSafeNextPath } from "@/lib/auth/next-path";
+import {
+  COURSE_DEFAULT_LOCALE,
+  buildCourseLessonRoute,
+  buildCourseOverviewPath,
+} from "@/lib/course/canonical-routes";
 import { getSiteLockConfig } from "@/lib/site-lock/config";
 import {
   isSiteLockBypassTokenValid,
@@ -7,6 +12,7 @@ import {
   isSiteLockSessionTokenValid,
 } from "@/lib/site-lock/session";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
+import { COURSE_MODULES } from "@/app/course/courseData";
 
 export async function proxy(request: NextRequest) {
   let config;
@@ -18,13 +24,13 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!config.enabled || isSiteLockPathBypassed(request.nextUrl.pathname)) {
-    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
+    return buildUnlockedResponse(request);
   }
 
   if (
     isSiteLockBypassTokenValid(request.headers.get("x-site-lock-bypass-token"), config.bypassToken)
   ) {
-    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
+    return buildUnlockedResponse(request);
   }
 
   const siteLockCookie = request.cookies.get(config.cookieName)?.value;
@@ -35,7 +41,7 @@ export async function proxy(request: NextRequest) {
       maxAgeSeconds: config.sessionMaxAgeSeconds,
     })
   ) {
-    return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
+    return buildUnlockedResponse(request);
   }
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -43,6 +49,15 @@ export async function proxy(request: NextRequest) {
   }
 
   return buildLockedRedirectResponse(request);
+}
+
+async function buildUnlockedResponse(request: NextRequest) {
+  const courseRedirectResponse = buildCourseLegacyRedirectResponse(request);
+  if (courseRedirectResponse) {
+    return courseRedirectResponse;
+  }
+
+  return withCoursePreviewHeadersIfNeeded(await updateSupabaseSession(request), request);
 }
 
 function withNoStoreHeaders(response: NextResponse): NextResponse {
@@ -55,6 +70,22 @@ function isCoursePreviewRequest(request: NextRequest): boolean {
   return (
     request.nextUrl.pathname === "/course" && request.nextUrl.searchParams.get("preview") === "1"
   );
+}
+
+function buildCourseLegacyRedirectResponse(request: NextRequest): NextResponse | null {
+  if (request.nextUrl.pathname !== "/course") return null;
+  if (request.nextUrl.searchParams.get("preview") === "1") return null;
+
+  const lessonParam = request.nextUrl.searchParams.get("lesson")?.trim();
+  if (!lessonParam) return null;
+
+  const destination = request.nextUrl.clone();
+  const canonicalRoute = buildCourseLessonRoute(COURSE_MODULES, lessonParam, COURSE_DEFAULT_LOCALE);
+
+  destination.pathname = canonicalRoute?.path ?? buildCourseOverviewPath(COURSE_DEFAULT_LOCALE);
+  destination.search = "";
+
+  return NextResponse.redirect(destination, 308);
 }
 
 function withCoursePreviewHeadersIfNeeded(

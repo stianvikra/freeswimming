@@ -108,7 +108,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
     });
   });
 
-  await page.goto("/course?lesson=body-position--body-position-front");
+  await page.goto("/course?preview=1&lesson=body-position--body-position-front");
 
   const player = page.getByTestId("course-player-card");
   const lessonInfoStrip = page.getByTestId("course-lesson-info-strip");
@@ -235,7 +235,7 @@ test("course lesson experience hides inactive containers for concept lessons", a
     });
   });
 
-  await page.goto("/course?lesson=intro-course--how-to-use-course");
+  await page.goto("/course?preview=1&lesson=intro-course--how-to-use-course");
 
   const lessonExperience = page.getByTestId("course-lesson-experience");
   await expect(lessonExperience).toBeVisible();
@@ -264,10 +264,13 @@ test("course browser metadata follows canonical lesson identity", async ({ page 
 
   await page.goto("/course?lesson=mod1-l1");
 
+  await expect(page).toHaveURL(
+    /\/en\/course\/course-module-introduction-to-the-course\/course-lesson-introduction-to-the-course-welcome-course-structure$/
+  );
   await expect(page).toHaveTitle("Welcome & Course Structure - Freestyle Course");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    /\/course\?lesson=intro-course--welcome-course-structure$/
+    /\/en\/course\/course-module-introduction-to-the-course\/course-lesson-introduction-to-the-course-welcome-course-structure$/
   );
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
@@ -276,6 +279,7 @@ test("course browser metadata follows canonical lesson identity", async ({ page 
 
   await page.goto("/course?lesson=unknown-future-lesson");
 
+  await expect(page).toHaveURL(/\/en\/course$/);
   await expect(page).toHaveTitle("Freestyle Course");
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/course$/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/en\/course$/);
 });

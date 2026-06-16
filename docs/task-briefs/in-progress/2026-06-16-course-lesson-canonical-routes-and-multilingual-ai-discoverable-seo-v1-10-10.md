@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-16-course-lesson-canonical-routes-and-multilingual-ai-discoverable-seo-v1-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-16`
 - `updated`: `2026-06-16`
@@ -14,9 +14,9 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-16`
-- `base`: clean synced `main@45aaecad` with unrelated untracked local `Ja.docx` intentionally left untouched; planning branch `docs/seo-ai-discoverability-parent-2026-06-16`.
-- `audit_status`: `ready`
-- `decision`: Use this as the first bounded implementation child under the SEO/AI parent after owner scope approval.
+- `base`: clean synced `main@89de17b5` with unrelated untracked local `Ja.docx` intentionally left untouched; implementation branch `feat/course-lesson-canonical-seo-2026-06-16`.
+- `audit_status`: `in-progress`
+- `decision`: Implement this as the first bounded implementation child under the SEO/AI parent after owner scope approval.
 - `reason`: Course lessons are the most important public learning surface and recent work stabilized lesson content, metadata, learning cards, admin parity, progress, and legacy field normalization. The remaining 10/10 discoverability gap is a canonical, multilingual-ready route contract with sitemap/robots/schema/AI crawler evidence.
 - `must_refresh_before_execution_if`: Refresh if `app/course`, course route metadata helpers, runtime identity aliases, `app/sitemap`, `app/robots`, site-lock/private-mode logic, supported locale decisions, Next.js i18n/metadata docs, Google SEO docs, OpenAI crawler docs, schema.org guidance, scorecard categories, or verification lanes change.
 
@@ -96,8 +96,8 @@ Return path:
 
 - Parent: [SEO And AI Discoverability 10/10 Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-16-seo-ai-discoverability-10-10-parent.md).
 - Related course parent: [Course Lesson Experience 10/10 Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-13-course-lesson-experience-10-10-parent.md).
-- Current child status: planned only.
-- Exact next step after planning PR: wait for owner to approve scope and explicitly request execution before branch implementation starts.
+- Current child status: in-progress.
+- Exact next step: implement canonical route helpers, metadata, sitemap/robots, route compatibility, structured data, and focused tests.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -164,6 +164,9 @@ Critical target categories for `10/10` claim:
 - UI system:
   - No UI redesign intended.
   - If adding a visible language switcher or route UI, use existing course/navigation primitives and screenshot handoff.
+- Session-step/workout domain:
+  - The `PoolsidePreviewPageClient` touch is limited to iframe preview measurement timer cleanup after a unit-test teardown failure; it does not change session-step content, workout semantics, export output, or the shared renderer.
+  - `docs/design/session-step-surface-contract.md` is reviewed as N/A for this cleanup because no session-step surface contract behavior is changed.
 - Testing:
   - Unit tests for route helpers and metadata/schema output.
   - Route/e2e tests for canonical path, legacy query, unknown route, sitemap, robots, private mode, and active locale behavior.
@@ -315,6 +318,39 @@ Implementation validation after owner execution approval:
   - Bing Webmaster Tools,
   - Screaming Frog or Ahrefs crawl.
 
+## Implementation Notes
+
+- Active canonical route policy:
+  - Course overview: `/en/course`.
+  - Course lesson: `/en/course/<module-slug>/<lesson-slug>`.
+  - Planned `nb` remains supported in typed locale config but non-indexable and non-routable until translated Norwegian lesson content exists.
+- Legacy compatibility:
+  - Known `/course?lesson=<canonical-or-legacy-id>` requests permanently redirect to the canonical English lesson path.
+  - Unknown lesson query values redirect to `/en/course` instead of creating indexable duplicate lesson pages.
+  - Preview URLs with `preview=1` remain query-based and noindex so admin preview flows do not become public canonicals.
+- Crawler policy:
+  - Public mode allows `OAI-SearchBot` for ChatGPT Search discoverability.
+  - Public mode explicitly disallows `GPTBot` so search discoverability and foundation-model training crawl are not conflated.
+  - Private/site-lock mode still returns an empty sitemap and `Disallow: /` for all crawlers.
+- Support and rollback notes:
+  - Diagnose course route issues from `/en/course` first, then confirm legacy `/course?lesson=` redirect behavior.
+  - If a canonical lesson URL is wrong, check `lib/course/canonical-routes.ts`, `lib/course/runtime-id-manifest.ts`, and the affected course lesson runtime ID.
+  - If indexing must be rolled back quickly, revert this PR to restore query canonicals and legacy sitemap behavior, then resubmit `/sitemap.xml` in Search Console/Bing after redeploy.
+  - External crawl/schema evidence remains optional until owner credentials are available.
+- Route/label/support sweep:
+  - Surfaces checked: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/task-briefs/planned`, `docs/task-briefs/in-progress`, and `docs/task-briefs/done`.
+  - Identifiers searched: `/course`, `lesson=`, `canonical`, `sitemap`, `robots`, `hreflang`, `OAI-SearchBot`, `GPTBot`, `Course outline`, `Open course`, `Share`, `QR`, and `resolveCanonicalCourseLessonRuntimeId`.
+  - Updated public course entry links, course share/QR defaults, admin known-lesson open links with legacy fallback, course e2e expectations, sitemap tests, and `docs/runbooks/core-flow-incident-response.md`.
+  - Left analytics route template `/course` unchanged intentionally so existing KPI aggregation is not renamed in this child.
+- Visual review evidence:
+  - Owner screenshot approval stop: N/A because this child changes route hrefs, server metadata, sitemap, robots, redirects, JSON-LD, tests, and support docs only; no visible layout, styling, labels, language switcher, print, brand, or rendered course UI changed.
+  - Screenshot comparison naming: N/A because no screenshot handoff is required; there are no `before-`, `after-`, or `reference-` artifacts for this non-visual route/metadata slice.
+
 ## Checkpoint Log
 
-- `2026-06-16 | planned | created as first child under the refreshed SEO/AI discoverability parent after owner agreed to the recommended docs-only planning package; implementation is not approved until owner explicitly says execute/build/implement this child | next: validate docs-only planning PR and wait for owner scope approval`
+- 2026-06-16 | planned | created as first child under the refreshed SEO/AI discoverability parent after owner agreed to the recommended docs-only planning package; implementation is not approved until owner explicitly says execute/build/implement this child | next: validate docs-only planning PR and wait for owner scope approval
+- 2026-06-16 | in-progress | owner said to proceed with the recommended child; created implementation branch `feat/course-lesson-canonical-seo-2026-06-16` from `main@89de17b5`, confirmed only unrelated untracked `Ja.docx` is present, and refreshed current Next.js, Google Search, Schema.org, and OpenAI crawler source constraints | next: implement canonical course/lesson route helpers, metadata, sitemap/robots, structured data, redirects/compatibility, and targeted tests
+- 2026-06-16 | in-progress | implemented canonical `/en/course` and `/en/course/<module>/<lesson>` route helpers, server metadata, JSON-LD, sitemap entries, public crawler policy, legacy query redirects, canonical share/QR/internal links, and route/support sweep updates; targeted unit tests, typecheck, lint, and targeted Playwright course/sitemap checks are green, while site-lock Playwright skipped because no `PW_SITE_LOCK_PASSWORD` or `PW_SITE_LOCK_BYPASS_TOKEN` was present | next: run final local gates including `npm run verify:pre-pr`, commit, push, open PR, then monitor CI
+- 2026-06-16 | pre-pr-green | `npm run verify:pre-pr` passed on the full lane: lint/quality gates, typecheck, 1613 unit tests, production build, perf budgets, and Playwright E2E with 110 passed / 568 skipped; focused Modal/MenuDrawer focus restoration was hardened and validated by core-flow a11y plus drawer focus tests after the first full run exposed a desktop focus race. Perf budgets passed with `/course` JS 319.8kb, LCP 112.0ms, CLS 0.000, TBT 0.0ms, worst margin 18.0%; trend recommendation was `tighten` after 10 weekly green runs, decision for this SEO PR is `hold` and prompt owner to schedule a separate bounded perf-budget tightening slice rather than expanding this canonical-route PR | next: commit, push, open PR, monitor CI, then run `npm run verify:pre-merge` before merge readiness
+- 2026-06-17 | ci-size-rework | PR #1145 `size-check` failed because the initial server/client split made GitHub count the 4k-line course page move as 9908 changed lines. Reworked the shape to keep the large client component at `app/course/page.tsx`, add small server metadata in `app/course/layout.tsx`, and move legacy `/course?lesson=` redirect compatibility into `proxy.ts`; this keeps product behavior while making the PR size match the actual scoped change | next: run targeted validation, amend, push, refresh PR body, then rerun CI
+- 2026-06-17 | unit-gate-stability | The final post-amend `verify:pre-pr` rerun exposed an unrelated `PoolsidePreviewPageClient` teardown timer that could call React state after unmount in unit tests. Added iframe preview measurement cleanup for RAF/timeouts; targeted `poolside-preview-page-client`, SEO metadata/routes, and typecheck are green | next: rerun `npm run verify:pre-pr`, amend, force-push, refresh PR body, and monitor CI

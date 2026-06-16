@@ -5,6 +5,7 @@ import ActionButton from "@/components/ActionButton";
 import PressLink from "@/components/ui/PressLink";
 import { BRAND_USAGE } from "@/lib/brand";
 import { resolveAdminRoleFromSupabase } from "@/lib/admin/server";
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 import { loadDrylandLibrarySnapshot } from "@/lib/dryland/server";
 import { loadHabitSnapshot } from "@/lib/habits/server";
 import {
@@ -66,6 +67,7 @@ export default async function HomePage() {
 
   const authHref = user ? "/my-library" : "/auth/sign-in?next=%2Fmy-library";
   const authLabel = user ? "Open My Library" : "Log in to My Library";
+  const courseOverviewHref = buildCourseOverviewPath();
 
   return (
     <SiteChrome>
@@ -99,7 +101,7 @@ export default async function HomePage() {
               title="Free course"
               subtitle="Start swimming today"
               note="No signup. No paywall. Just swim."
-              href="/course"
+              href={courseOverviewHref}
               variant="primary"
               compact
             />

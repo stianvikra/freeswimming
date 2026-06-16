@@ -95,6 +95,10 @@ async function gotoCourseLesson(page: Page, lessonId: string) {
   }
 }
 
+async function getActiveCourseLessonId(page: Page) {
+  return page.getByTestId("course-page").getAttribute("data-active-lesson-id");
+}
+
 test("course nav uses contextual actions on first and last lesson", async ({ page }, testInfo) => {
   test.skip(
     !isMobileProject(testInfo),
@@ -153,9 +157,7 @@ test("course nav uses contextual actions on first and last lesson", async ({ pag
     .first();
   await expect(lastLessonButton).toBeVisible({ timeout: 15_000 });
   await lastLessonButton.click();
-  await expect
-    .poll(() => new URL(page.url()).searchParams.get("lesson"), { timeout: 15_000 })
-    .toBe(lastLesson.id);
+  await expect.poll(() => getActiveCourseLessonId(page), { timeout: 15_000 }).toBe(lastLesson.id);
   await expect(drawer).toBeHidden();
   await waitForCoursePageToSettle(page);
 

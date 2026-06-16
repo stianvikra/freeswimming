@@ -36,12 +36,12 @@ Provide a deterministic first-response flow for production incidents on core rou
 
 ## Route Triage Matrix
 
-| Surface       | Primary failure signals                                             | First checks                                                                                |
-| ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `/`           | Blank render, nav broken, core CTA broken                           | Verify latest deployment, console/runtime errors, route load in desktop+mobile              |
-| `/course`     | Lesson load fails, progress save fails, support card actions broken | Confirm `/api/course/content` and `/api/progress/course` behavior; validate auth path       |
-| `/my-library` | Library list missing, entitlement mismatch, retry loops             | Confirm library reads + entitlement state and recent commerce changes                       |
-| `/admin`      | Access gate loops, content mutations fail, save errors              | Confirm auth role path, admin API responses (`401/403` vs `500`), schema readiness warnings |
+| Surface       | Primary failure signals                                                                                                             | First checks                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/`           | Blank render, nav broken, core CTA broken                                                                                           | Verify latest deployment, console/runtime errors, route load in desktop+mobile                          |
+| `/en/course`  | Canonical course or lesson URL fails, legacy `/course?lesson=` stops redirecting, progress save fails, support/share actions broken | Confirm `/api/course/content`, `/api/progress/course`, canonical metadata, and legacy redirect behavior |
+| `/my-library` | Library list missing, entitlement mismatch, retry loops                                                                             | Confirm library reads + entitlement state and recent commerce changes                                   |
+| `/admin`      | Access gate loops, content mutations fail, save errors                                                                              | Confirm auth role path, admin API responses (`401/403` vs `500`), schema readiness warnings             |
 
 Additional `My Library` sub-route checks:
 
