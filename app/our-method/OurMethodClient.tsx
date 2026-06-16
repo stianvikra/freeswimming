@@ -1,6 +1,7 @@
 import SiteChrome from "@/components/SiteChrome";
 import { cx } from "@/components/ui/cx";
 import PressLink from "@/components/ui/PressLink";
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 
 const METHOD_STEPS = [
   {
@@ -36,6 +37,8 @@ const METHOD_PROOF_POINTS = [
 ] as const;
 
 export default function OurMethodClient() {
+  const courseOverviewHref = buildCourseOverviewPath();
+
   return (
     <SiteChrome mobileNavMode="hidden">
       <section className="mx-auto w-full max-w-[1120px] px-4 pt-10 pb-28 sm:px-6 sm:pt-14 sm:pb-16 lg:pt-16">
@@ -63,7 +66,7 @@ export default function OurMethodClient() {
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <PressLink
                 tier="cta"
-                href="/course"
+                href={courseOverviewHref}
                 className="fs-cta-primary inline-flex min-h-12 items-center justify-center px-5 text-[15px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
               >
                 Start the free course

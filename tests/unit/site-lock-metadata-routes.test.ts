@@ -29,7 +29,24 @@ describe("site lock metadata route behavior", () => {
     const robotsPayload = robots();
     const sitemapPayload = sitemap();
 
-    expect(robotsPayload.rules).toMatchObject([{ userAgent: "*", allow: "/" }]);
+    expect(robotsPayload.rules).toEqual(
+      expect.arrayContaining([
+        { userAgent: "OAI-SearchBot", allow: "/" },
+        { userAgent: "GPTBot", disallow: "/" },
+        { userAgent: "*", allow: "/" },
+      ])
+    );
     expect(sitemapPayload.length).toBeGreaterThan(0);
+    expect(sitemapPayload).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ url: "https://freeswimming.org/en/course" }),
+        expect.objectContaining({
+          url: expect.stringContaining("https://freeswimming.org/en/course/course-module-"),
+        }),
+      ])
+    );
+    expect(sitemapPayload).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ url: "https://freeswimming.org/course" })])
+    );
   });
 });

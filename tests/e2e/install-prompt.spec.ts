@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { COURSE_MODULES } from "../../app/course/courseData";
+import { buildCourseLessonHref } from "../../lib/course/canonical-routes";
 import { resolveCanonicalCourseLessonRuntimeId } from "../../lib/course/runtime-id-manifest";
 import { isMobileProject } from "./project-guards";
 
@@ -27,7 +28,7 @@ async function stubPublishedCourseContent(page: Page) {
 }
 
 async function gotoInstallPromptLesson(page: Page) {
-  await page.goto(`/course?lesson=${encodeURIComponent(INSTALL_PROMPT_LESSON_ID)}`, {
+  await page.goto(buildCourseLessonHref(COURSE_MODULES, INSTALL_PROMPT_LESSON_ID), {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
@@ -36,6 +37,10 @@ async function gotoInstallPromptLesson(page: Page) {
     "data-active-lesson-id",
     INSTALL_PROMPT_LESSON_ID
   );
+}
+
+async function getActiveCourseLessonId(page: Page) {
+  return page.getByTestId("course-page").getAttribute("data-active-lesson-id");
 }
 
 test.beforeEach(async ({ page }) => {
@@ -321,11 +326,11 @@ async function activateMarkDoneButton(page: Page) {
 }
 
 async function goToNextLesson(page: Page) {
-  const currentLesson = new URL(page.url()).searchParams.get("lesson");
+  const currentLesson = await getActiveCourseLessonId(page);
   const currentLessonSignature = await getCurrentLessonSignature(page);
   await page.getByTestId("course-nav-right").click();
   await expect
-    .poll(() => new URL(page.url()).searchParams.get("lesson"), {
+    .poll(() => getActiveCourseLessonId(page), {
       timeout: 10_000,
     })
     .not.toBe(currentLesson);
@@ -622,7 +627,9 @@ test("guest sees free-account backup prompt after completing three lessons", asy
   expect(activeLessonId).toBeTruthy();
   await expect(createAccountLink).toHaveAttribute(
     "href",
-    `/auth/sign-in?next=%2Fcourse%3Flesson%3D${encodeURIComponent(activeLessonId ?? "")}`
+    `/auth/sign-in?next=${encodeURIComponent(
+      buildCourseLessonHref(COURSE_MODULES, activeLessonId ?? "")
+    )}`
   );
   await expect(backupPrompt.getByRole("button", { name: "Maybe later" })).toHaveClass(
     /fs-cta-secondary/

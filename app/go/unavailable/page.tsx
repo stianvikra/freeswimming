@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -109,7 +110,7 @@ export default async function GoUnavailablePage({ searchParams }: Props) {
               Retry QR link
             </Link>
           ) : null}
-          <Link href="/course" className={secondaryActionLayoutClass}>
+          <Link href={buildCourseOverviewPath()} className={secondaryActionLayoutClass}>
             Open course
           </Link>
           <Link href="/contact" className={secondaryActionLayoutClass}>

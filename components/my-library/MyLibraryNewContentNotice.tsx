@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { COURSE_MODULES } from "@/app/course/courseData";
 import { sendClientAnalyticsEvent } from "@/lib/analytics/client";
+import { buildCourseLessonHref, buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 import {
   buildMyLibrarySeenState,
   buildMyLibrarySeenStorageKey,
@@ -27,8 +29,8 @@ type NewContentSignalResponse =
     };
 
 function buildLessonHref(lessonId: string | null): string {
-  if (!lessonId) return "/course";
-  return `/course?lesson=${encodeURIComponent(lessonId)}`;
+  if (!lessonId) return buildCourseOverviewPath();
+  return buildCourseLessonHref(COURSE_MODULES, lessonId);
 }
 
 const quietButtonClass =

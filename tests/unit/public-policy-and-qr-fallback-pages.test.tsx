@@ -134,7 +134,7 @@ describe("public policy and QR fallback pages", () => {
 
     const courseLink = screen.getByRole("link", { name: "Open course" });
     const supportLink = screen.getByRole("link", { name: "Contact support" });
-    expect(courseLink).toHaveAttribute("href", "/course");
+    expect(courseLink).toHaveAttribute("href", "/en/course");
     expect(supportLink).toHaveAttribute("href", "/contact");
     expect(courseLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
     expect(supportLink).toHaveClass("fs-cta-secondary", "w-full", "sm:w-auto");
@@ -155,7 +155,7 @@ describe("public policy and QR fallback pages", () => {
       screen.getByRole("heading", { name: "We could not load this QR link right now" })
     ).toBeVisible();
     expect(screen.queryByRole("link", { name: "Retry QR link" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open course" })).toHaveAttribute("href", "/course");
+    expect(screen.getByRole("link", { name: "Open course" })).toHaveAttribute("href", "/en/course");
     expect(screen.getByRole("link", { name: "Contact support" })).toHaveAttribute(
       "href",
       "/contact"

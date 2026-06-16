@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { COURSE_MODULES } from "@/app/course/courseData";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import AdminContextQrPanel from "@/components/admin/AdminContextQrPanel";
@@ -38,6 +39,7 @@ import {
 } from "@/lib/admin/course-workspace";
 import type { AdminCategoryRow } from "@/lib/admin/categories";
 import { buildCoursePreviewHref, resolveCoursePreviewModeFromStatus } from "@/lib/course/preview";
+import { buildCourseLessonHref } from "@/lib/course/canonical-routes";
 import { resolveCourseLessonRuntimeId } from "@/lib/course/runtime-identity";
 import {
   resolveGuideDrillRuntimeId,
@@ -1166,7 +1168,11 @@ function buildLessonBodyPayload(
 
 function lessonOpenHref(item: AdminContentItemRow): string {
   const lessonId = resolveCourseLessonRuntimeId(item.body, item.slug) ?? item.slug.trim();
-  return `/course?lesson=${encodeURIComponent(lessonId)}`;
+  return buildCourseLessonHref(COURSE_MODULES, lessonId);
+}
+
+function courseLessonOpenHref(lessonId: string): string {
+  return buildCourseLessonHref(COURSE_MODULES, lessonId);
 }
 
 function lessonPreviewHref(item: AdminContentItemRow): string {
@@ -3674,9 +3680,7 @@ export default function AdminContentManager() {
                                         </p>
                                         <div className="flex flex-wrap items-center gap-2">
                                           <a
-                                            href={`/course?lesson=${encodeURIComponent(
-                                              lesson.runtimeLessonId
-                                            )}`}
+                                            href={courseLessonOpenHref(lesson.runtimeLessonId)}
                                             target="_blank"
                                             rel="noreferrer"
                                             className={compactSecondaryActionClass}
@@ -4018,7 +4022,7 @@ export default function AdminContentManager() {
                             Edit lesson
                           </button>
                           <a
-                            href={`/course?lesson=${encodeURIComponent(lesson.runtimeLessonId)}`}
+                            href={courseLessonOpenHref(lesson.runtimeLessonId)}
                             target="_blank"
                             rel="noreferrer"
                             className={compactSecondaryActionClass}

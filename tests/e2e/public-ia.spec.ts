@@ -30,7 +30,7 @@ test.describe("public route IA", () => {
     await expect(page.getByText("A free, step-by-step freestyle method for adults")).toBeVisible();
     await expect(page.getByRole("link", { name: "Start the free course" })).toHaveAttribute(
       "href",
-      "/course"
+      "/en/course"
     );
     await expect(page.getByRole("link", { name: "Ask a question" })).toHaveAttribute(
       "href",

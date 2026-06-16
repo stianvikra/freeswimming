@@ -36,9 +36,12 @@ test("course lesson pass criteria drive header and menu progress state", async (
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
 
   await page.goto("/course?lesson=mod1-l1");
-  await page.waitForURL(/\/course\?lesson=intro-course--welcome-course-structure$/, {
-    timeout: 15_000,
-  });
+  await page.waitForURL(
+    /\/en\/course\/course-module-introduction-to-the-course\/course-lesson-introduction-to-the-course-welcome-course-structure$/,
+    {
+      timeout: 15_000,
+    }
+  );
 
   await expect(page.getByText("Pass criteria", { exact: true })).toBeVisible();
   await expect(page.getByText("Loading pass criteria...")).toHaveCount(0);

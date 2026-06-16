@@ -1,7 +1,7 @@
 // components/SiteChrome.tsx
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import AdminContextNotesPanel from "@/components/admin/AdminContextNotesPanel";
 import BrandImage from "@/components/brand/BrandImage";
@@ -18,6 +18,7 @@ import {
   supportsAdminPageNotesSurface,
 } from "@/lib/admin/page-note-context";
 import { BRAND_USAGE } from "@/lib/brand";
+import { buildCourseOverviewPath } from "@/lib/course/canonical-routes";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type CustomMenu = {
@@ -79,7 +80,12 @@ function getDefaultMobileNavItems({
   microParam,
 }: DefaultMobileNavProps & { microParam: string }): MobileSegmentedNavItem[] {
   const isHomeRoute = pathname === "/";
-  const isCourseRoute = pathname === "/course" || pathname.startsWith("/course");
+  const courseOverviewPath = buildCourseOverviewPath();
+  const isCourseRoute =
+    pathname === "/course" ||
+    pathname.startsWith("/course") ||
+    pathname === courseOverviewPath ||
+    pathname.startsWith(`${courseOverviewPath}/`);
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isLibraryRoute = pathname === "/my-library" || pathname.startsWith("/my-library/");
@@ -114,7 +120,7 @@ function getDefaultMobileNavItems({
 
   const courseNavItem = linkMobileNavItem({
     id: "course",
-    href: "/course",
+    href: courseOverviewPath,
     label: "Course",
     testId: "mobile-nav-course",
     active: isCourseRoute,
@@ -318,6 +324,7 @@ export default function SiteChrome({
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [hasAuthSession, setHasAuthSession] = useState(false);
   const [dashboardVisible, setDashboardVisible] = useState(false);
+  const previousMenuOpenRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -402,6 +409,30 @@ export default function SiteChrome({
   const [drawerView, setDrawerView] = useState<"main" | "course">("main");
 
   const isMenuOpen = customMenu ? customMenu.isOpen : menuOpen;
+
+  useEffect(() => {
+    const wasOpen = previousMenuOpenRef.current;
+    previousMenuOpenRef.current = isMenuOpen;
+    if (!wasOpen || isMenuOpen) return;
+
+    const focusMenuToggle = () => {
+      const menuToggle = document.querySelector<HTMLButtonElement>(
+        '[data-testid="header-menu-toggle"]'
+      );
+      try {
+        menuToggle?.focus({ preventScroll: true });
+      } catch {
+        menuToggle?.focus();
+      }
+    };
+
+    const animationFrame = requestAnimationFrame(() => {
+      focusMenuToggle();
+      window.setTimeout(focusMenuToggle, 50);
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isMenuOpen]);
 
   const isHomeRoute = pathname === "/";
   const isAuthRoute = pathname === "/auth/sign-in" || pathname.startsWith("/auth/");

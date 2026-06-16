@@ -20,6 +20,7 @@ describe("Supabase egress cache contract", () => {
     const source = readRepoFile("app/course/page.tsx");
 
     expect(source).toContain('previewEnabled ? "no-store" : "force-cache"');
+    expect(source).toContain("cache: requestCache");
   });
 
   it("uses cached public catalog overrides on the plans page", () => {

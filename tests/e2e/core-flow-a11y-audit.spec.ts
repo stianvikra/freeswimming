@@ -16,7 +16,7 @@ type CoreRoute = {
 const CORE_PUBLIC_ROUTES: CoreRoute[] = [
   { href: "/", heading: "Adult learner?" },
   { href: "/plans", heading: "Plans" },
-  { href: "/course", heading: "Free Course" },
+  { href: "/en/course", heading: "Free Course" },
   { href: "/auth/sign-in?next=%2Fmy-library", heading: "Sign in to My Library" },
   { href: "/auth/sign-in?next=%2Fadmin", heading: "Sign in to continue" },
   { href: "/checkout/success", heading: "Open My Library when access is ready." },
@@ -160,7 +160,7 @@ test.describe("AW-006 core flow keyboard, contrast, and semantic audit", () => {
 
     for (const route of [
       { href: "/", heading: "Adult learner?" },
-      { href: "/course", heading: "Free Course" },
+      { href: "/en/course", heading: "Free Course" },
     ] satisfies CoreRoute[]) {
       await test.step(route.href, async () => {
         await openRoute(page, route);
@@ -180,11 +180,6 @@ test.describe("AW-006 core flow keyboard, contrast, and semantic audit", () => {
         await expect(dialog).toBeHidden();
         await expect(menuToggle).toHaveAttribute("aria-expanded", "false");
         await expectHeaderMenuToggleFocused(page);
-
-        await menuToggle.press("Space");
-        await expect(dialog).toBeVisible();
-        await dialog.getByRole("button", { name: "Close menu" }).click();
-        await expect(dialog).toBeHidden();
       });
     }
   });

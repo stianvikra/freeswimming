@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import manifest from "@/app/manifest";
 import { COURSE_LESSONS_FLAT } from "@/app/course/courseData";
-import { buildCoursePageMetadata, resolveCoursePageMetadata } from "@/app/course/metadata";
+import {
+  buildCoursePageMetadata,
+  buildCourseStructuredData,
+  resolveCoursePageMetadata,
+} from "@/app/course/metadata";
+
+const WELCOME_LESSON_CANONICAL_PATH =
+  "/en/course/course-module-introduction-to-the-course/course-lesson-introduction-to-the-course-welcome-course-structure";
 
 describe("course page metadata", () => {
   it("builds stable overview metadata for /course", () => {
@@ -12,11 +19,15 @@ describe("course page metadata", () => {
     expect(resolved).toMatchObject({
       title: "Freestyle Course",
       description: "Free, step-by-step freestyle swimming lessons for adult learners.",
-      canonicalPath: "/course",
+      canonicalPath: "/en/course",
       lesson: null,
       previewEnabled: false,
     });
-    expect(metadata.alternates?.canonical).toBe("/course");
+    expect(metadata.alternates?.canonical).toBe("/en/course");
+    expect(metadata.alternates?.languages).toMatchObject({
+      en: "/en/course",
+      "x-default": "/en/course",
+    });
     expect(metadata.robots).toBeUndefined();
   });
 
@@ -30,11 +41,12 @@ describe("course page metadata", () => {
     expect(resolved.lesson?.id).toBe(lesson?.id);
     expect(resolved.title).toBe(`${lesson?.title} - Freestyle Course`);
     expect(resolved.description).toContain(lesson?.goal);
-    expect(metadata.alternates?.canonical).toBe(`/course?lesson=${encodeURIComponent(lesson!.id)}`);
+    expect(metadata.alternates?.canonical).toBe(resolved.canonicalPath);
+    expect(resolved.canonicalPath).toMatch(/^\/en\/course\/course-module-/);
     expect(metadata.openGraph).toMatchObject({
       title: `${lesson?.title} - Freestyle Course`,
       description: resolved.description,
-      url: `/course?lesson=${encodeURIComponent(lesson!.id)}`,
+      url: resolved.canonicalPath,
     });
     expect(metadata.twitter).toMatchObject({
       card: "summary",
@@ -47,7 +59,7 @@ describe("course page metadata", () => {
     const resolved = resolveCoursePageMetadata({ lessonParam: "mod1-l1" });
 
     expect(resolved.lesson?.id).toBe("intro-course--welcome-course-structure");
-    expect(resolved.canonicalPath).toBe("/course?lesson=intro-course--welcome-course-structure");
+    expect(resolved.canonicalPath).toBe(WELCOME_LESSON_CANONICAL_PATH);
   });
 
   it("falls back to the course overview for unknown lesson values", () => {
@@ -55,7 +67,7 @@ describe("course page metadata", () => {
 
     expect(resolved.lesson).toBeNull();
     expect(resolved.title).toBe("Freestyle Course");
-    expect(resolved.canonicalPath).toBe("/course");
+    expect(resolved.canonicalPath).toBe("/en/course");
   });
 
   it("keeps preview URLs out of indexing metadata", () => {
@@ -68,8 +80,29 @@ describe("course page metadata", () => {
       index: false,
       follow: false,
     });
-    expect(metadata.alternates?.canonical).toBe(
-      "/course?lesson=intro-course--welcome-course-structure"
+    expect(metadata.alternates?.canonical).toBe(WELCOME_LESSON_CANONICAL_PATH);
+  });
+
+  it("builds JSON-LD from public course lesson data", () => {
+    const structuredData = buildCourseStructuredData({
+      lessonParam: "mod1-l1",
+    }) as { "@graph": Array<Record<string, unknown>> };
+
+    expect(structuredData["@graph"]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          "@type": "LearningResource",
+          "@id": `https://freeswimming.org${WELCOME_LESSON_CANONICAL_PATH}#lesson`,
+          name: "Welcome & Course Structure",
+          inLanguage: "en",
+          isPartOf: {
+            "@id": "https://freeswimming.org/en/course#course",
+          },
+        }),
+        expect.objectContaining({
+          "@type": "BreadcrumbList",
+        }),
+      ])
     );
   });
 

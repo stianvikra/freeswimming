@@ -232,7 +232,12 @@ export default function MenuDrawer({
   }
 
   return (
-    <Modal open={open} onClose={onClose} ariaLabel="Navigation menu">
+    <Modal
+      open={open}
+      onClose={onClose}
+      ariaLabel="Navigation menu"
+      restoreFocusSelector='[data-testid="header-menu-toggle"]'
+    >
       <div className="flex h-full flex-col overflow-hidden rounded-bl-[var(--fs-radius-panel)] bg-white/94">
         {/* Header */}
         <div className="px-5 pt-5">
