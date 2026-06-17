@@ -35,6 +35,8 @@ describe("analytics events", () => {
     expect(isAnalyticsEventName("habit_catch_up_day_left_missed")).toBe(true);
     expect(isAnalyticsEventName("habit_catch_up_reset_started")).toBe(true);
     expect(isAnalyticsEventName("habit_catch_up_reset_cancelled")).toBe(true);
+    expect(isAnalyticsEventName("habit_absence_review_day_marked")).toBe(true);
+    expect(isAnalyticsEventName("habit_absence_review_finished")).toBe(true);
     expect(isAnalyticsEventName("course_lesson_viewed")).toBe(true);
     expect(isAnalyticsEventName("course_lesson_completed")).toBe(true);
     expect(isAnalyticsEventName("course_lesson_continued")).toBe(true);

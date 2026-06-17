@@ -48,6 +48,8 @@ export const ANALYTICS_EVENT_NAMES = [
   "habit_catch_up_day_left_missed",
   "habit_catch_up_reset_started",
   "habit_catch_up_reset_cancelled",
+  "habit_absence_review_day_marked",
+  "habit_absence_review_finished",
   "micro_session_habit_link_created",
   "micro_session_habit_link_status_updated",
   "workout_builder_started",

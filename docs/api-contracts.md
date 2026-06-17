@@ -1093,8 +1093,8 @@ environment allowlist role from a profile-backed role.
 ```
 
 - `checkInDate` is the habit history date being written.
-- `selectedDate` is optional and controls which snapshot the route returns after the write; catch-up writes past days with `checkInDate` while keeping the UI on Today with `selectedDate`.
-- `actionSource` is optional and currently supports `catch_up` for privacy-safe diagnostics; unknown values are treated as normal Habits writes.
+- `selectedDate` is optional and controls which snapshot the route returns after the write; historical corrections can write a past `checkInDate` while returning the caller's selected snapshot.
+- `actionSource` is optional and still accepts legacy/diagnostic values such as `catch_up`; the current absence review UI does not use it because `Done with this day` / `Close review` write no habit history. Unknown values are treated as normal Habits writes.
 - `status: "skipped"` stores an intentional `Rest day`; it is not counted as done or missed.
 - Quit slips are explicit `valueBoolean: false` writes for `habit_mode = quit`; no slip or miss row is written automatically at day change.
 - Timed source updates use `timerSeconds` and/or `manualMinutes` and cannot be mixed with legacy `valueNumeric`.

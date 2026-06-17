@@ -228,7 +228,11 @@ function buildOpenBuildShortStreakSnapshot(): HabitSnapshot {
   };
 }
 
-function buildCatchUpRecoverySnapshot(options?: { secondHabit?: boolean }): HabitSnapshot {
+function buildCatchUpRecoverySnapshot(options?: {
+  secondHabit?: boolean;
+  selectedDate?: string;
+}): HabitSnapshot {
+  const selectedDate = options?.selectedDate ?? "2026-05-10";
   const primaryHabit = buildHabitDefinitionView(
     buildHabitRow({
       title: "Read 10 pages",
@@ -259,11 +263,11 @@ function buildCatchUpRecoverySnapshot(options?: { secondHabit?: boolean }): Habi
     schemaReady: true,
     resetEventsReady: true,
     loadError: null,
-    selectedDate: "2026-05-10",
+    selectedDate,
     activeHabits,
     archivedHabits: [],
-    daySummary: buildHabitDaySummary(activeHabits, checkIns, "2026-05-10"),
-    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, "2026-05-10"),
+    daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
+    weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
     motivationSummary: buildHabitMotivationSummary(activeHabits, checkIns, "2026-05-10"),
     motivationSummaries: buildMotivationRangeSummaries(activeHabits, checkIns, "2026-05-10"),
   };
@@ -1174,7 +1178,8 @@ describe("HabitPerfectDayHub", () => {
       "aria-label",
       "Habits calendar Week 19, 2026 May 4 - May 10"
     );
-    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("May 10");
+    expect(screen.getByTestId("habits-selected-date-context")).not.toHaveTextContent("Today ·");
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-03"
@@ -1315,6 +1320,9 @@ describe("HabitPerfectDayHub", () => {
       expect(screen.getByText("May 3, 2026")).toBeVisible();
       expect(screen.getByText("History")).toBeVisible();
       expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sun · May 3");
+      expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
+        "This day: 0/0 · Sun · May 3"
+      );
       expect(screen.getByTestId("habits-week-overview-summary")).toHaveAttribute(
         "aria-label",
         "Habits calendar Week 18, 2026 Apr 27 - May 3"
@@ -1378,6 +1386,9 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByText("History")).toBeVisible();
     expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sat · May 9");
+    expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
+      "This day: 0/1 · Sat · May 9"
+    );
     expect(screen.queryByRole("button", { name: "Add habit" })).toBeNull();
     expect(screen.getByRole("button", { name: "Mark done" })).toBeVisible();
 
@@ -1398,42 +1409,70 @@ describe("HabitPerfectDayHub", () => {
     });
   });
 
-  it("shows catch-up recovery only for stale tracked days and can leave missed without writes", async () => {
-    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
+  it("shows a date-first absence review list without habit cleanup panels", async () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot()}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
 
     const assistant = screen.getByTestId("habits-catch-up-assistant");
-    expect(within(assistant).getByRole("heading", { name: "5 missed days" })).toBeVisible();
+    expect(within(assistant).getByRole("heading", { name: "5 days to check" })).toBeVisible();
     expect(
       within(assistant).getByText(
-        "Nothing was marked failed automatically. Clean up past days or leave them missed."
+        "Nothing was marked failed automatically. Open each date, edit what happened, then mark the day checked."
       )
     ).toBeVisible();
-    expect(within(assistant).getByText("5 days")).toBeVisible();
+    expect(within(assistant).getByTestId("habits-absence-review-date-list")).toBeVisible();
+    expect(within(assistant).getByText("0 of 5 checked")).toBeVisible();
     expect(
-      within(assistant).getByText("1 habit needs cleanup. One past day at a time.")
-    ).toBeVisible();
-    expect(within(assistant).queryByRole("button", { name: "Done" })).toBeNull();
-
-    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
-    const habitCard = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
-    expect(habitCard.contains(habitPanel)).toBe(true);
-    expect(within(habitCard).getByRole("button", { name: "Done today" })).toBeVisible();
-    expect(within(habitPanel).getByText("5 missed days")).toBeVisible();
-    expect(within(habitPanel).getByText("Next: May 5")).toBeVisible();
-    expect(within(habitPanel).queryByText("May 6")).toBeNull();
-    expect(within(habitPanel).queryByRole("button", { name: "Done" })).toBeNull();
-    expect(within(habitPanel).queryByRole("button", { name: "Rest day" })).toBeNull();
-
-    fireEvent.click(within(assistant).getByRole("button", { name: "Clean up missed days" }));
-
-    const reviewPanel = await screen.findByTestId(
-      "habit-catch-up-review-11111111-1111-4111-8111-111111111111"
-    );
-    expect(within(reviewPanel).getByText("5 left")).toBeVisible();
-    expect(within(reviewPanel).getByRole("link", { name: "Open day" })).toHaveAttribute(
+      within(assistant).getByTestId("habits-absence-review-date-2026-05-05")
+    ).toHaveTextContent("Check");
+    expect(
+      within(assistant).getByTestId("habits-absence-review-date-2026-05-05")
+    ).toHaveTextContent("1 habit");
+    expect(within(assistant).getByRole("link", { name: "Edit Tue May 5" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-05"
     );
+    expect(within(assistant).queryByRole("link", { name: "Go to date" })).toBeNull();
+    expect(within(assistant).queryByText("Current date")).toBeNull();
+    expect(within(assistant).queryByText("Needs review")).toBeNull();
+    expect(within(assistant).queryByText("Reviewed")).toBeNull();
+    expect(within(assistant).getByRole("link", { name: "Edit Tue May 5" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-05"
+    );
+    expect(within(assistant).getByRole("link", { name: "Edit Wed May 6" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-06"
+    );
+    expect(within(assistant).getByRole("link", { name: "Edit Thu May 7" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-07"
+    );
+    expect(within(assistant).getByRole("link", { name: "Edit Fri May 8" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-08"
+    );
+    expect(within(assistant).getByRole("link", { name: "Edit Sat May 9" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-09"
+    );
+    expect(within(assistant).queryByRole("button", { name: "Done with this day" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Close review" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Mark day reviewed" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Mark done" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Rest day" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Leave missed" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Restart stats" })).toBeNull();
+
+    const habitCard = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
+    expect(screen.queryByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111")).toBeNull();
+    expect(within(habitCard).getByRole("button", { name: "Mark done" })).toBeVisible();
+
     await waitFor(() => {
       expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
         "habit_catch_up_assistant_shown",
@@ -1444,147 +1483,130 @@ describe("HabitPerfectDayHub", () => {
           catchUpHabitCount: 1,
           oldestCatchUpDate: "2026-05-05",
           newestCatchUpDate: "2026-05-09",
-          markDoneEntryCount: 5,
+          reviewMode: "date_first",
         })
       );
     });
-
-    fireEvent.click(within(reviewPanel).getByRole("button", { name: "Leave missed" }));
-
-    expect(fetch).not.toHaveBeenCalled();
-    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
-      "habit_catch_up_day_left_missed",
-      expect.objectContaining({
-        selectedDate: "2026-05-10",
-        catchUpDate: "2026-05-05",
-        habitMode: "build",
-        habitType: "binary",
-        canMarkDone: true,
-      })
-    );
-    expect(await screen.findByTestId("habits-action-success")).toHaveTextContent(
-      "Left Read 10 pages missed for May 5. No history was changed."
-    );
-    expect(within(habitPanel).queryByText("May 5")).toBeNull();
-    expect(within(habitPanel).getByText("Next: May 6")).toBeVisible();
-    expect(within(habitPanel).getByText("May 6")).toBeVisible();
-    expect(within(habitPanel).getByText("4 left")).toBeVisible();
   });
 
-  it("saves catch-up Done against the missed day while keeping Today selected", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        snapshot: buildSnapshot({ withHabit: true, completed: true }),
-      }),
-    } as Response);
+  it("excludes the current day from the absence review list", () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-09" })}
+        todayDate="2026-05-09"
+        userId="user-1"
+      />
+    );
 
-    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
+    const assistant = screen.getByTestId("habits-catch-up-assistant");
+    expect(within(assistant).getByRole("heading", { name: "4 days to check" })).toBeVisible();
+    expect(within(assistant).getByText("0 of 4 checked")).toBeVisible();
+    expect(within(assistant).queryByTestId("habits-absence-review-date-2026-05-09")).toBeNull();
+    expect(within(assistant).getByRole("link", { name: "Edit Fri May 8" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-08"
+    );
+  });
 
-    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
-    fireEvent.click(within(habitPanel).getByRole("button", { name: "Clean up" }));
-    fireEvent.click(within(habitPanel).getByRole("button", { name: "Done" }));
+  it("checks the selected review date without writing habit history and moves to the next date", async () => {
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(fetch).toHaveBeenCalledWith(
-      "/api/my-library/habits/check-ins",
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    expect(within(panel).queryByRole("heading", { name: "Check this day" })).toBeNull();
+    expect(within(panel).queryByRole("heading", { name: "May 5, 2026" })).toBeNull();
+    expect(within(panel).queryByText("Use the habit controls above, then continue.")).toBeNull();
+    expect(within(panel).queryByRole("link", { name: "Back to review list" })).toBeNull();
+    expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
+      "Check"
+    );
+    expect(within(panel).queryByText("Current date")).toBeNull();
+    expect(within(panel).queryByText("Needs review")).toBeNull();
+    expect(within(panel).queryByText("Reviewed")).toBeNull();
+    expect(within(panel).getByRole("link", { name: "Edit Wed May 6" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-06"
+    );
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Done with this day" }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
+      "Checked"
+    );
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-06");
+    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
+      "habit_absence_review_day_marked",
       expect.objectContaining({
-        method: "POST",
+        selectedDate: "2026-05-05",
+        reviewDate: "2026-05-05",
+        reviewMode: "date_first",
       })
     );
-    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
-      habitId: string;
-      checkInDate: string;
-      selectedDate: string;
-      actionSource: string;
-      valueBoolean: boolean;
-    };
-    expect(body).toMatchObject({
-      habitId: "11111111-1111-4111-8111-111111111111",
-      checkInDate: "2026-05-05",
-      selectedDate: "2026-05-10",
-      actionSource: "catch_up",
-      valueBoolean: true,
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("freeswimming:habits:v1:absence-review:user-1:2026-05-10") ??
+          "{}"
+      )
+    ).toMatchObject({
+      version: 1,
+      reviewedDates: ["2026-05-05"],
     });
   });
 
-  it("keeps the active catch-up date in review when saving fails", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      json: async () => ({
-        ok: false,
-        error: "Could not save catch-up completion right now.",
-      }),
-    } as Response);
-
-    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
-
-    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
-    fireEvent.click(within(habitPanel).getByRole("button", { name: "Clean up" }));
-    fireEvent.click(within(habitPanel).getByRole("button", { name: "Done" }));
-
-    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
-      "Could not save catch-up completion right now."
+  it("closes review from the last unchecked date without writing habit history", async () => {
+    window.localStorage.setItem(
+      "freeswimming:habits:v1:absence-review:user-1:2026-05-10",
+      JSON.stringify({
+        version: 1,
+        reviewedDates: ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08"],
+      })
     );
-    expect(within(habitPanel).getByText("May 5")).toBeVisible();
-    expect(within(habitPanel).queryByText("May 6")).toBeNull();
-  });
-
-  it("restarts catch-up Motivation stats with one server reset per active habit", async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        snapshot: buildCatchUpRecoverySnapshot({ secondHabit: true }),
-      }),
-    } as Response);
 
     render(
-      <HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot({ secondHabit: true })} />
+      <HabitPerfectDayHub
+        initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-09" })}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
-    expect(screen.getByTestId("habits-catch-up-reset-confirm")).toHaveTextContent(
-      "Earlier check-ins stay saved"
-    );
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    await waitFor(() => {
+      expect(within(panel).getByTestId("habits-absence-review-date-2026-05-08")).toHaveTextContent(
+        "Checked"
+      );
+    });
+    expect(within(panel).queryByRole("button", { name: "Done with this day" })).toBeNull();
+
+    const closeButton = within(panel).getByRole("button", { name: "Close review" });
+    expect(closeButton).toBeVisible();
+    fireEvent.click(closeButton);
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-10");
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("freeswimming:habits:v1:absence-review:user-1:2026-05-10") ??
+          "{}"
+      )
+    ).toMatchObject({
+      version: 1,
+      reviewedDates: ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"],
+    });
     expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
-      "habit_catch_up_reset_started",
+      "habit_absence_review_finished",
       expect.objectContaining({
-        selectedDate: "2026-05-10",
-        catchUpDayCount: 6,
-        catchUpEntryCount: 11,
-        catchUpHabitCount: 2,
-        activeHabitCount: 2,
+        selectedDate: "2026-05-09",
+        reviewMode: "date_first",
+        reviewDateCount: 5,
       })
     );
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
-      "habit_catch_up_reset_cancelled",
-      expect.objectContaining({
-        selectedDate: "2026-05-10",
-        catchUpDayCount: 6,
-        catchUpEntryCount: 11,
-        catchUpHabitCount: 2,
-        activeHabitCount: 2,
-      })
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
-    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
-
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
-    expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
-      "/api/my-library/habits/11111111-1111-4111-8111-111111111111/reset-stats",
-      "/api/my-library/habits/99999999-9999-4999-8999-999999999999/reset-stats",
-    ]);
-    for (const [, init] of vi.mocked(fetch).mock.calls) {
-      expect(JSON.parse(init?.body as string)).toMatchObject({
-        effectiveDate: "2026-05-10",
-        selectedDate: "2026-05-10",
-        actionSource: "catch_up",
-      });
-    }
   });
 
   it("uses My Library token fields and choices in the Add habit form", () => {
@@ -3071,8 +3093,11 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
-    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Today · May 10");
-    expect(screen.getByText("Today: 1/1")).toBeVisible();
+    expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("May 10");
+    expect(screen.getByTestId("habits-selected-date-context")).not.toHaveTextContent("Today ·");
+    expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
+      "Today: 1/1 · May 10"
+    );
     expect(screen.getByText("Today: 1 glass · Goal: 1 glass")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add habit" })).toHaveClass("w-full");
     expect(screen.queryByTestId("habits-week-overview-mobile")).toBeNull();
