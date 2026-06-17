@@ -1114,7 +1114,7 @@ environment allowlist role from a profile-backed role.
 - Reset stats creates a server-canonical `habit_motivation_resets` boundary for one active habit and never deletes `habit_check_ins`.
 - Catch-up all-habit recovery calls this route once per active habit so Motivation can restart from Today while complete history remains available in Calendar Comparison.
 - Source-backed Micro Session Habits still receive Habit credit only from the Micro Session owner-scoped source path; Habits does not expose manual `Mark done` for those linked rows.
-- Catch-up client analytics use `habit_catch_up_assistant_shown`, `habit_catch_up_day_reviewed`, `habit_catch_up_day_left_missed`, `habit_catch_up_reset_started`, and `habit_catch_up_reset_cancelled`; the prompt summary includes habit/date counts, and each habit card owns its own catch-up date actions. Saved done/rest/slip/reset writes continue through the existing server events with `actionSource: "catch_up"` when recovery initiated them.
+- Catch-up client analytics use `habit_catch_up_assistant_shown`, `habit_catch_up_day_reviewed`, `habit_catch_up_day_left_missed`, `habit_catch_up_reset_started`, and `habit_catch_up_reset_cancelled`; the prompt summary includes habit/day counts, each habit card shows a compact next-day cleanup flow, and only one missed day is actionable at a time. Saved done/rest/slip/reset writes continue through the existing server events with `actionSource: "catch_up"` when recovery initiated them.
 
 ## `GET|POST /api/progress/guide`
 

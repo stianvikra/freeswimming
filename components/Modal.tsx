@@ -86,8 +86,8 @@ export default function Modal({
   }, [visible]);
 
   useEffect(() => {
-    clearScheduledRestoreFocus();
     if (!visible) return;
+    clearScheduledRestoreFocus();
 
     const panel = panelRef.current;
     if (!panel) return;
