@@ -14,6 +14,8 @@ import {
 
 const WELCOME_PATH =
   "/en/course/course-module-introduction-to-the-course/course-lesson-introduction-to-the-course-welcome-course-structure";
+const BODY_POSITION_BACK_PATH =
+  "/en/course/course-module-body-position-drills/course-lesson-body-position-drills-body-position-back";
 
 describe("course canonical routes", () => {
   it("builds canonical overview and lesson paths for active English content", () => {
@@ -43,6 +45,22 @@ describe("course canonical routes", () => {
     if (resolution.status === "redirect") {
       expect(resolution.route.path).toBe(WELCOME_PATH);
     }
+  });
+
+  it("redirects known deprecated course slugs to the current canonical lesson", () => {
+    const resolution = resolveCourseLessonRouteBySlugs(COURSE_MODULES, {
+      locale: "en",
+      moduleSlug: "course-module-breathing-and-floating",
+      lessonSlug: "course-lesson-breathing-and-floating-floating-back",
+    });
+
+    expect(resolution.status).toBe("redirect");
+    if (resolution.status === "redirect") {
+      expect(resolution.route.path).toBe(BODY_POSITION_BACK_PATH);
+    }
+    expect(buildCourseLessonHref(COURSE_MODULES, "breathing-and-floating--floating-back")).toBe(
+      BODY_POSITION_BACK_PATH
+    );
   });
 
   it("fails closed for unknown slugs and keeps legacy query fallback for unknown ids", () => {

@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-06-16`
-- `updated`: `2026-06-16`
+- `updated`: `2026-06-17`
 - `execution_mode`: `plan-only parent; implementation only through explicit child briefs`
 - `supersedes_for_planning`: [SEO AI Discoverability And Admin SEO Controls](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-02-18-seo-ai-discoverability-and-admin-seo-controls.md)
 
@@ -102,12 +102,12 @@ Forward-compatibility-intent: nye offentlige routes, kursleksjoner og senere spr
 
 ## Child Brief Plan
 
-| Child                                                                                                                                                                                                                        | Status    | Purpose                                                                                                                                             |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Course Lesson Canonical Routes And Multilingual AI-Discoverable SEO V1](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-16-course-lesson-canonical-routes-and-multilingual-ai-discoverable-seo-v1-10-10.md) | `planned` | First implementation slice for route/canonical/i18n-ready course lesson SEO.                                                                        |
-| Public SEO Crawl Evidence And Tooling V1                                                                                                                                                                                     | `future`  | Add repeatable crawl evidence using Search Console, Rich Results, PageSpeed, Screaming Frog/Ahrefs, or local equivalent after route implementation. |
-| Admin SEO Controls And Redirect Governance V1                                                                                                                                                                                | `future`  | Refresh the older admin SEO controls scope after public route contracts are stable and admin content foundations are current.                       |
-| SEO Distribution Measurement And Search Console Ops V1                                                                                                                                                                       | `future`  | Establish monthly measurement across Search Console, Bing Webmaster Tools, AI visibility, crawl errors, and content opportunity review.             |
+| Child                                                                                                                                                                                                                     | Status        | Purpose                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Course Lesson Canonical Routes And Multilingual AI-Discoverable SEO V1](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-06-16-course-lesson-canonical-routes-and-multilingual-ai-discoverable-seo-v1-10-10.md) | `done`        | Shipped route/canonical/i18n-ready course lesson SEO through PR `#1145` and closeout PR `#1146`.                                                         |
+| [Public SEO Crawl Evidence And Tooling V1](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-06-17-public-seo-crawl-evidence-and-tooling-v1-10-10.md)                                                      | `in-progress` | Add repeatable crawl evidence using Search Console, Rich Results, PageSpeed, IndexNow/Bing-style checks, or local equivalent after route implementation. |
+| Admin SEO Controls And Redirect Governance V1                                                                                                                                                                             | `future`      | Refresh the older admin SEO controls scope after public route contracts are stable and admin content foundations are current.                            |
+| SEO Distribution Measurement And Search Console Ops V1                                                                                                                                                                    | `future`      | Establish monthly measurement across Search Console, Bing Webmaster Tools, AI visibility, crawl errors, and content opportunity review.                  |
 
 ## Codex Skill + Stack Readiness Radar
 
@@ -132,9 +132,10 @@ Systemic findings:
 Return path:
 
 - Current parent: this brief.
-- First planned child: [Course Lesson Canonical Routes And Multilingual AI-Discoverable SEO V1](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-06-16-course-lesson-canonical-routes-and-multilingual-ai-discoverable-seo-v1-10-10.md).
+- Completed first child: [Course Lesson Canonical Routes And Multilingual AI-Discoverable SEO V1](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-06-16-course-lesson-canonical-routes-and-multilingual-ai-discoverable-seo-v1-10-10.md).
+- Active child: [Public SEO Crawl Evidence And Tooling V1](/Users/stianvikra/freeswimming/docs/task-briefs/in-progress/2026-06-17-public-seo-crawl-evidence-and-tooling-v1-10-10.md).
 - Prior related work: Course lesson experience, metadata, learning cards, and legacy field cleanup are done through PRs `#1140`, `#1142`, and closeout PR `#1143`.
-- Exact next planning step: owner reviews this parent and first child scope, then explicitly says execute/build/implement the child before a runtime implementation branch starts.
+- Exact next step: complete the crawl evidence child on `feat/public-seo-crawl-evidence-2026-06-17`, then return here for the next SEO/AI child decision.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -302,3 +303,5 @@ Critical target categories for the parent 10/10 claim gate:
 ## Checkpoint Log
 
 - `2026-06-16 | planned | created refreshed SEO/AI discoverability parent from clean synced main@45aaecad after owner approved a docs-only parent + first child planning package; runtime implementation is not approved yet | next: validate docs-only gates, open PR, and wait for owner scope approval before executing the first child`
+- `2026-06-17 | main@92174a63 | canonical course lesson SEO child is done via PR #1145/#1146; created planned Public SEO Crawl Evidence And Tooling V1 child as the next evidence/tooling slice; no runtime implementation branch started | next: owner confirms execute/build/implement before moving the child to in-progress`
+- `2026-06-17 | feat/public-seo-crawl-evidence-2026-06-17 | owner explicitly said execute; Public SEO Crawl Evidence And Tooling V1 moved to in-progress | next: complete that child, then return to this parent for the next SEO/AI decision`

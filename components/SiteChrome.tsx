@@ -325,6 +325,7 @@ export default function SiteChrome({
   const [hasAuthSession, setHasAuthSession] = useState(false);
   const [dashboardVisible, setDashboardVisible] = useState(false);
   const previousMenuOpenRef = useRef(false);
+  const previousPathnameForBlurRef = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -395,10 +396,17 @@ export default function SiteChrome({
   // Blur active element on route change (best effort)
   useEffect(() => {
     if (typeof document === "undefined") return;
+
+    const previousPathname = previousPathnameForBlurRef.current;
+    previousPathnameForBlurRef.current = pathname;
+    if (previousPathname === null || previousPathname === pathname) return;
+
     // rAF makes sure it runs after paint (helps iOS)
-    requestAnimationFrame(() => {
+    const animationFrame = requestAnimationFrame(() => {
       (document.activeElement as HTMLElement | null)?.blur?.();
     });
+
+    return () => cancelAnimationFrame(animationFrame);
   }, [pathname]);
 
   const menuMode = menu?.mode ?? "site";
