@@ -1402,24 +1402,35 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
 
     const assistant = screen.getByTestId("habits-catch-up-assistant");
-    expect(within(assistant).getByRole("heading", { name: "Catch up missed days" })).toBeVisible();
+    expect(within(assistant).getByRole("heading", { name: "5 missed days" })).toBeVisible();
     expect(
       within(assistant).getByText(
-        "No automatic failures were saved. Each habit below shows its own missed dates. Fix them there, leave them missed, or restart Motivation stats from today."
+        "Nothing was marked failed automatically. Clean up past days or leave them missed."
       )
     ).toBeVisible();
-    expect(within(assistant).getByText("5 dates")).toBeVisible();
+    expect(within(assistant).getByText("5 days")).toBeVisible();
     expect(
-      within(assistant).getByText(/5 missed habit dates need review across 1 habit/)
+      within(assistant).getByText("1 habit needs cleanup. One past day at a time.")
     ).toBeVisible();
-    expect(within(assistant).queryByRole("button", { name: "Mark done" })).toBeNull();
+    expect(within(assistant).queryByRole("button", { name: "Done" })).toBeNull();
 
     const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
     const habitCard = screen.getByTestId("habit-card-11111111-1111-4111-8111-111111111111");
     expect(habitCard.contains(habitPanel)).toBe(true);
-    expect(within(habitPanel).getByText("5 dates need review")).toBeVisible();
-    expect(within(habitPanel).getByText("May 5")).toBeVisible();
-    expect(within(habitPanel).getAllByRole("link", { name: "Review day" })[0]).toHaveAttribute(
+    expect(within(habitCard).getByRole("button", { name: "Done today" })).toBeVisible();
+    expect(within(habitPanel).getByText("5 missed days")).toBeVisible();
+    expect(within(habitPanel).getByText("Next: May 5")).toBeVisible();
+    expect(within(habitPanel).queryByText("May 6")).toBeNull();
+    expect(within(habitPanel).queryByRole("button", { name: "Done" })).toBeNull();
+    expect(within(habitPanel).queryByRole("button", { name: "Rest day" })).toBeNull();
+
+    fireEvent.click(within(assistant).getByRole("button", { name: "Clean up missed days" }));
+
+    const reviewPanel = await screen.findByTestId(
+      "habit-catch-up-review-11111111-1111-4111-8111-111111111111"
+    );
+    expect(within(reviewPanel).getByText("5 left")).toBeVisible();
+    expect(within(reviewPanel).getByRole("link", { name: "Open day" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-05"
     );
@@ -1438,7 +1449,7 @@ describe("HabitPerfectDayHub", () => {
       );
     });
 
-    fireEvent.click(within(habitPanel).getAllByRole("button", { name: "Leave missed" })[0]!);
+    fireEvent.click(within(reviewPanel).getByRole("button", { name: "Leave missed" }));
 
     expect(fetch).not.toHaveBeenCalled();
     expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
@@ -1455,9 +1466,12 @@ describe("HabitPerfectDayHub", () => {
       "Left Read 10 pages missed for May 5. No history was changed."
     );
     expect(within(habitPanel).queryByText("May 5")).toBeNull();
+    expect(within(habitPanel).getByText("Next: May 6")).toBeVisible();
+    expect(within(habitPanel).getByText("May 6")).toBeVisible();
+    expect(within(habitPanel).getByText("4 left")).toBeVisible();
   });
 
-  it("saves catch-up Mark done against the missed day while keeping Today selected", async () => {
+  it("saves catch-up Done against the missed day while keeping Today selected", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -1469,7 +1483,8 @@ describe("HabitPerfectDayHub", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
 
     const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
-    fireEvent.click(within(habitPanel).getAllByRole("button", { name: "Mark done" })[0]!);
+    fireEvent.click(within(habitPanel).getByRole("button", { name: "Clean up" }));
+    fireEvent.click(within(habitPanel).getByRole("button", { name: "Done" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
     expect(fetch).toHaveBeenCalledWith(
@@ -1494,6 +1509,28 @@ describe("HabitPerfectDayHub", () => {
     });
   });
 
+  it("keeps the active catch-up date in review when saving fails", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        error: "Could not save catch-up completion right now.",
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot()} />);
+
+    const habitPanel = screen.getByTestId("habit-catch-up-11111111-1111-4111-8111-111111111111");
+    fireEvent.click(within(habitPanel).getByRole("button", { name: "Clean up" }));
+    fireEvent.click(within(habitPanel).getByRole("button", { name: "Done" }));
+
+    expect(await screen.findByTestId("habits-action-error")).toHaveTextContent(
+      "Could not save catch-up completion right now."
+    );
+    expect(within(habitPanel).getByText("May 5")).toBeVisible();
+    expect(within(habitPanel).queryByText("May 6")).toBeNull();
+  });
+
   it("restarts catch-up Motivation stats with one server reset per active habit", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
@@ -1507,7 +1544,7 @@ describe("HabitPerfectDayHub", () => {
       <HabitPerfectDayHub initialSnapshot={buildCatchUpRecoverySnapshot({ secondHabit: true })} />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Restart stats from today" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
     expect(screen.getByTestId("habits-catch-up-reset-confirm")).toHaveTextContent(
       "Earlier check-ins stay saved"
     );
@@ -1533,8 +1570,8 @@ describe("HabitPerfectDayHub", () => {
       })
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Restart stats from today" }));
-    fireEvent.click(screen.getByRole("button", { name: "Reset stats" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restart stats" }));
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
     expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual([
