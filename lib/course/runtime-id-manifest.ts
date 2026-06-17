@@ -2,12 +2,14 @@ type CourseLessonRuntimeIdentity = {
   canonicalLessonId: string;
   canonicalLessonSlug: string;
   legacyLessonIds: string[];
+  legacyLessonSlugs?: string[];
 };
 
 type CourseModuleRuntimeIdentity = {
   canonicalModuleId: string;
   canonicalModuleSlug: string;
   legacyModuleIds: string[];
+  legacyModuleSlugs?: string[];
   lessons: CourseLessonRuntimeIdentity[];
 };
 
@@ -67,6 +69,7 @@ const COURSE_MODULE_RUNTIME_IDENTITIES: CourseModuleRuntimeIdentity[] = [
     canonicalModuleId: "body-position",
     canonicalModuleSlug: "course-module-body-position-drills",
     legacyModuleIds: ["mod4"],
+    legacyModuleSlugs: ["course-module-breathing-and-floating"],
     lessons: [
       {
         canonicalLessonId: "body-position--body-position-skill",
@@ -76,7 +79,11 @@ const COURSE_MODULE_RUNTIME_IDENTITIES: CourseModuleRuntimeIdentity[] = [
       {
         canonicalLessonId: "body-position--body-position-back",
         canonicalLessonSlug: "course-lesson-body-position-drills-body-position-back",
-        legacyLessonIds: ["mod4-l2"],
+        legacyLessonIds: ["mod4-l2", "breathing-and-floating--floating-back"],
+        legacyLessonSlugs: [
+          "course-lesson-breathing-and-floating-floating-back",
+          "course-lesson-breathing-and-floating-floating-on-the-back",
+        ],
       },
       {
         canonicalLessonId: "body-position--body-position-front",
@@ -262,6 +269,9 @@ for (const moduleIdentity of COURSE_MODULE_RUNTIME_IDENTITIES) {
     moduleByRuntimeId.set(runtimeId, moduleIdentity);
   }
   moduleBySlug.set(moduleIdentity.canonicalModuleSlug, moduleIdentity);
+  for (const legacySlug of uniqueValues(moduleIdentity.legacyModuleSlugs ?? [])) {
+    moduleBySlug.set(legacySlug, moduleIdentity);
+  }
 
   for (const lessonIdentity of moduleIdentity.lessons) {
     for (const runtimeId of uniqueValues([
@@ -273,6 +283,10 @@ for (const moduleIdentity of COURSE_MODULE_RUNTIME_IDENTITIES) {
     }
     lessonBySlug.set(lessonIdentity.canonicalLessonSlug, lessonIdentity);
     lessonModuleBySlug.set(lessonIdentity.canonicalLessonSlug, moduleIdentity);
+    for (const legacySlug of uniqueValues(lessonIdentity.legacyLessonSlugs ?? [])) {
+      lessonBySlug.set(legacySlug, lessonIdentity);
+      lessonModuleBySlug.set(legacySlug, moduleIdentity);
+    }
   }
 }
 

@@ -39,6 +39,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "admin:notes:import-staged": "node ./scripts/import-admin-note-staged-attachment.mjs",
+    "seo:crawl-evidence": "node ./scripts/public-seo-crawl-evidence.mjs",
     "finance:reconcile": "node ./scripts/reconcile-finance-entitlements.mjs",
     "verify:open": "bash ./scripts/run-verify-open.sh",
     "verify:public": "bash ./scripts/run-verify-open.sh",
