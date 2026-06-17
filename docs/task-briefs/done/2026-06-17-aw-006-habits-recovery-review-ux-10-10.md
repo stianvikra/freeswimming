@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-17-aw-006-habits-recovery-review-ux-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-17`
 - `updated`: `2026-06-17`
@@ -11,14 +11,14 @@
 - `parent_intake`: `docs/task-briefs/planned/2026-06-03-aw-006-habits-ux-findings-reconcile-parent-10-10.md`
 - `parent_child`: Child U
 - `execution_mode`: `owner said "kjor Habits Recovery Review UX 10/10"; implement scoped runtime/docs/tests on branch aw-006-habits-recovery-review-ux`
-- `strict_10_10_mode`: `yes for UI/UX; no 10/10 claim until owner approves screenshots`
+- `strict_10_10_mode`: `yes; owner approved screenshots before PR gates`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-17`
 - `base`: clean synced `main@2fe6f621` after PR `#1146`; local `Ja.docx` remains untracked and out of scope.
-- `audit_status`: `in-progress`
-- `decision`: Implement this bounded Habits recovery UX child now.
+- `audit_status`: `done`
+- `decision`: Closed this bounded Habits recovery UX child in PR `#1147`.
 - `reason`: Admin note `d286e94e-20c4-4177-a2e1-28b9612907e9` asks for editable missed-day history and sick/rest handling on `/my-library/habits`; Child S made the data safe, but screenshot evidence `output/habits-tracking-mode-catch-up-2026-06-15-010508` shows the mobile catch-up UI is too long and text-heavy for a 10/10 recovery flow.
 - `must_refresh_before_execution_if`: Refresh if `/my-library/habits`, `HabitPerfectDayHub`, Habits check-in/reset APIs, Micro Session source-backed habits, Help/Guide, screenshot rules, or scorecard categories change before execution.
 
@@ -210,3 +210,44 @@ Use `output/habits-recovery-review-ux-YYYY-MM-DD-HHMMSS`.
 - `2026-06-17 | in-progress | pre-PR gate attempt 2 passed quality gates/typecheck/unit/build/perf budgets but failed one unrelated desktop Chromium global header focus assertion on /en/course; targeted Playwright rerun of core-flow header navigation passed, classifying it as a flake | next: rerun full verify:pre-pr`
 - `2026-06-17 | in-progress | perf-budget trend reported 10 consecutive weekly green runs and recommended tightening; decision for this scoped Habits UI PR is hold budget changes and record tighten prompt in PR summary because performance budgets are outside the active recovery UX slice | next: rerun full verify:pre-pr`
 - `2026-06-17 | in-progress | repeated full-gate header focus failure traced to shared Modal restore-focus scheduling being canceled when visible became false; patched Modal focus restore, with targeted core-flow header navigation and drawer focus-trap Playwright checks passing | next: rerun full verify:pre-pr`
+- `2026-06-17 | done | PR #1147 merged as squash commit b3526a6c after owner-approved screenshots, local pre-PR/pre-merge gates, and green required CI | next: complete repo-managed docs-only closeout and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-17`
+- `merged_pr`: `#1147`
+- `squash_commit`: `b3526a6c`
+- `result`: Habits recovery cleanup now shows a compact summary, reviews one missed day at a time, keeps `Leave missed` as no-write, preserves safe historical `Done`/`Rest day` writes, and hardens shared drawer focus restore without changing Habits data storage.
+- `validation`: owner-approved screenshot handoff at `output/habits-recovery-review-ux-20260617-020152`; targeted Playwright checks passed for header drawer focus and drawer focus trap; `npm run verify:pre-pr` passed locally; PR `#1147` required CI passed; `npm run verify:pre-merge` passed locally with marker `artifacts/verify-pre-merge/20260617-004604.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+Critical target categories:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Privacy and compliance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                    |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | 5/5   | Compact recovery summary and one-date review replaced the action wall.                      |
+| UX flow clarity                               | 5/5   | Labels/actions are short and explicit: `Done`, `Rest day`, `Leave missed`.                  |
+| Visual design quality                         | 5/5   | Approved mobile/desktop screenshot handoff shows no overlap or clutter.                     |
+| Business logic correctness and data integrity | 5/5   | Tests cover historical date writes, no-write leave missed, and Today snapshot preservation. |
+| Accessibility (a11y)                          | 5/5   | Focus restore regression fixed and validated with targeted Playwright.                      |
+| Data placement and sync boundaries            | 5/5   | Server remains canonical; local state only tracks active review/progress.                   |
+| Caching and invalidation strategy             | 5/5   | Successful writes refresh selected snapshots; failed writes do not advance.                 |
+| Reliability and failure handling              | 5/5   | Negative-path tests keep failed dates in review with retry.                                 |
+| Privacy and compliance                        | 5/5   | No free-text habit payload expansion; docs keep support language safe.                      |
+| Content governance                            | 5/5   | API/support/user-flow docs updated with the same recovery contract.                         |
+| Incident response and support operations      | 5/5   | Support runbook explains each cleanup action without private data.                          |
+| i18n operational readiness                    | 5/5   | Compact labels/copy validated on mobile; future locales require mapping.                    |
+| Stack-fit and dependency discipline           | 5/5   | Reused `HabitPerfectDayHub`, existing APIs, UI tokens, and no dependency.                   |
+| Testing and QA automation                     | 5/5   | Focused unit/a11y checks plus full pre-PR/pre-merge gates passed.                           |
+| DevOps and rollback readiness                 | 5/5   | No migration; revert restores prior UI without data cleanup.                                |
+
+Remaining gap: none for this brief. Performance budget tightening was prompted by trend evidence but intentionally held because budget changes were outside this Habits recovery UI slice.
