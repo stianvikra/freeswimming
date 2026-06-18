@@ -69,30 +69,18 @@ describe("AdminHelpCenter", () => {
 
     expect(screen.getByText("Course Workspace / All Content tabs:")).toBeVisible();
     expect(screen.getByText("Lesson fields editor")).toBeVisible();
+    expect(screen.getByText(/Edit lesson keeps public fields first/i)).toBeVisible();
+    expect(screen.getByText(/Video planning notes.*support tools/i)).toBeVisible();
     expect(
-      screen.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
-    ).toBeVisible();
-    expect(screen.getAllByText(/Video planning notes.*admin-only/i).length).toBeGreaterThanOrEqual(
+      screen.getAllByText(/Lesson experience layout.*public section preset/i).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Shown.*Hidden.*public visibility/i).length).toBeGreaterThanOrEqual(
       1
     );
-    expect(
-      screen.getAllByText(/Lesson experience layout.*all-lesson container preset/i).length
-    ).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getAllByText(/Shown on lesson page.*Hidden from lesson page.*Admin\/list only/i).length
-    ).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/inline `Show safety note` control/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
-    expect(
-      screen.getAllByText(/Technical fallback fields.*stable IDs/i).length
-    ).toBeGreaterThanOrEqual(1);
-    expect(
-      screen.getByText(/Practice images are non-editable in this slice.*calm fallback/i)
-    ).toBeVisible();
+    expect(screen.getAllByText(/Summary.*support sections/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Save changes / View changes / Cancel:")).toBeVisible();
     expect(screen.getByText("Public lesson mirror / Technical fallback fields:")).toBeVisible();
-    expect(screen.getByText(/Use each section's single visibility control/i)).toBeVisible();
-    expect(screen.getByText(/Video planning notes.*script and recording planning/i)).toBeVisible();
+    expect(screen.getByText(/support actions, and legacy fields/i)).toBeVisible();
     expect(screen.queryByText(/Advanced\/fallback/i)).not.toBeInTheDocument();
     expect(screen.getByText("7 days / 30 days / 90 days:")).toBeVisible();
     expect(screen.getByText("Open hello inbox:")).toBeVisible();

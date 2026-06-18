@@ -227,6 +227,8 @@ async function exerciseFoundationNavigation(page: Page) {
   const tabQrLinks = page.getByTestId("admin-tab-qr-links");
   const tabCommerce = page.getByTestId("admin-tab-commerce");
   const tabOperations = page.getByTestId("admin-tab-operations");
+  const tabAnalytics = page.getByTestId("admin-tab-analytics");
+  const tabUsers = page.getByTestId("admin-tab-users");
   const tabEmailTemplates = page.getByTestId("admin-tab-email-templates");
   const tabMessages = page.getByTestId("admin-tab-messages");
   const tabNotes = page.getByTestId("admin-tab-notes");
@@ -293,6 +295,12 @@ async function exerciseFoundationNavigation(page: Page) {
 
   await openTabWithFallback(tabOperations, "Operations", "operations");
   await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+
+  await openTabWithFallback(tabAnalytics, "Analytics", "analytics");
+  await expect(page.getByRole("heading", { name: "Read-only insight dashboard" })).toBeVisible();
+
+  await openTabWithFallback(tabUsers, "Users", "users");
+  await expect(page.getByRole("heading", { name: "Auth user directory" })).toBeVisible();
 
   await openTabWithFallback(tabEmailTemplates, "Email templates", "email-templates");
   await expect(page.getByRole("heading", { name: "Email templates" })).toBeVisible();
@@ -624,6 +632,7 @@ test.describe("admin foundation", () => {
       await expect(workspaceCreatedEditForm.getByTestId("admin-context-notes-panel")).toBeVisible();
       const qrPanel = workspaceCreatedEditForm.getByTestId("admin-context-qr-panel");
       await expect(qrPanel).toBeVisible();
+      await qrPanel.getByTestId("admin-context-qr-toggle").click();
       const qrCreateForm = qrPanel.getByTestId("admin-context-qr-create-form");
       await expect(qrCreateForm.getByLabel("Slug")).toHaveValue(/--workspace-lesson(?:-2)?$/);
       await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
@@ -684,18 +693,13 @@ test.describe("admin foundation", () => {
       await expect(listTypeFilter).toHaveValue("course_lesson");
       await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
       await expect(fixtureLessonEditForm).toBeVisible();
-      await expect(fixtureLessonEditForm.getByText("Lesson fields")).toBeVisible();
+      await expect(fixtureLessonEditForm.getByText("Lesson editor")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Video / estimated time")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Video planning notes")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Technical fallback fields")).toBeVisible();
       await fixtureLessonEditForm.getByText("Technical fallback fields").click();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
-      await expect(
-        fixtureLessonEditForm.getByText(
-          "Internal stable ID for open lesson links, progress, notes, and previews."
-        )
-      ).toBeVisible();
       const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel(
         "Show What good looks and feels like on lesson page"
       );
@@ -723,6 +727,7 @@ test.describe("admin foundation", () => {
       const checkpointCriteriaText = `Swim 12.5m relaxed and controlled ${unique}`;
       const videoPlanningNotes = `Opening breath cue, side angle, and retake marker ${unique}`;
       const supportStartLessonInModule = "3";
+      await fixtureLessonEditForm.getByText("Video planning notes").click();
       await fixtureLessonEditForm.getByLabel("Video script notes").fill(videoPlanningNotes);
       await fixtureLessonEditForm
         .getByLabel("Section badge label (optional)")

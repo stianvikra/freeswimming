@@ -79,21 +79,12 @@ test.describe("admin help center", () => {
       )
     ).toBeVisible();
     await expect(page.getByText("Lesson fields editor")).toBeVisible();
-    await expect(
-      page.getByText(/Public lesson mirror.*same order, width, and section rhythm/i)
-    ).toBeVisible();
-    await expect(page.getByText(/Video planning notes.*admin-only/i)).toBeVisible();
-    await expect(
-      page.getByText(/Shown on lesson page.*Hidden from lesson page.*Admin\/list only/i).first()
-    ).toBeVisible();
-    await expect(page.getByText(/Shown\/Hidden control.*section itself/i)).toBeVisible();
-    await expect(page.getByText(/Summary.*admin\/list fallback/i)).toBeVisible();
-    await expect(page.getByText(/Technical fallback.*stable IDs/i).first()).toBeVisible();
-    await expect(
-      page.getByText(/Practice images are non-editable in this slice.*calm fallback/i)
-    ).toBeVisible();
+    await expect(page.getByText(/Edit lesson keeps public fields first/i)).toBeVisible();
+    await expect(page.getByText(/Video planning notes.*support tools/i)).toBeVisible();
+    await expect(page.getByText(/Shown.*Hidden.*public visibility/i).first()).toBeVisible();
+    await expect(page.getByText(/Summary.*support sections/i).first()).toBeVisible();
     await expect(page.getByText("Public lesson mirror / Technical fallback fields:")).toBeVisible();
-    await expect(page.getByText(/Use each section's Shown\/Hidden control/i)).toBeVisible();
+    await expect(page.getByText(/support actions, and legacy fields/i)).toBeVisible();
     await expect(page.getByText("Open module scope / Show all modules:")).toBeVisible();
     await expect(page.getByText("Learner common mistakes visibility")).toBeVisible();
     await expect(

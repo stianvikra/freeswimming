@@ -190,7 +190,13 @@ describe("course lesson admin/public field parity audit", () => {
     }
 
     expect(adminSource).toContain("Public lesson mirror");
-    expect(adminSource).toContain("Shown on lesson page");
+    expect(adminSource).toContain("Lesson editor");
+    expect(adminSource).toContain("Shown");
+    expect(adminSource).toContain("Cues");
+    expect(adminSource).toContain("Mistakes");
+    expect(adminSource).toContain("Next");
+    expect(adminSource).toContain("Support");
+    expect(adminSource).toContain("Ready check");
     expect(adminSource).toContain("Video planning notes");
     expect(adminSource).toContain("Video script notes");
     expect(adminSource).toContain("videoPlanning");
@@ -199,12 +205,14 @@ describe("course lesson admin/public field parity audit", () => {
     expect(adminSource).toContain("Technical fallback fields");
     expect(adminSource).toContain("Technical fallback");
     expect(adminSource).not.toContain("Advanced/fallback");
-    expect(adminSource).toContain("Hidden from lesson page");
-    expect(adminSource).toContain("Show safety note");
+    expect(adminSource).toContain("Hidden");
+    expect(adminSource).toContain("safety note on lesson page");
+    expect(adminSource).toContain("collapsedByDefault");
     expect(adminSource).toContain("admin-auto-grow-textarea");
     expect(adminSource).toContain("admin-lesson-dryland-visual-placeholder");
     expect(adminSource).toContain("admin-lesson-water-visual-placeholder");
     expect(adminSource).toContain("Media deferred");
+    expect(adminSource).not.toContain("Visual not added yet");
     expect(adminSource).toContain("View changes");
     expect(adminSource).not.toContain("Checkpoint criteria (one per line)");
     expect(adminSource).not.toContain("Show on public lesson");

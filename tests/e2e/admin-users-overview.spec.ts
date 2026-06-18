@@ -121,6 +121,9 @@ test.describe("admin users overview", () => {
 
     await expect(page.getByTestId("admin-tab-users")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("admin-users-manager")).toBeVisible();
+    await expect(page.getByTestId("admin-users-manager-header")).toContainText(
+      "Role changes stay admin-only and audited."
+    );
     await expect(
       page.getByTestId("admin-users-row-11111111-1111-4111-8111-111111111111")
     ).toContainText("swimmer@example.com");

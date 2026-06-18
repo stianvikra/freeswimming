@@ -69,7 +69,7 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string; icon: L
   {
     id: "users",
     label: "Users",
-    subtitle: "Read-only accounts, access, and support status",
+    subtitle: "Accounts, access, support, and audited role controls",
     icon: Users,
   },
   {

@@ -149,7 +149,7 @@ const CONTENT_PAGE_FLOW = [
   {
     title: "Lesson fields editor",
     detail:
-      "Inside Edit lesson, `Public lesson mirror` uses the same order, width, and section rhythm swimmers see on the public lesson page: Video / estimated time, Lesson goal, Quick explanation, Why this matters, Dryland practice, Pool drill / water practice, What good looks and feels like, Common mistakes, Pass criteria, Next lesson, and Support card. `Video planning notes` is admin-only and stores script notes, shot plans, retake ideas, or recording reminders; it is not shown on the lesson page. `Lesson experience layout` is the all-lesson container preset: use `Concept / intro` for explanation-first introduction lessons, and `Custom` when manual section visibility is needed. Each public section has one visibility control that reads `Shown on lesson page` or `Hidden from lesson page`; there is no separate passive badge. Dryland and Pool drill safety notes are editable, use an inline `Show safety note` control, and long text boxes grow to fit content so authors do not have to stretch fields manually. `Admin/list only` marks fallback/search/list content, and `Technical fallback` marks stable IDs, support defaults, and older technical fields. `Summary` is the admin/list fallback for search, lists, and older content, not the main public lesson explanation when structured fields are present. Practice images are non-editable in this slice; existing image metadata is preserved, missing media uses a compact admin status, and the public lesson keeps a visual slot with a calm fallback instead of dropping the preview entirely. After saving, use `View changes` to open preview in a new tab before publishing.",
+      "Edit lesson keeps public fields first: Video/time, Goal, Quick explanation, Why this matters, practice, Coach check, and Ready check. `Shown` / `Hidden` controls public sections. `Video planning notes`, `Summary`, `Technical fallback`, notes, and QR links are support tools; open them only when needed. Save, then use `View changes` before publishing.",
   },
   {
     title: "Learner common mistakes visibility",
@@ -421,7 +421,7 @@ const BUTTON_GUIDE: ActionGroup[] = [
       {
         label: "Public lesson mirror / Technical fallback fields",
         meaning:
-          "`Lesson experience layout` sets the all-lesson container preset before section editing. `Shown on lesson page` fields follow the public lesson order and wording. `Video planning notes` stays admin-only for script and recording planning. Use each section's single visibility control for public visibility, and use inline `Show safety note` controls to hide caution copy without deleting it. `Admin/list only` keeps Summary separate for search and lists. Technical fallback fields keep stable IDs, support actions, and older technical fallback content separate from the main authoring flow.",
+          "`Lesson experience layout` sets the public section preset. `Shown` / `Hidden` controls public visibility. Keep `Video planning notes`, `Summary`, support actions, and legacy fields in their support sections unless you are changing those details.",
       },
       {
         label: "Open preview",
