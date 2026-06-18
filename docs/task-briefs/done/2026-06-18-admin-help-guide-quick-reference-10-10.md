@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-help-guide-quick-reference-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
@@ -497,6 +497,53 @@ Before marking done:
 - `product-rendering files changed after final capture`: none. Only the temporary screenshot harness route and capture script were removed after final capture.
 - `validation before screenshot handoff`: targeted Vitest passed (`tests/unit/admin-help-center.test.tsx`, `tests/unit/admin-workspace-shell.test.tsx`: `9` tests); `npm run typecheck` passed; `npm run lint` passed with `7` pre-existing warnings in old `output/` capture scripts; `npm run lint:briefs:all` passed before this evidence update and must be rerun after this patch; `git diff --check` passed; targeted Playwright admin Help/Guide spec exited `0` with `1` skipped because local dev-login/Supabase returned `AuthUnknownError: Unexpected token '<'`.
 
+## Completion Record
+
+- `completed`: `2026-06-18`
+- `merged_pr`: `#1155`
+- `squash_commit`: `e707d0b4`
+- `result`: Closed the scoped Admin Help/Guide Quick Reference 10/10 slice. Help/Guide now starts as a compact operator reference for all active admin tabs, common/dangerous actions, and recovery states while leaving admin runtime behavior unchanged.
+- `validation`: targeted unit/type/lint/diff checks passed before screenshot handoff; owner approved before/after screenshots; `npm run verify:pre-pr` passed on `8e7e0e37`; PR CI passed on #1155; `npm run verify:pre-merge` passed on `8e7e0e37`; `npm run merge:preflight -- --assert-ready` passed before merge.
+- `10/10 claim`: yes - all critical target categories listed in this brief reached `5/5` for this scoped Help/Guide slice. This does not claim the whole admin dashboard/lesson editor is 10/10.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Admin editor ergonomics`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Privacy and compliance`
+- `Content governance`
+- `Admin workflow and editability`
+- `Incident response and support operations`
+- `i18n operational readiness`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+Accessibility (a11y) also closed at `5/5` in the achieved-score table below; it is kept out of this machine-read critical list because the current brief linter strips parenthetical suffixes from critical-category bullets.
+
+| Category                                 | Achieved Score | Evidence                                                                                                                                                       | Gaps / Notes   |
+| ---------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Product goals and IA                     | `5/5`          | Help/Guide first-screen quick reference, all-tab coverage contract, screenshots, PR #1155 CI.                                                                  | No scoped gap. |
+| UX flow clarity                          | `5/5`          | Tab cards cover primary job, common action, dangerous action, and recovery; e2e/unit assertions updated.                                                       | No scoped gap. |
+| Visual design quality                    | `5/5`          | Before/after screenshots in `output/admin-help-guide-quick-reference-2026-06-18-130232/`; desktop height `16399px` to `5398px`, mobile `31799px` to `10268px`. | No scoped gap. |
+| Admin editor ergonomics                  | `5/5`          | Start here, Recovery states, and Tab quick reference put frequent admin decisions above collapsed long-form docs.                                              | No scoped gap. |
+| Accessibility (a11y)                     | `5/5`          | Existing semantic headings/details/buttons preserved; desktop/mobile screenshots and e2e coverage passed.                                                      | No scoped gap. |
+| Performance (CWV + payloads)             | `5/5`          | No dependency or data/runtime behavior added; build and perf budgets passed. Perf-budget tightening held for separate maintenance slice.                       | No scoped gap. |
+| Reliability and failure handling         | `5/5`          | Loading, empty, error, retry, content mismatch, and retry/recovery guidance now appear near the top.                                                           | No scoped gap. |
+| Security and authz                       | `5/5`          | Copy review and no auth/API/RLS route changes; protected behavior unchanged.                                                                                   | No scoped gap. |
+| Privacy and compliance                   | `5/5`          | Users, Analytics, Notes, Messages, screenshots, and provider caveats remain privacy-bounded; no sensitive data added.                                          | No scoped gap. |
+| Content governance                       | `5/5`          | Help/Guide is now the in-app quick-reference surface; deeper runbook/procedure material remains reachable in collapsed sections.                               | No scoped gap. |
+| Admin workflow and editability           | `5/5`          | Current tab labels/actions/recovery paths are mapped and tested against active admin tabs.                                                                     | No scoped gap. |
+| Incident response and support operations | `5/5`          | Common support/recovery paths are grouped up front and runbook boundaries remain explicit.                                                                     | No scoped gap. |
+| i18n operational readiness               | `5/5`          | Shorter grouped copy and responsive cards reduce clipping risk; desktop/mobile screenshots approved.                                                           | No scoped gap. |
+| Stack-fit and dependency discipline      | `5/5`          | Reused `AdminHelpCenter`, existing admin patterns, TypeScript test stack, and no new dependencies.                                                             | No scoped gap. |
+| Testing and QA automation                | `5/5`          | Unit coverage prevents active admin tab drift; e2e Help/Guide assertions updated; `verify:pre-pr`, CI, and `verify:pre-merge` passed.                          | No scoped gap. |
+| DevOps and rollback readiness            | `5/5`          | Small reversible UI/copy/test diff; rollback is `git revert e707d0b4`; merge-preflight passed.                                                                 | No scoped gap. |
+
 ## Checkpoint Log
 
 - `2026-06-18 | planned | created from post-merge admin dashboard re-audit finding: Help/Guide is the clearest bounded next child because it is too long for quick operator use while mobile nav and Analytics density remain separate follow-ups | next: owner reviews/approves or edits this brief before implementation`
@@ -504,3 +551,4 @@ Before marking done:
 - `2026-06-18 | screenshot-handoff-ready | implemented quick-reference-first Help/Guide, active-tab coverage contract, collapsed long-form detail sections, targeted unit/e2e assertion updates, route/label/support sweep, and before/after screenshots at output/admin-help-guide-quick-reference-2026-06-18-130232; targeted unit/type/lint/diff checks pass, with Playwright e2e skipped by known local dev-login/Supabase egress blocker | next: owner reviews screenshot handoff before npm run verify:pre-pr`
 - `2026-06-18 | screenshot-approved | owner approved screenshot handoff at output/admin-help-guide-quick-reference-2026-06-18-130232; no product-rendering files changed after final capture, only this brief checkpoint was updated | next: run npm run verify:pre-pr, then commit, push, and open PR`
 - `2026-06-18 | pre-pr-pass | npm run verify:pre-pr passed on the Help/Guide runtime/test diff: lint, typecheck, unit, build, perf budget, and full Playwright gate passed; Playwright reported 110 passed and 568 skipped under the known local dev-login/Supabase egress blocker; perf-budget trend remains hold for this UI PR and should be handled as a separate perf-maintenance slice | next: restage final brief checkpoint, commit, push, and open PR`
+- `2026-06-18 | merged | PR #1155 was squash-merged as e707d0b4 after all required GitHub checks, npm run verify:pre-merge, and merge-preflight passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: validate, PR, and auto-merge the docs-only closeout if all closeout gates pass`
