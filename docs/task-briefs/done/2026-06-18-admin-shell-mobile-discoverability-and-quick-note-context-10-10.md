@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-shell-mobile-discoverability-and-quick-note-context-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
@@ -14,7 +14,7 @@
 
 - `last_audited`: `2026-06-18`
 - `base`: `main@3e5d1c15`
-- `audit_status`: `owner-approved-in-progress`
+- `audit_status`: `merged-closeout`
 - `decision`: Implement this as the next bounded admin child after residual source-note closeout PR `#1159`.
 - `reason`: Post-merge re-audit shows mobile admin navigation exposes only about `3/11` tabs in first viewport, and open notes `a4677939` and `89eacfbc` point to admin shell/header and Quick note context clarity.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `app/admin/layout.tsx`, `AdminNoteQuickCaptureLauncher`, admin tab metadata, Help/Guide quick actions, screenshot rules, or active admin-note source IDs change.
@@ -175,3 +175,56 @@ Help/Guide update required and included because Quick note locked-context warnin
 - `2026-06-18 | planned | created from residual admin-note intake and post-merge re-audit: mobile admin tabs expose only about 3/11 tabs, with Quick note locked-context copy also captured | next: pre-execution audit and owner approval before branch`
 - `2026-06-18 | in-progress | moved to branch feat/admin-shell-mobile-discoverability after source notes were verified done, lint:briefs:all passed, and current code audit confirmed mobile nav + Quick note copy scope | next: implement scoped UI/test changes and capture screenshot handoff before pre-PR`
 - `2026-06-18 | in-progress | implemented mobile two-column admin section grid, hid long admin header helper copy on mobile, clarified Quick note locked-context warning, and updated Help/Guide copy; targeted tests passed: ./node_modules/.bin/vitest run tests/unit/admin-workspace-shell.test.tsx tests/unit/admin-note-quick-capture-launcher.test.tsx tests/unit/admin-help-center.test.tsx | screenshot artifacts: output/admin-shell-mobile-discoverability-2026-06-18-170920 | next: owner visual approval before verify:pre-pr`
+- `2026-06-18 | merged | PR #1160 merged as 855822d4 after owner screenshot approval, two local full-public verify:pre-pr passes, required CI green, and verify:pre-merge PASS; deploy-preview failed non-required on Vercel upload rate limit while Vercel status was green | next: docs-only closeout`
+- `2026-06-18 | perf-budget note | local perf budgets passed and trend reported 10 consecutive weekly green runs with 17.8% worst margin; decision: hold budget changes out of this admin UI slice and evaluate one stretch-target tightening in a dedicated perf-governance follow-up | next: continue admin audit child sequence`
+
+## Completion Record
+
+- `completed`: `2026-06-18`
+- `merged_pr`: `#1160`
+- `squash_commit`: `855822d4`
+- `result`: Admin mobile now exposes all active admin tabs through a compact grid instead of a hidden horizontal row, the long admin header helper text is removed from the mobile first viewport, and Quick note now explains that a draft is locked to its original context rather than stuck.
+- `validation`: Targeted unit tests passed for `admin-workspace-shell`, `admin-note-quick-capture-launcher`, and `admin-help-center`; screenshot handoff was owner-approved from `output/admin-shell-mobile-discoverability-2026-06-18-170920`; `npm run verify:pre-pr` passed full-public lane on `c164f1ea` with artifact `artifacts/test-runs/20260618-175302`; PR #1160 required CI passed (`verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, CodeQL, Vercel); `deploy-preview` failed non-required with Vercel upload rate limit / upload abort while Vercel status was green; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260618-163625.json`.
+- `10/10 claim`: yes - all critical target categories for this child reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Admin editor ergonomics
+- Business logic correctness and data integrity
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Mobile screenshots show all `11` active admin tabs visible; shell test asserts grid/tab coverage.          | None.        |
+| UX flow clarity                               | `5/5`          | Owner-approved screenshot handoff plus Quick note stale-context copy test.                                 | None.        |
+| Visual design quality                         | `5/5`          | Before/after mobile and desktop screenshots confirm no clipped tab row and desktop rail unchanged.         | None.        |
+| Business logic correctness and data integrity | `5/5`          | Diff kept URL tab state and Quick note persistence semantics unchanged; targeted unit tests passed.        | None.        |
+| Admin editor ergonomics                       | `5/5`          | Mobile grid removes hidden horizontal-scroll dependency for high-frequency admin navigation.               | None.        |
+| Accessibility (a11y)                          | `5/5`          | Existing button semantics preserved; unit tests assert active tab state and stable labels.                 | None.        |
+| Data placement and sync boundaries            | `5/5`          | No data placement, sync, API, schema, or cache behavior changed.                                           | None.        |
+| Reliability and failure handling              | `5/5`          | Existing parser fallback remains unchanged; Quick note warning remains deterministic.                      | None.        |
+| Security and authz                            | `5/5`          | No authz, API, RLS, role, or protected-route broadening in diff.                                           | None.        |
+| Privacy and compliance                        | `5/5`          | Screenshot handoff used deterministic local harness and exposed no private note bodies, users, or secrets. | None.        |
+| Admin workflow and editability                | `5/5`          | All existing admin sections remain reachable; Help/Guide Quick note copy updated with the changed wording. | None.        |
+| Incident response and support operations      | `5/5`          | Mobile shell now exposes Messages, Notes, Operations, Users, and Help without hidden-tab guesswork.        | None.        |
+| i18n operational readiness                    | `5/5`          | Grid/truncate treatment handles longer labels better than the old narrow horizontal row.                   | None.        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminWorkspace`, existing admin tab metadata, and `AdminNoteQuickCaptureLauncher`; no dependency.  | None.        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full `verify:pre-pr`, required CI, and `verify:pre-merge` passed.                         | None.        |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible UI/copy/test diff; rollback is `git revert 855822d4`.                                     | None.        |
+
+Remaining gaps: none for this child.
+
+Defer/fix recommendation: none; all target scores are `5/5`.
