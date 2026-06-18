@@ -111,10 +111,9 @@ async function getCourseProgressSnapshot(page: Page, canonicalLessonId: string) 
 }
 
 async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
-  const markDoneButton = page.getByTestId("course-mark-done-button");
   const passCriteriaMarkDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
-  await expect(markDoneButton).toBeVisible();
-  if (await markDoneButton.isEnabled()) return;
+  await expect(passCriteriaMarkDoneButton).toBeVisible();
+  if (await passCriteriaMarkDoneButton.isEnabled()) return;
 
   const checklist = page.getByTestId("course-done-gate-checklist");
   await expect(checklist).toBeVisible();
@@ -154,7 +153,7 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
       expect(checked).toBe(true);
     }
 
-    if ((await passCriteriaMarkDoneButton.isEnabled()) || (await markDoneButton.isEnabled())) {
+    if (await passCriteriaMarkDoneButton.isEnabled()) {
       return;
     }
 
@@ -162,26 +161,16 @@ async function satisfyDoneGateIfPresent(page: import("@playwright/test").Page) {
   }
 
   await expect
-    .poll(
-      async () =>
-        (await passCriteriaMarkDoneButton.isEnabled()) || (await markDoneButton.isEnabled()),
-      {
-        timeout: 5_000,
-      }
-    )
+    .poll(async () => await passCriteriaMarkDoneButton.isEnabled(), {
+      timeout: 5_000,
+    })
     .toBe(true);
 }
 
 async function clickEnabledMarkDoneButton(page: Page) {
-  const markDoneButton = page.getByTestId("course-mark-done-button");
   const passCriteriaMarkDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    if (await markDoneButton.isEnabled()) {
-      await markDoneButton.click();
-      return;
-    }
-
     if (
       (await passCriteriaMarkDoneButton.isVisible().catch(() => false)) &&
       (await passCriteriaMarkDoneButton.isEnabled())
@@ -193,8 +182,8 @@ async function clickEnabledMarkDoneButton(page: Page) {
     await page.waitForTimeout(200);
   }
 
-  await expect(markDoneButton).toBeEnabled();
-  await markDoneButton.click();
+  await expect(passCriteriaMarkDoneButton).toBeEnabled();
+  await passCriteriaMarkDoneButton.click();
 }
 
 test("signed-in course progress status is visible near the progress bar", async ({
@@ -249,7 +238,7 @@ test("signed-in mark-as-done syncs to account progress API", async ({ page }, te
   }
 
   await waitForRouteToSettle(page);
-  const markDoneButton = page.getByTestId("course-mark-done-button");
+  const markDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   const syncStatus = page.getByTestId("course-progress-sync-status");
 

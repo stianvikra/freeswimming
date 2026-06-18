@@ -1,171 +1,114 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { isDesktopProject } from "./project-guards";
-import { gotoWithTransientRetry, waitForRouteToSettle } from "./utils/transient-navigation";
 
-const COMMON_MISTAKES_STORAGE_KEY_PREFIX = "fs_course_common_mistakes_expanded:";
-const COMMON_MISTAKES_LESSON_CANDIDATES = [
-  "intro-course--welcome-course-structure",
-  "intro-course--course-navigation-basics",
-  "kick-drills--kick-basics-support-not-speed",
-  "kick-drills--standing-leg-kicks-poolside",
-  "body-position--body-position-skill",
-  "rotation--driven-by-core",
-] as const;
+const fullLessonExperienceDisplay = {
+  quickExplanation: true,
+  whyThisMatters: true,
+  landPractice: true,
+  landSafetyNote: true,
+  waterPractice: true,
+  waterSafetyNote: true,
+  feelCues: true,
+  commonMistakes: true,
+  nextStep: true,
+  support: false,
+};
 
-async function waitForCoursePageToSettle(page: Page) {
-  await waitForRouteToSettle(page);
-
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      })
-  );
-}
-
-async function gotoCourseLesson(page: Page, lessonId: string) {
-  const coursePage = page.getByTestId("course-page");
-  const courseContentResponse = page
-    .waitForResponse(
-      (response) =>
-        response.url().includes("/api/course/content") && response.request().method() === "GET",
-      { timeout: 15_000 }
-    )
-    .catch(() => null);
-
-  await gotoWithTransientRetry(page, `/course?lesson=${lessonId}`, 60_000);
-  await courseContentResponse;
-  await waitForCoursePageToSettle(page);
-
-  const courseContentSettled = await expect
-    .poll(async () => await coursePage.getAttribute("data-course-content-state"), {
-      timeout: 10_000,
-    })
-    .not.toBe("loading")
-    .then(() => true)
-    .catch(() => false);
-
-  if (!courseContentSettled) {
-    const activeLessonId = await coursePage.getAttribute("data-active-lesson-id");
-    const goalVisible = await page
-      .getByRole("heading", { name: "Goal" })
-      .isVisible()
-      .catch(() => false);
-    const commonMistakesVisible = await page
-      .getByRole("button", { name: /Common mistakes/i })
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    if (activeLessonId !== lessonId || (!goalVisible && !commonMistakesVisible)) {
-      test.skip(true, "Course content did not settle in this environment.");
-      return;
-    }
-  }
-
-  await page.waitForTimeout(300);
-}
-
-async function findLessonWithVisibleCommonMistakes(page: Page, lessonIds: readonly string[]) {
-  for (const lessonId of lessonIds) {
-    await gotoCourseLesson(page, lessonId);
-    const activeLessonId = await page
-      .getByTestId("course-page")
-      .getAttribute("data-active-lesson-id");
-    if (activeLessonId !== lessonId) {
-      continue;
-    }
-    const toggle = page.getByRole("button", { name: /Common mistakes/i }).first();
-    if (await toggle.isVisible().catch(() => false)) {
-      return { lessonId, toggle };
-    }
-  }
-
-  return null;
-}
-
-async function waitForCollapsedCommonMistakes(page: Page, lessonId: string) {
-  await expect(page.getByTestId("course-page")).toHaveAttribute("data-active-lesson-id", lessonId);
-  const toggle = page.getByRole("button", { name: /Common mistakes/i }).first();
-  const toggleVisible = await toggle.isVisible().catch(() => false);
-
-  if (!toggleVisible) {
-    test.skip(
-      true,
-      "Published course content in this environment does not keep the common mistakes section visible for the revisited lesson."
-    );
-    return;
-  }
-
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByText("Expand to review common errors for this lesson.")).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        ({ lessonId: currentLessonId, prefix }) =>
-          window.localStorage.getItem(`${prefix}${currentLessonId}`),
-        { lessonId, prefix: COMMON_MISTAKES_STORAGE_KEY_PREFIX }
-      )
-    )
-    .toBe("0");
-}
-
-test("common mistakes stays visible by default and persists per-lesson collapse locally", async ({
+test("common mistakes render as visible Coach check content without local collapse state", async ({
   page,
 }, testInfo) => {
   test.skip(!isDesktopProject(testInfo), "Runs once on desktop profile.");
   test.skip(testInfo.project.name !== "desktop-chromium", "Runs once on desktop Chromium.");
-  test.slow();
-  testInfo.setTimeout(180_000);
 
-  await gotoCourseLesson(page, COMMON_MISTAKES_LESSON_CANDIDATES[0]);
-
-  await page.evaluate(() => {
-    for (const key of Object.keys(window.localStorage)) {
-      if (key.startsWith("fs_course_common_mistakes_expanded:")) {
-        window.localStorage.removeItem(key);
-      }
-    }
+  await page.addInitScript(() => {
+    window.localStorage.setItem("fs_course_common_mistakes_expanded:body-position--front", "0");
   });
 
-  const firstLesson = await findLessonWithVisibleCommonMistakes(
-    page,
-    COMMON_MISTAKES_LESSON_CANDIDATES
-  );
-  if (!firstLesson) {
-    test.skip(
-      true,
-      "Published course content in this environment does not expose a common mistakes section for the tested lessons."
-    );
-    return;
-  }
+  await page.route("**/api/course/content*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        modules: [
+          {
+            id: "body-position",
+            title: "Body Position",
+            subtitle: "Build the line",
+            lessons: [
+              {
+                id: "body-position--front",
+                title: "Body Position on the Front",
+                youtubeId: "Xh6OblO06LY",
+                estMinutes: 4,
+                lessonType: "drill",
+                goal: "Learn to hold a long line face-down without lifting the head.",
+                cues: ["Head quiet", "Easy bubbles"],
+                commonMistakes: ["Looking forward"],
+                drill: {
+                  title: "Front glide",
+                  steps: ["Push off gently"],
+                },
+                lessonExperience: {
+                  variant: "water_drill",
+                  display: fullLessonExperienceDisplay,
+                  quickExplanation: "Keep the head quiet before adding distance.",
+                  waterPractice: {
+                    title: "Front glide + exhale",
+                    steps: ["Push off", "Stop before tension"],
+                  },
+                  commonMistakes: [
+                    { mistake: "Looking forward", fix: "Look down." },
+                    { mistake: "Holding breath", fix: "Let small bubbles out." },
+                  ],
+                  feelCues: ["Quiet head", "Soft neck", "Easy bubbles"],
+                  nextStep: "Try side balance.",
+                },
+              },
+            ],
+          },
+        ],
+        preview: {
+          enabled: false,
+          mode: "published",
+        },
+      }),
+    });
+  });
 
-  await expect(firstLesson.toggle).toHaveAttribute("aria-expanded", "true");
+  await page.goto("/course?preview=1&lesson=body-position--front");
 
-  await page.evaluate(
-    ({ lessonId, prefix }) => {
-      window.localStorage.setItem(`${prefix}${lessonId}`, "0");
-    },
-    { lessonId: firstLesson.lessonId, prefix: COMMON_MISTAKES_STORAGE_KEY_PREFIX }
-  );
+  const coachCheck = page.getByTestId("course-coach-check");
+  await expect(coachCheck).toBeVisible();
+  await expect(
+    coachCheck.getByRole("heading", { name: "What good looks and feels like" })
+  ).toBeVisible();
+  await expect(coachCheck).toContainText("Check these against how you feel in the water.");
+  await expect(coachCheck.getByRole("heading", { name: "Common mistakes" })).toBeVisible();
+  await expect(coachCheck.getByText("Coach check", { exact: true })).toHaveCount(0);
+  await expect(coachCheck.getByText("Catch it early, then switch cues.")).toHaveCount(0);
 
-  await gotoCourseLesson(page, firstLesson.lessonId);
-  await waitForCollapsedCommonMistakes(page, firstLesson.lessonId);
+  const quietCueBox = await coachCheck.getByText("Quiet head", { exact: true }).boundingBox();
+  const softCueBox = await coachCheck.getByText("Soft neck", { exact: true }).boundingBox();
+  const easyCueBox = await coachCheck.getByText("Easy bubbles", { exact: true }).boundingBox();
+  expect(quietCueBox).not.toBeNull();
+  expect(softCueBox).not.toBeNull();
+  expect(easyCueBox).not.toBeNull();
+  expect(softCueBox!.y).toBeGreaterThan(quietCueBox!.y);
+  expect(easyCueBox!.y).toBeGreaterThan(softCueBox!.y);
 
-  const secondLesson = await findLessonWithVisibleCommonMistakes(
-    page,
-    COMMON_MISTAKES_LESSON_CANDIDATES.filter((lessonId) => lessonId !== firstLesson.lessonId)
-  );
-  if (!secondLesson) {
-    test.skip(
-      true,
-      "Published course content in this environment does not expose a second common mistakes section for the tested lessons."
-    );
-    return;
-  }
+  await expect(coachCheck.getByText("Avoid", { exact: true })).toHaveCount(1);
+  await expect(coachCheck.getByText("Do this", { exact: true })).toHaveCount(1);
+  await expect(page.getByTestId("course-common-mistake-row")).toHaveCount(2);
+  const firstMistakeRow = page.getByTestId("course-common-mistake-row").first();
+  const firstFixBox = await firstMistakeRow.getByText("Look down.").boundingBox();
+  const firstAvoidBox = await firstMistakeRow.getByText("Looking forward").boundingBox();
+  expect(firstFixBox).not.toBeNull();
+  expect(firstAvoidBox).not.toBeNull();
+  expect(firstFixBox!.x).toBeLessThan(firstAvoidBox!.x);
+  await expect(page.getByText("Looking forward")).toBeVisible();
+  await expect(page.getByText("Look down.")).toBeVisible();
 
-  await expect(secondLesson.toggle).toHaveAttribute("aria-expanded", "true");
-
-  await gotoCourseLesson(page, firstLesson.lessonId);
-  await waitForCollapsedCommonMistakes(page, firstLesson.lessonId);
+  await expect(page.getByRole("button", { name: /Common mistakes/i })).toHaveCount(0);
+  await expect(page.getByText("Expand to review common errors for this lesson.")).toHaveCount(0);
 });

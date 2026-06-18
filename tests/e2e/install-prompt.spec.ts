@@ -246,7 +246,7 @@ async function waitForInstallDismissalPersistence(page: Page) {
 }
 
 async function satisfyDoneGateIfPresent(page: Page) {
-  const markDoneButton = page.getByTestId("course-mark-done-button");
+  const markDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   if (await markDoneButton.isEnabled()) return;
 
@@ -292,7 +292,7 @@ async function satisfyDoneGateIfPresent(page: Page) {
 }
 
 async function activateMarkDoneButton(page: Page) {
-  const markDoneButton = page.getByTestId("course-mark-done-button");
+  const markDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await dismissSwipeHintIfPresent(page);
     await expect(markDoneButton).toBeVisible();
@@ -508,7 +508,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   test.slow();
 
   await gotoInstallPromptLesson(page);
-  const markDoneButton = page.getByTestId("course-mark-done-button");
+  const markDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
 
@@ -532,7 +532,7 @@ test("first successful mark-as-done can trigger contextual install prompt once",
   await expect(prompt).toBeHidden();
   await waitForInstallDismissalPersistence(page);
 
-  const courseMarkDoneButton = page.getByTestId("course-mark-done-button");
+  const courseMarkDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   await courseMarkDoneButton.click();
   await expect(courseMarkDoneButton).toHaveText("Mark as done");
   await activateMarkDoneButton(page);
@@ -550,7 +550,7 @@ test("contextual install prompt shows success confirmation after accepted instal
   test.slow();
 
   await gotoInstallPromptLesson(page);
-  const markDoneButton = page.getByTestId("course-mark-done-button");
+  const markDoneButton = page.getByTestId("course-pass-criteria-mark-done-button");
   await expect(markDoneButton).toBeVisible();
   await dismissSwipeHintIfPresent(page);
 

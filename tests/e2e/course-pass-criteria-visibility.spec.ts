@@ -49,6 +49,7 @@ test("course lesson pass criteria drive header and menu progress state", async (
   await expect(checklist).toBeVisible();
   await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeVisible();
   await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeDisabled();
+  await expect(page.getByText("Not ready yet")).toHaveCount(0);
   const criteriaCount = await waitForStableChecklistCount(page, checklist);
   expect(criteriaCount).toBeGreaterThan(0);
   await expect(page.getByTestId("course-lesson-status-chip")).toHaveText("Not started");
@@ -74,7 +75,7 @@ test("course lesson pass criteria drive header and menu progress state", async (
   }
   await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeEnabled();
   await expect(page.getByTestId("course-pass-criteria-help")).toContainText(
-    "All pass criteria are checked."
+    "Mark as done is available."
   );
   await page.getByTestId("course-pass-criteria-mark-done-button").click();
 
@@ -86,18 +87,19 @@ test("course lesson pass criteria drive header and menu progress state", async (
   );
   const overviewDoneHelp = page.locator("#course-done-gate-feedback");
   await expect(overviewDoneHelp).toHaveText(
-    "Lesson is done. Press Done again to return it to In progress."
+    "Lesson is done. Use Ready check below to return it to In progress."
   );
   await expect(overviewDoneHelp).toHaveClass(/sr-only/);
   await expect(page.getByTestId("course-pass-criteria-help")).toContainText(
-    "Click Done again to return this lesson to In progress while keeping your checked criteria."
+    "Press Done to return this lesson to In progress."
   );
+  await expect(page.getByTestId("course-pass-criteria-done-icon")).toHaveCount(criteriaCount);
   await expect(currentLessonRow).toContainText("Done");
   await expect(currentLessonRow).toHaveAttribute("aria-label", /Done/);
 
-  await page.getByTestId("course-mark-done-button").click();
+  await page.getByTestId("course-pass-criteria-mark-done-button").click();
   await expect(page.getByTestId("course-lesson-status-chip")).toHaveText("Ready to complete");
-  await expect(page.getByTestId("course-mark-done-button")).toHaveAccessibleName("Mark as done");
+  await expect(page.getByTestId("course-mark-done-button")).toHaveAccessibleName("Ready check");
   await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toBeEnabled();
 
   const restoredChecklist = page.getByTestId("course-done-gate-checklist");

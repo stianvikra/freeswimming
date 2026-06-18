@@ -1953,6 +1953,7 @@ function CoursePageClient() {
   }, [clearCourseSyncTimer, stopProgressSaveTimer, syncCourseProgressNow]);
 
   const playerTopRef = useRef<HTMLDivElement | null>(null);
+  const readyCheckRef = useRef<HTMLElement | null>(null);
   const canonicalLessonReplaceHrefRef = useRef<string | null>(null);
 
   const goToLesson = useCallback(
@@ -2504,7 +2505,7 @@ function CoursePageClient() {
     Boolean(lessonExperience.waterPractice.safetyNote);
   const showPracticeSections = showLandPracticeSection || showWaterPracticeSection;
   const feelCuesHeading = "What good looks and feels like";
-  const feelCuesHelperText = "Use these points to check whether the movement feels right.";
+  const feelCuesHelperText = "Check these against how you feel in the water.";
   const showPrimaryFocusBlocks = showGoalSection || showQuickExplanationSection;
   const primaryFocusGridClass =
     showGoalSection && showQuickExplanationSection
@@ -2565,22 +2566,22 @@ function CoursePageClient() {
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
   const markDoneBlockedByGate = !lessonContentReady || (!isLessonDone && !doneGateSatisfied);
-  const passCriteriaStatusLabel = isLessonDone
-    ? "Done"
-    : doneGateSatisfied
-      ? "Ready to complete"
-      : "Not ready yet";
-  const passCriteriaStatusClass = isLessonDone
-    ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-    : doneGateSatisfied
-      ? "bg-emerald-50 text-emerald-700 ring-emerald-100/80"
-      : "bg-amber-50 text-amber-700 ring-amber-100/80";
   const markDoneFeedbackId = "course-done-gate-feedback";
   const passCriteriaHelpId = "course-pass-criteria-help";
   const markDoneButtonDescribedBy =
     !lessonContentReady || markDoneBlockedByGate || doneGateFeedback || isLessonDone
       ? markDoneFeedbackId
       : undefined;
+  const overviewReadyCheckLabel = isLessonDone ? "Done" : "Ready check";
+  const overviewReadyCheckDisabled = !lessonContentReady;
+  function handleOverviewReadyCheckClick() {
+    if (showPassCriteria) {
+      readyCheckRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    toggleLessonDone();
+  }
   const activeLessonProgressStatus = lessonProgressStatusById[activeLesson.id] ?? "not_started";
   const activeLessonStatusMeta =
     activeLessonProgressStatus === "done"
@@ -3543,21 +3544,21 @@ function CoursePageClient() {
                         </div>
                         <PressButton
                           tier="nav"
-                          onClick={toggleLessonDone}
-                          disabled={markDoneBlockedByGate}
-                          aria-pressed={isLessonDone}
+                          onClick={handleOverviewReadyCheckClick}
+                          disabled={overviewReadyCheckDisabled}
+                          aria-pressed={showPassCriteria ? undefined : isLessonDone}
                           aria-describedby={markDoneButtonDescribedBy}
                           data-testid="course-mark-done-button"
                           className={cx(
                             "inline-flex min-h-[30px] shrink-0 items-center justify-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
                             isLessonDone
-                              ? "bg-blue-50 text-blue-700 ring-blue-100/80"
-                              : markDoneBlockedByGate
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-200/75"
+                              : overviewReadyCheckDisabled
                                 ? "cursor-not-allowed bg-slate-100/90 text-slate-400 ring-slate-200/80"
-                                : "bg-white/92 text-slate-700 ring-slate-200/72"
+                                : "bg-white/92 text-slate-700 ring-slate-200/72 hover:bg-blue-50/70 hover:text-blue-700 hover:ring-blue-100/80"
                           )}
                         >
-                          {isLessonDone ? "Done" : "Mark as done"}
+                          {overviewReadyCheckLabel}
                         </PressButton>
                       </div>
                       {overviewExpanded ? (
@@ -3578,11 +3579,11 @@ function CoursePageClient() {
                           id={markDoneFeedbackId}
                           className="mt-1 text-[12px] font-medium text-amber-700"
                         >
-                          Check pass criteria below to unlock Mark as done.
+                          Use Ready check below to unlock Mark as done.
                         </p>
                       ) : isLessonDone ? (
                         <p id={markDoneFeedbackId} className="sr-only">
-                          Lesson is done. Press Done again to return it to In progress.
+                          Lesson is done. Use Ready check below to return it to In progress.
                         </p>
                       ) : doneGateFeedback ? (
                         <p
@@ -4119,103 +4120,120 @@ function CoursePageClient() {
                     ) : null}
 
                     {showCuesSection || showCommonMistakesSection ? (
-                      <article
-                        data-testid="course-coach-check"
-                        className="rounded-[28px] border border-blue-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,250,255,0.94)_48%,rgba(240,253,250,0.82))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.07)] lg:col-span-2 lg:border-blue-200/70 lg:p-6"
-                      >
-                        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
-                          {showCuesSection ? (
-                            <section aria-labelledby="course-feel-check-heading">
-                              <div className="max-w-[44rem]">
-                                <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
-                                  Coach check
-                                </p>
-                                <h3
-                                  id="course-feel-check-heading"
-                                  className="mt-1 text-[18px] leading-7 font-semibold text-slate-950"
+                      <div data-testid="course-coach-check" className="space-y-4 lg:col-span-2">
+                        {showCuesSection ? (
+                          <article
+                            aria-labelledby="course-feel-check-heading"
+                            className="rounded-[28px] border border-blue-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,250,255,0.95))] p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:border-blue-200/70 lg:p-6"
+                          >
+                            <div className="max-w-[44rem]">
+                              <h3
+                                id="course-feel-check-heading"
+                                className="text-[18px] leading-7 font-semibold text-slate-950"
+                              >
+                                {feelCuesHeading}
+                              </h3>
+                              <p className="mt-1 text-[13px] leading-6 font-medium text-slate-600">
+                                {feelCuesHelperText}
+                              </p>
+                            </div>
+                            <ul className="mt-4 max-w-[44rem] space-y-2.5 text-[14px] leading-6 text-slate-800">
+                              {lessonExperience.feelCues.map((cue, index) => (
+                                <li
+                                  key={cue}
+                                  className="relative overflow-hidden rounded-[18px] bg-white/82 px-4 py-3 ring-1 ring-blue-100/80"
                                 >
-                                  {feelCuesHeading}
-                                </h3>
-                                <p className="mt-1 text-[13px] leading-6 font-medium text-slate-600">
-                                  {feelCuesHelperText}
-                                </p>
-                              </div>
-                              <ul className="mt-4 grid gap-2.5 text-[14px] leading-6 text-slate-800 sm:grid-cols-[repeat(auto-fit,minmax(150px,1fr))] lg:grid-cols-1">
-                                {lessonExperience.feelCues.map((cue, index) => (
-                                  <li
-                                    key={cue}
-                                    className="relative overflow-hidden rounded-[18px] bg-white/82 px-4 py-3 ring-1 ring-blue-100/80"
-                                  >
-                                    <span className="flex items-center gap-3">
-                                      <span
-                                        aria-hidden="true"
-                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[12px] font-bold text-white shadow-sm shadow-blue-600/20"
-                                      >
-                                        {index + 1}
-                                      </span>
-                                      <span className="text-[15px] leading-6 font-semibold text-slate-900">
-                                        {cue}
-                                      </span>
+                                  <span className="flex items-center gap-3">
+                                    <span
+                                      aria-hidden="true"
+                                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[12px] font-bold text-blue-700 ring-1 ring-blue-100/90"
+                                    >
+                                      {index + 1}
                                     </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </section>
-                          ) : null}
+                                    <span className="text-[15px] leading-6 font-semibold text-slate-900">
+                                      {cue}
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </article>
+                        ) : null}
 
-                          {showCommonMistakesSection ? (
-                            <section aria-labelledby="course-correction-heading">
-                              <div className="max-w-[48rem]">
-                                <p className="text-[12px] font-semibold tracking-wide text-slate-500 uppercase">
-                                  Common mistakes
-                                </p>
-                                <h3
-                                  id="course-correction-heading"
-                                  className="mt-1 text-[18px] leading-7 font-semibold text-slate-950"
+                        {showCommonMistakesSection ? (
+                          <article
+                            aria-labelledby="course-correction-heading"
+                            className="rounded-[28px] border border-blue-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,250,255,0.94)_55%,rgba(240,253,250,0.74))] p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:border-blue-200/70 lg:p-6"
+                          >
+                            <div className="max-w-[48rem]">
+                              <h3
+                                id="course-correction-heading"
+                                className="text-[18px] leading-7 font-semibold text-slate-950"
+                              >
+                                Common mistakes
+                              </h3>
+                            </div>
+                            <div
+                              data-testid="course-common-mistakes-labels"
+                              className="mt-3 flex flex-wrap items-center gap-3 text-[12px] font-semibold sm:grid sm:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] sm:gap-4"
+                            >
+                              <span className="inline-flex items-center gap-1.5 text-blue-700">
+                                <span aria-hidden="true">+</span>
+                                <span>Do this</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 text-amber-700">
+                                <span aria-hidden="true">-</span>
+                                <span>Avoid</span>
+                              </span>
+                            </div>
+                            <ul className="mt-3 space-y-2.5 text-[14px] leading-7 text-slate-800">
+                              {commonMistakes.map((mistake) => (
+                                <li
+                                  key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
+                                  data-testid="course-common-mistake-row"
+                                  className="rounded-[18px] bg-white/76 px-4 py-3 ring-1 ring-slate-200/76"
                                 >
-                                  Catch it early, then switch cues.
-                                </h3>
-                              </div>
-                              <ul className="mt-4 space-y-2.5 text-[14px] leading-7 text-slate-800">
-                                {commonMistakes.map((mistake) => (
-                                  <li
-                                    key={`${mistake.mistake}-${mistake.fix ?? "fallback"}`}
-                                    data-testid="course-common-mistake-row"
-                                    className="grid gap-3 rounded-[18px] bg-white/82 p-3 ring-1 ring-slate-200/76 sm:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] sm:items-stretch"
-                                  >
-                                    <div className="rounded-2xl bg-amber-50/72 px-3 py-3 ring-1 ring-amber-100/80">
-                                      <span className="text-[11px] font-semibold tracking-wide text-amber-700 uppercase">
-                                        Avoid
-                                      </span>
-                                      <p className="mt-1 text-[15px] leading-6 font-semibold text-slate-950">
-                                        {mistake.mistake}
-                                      </p>
-                                    </div>
-                                    <div className="rounded-2xl bg-blue-50/72 px-3 py-3 ring-1 ring-blue-100/80">
-                                      <span className="text-[11px] font-semibold tracking-wide text-blue-700 uppercase">
-                                        Do instead
+                                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] sm:gap-4">
+                                    <div className="flex items-start gap-3 rounded-2xl bg-blue-50/48 px-3 py-2.5 sm:-m-1 sm:p-3">
+                                      <span
+                                        aria-label="Do this"
+                                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[13px] font-bold text-blue-700 ring-1 ring-blue-200/80"
+                                      >
+                                        +
                                       </span>
                                       {mistake.fix ? (
-                                        <p className="mt-1 text-[14px] leading-6 font-medium text-slate-800">
+                                        <p className="text-[15px] leading-6 font-semibold text-slate-950">
                                           {mistake.fix}
                                         </p>
                                       ) : (
-                                        <p className="mt-1 text-[14px] leading-6 font-medium text-slate-500">
+                                        <p className="text-[15px] leading-6 font-semibold text-slate-500">
                                           Correction not added yet
                                         </p>
                                       )}
                                     </div>
-                                  </li>
-                                ))}
-                              </ul>
-                            </section>
-                          ) : null}
-                        </div>
-                      </article>
+                                    <div className="flex items-start gap-3 px-1 py-1 sm:px-0 sm:py-0">
+                                      <span
+                                        aria-label="Avoid"
+                                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-50 text-[13px] font-bold text-amber-700 ring-1 ring-amber-100/80"
+                                      >
+                                        -
+                                      </span>
+                                      <p className="text-[14px] leading-6 font-medium text-slate-700">
+                                        {mistake.mistake}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </article>
+                        ) : null}
+                      </div>
                     ) : null}
 
                     {showPassCriteria ? (
                       <article
+                        ref={readyCheckRef}
                         className={cx(
                           "p-5",
                           supportCardClass,
@@ -4231,18 +4249,6 @@ function CoursePageClient() {
                             <h3 className="mt-1 text-[18px] leading-7 font-semibold text-slate-950">
                               Pass criteria
                             </h3>
-                            <p className="mt-1 max-w-[34rem] text-[13px] leading-6 font-medium text-slate-600">
-                              Check what feels true, then complete the lesson when all criteria
-                              match.
-                            </p>
-                            <span
-                              className={cx(
-                                "mt-3 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ring-1",
-                                passCriteriaStatusClass
-                              )}
-                            >
-                              {passCriteriaStatusLabel}
-                            </span>
                           </div>
                           <button
                             type="button"
@@ -4298,30 +4304,35 @@ function CoursePageClient() {
                             {passCriteria.map((criterion) => (
                               <li
                                 key={criterion}
-                                className="rounded-2xl bg-white/88 px-3 py-3 font-medium text-slate-800 ring-1 ring-blue-100/78"
+                                className="flex items-start gap-3 rounded-2xl bg-white/88 px-3 py-3 font-medium text-slate-800 ring-1 ring-emerald-100/90"
                               >
-                                {criterion}
+                                <CheckCircle2
+                                  data-testid="course-pass-criteria-done-icon"
+                                  className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                                  aria-hidden="true"
+                                />
+                                <span>{criterion}</span>
                               </li>
                             ))}
                           </ul>
                         )}
-                        <p
+                        <span
                           id={passCriteriaHelpId}
                           data-testid="course-pass-criteria-help"
-                          className="mt-3 border-t border-slate-200/72 pt-2 text-[12px] leading-5 font-medium text-slate-500"
+                          className="sr-only"
                         >
                           {doneGateRequired
                             ? doneGateSatisfied
-                              ? "All pass criteria are checked. Mark this lesson as done when it feels complete."
+                              ? "Mark as done is available."
                               : activeLessonProgressStatus === "in_progress"
-                                ? "Keep checking off what feels true. When all items are true, mark the lesson done."
-                                : "Check off what feels true. When all items are true, mark the lesson done."
+                                ? "Mark as done is unavailable until all pass criteria are checked."
+                                : "Mark as done is unavailable until all pass criteria are checked."
                             : isLessonDone
                               ? doneConfirmedLabel
-                                ? `Marked done after criteria check on ${doneConfirmedLabel}. Click Done again to return this lesson to In progress while keeping your checked criteria.`
-                                : "Marked done. Click Done again to return this lesson to In progress while keeping your checked criteria."
-                              : "When these are met, mark lesson as done here or in overview."}
-                        </p>
+                                ? `Done after criteria check on ${doneConfirmedLabel}. Press Done to return this lesson to In progress.`
+                                : "Done. Press Done to return this lesson to In progress."
+                              : "Mark this lesson as done here."}
+                        </span>
                       </article>
                     ) : null}
                     {showNextStepSection ? (
