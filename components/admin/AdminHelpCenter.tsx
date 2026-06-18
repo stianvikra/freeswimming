@@ -1,11 +1,17 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cx } from "@/components/ui/cx";
 import { ADMIN_NOTE_TEST_ARTIFACT_PREFIX } from "@/lib/admin/admin-note-test-artifacts";
+import { ADMIN_TAB_VALUES, type AdminTab } from "@/lib/admin/admin-workspace";
 
 type TabGuide = {
+  id: AdminTab;
   name: string;
   primaryJob: string;
+  commonAction: string;
+  dangerousAction: string;
+  recovery: string;
   commonRisk: string;
 };
 
@@ -19,91 +25,196 @@ type ActionGroup = {
   actions: Array<{ label: string; meaning: string }>;
 };
 
-const LAST_UPDATED = "2026-06-15";
+type RecoveryGuide = {
+  state: string;
+  operatorMove: string;
+  stopWhen: string;
+};
+
+type HelpDetailsSectionProps = {
+  id: string;
+  title: string;
+  summary: string;
+  children: ReactNode;
+};
+
+const LAST_UPDATED = "2026-06-18";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
-  { id: "learning-path", label: "Learning path" },
-  { id: "tabs", label: "Dashboard tabs" },
+  { id: "recovery", label: "Recovery states" },
+  { id: "quick-reference", label: "Tab quick reference" },
   { id: "content-page", label: "Content workflow" },
   { id: "qr-links", label: "QR workflow" },
-  { id: "email-templates", label: "Email templates" },
-  { id: "messages", label: "Messages" },
   { id: "users", label: "Users" },
   { id: "analytics", label: "Analytics" },
   { id: "buttons", label: "Buttons explained" },
-  { id: "quality-matrix", label: "10/10 matrix" },
   { id: "controls", label: "Doc controls" },
-  { id: "services", label: "Connected services" },
   { id: "playbooks", label: "Daily playbooks" },
-  { id: "troubleshoot", label: "Troubleshoot" },
-  { id: "change-log", label: "Change governance" },
 ] as const;
 
-const DASHBOARD_TABS: TabGuide[] = [
+export const ADMIN_HELP_TAB_GUIDES: TabGuide[] = [
   {
+    id: "content",
     name: "Content",
     primaryJob: "Create, edit, review, publish, and archive content records safely.",
+    commonAction: "Edit a lesson in Course Workspace, save, then use View changes.",
+    dangerousAction: "Publish, archive, delete, or reorder learning structure.",
+    recovery:
+      "If loading fails, use Retry/Refresh before creating anything. Use revisions to restore last known good content.",
     commonRisk: "Wrong status or wrong order can publish incomplete learning flow.",
   },
   {
+    id: "qr-links",
     name: "QR Links",
     primaryJob: "Manage stable short links and downloadable QR files for campaigns and lessons.",
+    commonAction: "Search the slug first, create in draft, verify destination, then activate.",
+    dangerousAction: "Activating a wrong destination or deleting a live redirect row.",
+    recovery: "Disable the QR link or restore the safe destination, then retest `/go/v/<slug>`.",
     commonRisk: "Wrong destination or status can send users to broken/non-live pages.",
   },
   {
+    id: "commerce",
     name: "Commerce",
     primaryJob: "Keep product labels/slugs aligned with active sales setup.",
+    commonAction: "Review product display labels and active sales status.",
+    dangerousAction: "Changing live product labels/slugs without checkout parity review.",
+    recovery:
+      "Compare against checkout/product setup and revert display copy if it can mislead buyers.",
     commonRisk: "Mismatch between product setup and checkout configuration.",
   },
   {
+    id: "operations",
     name: "Operations",
     primaryJob: "Control runtime flags and private-access lock behavior.",
+    commonAction: "Check runtime flags, private-access state, and smoke-test links.",
+    dangerousAction: "Turning lock or runtime flags on/off without verification.",
+    recovery: "Use the site-lock runbook/GitHub workflow, then smoke test locked and open states.",
     commonRisk: "Flag changes without verification can hide or expose routes unexpectedly.",
   },
   {
+    id: "analytics",
     name: "Analytics",
     primaryJob:
       "Inspect privacy-safe tracked activity, funnel counts, current sales prompt activity, paused/future-ready saved-workout guide measurement, builder save-rate, generated sessions, template starts, route/product activity, and dashboard caveats.",
+    commonAction: "Start with Data health, then choose 7/30/90 day range.",
+    dangerousAction:
+      "Treating activity counts as purchases, revenue, Stripe, finance, or unique people.",
+    recovery:
+      "For empty, quiet, capped, or setup-missing states, read the health state first and use Retry/Refresh before making product decisions.",
     commonRisk:
       "Treating dashboard counts as purchases, accounting records, revenue, Stripe reconciliation, or unique people instead of product activity signals.",
   },
   {
+    id: "users",
     name: "Users",
     primaryJob:
       "Scan canonical Auth users, profile/linkage state, role/access state, product entitlement summaries, and safe support signals.",
+    commonAction: "Search by email/display/auth id, open summary, then check support signals.",
+    dangerousAction:
+      "Changing roles or treating support hints as permission to inspect private data.",
+    recovery:
+      "Role changes require Admin, confirmation, reason, expected-role check, last-admin protection, and audit log.",
     commonRisk:
       "Treating account support data or role controls as permission to inspect private training, habit, note, payment, or raw analytics content.",
   },
   {
+    id: "email-templates",
     name: "Email templates",
     primaryJob:
       "Manage lifecycle-safe email copy with placeholder validation and publish controls.",
+    commonAction: "Edit draft/review copy, validate placeholders, then publish with admin role.",
+    dangerousAction: "Publishing invalid placeholders or reverting the wrong version.",
+    recovery: "Use conflict reload/history and restore the previous safe template version.",
     commonRisk: "Publishing template text with invalid placeholders can break outbound messages.",
   },
   {
+    id: "messages",
     name: "Messages",
     primaryJob:
       "Read stored intake requests, triage status, archive/delete safely, and diagnose notification delivery.",
+    commonAction: "Open New/Needs reply, inspect stored row, reply in email, mark replied.",
+    dangerousAction: "Deleting or marking replied before the human reply is complete.",
+    recovery:
+      "Stored message row is source of truth. Restore archived/deleted rows when moved by mistake.",
     commonRisk:
       "Treating email delivery as the source of truth can hide stored requests or failed notifications.",
   },
   {
+    id: "notes",
     name: "Notes",
     primaryJob:
       "Run an internal work queue with visible note IDs, priority, screenshots, related-note links, context filters, and done archive recovery.",
+    commonAction: "Create a Quick note or full note with route/context and screenshots.",
+    dangerousAction: "Deleting a note/image or attaching evidence to the wrong context.",
+    recovery:
+      "Use visible note ID, Done archive, related-note links, and admin-notes recovery runbook.",
     commonRisk:
       "Hidden context, missing screenshots, or mixed open/done queues make the next operator pick the wrong note.",
   },
   {
+    id: "categories",
     name: "Categories",
     primaryJob: "Maintain category taxonomy used by content and notes workflows.",
+    commonAction: "Keep category names consistent before using them in filters/reporting.",
+    dangerousAction: "Renaming or deleting taxonomy that active notes/content depend on.",
+    recovery:
+      "Restore the prior label when filters/reporting become noisy; document taxonomy changes in notes.",
     commonRisk: "Inconsistent naming makes filtering and reporting noisy.",
   },
   {
+    id: "help",
     name: "Help/Guide",
     primaryJob: "Learn workflows, recovery steps, and operational ownership.",
+    commonAction: "Use the quick reference, then open deeper playbooks only when needed.",
+    dangerousAction: "Shipping stale guidance after workflow labels or recovery behavior changed.",
+    recovery:
+      "Update Help/Guide, tests, and runbook links in the same PR as workflow/support changes.",
     commonRisk: "Outdated guidance causes avoidable operator mistakes.",
+  },
+];
+
+export const ADMIN_HELP_COVERED_TAB_VALUES = ADMIN_HELP_TAB_GUIDES.map((guide) => guide.id);
+
+export const ADMIN_HELP_HAS_ACTIVE_TAB_COVERAGE = ADMIN_TAB_VALUES.every((tab) =>
+  ADMIN_HELP_COVERED_TAB_VALUES.includes(tab)
+);
+
+const RECOVERY_GUIDES: RecoveryGuide[] = [
+  {
+    state: "Loading",
+    operatorMove:
+      "Wait for the current request first. If the spinner or skeleton persists after a normal retry window, use Refresh/Retry once and capture route + tab + timestamp.",
+    stopWhen:
+      "Do not create or publish new records from the same surface until the canonical list has loaded.",
+  },
+  {
+    state: "Empty",
+    operatorMove:
+      "Clear filters/search before assuming there is no data. If the surface has a create action, use it only after confirming the empty state is real.",
+    stopWhen:
+      "If an error banner is also visible, treat the state as failed loading rather than true empty data.",
+  },
+  {
+    state: "Error",
+    operatorMove:
+      "Read the error copy, keep the current URL/filter context, use Retry once, then check the relevant runbook if the same error returns.",
+    stopWhen:
+      "Do not delete, publish, role-change, or activate anything while the source list is in error.",
+  },
+  {
+    state: "Retry",
+    operatorMove:
+      "Retry repeats the same failed read/write. If it succeeds, verify the visible row/status changed as intended before continuing.",
+    stopWhen:
+      "If retry loops, record route, item id/slug, error text, deployment/check status, and escalate.",
+  },
+  {
+    state: "Content load mismatch",
+    operatorMove:
+      "If Content shows load error plus `No content items yet` or a create form, trust the error first. Retry/Refresh before creating a new item.",
+    stopWhen:
+      "Creating from a failed list can duplicate or mis-scope work; use revisions/support notes after the list recovers.",
   },
 ];
 
@@ -954,6 +1065,32 @@ const helpStrongClass = "font-semibold text-[color:var(--fs-color-ink-strong)]";
 const helpListClass = "mt-2 list-inside list-disc space-y-1 text-sm leading-6";
 const helpCodeClass =
   "rounded-[var(--fs-radius-control)] bg-white/80 px-1.5 py-0.5 text-xs text-[color:var(--fs-color-ink-strong)] ring-1 ring-[color:var(--fs-border-soft)]";
+const helpDetailsSummaryClass =
+  "flex cursor-pointer list-none items-start justify-between gap-3 rounded-[var(--fs-radius-control)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden";
+const helpDetailsStatusClass =
+  "mt-0.5 inline-flex min-h-7 shrink-0 items-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-2.5 text-[11px] font-semibold text-[color:var(--fs-color-brand-700)]";
+
+function HelpDetailsSection({ id, title, summary, children }: HelpDetailsSectionProps) {
+  return (
+    <section id={id} className={helpSectionClass}>
+      <details className="group">
+        <summary className={helpDetailsSummaryClass}>
+          <div className="min-w-0">
+            <h3 className={helpHeadingClass}>{title}</h3>
+            <span className="mt-1 block text-sm leading-6 text-[color:var(--fs-color-muted)]">
+              {summary}
+            </span>
+          </div>
+          <span className={helpDetailsStatusClass} aria-hidden="true">
+            <span className="group-open:hidden">Open</span>
+            <span className="hidden group-open:inline">Shown</span>
+          </span>
+        </summary>
+        <div className="mt-4">{children}</div>
+      </details>
+    </section>
+  );
+}
 
 export default function AdminHelpCenter() {
   return (
@@ -966,10 +1103,10 @@ export default function AdminHelpCenter() {
           </p>
         </div>
         <p className={`${helpBodyClass} max-w-3xl`}>
-          This is the operator training surface for admin. Use it to learn daily workflows, avoid
-          common mistakes, and recover quickly when something fails.
+          Fast operator reference for admin. Start here when you need the right tab, the safe next
+          action, the dangerous action to avoid, or the recovery path for a broken state.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2 lg:hidden">
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden">
           {ADMIN_HELP_QUICK_ACTIONS.map((action) => (
             <a
               key={action.id}
@@ -984,16 +1121,111 @@ export default function AdminHelpCenter() {
       </section>
 
       <section id="overview" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>What this dashboard is for</h3>
-        <p className={helpBodyClass}>
-          Admin controls content, QR routing, product setup, and operational flags. If you do not
-          have access, ask an owner to verify allowlist + role before troubleshooting UI behavior.
-        </p>
+        <h3 className={helpHeadingClass}>Start here</h3>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <article className={helpItemClass}>
+            <p className={helpItemTitleClass}>Find the right tab</p>
+            <p className={helpItemBodyClass}>
+              Use the quick-reference cards below before opening a workflow. They name the job,
+              routine action, risky action, and recovery move for every active admin tab.
+            </p>
+          </article>
+          <article className={helpItemClass}>
+            <p className={helpItemTitleClass}>Fix a broken state</p>
+            <p className={helpItemBodyClass}>
+              For loading, empty, error, and retry states, stop mutations first. Confirm the
+              canonical list loaded before creating, publishing, deleting, or role-changing.
+            </p>
+          </article>
+          <article className={helpItemClass}>
+            <p className={helpItemTitleClass}>Escalate with evidence</p>
+            <p className={helpItemBodyClass}>
+              Capture route, tab, item id or slug, exact error text, and deployment/check status.
+              Then use the linked runbook instead of guessing.
+            </p>
+          </article>
+        </div>
       </section>
 
-      <section id="learning-path" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Operator learning path (first day)</h3>
-        <div className="mt-3 space-y-3">
+      <section id="recovery" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Recovery states</h3>
+        <p className={helpBodyClass}>
+          Treat recovery as an operator workflow. If the source state is unclear, avoid mutation and
+          collect enough evidence for the right runbook.
+        </p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {RECOVERY_GUIDES.map((guide) => (
+            <article
+              key={guide.state}
+              className={helpItemClass}
+              data-testid={`admin-help-recovery-${guide.state.toLowerCase().replace(/\s+/g, "-")}`}
+            >
+              <p className={helpItemTitleClass}>{guide.state}</p>
+              <p className={helpItemBodyClass}>
+                <span className={helpStrongClass}>Operator move:</span> {guide.operatorMove}
+              </p>
+              <p className={helpItemBodyClass}>
+                <span className={helpStrongClass}>Stop when:</span> {guide.stopWhen}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="quick-reference" className={helpSectionClass}>
+        <h3 className={helpHeadingClass}>Tab quick reference</h3>
+        <p className={helpBodyClass}>
+          Every active admin tab must have a job, a common action, a dangerous action, and a
+          recovery move. Missing coverage is a release-quality issue.
+        </p>
+        <div
+          className="mt-3 grid gap-3 xl:grid-cols-2"
+          data-testid="admin-help-tab-quick-reference"
+        >
+          {ADMIN_HELP_TAB_GUIDES.map((tab) => (
+            <article
+              key={tab.id}
+              className={helpItemClass}
+              data-testid={`admin-help-tab-guide-${tab.id}`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className={helpItemTitleClass}>{tab.name}</p>
+                <span className="rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-50)] px-2 py-1 text-[11px] font-semibold text-[color:var(--fs-color-brand-700)]">
+                  {tab.id}
+                </span>
+              </div>
+              <dl className="mt-2 grid gap-2 text-sm leading-6 text-[color:var(--fs-color-muted)] sm:grid-cols-2">
+                <div>
+                  <dt className={helpStrongClass}>Primary job</dt>
+                  <dd>{tab.primaryJob}</dd>
+                </div>
+                <div>
+                  <dt className={helpStrongClass}>Common action</dt>
+                  <dd>{tab.commonAction}</dd>
+                </div>
+                <div>
+                  <dt className={helpStrongClass}>Dangerous action</dt>
+                  <dd>{tab.dangerousAction}</dd>
+                </div>
+                <div>
+                  <dt className={helpStrongClass}>Recovery</dt>
+                  <dd>{tab.recovery}</dd>
+                </div>
+              </dl>
+              <p className={helpItemBodyClass}>
+                <span className={helpStrongClass}>Watch for:</span> {tab.commonRisk}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <HelpDetailsSection
+        id="learning-path"
+        title="Operator learning path (first day)"
+        summary="First-day training stays available, but it no longer dominates the routine Help/Guide path."
+      >
+        <div className="space-y-3">
           {LEARNING_PATH.map((item) => (
             <article key={item.title} className={helpItemClass}>
               <p className={helpItemTitleClass}>{item.title}</p>
@@ -1001,12 +1233,15 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="tabs" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Dashboard tabs and when to use them</h3>
+      <HelpDetailsSection
+        id="tabs"
+        title="Dashboard tabs and when to use them"
+        summary="Compatibility view for the older tab guide; the active quick-reference above is the primary source."
+      >
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {DASHBOARD_TABS.map((tab) => (
+          {ADMIN_HELP_TAB_GUIDES.map((tab) => (
             <article key={tab.name} className={helpItemClass}>
               <p className={helpItemTitleClass}>{tab.name}</p>
               <p className={helpItemBodyClass}>
@@ -1018,10 +1253,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="content-page" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How the Content page works</h3>
+      <HelpDetailsSection
+        id="content-page"
+        title="How the Content page works"
+        summary="Detailed content workflow for production, preview, identity, and status decisions."
+      >
         <p className={helpBodyClass}>
           Work top-down: snapshot to workspace/list to row actions to create form.
         </p>
@@ -1033,10 +1271,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="qr-links" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How QR Links work</h3>
+      <HelpDetailsSection
+        id="qr-links"
+        title="How QR Links work"
+        summary="Detailed QR redirect registry workflow for slug verification, activation, assets, and rollback."
+      >
         <p className={helpBodyClass}>
           QR Links is your stable redirect registry. Keep slugs stable, destinations verified, and
           status intentional.
@@ -1049,10 +1290,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="email-templates" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How Email Templates work</h3>
+      <HelpDetailsSection
+        id="email-templates"
+        title="How Email Templates work"
+        summary="Lifecycle-safe email copy guidance for draft, review, publish, validation, and rollback."
+      >
         <p className={helpBodyClass}>
           Email Templates is lifecycle-safe message governance for operational copy that should not
           require code edits for every wording update.
@@ -1065,10 +1309,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="messages" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How Messages work</h3>
+      <HelpDetailsSection
+        id="messages"
+        title="How Messages work"
+        summary="Stored intake request guidance for triage, notification diagnostics, archive/delete, and reply workflow."
+      >
         <p className={helpBodyClass}>
           Messages is the source-of-truth safety net for stored public intake requests and
           notification diagnostics. The normal email inbox remains the v1 reply workspace.
@@ -1081,10 +1328,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="users" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How Users works</h3>
+      <HelpDetailsSection
+        id="users"
+        title="How Users works"
+        summary="Account, access, role-control, and privacy-boundary guidance for support triage."
+      >
         <p className={helpBodyClass}>
           Users is an Auth-canonical account, role, access, and support surface. It is purpose-bound
           and does not replace user data export, deletion, finance reporting, or private profile
@@ -1098,10 +1348,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="analytics" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>How Analytics works</h3>
+      <HelpDetailsSection
+        id="analytics"
+        title="How Analytics works"
+        summary="Read-only analytics caveats for product direction without revenue, finance, or unique-person claims."
+      >
         <p className={helpBodyClass}>
           Analytics is a read-only operational dashboard over sanitized first-party logged actions.
           Use it for product and support direction, not money records or tracking individual public
@@ -1115,10 +1368,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="buttons" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Buttons and what they do</h3>
+      <HelpDetailsSection
+        id="buttons"
+        title="Buttons and what they do"
+        summary="Action glossary for labels that need exact operational meaning."
+      >
         <p className={helpBodyClass}>
           These meanings must stay aligned with real admin labels. Update this section whenever a
           label, action, or workflow changes.
@@ -1140,10 +1396,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="edit-scope" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>What can be edited right now</h3>
+      <HelpDetailsSection
+        id="edit-scope"
+        title="What can be edited right now"
+        summary="Available admin mutations and guardrails for current production workflows."
+      >
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <article className={cx(helpCalloutClass, "border-emerald-200 bg-emerald-50/70")}>
             <p className="text-sm font-semibold text-emerald-900">Available now</p>
@@ -1179,10 +1438,13 @@ export default function AdminHelpCenter() {
             </ul>
           </article>
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="quality-matrix" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>10/10 Help/Training quality coverage matrix</h3>
+      <HelpDetailsSection
+        id="quality-matrix"
+        title="10/10 Help/Training quality coverage matrix"
+        summary="Quality contract for Help/Guide updates and operator training coverage."
+      >
         <p className={helpBodyClass}>
           This matrix defines what must be documented for high-quality operator guidance.
         </p>
@@ -1211,10 +1473,13 @@ export default function AdminHelpCenter() {
             </tbody>
           </table>
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="controls" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Documentation controls (required)</h3>
+      <HelpDetailsSection
+        id="controls"
+        title="Documentation controls (required)"
+        summary="Required update rules and runbook links for workflow, recovery, and support changes."
+      >
         <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-6 text-[color:var(--fs-color-muted)]">
           {DOC_CONTROLS.map((control) => (
             <li key={control}>{control}</li>
@@ -1229,10 +1494,13 @@ export default function AdminHelpCenter() {
             </span>
           ))}
         </p>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="services" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Connected services</h3>
+      <HelpDetailsSection
+        id="services"
+        title="Connected services"
+        summary="Provider/service roles and cautions that influence admin support interpretation."
+      >
         <div className="mt-3 space-y-3">
           {CONNECTED_SERVICES.map((service) => (
             <article key={service.name} className={helpItemClass}>
@@ -1242,10 +1510,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="playbooks" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Daily playbooks</h3>
+      <HelpDetailsSection
+        id="playbooks"
+        title="Daily playbooks"
+        summary="Step-by-step routines for content, QR, rollback, notes, and messages when deeper guidance is needed."
+      >
         <div className="mt-3 space-y-3">
           {DAILY_PLAYBOOKS.map((playbook) => (
             <article key={playbook.title} className={helpItemClass}>
@@ -1258,10 +1529,13 @@ export default function AdminHelpCenter() {
             </article>
           ))}
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="troubleshoot" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Troubleshoot fast</h3>
+      <HelpDetailsSection
+        id="troubleshoot"
+        title="Troubleshoot fast"
+        summary="Older troubleshooting cards remain available; the recovery-state section above is the first stop."
+      >
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <article className={cx(helpCalloutClass, "border-amber-200 bg-amber-50")}>
             <p className="text-sm font-semibold text-amber-900">Admin setup warning appears</p>
@@ -1323,15 +1597,18 @@ export default function AdminHelpCenter() {
             </p>
           </article>
         </div>
-      </section>
+      </HelpDetailsSection>
 
-      <section id="change-log" className={helpSectionClass}>
-        <h3 className={helpHeadingClass}>Change governance and freshness</h3>
+      <HelpDetailsSection
+        id="change-log"
+        title="Change governance and freshness"
+        summary="Freshness rule for future workflow, label, and recovery changes."
+      >
         <p className={helpBodyClass}>
           Help/Guide is part of release quality. If workflow labels, behavior, or recovery steps
           change, update this page in the same PR and keep help e2e assertions aligned.
         </p>
-      </section>
+      </HelpDetailsSection>
     </div>
   );
 }
