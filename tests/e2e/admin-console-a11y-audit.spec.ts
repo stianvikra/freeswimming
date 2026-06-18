@@ -15,6 +15,8 @@ const ADMIN_TAB_AUDIT_TARGETS: AdminTabAuditTarget[] = [
   { id: "qr-links", label: "QR Links", heading: "QR registry" },
   { id: "commerce", label: "Commerce", heading: "Commerce" },
   { id: "operations", label: "Operations", heading: "Operations" },
+  { id: "analytics", label: "Analytics", heading: "Read-only insight dashboard" },
+  { id: "users", label: "Users", heading: "Auth user directory" },
   { id: "email-templates", label: "Email templates", heading: "Email templates" },
   { id: "messages", label: "Messages", heading: "Messages" },
   { id: "notes", label: "Notes", heading: "Notes" },

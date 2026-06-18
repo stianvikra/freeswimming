@@ -64,6 +64,7 @@ type Props = {
   title?: string;
   description?: string;
   destinationHelpText?: string | null;
+  collapsedByDefault?: boolean;
   className?: string;
 };
 
@@ -163,8 +164,10 @@ export default function AdminContextQrPanel({
   title = "QR links",
   description = "Create and manage stable /go/v/ QR links without leaving this edit flow.",
   destinationHelpText = null,
+  collapsedByDefault = false,
   className = "",
 }: Props) {
+  const [expanded, setExpanded] = useState(!collapsedByDefault);
   const [origin, setOrigin] = useState("https://freeswimming.org");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -462,360 +465,383 @@ export default function AdminContextQrPanel({
           <h4 className={metadataLabelClass}>{title}</h4>
           <p className={cx("mt-1", mutedTextClass)}>{description}</p>
         </div>
-        <a href={registryHref} className={compactSecondaryActionClass}>
-          Open full QR registry
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className={compactSecondaryActionClass}
+            data-testid="admin-context-qr-toggle"
+          >
+            {expanded ? "Collapse QR links" : "Show QR links"}
+          </button>
+          <a href={registryHref} className={compactSecondaryActionClass}>
+            Open full QR registry
+          </a>
+        </div>
       </div>
 
-      {!schemaReady && warning ? (
-        <AdminManagerState tone="warning" density="compact" className="mt-3">
-          {warning}
-        </AdminManagerState>
-      ) : null}
-
-      {actionError ? (
-        <AdminManagerState tone="error" announcement="polite" density="compact" className="mt-3">
-          {actionError}
-        </AdminManagerState>
-      ) : null}
-
-      {actionNotice ? (
-        <AdminManagerState tone="success" density="compact" className="mt-3">
-          {actionNotice}
-        </AdminManagerState>
-      ) : null}
-
-      {loading ? (
-        <AdminManagerState tone="loading" density="compact" className="mt-3">
-          Loading QR links for this content…
-        </AdminManagerState>
-      ) : null}
-
-      {!loading && error ? (
-        <AdminManagerState
-          tone="error"
-          density="compact"
-          className="mt-3"
-          actionsClassName="mt-2"
-          actions={
-            <button
-              type="button"
-              onClick={() => void loadItems()}
-              className={compactSecondaryActionClass}
-            >
-              Retry
-            </button>
-          }
-        >
-          {error}
-        </AdminManagerState>
-      ) : null}
-
-      {!loading && !error ? (
+      {expanded ? (
         <>
-          {items.length === 0 ? (
-            <AdminManagerState
-              tone="empty"
-              title="No QR links attached yet"
-              density="spacious"
-              className="mt-3"
-              testId="admin-context-qr-empty-state"
-            >
-              Create the first stable `/go/v/` link from this editor.
+          {!schemaReady && warning ? (
+            <AdminManagerState tone="warning" density="compact" className="mt-3">
+              {warning}
             </AdminManagerState>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {items.map((item) => {
-                const isEditing = editingId === item.id;
-                const isBusy = savingId === item.id || deletingId === item.id;
+          ) : null}
 
-                return (
-                  <li key={item.id} className={rowCardClass} data-testid="admin-context-qr-item">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-                          {item.slug}
-                        </p>
-                        <p className={cx("mt-1 break-all", mutedTextClass)}>
-                          Stable link: {stableLinkForSlug(item.slug)}
-                        </p>
-                      </div>
-                      <span
-                        className={[
-                          "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
-                          STATUS_CHIP_CLASS_BY_VALUE[item.status],
-                        ].join(" ")}
+          {actionError ? (
+            <AdminManagerState
+              tone="error"
+              announcement="polite"
+              density="compact"
+              className="mt-3"
+            >
+              {actionError}
+            </AdminManagerState>
+          ) : null}
+
+          {actionNotice ? (
+            <AdminManagerState tone="success" density="compact" className="mt-3">
+              {actionNotice}
+            </AdminManagerState>
+          ) : null}
+
+          {loading ? (
+            <AdminManagerState tone="loading" density="compact" className="mt-3">
+              Loading QR links for this content…
+            </AdminManagerState>
+          ) : null}
+
+          {!loading && error ? (
+            <AdminManagerState
+              tone="error"
+              density="compact"
+              className="mt-3"
+              actionsClassName="mt-2"
+              actions={
+                <button
+                  type="button"
+                  onClick={() => void loadItems()}
+                  className={compactSecondaryActionClass}
+                >
+                  Retry
+                </button>
+              }
+            >
+              {error}
+            </AdminManagerState>
+          ) : null}
+
+          {!loading && !error ? (
+            <>
+              {items.length === 0 ? (
+                <AdminManagerState
+                  tone="empty"
+                  title="No QR links attached yet"
+                  density="spacious"
+                  className="mt-3"
+                  testId="admin-context-qr-empty-state"
+                >
+                  Create the first stable `/go/v/` link from this editor.
+                </AdminManagerState>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {items.map((item) => {
+                    const isEditing = editingId === item.id;
+                    const isBusy = savingId === item.id || deletingId === item.id;
+
+                    return (
+                      <li
+                        key={item.id}
+                        className={rowCardClass}
+                        data-testid="admin-context-qr-item"
                       >
-                        {item.status}
-                      </span>
-                    </div>
-
-                    {isEditing && editState ? (
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <label className={fieldLabelClass}>
-                          <span>Slug</span>
-                          <input
-                            type="text"
-                            value={editState.slug}
-                            onChange={(event) =>
-                              setEditState((previous) =>
-                                previous ? { ...previous, slug: event.target.value } : previous
-                              )
-                            }
-                            className={fieldClass}
-                          />
-                        </label>
-
-                        <label className={fieldLabelClass}>
-                          <span>Status</span>
-                          <select
-                            value={editState.status}
-                            onChange={(event) =>
-                              setEditState((previous) =>
-                                previous
-                                  ? {
-                                      ...previous,
-                                      status: event.target.value as QrLinkStatus,
-                                    }
-                                  : previous
-                              )
-                            }
-                            className={fieldClass}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                              {item.slug}
+                            </p>
+                            <p className={cx("mt-1 break-all", mutedTextClass)}>
+                              Stable link: {stableLinkForSlug(item.slug)}
+                            </p>
+                          </div>
+                          <span
+                            className={[
+                              "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold",
+                              STATUS_CHIP_CLASS_BY_VALUE[item.status],
+                            ].join(" ")}
                           >
-                            {STATUS_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
-                          <span>Destination URL (https)</span>
-                          <input
-                            type="url"
-                            value={editState.destinationUrl}
-                            onChange={(event) =>
-                              setEditState((previous) =>
-                                previous
-                                  ? {
-                                      ...previous,
-                                      destinationUrl: event.target.value,
-                                    }
-                                  : previous
-                              )
-                            }
-                            className={fieldClass}
-                          />
-                        </label>
-
-                        <label className={cx(fieldLabelClass, "sm:col-span-2")}>
-                          <span>Placement key</span>
-                          <input
-                            type="text"
-                            value={editState.placementKey}
-                            onChange={(event) =>
-                              setEditState((previous) =>
-                                previous
-                                  ? {
-                                      ...previous,
-                                      placementKey: event.target.value,
-                                    }
-                                  : previous
-                              )
-                            }
-                            className={fieldClass}
-                          />
-                        </label>
-
-                        <div className="flex flex-wrap gap-2 sm:col-span-2">
-                          <button
-                            type="button"
-                            onClick={() => void saveEdit(item.id)}
-                            disabled={isBusy}
-                            className={compactPrimaryActionClass}
-                          >
-                            {savingId === item.id ? "Saving…" : "Save QR changes"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={cancelEdit}
-                            disabled={isBusy}
-                            className={compactSecondaryActionClass}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className={cx("mt-2 space-y-1", mutedTextClass)}>
-                          <p>Destination: {item.destination_url}</p>
-                          <p>Placement: {item.placement_key || "Not set"}</p>
-                          <p>Updated: {formatTimestamp(item.updated_at)}</p>
+                            {item.status}
+                          </span>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void copyStableLink(item)}
-                            className={compactPrimaryActionClass}
-                          >
-                            {copiedLinkId === item.id ? "Copied" : "Copy stable link"}
-                          </button>
-                          <a
-                            href={stableLinkForSlug(item.slug)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={compactSecondaryActionClass}
-                          >
-                            Open redirect
-                          </a>
-                          <a
-                            href={item.destination_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={compactSecondaryActionClass}
-                          >
-                            Open destination
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => startEdit(item)}
-                            disabled={isBusy}
-                            className={compactSecondaryActionClass}
-                          >
-                            Edit QR
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void toggleStatus(item)}
-                            disabled={isBusy}
-                            className={compactQuietActionClass}
-                          >
-                            {savingId === item.id
-                              ? "Saving…"
-                              : item.status === "active"
-                                ? "Disable"
-                                : "Set active"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void deleteItem(item)}
-                            disabled={isBusy}
-                            className={dangerActionClass}
-                          >
-                            {deletingId === item.id ? "Deleting…" : "Delete"}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                        {isEditing && editState ? (
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <label className={fieldLabelClass}>
+                              <span>Slug</span>
+                              <input
+                                type="text"
+                                value={editState.slug}
+                                onChange={(event) =>
+                                  setEditState((previous) =>
+                                    previous ? { ...previous, slug: event.target.value } : previous
+                                  )
+                                }
+                                className={fieldClass}
+                              />
+                            </label>
 
-          <form
-            className="mt-3 grid gap-3 sm:grid-cols-2"
-            onSubmit={handleCreate}
-            data-testid="admin-context-qr-create-form"
-          >
-            <label className={fieldLabelClass}>
-              <span>Slug</span>
-              <input
-                type="text"
-                value={formState.slug}
-                onChange={(event) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    slug: event.target.value,
-                  }))
-                }
-                className={fieldClass}
-                placeholder="lesson-share"
-              />
-            </label>
+                            <label className={fieldLabelClass}>
+                              <span>Status</span>
+                              <select
+                                value={editState.status}
+                                onChange={(event) =>
+                                  setEditState((previous) =>
+                                    previous
+                                      ? {
+                                          ...previous,
+                                          status: event.target.value as QrLinkStatus,
+                                        }
+                                      : previous
+                                  )
+                                }
+                                className={fieldClass}
+                              >
+                                {STATUS_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
 
-            <label className={fieldLabelClass}>
-              <span>Status</span>
-              <select
-                value={formState.status}
-                onChange={(event) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    status: event.target.value as QrLinkStatus,
-                  }))
-                }
-                className={fieldClass}
+                            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
+                              <span>Destination URL (https)</span>
+                              <input
+                                type="url"
+                                value={editState.destinationUrl}
+                                onChange={(event) =>
+                                  setEditState((previous) =>
+                                    previous
+                                      ? {
+                                          ...previous,
+                                          destinationUrl: event.target.value,
+                                        }
+                                      : previous
+                                  )
+                                }
+                                className={fieldClass}
+                              />
+                            </label>
+
+                            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
+                              <span>Placement key</span>
+                              <input
+                                type="text"
+                                value={editState.placementKey}
+                                onChange={(event) =>
+                                  setEditState((previous) =>
+                                    previous
+                                      ? {
+                                          ...previous,
+                                          placementKey: event.target.value,
+                                        }
+                                      : previous
+                                  )
+                                }
+                                className={fieldClass}
+                              />
+                            </label>
+
+                            <div className="flex flex-wrap gap-2 sm:col-span-2">
+                              <button
+                                type="button"
+                                onClick={() => void saveEdit(item.id)}
+                                disabled={isBusy}
+                                className={compactPrimaryActionClass}
+                              >
+                                {savingId === item.id ? "Saving…" : "Save QR changes"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={isBusy}
+                                className={compactSecondaryActionClass}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className={cx("mt-2 space-y-1", mutedTextClass)}>
+                              <p>Destination: {item.destination_url}</p>
+                              <p>Placement: {item.placement_key || "Not set"}</p>
+                              <p>Updated: {formatTimestamp(item.updated_at)}</p>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void copyStableLink(item)}
+                                className={compactPrimaryActionClass}
+                              >
+                                {copiedLinkId === item.id ? "Copied" : "Copy stable link"}
+                              </button>
+                              <a
+                                href={stableLinkForSlug(item.slug)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={compactSecondaryActionClass}
+                              >
+                                Open redirect
+                              </a>
+                              <a
+                                href={item.destination_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={compactSecondaryActionClass}
+                              >
+                                Open destination
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => startEdit(item)}
+                                disabled={isBusy}
+                                className={compactSecondaryActionClass}
+                              >
+                                Edit QR
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void toggleStatus(item)}
+                                disabled={isBusy}
+                                className={compactQuietActionClass}
+                              >
+                                {savingId === item.id
+                                  ? "Saving…"
+                                  : item.status === "active"
+                                    ? "Disable"
+                                    : "Set active"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void deleteItem(item)}
+                                disabled={isBusy}
+                                className={dangerActionClass}
+                              >
+                                {deletingId === item.id ? "Deleting…" : "Delete"}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <form
+                className="mt-3 grid gap-3 sm:grid-cols-2"
+                onSubmit={handleCreate}
+                data-testid="admin-context-qr-create-form"
               >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <label className={fieldLabelClass}>
+                  <span>Slug</span>
+                  <input
+                    type="text"
+                    value={formState.slug}
+                    onChange={(event) =>
+                      setFormState((previous) => ({
+                        ...previous,
+                        slug: event.target.value,
+                      }))
+                    }
+                    className={fieldClass}
+                    placeholder="lesson-share"
+                  />
+                </label>
 
-            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
-              <span>Destination URL (https)</span>
-              <input
-                type="url"
-                value={formState.destinationUrl}
-                onChange={(event) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    destinationUrl: event.target.value,
-                  }))
-                }
-                className={fieldClass}
-                placeholder="https://freeswimming.org/course?lesson=intro-course--welcome-course-structure"
-              />
-              <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                {destinationHelpText ??
-                  "Best default is the internal Freeswimming route. Use external video or other allowlisted HTTPS URLs only as an advanced override."}
-              </p>
-            </label>
+                <label className={fieldLabelClass}>
+                  <span>Status</span>
+                  <select
+                    value={formState.status}
+                    onChange={(event) =>
+                      setFormState((previous) => ({
+                        ...previous,
+                        status: event.target.value as QrLinkStatus,
+                      }))
+                    }
+                    className={fieldClass}
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <label className={cx(fieldLabelClass, "sm:col-span-2")}>
-              <span>Placement key</span>
-              <input
-                type="text"
-                value={formState.placementKey}
-                onChange={(event) =>
-                  setFormState((previous) => ({
-                    ...previous,
-                    placementKey: event.target.value,
-                  }))
-                }
-                className={fieldClass}
-                placeholder="course.lesson.share"
-              />
-            </label>
+                <label className={cx(fieldLabelClass, "sm:col-span-2")}>
+                  <span>Destination URL (https)</span>
+                  <input
+                    type="url"
+                    value={formState.destinationUrl}
+                    onChange={(event) =>
+                      setFormState((previous) => ({
+                        ...previous,
+                        destinationUrl: event.target.value,
+                      }))
+                    }
+                    className={fieldClass}
+                    placeholder="https://freeswimming.org/course?lesson=intro-course--welcome-course-structure"
+                  />
+                  <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
+                    {destinationHelpText ??
+                      "Best default is the internal Freeswimming route. Use external video or other allowlisted HTTPS URLs only as an advanced override."}
+                  </p>
+                </label>
 
-            <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <button type="submit" disabled={submitting} className={compactPrimaryActionClass}>
-                {submitting ? "Creating…" : "Create QR link"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setFormState(
-                    buildInitialFormState({
-                      origin,
-                      slugHint,
-                      destinationPath,
-                      placementKey,
-                    })
-                  )
-                }
-                disabled={submitting}
-                className={compactSecondaryActionClass}
-              >
-                Reset defaults
-              </button>
-            </div>
-          </form>
+                <label className={cx(fieldLabelClass, "sm:col-span-2")}>
+                  <span>Placement key</span>
+                  <input
+                    type="text"
+                    value={formState.placementKey}
+                    onChange={(event) =>
+                      setFormState((previous) => ({
+                        ...previous,
+                        placementKey: event.target.value,
+                      }))
+                    }
+                    className={fieldClass}
+                    placeholder="course.lesson.share"
+                  />
+                </label>
+
+                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                  <button type="submit" disabled={submitting} className={compactPrimaryActionClass}>
+                    {submitting ? "Creating…" : "Create QR link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormState(
+                        buildInitialFormState({
+                          origin,
+                          slugHint,
+                          destinationPath,
+                          placementKey,
+                        })
+                      )
+                    }
+                    disabled={submitting}
+                    className={compactSecondaryActionClass}
+                  >
+                    Reset defaults
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : null}
         </>
       ) : null}
     </section>

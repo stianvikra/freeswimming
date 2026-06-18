@@ -131,6 +131,10 @@ describe("AdminWorkspace shell", () => {
     render(<AdminWorkspace role="viewer" />);
 
     expect(screen.getByTestId("admin-tab-users")).toHaveClass("fs-library-card-accent");
+    expect(screen.getByTestId("admin-tab-users")).toHaveAttribute(
+      "title",
+      "Accounts, access, support, and audited role controls"
+    );
     expect(screen.getByTestId("admin-active-section-label")).toHaveTextContent("Users");
     expect(screen.getByTestId("admin-manager-users")).toBeVisible();
   });

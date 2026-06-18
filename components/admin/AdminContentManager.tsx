@@ -124,23 +124,43 @@ const compactFieldClass =
   "h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-[rgba(248,250,252,0.75)] disabled:text-[color:var(--fs-color-muted)]";
 const textAreaClass =
   "admin-auto-grow-textarea min-h-20 w-full resize-y overflow-hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)] transition-colors placeholder:text-[color:var(--fs-color-muted)] focus:border-[color:var(--fs-border-brand)] focus:outline-none focus:ring-2 focus:ring-blue-100";
+const lessonMirrorComfortTextareaClass = [textAreaClass, "sm:!min-h-24"].join(" ");
+const lessonMirrorFocusTextareaClass = [textAreaClass, "sm:!min-h-28"].join(" ");
 const readOnlyValueClass =
   "min-h-9 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 px-3 py-2 text-sm text-[color:var(--fs-color-ink-strong)]";
 const compactCheckboxClass =
   "h-4 w-4 rounded border border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60";
-const lessonMirrorShellClass = "mt-4 w-full space-y-3";
+const lessonMirrorEditorClass =
+  "rounded-[var(--fs-radius-control)] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] p-3 shadow-[0_14px_34px_rgba(15,23,42,0.06)] sm:p-4";
+const lessonMirrorShellClass = "mt-3 w-full space-y-3";
 const lessonMirrorCardClass =
-  "rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/76 p-3 sm:p-4";
+  "rounded-[var(--fs-radius-control)] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)] sm:p-4";
 const lessonMirrorLargeCardClass =
-  "rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/78 p-3 sm:p-4";
+  "rounded-[var(--fs-radius-control)] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)] sm:p-4";
 const lessonMirrorPracticeCardClass =
-  "overflow-hidden rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/78 p-3 sm:p-4";
+  "overflow-hidden rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/96 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)]";
 const lessonMirrorWaterPracticeCardClass =
-  "overflow-hidden rounded-[var(--fs-radius-control)] border border-blue-100/90 bg-white/78 p-3 sm:p-4";
+  "overflow-hidden rounded-[var(--fs-radius-control)] border border-blue-100/90 bg-white/96 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)]";
 const lessonMirrorSoftCalloutClass =
   "rounded-[var(--fs-radius-control)] border-l-4 border-blue-200 bg-blue-50/50 px-3 py-3";
+const lessonMirrorCoachCheckClass =
+  "rounded-[var(--fs-radius-control)] border border-blue-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,250,255,0.94)_48%,rgba(240,253,250,0.82))] p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)] sm:p-4";
+const lessonMirrorReadyCheckClass =
+  "rounded-[var(--fs-radius-control)] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.94))] p-3 shadow-[0_10px_24px_rgba(15,23,42,0.055)] sm:p-4";
+const lessonMirrorCoachCheckRowClass =
+  "rounded-[var(--fs-radius-control)] bg-white/82 p-2 ring-1 ring-slate-200/76";
+const lessonMirrorAvoidFieldClass =
+  "rounded-[var(--fs-radius-control)] bg-amber-50/72 p-2 ring-1 ring-amber-100/80";
+const lessonMirrorFixFieldClass =
+  "rounded-[var(--fs-radius-control)] bg-blue-50/72 p-2 ring-1 ring-blue-100/80";
+const lessonMirrorReadyFieldClass =
+  "rounded-[var(--fs-radius-control)] bg-white/88 p-2 ring-1 ring-blue-100/78";
+const lessonMirrorSupportFieldClass =
+  "rounded-[var(--fs-radius-control)] border border-slate-200/72 bg-white/92 p-2";
 const lessonMirrorSectionEyebrowClass =
-  "text-[12px] font-semibold tracking-wide text-slate-500 uppercase";
+  "text-[13px] font-bold tracking-wide text-slate-600 uppercase";
+const lessonMirrorHeaderRowClass = "grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-2";
+const lessonMirrorPracticeHeaderClass = "grid gap-2 px-1 sm:px-2";
 const secondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const compactPrimaryActionClass =
@@ -164,8 +184,9 @@ const tabButtonClass =
 const tabButtonActiveClass = "bg-white text-[color:var(--fs-color-brand-700)] shadow-sm";
 const tabButtonInactiveClass = "text-[color:var(--fs-color-ink)] hover:bg-white/75";
 const statusFilterClass =
-  "fs-library-card inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
-const statusFilterActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
+  "inline-flex min-h-8 items-center justify-center rounded-full border border-[color:var(--fs-border-soft)] bg-white/66 px-2.5 text-[11px] font-semibold text-[color:var(--fs-color-ink)] transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const statusFilterActiveClass =
+  "border-[color:var(--fs-border-brand)] bg-[color:var(--fs-color-brand-50)] text-[color:var(--fs-color-brand-700)]";
 
 const COURSE_WORKSPACE_OVERVIEW_PREVIEW_LIMIT = 3;
 
@@ -451,13 +472,6 @@ const LESSON_EXPERIENCE_VARIANT_OPTIONS: Array<{
     description: "Use after manually choosing the exact visible containers.",
   },
 ];
-
-function getLessonExperienceVariantOption(value: LessonExperienceVariantOption) {
-  return (
-    LESSON_EXPERIENCE_VARIANT_OPTIONS.find((option) => option.value === value) ??
-    LESSON_EXPERIENCE_VARIANT_OPTIONS[0]
-  );
-}
 
 const LESSON_EXPERIENCE_DISPLAY_DEFAULTS: Record<
   LessonExperienceVariantOption,
@@ -2126,17 +2140,19 @@ export default function AdminContentManager() {
 
   function renderLessonSectionVisibilityToggle(
     key: LessonExperienceDisplayKey,
-    sectionLabel: string
+    sectionLabel: string,
+    visibleLabel?: string
   ) {
     const checked = editFormState?.lessonBody?.lessonExperience.display[key] ?? false;
+    const statusLabel = checked ? "Shown" : "Hidden";
 
     return (
       <label
         className={[
-          "inline-flex min-h-8 cursor-pointer items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+          "inline-flex min-h-7 cursor-pointer items-center gap-1.5 rounded-[var(--fs-radius-control)] border px-2 py-0.5 text-[11px] font-semibold transition",
           checked
-            ? "border-blue-100 bg-blue-50 text-blue-700 hover:border-blue-200 hover:bg-blue-100/70"
-            : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white",
+            ? "border-slate-200 bg-white/72 text-slate-600 hover:border-blue-200 hover:text-blue-700"
+            : "border-slate-200/80 bg-slate-50/70 text-slate-500 hover:border-slate-300 hover:bg-white",
         ].join(" ")}
       >
         <input
@@ -2146,7 +2162,7 @@ export default function AdminContentManager() {
           onChange={(event) => updateLessonExperienceDisplay(key, event.target.checked)}
           className={compactCheckboxClass}
         />
-        <span>{checked ? "Shown on lesson page" : "Hidden from lesson page"}</span>
+        <span>{visibleLabel ?? statusLabel}</span>
       </label>
     );
   }
@@ -2158,7 +2174,7 @@ export default function AdminContentManager() {
     const checked = editFormState?.lessonBody?.lessonExperience.display[key] ?? false;
 
     return (
-      <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold text-slate-600">
+      <label className="inline-flex min-h-7 cursor-pointer items-center gap-1.5 rounded-[var(--fs-radius-control)] border border-slate-200/80 bg-white/68 px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:bg-white">
         <input
           type="checkbox"
           aria-label={`Show ${sectionLabel} safety note on lesson page`}
@@ -2166,7 +2182,7 @@ export default function AdminContentManager() {
           onChange={(event) => updateLessonExperienceDisplay(key, event.target.checked)}
           className={compactCheckboxClass}
         />
-        <span>Show safety note</span>
+        <span>{checked ? "Shown" : "Hidden"}</span>
       </label>
     );
   }
@@ -2174,45 +2190,29 @@ export default function AdminContentManager() {
   function renderHiddenLessonSectionNotice(sectionLabel: string) {
     return (
       <AdminManagerState tone="empty" density="compact" className="!mt-0">
-        Hidden on public lesson. Saved {sectionLabel.toLowerCase()} content is preserved.
+        Hidden. Saved {sectionLabel.toLowerCase()} content is kept.
       </AdminManagerState>
     );
   }
 
   function renderLessonPracticeVisualPlaceholder(tone: "land" | "water") {
     const label = tone === "land" ? "Dryland practice visual" : "Water practice visual";
-    const helper =
-      tone === "land"
-        ? "Add or preserve a dryland visual when the media workflow is available."
-        : "Add or preserve a pool drill visual when the media workflow is available.";
     const testId =
       tone === "land"
         ? "admin-lesson-dryland-visual-placeholder"
         : "admin-lesson-water-visual-placeholder";
 
     return (
-      <div className="rounded-[var(--fs-radius-control)] border border-slate-200/80 bg-slate-50/75 p-3 sm:p-4">
-        <div
-          data-testid={testId}
-          className="flex items-start justify-between gap-3"
-          role="img"
-          aria-label={`${label} not editable in this slice`}
-        >
-          <span className="min-w-0">
-            <span className="block text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
-              {label}
-            </span>
-            <span className="mt-1 block text-[14px] font-semibold text-slate-800">
-              Visual not added yet
-            </span>
-            <span className="mt-1 block text-[12px] leading-5 font-medium text-slate-500">
-              {helper}
-            </span>
-          </span>
-          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600">
-            Media deferred
-          </span>
-        </div>
+      <div
+        data-testid={testId}
+        className="flex min-h-8 w-full max-w-full items-center justify-between gap-2 rounded-[var(--fs-radius-control)] border border-slate-200 bg-white/78 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+        role="img"
+        aria-label={`${label} not editable in this slice`}
+      >
+        <span className="truncate">{label}</span>
+        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] tracking-wide text-slate-500 uppercase">
+          Media deferred
+        </span>
       </div>
     );
   }
@@ -3134,7 +3134,7 @@ export default function AdminContentManager() {
   return (
     <div className="space-y-6" data-testid="admin-content-manager">
       <section className={managerHeaderClass} data-testid="admin-content-manager-header">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,auto)] lg:items-start">
           <div>
             <h2 id="admin-content-list-anchor" className={headingClass}>
               Content
@@ -3157,7 +3157,7 @@ export default function AdminContentManager() {
             ) : null}
           </div>
           {isAllContentView ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-[minmax(14rem,16rem)_minmax(10rem,auto)_minmax(10rem,auto)_minmax(10rem,auto)_auto]">
               <label className="sr-only" htmlFor="admin-content-search">
                 Search content items
               </label>
@@ -3170,7 +3170,7 @@ export default function AdminContentManager() {
                   setListQuery(event.target.value);
                 }}
                 placeholder="Search title, slug, category..."
-                className={[inlineFieldClass, "w-56 md:w-64"].join(" ")}
+                className={[inlineFieldClass, "w-full"].join(" ")}
               />
               <label className="sr-only" htmlFor="admin-content-type-filter">
                 Filter by type
@@ -3181,7 +3181,7 @@ export default function AdminContentManager() {
                 onChange={(event) =>
                   handleManualTypeFilterChange(event.target.value as "all" | AdminContentType)
                 }
-                className={inlineFieldClass}
+                className={[inlineFieldClass, "w-full"].join(" ")}
               >
                 {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -3199,7 +3199,7 @@ export default function AdminContentManager() {
                   setListFocusState(null);
                   setListStatusFilter(event.target.value as "all" | AdminContentStatus);
                 }}
-                className={inlineFieldClass}
+                className={[inlineFieldClass, "w-full"].join(" ")}
               >
                 <option value="all">All statuses</option>
                 {STATUS_OPTIONS.map((option) => (
@@ -3218,7 +3218,7 @@ export default function AdminContentManager() {
                   setListFocusState(null);
                   setListSort(event.target.value as ListSortOption);
                 }}
-                className={inlineFieldClass}
+                className={[inlineFieldClass, "w-full"].join(" ")}
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -3229,7 +3229,7 @@ export default function AdminContentManager() {
               <button
                 type="button"
                 onClick={() => void loadItems()}
-                className={secondaryActionClass}
+                className={[secondaryActionClass, "w-full sm:w-auto"].join(" ")}
               >
                 Refresh
               </button>
@@ -3271,7 +3271,7 @@ export default function AdminContentManager() {
 
         {isAllContentView ? (
           <div className="mt-4 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="hidden flex-wrap items-center gap-2 sm:flex">
               {ALL_CONTENT_SCOPE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -4399,22 +4399,22 @@ export default function AdminContentManager() {
                             {item.content_type === "course_lesson" && editFormState.lessonBody ? (
                               <>
                                 <div
-                                  className={["sm:col-span-2", mutedPanelClass].join(" ")}
+                                  className={["sm:col-span-2", lessonMirrorEditorClass].join(" ")}
                                   data-testid="admin-lesson-public-field-editor"
                                 >
-                                  <div className="flex flex-wrap items-start justify-between gap-2">
-                                    <div>
-                                      <h4 className={metadataLabelClass}>Lesson fields</h4>
-                                      <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100/72 pb-3">
+                                    <div className="min-w-0">
+                                      <h4 className={lessonMirrorSectionEyebrowClass}>
                                         Public lesson mirror
+                                      </h4>
+                                      <p className="mt-1 truncate text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                                        {editFormState.title || item.title}
                                       </p>
                                     </div>
+                                    <span className="inline-flex min-h-8 items-center rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                                      Lesson editor
+                                    </span>
                                   </div>
-                                  <p className={["mt-1", metadataClass].join(" ")}>
-                                    Edit these in the same order, width, and section rhythm swimmers
-                                    see on the public lesson page. Admin/list and technical fallback
-                                    fields are kept separate below.
-                                  </p>
 
                                   <div
                                     className={lessonMirrorShellClass}
@@ -4427,13 +4427,7 @@ export default function AdminContentManager() {
                                       <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="min-w-0 flex-1">
                                           <p className={lessonMirrorSectionEyebrowClass}>
-                                            Lesson containers
-                                          </p>
-                                          <p className={["mt-1", metadataClass].join(" ")}>
-                                            Choose the public section preset for this lesson.
-                                            Concept is the explanation-first layout for
-                                            introduction-style lessons. Manual section toggles
-                                            switch the lesson to Custom.
+                                            Public sections
                                           </p>
                                         </div>
                                         <label
@@ -4460,13 +4454,6 @@ export default function AdminContentManager() {
                                           </select>
                                         </label>
                                       </div>
-                                      <p className="rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/78 px-3 py-2 text-xs leading-5 text-[color:var(--fs-color-muted)]">
-                                        {
-                                          getLessonExperienceVariantOption(
-                                            editFormState.lessonBody.lessonExperience.variant
-                                          ).description
-                                        }
-                                      </p>
                                     </section>
 
                                     <fieldset
@@ -4479,11 +4466,6 @@ export default function AdminContentManager() {
                                           </span>
                                         </span>
                                       </legend>
-                                      <p className={metadataClass}>
-                                        Appears in the lesson video area and lesson metadata so the
-                                        swimmer knows what to watch and how long the lesson should
-                                        take.
-                                      </p>
                                       <div className="grid gap-3 sm:grid-cols-2">
                                         <label className={compactLabelClass}>
                                           <span>Video ID</span>
@@ -4497,10 +4479,6 @@ export default function AdminContentManager() {
                                             className={compactFieldClass}
                                             placeholder="Xh6OblO06LY"
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Use only the YouTube video ID from the public lesson
-                                            video, not a full URL.
-                                          </p>
                                         </label>
 
                                         <label className={compactLabelClass}>
@@ -4521,25 +4499,17 @@ export default function AdminContentManager() {
                                             className={compactFieldClass}
                                             placeholder="3"
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Shown beside the video as the public time estimate for
-                                            this lesson.
-                                          </p>
                                         </label>
                                       </div>
                                     </fieldset>
 
-                                    <fieldset
+                                    <details
                                       className={["space-y-3", lessonMirrorCardClass].join(" ")}
                                     >
-                                      <legend className={lessonMirrorSectionEyebrowClass}>
+                                      <summary className={compactDetailsSummaryClass}>
                                         Video planning notes
-                                      </legend>
-                                      <p className={metadataClass}>
-                                        Admin-only script notes, shot plan, retake ideas, or
-                                        recording reminders. Not shown on the lesson page.
-                                      </p>
-                                      <label className={compactLabelClass}>
+                                      </summary>
+                                      <label className={["mt-3", compactLabelClass].join(" ")}>
                                         <span>Video script notes</span>
                                         <textarea
                                           aria-label="Video script notes"
@@ -4555,7 +4525,7 @@ export default function AdminContentManager() {
                                           placeholder="Opening line, key demo shots, camera notes, retake reminders..."
                                         />
                                       </label>
-                                    </fieldset>
+                                    </details>
 
                                     <section
                                       className={["space-y-4", lessonMirrorLargeCardClass].join(
@@ -4566,16 +4536,21 @@ export default function AdminContentManager() {
                                       <div className="flex flex-wrap items-start justify-between gap-2">
                                         <div>
                                           <p className={lessonMirrorSectionEyebrowClass}>Lesson</p>
-                                          <p className={metadataClass}>
-                                            Mirrors the public Lesson section: goal, quick
-                                            explanation, and the coaching reason.
-                                          </p>
                                         </div>
                                       </div>
 
                                       <div className="grid gap-4 border-t border-slate-200/72 pt-4 lg:grid-cols-2 lg:divide-x lg:divide-slate-200/72">
-                                        <label className={compactLabelClass}>
-                                          <span>Goal</span>
+                                        <label
+                                          className={[compactLabelClass, "space-y-2"].join(" ")}
+                                        >
+                                          <span
+                                            className={[
+                                              lessonMirrorSectionEyebrowClass,
+                                              "flex min-h-7 items-center",
+                                            ].join(" ")}
+                                          >
+                                            Goal
+                                          </span>
                                           <textarea
                                             aria-label="Lesson goal"
                                             rows={3}
@@ -4583,36 +4558,24 @@ export default function AdminContentManager() {
                                             onChange={(event) =>
                                               updateLessonBodyField("goal", event.target.value)
                                             }
-                                            className={textAreaClass}
+                                            className={lessonMirrorFocusTextareaClass}
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Appears as Goal on the public lesson page and gives the
-                                            swimmer the single outcome to focus on.
-                                          </p>
                                         </label>
 
-                                        <div className="space-y-3 lg:pl-5">
-                                          <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div>
-                                              <p className={lessonMirrorSectionEyebrowClass}>
-                                                Quick explanation
-                                              </p>
-                                              <p className={metadataClass}>
-                                                Appears under Quick explanation and turns the goal
-                                                into a short, practical instruction.
-                                              </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                              {renderLessonSectionVisibilityToggle(
-                                                "quickExplanation",
-                                                "Quick explanation"
-                                              )}
-                                            </div>
+                                        <div className="space-y-2 lg:pl-5">
+                                          <div className={lessonMirrorHeaderRowClass}>
+                                            <p className={lessonMirrorSectionEyebrowClass}>
+                                              Quick explanation
+                                            </p>
+                                            {renderLessonSectionVisibilityToggle(
+                                              "quickExplanation",
+                                              "Quick explanation"
+                                            )}
                                           </div>
                                           {editFormState.lessonBody.lessonExperience.display
                                             .quickExplanation ? (
                                             <label className={compactLabelClass}>
-                                              <span>Quick explanation</span>
+                                              <span className="sr-only">Quick explanation</span>
                                               <textarea
                                                 aria-label="Quick explanation"
                                                 rows={3}
@@ -4626,7 +4589,7 @@ export default function AdminContentManager() {
                                                     event.target.value
                                                   )
                                                 }
-                                                className={textAreaClass}
+                                                className={lessonMirrorFocusTextareaClass}
                                                 placeholder="One plain-language explanation of what the swimmer should do."
                                               />
                                             </label>
@@ -4641,27 +4604,19 @@ export default function AdminContentManager() {
                                           " "
                                         )}
                                       >
-                                        <div className="flex flex-wrap items-start justify-between gap-2">
-                                          <div>
-                                            <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
-                                              Why this matters
-                                            </p>
-                                            <p className={metadataClass}>
-                                              Appears under Why this matters and explains the
-                                              coaching reason behind the lesson.
-                                            </p>
-                                          </div>
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            {renderLessonSectionVisibilityToggle(
-                                              "whyThisMatters",
-                                              "Why this matters"
-                                            )}
-                                          </div>
+                                        <div className={lessonMirrorHeaderRowClass}>
+                                          <p className="text-[13px] font-bold tracking-wide text-blue-700 uppercase">
+                                            Why this matters
+                                          </p>
+                                          {renderLessonSectionVisibilityToggle(
+                                            "whyThisMatters",
+                                            "Why this matters"
+                                          )}
                                         </div>
                                         {editFormState.lessonBody.lessonExperience.display
                                           .whyThisMatters ? (
                                           <label className={compactLabelClass}>
-                                            <span>Why this matters</span>
+                                            <span className="sr-only">Why this matters</span>
                                             <textarea
                                               aria-label="Why this matters"
                                               rows={3}
@@ -4675,7 +4630,7 @@ export default function AdminContentManager() {
                                                   event.target.value
                                                 )
                                               }
-                                              className={textAreaClass}
+                                              className={lessonMirrorComfortTextareaClass}
                                             />
                                           </label>
                                         ) : (
@@ -4684,486 +4639,502 @@ export default function AdminContentManager() {
                                       </div>
                                     </section>
 
-                                    <fieldset
-                                      className={["space-y-3", lessonMirrorPracticeCardClass].join(
-                                        " "
-                                      )}
-                                    >
-                                      <legend className="sr-only">Dryland practice</legend>
-                                      <div className="space-y-4">
-                                        <div className="flex flex-wrap items-start justify-between gap-2 px-1 sm:px-2">
-                                          <div>
-                                            <p className={lessonMirrorSectionEyebrowClass}>
-                                              Dryland practice
-                                            </p>
-                                            <p className={metadataClass}>
-                                              Appears before pool work so the swimmer can rehearse
-                                              the movement outside the water.
-                                            </p>
-                                          </div>
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            {renderLessonSectionVisibilityToggle(
-                                              "landPractice",
-                                              "Dryland practice"
-                                            )}
-                                          </div>
-                                        </div>
-                                        {editFormState.lessonBody.lessonExperience.display
-                                          .landPractice ? (
-                                          <>
-                                            {renderLessonPracticeVisualPlaceholder("land")}
-                                            <div className="space-y-3 px-1 pb-2 sm:px-2">
-                                              <label className={compactLabelClass}>
-                                                <span>Dryland practice title</span>
-                                                <input
-                                                  aria-label="Dryland practice title"
-                                                  type="text"
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .landPracticeTitle
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "landPracticeTitle",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={compactFieldClass}
-                                                />
-                                              </label>
-                                              <label className={compactLabelClass}>
-                                                <span>Dryland practice steps (one per line)</span>
-                                                <textarea
-                                                  aria-label="Dryland practice steps (one per line)"
-                                                  rows={4}
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .landPracticeSteps
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "landPracticeSteps",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={textAreaClass}
-                                                />
-                                              </label>
-                                              <label className={compactLabelClass}>
-                                                <span className="flex flex-wrap items-center justify-between gap-2">
-                                                  <span>Dryland practice safety note</span>
-                                                  {renderLessonSafetyNoteVisibilityToggle(
-                                                    "landSafetyNote",
-                                                    "Dryland practice"
-                                                  )}
-                                                </span>
-                                                <textarea
-                                                  aria-label="Dryland practice safety note"
-                                                  rows={2}
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .landPracticeSafetyNote
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "landPracticeSafetyNote",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={textAreaClass}
-                                                />
-                                                <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                                  Optional safety or reset note for the dryland
-                                                  practice.
-                                                </p>
-                                              </label>
-                                            </div>
-                                          </>
-                                        ) : (
-                                          renderHiddenLessonSectionNotice("Dryland practice")
-                                        )}
-                                      </div>
-                                    </fieldset>
-
-                                    <fieldset
-                                      className={[
-                                        "space-y-3",
-                                        lessonMirrorWaterPracticeCardClass,
-                                      ].join(" ")}
-                                    >
-                                      <legend className="sr-only">
-                                        Pool drill / water practice
-                                      </legend>
-                                      <div className="space-y-4">
-                                        <div className="flex flex-wrap items-start justify-between gap-2 px-1 sm:px-2">
-                                          <div>
-                                            <p className={lessonMirrorSectionEyebrowClass}>
-                                              Pool drill
-                                            </p>
-                                            <p className={metadataClass}>
-                                              Appears as the in-water practice block and tells the
-                                              swimmer exactly what to try in the pool.
-                                            </p>
-                                          </div>
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            {renderLessonSectionVisibilityToggle(
-                                              "waterPractice",
-                                              "Pool drill / water practice"
-                                            )}
-                                          </div>
-                                        </div>
-                                        {editFormState.lessonBody.lessonExperience.display
-                                          .waterPractice ? (
-                                          <>
-                                            {renderLessonPracticeVisualPlaceholder("water")}
-                                            <div className="space-y-3 px-1 pb-2 sm:px-2">
-                                              <label className={compactLabelClass}>
-                                                <span>Pool drill title</span>
-                                                <input
-                                                  aria-label="Pool drill title"
-                                                  type="text"
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .waterPracticeTitle
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "waterPracticeTitle",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={compactFieldClass}
-                                                />
-                                              </label>
-                                              <label className={compactLabelClass}>
-                                                <span>Pool drill steps (one per line)</span>
-                                                <textarea
-                                                  aria-label="Pool drill steps (one per line)"
-                                                  rows={4}
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .waterPracticeSteps
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "waterPracticeSteps",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={textAreaClass}
-                                                />
-                                              </label>
-                                              <label className={compactLabelClass}>
-                                                <span className="flex flex-wrap items-center justify-between gap-2">
-                                                  <span>Water practice safety note</span>
-                                                  {renderLessonSafetyNoteVisibilityToggle(
-                                                    "waterSafetyNote",
-                                                    "Water practice"
-                                                  )}
-                                                </span>
-                                                <textarea
-                                                  aria-label="Water practice safety note"
-                                                  rows={2}
-                                                  value={
-                                                    editFormState.lessonBody.lessonExperience
-                                                      .waterPracticeSafetyNote
-                                                  }
-                                                  onChange={(event) =>
-                                                    updateLessonExperienceField(
-                                                      "waterPracticeSafetyNote",
-                                                      event.target.value
-                                                    )
-                                                  }
-                                                  className={textAreaClass}
-                                                />
-                                                <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                                  Appears with the water practice when the lesson
-                                                  needs a specific safety or reset note.
-                                                </p>
-                                              </label>
-                                            </div>
-                                          </>
-                                        ) : (
-                                          renderHiddenLessonSectionNotice(
-                                            "Pool drill / water practice"
-                                          )
-                                        )}
-                                      </div>
-                                    </fieldset>
-
-                                    <fieldset
-                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
-                                    >
-                                      <legend className={lessonMirrorSectionEyebrowClass}>
-                                        What good looks and feels like
-                                      </legend>
-                                      <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
-                                          Appears as What good looks and feels like so the swimmer
-                                          can self-check the movement.
-                                        </p>
-                                        {renderLessonSectionVisibilityToggle(
-                                          "feelCues",
-                                          "What good looks and feels like"
-                                        )}
-                                      </div>
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .feelCues ? (
-                                        <label className={compactLabelClass}>
-                                          <span>What good looks and feels like (one per line)</span>
-                                          <textarea
-                                            aria-label="What good looks and feels like (one per line)"
-                                            rows={4}
-                                            value={
-                                              editFormState.lessonBody.lessonExperience.feelCues
-                                            }
-                                            onChange={(event) =>
-                                              updateLessonExperienceField(
-                                                "feelCues",
-                                                event.target.value
-                                              )
-                                            }
-                                            className={textAreaClass}
-                                          />
-                                        </label>
-                                      ) : (
-                                        renderHiddenLessonSectionNotice(
-                                          "What good looks and feels like"
-                                        )
-                                      )}
-                                    </fieldset>
-
-                                    <fieldset
-                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
-                                    >
-                                      <legend className={lessonMirrorSectionEyebrowClass}>
-                                        Common mistakes
-                                      </legend>
-                                      <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
-                                          Appears under Common mistakes. Keep each correction
-                                          attached to its matching mistake.
-                                        </p>
-                                        {renderLessonSectionVisibilityToggle(
-                                          "commonMistakes",
-                                          "Common mistakes"
-                                        )}
-                                      </div>
-                                      {editFormState.lessonBody.lessonExperience.display
-                                        .commonMistakes ? (
-                                        <>
-                                          <div className="space-y-2">
-                                            {editFormState.lessonBody.lessonExperience.commonMistakes.map(
-                                              (row, mistakeIndex) => (
-                                                <div
-                                                  key={mistakeIndex}
-                                                  className="grid gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/82 p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-                                                >
-                                                  <label className={compactLabelClass}>
-                                                    <span>Common mistake {mistakeIndex + 1}</span>
-                                                    <textarea
-                                                      aria-label={`Common mistake ${mistakeIndex + 1}`}
-                                                      rows={2}
-                                                      value={row.mistake}
-                                                      onChange={(event) =>
-                                                        updateLessonExperienceMistakeRow(
-                                                          mistakeIndex,
-                                                          "mistake",
-                                                          event.target.value
-                                                        )
-                                                      }
-                                                      className={textAreaClass}
-                                                    />
-                                                  </label>
-                                                  <label className={compactLabelClass}>
-                                                    <span>Correction {mistakeIndex + 1}</span>
-                                                    <textarea
-                                                      aria-label={`Correction ${mistakeIndex + 1}`}
-                                                      rows={2}
-                                                      value={row.fix}
-                                                      onChange={(event) =>
-                                                        updateLessonExperienceMistakeRow(
-                                                          mistakeIndex,
-                                                          "fix",
-                                                          event.target.value
-                                                        )
-                                                      }
-                                                      className={textAreaClass}
-                                                    />
-                                                  </label>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                      removeLessonExperienceMistakeRow(mistakeIndex)
-                                                    }
-                                                    className={[
-                                                      compactSecondaryActionClass,
-                                                      "self-end",
-                                                    ].join(" ")}
-                                                  >
-                                                    Remove row
-                                                  </button>
-                                                </div>
-                                              )
-                                            )}
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={addLessonExperienceMistakeRow}
-                                            className={compactSuccessActionClass}
-                                          >
-                                            Add mistake row
-                                          </button>
-                                        </>
-                                      ) : (
-                                        renderHiddenLessonSectionNotice("Common mistakes")
-                                      )}
-                                    </fieldset>
-
                                     <div className="grid gap-3 lg:grid-cols-2">
-                                      <label
+                                      <fieldset
                                         className={[
-                                          compactLabelClass,
-                                          "block",
-                                          lessonMirrorCardClass,
+                                          "space-y-3",
+                                          lessonMirrorPracticeCardClass,
                                         ].join(" ")}
                                       >
-                                        <span className="flex flex-wrap items-center justify-between gap-2">
-                                          <span className={lessonMirrorSectionEyebrowClass}>
-                                            Pass criteria
-                                          </span>
-                                        </span>
-                                        <textarea
-                                          aria-label="Pass criteria (one per line)"
-                                          rows={3}
-                                          value={editFormState.lessonBody.passCriteria}
-                                          onChange={(event) =>
-                                            updateLessonBodyField(
-                                              "passCriteria",
-                                              event.target.value
-                                            )
-                                          }
-                                          className={textAreaClass}
-                                          placeholder="Do not mark done before you can swim 12.5m relaxed."
-                                        />
-                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                          Appears as Pass criteria and defines when the swimmer
-                                          should mark the lesson complete.
-                                        </p>
-                                      </label>
-
-                                      <fieldset
-                                        className={["space-y-3", lessonMirrorCardClass].join(" ")}
-                                      >
-                                        <legend className={lessonMirrorSectionEyebrowClass}>
-                                          Next step
-                                        </legend>
-                                        <div className="flex flex-wrap items-start justify-between gap-2">
-                                          <p
-                                            className={["min-w-0 flex-1", metadataClass].join(" ")}
-                                          >
-                                            Appears under Next step and points the swimmer toward
-                                            the next action after this lesson.
-                                          </p>
-                                          {renderLessonSectionVisibilityToggle(
-                                            "nextStep",
-                                            "Next step"
+                                        <legend className="sr-only">Dryland practice</legend>
+                                        <div className="space-y-4">
+                                          <div className={lessonMirrorPracticeHeaderClass}>
+                                            <div className={lessonMirrorHeaderRowClass}>
+                                              <p className={lessonMirrorSectionEyebrowClass}>
+                                                Dryland practice
+                                              </p>
+                                              {renderLessonSectionVisibilityToggle(
+                                                "landPractice",
+                                                "Dryland practice"
+                                              )}
+                                            </div>
+                                            {editFormState.lessonBody.lessonExperience.display
+                                              .landPractice
+                                              ? renderLessonPracticeVisualPlaceholder("land")
+                                              : null}
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .landPractice ? (
+                                            <>
+                                              <div className="space-y-3 px-1 pb-2 sm:px-2">
+                                                <label className={compactLabelClass}>
+                                                  <span>Title</span>
+                                                  <input
+                                                    aria-label="Dryland practice title"
+                                                    type="text"
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .landPracticeTitle
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "landPracticeTitle",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={compactFieldClass}
+                                                  />
+                                                </label>
+                                                <label className={compactLabelClass}>
+                                                  <span>Steps</span>
+                                                  <textarea
+                                                    aria-label="Dryland practice steps (one per line)"
+                                                    rows={4}
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .landPracticeSteps
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "landPracticeSteps",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={textAreaClass}
+                                                  />
+                                                </label>
+                                                <label className={compactLabelClass}>
+                                                  <span className="flex flex-wrap items-center justify-between gap-2">
+                                                    <span>Safety note</span>
+                                                    {renderLessonSafetyNoteVisibilityToggle(
+                                                      "landSafetyNote",
+                                                      "Dryland practice"
+                                                    )}
+                                                  </span>
+                                                  <textarea
+                                                    aria-label="Dryland practice safety note"
+                                                    rows={2}
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .landPracticeSafetyNote
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "landPracticeSafetyNote",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={lessonMirrorComfortTextareaClass}
+                                                  />
+                                                </label>
+                                              </div>
+                                            </>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice("Dryland practice")
                                           )}
                                         </div>
-                                        {editFormState.lessonBody.lessonExperience.display
-                                          .nextStep ? (
-                                          <label className={compactLabelClass}>
-                                            <span>Next step</span>
-                                            <textarea
-                                              aria-label="Next step"
-                                              rows={4}
-                                              value={
-                                                editFormState.lessonBody.lessonExperience.nextStep
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "nextStep",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={textAreaClass}
-                                            />
-                                          </label>
-                                        ) : (
-                                          renderHiddenLessonSectionNotice("Next step")
-                                        )}
+                                      </fieldset>
+
+                                      <fieldset
+                                        className={[
+                                          "space-y-3",
+                                          lessonMirrorWaterPracticeCardClass,
+                                        ].join(" ")}
+                                      >
+                                        <legend className="sr-only">
+                                          Pool drill / water practice
+                                        </legend>
+                                        <div className="space-y-4">
+                                          <div className={lessonMirrorPracticeHeaderClass}>
+                                            <div className={lessonMirrorHeaderRowClass}>
+                                              <p className={lessonMirrorSectionEyebrowClass}>
+                                                Pool drill
+                                              </p>
+                                              {renderLessonSectionVisibilityToggle(
+                                                "waterPractice",
+                                                "Pool drill / water practice"
+                                              )}
+                                            </div>
+                                            {editFormState.lessonBody.lessonExperience.display
+                                              .waterPractice
+                                              ? renderLessonPracticeVisualPlaceholder("water")
+                                              : null}
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .waterPractice ? (
+                                            <>
+                                              <div className="space-y-3 px-1 pb-2 sm:px-2">
+                                                <label className={compactLabelClass}>
+                                                  <span>Title</span>
+                                                  <input
+                                                    aria-label="Pool drill title"
+                                                    type="text"
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .waterPracticeTitle
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "waterPracticeTitle",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={compactFieldClass}
+                                                  />
+                                                </label>
+                                                <label className={compactLabelClass}>
+                                                  <span>Steps</span>
+                                                  <textarea
+                                                    aria-label="Pool drill steps (one per line)"
+                                                    rows={4}
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .waterPracticeSteps
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "waterPracticeSteps",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={textAreaClass}
+                                                  />
+                                                </label>
+                                                <label className={compactLabelClass}>
+                                                  <span className="flex flex-wrap items-center justify-between gap-2">
+                                                    <span>Safety note</span>
+                                                    {renderLessonSafetyNoteVisibilityToggle(
+                                                      "waterSafetyNote",
+                                                      "Water practice"
+                                                    )}
+                                                  </span>
+                                                  <textarea
+                                                    aria-label="Water practice safety note"
+                                                    rows={2}
+                                                    value={
+                                                      editFormState.lessonBody.lessonExperience
+                                                        .waterPracticeSafetyNote
+                                                    }
+                                                    onChange={(event) =>
+                                                      updateLessonExperienceField(
+                                                        "waterPracticeSafetyNote",
+                                                        event.target.value
+                                                      )
+                                                    }
+                                                    className={lessonMirrorComfortTextareaClass}
+                                                  />
+                                                </label>
+                                              </div>
+                                            </>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice(
+                                              "Pool drill / water practice"
+                                            )
+                                          )}
+                                        </div>
                                       </fieldset>
                                     </div>
 
-                                    <fieldset
-                                      className={["space-y-3", lessonMirrorCardClass].join(" ")}
+                                    <section
+                                      className={["space-y-4", lessonMirrorCoachCheckClass].join(
+                                        " "
+                                      )}
+                                      aria-label="Coach check"
                                     >
-                                      <legend className={lessonMirrorSectionEyebrowClass}>
-                                        Support card
-                                      </legend>
-                                      <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <p className={["min-w-0 flex-1", metadataClass].join(" ")}>
-                                          Appears in the public support card when the swimmer needs
-                                          more help.
+                                      <div className={lessonMirrorHeaderRowClass}>
+                                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                                          Coach check
                                         </p>
-                                        {renderLessonSectionVisibilityToggle(
-                                          "support",
-                                          "Support card"
+                                      </div>
+
+                                      <div className="space-y-4">
+                                        <div className="space-y-3">
+                                          <div className={lessonMirrorHeaderRowClass}>
+                                            <p className={lessonMirrorSectionEyebrowClass}>
+                                              What good looks and feels like
+                                            </p>
+                                            {renderLessonSectionVisibilityToggle(
+                                              "feelCues",
+                                              "What good looks and feels like",
+                                              "Cues"
+                                            )}
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .feelCues ? (
+                                            <label className={compactLabelClass}>
+                                              <span className="sr-only">
+                                                What good looks and feels like (one per line)
+                                              </span>
+                                              <textarea
+                                                aria-label="What good looks and feels like (one per line)"
+                                                rows={3}
+                                                value={
+                                                  editFormState.lessonBody.lessonExperience.feelCues
+                                                }
+                                                onChange={(event) =>
+                                                  updateLessonExperienceField(
+                                                    "feelCues",
+                                                    event.target.value
+                                                  )
+                                                }
+                                                className={lessonMirrorComfortTextareaClass}
+                                              />
+                                            </label>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice(
+                                              "What good looks and feels like"
+                                            )
+                                          )}
+                                        </div>
+
+                                        <div className="space-y-3">
+                                          <div className={lessonMirrorHeaderRowClass}>
+                                            <p className={lessonMirrorSectionEyebrowClass}>
+                                              Common mistakes
+                                            </p>
+                                            {renderLessonSectionVisibilityToggle(
+                                              "commonMistakes",
+                                              "Common mistakes",
+                                              "Mistakes"
+                                            )}
+                                          </div>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .commonMistakes ? (
+                                            <>
+                                              <div className="space-y-2">
+                                                {editFormState.lessonBody.lessonExperience.commonMistakes.map(
+                                                  (row, mistakeIndex) => (
+                                                    <div
+                                                      key={mistakeIndex}
+                                                      className={[
+                                                        "grid gap-2",
+                                                        lessonMirrorCoachCheckRowClass,
+                                                      ].join(" ")}
+                                                    >
+                                                      <div className="grid gap-2 sm:grid-cols-2">
+                                                        <label
+                                                          className={[
+                                                            compactLabelClass,
+                                                            lessonMirrorAvoidFieldClass,
+                                                          ].join(" ")}
+                                                        >
+                                                          <span>
+                                                            Common mistake {mistakeIndex + 1}
+                                                          </span>
+                                                          <textarea
+                                                            aria-label={`Common mistake ${mistakeIndex + 1}`}
+                                                            rows={2}
+                                                            value={row.mistake}
+                                                            onChange={(event) =>
+                                                              updateLessonExperienceMistakeRow(
+                                                                mistakeIndex,
+                                                                "mistake",
+                                                                event.target.value
+                                                              )
+                                                            }
+                                                            className={textAreaClass}
+                                                          />
+                                                        </label>
+                                                        <label
+                                                          className={[
+                                                            compactLabelClass,
+                                                            lessonMirrorFixFieldClass,
+                                                          ].join(" ")}
+                                                        >
+                                                          <span>Correction {mistakeIndex + 1}</span>
+                                                          <textarea
+                                                            aria-label={`Correction ${mistakeIndex + 1}`}
+                                                            rows={2}
+                                                            value={row.fix}
+                                                            onChange={(event) =>
+                                                              updateLessonExperienceMistakeRow(
+                                                                mistakeIndex,
+                                                                "fix",
+                                                                event.target.value
+                                                              )
+                                                            }
+                                                            className={textAreaClass}
+                                                          />
+                                                        </label>
+                                                      </div>
+                                                      <div className="flex justify-end">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            removeLessonExperienceMistakeRow(
+                                                              mistakeIndex
+                                                            )
+                                                          }
+                                                          className={compactSecondaryActionClass}
+                                                        >
+                                                          Remove row
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={addLessonExperienceMistakeRow}
+                                                className={compactSuccessActionClass}
+                                              >
+                                                Add mistake row
+                                              </button>
+                                            </>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice("Common mistakes")
+                                          )}
+                                        </div>
+                                      </div>
+                                    </section>
+
+                                    <section
+                                      className={["space-y-3", lessonMirrorReadyCheckClass].join(
+                                        " "
+                                      )}
+                                      aria-label="Ready check"
+                                    >
+                                      <div className={lessonMirrorHeaderRowClass}>
+                                        <p className="text-[12px] font-semibold tracking-wide text-blue-700 uppercase">
+                                          Ready check
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          {renderLessonSectionVisibilityToggle(
+                                            "nextStep",
+                                            "Next step",
+                                            "Next"
+                                          )}
+                                          {renderLessonSectionVisibilityToggle(
+                                            "support",
+                                            "Support card",
+                                            "Support"
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="grid gap-3 lg:grid-cols-2">
+                                        <label
+                                          className={[
+                                            compactLabelClass,
+                                            "block",
+                                            lessonMirrorReadyFieldClass,
+                                          ].join(" ")}
+                                        >
+                                          <span className={lessonMirrorSectionEyebrowClass}>
+                                            Pass criteria
+                                          </span>
+                                          <textarea
+                                            aria-label="Pass criteria (one per line)"
+                                            rows={3}
+                                            value={editFormState.lessonBody.passCriteria}
+                                            onChange={(event) =>
+                                              updateLessonBodyField(
+                                                "passCriteria",
+                                                event.target.value
+                                              )
+                                            }
+                                            className={lessonMirrorComfortTextareaClass}
+                                            placeholder="Do not mark done before you can swim 12.5m relaxed."
+                                          />
+                                        </label>
+
+                                        <div
+                                          className={[
+                                            "space-y-2",
+                                            lessonMirrorReadyFieldClass,
+                                          ].join(" ")}
+                                        >
+                                          <p className={lessonMirrorSectionEyebrowClass}>
+                                            Next step
+                                          </p>
+                                          {editFormState.lessonBody.lessonExperience.display
+                                            .nextStep ? (
+                                            <label className={compactLabelClass}>
+                                              <span className="sr-only">Next step</span>
+                                              <textarea
+                                                aria-label="Next step"
+                                                rows={3}
+                                                value={
+                                                  editFormState.lessonBody.lessonExperience.nextStep
+                                                }
+                                                onChange={(event) =>
+                                                  updateLessonExperienceField(
+                                                    "nextStep",
+                                                    event.target.value
+                                                  )
+                                                }
+                                                className={lessonMirrorComfortTextareaClass}
+                                              />
+                                            </label>
+                                          ) : (
+                                            renderHiddenLessonSectionNotice("Next step")
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        className={[
+                                          "space-y-3",
+                                          lessonMirrorSupportFieldClass,
+                                        ].join(" ")}
+                                      >
+                                        <div className={lessonMirrorHeaderRowClass}>
+                                          <p className={lessonMirrorSectionEyebrowClass}>
+                                            Support card
+                                          </p>
+                                        </div>
+                                        {editFormState.lessonBody.lessonExperience.display
+                                          .support ? (
+                                          <div className="grid gap-3 lg:grid-cols-[minmax(180px,0.72fr)_minmax(0,1.28fr)]">
+                                            <label className={compactLabelClass}>
+                                              <span>Support card title</span>
+                                              <input
+                                                aria-label="Support card title"
+                                                type="text"
+                                                value={
+                                                  editFormState.lessonBody.lessonExperience
+                                                    .supportTitle
+                                                }
+                                                onChange={(event) =>
+                                                  updateLessonExperienceField(
+                                                    "supportTitle",
+                                                    event.target.value
+                                                  )
+                                                }
+                                                className={compactFieldClass}
+                                              />
+                                            </label>
+                                            <label className={compactLabelClass}>
+                                              <span>Support card body</span>
+                                              <textarea
+                                                aria-label="Support card body"
+                                                rows={3}
+                                                value={
+                                                  editFormState.lessonBody.lessonExperience
+                                                    .supportBody
+                                                }
+                                                onChange={(event) =>
+                                                  updateLessonExperienceField(
+                                                    "supportBody",
+                                                    event.target.value
+                                                  )
+                                                }
+                                                className={lessonMirrorComfortTextareaClass}
+                                              />
+                                            </label>
+                                          </div>
+                                        ) : (
+                                          renderHiddenLessonSectionNotice("Support card")
                                         )}
                                       </div>
-                                      {editFormState.lessonBody.lessonExperience.display.support ? (
-                                        <>
-                                          <label className={compactLabelClass}>
-                                            <span>Support card title</span>
-                                            <input
-                                              aria-label="Support card title"
-                                              type="text"
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .supportTitle
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "supportTitle",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={compactFieldClass}
-                                            />
-                                          </label>
-                                          <label className={compactLabelClass}>
-                                            <span>Support card body</span>
-                                            <textarea
-                                              aria-label="Support card body"
-                                              rows={4}
-                                              value={
-                                                editFormState.lessonBody.lessonExperience
-                                                  .supportBody
-                                              }
-                                              onChange={(event) =>
-                                                updateLessonExperienceField(
-                                                  "supportBody",
-                                                  event.target.value
-                                                )
-                                              }
-                                              className={textAreaClass}
-                                            />
-                                          </label>
-                                        </>
-                                      ) : (
-                                        renderHiddenLessonSectionNotice("Support card")
-                                      )}
-                                    </fieldset>
+                                    </section>
 
-                                    <fieldset className={["space-y-3", nestedPanelClass].join(" ")}>
-                                      <legend className="w-full">
-                                        <span className="flex flex-wrap items-center justify-between gap-2">
-                                          <span className={metadataLabelClass}>
-                                            Admin/list fallback
-                                          </span>
-                                          {renderLessonContentScopeBadge("Admin/list only")}
-                                        </span>
-                                      </legend>
+                                    <details className={["space-y-3", nestedPanelClass].join(" ")}>
+                                      <summary className={compactDetailsSummaryClass}>
+                                        <span>Admin/list fallback</span>
+                                        {renderLessonContentScopeBadge("Admin/list only")}
+                                      </summary>
                                       <label className={compactLabelClass}>
                                         <span>Summary</span>
                                         <textarea
@@ -5177,24 +5148,14 @@ export default function AdminContentManager() {
                                           }
                                           className={textAreaClass}
                                         />
-                                        <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                          Used for admin lists, search, and legacy fallback. It is
-                                          not the main public lesson explanation when structured
-                                          fields are present.
-                                        </p>
                                       </label>
-                                    </fieldset>
+                                    </details>
 
                                     <details className={["space-y-3", nestedPanelClass].join(" ")}>
-                                      <summary className={metadataLabelClass}>
-                                        <span className="inline-flex flex-wrap items-center gap-2">
-                                          <span>Technical fallback fields</span>
-                                          {renderLessonContentScopeBadge("Technical fallback")}
-                                        </span>
+                                      <summary className={compactDetailsSummaryClass}>
+                                        <span>Technical fallback fields</span>
+                                        {renderLessonContentScopeBadge("Technical fallback")}
                                       </summary>
-                                      <p className={["mt-2", metadataClass].join(" ")}>
-                                        Stable IDs, support defaults, and legacy fallback content.
-                                      </p>
 
                                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                                         <div
@@ -5204,10 +5165,6 @@ export default function AdminContentManager() {
                                           <div className={readOnlyValueClass}>
                                             <code>{editFormState.lessonBody.lessonId}</code>
                                           </div>
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Internal stable ID for open lesson links, progress,
-                                            notes, and previews. It is locked after creation.
-                                          </p>
                                         </div>
 
                                         <label className={compactLabelClass}>
@@ -5232,10 +5189,6 @@ export default function AdminContentManager() {
                                               </option>
                                             ))}
                                           </select>
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Technical lesson category used for badge defaults and
-                                            fallback layout behavior.
-                                          </p>
                                         </label>
 
                                         <label
@@ -5255,10 +5208,6 @@ export default function AdminContentManager() {
                                             className={compactFieldClass}
                                             placeholder="Defaults to Learn / Drill / Swim"
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Optional fallback label for the public lesson badge when
-                                            the type default is not specific enough.
-                                          </p>
                                         </label>
 
                                         <label
@@ -5285,10 +5234,6 @@ export default function AdminContentManager() {
                                             className={compactFieldClass}
                                             placeholder="Example: 4"
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Leave empty to show extra help on all lessons where it
-                                            is enabled.
-                                          </p>
                                         </label>
 
                                         <fieldset
@@ -5300,10 +5245,6 @@ export default function AdminContentManager() {
                                           <legend className={metadataLabelClass}>
                                             Extra help actions
                                           </legend>
-                                          <p className={metadataClass}>
-                                            Controls which support actions appear inside the
-                                            fallback extra help card.
-                                          </p>
                                           <div className="grid gap-2 sm:grid-cols-2">
                                             {[
                                               ["supportActionVideoAnalysis", "Show Video Analysis"],
@@ -5369,10 +5310,6 @@ export default function AdminContentManager() {
                                             }
                                             className={textAreaClass}
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Fallback source for What good looks and feels like when
-                                            structured cues are missing.
-                                          </p>
                                         </label>
 
                                         <label className={compactLabelClass}>
@@ -5389,9 +5326,6 @@ export default function AdminContentManager() {
                                             }
                                             className={textAreaClass}
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Fallback source when structured mistakes are absent.
-                                          </p>
                                         </label>
 
                                         <label className={compactLabelClass}>
@@ -5426,10 +5360,6 @@ export default function AdminContentManager() {
                                             }
                                             className={textAreaClass}
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Fallback source for Pool drill / water practice when
-                                            structured water practice steps are missing.
-                                          </p>
                                         </label>
 
                                         <label
@@ -5445,10 +5375,6 @@ export default function AdminContentManager() {
                                             }
                                             className={textAreaClass}
                                           />
-                                          <p className="text-[11px] font-normal text-[color:var(--fs-color-muted)]">
-                                            Only used when the structured Next step field above is
-                                            empty.
-                                          </p>
                                         </label>
                                       </div>
                                     </details>
@@ -5466,7 +5392,7 @@ export default function AdminContentManager() {
                               includeModuleContextForCourseLesson={
                                 editNotesContext.includeModuleContextForCourseLesson
                               }
-                              collapsedByDefault={false}
+                              collapsedByDefault
                               className="mt-3"
                             />
                           ) : null}
@@ -5479,6 +5405,7 @@ export default function AdminContentManager() {
                               destinationPath={editQrContext.destinationPath}
                               placementKey={editQrContext.placementKey}
                               destinationHelpText={editQrContext.destinationHelpText}
+                              collapsedByDefault
                               className="mt-3"
                             />
                           ) : null}
@@ -5898,7 +5825,7 @@ export default function AdminContentManager() {
           })()
         : null}
 
-      {isAllContentView ? (
+      {isAllContentView && !editingItemId ? (
         <section className={rowCardClass}>
           <h2 className={headingClass}>Create content item</h2>
           <p className={["mt-2", mutedTextClass].join(" ")}>

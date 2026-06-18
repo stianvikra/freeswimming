@@ -933,19 +933,25 @@ describe("AdminContentManager state rendering", () => {
     const publicFieldEditor = within(editForm).getByTestId("admin-lesson-public-field-editor");
     const lessonEditor = within(publicFieldEditor).getByTestId("admin-lesson-experience-editor");
     expect(lessonEditor).toBeInTheDocument();
+    expect(screen.queryByTestId("admin-content-create-form")).not.toBeInTheDocument();
     expect(within(publicFieldEditor).getByText("Public lesson mirror")).toBeVisible();
-    expect(within(lessonEditor).getAllByText("Shown on lesson page").length).toBeGreaterThan(0);
+    expect(within(publicFieldEditor).getByText("Lesson editor")).toBeVisible();
+    expect(within(lessonEditor).getAllByText("Shown").length).toBeGreaterThan(0);
     expect(within(lessonEditor).getByText("Video / estimated time")).toBeVisible();
     expect(within(lessonEditor).getByText("Video planning notes")).toBeVisible();
-    expect(within(lessonEditor).getByText(/Admin-only script notes/i)).toBeVisible();
-    expect(within(lessonEditor).getByText("Lesson containers")).toBeVisible();
-    expect(
-      within(lessonEditor).getByText(/Concept is the explanation-first layout/i)
-    ).toBeVisible();
+    expect(within(lessonEditor).getByText("Public sections")).toBeVisible();
+    expect(within(lessonEditor).getByText("Coach check")).toBeVisible();
+    expect(within(lessonEditor).getByText("Cues")).toBeVisible();
+    expect(within(lessonEditor).getByText("Mistakes")).toBeVisible();
+    expect(within(lessonEditor).getByText("Ready check")).toBeVisible();
+    expect(within(lessonEditor).getByText("Next")).toBeVisible();
+    expect(within(lessonEditor).getByText("Support")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list fallback")).toBeVisible();
     expect(within(lessonEditor).getByText("Admin/list only")).toBeVisible();
     expect(within(lessonEditor).getByText("Technical fallback fields")).toBeVisible();
     expect(within(lessonEditor).getByText("Technical fallback")).toBeVisible();
+    fireEvent.click(within(lessonEditor).getByText("Admin/list fallback"));
+    fireEvent.click(within(lessonEditor).getByText("Technical fallback fields"));
     expect(within(lessonEditor).getAllByLabelText("Lesson experience layout")).toHaveLength(1);
     expect(within(lessonEditor).getByLabelText("Lesson experience layout")).toHaveValue(
       "water_drill"
@@ -969,16 +975,17 @@ describe("AdminContentManager state rendering", () => {
     expect(within(lessonEditor).queryByText("Legacy section visibility")).not.toBeInTheDocument();
     expect(
       within(lessonEditor).getByTestId("admin-lesson-dryland-visual-placeholder")
-    ).toHaveTextContent("Visual not added yet");
+    ).toHaveTextContent("Dryland practice visual");
     expect(
       within(lessonEditor).getByTestId("admin-lesson-dryland-visual-placeholder")
     ).toHaveTextContent("Media deferred");
     expect(
       within(lessonEditor).getByTestId("admin-lesson-water-visual-placeholder")
-    ).toHaveTextContent("Visual not added yet");
+    ).toHaveTextContent("Water practice visual");
     expect(
       within(lessonEditor).getByTestId("admin-lesson-water-visual-placeholder")
     ).toHaveTextContent("Media deferred");
+    expect(within(lessonEditor).queryByText("Visual not added yet")).not.toBeInTheDocument();
     expect(within(lessonEditor).queryByText("Not editable here")).not.toBeInTheDocument();
     expect(within(editForm).getByRole("link", { name: "View changes" })).toHaveAttribute(
       "href",
@@ -991,6 +998,7 @@ describe("AdminContentManager state rendering", () => {
     fireEvent.change(within(lessonEditor).getByLabelText("Estimated minutes"), {
       target: { value: "5" },
     });
+    fireEvent.click(within(lessonEditor).getByText("Video planning notes"));
     fireEvent.change(within(lessonEditor).getByLabelText("Video script notes"), {
       target: {
         value: "Open with the breath cue. Capture side angle and one close-up retake.",
@@ -1197,7 +1205,9 @@ describe("AdminContentManager state rendering", () => {
       within(lessonEditor).getByLabelText("Show Dryland practice on lesson page")
     ).not.toBeChecked();
     expect(within(lessonEditor).queryByLabelText("Dryland practice title")).not.toBeInTheDocument();
-    expect(within(lessonEditor).getByText(/Hidden on public lesson/i)).toBeVisible();
+    expect(
+      within(lessonEditor).getByText(/Hidden\. Saved dryland practice content is kept\./i)
+    ).toBeVisible();
 
     fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
 

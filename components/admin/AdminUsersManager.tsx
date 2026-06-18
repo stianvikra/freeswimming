@@ -615,7 +615,7 @@ export default function AdminUsersManager({ adminRole }: Props) {
             <p className={cx("mt-2 max-w-3xl", mutedTextClass)}>
               Canonical Supabase Auth users with purpose-bound profile, role, access, tester, and
               support signals. Private training, habit notes, raw analytics payloads, provider IDs,
-              and finance records stay out of this view.
+              and finance records stay out of this view. Role changes stay admin-only and audited.
             </p>
           </div>
           <button

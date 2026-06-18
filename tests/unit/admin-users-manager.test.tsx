@@ -109,6 +109,9 @@ describe("AdminUsersManager", () => {
     await waitFor(() => expect(screen.getByTestId("admin-users-list")).toBeVisible());
 
     expect(screen.getByRole("heading", { name: /Auth user directory/i })).toBeVisible();
+    expect(screen.getByTestId("admin-users-manager-header")).toHaveTextContent(
+      "Role changes stay admin-only and audited."
+    );
     expect(screen.getByTestId("admin-users-summary")).toHaveTextContent("1 auth user");
     expect(screen.getByTestId(`admin-users-row-${userId}`)).toHaveTextContent(
       "swimmer@example.com"
