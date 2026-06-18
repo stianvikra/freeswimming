@@ -242,7 +242,16 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(screen.getByTestId("admin-analytics-workout-builder-template-usage")).toBeVisible();
     expect(screen.getByTestId("admin-analytics-top-lists")).toBeVisible();
-    expect(screen.getByTestId("admin-analytics-caveats")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-reading-rules")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-caveats")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-analytics-core-signal-group")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-commerce-readiness-group")).toBeVisible();
+    expect(screen.getByTestId("admin-analytics-workout-builder-group")).toBeVisible();
+    expect(screen.getByText("Read the numbers safely")).toBeVisible();
+    expect(screen.getByText(/Counts are selected-range events/i)).toBeVisible();
+    expect(
+      screen.getByText(/not purchase, revenue, Stripe reconciliation, or finance truth/i)
+    ).toBeVisible();
 
     expect(screen.getByTestId("admin-analytics-health")).toHaveTextContent(/Fresh|Quiet/);
     expect(
@@ -262,8 +271,8 @@ describe("AdminAnalyticsDashboard", () => {
         "3 viewed / 2 marked done / 1 continued / 1 support interest"
       )
     ).toBeVisible();
-    expect(within(courseLessonKpi).getByText(/not proven technique mastery/i)).toBeVisible();
-    expect(within(courseLessonKpi).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(courseLessonKpi).getByText("Interpretation note")).toBeVisible();
+    expect(within(courseLessonKpi).getByText(/not proven technique mastery/i)).toBeInTheDocument();
     const existingUpsell = screen.getByTestId("admin-analytics-existing-upsell-baseline");
     expect(within(existingUpsell).getByText("Current sales prompts")).toBeVisible();
     expect(within(existingUpsell).getByText("Shown")).toBeVisible();
@@ -275,7 +284,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       within(existingUpsell).getByText("1 shown / 1 clicked / 1 checkout cancelled")
     ).toBeVisible();
-    expect(within(existingUpsell).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(existingUpsell).getByText("Interpretation note")).toBeVisible();
     const workoutContextStageSummary = screen.getByTestId(
       "admin-analytics-workout-context-stage-summary"
     );
@@ -297,8 +306,8 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextStageSummary).getAllByText("100%")).toHaveLength(2);
     expect(
       within(workoutContextStageSummary).getByText(/future-placement readiness counts/i)
-    ).toBeVisible();
-    expect(within(workoutContextStageSummary).queryByRole("button")).not.toBeInTheDocument();
+    ).toBeInTheDocument();
+    expect(within(workoutContextStageSummary).getByText("Interpretation note")).toBeVisible();
     const workoutContextCta = screen.getByTestId("admin-analytics-workout-context-cta");
     expect(within(workoutContextCta).getByText("Poolside guide prompt readiness")).toBeVisible();
     expect(within(workoutContextCta).getByText("Paused path")).toBeVisible();
@@ -312,8 +321,10 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextCta).queryByText("Guide prompt shown after saving")).toBeNull();
     expect(within(workoutContextCta).queryByText("Clicked guide prompt")).toBeNull();
     expect(within(workoutContextCta).queryByText("Clicked / shown")).toBeNull();
-    expect(within(workoutContextCta).getByText(/approved paused-placement setup/i)).toBeVisible();
-    expect(within(workoutContextCta).queryByRole("button")).not.toBeInTheDocument();
+    expect(
+      within(workoutContextCta).getByText(/approved paused-placement setup/i)
+    ).toBeInTheDocument();
+    expect(within(workoutContextCta).getByText("Interpretation note")).toBeVisible();
     const workoutContextCheckoutStarted = screen.getByTestId(
       "admin-analytics-workout-context-checkout-started"
     );
@@ -329,8 +340,8 @@ describe("AdminAnalyticsDashboard", () => {
       within(workoutContextCheckoutStarted).getByText(
         /approved paused or future-ready saved-workout guide path/i
       )
-    ).toBeVisible();
-    expect(within(workoutContextCheckoutStarted).queryByRole("button")).not.toBeInTheDocument();
+    ).toBeInTheDocument();
+    expect(within(workoutContextCheckoutStarted).getByText("Interpretation note")).toBeVisible();
     const workoutContextCheckoutOutcome = screen.getByTestId(
       "admin-analytics-workout-context-checkout-outcome"
     );
@@ -352,8 +363,8 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(workoutContextCheckoutOutcome).getByText("100%")).toBeVisible();
     expect(
       within(workoutContextCheckoutOutcome).getByText(/aggregate support diagnostics only/i)
-    ).toBeVisible();
-    expect(within(workoutContextCheckoutOutcome).queryByRole("button")).not.toBeInTheDocument();
+    ).toBeInTheDocument();
+    expect(within(workoutContextCheckoutOutcome).getByText("Interpretation note")).toBeVisible();
     const workoutContextCheckoutCancel = screen.getByTestId(
       "admin-analytics-workout-context-checkout-cancel"
     );
@@ -372,9 +383,9 @@ describe("AdminAnalyticsDashboard", () => {
     ).toBeVisible();
     expect(
       within(workoutContextCheckoutCancel).getByText(/return-from-checkout telemetry only/i)
-    ).toBeVisible();
+    ).toBeInTheDocument();
     expect(within(workoutContextCheckoutCancel).queryByText("Cancel rate")).toBeNull();
-    expect(within(workoutContextCheckoutCancel).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(workoutContextCheckoutCancel).getByText("Interpretation note")).toBeVisible();
     const builderFunnel = screen.getByTestId("admin-analytics-workout-builder-funnel");
     expect(within(builderFunnel).getByText("Builder starts and saves")).toBeVisible();
     expect(within(builderFunnel).getByText("Started")).toBeVisible();
@@ -383,7 +394,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(builderFunnel).getByText("5")).toBeVisible();
     expect(within(builderFunnel).getByText("3")).toBeVisible();
     expect(within(builderFunnel).getByText("60%")).toBeVisible();
-    expect(within(builderFunnel).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(builderFunnel).getByText("Interpretation note")).toBeVisible();
     const sourceBreakdown = screen.getByTestId("admin-analytics-workout-builder-source-breakdown");
     expect(within(sourceBreakdown).getByText("Manual vs generated workouts")).toBeVisible();
     expect(within(sourceBreakdown).getByText("Manual starts")).toBeVisible();
@@ -394,7 +405,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(sourceBreakdown).getByText("Generated save rate")).toBeVisible();
     expect(within(sourceBreakdown).getByText("40%")).toBeVisible();
     expect(within(sourceBreakdown).getByText("25%")).toBeVisible();
-    expect(within(sourceBreakdown).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(sourceBreakdown).getByText("Interpretation note")).toBeVisible();
     const generatedCompletion = screen.getByTestId(
       "admin-analytics-workout-builder-template-generated-completion"
     );
@@ -404,14 +415,14 @@ describe("AdminAnalyticsDashboard", () => {
     expect(within(generatedCompletion).getByText("Completion rate")).toBeVisible();
     expect(within(generatedCompletion).getByText("Template starts")).toBeVisible();
     expect(within(generatedCompletion).getByText("Use template clicks")).toBeVisible();
-    expect(within(generatedCompletion).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(generatedCompletion).getByText("Interpretation note")).toBeVisible();
     const templateUsage = screen.getByTestId("admin-analytics-workout-builder-template-usage");
     expect(within(templateUsage).getAllByText("Template starts")).toHaveLength(2);
     expect(within(templateUsage).getByText("Templates used")).toBeVisible();
     expect(within(templateUsage).getByText("Needs review")).toBeVisible();
     expect(within(templateUsage).getByText("Aerobic base 1000")).toBeVisible();
     expect(within(templateUsage).getByText("Technique reset 900")).toBeVisible();
-    expect(within(templateUsage).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(templateUsage).getByText("Interpretation note")).toBeVisible();
     expect(
       within(screen.getByTestId("admin-analytics-top-events")).getByText("Plans viewed")
     ).toBeVisible();
@@ -421,34 +432,22 @@ describe("AdminAnalyticsDashboard", () => {
     expect(
       within(screen.getByTestId("admin-analytics-top-products")).getByText("Guide Poolside")
     ).toBeVisible();
+    const caveats = screen.getByTestId("admin-analytics-caveats");
+    expect(within(caveats).getByText(/All dashboard caveats/i)).toBeVisible();
+    expect(within(caveats).getByText(/not purchase or accounting records/i)).toBeInTheDocument();
+    fireEvent.click(within(caveats).getByText(/All dashboard caveats/i));
+    expect(within(caveats).getByText(/not purchase or accounting records/i)).toBeVisible();
     expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /not purchase or accounting records/i
-      )
-    ).toBeVisible();
+      within(caveats).getByText(/checkout starts for the approved guide path only/i)
+    ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /checkout starts for the approved guide path only/i
-      )
-    ).toBeVisible();
+      within(caveats).getByText(/Saved-workout guide prompt counts show views and clicks only/i)
+    ).toBeInTheDocument();
+    expect(within(caveats).getByText(/not export success/i)).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /Saved-workout guide prompt counts show views and clicks only/i
-      )
-    ).toBeVisible();
-    expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(/not export success/i)
-    ).toBeVisible();
-    expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /Template starts count only the Use template action/i
-      )
-    ).toBeVisible();
-    expect(
-      within(screen.getByTestId("admin-analytics-caveats")).getByText(
-        /not linked to user profiles/i
-      )
-    ).toBeVisible();
+      within(caveats).getByText(/Template starts count only the Use template action/i)
+    ).toBeInTheDocument();
+    expect(within(caveats).getByText(/not linked to user profiles/i)).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/admin/analytics/insights?rangeDays=30", {
       method: "GET",
       credentials: "same-origin",
@@ -529,7 +528,7 @@ describe("AdminAnalyticsDashboard", () => {
     expect(screen.getByTestId("admin-analytics-workout-builder-template-usage")).toHaveTextContent(
       "Not counted"
     );
-    expect(screen.getByText(/database errors/i)).toBeVisible();
+    expect(screen.getByText(/database errors/i)).toBeInTheDocument();
     expect(screen.queryByText(/payload/i, { selector: "code" })).not.toBeInTheDocument();
   });
 
