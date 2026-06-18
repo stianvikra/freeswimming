@@ -3,21 +3,31 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-shell-mobile-discoverability-and-quick-note-context-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
-- `execution_mode`: `plan only until owner explicitly approves implementation`
+- `execution_mode`: `owner-approved implementation; visual screenshot handoff required before pre-PR`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-notes-residual-disposition-intake-10-10.md`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-18`
-- `base`: `main@a0a63d58`
-- `audit_status`: `draft-for-owner-audit`
-- `decision`: Keep this as the recommended next bounded admin implementation candidate, but re-audit before moving it to `in-progress` or creating a branch.
+- `base`: `main@3e5d1c15`
+- `audit_status`: `owner-approved-in-progress`
+- `decision`: Implement this as the next bounded admin child after residual source-note closeout PR `#1159`.
 - `reason`: Post-merge re-audit shows mobile admin navigation exposes only about `3/11` tabs in first viewport, and open notes `a4677939` and `89eacfbc` point to admin shell/header and Quick note context clarity.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `app/admin/layout.tsx`, `AdminNoteQuickCaptureLauncher`, admin tab metadata, Help/Guide quick actions, screenshot rules, or active admin-note source IDs change.
+
+## Pre-Execution Audit Result
+
+- `git status -sb`: clean `main...origin/main` before branch creation.
+- `git log --oneline -n 10`: latest commit `3e5d1c15 docs: capture residual admin notes`.
+- Source notes `a4677939` and `89eacfbc`: live query returned `open=0`; both are done as captured in audited briefs.
+- Current code surfaces inspected: `AdminWorkspace`, `app/admin/layout.tsx`, `AdminNoteQuickCaptureLauncher`, `lib/admin/admin-workspace`.
+- Current gap confirmed: mobile admin navigation is still an `overflow-x-auto` row; first viewport does not expose all `11` active tabs.
+- Quick note gap confirmed: locked-context persistence is already correct; copy/affordance needs clearer wording only.
+- Owner approval: owner approved recommended next child end to end after merge.
 
 ## Goal
 
@@ -143,6 +153,12 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 4. URL tab state and Quick note save behavior are unchanged.
 5. Screenshot handoff is owner-approved before `npm run verify:pre-pr`.
 
+## Quality Gate Evidence
+
+- Route/label/support sweep: identifiers searched were `admin`, `ADMIN_TABS`, `AdminWorkspace`, `AdminNoteQuickCaptureLauncher`, `Quick note`, `Help/Guide`, and the changed warning copy. Directories/surfaces checked: `app/admin/`, `components/admin/`, `tests/unit/`, active task briefs, and Help/Guide quick actions. Fallout handled in this slice: Help/Guide Quick note copy updated; no admin route, tab value, or action label rename was introduced.
+- Reference surface / shared component: the mobile switcher reuses the existing `AdminWorkspace` shared component and canonical admin tab metadata instead of creating a new route or duplicate tab renderer; Quick note copy stays inside the existing `AdminNoteQuickCaptureLauncher`.
+- Owner screenshot approval stop: before/after screenshot handoff was provided from `output/admin-shell-mobile-discoverability-2026-06-18-170920`; owner approved the visual review on `2026-06-18` before `npm run verify:pre-pr`.
+
 ## Validation
 
 - `npm run lint:briefs`
@@ -152,8 +168,10 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 
 ## Help / Guide Impact
 
-Required if visible admin navigation labels, Quick note warning copy, or recovery guidance changes. Otherwise record explicit no-impact evidence in the child closeout.
+Help/Guide update required and included because Quick note locked-context warning copy changed. Admin navigation labels did not change; mobile presentation changed only.
 
 ## Checkpoint Log
 
 - `2026-06-18 | planned | created from residual admin-note intake and post-merge re-audit: mobile admin tabs expose only about 3/11 tabs, with Quick note locked-context copy also captured | next: pre-execution audit and owner approval before branch`
+- `2026-06-18 | in-progress | moved to branch feat/admin-shell-mobile-discoverability after source notes were verified done, lint:briefs:all passed, and current code audit confirmed mobile nav + Quick note copy scope | next: implement scoped UI/test changes and capture screenshot handoff before pre-PR`
+- `2026-06-18 | in-progress | implemented mobile two-column admin section grid, hid long admin header helper copy on mobile, clarified Quick note locked-context warning, and updated Help/Guide copy; targeted tests passed: ./node_modules/.bin/vitest run tests/unit/admin-workspace-shell.test.tsx tests/unit/admin-note-quick-capture-launcher.test.tsx tests/unit/admin-help-center.test.tsx | screenshot artifacts: output/admin-shell-mobile-discoverability-2026-06-18-170920 | next: owner visual approval before verify:pre-pr`

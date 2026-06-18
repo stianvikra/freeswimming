@@ -653,7 +653,12 @@ describe("AdminNoteQuickCaptureLauncher", () => {
     );
     expect(screen.getAllByText("Plans page")).toHaveLength(2);
     expect(
-      screen.getByText("You are viewing another page right now. This draft will still save to", {
+      screen.getByText("This draft is not stuck. It is locked to", {
+        exact: false,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Discard it to start a fresh note for the page behind this panel.", {
         exact: false,
       })
     ).toBeInTheDocument();
