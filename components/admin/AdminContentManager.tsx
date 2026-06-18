@@ -1300,6 +1300,8 @@ export default function AdminContentManager() {
   );
   const [moduleDeleteSubmitting, setModuleDeleteSubmitting] = useState(false);
   const [cleanupSubmitting, setCleanupSubmitting] = useState(false);
+  const [mirrorDetailsOpen, setMirrorDetailsOpen] = useState(false);
+  const [openStatusActionsItemId, setOpenStatusActionsItemId] = useState<string | null>(null);
 
   useEffect(() => {
     document
@@ -3345,141 +3347,158 @@ export default function AdminContentManager() {
         ) : null}
 
         {isAllContentView && schemaReady && mirror ? (
-          <AdminManagerState
-            as="article"
-            tone="neutral"
-            title="Platform mirror snapshot"
-            titleElement="h3"
-            testId="admin-content-mirror-state"
-            actions={
-              mirror.summary.ignoredRecordCount > 0 ? (
-                adminRole === "admin" ? (
-                  <button
-                    type="button"
-                    onClick={handleCleanupQaTestRecords}
-                    disabled={cleanupSubmitting}
-                    data-testid="admin-mirror-cleanup-test-records"
-                    className={compactSecondaryActionClass}
-                  >
-                    {cleanupSubmitting
-                      ? "Cleaning QA/test records..."
-                      : "Delete ignored QA/test records"}
-                  </button>
-                ) : (
-                  <span className="text-xs text-slate-500">
-                    Sign in as admin to delete ignored QA/test records.
-                  </span>
-                )
-              ) : null
-            }
-          >
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span
-                className={[
-                  "inline-flex h-6 items-center rounded-full border px-2 font-semibold",
-                  mirror.summary.mismatchCount === 0
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-amber-200 bg-amber-50 text-amber-800",
-                ].join(" ")}
-              >
-                {mirror.summary.mismatchCount === 0
-                  ? "All aligned"
-                  : `${mirror.summary.mismatchCount} mismatch${
-                      mirror.summary.mismatchCount === 1 ? "" : "es"
-                    }`}
-              </span>
-              {mirror.summary.coverageMismatchCount > 0 ? (
-                <span className="text-slate-600">
-                  {mirror.summary.coverageMismatchCount} identity drift
-                  {mirror.summary.coverageMismatchCount === 1 ? "" : "s"}
-                </span>
-              ) : null}
-              {mirror.summary.ignoredRecordCount > 0 ? (
-                <span className="text-slate-600">
-                  {mirror.summary.ignoredRecordCount} ignored QA/test record
-                  {mirror.summary.ignoredRecordCount === 1 ? "" : "s"}
-                </span>
-              ) : null}
-            </div>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {mirror.metrics.map((metric) => (
-                <li key={metric.key}>
-                  <button
-                    type="button"
-                    data-testid={`admin-mirror-metric-${metric.key}`}
-                    onClick={() => handleMirrorMetricFocus(metric)}
-                    aria-pressed={activeMirrorMetricKey === metric.key}
+          <AdminManagerState as="article" tone="neutral" testId="admin-content-mirror-state">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h3 className={smallHeadingClass}>Platform mirror snapshot</h3>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span
                     className={[
-                      "w-full rounded-lg border px-3 py-2 text-left text-xs text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
-                      metric.status === "matched"
-                        ? "border-slate-200 bg-white hover:bg-slate-50"
-                        : "border-amber-300 bg-amber-50/40 hover:bg-amber-50/70",
-                      activeMirrorMetricKey === metric.key ? "ring-2 ring-blue-300" : "",
+                      "inline-flex h-6 items-center rounded-full border px-2 font-semibold",
+                      mirror.summary.mismatchCount === 0
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-amber-200 bg-amber-50 text-amber-800",
                     ].join(" ")}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p
-                        className={[
-                          "font-semibold",
-                          metric.status === "matched" ? "text-slate-900" : "text-amber-900",
-                        ].join(" ")}
-                      >
-                        {metric.label}
-                      </p>
-                      <span
-                        className={[
-                          "inline-flex h-5 items-center rounded-full border px-2 text-[11px] font-semibold",
-                          metric.status === "matched"
-                            ? "border-slate-200 bg-slate-50 text-slate-600"
-                            : "border-amber-200 bg-white text-amber-800",
-                        ].join(" ")}
-                      >
-                        {metric.status === "matched" ? "Aligned" : "Review"}
-                      </span>
-                    </div>
-                    <p className="mt-1">
-                      Platform: {metric.platformCount} · Admin: {metric.adminCount}
-                      {metric.delta !== 0
-                        ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
-                        : ""}
-                    </p>
-                    {metric.coverage.missingCount > 0 ? (
+                    {mirror.summary.mismatchCount === 0
+                      ? "All aligned"
+                      : `${mirror.summary.mismatchCount} mismatch${
+                          mirror.summary.mismatchCount === 1 ? "" : "es"
+                        }`}
+                  </span>
+                  {mirror.summary.coverageMismatchCount > 0 ? (
+                    <span className="text-slate-600">
+                      {mirror.summary.coverageMismatchCount} identity drift
+                      {mirror.summary.coverageMismatchCount === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
+                  {mirror.summary.ignoredRecordCount > 0 ? (
+                    <span className="text-slate-600">
+                      {mirror.summary.ignoredRecordCount} ignored QA/test record
+                      {mirror.summary.ignoredRecordCount === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMirrorDetailsOpen((current) => !current)}
+                  aria-expanded={mirrorDetailsOpen}
+                  aria-controls="admin-mirror-details-panel"
+                  data-testid="admin-mirror-summary"
+                  className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(" ")}
+                >
+                  {mirrorDetailsOpen ? "Hide mirror details" : "View mirror details"}
+                </button>
+                {mirror.summary.ignoredRecordCount > 0 ? (
+                  adminRole === "admin" ? (
+                    <button
+                      type="button"
+                      onClick={handleCleanupQaTestRecords}
+                      disabled={cleanupSubmitting}
+                      data-testid="admin-mirror-cleanup-test-records"
+                      className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(" ")}
+                    >
+                      {cleanupSubmitting
+                        ? "Cleaning QA/test records..."
+                        : "Delete ignored QA/test records"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-500">
+                      Sign in as admin to delete ignored QA/test records.
+                    </span>
+                  )
+                ) : null}
+              </div>
+            </div>
+            <div
+              id="admin-mirror-details-panel"
+              data-testid="admin-mirror-details"
+              hidden={!mirrorDetailsOpen}
+              className="mt-3"
+            >
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {mirror.metrics.map((metric) => (
+                  <li key={metric.key}>
+                    <button
+                      type="button"
+                      data-testid={`admin-mirror-metric-${metric.key}`}
+                      onClick={() => handleMirrorMetricFocus(metric)}
+                      aria-pressed={activeMirrorMetricKey === metric.key}
+                      className={[
+                        "w-full rounded-lg border px-3 py-2 text-left text-xs text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300",
+                        metric.status === "matched"
+                          ? "border-slate-200 bg-white hover:bg-slate-50"
+                          : "border-amber-300 bg-amber-50/40 hover:bg-amber-50/70",
+                        activeMirrorMetricKey === metric.key ? "ring-2 ring-blue-300" : "",
+                      ].join(" ")}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p
+                          className={[
+                            "font-semibold",
+                            metric.status === "matched" ? "text-slate-900" : "text-amber-900",
+                          ].join(" ")}
+                        >
+                          {metric.label}
+                        </p>
+                        <span
+                          className={[
+                            "inline-flex h-5 items-center rounded-full border px-2 text-[11px] font-semibold",
+                            metric.status === "matched"
+                              ? "border-slate-200 bg-slate-50 text-slate-600"
+                              : "border-amber-200 bg-white text-amber-800",
+                          ].join(" ")}
+                        >
+                          {metric.status === "matched" ? "Aligned" : "Review"}
+                        </span>
+                      </div>
                       <p className="mt-1">
-                        Missing IDs: {metric.coverage.missingCount}
-                        {metric.coverage.missingSamples.length > 0
-                          ? ` (${metric.coverage.missingSamples.join(", ")})`
+                        Platform: {metric.platformCount} · Admin: {metric.adminCount}
+                        {metric.delta !== 0
+                          ? ` · Delta: ${metric.delta > 0 ? "+" : ""}${metric.delta}`
                           : ""}
                       </p>
-                    ) : null}
-                    {metric.coverage.extraCount > 0 ? (
-                      <p className="mt-1">
-                        Extra IDs: {metric.coverage.extraCount}
-                        {metric.coverage.extraSamples.length > 0
-                          ? ` (${metric.coverage.extraSamples.join(", ")})`
-                          : ""}
+                      {metric.coverage.missingCount > 0 ? (
+                        <p className="mt-1">
+                          Missing IDs: {metric.coverage.missingCount}
+                          {metric.coverage.missingSamples.length > 0
+                            ? ` (${metric.coverage.missingSamples.join(", ")})`
+                            : ""}
+                        </p>
+                      ) : null}
+                      {metric.coverage.extraCount > 0 ? (
+                        <p className="mt-1">
+                          Extra IDs: {metric.coverage.extraCount}
+                          {metric.coverage.extraSamples.length > 0
+                            ? ` (${metric.coverage.extraSamples.join(", ")})`
+                            : ""}
+                        </p>
+                      ) : null}
+                      {metric.coverage.ignoredCount > 0 ? (
+                        <p className="mt-1">
+                          Ignored QA/test IDs: {metric.coverage.ignoredCount}
+                          {metric.coverage.ignoredSamples.length > 0
+                            ? ` (${metric.coverage.ignoredSamples.join(", ")})`
+                            : ""}
+                        </p>
+                      ) : null}
+                      <p className="mt-2 text-[11px] font-medium opacity-80">
+                        {activeMirrorMetricKey === metric.key
+                          ? "Active scope"
+                          : "Click to focus content list"}
                       </p>
-                    ) : null}
-                    {metric.coverage.ignoredCount > 0 ? (
-                      <p className="mt-1">
-                        Ignored QA/test IDs: {metric.coverage.ignoredCount}
-                        {metric.coverage.ignoredSamples.length > 0
-                          ? ` (${metric.coverage.ignoredSamples.join(", ")})`
-                          : ""}
-                      </p>
-                    ) : null}
-                    <p className="mt-2 text-[11px] font-medium opacity-80">
-                      {activeMirrorMetricKey === metric.key
-                        ? "Active scope"
-                        : "Click to focus content list"}
-                    </p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-slate-500">
-              Snapshot checks current platform modules/lessons/guides/products against admin records
-              and excludes explicit QA/test slugs such as `e2e-admin-content-*` from parity counts.
-            </p>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500">
+                Snapshot checks current platform modules/lessons/guides/products against admin
+                records and excludes explicit QA/test slugs such as `e2e-admin-content-*` from
+                parity counts.
+              </p>
+            </div>
           </AdminManagerState>
         ) : null}
 
@@ -4217,6 +4236,7 @@ export default function AdminContentManager() {
                 ? resolveAdminContentEditNotesContext(item)
                 : null;
               const editQrContext = isEditingRow ? resolveAdminContentEditQrContext(item) : null;
+              const isStatusActionsOpen = openStatusActionsItemId === item.id;
               const courseWorkspaceScopeId =
                 item.content_type === "course_module"
                   ? item.id
@@ -4250,7 +4270,12 @@ export default function AdminContentManager() {
                   data-testid="admin-content-item"
                   className={rowCardClass}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div
+                    className={[
+                      "flex flex-wrap items-start justify-between gap-3",
+                      !isEditingRow ? "sm:items-center" : "",
+                    ].join(" ")}
+                  >
                     <div className="min-w-[280px] flex-1">
                       <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
                         {item.title}
@@ -5433,12 +5458,12 @@ export default function AdminContentManager() {
                             </AdminManagerState>
                           ) : null}
 
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap [&>*:last-child:nth-child(odd)]:col-span-2">
                             <button
                               type="button"
                               onClick={() => void handleSaveEdit(item)}
                               disabled={Boolean(rowBusy)}
-                              className={compactPrimaryActionClass}
+                              className={[compactPrimaryActionClass, "w-full sm:w-auto"].join(" ")}
                             >
                               {savingEditId === item.id ? "Saving…" : "Save changes"}
                             </button>
@@ -5447,7 +5472,9 @@ export default function AdminContentManager() {
                                 href={rowPreviewHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className={compactWarningActionClass}
+                                className={[compactWarningActionClass, "w-full sm:w-auto"].join(
+                                  " "
+                                )}
                               >
                                 View changes
                               </a>
@@ -5458,7 +5485,9 @@ export default function AdminContentManager() {
                                 closeEditMode();
                               }}
                               disabled={Boolean(rowBusy)}
-                              className={compactSecondaryActionClass}
+                              className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                " "
+                              )}
                             >
                               Cancel
                             </button>
@@ -5467,130 +5496,180 @@ export default function AdminContentManager() {
                       ) : null}
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                    <div className="flex w-full flex-col items-end gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
                       <span className={metadataClass}>Order: {item.sort_order}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleStartEdit(item);
-                        }}
-                        disabled={Boolean(rowBusy) || (Boolean(editingItemId) && !isEditingRow)}
-                        className={compactPrimaryActionClass}
-                      >
-                        {isEditingRow ? "Editing" : isInlineEditable ? "Edit" : "Edit (soon)"}
-                      </button>
-                      {!isEditingRow ? (
-                        <>
-                          {item.content_type === "course_module" ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => void handleMoveModule(item.id, "up")}
-                                disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveUp}
-                                className={compactSecondaryActionClass}
-                              >
-                                Move up
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleMoveModule(item.id, "down")}
-                                disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveDown}
-                                className={compactSecondaryActionClass}
-                              >
-                                Move down
-                              </button>
-                            </>
-                          ) : null}
-                          {item.content_type === "course_lesson" ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => void handleMoveLesson(item.id, "up")}
-                                disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveUp}
-                                className={compactSecondaryActionClass}
-                              >
-                                Move up
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleMoveLesson(item.id, "down")}
-                                disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveDown}
-                                className={compactSecondaryActionClass}
-                              >
-                                Move down
-                              </button>
-                            </>
-                          ) : null}
-                          {item.content_type === "course_lesson" ||
-                          item.content_type === "course_module" ? (
-                            rowPreviewHref ? (
+                      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end [&>*:last-child:nth-child(odd)]:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleStartEdit(item);
+                          }}
+                          disabled={Boolean(rowBusy) || (Boolean(editingItemId) && !isEditingRow)}
+                          className={[compactPrimaryActionClass, "w-full sm:w-auto"].join(" ")}
+                        >
+                          {isEditingRow ? "Editing" : isInlineEditable ? "Edit" : "Edit (soon)"}
+                        </button>
+                        {!isEditingRow ? (
+                          <>
+                            {item.content_type === "course_module" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleMoveModule(item.id, "up")}
+                                  disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveUp}
+                                  className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                    " "
+                                  )}
+                                >
+                                  Move up
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleMoveModule(item.id, "down")}
+                                  disabled={Boolean(rowBusy) || !moduleMoveBounds?.canMoveDown}
+                                  className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                    " "
+                                  )}
+                                >
+                                  Move down
+                                </button>
+                              </>
+                            ) : null}
+                            {item.content_type === "course_lesson" ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleMoveLesson(item.id, "up")}
+                                  disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveUp}
+                                  className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                    " "
+                                  )}
+                                >
+                                  Move up
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleMoveLesson(item.id, "down")}
+                                  disabled={Boolean(rowBusy) || !lessonMoveBounds?.canMoveDown}
+                                  className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                    " "
+                                  )}
+                                >
+                                  Move down
+                                </button>
+                              </>
+                            ) : null}
+                            {item.content_type === "course_lesson" ||
+                            item.content_type === "course_module" ? (
+                              rowPreviewHref ? (
+                                <a
+                                  href={rowPreviewHref}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={[compactWarningActionClass, "w-full sm:w-auto"].join(
+                                    " "
+                                  )}
+                                >
+                                  Open preview
+                                </a>
+                              ) : (
+                                <span className="inline-flex min-h-9 w-full items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)] sm:w-auto">
+                                  Open preview (no lessons)
+                                </span>
+                              )
+                            ) : null}
+                            {item.content_type === "course_lesson" ? (
                               <a
-                                href={rowPreviewHref}
+                                href={lessonQrPrefillHref(item)}
+                                className={[compactSuccessActionClass, "w-full sm:w-auto"].join(
+                                  " "
+                                )}
+                              >
+                                Create QR link
+                              </a>
+                            ) : null}
+                            {item.content_type === "course_lesson" ? (
+                              <a
+                                href={lessonOpenHref(item)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className={compactWarningActionClass}
+                                className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                  " "
+                                )}
                               >
-                                Open preview
+                                Open lesson
                               </a>
-                            ) : (
-                              <span className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/60 px-3 text-xs font-semibold text-[color:var(--fs-color-muted)]">
-                                Open preview (no lessons)
-                              </span>
-                            )
-                          ) : null}
-                          {item.content_type === "course_lesson" ? (
-                            <a
-                              href={lessonQrPrefillHref(item)}
-                              className={compactSuccessActionClass}
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void handleToggleRevisions(item.id)}
+                              disabled={Boolean(rowBusy)}
+                              className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                " "
+                              )}
                             >
-                              Create QR link
-                            </a>
-                          ) : null}
-                          {item.content_type === "course_lesson" ? (
-                            <a
-                              href={lessonOpenHref(item)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className={compactSecondaryActionClass}
+                              {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenStatusActionsItemId((current) =>
+                                  current === item.id ? null : item.id
+                                )
+                              }
+                              aria-expanded={isStatusActionsOpen}
+                              aria-controls={`admin-content-status-actions-panel-${item.id}`}
+                              data-testid="admin-content-status-actions"
+                              className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                " "
+                              )}
                             >
-                              Open lesson
-                            </a>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => void handleToggleRevisions(item.id)}
-                            disabled={Boolean(rowBusy)}
-                            className={compactSecondaryActionClass}
-                          >
-                            {openRevisionsItemId === item.id ? "Hide revisions" : "Revisions"}
-                          </button>
-                          {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
-                            (option) => (
-                              <button
-                                key={`${item.id}-${option.value}`}
-                                type="button"
-                                onClick={() => void handleSetStatus(item, option.value)}
-                                disabled={Boolean(rowBusy)}
-                                className={compactSecondaryActionClass}
-                              >
-                                {updatingId === item.id
-                                  ? "Saving…"
-                                  : statusActionLabel(option.value)}
-                              </button>
-                            )
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => void handleDelete(item)}
-                            disabled={Boolean(rowBusy)}
-                            className={compactDangerActionClass}
-                          >
-                            {deletingId === item.id ? "Deleting…" : "Delete"}
-                          </button>
-                        </>
-                      ) : null}
+                              {isStatusActionsOpen ? "Hide status actions" : "Status actions"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(item)}
+                              disabled={Boolean(rowBusy)}
+                              className={[compactDangerActionClass, "w-full sm:w-auto"].join(" ")}
+                            >
+                              {deletingId === item.id ? "Deleting…" : "Delete"}
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+                  {!isEditingRow && isStatusActionsOpen ? (
+                    <div
+                      id={`admin-content-status-actions-panel-${item.id}`}
+                      data-testid="admin-content-status-actions-panel"
+                      className="mt-3 w-full rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-slate-50/72 p-2 sm:ml-auto sm:max-w-xl"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                        <p className={metadataLabelClass}>Lifecycle status</p>
+                        <span className={metadataClass}>
+                          Current: {STATUS_LABEL_BY_VALUE[item.status]}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                        {STATUS_OPTIONS.filter((option) => option.value !== item.status).map(
+                          (option) => (
+                            <button
+                              key={`${item.id}-${option.value}`}
+                              type="button"
+                              onClick={() => void handleSetStatus(item, option.value)}
+                              disabled={Boolean(rowBusy)}
+                              className={[compactSecondaryActionClass, "w-full sm:w-auto"].join(
+                                " "
+                              )}
+                            >
+                              {updatingId === item.id ? "Saving…" : statusActionLabel(option.value)}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                   {openRevisionsItemId === item.id ? (
                     <div
                       className={["mt-3", nestedPanelClass].join(" ")}
@@ -6010,7 +6089,7 @@ export default function AdminContentManager() {
                 <button
                   type="submit"
                   disabled={!schemaReady || submitting}
-                  className={compactPrimaryActionClass}
+                  className={[compactPrimaryActionClass, "w-full sm:w-auto"].join(" ")}
                 >
                   {submitting ? "Saving…" : "Save content item"}
                 </button>

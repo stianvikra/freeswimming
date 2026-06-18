@@ -66,6 +66,9 @@ test.describe("admin content parity", () => {
     await expect(
       mirrorCard.getByRole("heading", { name: "Platform mirror snapshot" })
     ).toBeVisible();
+    await expect(mirrorCard.getByText("View mirror details")).toBeVisible();
+    await mirrorCard.getByTestId("admin-mirror-summary").click();
+    await expect(mirrorCard.getByText("Hide mirror details")).toBeVisible();
     await expect(mirrorCard.getByText("Course modules", { exact: true })).toBeVisible();
     await expect(mirrorCard.getByText("Course lessons", { exact: true })).toBeVisible();
     await expect(mirrorCard.getByText("0-1000 sessions", { exact: true })).toBeVisible();

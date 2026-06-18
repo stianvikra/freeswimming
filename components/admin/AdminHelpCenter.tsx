@@ -548,6 +548,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         meaning: "Inspect previous versions and restore the last known good state when needed.",
       },
       {
+        label: "Status actions",
+        meaning:
+          "Opens the grouped lifecycle controls so status changes do not compete with everyday edit, preview, and revision actions.",
+      },
+      {
         label: "Move to draft / Move to review / Publish / Archive",
         meaning:
           "Moves item through lifecycle states with explicit intent. Publish/revert transitions require admin role.",
