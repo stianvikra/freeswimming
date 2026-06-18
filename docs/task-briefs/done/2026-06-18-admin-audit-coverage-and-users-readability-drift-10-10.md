@@ -181,9 +181,9 @@ Target score snapshot:
 | Testing and QA automation                | `5/5` | Targeted unit tests, typecheck, admin-audit lint, brief lint, and diff check pass before screenshot handoff. | `verify:pre-pr` waits for owner screenshot approval.  |
 | DevOps and rollback readiness            | `5/5` | Small reversible diff; no schema/config/migration.                                                           | Commit/PR waits until after screenshot approval.      |
 
-`10/10 claim`: no final claim yet; screenshot owner approval, `verify:pre-pr`, PR CI, and `verify:pre-merge` are still pending.
+`10/10 claim`: yes for this scoped Users/Analytics coverage and Users readability child; screenshot owner approval, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed for PR `#1153`.
 
-Whole-dashboard `10/10` claim: no. This child does not audit every admin menu, tab state, action group, or Help/Guide path. The in-progress follow-up brief `docs/task-briefs/in-progress/2026-06-18-admin-full-dashboard-ui-ux-audit-and-gap-list-10-10.md` owns the full dashboard UI/UX audit and 10/10 gap list.
+Whole-dashboard `10/10` claim: no. This child does not audit every admin menu, tab state, action group, or Help/Guide path. The done follow-up brief `docs/task-briefs/done/2026-06-18-admin-full-dashboard-ui-ux-audit-and-gap-list-10-10.md` records the full dashboard UI/UX audit and gap list.
 
 ## Checkpoint Log
 
@@ -192,3 +192,30 @@ Whole-dashboard `10/10` claim: no. This child does not audit every admin menu, t
 - `2026-06-18 | screenshot handoff ready | targeted validation passed, before/after screenshots captured at output/admin-audit-users-readability-drift-2026-06-18-084735, temporary harness removed, and post-implementation audit recorded | next: owner requested broader dashboard screenshot evidence`
 - `2026-06-18 | implementation patch | updated Users copy/title away from read-only, added Users/Analytics to broad admin e2e coverage, refreshed admin module contracts and AW-012 checklist/findings-log active module matrix | next: run targeted validation and screenshot handoff`
 - `2026-06-18 | start | owner approved child admin-audit-coverage-and-users-readability-drift; branch created from main@a1d2cf17; scope limited to coverage/docs/Users readability drift with no user creation | next: implement scoped docs/tests/copy changes`
+- `2026-06-18 | merged | PR #1153 merged as squash commit 003797fe after owner-approved screenshots, local verify:pre-pr, green required CI, and local verify:pre-merge; no user creation/auth/schema behavior was added | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-18`
+- `merged_pr`: `#1153`
+- `squash_commit`: `003797fe`
+- `result`: Closed the Users/Analytics admin coverage drift and Users readability child by adding active Users and Analytics coverage to admin audit/test surfaces, correcting stale read-only Users wording, and preserving the no-user-creation boundary.
+- `validation`: owner-approved screenshot evidence, `npm run verify:pre-pr` PASS on commit `41079043`, GitHub required checks PASS for PR `#1153`, and `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260618-093609.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this scoped child. Whole-dashboard admin product `10/10` remains explicitly not claimed here.
+
+| Category                                 | Achieved Score | Evidence                                                                             | Gaps / Notes                                                |
+| ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Product goals and IA                     | `5/5`          | Users and Analytics added to broad admin coverage/docs; PR `#1153`.                  | No gap in child scope.                                      |
+| UX flow clarity                          | `5/5`          | Users copy no longer contradicts role management; tests updated.                     | No gap in child scope.                                      |
+| Visual design quality                    | `5/5`          | Owner-approved Users/dashboard screenshot handoff and no clipped changed copy.       | Whole-dashboard polish is owned by separate audit findings. |
+| Admin editor ergonomics                  | `5/5`          | Role controls remain named as guarded admin controls, not casual account creation.   | User creation remains out of scope.                         |
+| Accessibility (a11y)                     | `5/5`          | Broad admin e2e target list includes Users and Analytics; CI passed.                 | No gap in child scope.                                      |
+| Reliability and failure handling         | `5/5`          | Analytics retry/error surface remains covered; no route/cache behavior changed.      | No gap in child scope.                                      |
+| Security and authz                       | `5/5`          | No Auth Admin, schema, RLS, or access broadening; user creation explicitly deferred. | No gap in child scope.                                      |
+| Privacy and compliance                   | `5/5`          | Users private-data exclusion assertions preserved.                                   | No gap in child scope.                                      |
+| Admin workflow and editability           | `5/5`          | Active admin workflow checklist/docs include current Users and Analytics surfaces.   | Deeper full-dashboard findings recorded separately.         |
+| Incident response and support operations | `5/5`          | Users/support copy and audit checklist align with current account support triage.    | No gap in child scope.                                      |
+| i18n operational readiness               | `5/5`          | Short changed copy wraps cleanly in desktop/mobile evidence.                         | No gap in child scope.                                      |
+| Stack-fit and dependency discipline      | `5/5`          | Existing admin components/tests/docs reused; no dependency or Codex config change.   | No gap.                                                     |
+| Testing and QA automation                | `5/5`          | Targeted tests, `npm run verify:pre-pr`, CI, and `npm run verify:pre-merge` passed.  | No gap.                                                     |
+| DevOps and rollback readiness            | `5/5`          | Small reversible squash commit `003797fe`; rollback is `git revert 003797fe`.        | No gap.                                                     |
