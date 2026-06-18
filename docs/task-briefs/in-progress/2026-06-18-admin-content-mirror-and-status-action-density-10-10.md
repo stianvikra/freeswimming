@@ -3,20 +3,20 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-content-mirror-and-status-action-density-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
-- `execution_mode`: `plan only until owner explicitly approves implementation`
+- `execution_mode`: `owner-approved implementation after pre-execution audit`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-notes-residual-disposition-intake-10-10.md`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-18`
-- `base`: `main@a0a63d58`
-- `audit_status`: `draft-for-owner-audit`
-- `decision`: Keep this as a separate Content admin follow-up candidate, not part of the mobile shell slice; re-audit before implementation.
-- `reason`: Open note `a4677939` includes Content-specific requests: collapsible Platform mirror snapshot with mismatch summary and lower-noise status actions. These touch `AdminContentManager`, not just the shell.
+- `base`: `main@3d07af08`
+- `audit_status`: `ready-for-scoped-implementation`
+- `decision`: Execute this as the next bounded Content admin child after PR `#1160` and closeout PR `#1161` closed the shell/mobile and Quick note portions of the source notes.
+- `reason`: Source note `a4677939` is now fully captured and marked done in live Admin Notes, but its Content-specific request is not implemented yet. Current `AdminContentManager` still renders all mirror metrics/details expanded and renders every alternate status transition as peer row buttons.
 - `must_refresh_before_execution_if`: Refresh if `AdminContentManager`, mirror snapshot model, content status workflow, content tests, Help/Guide content workflow, or screenshot rules change.
 
 ## Goal
@@ -35,9 +35,23 @@ Fremoverkompatibilitet: nye mirror metrics og statusverdier skal enten arve samm
 
 ## Source Notes Covered
 
-| Note ID                                | Covered Scope                                                                 | Explicit Boundary                                                                                                                 |
-| -------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `a4677939-8f6a-44ce-b585-490f65b07793` | Platform mirror snapshot collapse/summary and Content status action grouping. | Admin shell/header/mobile navigation is owned by `2026-06-18-admin-shell-mobile-discoverability-and-quick-note-context-10-10.md`. |
+| Note ID                                | Covered Scope                                                                 | Explicit Boundary                                                                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `a4677939-8f6a-44ce-b585-490f65b07793` | Platform mirror snapshot collapse/summary and Content status action grouping. | Admin shell/header/mobile navigation is done in `docs/task-briefs/done/2026-06-18-admin-shell-mobile-discoverability-and-quick-note-context-10-10.md` via PR `#1160` and closeout PR `#1161`. |
+
+## Pre-Execution Audit Evidence
+
+- Branch/base: `feat/admin-content-mirror-status-density` from clean `main@3d07af08`.
+- Live source-note refresh: six captured admin-note IDs still exist and `open=0`; note `a4677939-8f6a-44ce-b585-490f65b07793` remains `is_done=true` with title `Admin dashboard 0 header`, context `page:/admin`, and updated timestamp `2026-06-18T14:59:39.490705+00:00`.
+- Code evidence:
+  - `components/admin/AdminContentManager.tsx` renders `Platform mirror snapshot` as a full `AdminManagerState` with every metric card and missing/extra/ignored sample text visible immediately.
+  - The same component renders `Move to draft`, `Move to review`, `Publish`, and `Archive` as peer buttons for every row status that is not current, beside preview/revisions/delete actions.
+  - `handleMirrorMetricFocus` and `handleSetStatus` already own the behavior; this slice should reorganize presentation only.
+- Test evidence:
+  - `tests/unit/admin-content-manager-state.test.tsx` already asserts mirror summary/focus behavior and QA cleanup feedback.
+  - `tests/e2e/admin-content-parity.spec.ts` expects the full mirror metric list to be visible; it must be updated if details become disclosure-based.
+  - `tests/e2e/admin-foundation.spec.ts` exercises all four status transitions; grouping must preserve those operations and update locators where needed.
+- Help/Guide evidence: `components/admin/AdminHelpCenter.tsx` already documents mirror/status workflows. Update it only if visible labels, diagnostic behavior, or operator recovery guidance changes.
 
 ## Pre-Execution Audit Gate
 
@@ -47,7 +61,7 @@ Before implementation starts:
 2. Refresh source note `a4677939` and verify whether the shell portion has already been handled elsewhere.
 3. Inspect current Content desktop/mobile screenshots or capture fresh evidence for mirror/status density.
 4. Confirm whether Help/Guide needs updates for status action labels, mirror diagnostics, or recovery behavior.
-5. Run `npm run lint:briefs:all` and get owner approval before moving this brief to `in-progress`.
+5. Run `npm run lint:briefs:all` before runtime edits.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -91,6 +105,15 @@ Critical target categories for this child: UX flow clarity, Visual design qualit
 - UI system: use existing `AdminManagerState`, status chips, `fs-*` actions, and native disclosure/menu patterns.
 - Testing: update mirror/status unit and e2e coverage; screenshot handoff required.
 
+## Reference Surface And Route/Label Sweep Evidence
+
+- Reference surface: the mature in-repo surface is `components/admin/AdminContentManager.tsx` itself, specifically its existing `AdminManagerState` mirror diagnostics, `STATUS_OPTIONS` / `STATUS_LABEL_BY_VALUE`, `fs-*` action token classes, and Content row edit/revision/delete action layout. This slice reuses those shared component/view-model contracts and only reorganizes disclosure/action density.
+- Shared UI contract: keep admin action buttons on existing `fs-cta-*` classes, use local UI disclosure state only, keep server-canonical mirror/status data unchanged, and preserve the existing row action mutation handlers.
+- Route/label/support sweep identifiers searched: `View mirror details`, `Hide mirror details`, `Status actions`, `Move to draft`, `Move to review`, `Publish`, `Archive`, `Platform mirror snapshot`, `Delete ignored QA/test records`, `admin-content-status-actions`, and `admin-mirror-summary`.
+- Directories/surfaces checked: `app/`, `components/`, `tests/`, `docs/`, `docs/runbooks/`, planned/in-progress/done task briefs, and Help/Guide assertions.
+- Fallout handled: Content product labels/locators updated in `AdminContentManager`, Help/Guide glossary updated in `AdminHelpCenter`, unit assertions updated in `admin-content-manager-state` and `admin-help-center`, and e2e locators updated in `admin-content-parity` and `admin-foundation`.
+- Intentional leftovers: generic `Publish`/`Archive` hits in goals, habits, email templates, messages, API routes, and historical briefs are unrelated domain labels and stay unchanged.
+
 ## Data Placement And Sync Contract
 
 - Server-canonical data: admin content rows and mirror snapshot response.
@@ -132,17 +155,38 @@ Critical target categories for this child: UX flow clarity, Visual design qualit
 
 ## Acceptance Criteria
 
-1. Mirror snapshot can be compact by default while mismatch counts remain visible.
-2. Status transitions are grouped without hiding publish/review/archive/draft meaning.
-3. Content data behavior and authz boundaries are unchanged.
-4. Screenshot handoff is owner-approved before `npm run verify:pre-pr`.
+1. Mirror snapshot has a compact first-read state while `mismatchCount`, `coverageMismatchCount`, and `ignoredRecordCount` remain visible without opening details.
+2. Mirror metric details remain reachable through an accessible disclosure/focus action, and clicking a metric still focuses the matching Content list scope.
+3. Status transitions are grouped under a lifecycle/status action affordance without changing `draft`, `review`, `published`, or `archived` semantics.
+4. Existing preview, revisions, delete, QA cleanup, edit, create, and refresh behavior remains unchanged.
+5. Content data behavior, authz boundaries, API routes, schema, RLS, and cache behavior are unchanged.
+6. Screenshot handoff is owner-approved before `npm run verify:pre-pr`.
 
 ## Validation
 
 - `npm run lint:briefs`
-- targeted Content/mirror/status tests
+- `npm run lint:briefs:all`
+- targeted Content/mirror/status tests, expected starting point:
+  - `./node_modules/.bin/vitest run tests/unit/admin-content-manager-state.test.tsx tests/unit/admin-content-mirror.test.ts tests/unit/admin-help-center.test.tsx`
+  - targeted Playwright only if unit coverage cannot prove the changed status/mirror behavior
 - screenshot handoff
 - after screenshot approval: `npm run verify:pre-pr`, CI, `npm run verify:pre-merge`
+
+Current evidence:
+
+- `npm run lint:briefs` - pass before runtime edits; no changed task briefs found in the initial branch state.
+- `npm run lint:briefs:all` - pass before runtime edits.
+- `git diff --check` - pass after the form CTA correction and test lock.
+- `./node_modules/.bin/vitest run tests/unit/admin-content-manager-state.test.tsx tests/unit/admin-content-mirror.test.ts tests/unit/admin-help-center.test.tsx` - pass after the form CTA correction and width-rule test lock, `3` files and `27` tests.
+- `npm run lint:briefs:all` - pass after the form CTA correction and width-rule test lock.
+- `npx playwright test tests/e2e/admin-content-parity.spec.ts tests/e2e/admin-foundation.spec.ts --project=desktop-chromium` - pass after the form CTA correction for available local coverage: `2` passed, `3` skipped because local `/dev/login` returned non-JSON while Supabase/dev-login was unavailable.
+- `npm run verify:pre-pr` - pass after owner screenshot approval and stale `.next/dev/types` cleanup: full lane, `249` unit files / `1619` tests passed, build passed, perf budgets passed, and E2E `110` passed / `568` skipped in the local public lane.
+- Screenshot artifacts: `output/admin-content-mirror-status-density-2026-06-18-190242/`.
+- Corrected screenshot artifacts after owner visual feedback: `output/admin-content-mirror-status-density-corrections-2026-06-18-193649/`.
+- Width-rule screenshot artifacts after second owner visual feedback: `output/admin-content-mirror-status-density-width-rules-2026-06-18-195159/`.
+- Form CTA screenshot artifacts after third owner visual feedback: `output/admin-content-mirror-status-density-form-cta-2026-06-18-202042/`, with previous width-rule mobile/desktop references copied into the same folder for after/reference review.
+- Screenshot caveat: real admin auth was blocked for screenshot-only capture, so before/after evidence used a temporary local visual harness with deterministic mock content data. The harness and capture script were removed before validation/PR diff.
+- Performance budget tighten decision: `hold` in this UI/action-density slice. The pre-PR run reported `10` consecutive weekly green perf-budget runs and recommended tightening one stretch target; that should be handled as a dedicated perf-budget owner decision, not bundled into this Content admin UI PR.
 
 ## Help / Guide Impact
 
@@ -151,3 +195,9 @@ Required if status action labels, mirror diagnostic behavior, or recovery guidan
 ## Checkpoint Log
 
 - `2026-06-18 | planned | split Content-specific mirror/status action items from live note a4677939 into a dedicated follow-up so the admin shell mobile slice stays narrow | next: re-audit after shell mobile discoverability before implementation`
+- `2026-06-18 | in-progress | refreshed on main@3d07af08 after PR #1160 and closeout PR #1161; live admin-note metadata still shows the six captured notes done/open=0; current code audit confirmed mirror details and row status transitions remain the bounded Content density scope | next: implement presentation-only mirror/status grouping, update targeted tests and Help/Guide if labels/diagnostics change, then capture screenshot handoff`
+- `2026-06-18 | screenshot-handoff | implemented presentation-only mirror disclosure and row status-action grouping, updated Help/Guide glossary and targeted unit/e2e locators, captured before/after screenshots in output/admin-content-mirror-status-density-2026-06-18-190242, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-18 | visual-correction | owner rejected the first visual pass as too stacked and weak on mobile; moved mirror actions into a right-aligned top row, toggled View/Hide mirror label, replaced row details with an aria-expanded status button plus full-width mobile lifecycle panel, refreshed screenshots in output/admin-content-mirror-status-density-corrections-2026-06-18-193649, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-18 | width-rule-correction | owner flagged vertical misalignment and orphan 50% mobile buttons; centered desktop action rows, made mirror actions 100% on narrow mobile, made standard row actions 50/50 with orphan last action spanning 100%, kept lifecycle mutation actions 100%, refreshed screenshots in output/admin-content-mirror-status-density-width-rules-2026-06-18-195159, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-18 | form-cta-correction | owner flagged create-form submit as an arbitrary small mobile button; made Content create submit 100% on mobile and auto-width on desktop, applied the same 50/50/orphan-full mobile grid to inline edit actions, locked those width rules in unit coverage, refreshed screenshots in output/admin-content-mirror-status-density-form-cta-2026-06-18-202042, copied previous width-rule references into the same handoff folder, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-18 | pre-pr-green | owner approved screenshots and merge-on-good-tests; npm run verify:pre-pr passed after clearing stale generated Next dev type cache from the removed visual harness; perf-budget tighten recommendation recorded as hold for this UI slice | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge before merge`

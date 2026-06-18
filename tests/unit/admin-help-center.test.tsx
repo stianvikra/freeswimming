@@ -108,6 +108,7 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText("Search / Role / Sort:")).toBeVisible();
     expect(screen.getByText("User summary:")).toBeVisible();
     expect(screen.getByText("Change role:")).toBeVisible();
+    expect(screen.getByText("Status actions:")).toBeVisible();
 
     openDetailsSection("How the Content page works");
     expect(screen.getByText("Lesson fields editor")).toBeVisible();

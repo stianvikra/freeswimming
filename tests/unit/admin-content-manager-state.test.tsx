@@ -536,6 +536,17 @@ describe("AdminContentManager state rendering", () => {
     expect(mirrorState).toHaveTextContent("Platform mirror snapshot");
     expect(mirrorState).toHaveTextContent("1 mismatch");
     expect(mirrorState).toHaveTextContent("1 identity drift");
+    const mirrorDetails = within(mirrorState).getByTestId("admin-mirror-details");
+    const mirrorSummary = within(mirrorState).getByTestId("admin-mirror-summary");
+    expect(mirrorDetails).not.toBeVisible();
+    expect(mirrorSummary).toHaveAttribute("aria-expanded", "false");
+    expect(mirrorSummary).toHaveTextContent("View mirror details");
+
+    fireEvent.click(mirrorSummary);
+
+    expect(mirrorDetails).toBeVisible();
+    expect(mirrorSummary).toHaveAttribute("aria-expanded", "true");
+    expect(mirrorSummary).toHaveTextContent("Hide mirror details");
     expect(within(mirrorState).getByTestId("admin-mirror-metric-course_module")).toHaveTextContent(
       "Course modules"
     );
@@ -645,6 +656,15 @@ describe("AdminContentManager state rendering", () => {
     const contentItem = await screen.findByTestId("admin-content-item");
     expect(contentItem).toHaveClass("fs-library-card");
     expect(within(contentItem).getByRole("button", { name: "Edit" })).toHaveClass("fs-cta-primary");
+    const statusActionsButton = within(contentItem).getByTestId("admin-content-status-actions");
+    expect(statusActionsButton).toHaveAttribute("aria-expanded", "false");
+    expect(statusActionsButton.parentElement).toHaveClass(
+      "grid-cols-2",
+      "[&>*:last-child:nth-child(odd)]:col-span-2",
+      "sm:flex"
+    );
+    expect(within(contentItem).getByText("Status actions")).toBeVisible();
+    expect(within(contentItem).queryByTestId("admin-content-status-actions-panel")).toBeNull();
 
     const createForm = screen.getByTestId("admin-content-create-form");
     expect(createForm.closest("section")).toHaveClass("fs-library-card");
@@ -658,7 +678,9 @@ describe("AdminContentManager state rendering", () => {
       "rounded-[var(--fs-radius-control)]"
     );
     expect(within(createForm).getByRole("button", { name: "Save content item" })).toHaveClass(
-      "fs-cta-primary"
+      "fs-cta-primary",
+      "w-full",
+      "sm:w-auto"
     );
 
     fireEvent.click(within(contentItem).getByRole("button", { name: "Edit" }));
@@ -671,9 +693,13 @@ describe("AdminContentManager state rendering", () => {
     expect(within(editForm).getByLabelText("Summary")).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
     );
-    expect(within(editForm).getByRole("button", { name: "Save changes" })).toHaveClass(
-      "fs-cta-primary"
+    const saveChangesButton = within(editForm).getByRole("button", { name: "Save changes" });
+    expect(saveChangesButton.parentElement).toHaveClass(
+      "grid-cols-2",
+      "[&>*:last-child:nth-child(odd)]:col-span-2",
+      "sm:flex"
     );
+    expect(saveChangesButton).toHaveClass("fs-cta-primary", "w-full", "sm:w-auto");
     expect(within(editForm).getByRole("button", { name: "Cancel" })).toHaveClass(
       "fs-cta-secondary"
     );

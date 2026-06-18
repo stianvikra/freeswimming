@@ -467,7 +467,13 @@ test.describe("admin foundation", () => {
         nextStatus: "draft" | "review" | "published" | "archived",
         successNotice: string
       ) {
-        await expect(createdItem.getByRole("button", { name: actionName })).toBeEnabled();
+        const statusActions = createdItem.getByTestId("admin-content-status-actions");
+        if ((await statusActions.getAttribute("aria-expanded")) !== "true") {
+          await statusActions.click();
+        }
+        const statusPanel = createdItem.getByTestId("admin-content-status-actions-panel");
+        const statusButton = statusPanel.getByRole("button", { name: actionName });
+        await expect(statusButton).toBeEnabled();
         await Promise.all([
           page.waitForResponse(
             (response) =>
@@ -475,7 +481,7 @@ test.describe("admin foundation", () => {
               /\/api\/admin\/content\/[^/]+$/.test(new URL(response.url()).pathname),
             { timeout: 15_000 }
           ),
-          createdItem.getByRole("button", { name: actionName }).click(),
+          statusButton.click(),
         ]);
         await expect(page.getByText(successNotice)).toBeVisible();
         await expect(createdItem.getByRole("button", { name: "Saving…" })).toHaveCount(0);
