@@ -739,8 +739,9 @@ export default function AdminNoteQuickCaptureLauncher(props: Props) {
                       testId="admin-note-quick-capture-context-warning"
                     >
                       <>
-                        You are viewing another page right now. This draft will still save to{" "}
-                        <span className="font-semibold">{draftContext.contextLabel}</span>.
+                        This draft is not stuck. It is locked to{" "}
+                        <span className="font-semibold">{draftContext.contextLabel}</span> and will
+                        save there. Discard it to start a fresh note for the page behind this panel.
                       </>
                     </AdminManagerState>
                   ) : null}

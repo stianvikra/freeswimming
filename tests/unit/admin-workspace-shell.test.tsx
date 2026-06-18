@@ -58,11 +58,13 @@ describe("AdminWorkspace shell", () => {
 
     expect(screen.getByTestId("admin-workspace-shell")).toHaveClass("contents");
     expect(screen.getByTestId("admin-tab-grid")).toHaveClass(
+      "grid",
+      "grid-cols-2",
       "lg:sticky",
       "lg:col-start-2",
-      "lg:grid-cols-1",
-      "overflow-x-auto"
+      "lg:grid-cols-1"
     );
+    expect(screen.getByTestId("admin-tab-grid")).not.toHaveClass("overflow-x-auto");
     expect(screen.getByTestId("admin-workspace-main")).toHaveClass("lg:col-start-1", "min-w-0");
 
     const contentTab = screen.getByTestId("admin-tab-content");
@@ -98,6 +100,7 @@ describe("AdminWorkspace shell", () => {
     const adminSections = screen.getByRole("navigation", { name: "Admin sections" });
     const sectionButtons = within(adminSections).getAllByRole("button");
     expect(sectionButtons).toHaveLength(11);
+    expect(screen.getByTestId("admin-tab-grid")).toHaveClass("grid-cols-2", "sm:grid-cols-3");
     expect(sectionButtons.map((button) => button.textContent)).toEqual([
       "Content",
       "QR Links",

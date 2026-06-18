@@ -105,7 +105,7 @@ const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string; icon: L
 ];
 
 const adminTabButtonBaseClass =
-  "fs-library-card flex min-h-11 w-max shrink-0 items-center gap-2.5 !border-transparent !bg-transparent px-2.5 py-2 text-left !shadow-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 lg:w-full lg:shrink";
+  "fs-library-card flex min-h-11 w-full min-w-0 items-center gap-2.5 !border-transparent !bg-transparent px-2.5 py-2 text-left !shadow-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const adminTabActiveClass =
   "fs-library-card-accent !border-[color:var(--fs-border-brand)] !bg-white/86 !shadow-[0_6px_18px_rgba(15,23,42,0.055)]";
 const adminTabInactiveClass = "hover:!border-[color:var(--fs-border-brand)] hover:!bg-white/72";
@@ -146,7 +146,7 @@ export default function AdminWorkspace({ role }: Props) {
     <div className="contents" data-testid="admin-workspace-shell">
       <nav
         aria-label="Admin sections"
-        className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:grid lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-x-visible lg:overflow-y-auto lg:rounded-[var(--fs-radius-card)] lg:border lg:border-[color:var(--fs-border-soft)] lg:bg-white/42 lg:p-2 lg:shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
+        className="mt-4 grid grid-cols-2 gap-2 pb-1 sm:grid-cols-3 lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:rounded-[var(--fs-radius-card)] lg:border lg:border-[color:var(--fs-border-soft)] lg:bg-white/42 lg:p-2 lg:shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
         data-testid="admin-tab-grid"
       >
         {activeTab === "help" ? (
@@ -177,7 +177,7 @@ export default function AdminWorkspace({ role }: Props) {
           const isActive = tab.id === activeTab;
           const TabIcon = tab.icon;
           return (
-            <div key={tab.id} className="shrink-0 lg:shrink">
+            <div key={tab.id} className="min-w-0">
               <button
                 type="button"
                 onClick={() => selectTab(tab.id)}
@@ -198,7 +198,7 @@ export default function AdminWorkspace({ role }: Props) {
                 />
                 <p
                   className={cx(
-                    "text-sm font-semibold whitespace-nowrap",
+                    "min-w-0 truncate text-sm font-semibold",
                     isActive ? "text-[color:var(--fs-color-brand-700)]" : "text-slate-900"
                   )}
                 >
