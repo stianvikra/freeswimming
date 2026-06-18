@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-content-mirror-and-status-action-density-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
@@ -201,3 +201,50 @@ Required if status action labels, mirror diagnostic behavior, or recovery guidan
 - `2026-06-18 | width-rule-correction | owner flagged vertical misalignment and orphan 50% mobile buttons; centered desktop action rows, made mirror actions 100% on narrow mobile, made standard row actions 50/50 with orphan last action spanning 100%, kept lifecycle mutation actions 100%, refreshed screenshots in output/admin-content-mirror-status-density-width-rules-2026-06-18-195159, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-18 | form-cta-correction | owner flagged create-form submit as an arbitrary small mobile button; made Content create submit 100% on mobile and auto-width on desktop, applied the same 50/50/orphan-full mobile grid to inline edit actions, locked those width rules in unit coverage, refreshed screenshots in output/admin-content-mirror-status-density-form-cta-2026-06-18-202042, copied previous width-rule references into the same handoff folder, and removed the temporary harness/script | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-18 | pre-pr-green | owner approved screenshots and merge-on-good-tests; npm run verify:pre-pr passed after clearing stale generated Next dev type cache from the removed visual harness; perf-budget tighten recommendation recorded as hold for this UI slice | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge before merge`
+- `2026-06-18 | merged | PR #1162 merged as de577676 after local pre-pr/pre-merge gates and required GitHub checks passed; deploy-preview GitHub Action failed with Vercel upload abort while the Vercel status itself was green and non-required | next: close this brief through repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-18`
+- `merged_pr`: `#1162`
+- `squash_commit`: `de577676`
+- `result`: Closed the Content admin mirror/status density slice. Mirror health now reads as a compact summary until details are opened, lifecycle transitions are grouped behind a status action, desktop action rows are vertically centered/right aligned, mobile action widths follow predictable 100% or 50/50 rules, and the create/edit submit buttons no longer render as arbitrary narrow mobile controls.
+- `validation`: Targeted unit and Playwright checks passed, screenshot handoff was owner-approved, `npm run verify:pre-pr` passed full public lane on `8f90aac7`, `npm run verify:pre-merge` passed for `8f90aac7`, required GitHub checks passed on PR `#1162` (`Analyze (javascript-typescript)`, `size-check`, `verify`), and PR `#1162` was squash-merged as `de577676`.
+- `screenshot_artifacts`: `output/admin-content-mirror-status-density-form-cta-2026-06-18-202042/`
+- `remaining_gaps`: none for this bounded child. Performance-budget tightening remains intentionally held for a dedicated owner decision because it is platform governance, not Content admin UI scope.
+- `10/10 claim`: yes - all critical target categories for this child reached `5/5`.
+
+Critical target categories confirmed `5/5`:
+
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Reliability and failure handling
+- Security and authz
+- Content governance
+- Admin workflow and editability
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Canonical accessibility target also confirmed in the score table: `Accessibility (a11y)` is `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                                                             | Gaps / Notes                                                                                 |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1162` merged the scoped Content-only mirror/status density changes without moving routes or changing the Content workspace job.                                                                                                 | None.                                                                                        |
+| UX flow clarity                               | `5/5`          | Mirror summary remains visible while details are disclosed on demand; status actions are grouped; owner-reviewed screenshot artifacts show the corrected desktop/mobile flow.                                                        | None.                                                                                        |
+| Visual design quality                         | `5/5`          | Owner-approved final screenshot handoff at `output/admin-content-mirror-status-density-form-cta-2026-06-18-202042/` covers desktop/mobile mirror, row actions, and form CTA width corrections.                                       | None.                                                                                        |
+| Business logic correctness and data integrity | `5/5`          | `AdminContentManager` kept mirror/status handlers and server-canonical data unchanged; targeted unit tests and Playwright locators passed; no schema/API/RLS changes.                                                                | None.                                                                                        |
+| Admin editor ergonomics                       | `5/5`          | Low-frequency lifecycle transitions are grouped while edit, revisions, delete, mirror focus, QA cleanup, and save actions remain directly reachable where expected.                                                                  | None.                                                                                        |
+| Accessibility (a11y)                          | `5/5`          | Disclosure controls use stable labels, `aria-expanded`, and `aria-controls`; unit/e2e coverage locks mirror details and status-action panel behavior.                                                                                | None.                                                                                        |
+| Data placement and sync boundaries            | `5/5`          | Only local disclosure/action-panel state was added; server-canonical mirror and content status data remain unchanged.                                                                                                                | None.                                                                                        |
+| Reliability and failure handling              | `5/5`          | Existing mirror warnings, ignored QA/test cleanup, status feedback, and error paths remain deterministic; targeted and full gates passed.                                                                                            | None.                                                                                        |
+| Security and authz                            | `5/5`          | Admin route/API/authz boundaries were not changed; existing admin negative-path and public lane CI coverage stayed green.                                                                                                            | None.                                                                                        |
+| Privacy and compliance                        | `5/5`          | No new private data, provider data, payment data, raw analytics, or policy-impacting surface was introduced; PR body policy scan was N/A.                                                                                            | None.                                                                                        |
+| Content governance                            | `5/5`          | Help/Guide glossary was updated for `Status actions`; publish/review/archive/draft semantics remain explicit and tested.                                                                                                             | None.                                                                                        |
+| Admin workflow and editability                | `5/5`          | Content edit/create/revision/delete/status workflows stayed available with reduced scan noise; `tests/e2e/admin-foundation.spec.ts` and unit state tests were updated.                                                               | None.                                                                                        |
+| i18n operational readiness                    | `5/5`          | Mobile actions now use 100% or 50/50/orphan-full width rules and desktop action rows are centered, reducing clipping risk for longer labels.                                                                                         | None.                                                                                        |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminContentManager`, existing status constants, mirror view model, `fs-*` action classes, and Help/Guide surface; no dependency/package/config changes.                                                                     | None.                                                                                        |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest passed (`3` files / `27` tests); targeted Playwright passed for available local coverage (`2` passed / `3` environment-gated skips); full `verify:pre-pr` passed (`249` unit files / `1619` tests, E2E `110`/`568`). | Local admin-auth Playwright paths remained skipped when `/dev/login` returned non-JSON.      |
+| DevOps and rollback readiness                 | `5/5`          | `npm run verify:pre-merge` passed; required GitHub checks passed; rollback is normal `git revert de577676`. The non-required deploy-preview Action failed with upload abort while Vercel status passed.                              | No release blocker; deploy-preview Action flake remains outside this bounded runtime change. |
