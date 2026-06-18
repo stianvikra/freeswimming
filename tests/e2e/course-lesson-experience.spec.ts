@@ -140,7 +140,7 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await expect(page.getByTestId("course-practice-water-media")).toBeVisible();
   await expect(page.getByTestId("course-practice-water-media")).toContainText("Visual coming soon");
   await expect(page.getByText("Use shallow water.")).toBeVisible();
-  await expect(page.getByText("Do instead").first()).toBeVisible();
+  await expect(page.getByText("Do this").first()).toBeVisible();
   const mistakeRow = page.getByTestId("course-common-mistake-row").filter({
     hasText: "Looking forward",
   });
@@ -151,7 +151,12 @@ test("course lesson experience renders skeleton before support", async ({ page }
   await expect(mistakeOnlyRow).toContainText("Correction not added yet");
   await expect(lessonExperience).not.toContainText("One cue");
   await expect(lessonExperience).toContainText("What good looks and feels like");
+  await expect(lessonExperience).toContainText("Check these against how you feel in the water.");
   await expect(lessonExperience.getByText("Quiet head", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("course-mark-done-button")).toHaveAccessibleName("Ready check");
+  await expect(page.getByTestId("course-pass-criteria-mark-done-button")).toHaveAccessibleName(
+    "Mark as done"
+  );
   await expect(page.getByTestId("course-next-lesson-preview-visual")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Side balance" })).toBeVisible();
   await expect(
@@ -246,9 +251,7 @@ test("course lesson experience hides inactive containers for concept lessons", a
   await expect(lessonExperience).not.toContainText("Key reminder");
   await expect(lessonExperience).not.toContainText("What this should feel like in the water.");
   await expect(lessonExperience).toContainText("What good looks and feels like");
-  await expect(lessonExperience).toContainText(
-    "Use these points to check whether the movement feels right."
-  );
+  await expect(lessonExperience).toContainText("Check these against how you feel in the water.");
   await expect(lessonExperience.getByText("Calm start", { exact: true })).toBeVisible();
   await expect(page.getByText("Open the first water drill when ready.")).toBeVisible();
   await expect(lessonExperience).not.toContainText("Dryland practice");

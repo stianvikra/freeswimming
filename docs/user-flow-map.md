@@ -12,7 +12,7 @@ flowchart TD
 
   B --> G[Course Page]
   G --> H[Watch Lesson Video]
-  H --> I[Mark as done]
+  H --> I[Ready check<br/>Mark as done]
   I --> J[Next lesson]
   J --> H
 
@@ -43,7 +43,7 @@ flowchart LR
   S1[1. Home<br/>Tap Free Course] --> S2[2. Course page<br/>Watch current video]
   S2 --> S3[3. Tap Lessons<br/>Open Course menu]
   S3 --> S4[4. Choose module + lesson]
-  S4 --> S5[5. Back to Course<br/>Mark as done]
+  S4 --> S5[5. Back to Course<br/>Ready check]
   S5 --> S6[6. Tap Next]
   S6 --> S7[7. Optional paths<br/>Poolside Guide / Video Analysis / Contact]
 ```
@@ -53,7 +53,7 @@ flowchart LR
 - `Lesson X of Y`
 - `Module A of B`
 - `Current`
-- `Mark as done` -> `Done`; clicking `Done` again returns the lesson to `In progress` while keeping checked pass criteria so the learner can re-mark it later.
+- `Ready check` is the header shortcut/status; `Mark as done` lives beside `Pass criteria` and changes to `Done`; clicking `Done` there returns the lesson to `In progress` while keeping checked pass criteria so the learner can re-mark it later.
 - `Lessons` (for course drawer)
 - `Main` (for switching from Course menu to main drawer)
 

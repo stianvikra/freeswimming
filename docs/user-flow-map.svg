@@ -37,7 +37,8 @@
   <text class="label" x="1050" y="225">Watch Lesson Video</text>
 
   <rect class="node" x="1360" y="170" width="220" height="90" />
-  <text class="label" x="1406" y="225">Mark Done</text>
+  <text class="label" x="1390" y="215">Ready Check</text>
+  <text class="small" x="1390" y="238">Mark as done</text>
 
   <rect class="node" x="1620" y="170" width="140" height="90" />
   <text class="label" x="1650" y="225">Next</text>
@@ -93,5 +94,5 @@
   <path class="line" d="M 1530 500 L 550 640" />
   <path class="line" d="M 1560 620 L 550 640" />
 
-  <text class="small" x="60" y="900">Label consistency: Lesson X of Y · Module A of B · Current · Mark as done/Done</text>
+  <text class="small" x="60" y="900">Label consistency: Lesson X of Y · Module A of B · Current · Ready check · Mark as done/Done</text>
 </svg>
