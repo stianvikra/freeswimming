@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-analytics-density-and-caveats-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-18`
@@ -202,8 +202,55 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
   - `after-admin-analytics-mobile.png`
   - `reference-admin-analytics-post-merge-desktop.png` if practical from the prior audit artifact
 
+## Completion Record
+
+- `completed`: `2026-06-18`
+- `merged_pr`: `#1157`
+- `squash_commit`: `facfd7d7`
+- `result`: Closed the scoped Admin Analytics Density And Caveats 10/10 slice. Admin Analytics now starts with visible reading rules, groups metrics by operator job, and keeps detailed caveats available through native disclosures without changing KPI math, API contracts, or data boundaries.
+- `validation`: targeted Vitest and ESLint passed before screenshot handoff; owner approved after/reference screenshots in `output/admin-analytics-density-caveats-2026-06-18-154449/`; `npm run verify:pre-pr` passed full lane on `3e49d04a`; required PR CI passed on #1157 (`verify`, `Analyze (javascript-typescript)`, `size-check`); `npm run verify:pre-merge` passed full lane with PASS marker `artifacts/verify-pre-merge/20260618-141437.json`; PR #1157 was squash-merged as `facfd7d7`. Non-required `deploy-preview` failed twice with Vercel CLI `Upload aborted` while the separate Vercel status passed; this did not block required branch protection and remains a maintenance follow-up candidate.
+- `10/10 claim`: yes - all critical target categories listed in this brief reached `5/5` for this scoped Admin Analytics readability slice. This does not claim the whole admin dashboard/lesson editor is 10/10.
+
+Critical target categories confirmed `5/5`:
+
+- `Product goals and IA`
+- `UX flow clarity`
+- `Visual design quality`
+- `Business logic correctness and data integrity`
+- `Reliability and failure handling`
+- `Security and authz`
+- `Privacy and compliance`
+- `Admin workflow and editability`
+- `Analytics and KPI observability`
+- `Incident response and support operations`
+- `i18n operational readiness`
+- `Stack-fit and dependency discipline`
+- `Testing and QA automation`
+- `DevOps and rollback readiness`
+
+Accessibility also closed at `5/5` in the achieved-score table below; it is kept out of this machine-read critical list because the current brief linter strips parenthetical suffixes from critical-category bullets.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                        | Gaps / Notes                                                                                                |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Visible reading rules and Analytics groups separate core signal, commerce readiness, and workout builder diagnostics; screenshots and component tests passed.                   | No scoped gap.                                                                                              |
+| UX flow clarity                               | `5/5`          | Critical interpretation rules are visible before detailed panels; range, refresh, loading, error, retry, quiet, capped, and setup states remain covered.                        | No scoped gap.                                                                                              |
+| Visual design quality                         | `5/5`          | After/reference screenshots in `output/admin-analytics-density-caveats-2026-06-18-154449/`; desktop height reduced from `6466px` to `4714px`, mobile captured without clipping. | No scoped gap.                                                                                              |
+| Business logic correctness and data integrity | `5/5`          | No API, view-model, KPI formula, range, truncation, unknown-value, or no-store fetch behavior changed; targeted tests passed.                                                   | No scoped gap.                                                                                              |
+| Accessibility (a11y)                          | `5/5`          | Caveats use native `details` disclosure controls; existing labeled range/retry controls and semantic headings remain in place.                                                  | No scoped gap.                                                                                              |
+| Reliability and failure handling              | `5/5`          | Existing error, retry, schema-missing, unsafe identifier redaction, quiet/no-data, and capped-list behavior stayed deterministic in tests.                                      | No scoped gap.                                                                                              |
+| Security and authz                            | `5/5`          | Read-only UI/test/docs diff; no protected route, authz, service-role, RLS, API, or schema change.                                                                               | No scoped gap.                                                                                              |
+| Privacy and compliance                        | `5/5`          | No raw payloads, PII, provider IDs, user drilldowns, or finance truth added; unsafe identifiers remain redacted.                                                                | No scoped gap.                                                                                              |
+| Admin workflow and editability                | `5/5`          | Refresh/range controls remain clear while support diagnostics are grouped away from routine metric scanning.                                                                    | No scoped gap.                                                                                              |
+| Analytics and KPI observability               | `5/5`          | KPI caveats remain explicit: selected-range events, not unique-person conversion, not purchases/revenue/finance, unknowns excluded from dedicated KPIs.                         | No scoped gap.                                                                                              |
+| Incident response and support operations      | `5/5`          | Review-needed diagnostics, schema/freshness warnings, and finance/non-revenue caveats remain findable without a default prose wall.                                             | No scoped gap.                                                                                              |
+| i18n operational readiness                    | `5/5`          | Short group labels and disclosure summaries reduce fixed-width copy pressure in desktop/mobile screenshots.                                                                     | No scoped gap.                                                                                              |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminAnalyticsDashboard`, existing view-model/test stack, Tailwind tokens, and native browser disclosure; no dependency added.                                          | No scoped gap.                                                                                              |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, targeted ESLint, `lint:briefs:all`, `verify:pre-pr`, required CI, and `verify:pre-merge` passed.                                                               | Non-required `deploy-preview` had Vercel upload aborts; required checks and separate Vercel status passed.  |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible UI/test/docs diff; rollback is `git revert facfd7d7`; no migration, package, workflow, config, or data change.                                                 | Perf-budget trend still recommends future tightening, held for a separate perf-maintenance slice per scope. |
+
 ## Checkpoint Log
 
+- `2026-06-18 | merged | PR #1157 was squash-merged as facfd7d7 after owner screenshot approval, npm run verify:pre-pr, required PR CI, and npm run verify:pre-merge passed; post-merge preflight surfaced this repo-managed docs-only closeout | next: validate, PR, and auto-merge the docs-only closeout if all closeout gates pass`
 - `2026-06-18 | pre-pr gate passed | owner approved screenshot handoff; npm run verify:pre-pr passed full lane (lint, typecheck, 1619 unit tests, build, perf budgets, Playwright 110 passed / 568 skipped in local credential-limited profile); perf-budget trend again recommended tighten after 10 green runs, held out of this UI PR per scope and parent perf-maintenance note | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge`
 - `2026-06-18 | screenshot approval stop | implemented grouped Admin Analytics scan order, visible reading rules, native caveat disclosures, and mobile two-column metric grids without changing API/view-model/KPI semantics; targeted Vitest, targeted ESLint, and lint:briefs:all passed; after/reference screenshots captured in output/admin-analytics-density-caveats-2026-06-18-154449 with desktop height 6466px -> 4714px and mobile height 9776px after density refinement; temporary local visual harness/script removed before handoff | next: wait for owner screenshot approval or visual corrections before verify:pre-pr`
 - `2026-06-18 | child in progress | owner approved "ok kjor pa" after post-merge admin re-audit selected Admin Analytics density and caveat grouping as the next bounded child; branch admin-analytics-density-caveats created from main@a7056f2a; screenshot approval stop remains required before verify:pre-pr | next: implement grouped Analytics layout, targeted tests, and screenshot handoff`
