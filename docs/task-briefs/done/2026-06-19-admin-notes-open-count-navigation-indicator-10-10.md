@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-open-count-navigation-indicator-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
@@ -219,3 +219,55 @@ Execution evidence: identifiers searched were `Notes`, `open notes`, `notes summ
 - `2026-06-19 | in-progress | owner approved execution and asked to add four scope clarifications: count includes open contextual notes in the same Notes queue, Help/Guide must clarify open-not-unread semantics, shell entry defaults to open while intentional deep links keep explicit filters/context, and create-form/SLA/unread/polling/bulk-triage work remains out of scope | next: implement scoped navigation/count indicator and screenshot handoff before PR gates`
 - `2026-06-19 | screenshot-review | implemented count-only /api/admin/notes/summary route, Notes shell badge, click-to-open queue cleanup, Help/Guide/runbook copy, architecture registry entry, and targeted route/helper/shell/help tests; owner flagged excessive desktop whitespace in first screenshot, root cause was admin grid auto rows stretching inside min-h-screen, fixed with desktop content-start and row-2 nav/main placement; validation passed: targeted Vitest (4 files / 40 tests), targeted ESLint, npm run lint:briefs:all, npm run typecheck, git diff --check; refreshed screenshot artifacts captured at output/admin-notes-open-count-indicator-2026-06-19-144301 using temporary local harness because dev-login hit local Supabase egress guard, and the harness was removed before final diff | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-19 | pre-pr-ready | owner approved screenshot handoff; initial npm run verify:pre-pr failed on two unrelated mobile E2E timeouts, the two failed tests then passed isolated, and rerun npm run verify:pre-pr passed full-public lane at artifacts/test-runs/20260619-162246; perf budget trend again recommended tightening one stretch target after 10 consecutive weekly green runs, recorded for PR summary and deferred from this Notes-only slice | next: commit, push, open PR, monitor CI`
+- `2026-06-19 | done | PR #1177 merged with squash commit 18444899 after green GitHub checks and local npm run verify:pre-merge; post-merge preflight surfaced this repo-managed docs-only closeout | next: validate closeout PR and merge if green`
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1177`
+- `squash_commit`: `18444899`
+- `result`: Admin Notes now shows a compact open-count badge in the admin menu, shell entry lands on the open Notes queue by default, intentional deep links remain supported, and the desktop admin whitespace regression found during screenshot review was fixed.
+- `validation`: Targeted Vitest passed for admin workspace shell, Notes routes/helpers, and Help/Guide tests; targeted ESLint, typecheck, lint:briefs:all, lint:quality-gates, and git diff --check passed; screenshot handoff was owner-approved; `npm run verify:pre-pr` passed at `artifacts/test-runs/20260619-162246`; required GitHub checks passed; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260619-144856.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no active release-blocking gaps remain for this slice.
+
+Critical target categories for the 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- Scalability and cost efficiency
+- DevOps and rollback readiness
+
+All target categories, including `Accessibility (a11y)` and `Performance (CWV + payloads)`, are scored `5/5` in the closeout table below.
+
+| Category                                      | Achieved Score | Evidence                                                                                                             | Gaps / Notes |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | PR #1177 scope and screenshots show Notes menu count without changing admin IA.                                      | No gap.      |
+| UX flow clarity                               | `5/5`          | Shell tests cover click-to-open queue behavior; Help/Guide copy clarifies open-not-unread semantics.                 | No gap.      |
+| Visual design quality                         | `5/5`          | Owner-approved after/reference screenshot handoff at `output/admin-notes-open-count-indicator-2026-06-19-144301`.    | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Route/helper tests cover open-only count, zero, capped, schema-missing, and non-schema failure behavior.             | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Helper and shell tests cover accessible open-count labels and capped `9+` meaning.                                   | No gap.      |
+| Performance (CWV + payloads)                  | `5/5`          | Count-only no-store route avoids note bodies, attachments, context payloads, and polling; verify gates passed.       | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Brief and route contract keep count server-canonical and shell display local/read-only.                              | No gap.      |
+| Caching and invalidation strategy             | `5/5`          | Summary route is `force-dynamic` with `Cache-Control: no-store`; route tests and registry updated.                   | No gap.      |
+| Reliability and failure handling              | `5/5`          | Shell/route tests cover quiet zero/schema-missing/failure states without misleading visible badge.                   | No gap.      |
+| Security and authz                            | `5/5`          | Admin-gated route with unauthorized negative-path tests.                                                             | No gap.      |
+| Privacy and compliance                        | `5/5`          | Shell receives aggregate count only, with no note title/body/context/attachment/user payload.                        | No gap.      |
+| Admin workflow and editability                | `5/5`          | Notes menu exposes open work and preserves intentional filter/deep-link workflows.                                   | No gap.      |
+| Incident response and support operations      | `5/5`          | Help/Guide and Notes recovery runbook describe badge meaning for operator triage.                                    | No gap.      |
+| i18n operational readiness                    | `5/5`          | Centralized label helpers and responsive screenshots cover capped label behavior.                                    | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused AdminWorkspace/Messages badge pattern, existing route/test stack, and added no dependency.                    | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted tests, `npm run verify:pre-pr`, GitHub checks, and `npm run verify:pre-merge` passed.                       | No gap.      |
+| Scalability and cost efficiency               | `5/5`          | Supabase head/count query keeps cost independent of note body/attachment size.                                       | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible squash commit `18444899`, no migration/package/workflow change, rollback via `git revert 18444899`. | No gap.      |
