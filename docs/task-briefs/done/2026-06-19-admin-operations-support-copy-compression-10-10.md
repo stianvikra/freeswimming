@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-operations-support-copy-compression-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
@@ -54,7 +54,23 @@ Findings:
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for this scoped 10/10 claim: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Admin editor ergonomics, Accessibility (a11y), Reliability and failure handling, Security and authz, Privacy and compliance, Incident response and support operations, i18n operational readiness, Stack-fit and dependency discipline, Testing and QA automation, DevOps and rollback readiness.
+Critical target categories for this scoped 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Accessibility (a11y)
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                             | Evidence                                       | Expected Closeout Score |
 | --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------- |
@@ -64,6 +80,7 @@ Critical target categories for this scoped 10/10 claim: Product goals and IA, UX
 | Business logic correctness and data integrity | `target`     | Runtime flag payloads, site-lock snapshot values, env names, links, and no-store fetch behavior remain unchanged.                                              | diff review + existing/updated tests           | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | High-frequency status/action reading is faster; low-frequency explanation is still reachable.                                                                  | screenshot review + workflow review            | `5/5`                   |
 | Accessibility (a11y)                          | `target`     | Any disclosure or compact support panel uses accessible names/roles and remains keyboard reachable.                                                            | component tests + screenshot QA                | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same threshold and evidence.                                                                        | component tests + screenshot QA                | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no new dependency, image, route, API call, or heavy client state.                                                                             | package/diff review                            | `4/5`                   |
 | Data placement and sync boundaries            | `supporting` | Supporting only: server-canonical runtime flag and site-lock data stay unchanged; local UI state is disclosure-only if used.                                   | diff review                                    | `4/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: `/api/admin/operations/flags` remains same-origin/no-store and refresh behavior stays unchanged.                                              | component tests + diff review                  | `4/5`                   |
@@ -221,8 +238,39 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 
 ## Checkpoint Log
 
+- `2026-06-19 | merged | PR #1171 merged at dfddec94 after required CI and npm run verify:pre-merge passed; post-merge preflight opened this docs-only closeout | next: validate and merge the repo-managed closeout PR`
 - `2026-06-19 | pre-pr-green | npm run verify:pre-pr passed after owner screenshot approval; recorded performance-budget hold for this UI-only slice | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge, and merge only if required checks and local gates are green`
 - `2026-06-19 | screenshot-approved | owner approved after/reference screenshots and approved merge on good tests | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge only if required checks and local gates are green`
 - `2026-06-19 | screenshot-handoff | implemented presentation-only Operations site-lock copy compression with support/env guidance behind native disclosure and mobile full-width site-lock actions; targeted Operations Vitest passed; after/reference screenshots captured in output/admin-operations-support-copy-compression-2026-06-19-081625 and temporary harness removed | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-19 | in-progress | owner approved implementation; branch renamed to feat/admin-operations-support-copy-compression and brief moved to in-progress | next: implement presentation-only Operations support-copy compression, update targeted test, capture after/reference screenshots, and stop for owner screenshot approval before verify:pre-pr`
 - `2026-06-19 | planned | post-merge re-audit on main@78a44ec1 selected Operations support-copy compression as the next bounded admin-readability child; Notes create-form density is intentionally deferred because its create/edit/upload/link workflows have broader blast radius | next: owner approves implementation before moving this brief to in-progress`
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1171`
+- `squash_commit`: `dfddec9418214cce9cc9f1f87961a4ecec0f01dc`
+- `result`: Closed Admin Operations Support Copy Compression. Operations now keeps site-lock status/actions prominent, moves low-frequency access/env guidance behind native disclosure, and keeps runtime flag/site-lock behavior unchanged.
+- `validation`: Targeted Operations Vitest passed; owner-approved after/reference screenshots captured in `output/admin-operations-support-copy-compression-2026-06-19-081625/`; `npm run verify:pre-pr` passed; PR CI passed; `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260619-081050.json`.
+- `10/10 claim`: yes - all critical target categories for this scoped child reached `5/5`; supporting performance stayed unchanged and the budget ratchet decision is `hold` for this UI-only slice.
+
+Visual note: no product-rendering files changed after the approved screenshot handoff before PR #1171 merged.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                               | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | Status/action/detail hierarchy implemented in `AdminOperationsManager`; screenshots and PR #1171 review confirmed scoped Operations job clarity.       | No gap.      |
+| UX flow clarity                               | `5/5`          | Default site-lock card now keeps status, metadata, workflow, unlock, sign-out, and runbook visible while moving routine support prose into disclosure. | No gap.      |
+| Visual design quality                         | `5/5`          | Owner-approved desktop/mobile after/reference screenshots show no clipping, overlap, or arbitrary mobile action widths.                                | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Diff review and tests preserved runtime flag payloads, site-lock snapshot values, env names, links, no-store fetch, and mutation behavior.             | No gap.      |
+| Admin editor ergonomics                       | `5/5`          | High-frequency Operations scan path is shorter; low-frequency guidance remains one click away.                                                         | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Native `details/summary` disclosure is keyboard reachable and covered by `admin-operations-manager-state` test.                                        | No gap.      |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence.                                                                              | No gap.      |
+| Reliability and failure handling              | `5/5`          | Existing loading/error/retry/toggle state coverage stayed intact; targeted test suite passed.                                                          | No gap.      |
+| Security and authz                            | `5/5`          | No authz, bypass token, password, env, workflow permission, or runtime flag mutation boundary changed.                                                 | No gap.      |
+| Privacy and compliance                        | `5/5`          | Screenshots and UI expose env names only, not secrets or raw token values; no private user/provider/finance payloads added.                            | No gap.      |
+| Admin workflow and editability                | `5/5`          | Operations actions remain visible and grouped by frequency/risk without ambiguous hidden controls.                                                     | No gap.      |
+| Incident response and support operations      | `5/5`          | Workflow, runbook, unlock, sign-out, disable guidance, and required env names remain accessible.                                                       | No gap.      |
+| i18n operational readiness                    | `5/5`          | Short labels and full-width mobile action layout were checked in responsive screenshot handoff.                                                        | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminOperationsManager`, existing action tokens, metadata patterns, and native disclosure; no dependency/config change.                        | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, brief lint, quality gates, full `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                                                | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible UI/test/docs diff; no migration, secret, workflow, package, or runtime config dependency.                                             | No gap.      |
