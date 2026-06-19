@@ -8,7 +8,7 @@
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
-- `source_audit`: `docs/task-briefs/in-progress/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
+- `source_audit`: `docs/task-briefs/done/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
 - `execution_mode`: `plan only until owner explicitly approves implementation`
 
 ## Brief Audit Record

@@ -265,9 +265,9 @@ Owner decision:
 
 - Run the whole-dashboard score refresh and Notes create-form density pre-execution audit together as one docs-only workstream.
 
-Active docs-only child:
+Completed docs-only child:
 
-- `docs/task-briefs/in-progress/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
+- `docs/task-briefs/done/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
 
 Planned child selected first by that audit:
 
