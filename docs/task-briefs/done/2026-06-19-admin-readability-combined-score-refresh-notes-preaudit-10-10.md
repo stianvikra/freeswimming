@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
@@ -217,6 +217,7 @@ Critical target categories for this audit artifact:
 | Business logic correctness and data integrity | `target`     | Audit changes docs only and explicitly preserves Notes payloads, upload behavior, context links, related-note identity, and server-canonical data.                  | changed-files review + Notes test inventory | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | Audit ranks admin nav/edit/create friction and chooses Notes open-count navigation as the next highest-value bounded slice.                                         | whole-dashboard refresh + Notes findings    | `5/5`                   |
 | Accessibility (a11y)                          | `target`     | Audit identifies future Notes progressive disclosure must keep accessible native controls, labels, focus, and recovery visibility.                                  | future child acceptance criteria            | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same accessible controls, labels, focus, and recovery visibility requirement.                            | future child acceptance criteria            | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: docs-only audit adds no runtime payload; performance ratchet remains held until two new weekly green cycles after `2026-06-19`.                    | no-runtime-diff review                      | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Audit records Notes server-canonical note data vs local draft/staged-image state and requires future implementation to preserve those boundaries.                   | Notes pre-audit + planned child contract    | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: no cache/read path changes; future Notes child must preserve current admin fetch/refresh behavior.                                                 | scope review                                | `4/5`                   |
@@ -361,3 +362,52 @@ Fallout:
 
 - `2026-06-19 | in-progress | owner approved combined audit after asking whether Notes create-form density audit and whole-dashboard score refresh could run together; branch docs/admin-readability-combined-audit-2026-06-19 created from clean main@f5b9388c | next: write docs-only audit, planned Notes children, parent status update, then run docs gates`
 - `2026-06-19 | scope-refined | owner proposed a Notes open-count menu indicator and open-queue click behavior; current code audit confirmed default Notes filter is already open, so the new scope is a separate planned Notes nav/triage child before create-form density | next: validate changed briefs`
+- `2026-06-19 | merged | PR #1175 merged as c52e7687 after docs-only verify:pre-pr, green PR CI, and docs-only verify:pre-merge passed | next: repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1175`
+- `squash_commit`: `c52e76872b569ef95e86b12e8280fd2e9bd01edc`
+- `result`: Closed the combined admin-readability audit by refreshing the whole-dashboard score on current `main`, recording that the product should not yet claim whole-dashboard `10/10`, and splitting the next Notes work into a smaller open-count navigation indicator child followed by create-form density.
+- `validation`: `npm run verify:pre-pr` passed docs-only lane on commit `a71a8c36`; PR #1175 CI passed (`verify`, `e2e-smoke`, `site-lock-smoke`, `size-check`, CodeQL, Vercel, deploy-preview); `npm run verify:pre-merge` passed with marker `artifacts/verify-pre-merge/20260619-110752.json`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this docs-only audit artifact. No - this does not claim the whole admin dashboard product is `10/10`.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Accessibility (a11y)
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                          | Gaps / Notes                                           |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | Whole-dashboard score refresh and parent status update merged in PR #1175.                                                        | Product `10/10` remains unclaimed by design.           |
+| UX flow clarity                               | `5/5`          | Audit separated shipped admin improvements from remaining Notes nav/create-form friction.                                         | Next planned child is Notes open-count navigation.     |
+| Visual design quality                         | `5/5`          | Audit recorded that fresh screenshots are required before any future Notes runtime child or whole-dashboard visual `10/10` claim. | No visual/runtime files changed in this audit.         |
+| Business logic correctness and data integrity | `5/5`          | Docs-only diff; Notes payloads, uploads, context refs, related notes, and status behavior unchanged.                              | No runtime gap in audit scope.                         |
+| Admin editor ergonomics                       | `5/5`          | Audit selected Notes open-count triage before create-form density as the safest next admin ergonomics improvement.                | Runtime implementation remains planned, not shipped.   |
+| Accessibility (a11y)                          | `5/5`          | Planned children require accessible labels/disclosure and screenshot handoff; docs-only gates passed.                             | Future runtime child must validate.                    |
+| Accessibility                                 | `5/5`          | Lifecycle-lint alias for canonical `Accessibility (a11y)`; same evidence as the canonical accessibility row.                      | Future runtime child must validate.                    |
+| Data placement and sync boundaries            | `5/5`          | Notes server-canonical vs local draft/staged-image boundaries documented.                                                         | No sync behavior changed.                              |
+| Reliability and failure handling              | `5/5`          | Existing Notes loading, retry, schema warning, create error, staged-image recovery, and context validation behaviors inventoried. | Future child must preserve tests.                      |
+| Security and authz                            | `5/5`          | No authz, route, API, service-role, or Auth Admin behavior changed.                                                               | No gap.                                                |
+| Privacy and compliance                        | `5/5`          | No private user/payment/provider/raw analytics or note payload data added; audit remains docs-only.                               | No gap.                                                |
+| Content governance                            | `5/5`          | Incident/support guidance handling and Help/Guide impact rules documented for future Notes children.                              | No Help/Guide runtime copy changed now.                |
+| Admin workflow and editability                | `5/5`          | Current Notes workflow coverage inventoried; planned children preserve create/edit/upload/link/archive/delete behavior.           | Open-count and create-density children remain pending. |
+| Incident response and support operations      | `5/5`          | Notes open-count and incident template support boundaries documented.                                                             | Runtime support signal not implemented yet.            |
+| i18n operational readiness                    | `5/5`          | Future Notes badge/copy/disclosure screenshot requirements recorded for longer labels.                                            | Future runtime child must validate desktop/mobile.     |
+| Stack-fit and dependency discipline           | `5/5`          | Audit uses existing task brief, scorecard, admin components, and test contracts; no dependency or local Codex config change.      | No gap.                                                |
+| Testing and QA automation                     | `5/5`          | `lint:briefs`, `lint:briefs:all`, quality gates, docs-only `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                 | No gap for docs-only artifact.                         |
+| DevOps and rollback readiness                 | `5/5`          | Reversible docs-only squash commit `c52e7687`; no migration, package, workflow, config, or runtime dependency.                    | Rollback is normal `git revert c52e7687`.              |
