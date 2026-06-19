@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const adminWorkspaceClass =
   "mx-auto min-h-screen w-full max-w-[1800px] px-3 pt-4 pb-16 sm:px-5 sm:pt-6 xl:px-8";
 const adminWorkspaceGridClass =
-  "lg:grid lg:grid-cols-[minmax(0,1fr)_224px] lg:items-start lg:gap-4 xl:grid-cols-[minmax(0,1fr)_236px] xl:gap-5";
+  "lg:grid lg:grid-cols-[minmax(0,1fr)_224px] lg:content-start lg:items-start lg:gap-4 xl:grid-cols-[minmax(0,1fr)_236px] xl:gap-5";
 const adminShellCardClass = "fs-library-card fs-library-card-accent p-5 sm:p-6 md:p-8";
 const adminShellHeaderClass =
   "border-b border-[color:var(--fs-border-soft)] bg-white/40 px-1 pb-4 sm:px-0";

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  buildAdminNotesTabAriaLabel,
   buildAdminNoteAttachmentEvidenceSummary,
   buildAdminNoteAttachmentOrdinalLabel,
   buildAdminNoteAttachmentStoragePath,
   buildIncidentNoteBodyTemplate,
   canonicalizeAdminNoteLinkPair,
+  formatAdminNotesOpenBadgeCount,
   parseCreateAdminNotePayload,
   parseUpdateAdminNotePayload,
   validateAdminNoteAttachment,
@@ -155,6 +157,24 @@ describe("admin note attachment validation", () => {
         locationLabel: "Staged locally",
       })
     ).toBe("WEBP · 1.5 KB · Staged locally");
+  });
+});
+
+describe("admin notes open-count badge helpers", () => {
+  it("formats compact open-count badges", () => {
+    expect(formatAdminNotesOpenBadgeCount(0)).toBeNull();
+    expect(formatAdminNotesOpenBadgeCount(Number.NaN)).toBeNull();
+    expect(formatAdminNotesOpenBadgeCount(1)).toBe("1");
+    expect(formatAdminNotesOpenBadgeCount(9)).toBe("9");
+    expect(formatAdminNotesOpenBadgeCount(10)).toBe("9+");
+  });
+
+  it("builds accessible labels with open-note semantics", () => {
+    expect(buildAdminNotesTabAriaLabel(null)).toBe("Notes");
+    expect(buildAdminNotesTabAriaLabel(0)).toBe("Notes");
+    expect(buildAdminNotesTabAriaLabel(1)).toBe("Notes, 1 open note");
+    expect(buildAdminNotesTabAriaLabel(3)).toBe("Notes, 3 open notes");
+    expect(buildAdminNotesTabAriaLabel(12)).toBe("Notes, 9 or more open notes");
   });
 });
 

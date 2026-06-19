@@ -39,6 +39,15 @@ import {
   formatAdminMessagesNeedsReplyBadgeCount,
   type AdminMessagesSummaryResponse,
 } from "@/lib/admin/messages";
+import {
+  applyAdminNotesFilterStateToSearchParams,
+  DEFAULT_ADMIN_NOTES_FILTER_STATE,
+} from "@/lib/admin/notes-manager";
+import {
+  buildAdminNotesTabAriaLabel,
+  formatAdminNotesOpenBadgeCount,
+  type AdminNotesSummaryResponse,
+} from "@/lib/admin/notes";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string; icon: LucideIcon }> = [
   {
@@ -133,6 +142,10 @@ export default function AdminWorkspace({ role }: Props) {
   const [messagesSummaryStatus, setMessagesSummaryStatus] = useState<
     "idle" | "loaded" | "unavailable"
   >("idle");
+  const [notesOpenCount, setNotesOpenCount] = useState<number | null>(null);
+  const [notesSummaryStatus, setNotesSummaryStatus] = useState<"idle" | "loaded" | "unavailable">(
+    "idle"
+  );
   const activeTab = useMemo(
     () => parseAdminTab(searchParams?.get("tab") ?? null) ?? "content",
     [searchParams]
@@ -177,11 +190,51 @@ export default function AdminWorkspace({ role }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadNotesSummary() {
+      try {
+        const response = await fetch("/api/admin/notes/summary", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as AdminNotesSummaryResponse;
+        if (cancelled) return;
+        if (!response.ok || !payload.ok || !payload.schemaReady) {
+          setNotesOpenCount(null);
+          setNotesSummaryStatus("unavailable");
+          return;
+        }
+        setNotesOpenCount(payload.openCount);
+        setNotesSummaryStatus("loaded");
+      } catch {
+        if (!cancelled) {
+          setNotesOpenCount(null);
+          setNotesSummaryStatus("unavailable");
+        }
+      }
+    }
+
+    void loadNotesSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function selectTab(tab: AdminTab) {
-    const nextParams = applyAdminTabToSearchParams(
+    let nextParams = applyAdminTabToSearchParams(
       new URLSearchParams(searchParams?.toString() ?? ""),
       tab
     );
+    if (tab === "notes") {
+      nextParams = applyAdminNotesFilterStateToSearchParams(
+        nextParams,
+        DEFAULT_ADMIN_NOTES_FILTER_STATE
+      );
+    }
     const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
     startTransition(() => {
       router.replace(nextHref, { scroll: false });
@@ -192,7 +245,7 @@ export default function AdminWorkspace({ role }: Props) {
     <div className="contents" data-testid="admin-workspace-shell">
       <nav
         aria-label="Admin sections"
-        className="mt-4 grid grid-cols-2 gap-2 pb-1 sm:grid-cols-3 lg:sticky lg:top-28 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:rounded-[var(--fs-radius-card)] lg:border lg:border-[color:var(--fs-border-soft)] lg:bg-white/42 lg:p-2 lg:shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
+        className="mt-4 grid grid-cols-2 gap-2 pb-1 sm:grid-cols-3 lg:sticky lg:top-28 lg:col-start-2 lg:row-start-2 lg:mt-0 lg:max-h-[calc(100vh-8rem)] lg:grid-cols-1 lg:overflow-y-auto lg:rounded-[var(--fs-radius-card)] lg:border lg:border-[color:var(--fs-border-soft)] lg:bg-white/42 lg:p-2 lg:shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
         data-testid="admin-tab-grid"
       >
         {activeTab === "help" ? (
@@ -226,10 +279,14 @@ export default function AdminWorkspace({ role }: Props) {
             tab.id === "messages"
               ? formatAdminMessagesNeedsReplyBadgeCount(messagesNeedsReplyCount ?? 0)
               : null;
+          const openNotesBadge =
+            tab.id === "notes" ? formatAdminNotesOpenBadgeCount(notesOpenCount ?? 0) : null;
           const messagesAriaLabel =
             tab.id === "messages"
               ? buildAdminMessagesTabAriaLabel(messagesNeedsReplyCount)
               : undefined;
+          const notesAriaLabel =
+            tab.id === "notes" ? buildAdminNotesTabAriaLabel(notesOpenCount) : undefined;
           return (
             <div key={tab.id} className="min-w-0">
               <button
@@ -237,7 +294,7 @@ export default function AdminWorkspace({ role }: Props) {
                 onClick={() => selectTab(tab.id)}
                 data-testid={`admin-tab-${tab.id}`}
                 title={tab.subtitle}
-                aria-label={messagesAriaLabel}
+                aria-label={messagesAriaLabel ?? notesAriaLabel}
                 className={cx(
                   adminTabButtonBaseClass,
                   isActive ? adminTabActiveClass : adminTabInactiveClass
@@ -269,6 +326,16 @@ export default function AdminWorkspace({ role }: Props) {
                     {needsReplyBadge}
                   </span>
                 ) : null}
+                {openNotesBadge ? (
+                  <span
+                    className={adminTabBadgeClass}
+                    aria-hidden="true"
+                    data-testid="admin-tab-notes-open-badge"
+                    title={`${notesOpenCount} open admin notes`}
+                  >
+                    {openNotesBadge}
+                  </span>
+                ) : null}
               </button>
             </div>
           );
@@ -278,9 +345,17 @@ export default function AdminWorkspace({ role }: Props) {
             Messages needs-reply count unavailable.
           </span>
         ) : null}
+        {notesSummaryStatus === "unavailable" ? (
+          <span className="sr-only" role="status" data-testid="admin-notes-summary-status">
+            Notes open count unavailable.
+          </span>
+        ) : null}
       </nav>
 
-      <div className="mt-5 min-w-0 lg:col-start-1" data-testid="admin-workspace-main">
+      <div
+        className="mt-5 min-w-0 lg:col-start-1 lg:row-start-2 lg:mt-0"
+        data-testid="admin-workspace-main"
+      >
         <span className="sr-only" data-testid="admin-active-section-label">
           {activeMeta.label}
         </span>

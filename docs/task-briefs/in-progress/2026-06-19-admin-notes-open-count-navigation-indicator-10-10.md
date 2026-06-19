@@ -3,20 +3,20 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-open-count-navigation-indicator-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
 - `source_audit`: `docs/task-briefs/done/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
-- `execution_mode`: `plan only until owner explicitly approves implementation`
+- `execution_mode`: `execute after owner approval`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-19`
-- `base`: `main@f5b9388c`
+- `base`: `main@d9535756`
 - `audit_status`: `ready`
-- `decision`: Prefer this Notes triage/navigation child before the broader Notes create-form density child if the owner approves implementation.
+- `decision`: Execute this Notes triage/navigation child before the broader Notes create-form density child.
 - `reason`: Owner proposed that Notes should mirror the Messages count affordance by showing how many admin notes are open and opening the Notes tab on the open queue. Current Notes default filter is already `open`, but the shell has no count and `AdminWorkspace` tab changes can preserve stale Notes filters from the current URL.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `AdminNotesManager`, `lib/admin/notes-manager.ts`, admin Notes API routes, Notes status semantics, Admin Help/Guide Notes copy, Messages badge helper patterns, screenshot rules, scorecard categories, or route/label/support sweep rules change before implementation.
 
@@ -36,20 +36,22 @@ Fremoverkompatibilitet: fremtidige note-statusverdier maa eksplisitt mappes til 
 
 ## Selected Decisions
 
-| Decision         | Recommended Default                                                               | Reason                                                                                                      |
-| ---------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Count meaning    | `open` admin notes (`is_done=false`)                                              | Matches current Notes default queue and operator triage job.                                                |
-| Badge surface    | Notes admin tab only                                                              | Keeps private admin workflow signal inside private admin.                                                   |
-| Badge icon       | Reuse existing Notes `MessageSquareText` tab icon plus compact numeric badge      | Avoids adding a second icon or changing tab identity.                                                       |
-| Badge cap        | `9+`                                                                              | Keeps desktop/mobile tab layout stable.                                                                     |
-| Data source      | Admin-gated aggregate summary endpoint or equivalent count-only route             | Avoids loading full note bodies, attachments, and context details into the shell.                           |
-| Refresh behavior | One fetch on admin shell mount; no polling                                        | Same conservative model as Messages unless live alerts are later approved.                                  |
-| Failure behavior | No visible badge on error/schema-missing; optional screen-reader status only      | Avoids false certainty.                                                                                     |
-| Click behavior   | Selecting Notes from shell clears stale Notes filters and lands on the open queue | Current default is open; implementation should avoid preserving old `notesStatus=done/all` unintentionally. |
+| Decision         | Recommended Default                                                                         | Reason                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Count meaning    | `open` admin notes (`is_done=false`)                                                        | Matches current Notes default queue and operator triage job.                                                 |
+| Count scope      | All open notes visible in the Notes queue, including contextual notes; exclude `done` notes | Keeps the menu count aligned with the actual open Notes workload instead of only standalone dashboard notes. |
+| Badge surface    | Notes admin tab only                                                                        | Keeps private admin workflow signal inside private admin.                                                    |
+| Badge icon       | Reuse existing Notes `MessageSquareText` tab icon plus compact numeric badge                | Avoids adding a second icon or changing tab identity.                                                        |
+| Badge cap        | `9+`                                                                                        | Keeps desktop/mobile tab layout stable.                                                                      |
+| Data source      | Admin-gated aggregate summary endpoint or equivalent count-only route                       | Avoids loading full note bodies, attachments, and context details into the shell.                            |
+| Refresh behavior | One fetch on admin shell mount; no polling                                                  | Same conservative model as Messages unless live alerts are later approved.                                   |
+| Failure behavior | No visible badge on error/schema-missing; optional screen-reader status only                | Avoids false certainty.                                                                                      |
+| Click behavior   | Selecting Notes from shell clears stale Notes filters and lands on the open queue           | Current default is open; implementation should avoid preserving old `notesStatus=done/all` unintentionally.  |
 
 ## Scope
 
 - Add a count-only admin Notes summary contract for open notes, or reuse an existing safe count path if one exists at implementation time.
+- Count all open notes that belong in the Notes queue, including contextual notes, and exclude `done` notes.
 - Add a compact Notes tab badge in `AdminWorkspace`.
 - Update Notes tab selection so shell entry lands on open Notes queue by default.
 - Preserve deep links to a specific note/query/context when those links intentionally include filters.
@@ -61,7 +63,7 @@ Fremoverkompatibilitet: fremtidige note-statusverdier maa eksplisitt mappes til 
 - No create-form density implementation.
 - No change to Notes create/edit/upload/link/delete/done/archive payloads.
 - No change to admin note status model beyond using existing open/done meaning.
-- No polling, unread/new count, SLA alerting, global badge, public navigation badge, or notification sound.
+- No priority/SLA model, unread/new count, live polling, bulk triage, global badge, public navigation badge, or notification sound.
 - No database migration, RLS, storage, generated types, service-role, authz, package, workflow, or performance-budget change.
 - Do not touch `Ja.docx`.
 
@@ -136,7 +138,7 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 - Human-readable labels: badge display text is derived UI only.
 - Mutability rules: no note entity, status value, or filter query param is renamed.
 - Rename vs repurpose: new status or unread semantics require a new mapping decision.
-- Compatibility: existing specific Notes deep links must continue to work when intentionally carrying filters/query params.
+- Compatibility: `/admin?tab=notes` enters the open queue, while existing specific Notes deep links must continue to work when intentionally carrying filters/query/context params such as `notesStatus=done/all`.
 - Observability and repair: summary failures should be test-visible and support-safe.
 
 ## Forward Compatibility Contract
@@ -150,7 +152,7 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 
 ## Help / Guide Impact
 
-Expected update if visible badge semantics ship. Help/Guide or runbook should state that the Notes badge means open admin notes and is not an unread counter.
+Expected update if visible badge semantics ship. Help/Guide or runbook should state that the Notes badge means open admin notes and is not an unread/new counter.
 
 ## Route / Label / Support Surface Sweep
 
@@ -169,6 +171,14 @@ Run before broad gates:
 
 Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/checklists/`, planned/in-progress/done task briefs, and Help/Guide assertions.
 
+Execution evidence: identifiers searched were `Notes`, `open notes`, `notes summary`, `notesStatus=open`, `admin-tab-notes`, `admin-tab-notes-open-badge`, `Needs reply`, `Messages`, `Help/Guide`, and `/admin?tab=notes`. Directories/surfaces checked were `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, task briefs, and Help/Guide assertions. Fallout handled in this slice: admin shell badge/navigation, Notes summary API contract registry, Notes runbook copy, Help/Guide copy, route tests, helper tests, and shell tests.
+
+## Implementation Evidence Notes
+
+- API/server failure-mode evidence: summary route is admin-gated, `dynamic = "force-dynamic"`, returns `Cache-Control: no-store`, treats schema-missing as quiet `schemaReady:false`, and uses a tested non-schema failure mode that logs and returns `{ ok:false }` with status `500`; there is no unexpected 500 for the known schema-missing state.
+- UI reference surface evidence: Notes badge reuses the existing Messages badge reference surface in `AdminWorkspace` and the same shared component/tab visual contract rather than introducing a new nav pattern.
+- Accessibility/responsive evidence: helper tests cover capped labels such as `9 or more open notes`, shell tests cover visible badge states, and screenshot handoff covers desktop/mobile with after/reference naming.
+
 ## Screenshot Handoff Plan
 
 - Use `docs/runbooks/ui-debug-hypothesis-and-handoff.md`.
@@ -185,11 +195,11 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 ## Acceptance Criteria
 
 1. Notes tab shows a compact badge only when open note count is greater than zero.
-2. Badge caps at `9+` and accessible label states the open-note meaning.
+2. Badge caps at `9+` and accessible label states the open-note meaning, not unread/new semantics.
 3. Summary route/data source is admin-gated, count-only, and no-store/fresh by design.
 4. Failure or schema-missing state shows no misleading visible badge.
 5. Selecting Notes from the admin shell lands on open queue by default and avoids stale `done/all` carryover.
-6. Existing intentional Notes deep links with query/context filters still work.
+6. Existing intentional Notes deep links with query/context filters still work, including explicit `notesStatus=done/all`.
 7. Help/Guide explains the badge if visible copy ships.
 8. Screenshot handoff is owner-approved before `npm run verify:pre-pr`.
 
@@ -206,3 +216,6 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 ## Checkpoint Log
 
 - `2026-06-19 | planned | created from owner scope proposal during the combined admin readability audit: Notes should show open-count in the menu like Messages and open on the open admin-notes queue | next: owner decides whether to execute this child before Notes create-form density`
+- `2026-06-19 | in-progress | owner approved execution and asked to add four scope clarifications: count includes open contextual notes in the same Notes queue, Help/Guide must clarify open-not-unread semantics, shell entry defaults to open while intentional deep links keep explicit filters/context, and create-form/SLA/unread/polling/bulk-triage work remains out of scope | next: implement scoped navigation/count indicator and screenshot handoff before PR gates`
+- `2026-06-19 | screenshot-review | implemented count-only /api/admin/notes/summary route, Notes shell badge, click-to-open queue cleanup, Help/Guide/runbook copy, architecture registry entry, and targeted route/helper/shell/help tests; owner flagged excessive desktop whitespace in first screenshot, root cause was admin grid auto rows stretching inside min-h-screen, fixed with desktop content-start and row-2 nav/main placement; validation passed: targeted Vitest (4 files / 40 tests), targeted ESLint, npm run lint:briefs:all, npm run typecheck, git diff --check; refreshed screenshot artifacts captured at output/admin-notes-open-count-indicator-2026-06-19-144301 using temporary local harness because dev-login hit local Supabase egress guard, and the harness was removed before final diff | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-19 | pre-pr-ready | owner approved screenshot handoff; initial npm run verify:pre-pr failed on two unrelated mobile E2E timeouts, the two failed tests then passed isolated, and rerun npm run verify:pre-pr passed full-public lane at artifacts/test-runs/20260619-162246; perf budget trend again recommended tightening one stretch target after 10 consecutive weekly green runs, recorded for PR summary and deferred from this Notes-only slice | next: commit, push, open PR, monitor CI`

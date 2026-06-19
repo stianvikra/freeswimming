@@ -38,6 +38,7 @@ import { DELETE as deleteNote } from "@/app/api/admin/notes/[id]/route";
 import { POST as uploadAttachment } from "@/app/api/admin/notes/[id]/attachments/route";
 import { DELETE as deleteAttachment } from "@/app/api/admin/notes/[id]/attachments/[attachmentId]/route";
 import { POST as addRelatedNote } from "@/app/api/admin/notes/[id]/links/route";
+import { GET as getNotesSummary } from "@/app/api/admin/notes/summary/route";
 
 function applyResponseCookiesIdentity<T>(response: T): T {
   return response;
@@ -106,6 +107,12 @@ function buildSelectIn(result: unknown) {
   return { select, inMock };
 }
 
+function buildSummaryCountChain(result: unknown) {
+  const eq = vi.fn().mockResolvedValue(result);
+  const select = vi.fn().mockReturnValue({ eq });
+  return { select, eq };
+}
+
 describe("admin notes mutation routes", () => {
   beforeEach(() => {
     requireAdminRoleFromSupabaseMock.mockResolvedValue({
@@ -142,6 +149,88 @@ describe("admin notes mutation routes", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("fails closed for unauthenticated summary access", async () => {
+    requireAdminRoleFromSupabaseMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized.",
+    });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from: vi.fn() },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getNotesSummary();
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toEqual({ ok: false, error: "Unauthorized." });
+  });
+
+  it("returns setup guidance for summary when notes schema is not ready", async () => {
+    const summaryResult = {
+      count: null,
+      error: {
+        code: "42P01",
+        message: 'relation "admin_notes" does not exist',
+      },
+    };
+    const summaryChain = buildSummaryCountChain(summaryResult);
+    const from = vi.fn().mockImplementationOnce(() => ({ select: summaryChain.select }));
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getNotesSummary();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      warning?: string | null;
+      openCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: false,
+      openCount: 0,
+    });
+    expect(payload.warning).toContain("Admin notes");
+  });
+
+  it("summarizes open notes without loading note bodies or attachments", async () => {
+    const summaryResult = {
+      count: 7,
+      error: null,
+    };
+    const summaryChain = buildSummaryCountChain(summaryResult);
+    const from = vi.fn().mockImplementationOnce(() => ({ select: summaryChain.select }));
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getNotesSummary();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      openCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: true,
+      openCount: 7,
+    });
+    expect(summaryChain.select).toHaveBeenCalledWith("id", { count: "exact", head: true });
+    expect(summaryChain.eq).toHaveBeenCalledWith("is_done", false);
   });
 
   it("deletes note attachments from storage before reporting note delete success", async () => {

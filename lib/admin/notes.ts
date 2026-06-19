@@ -1,3 +1,4 @@
+import type { AdminRole } from "@/lib/admin/access";
 import type { Database } from "@/types/database";
 import {
   canonicalizeAdminNoteContext,
@@ -39,6 +40,19 @@ export type AdminNoteItem = AdminNoteRow & {
   attachments: AdminNoteAttachment[];
   related_notes: AdminNoteLinkedSummary[];
 };
+
+export type AdminNotesSummaryResponse =
+  | {
+      ok: true;
+      role: AdminRole;
+      schemaReady: boolean;
+      warning: string | null;
+      openCount: number;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 export const ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY: Record<IncidentNoteSeverity, string> = {
   P0: "Incident P0",
@@ -107,6 +121,7 @@ type ParseResult<T> =
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ADMIN_NOTES_OPEN_BADGE_MAX = 9;
 
 export function sortAdminNotesByNewest(
   a: Pick<AdminNoteRow, "note_date" | "created_at">,
@@ -223,6 +238,23 @@ export function buildAdminNoteAttachmentEvidenceSummary(params: {
   }
 
   return parts.join(" · ");
+}
+
+export function formatAdminNotesOpenBadgeCount(count: number): string | null {
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const wholeCount = Math.floor(count);
+  return wholeCount > ADMIN_NOTES_OPEN_BADGE_MAX
+    ? `${ADMIN_NOTES_OPEN_BADGE_MAX}+`
+    : String(wholeCount);
+}
+
+export function buildAdminNotesTabAriaLabel(count: number | null): string {
+  if (!count || !Number.isFinite(count) || count <= 0) return "Notes";
+  const wholeCount = Math.floor(count);
+  if (wholeCount > ADMIN_NOTES_OPEN_BADGE_MAX) {
+    return `Notes, ${ADMIN_NOTES_OPEN_BADGE_MAX} or more open notes`;
+  }
+  return wholeCount === 1 ? "Notes, 1 open note" : `Notes, ${wholeCount} open notes`;
 }
 
 export function isUuid(value: string): boolean {

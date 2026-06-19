@@ -38,7 +38,7 @@ type HelpDetailsSectionProps = {
   children: ReactNode;
 };
 
-const LAST_UPDATED = "2026-06-18";
+const LAST_UPDATED = "2026-06-19";
 
 export const ADMIN_HELP_QUICK_ACTIONS = [
   { id: "overview", label: "Start here" },
@@ -145,7 +145,8 @@ export const ADMIN_HELP_TAB_GUIDES: TabGuide[] = [
     name: "Notes",
     primaryJob:
       "Run an internal work queue with visible note IDs, priority, screenshots, related-note links, context filters, and done archive recovery.",
-    commonAction: "Create a Quick note or full note with route/context and screenshots.",
+    commonAction:
+      "Use the Notes open-count badge, then create a Quick note or full note with route/context and screenshots.",
     dangerousAction: "Deleting a note/image or attaching evidence to the wrong context.",
     recovery:
       "Use visible note ID, Done archive, related-note links, and admin-notes recovery runbook.",
@@ -387,6 +388,24 @@ const MESSAGE_WORKFLOW = [
     title: "Diagnose notification issues",
     detail:
       "Check notification status and delivery attempts to answer whether the platform received the request and whether provider notification was accepted, disabled, or failed. A failed notification never means the stored request is lost.",
+  },
+];
+
+const NOTES_WORKFLOW = [
+  {
+    title: "Notes badge means Open",
+    detail:
+      "The Notes menu badge counts open admin notes, including contextual notes in the same queue. It is not an unread or new-note counter, and done notes are excluded.",
+  },
+  {
+    title: "Open queue is the normal start",
+    detail:
+      "Opening Notes from the admin menu starts on the Open queue so active work is visible first. Direct links with explicit status, search, priority, category, or context filters keep those filters.",
+  },
+  {
+    title: "Use done as archive",
+    detail:
+      "Mark completion status once the work is resolved, then use Done archive to confirm the note remains recoverable without keeping it in the open workload.",
   },
 ];
 
@@ -1028,6 +1047,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
       "Saved image cards now show a stable evidence summary: image order, file type, file size, and upload date, without exposing raw storage paths.",
       `If a note title starts with \`${ADMIN_NOTE_TEST_ARTIFACT_PREFIX}\`, it is automated test residue and should clear automatically; if it stays open, use the admin-notes recovery runbook before deleting anything manually.`,
       "On mobile, the two image actions stay visible so you do not need to remember hidden paste shortcuts.",
+      "Use the Notes menu badge as the open-work signal; it is not an unread or new-note count.",
       "Link any follow-up note instead of pasting duplicate text.",
       "Use Search + Priority + Context filters in Notes to reopen the same note quickly.",
       "Mark completion status once resolved, then use Done archive to confirm it is recoverable.",
@@ -1332,6 +1352,25 @@ export default function AdminHelpCenter() {
         </p>
         <div className="mt-3 space-y-3">
           {MESSAGE_WORKFLOW.map((item) => (
+            <article key={item.title} className={helpItemClass}>
+              <p className={helpItemTitleClass}>{item.title}</p>
+              <p className={helpItemBodyClass}>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </HelpDetailsSection>
+
+      <HelpDetailsSection
+        id="notes"
+        title="How Notes work"
+        summary="Open-work queue guidance for note counts, contextual notes, filters, and done archive recovery."
+      >
+        <p className={helpBodyClass}>
+          Notes is the internal work queue for follow-up tasks, contextual evidence, screenshots,
+          related-note links, and done archive recovery.
+        </p>
+        <div className="mt-3 space-y-3">
+          {NOTES_WORKFLOW.map((item) => (
             <article key={item.title} className={helpItemClass}>
               <p className={helpItemTitleClass}>{item.title}</p>
               <p className={helpItemBodyClass}>{item.detail}</p>
