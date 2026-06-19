@@ -104,6 +104,7 @@ test("course mobile shows the player and lesson info before the progress overvie
   await expect(player).toBeVisible();
   await expect(lessonInfo).toBeVisible();
   await expect(lessonInfo).toContainText("Lesson info");
+  await expect(page.getByText("Loading lesson details...")).toBeHidden();
   await expect(overviewStatus).toBeVisible();
 
   const playerBox = await player.boundingBox();

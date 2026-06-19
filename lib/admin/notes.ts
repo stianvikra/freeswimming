@@ -257,6 +257,11 @@ export function buildAdminNotesTabAriaLabel(count: number | null): string {
   return wholeCount === 1 ? "Notes, 1 open note" : `Notes, ${wholeCount} open notes`;
 }
 
+export function buildAdminNotesQuickAccessAriaLabel(count: number | null): string {
+  const tabLabel = buildAdminNotesTabAriaLabel(count);
+  return tabLabel === "Notes" ? "Open Notes" : `Open ${tabLabel}`;
+}
+
 export function isUuid(value: string): boolean {
   return UUID_REGEX.test(value);
 }

@@ -3,19 +3,19 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-floating-quick-access-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
 - `source_audit`: owner follow-up after `docs/task-briefs/done/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
-- `execution_mode`: `plan only until owner explicitly approves implementation`
+- `execution_mode`: `implementation approved by owner on 2026-06-19; pause after screenshot handoff before broad PR gates`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-19`
-- `base`: `main@0fe229f4`
-- `audit_status`: `ready`
+- `base`: `main@84cf3252`
+- `audit_status`: `implementation in progress`
 - `decision`: Keep this as a separate admin-shell/accessibility child instead of adding it to the Notes create-form density slice.
 - `reason`: A floating or sticky Notes affordance changes global admin access behavior, z-index/responsive layout, and touch/a11y expectations; the create-form density brief is intentionally limited to the create panel.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `AdminNotesManager`, Notes open-count summary behavior, admin tab routing, mobile admin shell layout, Help/Guide Notes copy, screenshot handoff rules, scorecard categories, or the parent admin-readability status change before implementation.
@@ -90,9 +90,9 @@ Systemic findings:
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`.
-- Current active sibling: `docs/task-briefs/in-progress/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`.
-- Last merged workstream: PR `#1177` and repo-managed closeout PR `#1178`.
-- Next planning step: owner chooses whether to execute create-form density first or this quick-access child first.
+- Last merged sibling: PR `#1179` and repo-managed closeout PR `#1180`.
+- Last merged workstream before this child: PR `#1179` and repo-managed closeout PR `#1180`.
+- Next planning step: implement fixed/sticky admin-only Notes quick access and pause for screenshot handoff approval before broad gates.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -142,6 +142,8 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
   - no Stripe, email, analytics provider, Vercel, GitHub workflow, or browser-notification integration.
 - UI system:
   - reuse existing admin token classes, icon system, focus styles, and badge patterns;
+  - reference surface: `AdminWorkspace` owns the admin tab rail, Notes open-count badge, and `/admin?tab=notes` tab navigation; the quick-access control reuses that shared UI contract instead of creating a separate route, badge source, or workflow model;
+  - shared component/view-model contract: `AdminWorkspace` still owns summary fetch state and active-tab selection, while `lib/admin/notes.ts` owns the accessible open-count labels used by both the tab badge and shortcut;
   - avoid decorative blobs/assets;
   - screenshot handoff comparison type should be `after/reference` unless a true before/after recapture is practical.
 - Testing:
@@ -179,6 +181,8 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 
 Expected update if visible shortcut copy ships. Help/Guide should clarify that the control opens the Notes open queue and that the count, if shown, means open admin notes rather than unread/new alerts.
 
+Implementation update: Help/Guide copy now documents the floating Notes shortcut, the Open queue target, the non-draggable v1 boundary, and the open-notes-only count meaning.
+
 ## Route / Label / Support Surface Sweep
 
 Run before broad gates:
@@ -193,6 +197,8 @@ Run before broad gates:
 - `/admin?tab=notes`
 
 Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/checklists/`, planned/in-progress/done task briefs, and Help/Guide assertions.
+
+Execution evidence: searched `admin-notes-quick-access`, `Floating Notes shortcut`, `Open Notes`, `Notes badge means Open`, `open notes`, `/admin?tab=notes`, `admin-tab-notes`, and `admin-notes-open-badge` across `app/`, `components/`, `lib/`, `tests/`, `docs/runbooks/`, `docs/checklists/`, and task brief lifecycle folders. Fallout handled in this slice: admin shell shortcut, Notes helper label, shell tests, Help/Guide copy, Help/Guide assertion, and active brief evidence. No route rename or public support-surface change was introduced.
 
 ## Screenshot Handoff Plan
 
@@ -236,3 +242,7 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 ## Checkpoint Log
 
 - `2026-06-19 | planned | created from owner follow-up asking whether Notes should have a floating icon that can be moved by finger so it is always available for admin; scope selects fixed/sticky admin-only quick access as the recommended v1 and defers draggable/touch-movable behavior to an explicit future decision | next: owner chooses whether this quick-access child should run before or after create-form density`
+- `2026-06-19 | in-progress | owner approved implementation from main@84cf3252 on branch admin-notes-floating-quick-access; scope remains fixed/sticky admin-only quick access with draggable behavior deferred | next: inspect admin shell and implement shortcut`
+- `2026-06-19 | in-progress | implemented admin-only fixed Notes quick access, shared open-count label helper, Help/Guide copy, and unit coverage; targeted tests, typecheck, lint, brief lint, route/label/support sweep, and regenerated screenshot handoff are clean; screenshot artifact folder: output/admin-notes-floating-quick-access-2026-06-19-230545 | next: owner screenshot approval before verify:pre-pr`
+- `2026-06-19 | in-progress | owner approved screenshot handoff; npm run verify:pre-pr passed locally after screenshot approval. Perf trend reported tighten recommendation after 10 consecutive weekly green runs; decision for this UI slice is hold/defer budget tightening to the planned performance ratchet brief docs/task-briefs/planned/2026-06-19-next-performance-budget-ratchet-maintenance-10-10.md so this PR stays scoped to Notes quick access | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-19 | in-progress | PR #1181 CI is green after PR-body lint repair. Local npm run verify:pre-merge found one unrelated course mobile E2E flake where the layout assertion measured while Loading lesson details was still visible; hardened that test to wait for loading details to disappear before reading bounding boxes. No Notes/product behavior changed | next: targeted rerun of the hardened E2E, amend/push, CI, then rerun npm run verify:pre-merge`

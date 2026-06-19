@@ -398,9 +398,14 @@ const NOTES_WORKFLOW = [
       "The Notes menu badge counts open admin notes, including contextual notes in the same queue. It is not an unread or new-note counter, and done notes are excluded.",
   },
   {
+    title: "Floating Notes shortcut",
+    detail:
+      "The floating Notes shortcut is admin-only and opens the same Open queue. If it shows a number, that number means open notes, not unread notes, new notes, SLA, or priority alerts.",
+  },
+  {
     title: "Open queue is the normal start",
     detail:
-      "Opening Notes from the admin menu starts on the Open queue so active work is visible first. Direct links with explicit status, search, priority, category, or context filters keep those filters.",
+      "Opening Notes from the admin menu or floating shortcut starts on the Open queue so active work is visible first. Direct links with explicit status, search, priority, category, or context filters keep those filters.",
   },
   {
     title: "Use done as archive",
@@ -852,6 +857,11 @@ const BUTTON_GUIDE: ActionGroup[] = [
         label: "Use P0 template / Use P1 template / Use P2 template",
         meaning:
           "Prefills standardized incident structure. P0 = critical outage, P1 = major degradation with workaround, P2 = low-impact bug/UX issue.",
+      },
+      {
+        label: "Floating Notes shortcut",
+        meaning:
+          "Keeps the open Notes queue reachable from other admin surfaces. It is not draggable in v1 and its count means open notes only.",
       },
       {
         label: "Open / Done archive / All + Search + Context filters",

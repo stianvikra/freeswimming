@@ -120,6 +120,8 @@ describe("AdminHelpCenter", () => {
     openDetailsSection("How Notes work");
     expect(screen.getByText("Notes badge means Open")).toBeVisible();
     expect(screen.getByText(/including contextual notes in the same queue/i)).toBeVisible();
+    expect(screen.getByText("Floating Notes shortcut")).toBeVisible();
+    expect(screen.getByText(/opens the same Open queue/i)).toBeVisible();
     expect(screen.getByText(/not an unread or new-note counter/i)).toBeVisible();
     expect(screen.getByText(/Direct links with explicit status/i)).toBeVisible();
 

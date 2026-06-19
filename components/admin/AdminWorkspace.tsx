@@ -44,6 +44,7 @@ import {
   DEFAULT_ADMIN_NOTES_FILTER_STATE,
 } from "@/lib/admin/notes-manager";
 import {
+  buildAdminNotesQuickAccessAriaLabel,
   buildAdminNotesTabAriaLabel,
   formatAdminNotesOpenBadgeCount,
   type AdminNotesSummaryResponse,
@@ -125,6 +126,10 @@ const adminTabActiveClass =
 const adminTabInactiveClass = "hover:!border-[color:var(--fs-border-brand)] hover:!bg-white/72";
 const adminTabBadgeClass =
   "ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold leading-none text-amber-900 ring-1 ring-amber-300";
+const adminNotesQuickAccessClass =
+  "fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-3 z-[55] inline-flex min-h-12 max-w-[calc(100vw-1.5rem)] items-center gap-2 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-brand)] bg-white/94 px-3.5 py-2 text-sm font-semibold text-[color:var(--fs-color-brand-700)] shadow-[0_18px_42px_rgba(15,23,42,0.14)] backdrop-blur transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:left-5 lg:bottom-5";
+const adminNotesQuickAccessBadgeClass =
+  "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold leading-none text-amber-900 ring-1 ring-amber-300";
 const adminHelpSubnavClass =
   "hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 p-3 lg:block";
 const adminHelpSubnavLinkClass =
@@ -155,6 +160,8 @@ export default function AdminWorkspace({ role }: Props) {
     () => TAB_LABELS.find((tab) => tab.id === activeTab) ?? TAB_LABELS[0],
     [activeTab]
   );
+  const notesQuickAccessBadge = formatAdminNotesOpenBadgeCount(notesOpenCount ?? 0);
+  const notesQuickAccessLabel = buildAdminNotesQuickAccessAriaLabel(notesOpenCount);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,6 +358,30 @@ export default function AdminWorkspace({ role }: Props) {
           </span>
         ) : null}
       </nav>
+
+      {activeTab !== "notes" ? (
+        <button
+          type="button"
+          onClick={() => selectTab("notes")}
+          className={adminNotesQuickAccessClass}
+          aria-label={notesQuickAccessLabel}
+          title="Open Notes queue"
+          data-testid="admin-notes-quick-access"
+        >
+          <MessageSquareText className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Notes</span>
+          {notesQuickAccessBadge ? (
+            <span
+              className={adminNotesQuickAccessBadgeClass}
+              aria-hidden="true"
+              data-testid="admin-notes-quick-access-badge"
+              title={`${notesOpenCount} open admin notes`}
+            >
+              {notesQuickAccessBadge}
+            </span>
+          ) : null}
+        </button>
+      ) : null}
 
       <div
         className="mt-5 min-w-0 lg:col-start-1 lg:row-start-2 lg:mt-0"
