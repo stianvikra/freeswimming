@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_INCIDENT_NOTE_CATEGORY_BY_SEVERITY,
+  buildAdminNotesQuickAccessAriaLabel,
   buildAdminNotesTabAriaLabel,
   buildAdminNoteAttachmentEvidenceSummary,
   buildAdminNoteAttachmentOrdinalLabel,
@@ -175,6 +176,14 @@ describe("admin notes open-count badge helpers", () => {
     expect(buildAdminNotesTabAriaLabel(1)).toBe("Notes, 1 open note");
     expect(buildAdminNotesTabAriaLabel(3)).toBe("Notes, 3 open notes");
     expect(buildAdminNotesTabAriaLabel(12)).toBe("Notes, 9 or more open notes");
+  });
+
+  it("builds quick-access labels without changing open-note semantics", () => {
+    expect(buildAdminNotesQuickAccessAriaLabel(null)).toBe("Open Notes");
+    expect(buildAdminNotesQuickAccessAriaLabel(0)).toBe("Open Notes");
+    expect(buildAdminNotesQuickAccessAriaLabel(1)).toBe("Open Notes, 1 open note");
+    expect(buildAdminNotesQuickAccessAriaLabel(3)).toBe("Open Notes, 3 open notes");
+    expect(buildAdminNotesQuickAccessAriaLabel(12)).toBe("Open Notes, 9 or more open notes");
   });
 });
 

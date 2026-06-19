@@ -265,6 +265,53 @@ describe("AdminWorkspace shell", () => {
       "Notes open count unavailable."
     );
     expect(screen.getByTestId("admin-tab-notes")).toHaveAttribute("aria-label", "Notes");
+    expect(screen.getByTestId("admin-notes-quick-access")).toHaveAttribute(
+      "aria-label",
+      "Open Notes"
+    );
+    expect(screen.queryByTestId("admin-notes-quick-access-badge")).not.toBeInTheDocument();
+  });
+
+  it("shows a compact Notes quick access from non-Notes tabs", async () => {
+    stubWorkspaceSummaryFetch({ notesOpenCount: 5 });
+    searchParamsValue.current =
+      "tab=messages&notesStatus=done&notesQuery=stale&notesPriority=high&notesCategory=Product&notesContextType=course_lesson&notesContextRef=legacy&foo=bar";
+
+    render(<AdminWorkspace role="admin" />);
+
+    const quickAccess = screen.getByTestId("admin-notes-quick-access");
+    expect(quickAccess).toHaveClass("fixed", "left-3", "min-h-12", "sm:left-5", "lg:bottom-5");
+    quickAccess.focus();
+    expect(quickAccess).toHaveFocus();
+
+    const badge = await screen.findByTestId("admin-notes-quick-access-badge");
+    expect(badge).toHaveTextContent("5");
+    expect(quickAccess).toHaveAttribute("aria-label", "Open Notes, 5 open notes");
+
+    fireEvent.click(quickAccess);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    const href = String(replaceMock.mock.calls[0]?.[0] ?? "");
+    const params = new URLSearchParams(href.split("?")[1] ?? "");
+    expect(href.startsWith("/admin?")).toBe(true);
+    expect(params.get("tab")).toBe("notes");
+    expect(params.get("foo")).toBe("bar");
+    expect(params.get("notesStatus")).toBeNull();
+    expect(params.get("notesQuery")).toBeNull();
+    expect(params.get("notesPriority")).toBeNull();
+    expect(params.get("notesCategory")).toBeNull();
+    expect(params.get("notesContextType")).toBeNull();
+    expect(params.get("notesContextRef")).toBeNull();
+  });
+
+  it("hides Notes quick access while the Notes workspace is active", () => {
+    searchParamsValue.current = "tab=notes";
+
+    render(<AdminWorkspace role="admin" />);
+
+    expect(screen.queryByTestId("admin-notes-quick-access")).not.toBeInTheDocument();
   });
 
   it("selects Notes as the open queue while clearing stale Notes filters from shell clicks", async () => {
