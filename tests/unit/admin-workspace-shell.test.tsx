@@ -46,7 +46,7 @@ describe("AdminWorkspace shell", () => {
     pathnameValue.current = "/admin";
     searchParamsValue.current = "";
     replaceMock.mockClear();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(0)));
+    stubWorkspaceSummaryFetch();
   });
 
   afterEach(() => {
@@ -64,10 +64,16 @@ describe("AdminWorkspace shell", () => {
       "grid-cols-2",
       "lg:sticky",
       "lg:col-start-2",
+      "lg:row-start-2",
       "lg:grid-cols-1"
     );
+    expect(screen.getByTestId("admin-tab-grid")).not.toHaveClass("lg:row-span-2");
     expect(screen.getByTestId("admin-tab-grid")).not.toHaveClass("overflow-x-auto");
-    expect(screen.getByTestId("admin-workspace-main")).toHaveClass("lg:col-start-1", "min-w-0");
+    expect(screen.getByTestId("admin-workspace-main")).toHaveClass(
+      "lg:col-start-1",
+      "lg:row-start-2",
+      "min-w-0"
+    );
 
     const contentTab = screen.getByTestId("admin-tab-content");
     expect(contentTab).toHaveClass("fs-library-card", "fs-library-card-accent");
@@ -176,7 +182,7 @@ describe("AdminWorkspace shell", () => {
   });
 
   it("shows a Messages needs-reply badge from the shell summary count", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(3)));
+    stubWorkspaceSummaryFetch({ messagesNeedsReplyCount: 3 });
 
     render(<AdminWorkspace role="admin" />);
 
@@ -193,7 +199,7 @@ describe("AdminWorkspace shell", () => {
   });
 
   it("caps the Messages needs-reply badge without hiding the accessible meaning", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(12)));
+    stubWorkspaceSummaryFetch({ messagesNeedsReplyCount: 12 });
 
     render(<AdminWorkspace role="admin" />);
 
@@ -205,7 +211,7 @@ describe("AdminWorkspace shell", () => {
   });
 
   it("fails quiet when the Messages summary count is unavailable", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryErrorResponse()));
+    stubWorkspaceSummaryFetch({ messagesResponse: messagesSummaryErrorResponse() });
 
     render(<AdminWorkspace role="admin" />);
 
@@ -217,9 +223,108 @@ describe("AdminWorkspace shell", () => {
     );
     expect(screen.getByTestId("admin-tab-messages")).toHaveAttribute("aria-label", "Messages");
   });
+
+  it("shows a Notes open-count badge from the shell summary count", async () => {
+    stubWorkspaceSummaryFetch({ notesOpenCount: 4 });
+
+    render(<AdminWorkspace role="admin" />);
+
+    const notesTab = screen.getByTestId("admin-tab-notes");
+    const badge = await screen.findByTestId("admin-tab-notes-open-badge");
+
+    expect(badge).toHaveTextContent("4");
+    expect(notesTab).toHaveAttribute("aria-label", "Notes, 4 open notes");
+    expect(fetch).toHaveBeenCalledWith("/api/admin/notes/summary", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  });
+
+  it("caps the Notes open-count badge without hiding the accessible meaning", async () => {
+    stubWorkspaceSummaryFetch({ notesOpenCount: 14 });
+
+    render(<AdminWorkspace role="admin" />);
+
+    const notesTab = screen.getByTestId("admin-tab-notes");
+    const badge = await screen.findByTestId("admin-tab-notes-open-badge");
+
+    expect(badge).toHaveTextContent("9+");
+    expect(notesTab).toHaveAttribute("aria-label", "Notes, 9 or more open notes");
+  });
+
+  it("fails quiet when the Notes summary count is unavailable", async () => {
+    stubWorkspaceSummaryFetch({ notesResponse: notesSummaryErrorResponse() });
+
+    render(<AdminWorkspace role="admin" />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-tab-notes-open-badge")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("admin-notes-summary-status")).toHaveTextContent(
+      "Notes open count unavailable."
+    );
+    expect(screen.getByTestId("admin-tab-notes")).toHaveAttribute("aria-label", "Notes");
+  });
+
+  it("selects Notes as the open queue while clearing stale Notes filters from shell clicks", async () => {
+    searchParamsValue.current =
+      "tab=messages&notesStatus=done&notesQuery=stale&notesPriority=high&notesCategory=Product&notesContextType=course_lesson&notesContextRef=legacy&foo=bar";
+
+    render(<AdminWorkspace role="admin" />);
+
+    fireEvent.click(screen.getByTestId("admin-tab-notes"));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalled();
+    });
+    const href = String(replaceMock.mock.calls[0]?.[0] ?? "");
+    const params = new URLSearchParams(href.split("?")[1] ?? "");
+    expect(href.startsWith("/admin?")).toBe(true);
+    expect(params.get("tab")).toBe("notes");
+    expect(params.get("foo")).toBe("bar");
+    expect(params.get("notesStatus")).toBeNull();
+    expect(params.get("notesQuery")).toBeNull();
+    expect(params.get("notesPriority")).toBeNull();
+    expect(params.get("notesCategory")).toBeNull();
+    expect(params.get("notesContextType")).toBeNull();
+    expect(params.get("notesContextRef")).toBeNull();
+  });
 });
 
-function summaryResponse(needsReplyCount: number) {
+type MockSummaryResponse = {
+  ok: boolean;
+  json: () => Promise<unknown>;
+};
+
+function stubWorkspaceSummaryFetch(options?: {
+  messagesNeedsReplyCount?: number;
+  notesOpenCount?: number;
+  messagesResponse?: MockSummaryResponse;
+  notesResponse?: MockSummaryResponse;
+}) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: string | URL | Request) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url === "/api/admin/messages/summary") {
+        return Promise.resolve(
+          options?.messagesResponse ??
+            messagesSummaryResponse(options?.messagesNeedsReplyCount ?? 0)
+        );
+      }
+      if (url === "/api/admin/notes/summary") {
+        return Promise.resolve(
+          options?.notesResponse ?? notesSummaryResponse(options?.notesOpenCount ?? 0)
+        );
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+    })
+  );
+}
+
+function messagesSummaryResponse(needsReplyCount: number) {
   return {
     ok: true,
     json: async () => ({
@@ -232,12 +337,35 @@ function summaryResponse(needsReplyCount: number) {
   };
 }
 
-function summaryErrorResponse() {
+function messagesSummaryErrorResponse() {
   return {
     ok: false,
     json: async () => ({
       ok: false,
       error: "Could not load message summary right now.",
+    }),
+  };
+}
+
+function notesSummaryResponse(openCount: number) {
+  return {
+    ok: true,
+    json: async () => ({
+      ok: true,
+      role: "admin",
+      schemaReady: true,
+      warning: null,
+      openCount,
+    }),
+  };
+}
+
+function notesSummaryErrorResponse() {
+  return {
+    ok: false,
+    json: async () => ({
+      ok: false,
+      error: "Could not load notes summary right now.",
     }),
   };
 }

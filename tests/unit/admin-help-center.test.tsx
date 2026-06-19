@@ -117,6 +117,12 @@ describe("AdminHelpCenter", () => {
       screen.getAllByText(/normal email inbox remains the v1 reply workspace/i).length
     ).toBeGreaterThanOrEqual(1);
 
+    openDetailsSection("How Notes work");
+    expect(screen.getByText("Notes badge means Open")).toBeVisible();
+    expect(screen.getByText(/including contextual notes in the same queue/i)).toBeVisible();
+    expect(screen.getByText(/not an unread or new-note counter/i)).toBeVisible();
+    expect(screen.getByText(/Direct links with explicit status/i)).toBeVisible();
+
     openDetailsSection("How the Content page works");
     expect(screen.getByText("Lesson fields editor")).toBeVisible();
     expect(screen.getByText(/Edit lesson keeps public fields first/i)).toBeVisible();

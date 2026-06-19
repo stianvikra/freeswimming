@@ -6,6 +6,7 @@ Use this runbook for AW-012 workflow `A4` stale-note reconciliation edge cases.
 
 - Recover safely when note state in UI looks stale after concurrent admin edits.
 - Keep note context links and status updates deterministic across `/admin`, supported public routes, and selected `My Library` hub routes.
+- Treat the Notes menu badge as the open-work count, not an unread/new-note count.
 - Provide a short manual walkthrough note contract for AW-012 evidence.
 
 ## Triggers
