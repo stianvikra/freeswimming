@@ -73,7 +73,37 @@ describe("AdminOperationsManager state rendering", () => {
     );
     expect(screen.getByTestId("admin-operations-flag-row")).toHaveClass("fs-library-card");
     expect(screen.getByRole("button", { name: "Disable" })).toHaveClass("fs-cta-secondary");
-    expect(screen.getByRole("link", { name: "Open unlock page" })).toHaveClass("fs-cta-secondary");
+    expect(screen.getByRole("link", { name: "Open unlock page" })).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+    expect(screen.getByRole("link", { name: "Open lock operations workflow" })).toHaveClass(
+      "fs-cta-secondary",
+      "w-full",
+      "sm:w-auto"
+    );
+  });
+
+  it("keeps low-frequency site-lock support copy behind accessible disclosure", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(operationsResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminOperationsManager />);
+
+    await screen.findByText("Private Access Gate (env-controlled)");
+
+    const details = screen.getByTestId("admin-operations-site-lock-details");
+    expect(details.tagName).toBe("DETAILS");
+    expect(details).not.toHaveAttribute("open");
+
+    fireEvent.click(screen.getByText("View access and env guidance"));
+
+    expect(details).toHaveAttribute("open");
+    expect(
+      screen.getByText(/Signed-in admins are issued preview access automatically/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Required env vars:/i)).toBeInTheDocument();
   });
 
   it("keeps load error retry wired to the original operations loader", async () => {
