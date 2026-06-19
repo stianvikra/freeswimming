@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-floating-quick-access-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
-- `updated`: `2026-06-19`
+- `updated`: `2026-06-20`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
 - `source_audit`: owner follow-up after `docs/task-briefs/done/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
 - `execution_mode`: `implementation approved by owner on 2026-06-19; pause after screenshot handoff before broad PR gates`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-19`
 - `base`: `main@84cf3252`
-- `audit_status`: `implementation in progress`
+- `audit_status`: `complete`
 - `decision`: Keep this as a separate admin-shell/accessibility child instead of adding it to the Notes create-form density slice.
 - `reason`: A floating or sticky Notes affordance changes global admin access behavior, z-index/responsive layout, and touch/a11y expectations; the create-form density brief is intentionally limited to the create panel.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `AdminNotesManager`, Notes open-count summary behavior, admin tab routing, mobile admin shell layout, Help/Guide Notes copy, screenshot handoff rules, scorecard categories, or the parent admin-readability status change before implementation.
@@ -246,3 +246,63 @@ Execution evidence: searched `admin-notes-quick-access`, `Floating Notes shortcu
 - `2026-06-19 | in-progress | implemented admin-only fixed Notes quick access, shared open-count label helper, Help/Guide copy, and unit coverage; targeted tests, typecheck, lint, brief lint, route/label/support sweep, and regenerated screenshot handoff are clean; screenshot artifact folder: output/admin-notes-floating-quick-access-2026-06-19-230545 | next: owner screenshot approval before verify:pre-pr`
 - `2026-06-19 | in-progress | owner approved screenshot handoff; npm run verify:pre-pr passed locally after screenshot approval. Perf trend reported tighten recommendation after 10 consecutive weekly green runs; decision for this UI slice is hold/defer budget tightening to the planned performance ratchet brief docs/task-briefs/planned/2026-06-19-next-performance-budget-ratchet-maintenance-10-10.md so this PR stays scoped to Notes quick access | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
 - `2026-06-19 | in-progress | PR #1181 CI is green after PR-body lint repair. Local npm run verify:pre-merge found one unrelated course mobile E2E flake where the layout assertion measured while Loading lesson details was still visible; hardened that test to wait for loading details to disappear before reading bounding boxes. No Notes/product behavior changed | next: targeted rerun of the hardened E2E, amend/push, CI, then rerun npm run verify:pre-merge`
+- `2026-06-20 | done | PR #1181 merged as squash commit 51dbfdde after CI and local npm run verify:pre-merge passed on c169b294; closeout moved this brief to done and records completion evidence | next: run closeout lint/verify gates and merge repo-managed docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-20`
+- `merged_pr`: `#1181`
+- `squash_commit`: `51dbfdde`
+- `result`: Closed Admin Notes Floating Quick Access. Admin now has a compact private Notes shortcut on non-Notes admin screens, so the open Notes work queue is one click away on desktop and mobile without adding unread, polling, draggable, or database behavior.
+- `validation`: targeted unit tests passed for admin shell/helper/Help copy; targeted mobile course E2E flake hardening passed; `npm run typecheck`, `npm run lint`, `npm run lint:briefs:all`, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed.
+- `screenshot_artifacts`: `output/admin-notes-floating-quick-access-2026-06-19-230545`
+- `owner_screenshot_review`: approved in chat with `godkjent`.
+- `remaining_gaps`: none for the scoped fixed/sticky quick-access slice.
+- `deferred_scope`: draggable/touch-movable behavior, unread/SLA/polling, global notifications, database/RLS/API changes, and performance-budget tightening remain separate owner-approved briefs/decisions.
+- `critical target categories`:
+  - Product goals and IA
+  - UX flow clarity
+  - Visual design quality
+  - Business logic correctness and data integrity
+  - Admin editor ergonomics
+  - Data placement and sync boundaries
+  - Reliability and failure handling
+  - Security and authz
+  - Privacy and compliance
+  - Admin workflow and editability
+  - Incident response and support operations
+  - i18n operational readiness
+  - Stack-fit and dependency discipline
+  - Testing and QA automation
+  - DevOps and rollback readiness
+
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this scoped slice.
+- `accessibility_confirmation`: Accessibility (a11y) is also a critical target for this slice and is scored `5/5` in the closeout table.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                        | Gaps / Notes                                                                     |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR `#1181`, screenshot artifacts, shell tests, and route behavior open the existing Notes queue without changing admin tab IA.                                  | none                                                                             |
+| UX flow clarity                               | `5/5`          | Help/Guide copy and tests clarify the shortcut opens Notes and the count means open notes, not unread/SLA.                                                      | none                                                                             |
+| Visual design quality                         | `5/5`          | Desktop/mobile screenshot handoff approved; regenerated capture reports no overlaps after bottom-left placement.                                                | none                                                                             |
+| Business logic correctness and data integrity | `5/5`          | Diff review and tests show no Notes schema, status, payload, filter, create/edit/upload/link/done/delete behavior changed.                                      | none                                                                             |
+| Admin editor ergonomics                       | `5/5`          | Admin shell shortcut reduces steps to reach the open Notes queue from other admin tabs, with Help/Guide support.                                                | none                                                                             |
+| Accessibility (a11y)                          | `5/5`          | `buildAdminNotesQuickAccessAriaLabel` and shell tests cover screen-reader count text, keyboard/click behavior, focus styling, and hidden-on-active-Notes state. | none                                                                             |
+| Performance (CWV + payloads)                  | `4/5`          | No dependency, asset, polling, or new payload source added; existing full verify passed.                                                                        | supporting only; performance-budget tightening deferred to planned ratchet brief |
+| Data placement and sync boundaries            | `5/5`          | Shortcut is local UI state; open count remains existing server-canonical summary behavior.                                                                      | none                                                                             |
+| Caching and invalidation strategy             | `4/5`          | No cache layer or invalidation rule changed; existing Notes freshness behavior reused.                                                                          | supporting only                                                                  |
+| Reliability and failure handling              | `5/5`          | Shell tests cover count failure hiding misleading badge while preserving safe navigation to Notes.                                                              | none                                                                             |
+| Security and authz                            | `5/5`          | Private admin shell-only UI; no public route, authz, RLS, API, or service-role changes.                                                                         | none                                                                             |
+| Privacy and compliance                        | `5/5`          | Shortcut exposes aggregate count only; screenshot evidence uses sanitized local harness data.                                                                   | none                                                                             |
+| Content governance                            | `4/5`          | Help/Guide updated for operator meaning; no publish/revision workflow changed.                                                                                  | supporting only                                                                  |
+| Admin workflow and editability                | `5/5`          | Existing Notes create/edit/filter/archive workflows preserved; quick access uses same tab contract.                                                             | none                                                                             |
+| SEO and crawlability                          | `N/A`          | Private authenticated admin UI only; no public metadata, sitemap, robots, canonical, or crawlable route changes.                                                | N/A                                                                              |
+| AI discoverability                            | `N/A`          | No public AI-facing content, structured data, entity page, or crawl-safe semantic contract changes.                                                             | N/A                                                                              |
+| Analytics and KPI observability               | `4/5`          | No analytics/KPI payload changed by design; PR evidence documents no analytics diff.                                                                            | supporting only                                                                  |
+| Commerce and revenue ops                      | `N/A`          | No product, checkout, Stripe, entitlement, pricing, revenue, refund, invoice, payout, or commerce behavior changes.                                             | N/A                                                                              |
+| Incident response and support operations      | `5/5`          | Help/Guide clarifies operator shortcut to open support notes without redefining incidents, priority, templates, or recovery procedures.                         | none                                                                             |
+| Finance and reporting operations              | `N/A`          | No billing provider data, finance reports, payouts, refunds, invoices, reconciliation, entitlement grants, or revenue truth changes.                            | N/A                                                                              |
+| i18n operational readiness                    | `5/5`          | Compact icon-first shortcut with aria label/count helper avoids visible long-label clipping; desktop/mobile screenshots confirm no overlap.                     | none                                                                             |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminWorkspace`, existing Notes count semantics, `lib/admin/notes.ts` helpers, Tailwind/admin tokens, and current tests; no dependency added.           | none                                                                             |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, targeted Playwright E2E hardening, typecheck, lint, brief lint, `verify:pre-pr`, PR CI, and `verify:pre-merge` passed.                         | none                                                                             |
+| Scalability and cost efficiency               | `4/5`          | No note-body/attachment payload, polling, or query-per-note behavior added.                                                                                     | supporting only                                                                  |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible UI/test/docs diff; PR `#1181` CI and local pre-merge passed; rollback is `git revert 51dbfdde`.                                                | none                                                                             |
