@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-19`
 - `base`: `main@0fe229f4`
-- `audit_status`: `ready`
+- `audit_status`: `closed`
 - `decision`: Execute this child now after the smaller Notes open-count navigation indicator child shipped.
 - `reason`: PR `#1177` and closeout PR `#1178` are merged, and the owner approved the recommended next step: create-form density first, with floating Notes quick access kept as a separate planned child.
 - `must_refresh_before_execution_if`: Refresh if `AdminNotesManager`, Notes API contracts, attachment limits, admin note context types, incident severity guidance, Admin Help/Guide Notes copy, Notes tests, screenshot handoff rules, scorecard categories, or parent admin-readability status change before implementation.
@@ -91,6 +91,7 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 | Business logic correctness and data integrity | `target`     | Notes create payload, staged-image upload, recovery, context validation, done state, edit/upload/link/delete behavior remain unchanged.                        | targeted unit/e2e tests + diff review       | `5/5`                   |
 | Admin editor ergonomics                       | `target`     | High-frequency note creation gets fewer default scan obstacles while low-frequency tools remain reachable.                                                     | workflow review + screenshots               | `5/5`                   |
 | Accessibility (a11y)                          | `target`     | Any disclosure/control change preserves labels, roles, focus, keyboard access, visible validation, and touch targets.                                          | Testing Library + screenshot/a11y review    | `5/5`                   |
+| Accessibility                                 | `target`     | Closeout alias for `Accessibility (a11y)` so the done-brief 10/10 critical-category gate maps to the canonical a11y evidence.                                  | Same as `Accessibility (a11y)`              | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no new dependency, image asset, API call, or heavy client state; disclosure state is local-only if used.                                      | package/diff review                         | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical notes and local create/staged-image draft state stay distinct and documented.                                                                 | diff review + contract notes                | `5/5`                   |
 | Caching and invalidation strategy             | `supporting` | Supporting only: existing Notes fetch/refresh/no-store behavior and mutation refresh semantics remain unchanged.                                               | route/component diff review                 | `4/5`                   |
@@ -231,3 +232,54 @@ Execution evidence: searched the required labels across `app/`, `components/`, `
 - `2026-06-19 | in-progress | owner approved recommended sequence: run create-form density first and keep floating Notes quick access as a separate planned child; branch feat/admin-notes-create-form-density created from main@0fe229f4 | next: implement create-panel progressive reveal without API/data/status/nav changes`
 - `2026-06-19 | screenshot-review | implemented create-panel progressive reveal: routine fields, mark-done, and save stay in the primary path, while incident templates, image tools, and optional context attach are compact disclosure sections that auto-open when staged images, upload recovery, or partial context validation are active; validation passed: targeted Vitest for admin notes manager state + related links, targeted ESLint, npm run typecheck, route/label/support sweep, and git diff --check; targeted desktop Chromium e2e command completed with 3 tests skipped because local dev-login/Supabase returned HTML instead of JSON; screenshot artifacts captured at output/admin-notes-create-form-density-2026-06-19-191713 using a temporary local visual harness, then the harness/script were removed before final diff | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-19 | pre-pr-pass | owner approved screenshot handoff; npm run verify:pre-pr passed full public lane on branch feat/admin-notes-create-form-density: quality gates, lint, typecheck, 249 unit files / 1636 tests, build, performance budgets, and Playwright e2e 111 passed / 567 skipped with skips tied to the local dev-login/Supabase guard matrix; perf-budget trend recommended tighten after consecutive green runs, decision: hold inside this non-performance Notes UI slice and carry the tighten prompt to the existing planned performance-ratchet queue | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge`
+- `2026-06-19 | merged | PR #1179 merged as squash commit 89195683 after green PR CI and npm run verify:pre-merge; no runtime files changed after screenshot capture | next: repo-managed docs-only closeout PR`
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1179`
+- `squash_commit`: `89195683`
+- `result`: Admin Notes create now keeps the everyday note fields first and moves lower-frequency incident, image, and optional context tools behind compact progressive sections that auto-open when active recovery or validation state needs attention.
+- `validation`: targeted Notes Vitest, targeted ESLint, `npm run typecheck`, route/label/support sweep, screenshot handoff approved by owner, `npm run verify:pre-pr` PASS, PR CI PASS, and `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting performance/caching/analytics/scalability categories remained unchanged and out of runtime threshold scope.
+
+Critical target categories for the 10/10 claim gate:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Admin editor ergonomics
+- Accessibility (a11y)
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Content governance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                   | Gaps / Notes |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Product goals and IA                          | `5/5`          | Progressive create-panel structure shipped in PR `#1179`; screenshot artifacts approved: `output/admin-notes-create-form-density-2026-06-19-191713`.                                       | No gap.      |
+| UX flow clarity                               | `5/5`          | Routine create path stays primary; incident/image/context helpers are reachable and auto-open when active. Verified by screenshots and updated Notes tests.                                | No gap.      |
+| Visual design quality                         | `5/5`          | Desktop/mobile after/reference screenshots show denser create form with no known overlap or clipped changed controls.                                                                      | No gap.      |
+| Business logic correctness and data integrity | `5/5`          | Payload/API/status/context/attachment behavior unchanged; targeted unit/e2e tests and full gates passed.                                                                                   | No gap.      |
+| Admin editor ergonomics                       | `5/5`          | Common note capture has fewer default scan obstacles while low-frequency tools remain available.                                                                                           | No gap.      |
+| Accessibility (a11y)                          | `5/5`          | Native disclosure controls preserve keyboard access and labels; Testing Library plus full Playwright public matrix passed.                                                                 | No gap.      |
+| Accessibility                                 | `5/5`          | Closeout alias for `Accessibility (a11y)` with the same test and screenshot evidence.                                                                                                      | No gap.      |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical Notes data and local staged-image/disclosure state boundaries stayed unchanged.                                                                                           | No gap.      |
+| Reliability and failure handling              | `5/5`          | Staged-image recovery, retry, context validation, create errors, and schema/load states remain visible and deterministic.                                                                  | No gap.      |
+| Security and authz                            | `5/5`          | No authz, route, API, storage, RLS, or admin boundary changes; existing negative-path CI passed.                                                                                           | No gap.      |
+| Privacy and compliance                        | `5/5`          | Screenshots used deterministic non-sensitive local harness data; no private/user/payment/provider data exposed.                                                                            | No gap.      |
+| Content governance                            | `5/5`          | Help/Guide impact reviewed as `N/A` because action meaning and recovery procedure copy were preserved.                                                                                     | No gap.      |
+| Admin workflow and editability                | `5/5`          | Create, edit, image, related-note, done/archive, and delete workflows stayed available; workflow selectors updated.                                                                        | No gap.      |
+| Incident response and support operations      | `5/5`          | Incident templates remain reachable and active recovery states are not hidden.                                                                                                             | No gap.      |
+| i18n operational readiness                    | `5/5`          | Short disclosure summaries and responsive screenshots support longer-label tolerance without changing locales.                                                                             | No gap.      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `AdminNotesManager`, existing Notes helpers, Freeswimming tokens, native controls, and current tests; no dependency.                                                                | No gap.      |
+| Testing and QA automation                     | `5/5`          | Targeted Notes tests, `npm run verify:pre-pr`, PR CI, and `npm run verify:pre-merge` passed. Local full Playwright result: `111 passed / 567 skipped` due dev-login/Supabase guard matrix. | No gap.      |
+| DevOps and rollback readiness                 | `5/5`          | Small reversible UI/test/docs diff, no schema/API/package/workflow change, screenshot approval completed before broad gates.                                                               | No gap.      |
