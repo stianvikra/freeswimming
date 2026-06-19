@@ -14,8 +14,8 @@
 - `last_audited`: `2026-06-19`
 - `base`: `main@5af65a0c`
 - `audit_status`: `ready`
-- `decision`: Post-Operations parent refresh is complete; no admin-readability implementation child is currently active or approved. Operations support-copy compression is done, and the next admin-readability planning choice is either a Notes create-form density pre-execution audit or a whole-dashboard score refresh.
-- `reason`: `main` is clean and synced at `5af65a0c`; PR `#1171` and closeout PR `#1172` closed the Operations support-copy child, and PR `#1173` planned the next performance-budget ratchet without runtime changes. The old parent status still pointed at Operations as active, so this refresh realigns the parent with the current done briefs and keeps Notes/whole-dashboard follow-up separate from runtime implementation.
+- `decision`: Owner approved a combined docs-only audit: whole-dashboard score refresh first, then Notes create-form density pre-execution audit. No runtime implementation is approved in this parent.
+- `reason`: `main` is clean and synced at `f5b9388c`; PR `#1174` refreshed the parent after PR `#1171`/`#1172` closed Operations and post-merge preflight found no required closeout. The owner then chose to run the two remaining planning options together as one audit workstream.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `AdminWorkspace`, `lib/admin/admin-workspace.ts`, admin audit checklist, admin Help/Guide, Users role-management routes, Supabase Auth Admin behavior, screenshot handoff rules, route/label/support sweep rules, verification lanes, or performance-budget defaults change before execution.
 
 ## Goal
@@ -258,6 +258,30 @@ Forward compatibility intent:
 - Future admin tabs continue to follow `ADMIN_TAB_VALUES` and the Help/Guide active-tab coverage contract.
 - Future Notes workflow states, incident templates, upload/recovery actions, and related-note relationships must preserve server-canonical note data and existing action semantics unless a child explicitly maps the change with tests.
 - New operational recovery procedures, env names, destructive actions, security-sensitive toggles, or scoring semantics require explicit Help/Guide/runbook mapping, tests, and owner decision before release.
+
+## Combined Audit Selection (2026-06-19)
+
+Owner decision:
+
+- Run the whole-dashboard score refresh and Notes create-form density pre-execution audit together as one docs-only workstream.
+
+Active docs-only child:
+
+- `docs/task-briefs/in-progress/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
+
+Planned child selected first by that audit:
+
+- `docs/task-briefs/planned/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
+
+Planned follow-up child from the same audit:
+
+- `docs/task-briefs/planned/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`
+
+Current boundary:
+
+- Do not implement runtime/UI changes from the planned Notes child until the owner explicitly approves that child.
+- Do not touch `Ja.docx`.
+- Do not change performance budgets until at least two new weekly green cycles exist after `2026-06-19`.
 
 ## Historical Post-Merge Re-Audit Results Before Operations (2026-06-19)
 
