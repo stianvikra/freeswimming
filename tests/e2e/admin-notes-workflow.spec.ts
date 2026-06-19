@@ -321,8 +321,10 @@ test.describe("admin notes workflow", () => {
     const body = "Initial note body from Playwright.";
     const updatedBody = "Updated note body from Playwright.";
 
-    await page.getByRole("button", { name: "Use P1 template" }).click();
     const createForm = page.getByTestId("admin-notes-create-form");
+    await createForm.getByRole("button", { name: /Incident quick templates/ }).click();
+    await createForm.getByRole("button", { name: "Use P1 template" }).click();
+    await createForm.getByRole("button", { name: /Image \(optional\)/ }).click();
     await expect(
       createForm.getByRole("button", { name: "Paste image from clipboard" })
     ).toBeVisible();
@@ -344,6 +346,7 @@ test.describe("admin notes workflow", () => {
     await createForm.locator('input[type="date"]').fill("2026-02-20");
     await createForm.getByLabel("Priority").selectOption("high");
     await createForm.getByLabel("Text").fill(body);
+    await createForm.getByRole("button", { name: /Attach to \(optional\)/ }).click();
     await createForm.getByTestId("admin-note-create-context-type").selectOption("course_lesson");
     const modulePicker = createForm.getByTestId("admin-note-create-context-lesson-module");
     const moduleOptionCount = await modulePicker.locator("option").count();
@@ -745,6 +748,7 @@ test.describe("admin notes workflow", () => {
     await openNotesSection(page);
 
     const createForm = page.getByTestId("admin-notes-create-form");
+    await createForm.getByRole("button", { name: /Image \(optional\)/ }).click();
     await expect(
       createForm.getByRole("button", { name: "Paste image from clipboard" })
     ).toBeVisible({

@@ -2,7 +2,17 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ImageIcon, Link2, RefreshCcw, Save, Search, Trash2, Upload } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ImageIcon,
+  Link2,
+  RefreshCcw,
+  Save,
+  Search,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import AdminManagerState from "@/components/admin/AdminManagerState";
 import AdminNoteClipboardPasteButton from "@/components/admin/AdminNoteClipboardPasteButton";
 import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
@@ -119,6 +129,9 @@ const statusFilterClass =
 const statusFilterActiveClass = "fs-library-card-accent border-[color:var(--fs-border-brand)]";
 const checkboxClass =
   "h-4 w-4 rounded border-[color:var(--fs-border-soft)] text-[color:var(--fs-color-brand-700)] focus:ring-blue-500";
+const createDisclosureButtonClass =
+  "flex min-h-12 w-full items-center justify-between gap-3 rounded-[var(--fs-radius-control)] px-3 py-2 text-left transition-colors hover:bg-white/75 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+const createDisclosureSummaryClass = "text-xs leading-5 text-[color:var(--fs-color-muted)]";
 
 export default function AdminNotesManager() {
   const pathname = usePathname() ?? "/admin";
@@ -147,6 +160,9 @@ export default function AdminNotesManager() {
   const [createPendingScreenshots, setCreatePendingScreenshots] = useState<PendingScreenshot[]>([]);
   const [createCaptureRecovery, setCreateCaptureRecovery] =
     useState<AdminNoteCreateCaptureRecovery | null>(null);
+  const [createIncidentToolsOpen, setCreateIncidentToolsOpen] = useState(false);
+  const [createImageToolsOpen, setCreateImageToolsOpen] = useState(false);
+  const [createContextToolsOpen, setCreateContextToolsOpen] = useState(false);
   const createPendingScreenshotsRef = useRef<PendingScreenshot[]>([]);
 
   useEffect(() => {
@@ -393,6 +409,11 @@ export default function AdminNotesManager() {
     formState.contextType,
     formState.contextRef
   );
+  const createImageToolsActive =
+    createPendingScreenshots.length > 0 || Boolean(createCaptureRecovery);
+  const createImageToolsExpanded = createImageToolsOpen || createImageToolsActive;
+  const createContextToolsActive = formState.contextType !== "" || createContextInvalid;
+  const createContextToolsExpanded = createContextToolsOpen || createContextToolsActive;
 
   function setCreateContextType(nextType: AdminNoteContextType | "") {
     setFormState((prev) => ({
@@ -2018,42 +2039,6 @@ export default function AdminNotesManager() {
         <p className={cx("mt-2", mutedTextClass)}>
           Store planning notes with category, priority, date, and completion tracking.
         </p>
-        <p className={cx("mt-2", metadataClass)}>
-          Stage up to {ADMIN_NOTE_ATTACHMENT_MAX_FILES} images before save if needed, then use Edit
-          to attach more images or link related notes afterward.
-        </p>
-        <div className="mt-3 rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 p-3">
-          <p className="text-xs font-semibold text-amber-900">Incident quick templates</p>
-          <p className="mt-1 text-xs text-amber-800">
-            Use these for runbook incidents so severity, owner, and update cadence stay
-            standardized.
-          </p>
-          <div className="mt-3 grid gap-2 md:grid-cols-3">
-            {INCIDENT_NOTE_SEVERITIES.map((severity) => (
-              <div
-                key={severity}
-                className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-white/85 px-3 py-2"
-              >
-                <p className="text-xs font-semibold text-amber-950">{severity}</p>
-                <p className="mt-1 text-xs text-amber-900">
-                  {ADMIN_INCIDENT_SEVERITY_GUIDANCE[severity]}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {INCIDENT_NOTE_SEVERITIES.map((severity) => (
-              <button
-                key={severity}
-                type="button"
-                onClick={() => applyIncidentTemplate(severity)}
-                className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
-              >
-                Use {severity} template
-              </button>
-            ))}
-          </div>
-        </div>
 
         <form
           className="mt-5 grid gap-4 sm:grid-cols-2"
@@ -2131,274 +2116,6 @@ export default function AdminNotesManager() {
             />
           </label>
 
-          <div className={cx("space-y-3 p-4 sm:col-span-2", nestedPanelClass)}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className={smallHeadingClass}>Image (optional)</p>
-                <p className={cx("mt-1", metadataClass)}>
-                  Copy a screenshot or image to clipboard, then paste it here, or upload up to{" "}
-                  {ADMIN_NOTE_ATTACHMENT_MAX_FILES} files before save.
-                </p>
-              </div>
-              <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
-                <AdminNoteClipboardPasteButton
-                  onPasteReady={async (file) => {
-                    setActionError(null);
-                    appendCreatePendingScreenshots([file]);
-                  }}
-                  onError={(message) => {
-                    setActionError(message);
-                    setActionNotice(null);
-                  }}
-                  disabled={Boolean(submitting)}
-                />
-                <label
-                  className={cx(
-                    compactSecondaryActionClass,
-                    mobileActionItemClass,
-                    "cursor-pointer py-2"
-                  )}
-                >
-                  <Upload className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Upload images</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    className="sr-only"
-                    disabled={Boolean(submitting)}
-                    onChange={(event) => {
-                      handleCreateImageSelection(event.target.files);
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {createPendingScreenshots.length > 0 ? (
-              <div className="space-y-3">
-                <div className={nestedPanelClass}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
-                        {formatAdminNoteImageCountLabel(createPendingScreenshots.length)} ready to
-                        attach
-                      </p>
-                      <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
-                        {createCaptureRecovery
-                          ? `Saved note "${createCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
-                          : "These images stay local until this note save finishes successfully."}
-                      </p>
-                    </div>
-                    {createCaptureRecovery ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void retryCreatePendingScreenshotUpload();
-                        }}
-                        disabled={submitting}
-                        className={compactPrimaryActionClass}
-                      >
-                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
-                        {submitting ? "Retrying…" : "Retry upload"}
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {createPendingScreenshots.map((image, index) => (
-                    <div key={image.id} className={nestedPanelClass}>
-                      <div className="flex items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={image.previewUrl}
-                          alt={`Pending image preview ${index + 1}`}
-                          className="h-14 w-14 rounded-lg object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
-                            {buildAdminNoteAttachmentOrdinalLabel(
-                              index,
-                              createPendingScreenshots.length
-                            )}
-                          </p>
-                          <p className="mt-1 truncate text-[11px] text-[color:var(--fs-color-muted)]">
-                            {image.file.name}
-                          </p>
-                          <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
-                            {buildAdminNoteAttachmentEvidenceSummary({
-                              mimeType: image.file.type,
-                              sizeBytes: image.file.size,
-                              locationLabel: "Staged locally",
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          removeCreatePendingScreenshot(image.id);
-                        }}
-                        disabled={submitting}
-                        className={cx("mt-3", compactSecondaryActionClass)}
-                      >
-                        Remove image {index + 1}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {createCaptureRecovery ? (
-                  <p className="text-[11px] text-[color:var(--fs-color-muted)]">
-                    Saved note: {createCaptureRecovery.title}. Retry the upload here or use Edit
-                    from the work queue later.
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <label className={labelClass}>
-            <span>Attach to (optional)</span>
-            <select
-              value={formState.contextType}
-              onChange={(e) => setCreateContextType(e.target.value as AdminNoteContextType | "")}
-              data-testid="admin-note-create-context-type"
-              className={fieldClass}
-            >
-              <option value="">No attachment</option>
-              {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className={labelClass}>
-            <span>Selected target</span>
-            {formState.contextType === "" ? (
-              <input
-                type="text"
-                value=""
-                disabled
-                className={fieldClass}
-                placeholder="No attachment"
-              />
-            ) : null}
-            {formState.contextType === "course_module" ? (
-              <select
-                value={formState.contextRef}
-                onChange={(e) => setCreateContextRef(e.target.value)}
-                data-testid="admin-note-create-context-module"
-                className={fieldClass}
-              >
-                <option value="">Choose module</option>
-                {contextCatalog.modules.map((option) => (
-                  <option key={option.ref} value={option.ref}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {formState.contextType === "course_lesson" ? (
-              <div className="space-y-2">
-                <select
-                  value={formState.contextModuleRef}
-                  onChange={(e) => {
-                    setCreateContextModuleRef(e.target.value);
-                  }}
-                  data-testid="admin-note-create-context-lesson-module"
-                  className={fieldClass}
-                >
-                  <option value="">Choose module first</option>
-                  {contextCatalog.modules.map((option) => (
-                    <option key={option.ref} value={option.ref}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={formState.contextRef}
-                  onChange={(e) => {
-                    setCreateContextRef(e.target.value);
-                  }}
-                  data-testid="admin-note-create-context-lesson"
-                  className={fieldClass}
-                >
-                  <option value="">Choose lesson</option>
-                  {createLessonOptions.map((option) => (
-                    <option key={option.ref} value={option.ref}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-            {formState.contextType === "guide_session" ? (
-              <select
-                value={formState.contextRef}
-                onChange={(e) => setCreateContextRef(e.target.value)}
-                data-testid="admin-note-create-context-session"
-                className={fieldClass}
-              >
-                <option value="">Choose session</option>
-                {contextCatalog.sessions.map((option) => (
-                  <option key={option.ref} value={option.ref}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {formState.contextType === "guide_drill" ? (
-              <select
-                value={formState.contextRef}
-                onChange={(e) => setCreateContextRef(e.target.value)}
-                data-testid="admin-note-create-context-drill"
-                className={fieldClass}
-              >
-                <option value="">Choose drill</option>
-                {contextCatalog.drills.map((option) => (
-                  <option key={option.ref} value={option.ref}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {formState.contextType === "product" ? (
-              <select
-                value={formState.contextRef}
-                onChange={(e) => setCreateContextRef(e.target.value)}
-                data-testid="admin-note-create-context-product"
-                className={fieldClass}
-              >
-                <option value="">Choose product</option>
-                {contextCatalog.products.map((option) => (
-                  <option key={option.ref} value={option.ref}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {formState.contextType === "page" ? (
-              <select
-                value={formState.contextRef}
-                onChange={(e) => setCreateContextRef(e.target.value)}
-                data-testid="admin-note-create-context-page"
-                className={fieldClass}
-              >
-                <option value="">Choose page</option>
-                {contextCatalog.pages.map((option) => (
-                  <option key={option.ref} value={option.ref}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-          </label>
-
           <label className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--fs-color-ink)] sm:col-span-2">
             <input
               type="checkbox"
@@ -2409,7 +2126,7 @@ export default function AdminNotesManager() {
             Mark as done now
           </label>
 
-          <div className="sm:col-span-2">
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
             <button
               type="submit"
               disabled={submitting || createContextInvalid || Boolean(createCaptureRecovery)}
@@ -2419,11 +2136,434 @@ export default function AdminNotesManager() {
               {submitting ? "Saving…" : "Save note"}
             </button>
           </div>
+
           {createContextInvalid ? (
             <p className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
               Set both context type and context ref, or leave both empty.
             </p>
           ) : null}
+
+          <div className="space-y-3 sm:col-span-2" aria-label="Optional note tools">
+            <section
+              className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-amber-50/70 p-1"
+              data-testid="admin-notes-create-incident-tools"
+            >
+              <button
+                type="button"
+                className={createDisclosureButtonClass}
+                aria-expanded={createIncidentToolsOpen}
+                aria-controls="admin-notes-create-incident-tools-panel"
+                onClick={() => setCreateIncidentToolsOpen((current) => !current)}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-800" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-amber-950">
+                      Incident quick templates
+                    </span>
+                    <span className="block text-xs text-amber-800">P0/P1/P2 runbook templates</span>
+                  </span>
+                </span>
+                <ChevronDown
+                  className={cx(
+                    "h-4 w-4 shrink-0 text-amber-900 transition-transform",
+                    createIncidentToolsOpen ? "rotate-180" : ""
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {createIncidentToolsOpen ? (
+                <div
+                  id="admin-notes-create-incident-tools-panel"
+                  className="space-y-3 border-t border-amber-200 px-3 pt-3 pb-3"
+                >
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {INCIDENT_NOTE_SEVERITIES.map((severity) => (
+                      <div
+                        key={severity}
+                        className="rounded-[var(--fs-radius-control)] border border-amber-200 bg-white/85 px-3 py-2"
+                      >
+                        <p className="text-xs font-semibold text-amber-950">{severity}</p>
+                        <p className="mt-1 text-xs text-amber-900">
+                          {ADMIN_INCIDENT_SEVERITY_GUIDANCE[severity]}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {INCIDENT_NOTE_SEVERITIES.map((severity) => (
+                      <button
+                        key={severity}
+                        type="button"
+                        onClick={() => applyIncidentTemplate(severity)}
+                        className="inline-flex min-h-9 items-center justify-center rounded-[var(--fs-radius-control)] border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                      >
+                        Use {severity} template
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section
+              className={cx("p-1", mutedPanelClass)}
+              data-testid="admin-notes-create-image-tools"
+            >
+              <button
+                type="button"
+                className={createDisclosureButtonClass}
+                aria-expanded={createImageToolsExpanded}
+                aria-controls="admin-notes-create-image-tools-panel"
+                onClick={() => setCreateImageToolsOpen((current) => !current)}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <ImageIcon
+                    className="h-4 w-4 shrink-0 text-[color:var(--fs-color-brand-700)]"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      Image (optional)
+                    </span>
+                    <span className={createDisclosureSummaryClass}>
+                      {createCaptureRecovery
+                        ? "Upload retry needed"
+                        : createPendingScreenshots.length > 0
+                          ? `${formatAdminNoteImageCountLabel(createPendingScreenshots.length)} staged`
+                          : `Paste or upload up to ${ADMIN_NOTE_ATTACHMENT_MAX_FILES} images`}
+                    </span>
+                  </span>
+                </span>
+                <ChevronDown
+                  className={cx(
+                    "h-4 w-4 shrink-0 text-[color:var(--fs-color-muted)] transition-transform",
+                    createImageToolsExpanded ? "rotate-180" : ""
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {createImageToolsExpanded ? (
+                <div
+                  id="admin-notes-create-image-tools-panel"
+                  className="space-y-3 border-t border-[color:var(--fs-border-soft)] px-3 pt-3 pb-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className={metadataClass}>
+                      Copy a screenshot or image to clipboard, then paste it here, or upload before
+                      save.
+                    </p>
+                    <div className={getMobileActionGroupClass(2, { stackOnMobile: true })}>
+                      <AdminNoteClipboardPasteButton
+                        onPasteReady={async (file) => {
+                          setActionError(null);
+                          appendCreatePendingScreenshots([file]);
+                        }}
+                        onError={(message) => {
+                          setActionError(message);
+                          setActionNotice(null);
+                        }}
+                        disabled={Boolean(submitting)}
+                      />
+                      <label
+                        className={cx(
+                          compactSecondaryActionClass,
+                          mobileActionItemClass,
+                          "cursor-pointer py-2"
+                        )}
+                      >
+                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Upload images</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          className="sr-only"
+                          disabled={Boolean(submitting)}
+                          onChange={(event) => {
+                            handleCreateImageSelection(event.target.files);
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {createPendingScreenshots.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className={nestedPanelClass}>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                              {formatAdminNoteImageCountLabel(createPendingScreenshots.length)}{" "}
+                              ready to attach
+                            </p>
+                            <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
+                              {createCaptureRecovery
+                                ? `Saved note "${createCaptureRecovery.title}" is waiting on the remaining staged images. Retry upload or remove any images you no longer need.`
+                                : "These images stay local until this note save finishes successfully."}
+                            </p>
+                          </div>
+                          {createCaptureRecovery ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void retryCreatePendingScreenshotUpload();
+                              }}
+                              disabled={submitting}
+                              className={compactPrimaryActionClass}
+                            >
+                              <Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                              {submitting ? "Retrying…" : "Retry upload"}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {createPendingScreenshots.map((image, index) => (
+                          <div key={image.id} className={nestedPanelClass}>
+                            <div className="flex items-center gap-3">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={image.previewUrl}
+                                alt={`Pending image preview ${index + 1}`}
+                                className="h-14 w-14 rounded-lg object-cover"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-[color:var(--fs-color-ink-strong)]">
+                                  {buildAdminNoteAttachmentOrdinalLabel(
+                                    index,
+                                    createPendingScreenshots.length
+                                  )}
+                                </p>
+                                <p className="mt-1 truncate text-[11px] text-[color:var(--fs-color-muted)]">
+                                  {image.file.name}
+                                </p>
+                                <p className="mt-1 text-[11px] text-[color:var(--fs-color-muted)]">
+                                  {buildAdminNoteAttachmentEvidenceSummary({
+                                    mimeType: image.file.type,
+                                    sizeBytes: image.file.size,
+                                    locationLabel: "Staged locally",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                removeCreatePendingScreenshot(image.id);
+                              }}
+                              disabled={submitting}
+                              className={cx("mt-3", compactSecondaryActionClass)}
+                            >
+                              Remove image {index + 1}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {createCaptureRecovery ? (
+                        <p className="text-[11px] text-[color:var(--fs-color-muted)]">
+                          Saved note: {createCaptureRecovery.title}. Retry the upload here or use
+                          Edit from the work queue later.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+
+            <section
+              className={cx("p-1", mutedPanelClass)}
+              data-testid="admin-notes-create-context-tools"
+            >
+              <button
+                type="button"
+                className={createDisclosureButtonClass}
+                aria-expanded={createContextToolsExpanded}
+                aria-controls="admin-notes-create-context-tools-panel"
+                onClick={() => setCreateContextToolsOpen((current) => !current)}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <Link2
+                    className="h-4 w-4 shrink-0 text-[color:var(--fs-color-brand-700)]"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      Attach to (optional)
+                    </span>
+                    <span className={createDisclosureSummaryClass}>
+                      {createContextInvalid
+                        ? "Needs type and target"
+                        : formState.contextType
+                          ? "Context selected"
+                          : "No attachment"}
+                    </span>
+                  </span>
+                </span>
+                <ChevronDown
+                  className={cx(
+                    "h-4 w-4 shrink-0 text-[color:var(--fs-color-muted)] transition-transform",
+                    createContextToolsExpanded ? "rotate-180" : ""
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {createContextToolsExpanded ? (
+                <div
+                  id="admin-notes-create-context-tools-panel"
+                  className="grid gap-3 border-t border-[color:var(--fs-border-soft)] px-3 pt-3 pb-3 sm:grid-cols-2"
+                >
+                  <label className={labelClass}>
+                    <span>Attach to (optional)</span>
+                    <select
+                      value={formState.contextType}
+                      onChange={(e) =>
+                        setCreateContextType(e.target.value as AdminNoteContextType | "")
+                      }
+                      data-testid="admin-note-create-context-type"
+                      className={fieldClass}
+                    >
+                      <option value="">No attachment</option>
+                      {ADMIN_NOTES_CONTEXT_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={labelClass}>
+                    <span>Selected target</span>
+                    {formState.contextType === "" ? (
+                      <input
+                        type="text"
+                        value=""
+                        disabled
+                        className={fieldClass}
+                        placeholder="No attachment"
+                      />
+                    ) : null}
+                    {formState.contextType === "course_module" ? (
+                      <select
+                        value={formState.contextRef}
+                        onChange={(e) => setCreateContextRef(e.target.value)}
+                        data-testid="admin-note-create-context-module"
+                        className={fieldClass}
+                      >
+                        <option value="">Choose module</option>
+                        {contextCatalog.modules.map((option) => (
+                          <option key={option.ref} value={option.ref}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    {formState.contextType === "course_lesson" ? (
+                      <div className="space-y-2">
+                        <select
+                          value={formState.contextModuleRef}
+                          onChange={(e) => {
+                            setCreateContextModuleRef(e.target.value);
+                          }}
+                          data-testid="admin-note-create-context-lesson-module"
+                          className={fieldClass}
+                        >
+                          <option value="">Choose module first</option>
+                          {contextCatalog.modules.map((option) => (
+                            <option key={option.ref} value={option.ref}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={formState.contextRef}
+                          onChange={(e) => {
+                            setCreateContextRef(e.target.value);
+                          }}
+                          data-testid="admin-note-create-context-lesson"
+                          className={fieldClass}
+                        >
+                          <option value="">Choose lesson</option>
+                          {createLessonOptions.map((option) => (
+                            <option key={option.ref} value={option.ref}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+                    {formState.contextType === "guide_session" ? (
+                      <select
+                        value={formState.contextRef}
+                        onChange={(e) => setCreateContextRef(e.target.value)}
+                        data-testid="admin-note-create-context-session"
+                        className={fieldClass}
+                      >
+                        <option value="">Choose session</option>
+                        {contextCatalog.sessions.map((option) => (
+                          <option key={option.ref} value={option.ref}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    {formState.contextType === "guide_drill" ? (
+                      <select
+                        value={formState.contextRef}
+                        onChange={(e) => setCreateContextRef(e.target.value)}
+                        data-testid="admin-note-create-context-drill"
+                        className={fieldClass}
+                      >
+                        <option value="">Choose drill</option>
+                        {contextCatalog.drills.map((option) => (
+                          <option key={option.ref} value={option.ref}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    {formState.contextType === "product" ? (
+                      <select
+                        value={formState.contextRef}
+                        onChange={(e) => setCreateContextRef(e.target.value)}
+                        data-testid="admin-note-create-context-product"
+                        className={fieldClass}
+                      >
+                        <option value="">Choose product</option>
+                        {contextCatalog.products.map((option) => (
+                          <option key={option.ref} value={option.ref}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    {formState.contextType === "page" ? (
+                      <select
+                        value={formState.contextRef}
+                        onChange={(e) => setCreateContextRef(e.target.value)}
+                        data-testid="admin-note-create-context-page"
+                        className={fieldClass}
+                      >
+                        <option value="">Choose page</option>
+                        {contextCatalog.pages.map((option) => (
+                          <option key={option.ref} value={option.ref}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                  </label>
+                </div>
+              ) : null}
+            </section>
+          </div>
         </form>
       </section>
     </div>

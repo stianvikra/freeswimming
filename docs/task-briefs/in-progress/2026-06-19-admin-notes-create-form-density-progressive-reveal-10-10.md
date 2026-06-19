@@ -3,28 +3,28 @@
 ## Metadata
 
 - `id`: `2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
 - `source_audit`: `docs/task-briefs/done/2026-06-19-admin-readability-combined-score-refresh-notes-preaudit-10-10.md`
-- `execution_mode`: `plan only until owner explicitly approves implementation`
+- `execution_mode`: `execute after owner approval`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-19`
-- `base`: `main@f5b9388c`
+- `base`: `main@0fe229f4`
 - `audit_status`: `ready`
-- `decision`: Use this planned child after the smaller Notes open-count navigation indicator child, unless the owner explicitly chooses create-form density first.
-- `reason`: Combined audit found Notes create-form density remains a clear admin-readability friction, but the owner identified a smaller first Notes triage improvement: open-count badge plus open-queue entry behavior.
+- `decision`: Execute this child now after the smaller Notes open-count navigation indicator child shipped.
+- `reason`: PR `#1177` and closeout PR `#1178` are merged, and the owner approved the recommended next step: create-form density first, with floating Notes quick access kept as a separate planned child.
 - `must_refresh_before_execution_if`: Refresh if `AdminNotesManager`, Notes API contracts, attachment limits, admin note context types, incident severity guidance, Admin Help/Guide Notes copy, Notes tests, screenshot handoff rules, scorecard categories, or parent admin-readability status change before implementation.
 
 ## Relationship To Notes Open-Count Child
 
 Recommended order:
 
-1. `docs/task-briefs/planned/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
+1. `docs/task-briefs/done/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
 2. this create-form density child
 
 Reason: the open-count child improves Notes triage/discovery without touching create/edit/upload/link layout. It is smaller and matches the proven Messages badge pattern.
@@ -72,6 +72,7 @@ Fremoverkompatibilitet: nye Notes-kategorier/context-valg skal fortsatt komme fr
 - No change to note IDs, category semantics, priority values, status behavior, done/archive behavior, context type/ref values, related-note identity, attachment format/limit, or incident severity meaning.
 - No change to dashboard Quick note save behavior.
 - No admin shell/nav redesign.
+- No floating/sticky Notes quick-access control; that is tracked separately in `docs/task-briefs/planned/2026-06-19-admin-notes-floating-quick-access-10-10.md`.
 - No new dependency or local Codex config change.
 - No performance-budget threshold change.
 - Do not touch `Ja.docx`.
@@ -123,7 +124,8 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 - External services:
   - no Stripe, email, analytics provider, Vercel, or GitHub workflow changes.
 - UI system:
-  - reuse existing `fs-library-card`, `fs-cta-*`, field classes, nested panel pattern, status states, and native controls where possible.
+  - reference surface: reuse existing `AdminNotesManager` create/edit form surface, with the edit form as the parity reference for upload/context/related-note controls;
+  - shared component contract: keep existing `AdminNoteClipboardPasteButton`, `fs-library-card`, `fs-cta-*`, field classes, nested panel pattern, status states, and native controls where possible.
   - screenshot handoff comparison type should be `before/after` if baseline recapture is practical; otherwise `after/reference` with current Notes and edit-form references.
 - Testing:
   - update `tests/unit/admin-notes-manager-state.test.tsx` and `tests/e2e/admin-notes-workflow.spec.ts` only as needed by changed labels/structure.
@@ -159,6 +161,8 @@ Critical target categories for this child: Product goals and IA, UX flow clarity
 
 Expected `N/A` if implementation only changes placement/disclosure while preserving visible action meaning and recovery guidance. Required if incident template copy, upload recovery wording, context attachment labels, or support procedure meaning changes.
 
+Current implementation impact: `N/A` for Help/Guide runtime copy because the shipped action labels and recovery meanings are preserved. Incident, image, context, upload, retry, save, related-note, and context-validation semantics are unchanged; only default placement/disclosure changed.
+
 ## Route / Label / Support Surface Sweep
 
 Run before broad gates:
@@ -181,6 +185,8 @@ Run before broad gates:
 - `/admin?tab=notes`
 
 Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/checklists/`, and active/planned/done task briefs.
+
+Execution evidence: searched the required labels across `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbooks/`, `docs/checklists/`, and task briefs. Fallout handled in this slice: `AdminNotesManager` create-panel disclosure structure, targeted unit/e2e selectors, active child brief, and parent pointer. No Help/Guide or runbook update is required because visible action meaning and recovery procedure did not change.
 
 ## Screenshot Handoff Plan
 
@@ -222,3 +228,6 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 ## Checkpoint Log
 
 - `2026-06-19 | planned | created as the selected next child from the combined admin readability score refresh and Notes pre-execution audit; no runtime implementation has started | next: owner decides whether to execute this child`
+- `2026-06-19 | in-progress | owner approved recommended sequence: run create-form density first and keep floating Notes quick access as a separate planned child; branch feat/admin-notes-create-form-density created from main@0fe229f4 | next: implement create-panel progressive reveal without API/data/status/nav changes`
+- `2026-06-19 | screenshot-review | implemented create-panel progressive reveal: routine fields, mark-done, and save stay in the primary path, while incident templates, image tools, and optional context attach are compact disclosure sections that auto-open when staged images, upload recovery, or partial context validation are active; validation passed: targeted Vitest for admin notes manager state + related links, targeted ESLint, npm run typecheck, route/label/support sweep, and git diff --check; targeted desktop Chromium e2e command completed with 3 tests skipped because local dev-login/Supabase returned HTML instead of JSON; screenshot artifacts captured at output/admin-notes-create-form-density-2026-06-19-191713 using a temporary local visual harness, then the harness/script were removed before final diff | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-19 | pre-pr-pass | owner approved screenshot handoff; npm run verify:pre-pr passed full public lane on branch feat/admin-notes-create-form-density: quality gates, lint, typecheck, 249 unit files / 1636 tests, build, performance budgets, and Playwright e2e 111 passed / 567 skipped with skips tied to the local dev-login/Supabase guard matrix; perf-budget trend recommended tighten after consecutive green runs, decision: hold inside this non-performance Notes UI slice and carry the tighten prompt to the existing planned performance-ratchet queue | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge before merge`
