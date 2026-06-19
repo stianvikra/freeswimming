@@ -273,9 +273,9 @@ Planned child selected first by that audit:
 
 - `docs/task-briefs/planned/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
 
-Active follow-up child from the same audit:
+Closed follow-up child from the same audit:
 
-- `docs/task-briefs/in-progress/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`
+- `docs/task-briefs/done/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`
 
 Additional planned Notes access child from owner follow-up:
 
@@ -543,6 +543,7 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 
 ## Checkpoint Log
 
+- `2026-06-19 | create-form-density-merged | Notes create-form density child closed in docs/task-briefs/done/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md via PR #1179; floating Notes quick access remains a separate planned child | next: run post-merge preflight and choose next bounded admin-readability child`
 - `2026-06-19 | post-operations-parent-refresh | main is clean and synced at 5af65a0c after PR #1171, closeout PR #1172, and PR #1173; Operations support-copy compression is done, performance ratchet waits for two new weekly green cycles after 2026-06-19, and the current admin-readability choices are Notes create-form density pre-execution audit or whole-dashboard score refresh | next: owner selects one planning path before any runtime implementation`
 - `2026-06-19 | child-approved | owner approved the selected Operations support-copy compression child; active brief moved to docs/task-briefs/in-progress/2026-06-19-admin-operations-support-copy-compression-10-10.md on branch feat/admin-operations-support-copy-compression | next: complete scoped implementation, targeted tests, and screenshot approval stop before verify:pre-pr`
 - `2026-06-19 | post-merge-reaudit | current-state audit on main@78a44ec1 captured Operations/Notes screenshots in output/admin-readability-post-merge-reaudit-2026-06-19-080846 and selected docs/task-briefs/planned/2026-06-19-admin-operations-support-copy-compression-10-10.md as the next bounded admin-readability child; Notes create-form density remains deferred | next: owner approves moving the Operations child to in-progress before runtime implementation`
