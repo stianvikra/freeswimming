@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-19`
-- `base`: `main@78a44ec1`
+- `base`: `main@5af65a0c`
 - `audit_status`: `ready`
-- `decision`: Post-merge admin readability re-audit is complete; active implementation child is `docs/task-briefs/in-progress/2026-06-19-admin-operations-support-copy-compression-10-10.md`.
-- `reason`: `main` is clean and synced at `78a44ec1`; the original baseline findings have changed because multiple child slices have since merged. Fresh code review and current-state screenshots on `2026-06-19` confirm Operations support-copy compression is the smallest useful remaining admin-readability child, while Notes create-form density remains higher risk and deferred.
+- `decision`: Post-Operations parent refresh is complete; no admin-readability implementation child is currently active or approved. Operations support-copy compression is done, and the next admin-readability planning choice is either a Notes create-form density pre-execution audit or a whole-dashboard score refresh.
+- `reason`: `main` is clean and synced at `5af65a0c`; PR `#1171` and closeout PR `#1172` closed the Operations support-copy child, and PR `#1173` planned the next performance-budget ratchet without runtime changes. The old parent status still pointed at Operations as active, so this refresh realigns the parent with the current done briefs and keeps Notes/whole-dashboard follow-up separate from runtime implementation.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, `AdminWorkspace`, `lib/admin/admin-workspace.ts`, admin audit checklist, admin Help/Guide, Users role-management routes, Supabase Auth Admin behavior, screenshot handoff rules, route/label/support sweep rules, verification lanes, or performance-budget defaults change before execution.
 
 ## Goal
@@ -207,29 +207,30 @@ Whole-dashboard `10/10` claim status: `no`. A defensible claim requires the full
 
 Status source:
 
-- Repo base: clean `main@78a44ec1`.
+- Repo base: clean `main@5af65a0c`.
 - `Ja.docx` remains owner/local state and is not in scope for this audit refresh.
-- This refresh is audit/docs-only. It captures current-state screenshot evidence through a temporary local harness but does not leave runtime code, UI, tests, routes, data, or API behavior changed.
+- This refresh is docs-only. It uses existing current-state and child-closeout evidence and does not change runtime code, UI, tests, routes, data, API behavior, screenshots, or `Ja.docx`.
 
 Closed child work since the original baseline:
 
-| Child / Area                                | Outcome                                                                                                                                                | Current Status |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
-| Users/Analytics coverage and Users wording  | PR `#1153` added active Users/Analytics coverage and corrected stale Users read-only wording while keeping user creation deferred.                     | `done`         |
-| Full dashboard UI/UX audit and gap list     | PR `#1153` shipped the full-dashboard audit artifact and selected lesson editor readability as the first implementation child.                         | `done`         |
-| Lesson editor less-is-more readability      | PR `#1153` reduced lesson-editor copy/density, preserved data behavior, and kept whole-dashboard 10/10 unclaimed.                                      | `done`         |
-| Help/Guide quick reference                  | PR `#1155` turned Help/Guide into a quicker operator reference with active-tab coverage and recovery guidance.                                         | `done`         |
-| Admin Analytics density and caveats         | PR `#1157` grouped Analytics reading rules and caveats without changing KPI math or API contracts.                                                     | `done`         |
-| Mobile admin shell and Quick note context   | PR `#1160` exposed all active admin tabs on mobile and clarified Quick note locked-context behavior.                                                   | `done`         |
-| Content mirror/status action density        | PR `#1162` collapsed mirror detail noise and grouped low-frequency Content lifecycle actions without changing content semantics.                       | `done`         |
-| Messages `Needs reply` navigation indicator | PR `#1167` added a privacy-safe aggregate Messages badge and summary route; closeout PR `#1168` is merged.                                             | `done`         |
-| Performance budget ratchet                  | PR `#1169` and closeout PR `#1170` tightened JS transfer `390kb` -> `380kb`; next perf ratchet waits for two new weekly green runs after `2026-06-19`. | `done`         |
+| Child / Area                                | Outcome                                                                                                                                                                                     | Current Status |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Users/Analytics coverage and Users wording  | PR `#1153` added active Users/Analytics coverage and corrected stale Users read-only wording while keeping user creation deferred.                                                          | `done`         |
+| Full dashboard UI/UX audit and gap list     | PR `#1153` shipped the full-dashboard audit artifact and selected lesson editor readability as the first implementation child.                                                              | `done`         |
+| Lesson editor less-is-more readability      | PR `#1153` reduced lesson-editor copy/density, preserved data behavior, and kept whole-dashboard 10/10 unclaimed.                                                                           | `done`         |
+| Help/Guide quick reference                  | PR `#1155` turned Help/Guide into a quicker operator reference with active-tab coverage and recovery guidance.                                                                              | `done`         |
+| Admin Analytics density and caveats         | PR `#1157` grouped Analytics reading rules and caveats without changing KPI math or API contracts.                                                                                          | `done`         |
+| Mobile admin shell and Quick note context   | PR `#1160` exposed all active admin tabs on mobile and clarified Quick note locked-context behavior.                                                                                        | `done`         |
+| Content mirror/status action density        | PR `#1162` collapsed mirror detail noise and grouped low-frequency Content lifecycle actions without changing content semantics.                                                            | `done`         |
+| Messages `Needs reply` navigation indicator | PR `#1167` added a privacy-safe aggregate Messages badge and summary route; closeout PR `#1168` is merged.                                                                                  | `done`         |
+| Operations support-copy compression         | PR `#1171` and closeout PR `#1172` compressed Operations site-lock support copy while preserving runtime/site-lock behavior.                                                                | `done`         |
+| Performance budget ratchet                  | PR `#1169` and closeout PR `#1170` tightened JS transfer `390kb` -> `380kb`; PR `#1173` planned the next ratchet. Next perf ratchet waits for two new weekly green runs after `2026-06-19`. | `done`         |
 
 Current interpretation:
 
-- The original high-priority blockers for lesson editor, Help/Guide, Analytics density, mobile tab discoverability, Content status/mirror density, and Messages discoverability are no longer active as originally written.
+- The original high-priority blockers for lesson editor, Help/Guide, Analytics density, mobile tab discoverability, Content status/mirror density, Messages discoverability, and Operations support-copy density are no longer active as originally written.
 - Historical checkpoint lines that point to `in-progress` child paths are superseded by the corresponding `done` brief paths.
-- A whole-dashboard admin `10/10` product claim is still not made here; a current post-merge re-audit must inspect the active dashboard after all merged child work.
+- A whole-dashboard admin `10/10` product claim is still not made here; a current whole-dashboard score refresh must inspect the active dashboard after all merged child work if that claim becomes the next goal.
 
 Completed post-merge re-audit step:
 
@@ -237,27 +238,28 @@ Completed post-merge re-audit step:
 2. Compare current `AdminWorkspace`, `AdminOperationsManager`, `AdminNotesManager`, `AdminHelpCenter`, admin e2e/unit coverage, and the latest relevant screenshot artifacts.
 3. Select exactly one next child or explicitly defer all remaining UI/readability gaps.
 
-Current candidate findings to verify before selecting a child:
+Current remaining decision points after PR `#1171`, PR `#1172`, and PR `#1173`:
 
-| Candidate                                      | Type                           | Why It Is Still Plausible                                                                                                                                                                                        | Why It Is Not Yet Selected                                                                                                    |
-| ---------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Operations support-copy compression            | `bounded implementation child` | Current Operations still exposes useful but routine-competing site-lock/env/runbook prose beside the flag actions. It is lower risk than Notes because no data model or create/edit workflow changes are needed. | Needs fresh screenshot/audit evidence after mobile shell and Help changes.                                                    |
-| Notes create-form density / progressive reveal | `bounded implementation child` | Notes still combines queue filters, create/edit, screenshots, related notes, upload recovery, and incident templates in one operational surface.                                                                 | Higher blast radius than Operations because create/edit/upload/incident workflows and existing e2e coverage must stay intact. |
-| Admin whole-dashboard product score refresh    | `safe process/docs update`     | The previous whole-dashboard audit is now stale because multiple selected blockers have shipped.                                                                                                                 | Should be audit-only unless it selects one bounded implementation child.                                                      |
+| Candidate                                      | Type                             | Why It Is Still Plausible                                                                                                                        | Why It Is Not Yet Selected                                                                                                                     |
+| ---------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Notes create-form density / progressive reveal | `bounded implementation child`   | Notes still combines queue filters, create/edit, screenshots, related notes, upload recovery, and incident templates in one operational surface. | Requires a fresh pre-execution audit and screenshot plan because create/edit/upload/link workflows and existing e2e coverage must stay intact. |
+| Admin whole-dashboard product score refresh    | `safe process/docs update`       | The previous whole-dashboard audit is now historical because multiple selected blockers have shipped, including Operations.                      | Should stay audit-only unless it selects exactly one bounded child or explicitly defers remaining gaps.                                        |
+| Pass-criteria scoring decision                 | `deferred architecture decision` | The residual note intake still has a planned pass-criteria scoring decision that affects lesson completion semantics.                            | Not an admin-readability UI child; needs owner product decision before implementation.                                                         |
 
-Recommended child if the re-audit confirms current code evidence:
+Recommended next planning choice:
 
-- `admin-operations-support-copy-compression`
-- Rationale: it is the smallest likely admin-readability child left from the old gap list, improves support/ops clarity, and avoids touching Notes create/edit/upload data behavior.
-- Scope boundary: no runtime-flag semantics, site-lock behavior, env variable names, API routes, authz, data storage, or runbook procedure changes.
+- If continuing admin UI/readability implementation: create or refresh a Notes density child only after a pre-execution audit of `AdminNotesManager`, current tests, Help/Guide impact, and desktop/mobile screenshot needs.
+- If trying to close or re-score the parent: run an audit-only whole-dashboard score refresh on current `main`, then either select one bounded child or explicitly defer remaining gaps.
+- Do not reopen Operations support-copy compression; it is closed in `docs/task-briefs/done/2026-06-19-admin-operations-support-copy-compression-10-10.md`.
+- Do not change performance budgets until at least two new weekly green cycles exist after `2026-06-19`.
 
 Forward compatibility intent:
 
 - Future admin tabs continue to follow `ADMIN_TAB_VALUES` and the Help/Guide active-tab coverage contract.
-- Future Operations flags should inherit concise label/status/action presentation automatically from the existing flag row pattern.
-- New operational recovery procedures, env names, destructive actions, or security-sensitive toggles require explicit Help/Guide/runbook mapping, tests, and owner decision before release.
+- Future Notes workflow states, incident templates, upload/recovery actions, and related-note relationships must preserve server-canonical note data and existing action semantics unless a child explicitly maps the change with tests.
+- New operational recovery procedures, env names, destructive actions, security-sensitive toggles, or scoring semantics require explicit Help/Guide/runbook mapping, tests, and owner decision before release.
 
-## Post-Merge Re-Audit Results (2026-06-19)
+## Historical Post-Merge Re-Audit Results Before Operations (2026-06-19)
 
 Audit status: complete; no runtime/UI implementation is included in this result.
 
@@ -270,7 +272,7 @@ Evidence:
 - Screenshot filenames: `reference-current-operations-desktop.png`, `reference-current-notes-desktop.png`, `reference-current-operations-mobile.png`.
 - Screenshot caveat: local admin auth was avoided for screenshot-only capture; the temporary visual harness rendered real admin components with deterministic mock API responses and must not remain in the validation/PR diff.
 
-Ranked current findings:
+Ranked findings at that point:
 
 | Rank | Surface                         | Finding                                                                                                                                                                                                                                                                                               | Severity | Decision                                                                       |
 | ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ |
@@ -278,7 +280,7 @@ Ranked current findings:
 | 2    | Notes create-form density       | Notes combines filters, note cards, incident templates, image staging/upload, related notes, context attachment, and save flow in one long surface.                                                                                                                                                   | `medium` | Defer because create/edit/upload/link coverage creates broader blast radius.   |
 | 3    | Whole-dashboard score freshness | The previous whole-dashboard audit is now historical after multiple child merges.                                                                                                                                                                                                                     | `low`    | Keep as a future safe process/docs refresh, not the next implementation child. |
 
-Selected child:
+Selected child at that point:
 
 - `docs/task-briefs/in-progress/2026-06-19-admin-operations-support-copy-compression-10-10.md`
 
@@ -288,7 +290,7 @@ Selection rationale:
 - Presentation-only scope can preserve runtime flag/site-lock semantics, API routes, authz, data storage, env names, and runbook procedures.
 - Notes remains important, but its create/edit/upload/link behaviors should get a separate pre-execution audit and screenshot plan.
 
-Current audit score snapshot:
+Historical audit score snapshot:
 
 | Target Category                          | Audit Score | Reason                                                                                                          |
 | ---------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
@@ -306,10 +308,10 @@ Current audit score snapshot:
 | Testing and QA automation                | `4/5`       | Targeted unit coverage exists; selected child must extend it for changed presentation/disclosure contract.      |
 | DevOps and rollback readiness            | `5/5`       | Recommended child is small, reversible, and has no migration/config/package dependency.                         |
 
-Remaining gaps:
+Remaining gaps after the Operations child:
 
-- Operations support copy should be implemented only after owner approval of the selected child.
 - Notes create-form density remains a deferred admin-readability child.
+- Whole-dashboard score freshness remains an audit-only follow-up if the owner wants a current dashboard-level `10/10` claim or deferral decision.
 - No whole-dashboard `10/10` claim is made by this parent.
 
 ## Platform 10/10 Scorecard Mapping
@@ -513,6 +515,7 @@ Check at minimum `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbook
 
 ## Checkpoint Log
 
+- `2026-06-19 | post-operations-parent-refresh | main is clean and synced at 5af65a0c after PR #1171, closeout PR #1172, and PR #1173; Operations support-copy compression is done, performance ratchet waits for two new weekly green cycles after 2026-06-19, and the current admin-readability choices are Notes create-form density pre-execution audit or whole-dashboard score refresh | next: owner selects one planning path before any runtime implementation`
 - `2026-06-19 | child-approved | owner approved the selected Operations support-copy compression child; active brief moved to docs/task-briefs/in-progress/2026-06-19-admin-operations-support-copy-compression-10-10.md on branch feat/admin-operations-support-copy-compression | next: complete scoped implementation, targeted tests, and screenshot approval stop before verify:pre-pr`
 - `2026-06-19 | post-merge-reaudit | current-state audit on main@78a44ec1 captured Operations/Notes screenshots in output/admin-readability-post-merge-reaudit-2026-06-19-080846 and selected docs/task-briefs/planned/2026-06-19-admin-operations-support-copy-compression-10-10.md as the next bounded admin-readability child; Notes create-form density remains deferred | next: owner approves moving the Operations child to in-progress before runtime implementation`
 - `2026-06-19 | status-refresh | main is clean and synced at 78a44ec1 after PR #1169 and closeout PR #1170; prior admin-readability child paths in this parent are historical because Users/Analytics coverage, full-dashboard audit, lesson editor, Help/Guide, Analytics density, mobile shell, Content mirror/status density, and Messages needs-reply indicator have all shipped and closed; next: run a short post-merge admin readability re-audit before choosing exactly one new bounded child, with Operations support-copy compression as the current lowest-risk candidate to verify`
