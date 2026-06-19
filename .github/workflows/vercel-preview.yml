@@ -63,7 +63,7 @@ jobs:
         if: steps.vercel-secrets.outputs.available == 'true'
         id: deploy
         run: |
-          preview_url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          preview_url="$(vercel deploy --prebuilt --archive=tgz --token="$VERCEL_TOKEN")"
           echo "url=${preview_url}" >> "$GITHUB_OUTPUT"
 
       - name: Comment Preview URL

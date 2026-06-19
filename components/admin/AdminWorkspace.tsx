@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useMemo } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -34,6 +34,11 @@ import {
   parseAdminTab,
   type AdminTab,
 } from "@/lib/admin/admin-workspace";
+import {
+  buildAdminMessagesTabAriaLabel,
+  formatAdminMessagesNeedsReplyBadgeCount,
+  type AdminMessagesSummaryResponse,
+} from "@/lib/admin/messages";
 
 const TAB_LABELS: Array<{ id: AdminTab; label: string; subtitle: string; icon: LucideIcon }> = [
   {
@@ -109,6 +114,8 @@ const adminTabButtonBaseClass =
 const adminTabActiveClass =
   "fs-library-card-accent !border-[color:var(--fs-border-brand)] !bg-white/86 !shadow-[0_6px_18px_rgba(15,23,42,0.055)]";
 const adminTabInactiveClass = "hover:!border-[color:var(--fs-border-brand)] hover:!bg-white/72";
+const adminTabBadgeClass =
+  "ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 px-1.5 text-[11px] font-bold leading-none text-amber-900 ring-1 ring-amber-300";
 const adminHelpSubnavClass =
   "hidden rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/75 p-3 lg:block";
 const adminHelpSubnavLinkClass =
@@ -122,6 +129,10 @@ export default function AdminWorkspace({ role }: Props) {
   const pathname = usePathname() ?? "/admin";
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [messagesNeedsReplyCount, setMessagesNeedsReplyCount] = useState<number | null>(null);
+  const [messagesSummaryStatus, setMessagesSummaryStatus] = useState<
+    "idle" | "loaded" | "unavailable"
+  >("idle");
   const activeTab = useMemo(
     () => parseAdminTab(searchParams?.get("tab") ?? null) ?? "content",
     [searchParams]
@@ -131,6 +142,41 @@ export default function AdminWorkspace({ role }: Props) {
     () => TAB_LABELS.find((tab) => tab.id === activeTab) ?? TAB_LABELS[0],
     [activeTab]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMessagesSummary() {
+      try {
+        const response = await fetch("/api/admin/messages/summary", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as AdminMessagesSummaryResponse;
+        if (cancelled) return;
+        if (!response.ok || !payload.ok || !payload.schemaReady) {
+          setMessagesNeedsReplyCount(null);
+          setMessagesSummaryStatus("unavailable");
+          return;
+        }
+        setMessagesNeedsReplyCount(payload.needsReplyCount);
+        setMessagesSummaryStatus("loaded");
+      } catch {
+        if (!cancelled) {
+          setMessagesNeedsReplyCount(null);
+          setMessagesSummaryStatus("unavailable");
+        }
+      }
+    }
+
+    void loadMessagesSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function selectTab(tab: AdminTab) {
     const nextParams = applyAdminTabToSearchParams(
       new URLSearchParams(searchParams?.toString() ?? ""),
@@ -176,6 +222,14 @@ export default function AdminWorkspace({ role }: Props) {
         {TAB_LABELS.map((tab) => {
           const isActive = tab.id === activeTab;
           const TabIcon = tab.icon;
+          const needsReplyBadge =
+            tab.id === "messages"
+              ? formatAdminMessagesNeedsReplyBadgeCount(messagesNeedsReplyCount ?? 0)
+              : null;
+          const messagesAriaLabel =
+            tab.id === "messages"
+              ? buildAdminMessagesTabAriaLabel(messagesNeedsReplyCount)
+              : undefined;
           return (
             <div key={tab.id} className="min-w-0">
               <button
@@ -183,6 +237,7 @@ export default function AdminWorkspace({ role }: Props) {
                 onClick={() => selectTab(tab.id)}
                 data-testid={`admin-tab-${tab.id}`}
                 title={tab.subtitle}
+                aria-label={messagesAriaLabel}
                 className={cx(
                   adminTabButtonBaseClass,
                   isActive ? adminTabActiveClass : adminTabInactiveClass
@@ -204,10 +259,25 @@ export default function AdminWorkspace({ role }: Props) {
                 >
                   {tab.label}
                 </p>
+                {needsReplyBadge ? (
+                  <span
+                    className={adminTabBadgeClass}
+                    aria-hidden="true"
+                    data-testid="admin-tab-messages-needs-reply-badge"
+                    title={`${messagesNeedsReplyCount} messages need reply`}
+                  >
+                    {needsReplyBadge}
+                  </span>
+                ) : null}
               </button>
             </div>
           );
         })}
+        {messagesSummaryStatus === "unavailable" ? (
+          <span className="sr-only" role="status" data-testid="admin-messages-summary-status">
+            Messages needs-reply count unavailable.
+          </span>
+        ) : null}
       </nav>
 
       <div className="mt-5 min-w-0 lg:col-start-1" data-testid="admin-workspace-main">

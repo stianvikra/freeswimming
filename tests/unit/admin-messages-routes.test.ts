@@ -24,6 +24,7 @@ vi.mock("@/lib/analytics/events", () => ({
 }));
 
 import { GET as listMessages } from "@/app/api/admin/messages/route";
+import { GET as getMessagesSummary } from "@/app/api/admin/messages/summary/route";
 import { GET as getMessage, PATCH as patchMessage } from "@/app/api/admin/messages/[id]/route";
 
 function applyResponseCookiesIdentity<T>(response: T): T {
@@ -130,6 +131,25 @@ describe("admin messages routes", () => {
     expect(payload).toEqual({ ok: false, error: "Unauthorized." });
   });
 
+  it("fails closed for unauthenticated summary access", async () => {
+    requireAdminRoleFromSupabaseMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      error: "Unauthorized.",
+    });
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from: vi.fn() },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getMessagesSummary();
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toEqual({ ok: false, error: "Unauthorized." });
+  });
+
   it("returns setup guidance instead of throwing when message schema is not ready", async () => {
     const listChain = buildQueryChain({
       data: null,
@@ -160,6 +180,43 @@ describe("admin messages routes", () => {
       ok: true,
       schemaReady: false,
       items: [],
+    });
+    expect(payload.warning).toContain("Admin messages");
+  });
+
+  it("returns setup guidance for summary when message schema is not ready", async () => {
+    const summaryResult = {
+      count: null,
+      error: {
+        code: "42P01",
+        message: 'relation "admin_messages" does not exist',
+      },
+    };
+    const summaryChain = buildQueryChain({
+      count: null,
+      error: summaryResult.error,
+    });
+    summaryChain.eq.mockResolvedValueOnce(summaryResult);
+    const from = vi.fn().mockImplementationOnce(() => ({ select: summaryChain.select }));
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getMessagesSummary();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      warning?: string | null;
+      needsReplyCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: false,
+      needsReplyCount: 0,
     });
     expect(payload.warning).toContain("Admin messages");
   });
@@ -211,6 +268,40 @@ describe("admin messages routes", () => {
     expect(listChain.lt).toHaveBeenCalledWith("created_at", "2026-05-06T19:00:00.000Z");
     expect(listChain.limit).toHaveBeenCalledWith(11);
     expect(attemptsChain.in).toHaveBeenCalledWith("message_id", [baseMessage.id]);
+  });
+
+  it("summarizes needs-reply messages without loading message bodies", async () => {
+    const summaryResult = {
+      count: 3,
+      error: null,
+    };
+    const summaryChain = buildQueryChain({
+      count: summaryResult.count,
+      error: summaryResult.error,
+    });
+    summaryChain.eq.mockResolvedValueOnce(summaryResult);
+    const from = vi.fn().mockImplementationOnce(() => ({ select: summaryChain.select }));
+    createRouteHandlerSupabaseClientMock.mockResolvedValueOnce({
+      supabase: { from },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await getMessagesSummary();
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      schemaReady?: boolean;
+      needsReplyCount?: number;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(payload).toMatchObject({
+      ok: true,
+      schemaReady: true,
+      needsReplyCount: 3,
+    });
+    expect(summaryChain.select).toHaveBeenCalledWith("id", { count: "exact", head: true });
+    expect(summaryChain.eq).toHaveBeenCalledWith("status", "needs_reply");
   });
 
   it("rejects invalid message ids before auth lookup", async () => {

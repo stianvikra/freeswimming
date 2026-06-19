@@ -116,6 +116,19 @@ export type AdminMessagesResponse =
       error: string;
     };
 
+export type AdminMessagesSummaryResponse =
+  | {
+      ok: true;
+      role: AdminRole;
+      schemaReady: boolean;
+      warning: string | null;
+      needsReplyCount: number;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type AdminMessageResponse =
   | {
       ok: true;
@@ -140,6 +153,7 @@ type ParseResult<T> =
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 50;
+const ADMIN_MESSAGES_NEEDS_REPLY_BADGE_MAX = 9;
 
 export function selectAdminMessageFields(): string {
   return `
@@ -335,6 +349,23 @@ export function getAdminMessageStatusLabel(status: AdminMessageStatus): string {
     case "deleted":
       return "Deleted";
   }
+}
+
+export function formatAdminMessagesNeedsReplyBadgeCount(count: number): string | null {
+  if (!Number.isFinite(count) || count <= 0) return null;
+  const wholeCount = Math.floor(count);
+  return wholeCount > ADMIN_MESSAGES_NEEDS_REPLY_BADGE_MAX
+    ? `${ADMIN_MESSAGES_NEEDS_REPLY_BADGE_MAX}+`
+    : String(wholeCount);
+}
+
+export function buildAdminMessagesTabAriaLabel(count: number | null): string {
+  if (!count || !Number.isFinite(count) || count <= 0) return "Messages";
+  const wholeCount = Math.floor(count);
+  if (wholeCount > ADMIN_MESSAGES_NEEDS_REPLY_BADGE_MAX) {
+    return `Messages, ${ADMIN_MESSAGES_NEEDS_REPLY_BADGE_MAX} or more need reply`;
+  }
+  return wholeCount === 1 ? "Messages, 1 needs reply" : `Messages, ${wholeCount} need reply`;
 }
 
 export function getAdminMessageDeliveryStatusLabel(status: AdminMessageDeliveryStatus): string {
