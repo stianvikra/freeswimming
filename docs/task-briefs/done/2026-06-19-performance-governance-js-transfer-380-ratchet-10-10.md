@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-performance-governance-js-transfer-380-ratchet-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-19`
@@ -41,6 +41,7 @@ Critical target categories for a `10/10` claim in this brief:
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice does not touch admin editing surfaces or workflows.                                                                                         | explicit scope rationale                                                  | `N/A`                   |
 | Accessibility (a11y)                          | `N/A`        | N/A because this slice does not change rendered UI or accessibility semantics.                                                                                     | explicit non-UI scope rationale                                           | `N/A`                   |
 | Performance (CWV + payloads)                  | `target`     | `npm run test:perf:budgets` passes with JS transfer default `380kb` for `/`, `/plans`, `/course`, and `/my-library`; trend decision is recorded as `tighten`.      | `npm run test:perf:trend` + `npm run test:perf:budgets` + `verify:pre-pr` | `5/5`                   |
+| Performance                                   | `target`     | Alias for the canonical `Performance (CWV + payloads)` target so closeout lint can bind the critical-category shorthand to the same evidence.                      | same as `Performance (CWV + payloads)`                                    | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because no product state, persistence, sync, or local/server data ownership changes.                                                                           | explicit stateless governance-slice rationale                             | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache mode, revalidation trigger, or data freshness behavior changes.                                                                         | explicit scope rationale                                                  | `N/A`                   |
 | Reliability and failure handling              | `supporting` | Supporting only: the perf gate should fail clearly if any core route exceeds the tightened threshold.                                                              | perf budget failure contract remains unchanged + targeted run             | `4/5`                   |
@@ -209,3 +210,24 @@ Critical target categories for a `10/10` claim in this brief:
 - `2026-06-19 | in-progress` - owner approved execution of the planned performance-budget ratchet; branch created from clean `main` at `4ba926a7`; implementation sets JS transfer default `390kb` -> `380kb` and updates canonical perf-governance docs; next: run targeted validation and `npm run verify:pre-pr`.
 - `2026-06-19 | targeted validation` - `npm run test:perf:trend` PASS/recommended `tighten` with `10` weekly green runs and `17.8%` worst margin; `npm run lint:quality-gates` PASS; `npm run lint:briefs:all` PASS including this new brief; safe dummy-Supabase `npm run build` PASS; safe dummy-Supabase `npm run test:perf:budgets` PASS with JS medians `/` `282.0kb`, `/plans` `283.7kb`, `/course` `320.5kb`, `/my-library` `281.6kb`, worst margin `15.7%` under the new `380kb` threshold; next: run `npm run verify:pre-pr`.
 - `2026-06-19 | pre-pr gate` - safe dummy-Supabase `npm run verify:pre-pr` PASS full lane from `origin/main@4ba926a7`; evidence log `artifacts/test-runs/20260619-071441/verify.log`; included branch-current, migration drift skip, quality gates, admin/env/pr-body lint, ESLint with existing output-script warnings only, typecheck, `249` unit files / `1625` tests, build, perf budgets with `/course` JS `320.5kb` and worst margin `15.7%`, and Playwright E2E `111` passed / `567` skipped in local public dummy-env; next: commit, push, open PR, monitor CI, then run `npm run verify:pre-merge`.
+- `2026-06-19 | merged` - PR #1169 merged to `main` as squash commit `f66c3339b18b330843cf71df9aa393a5ee9ef75c`; CI PASS for `verify`, `e2e-smoke`, `site-lock-smoke`, CodeQL, Vercel, Vercel Preview Comments, deploy-preview, and size-check; safe dummy-Supabase `npm run verify:pre-merge` PASS full lane with branch-current, full verification, perf budgets at `380kb`, and Playwright E2E `111` passed / `567` skipped; post-merge preflight requested docs-only closeout only.
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1169`
+- `squash_commit`: `f66c3339b18b330843cf71df9aa393a5ee9ef75c`
+- `result`: Closed Performance Governance JS Transfer 380 Ratchet. The default public core-route JS transfer budget now fails at `380kb` instead of `390kb`, with governance docs aligned to the `2026-06-19` tighten decision.
+- `validation`: `npm run test:perf:trend` PASS; safe dummy-Supabase `npm run test:perf:budgets` PASS with `/course` JS `320.5kb` and worst margin `15.7%`; `npm run lint:briefs:all` PASS; `npm run verify:pre-pr` PASS full lane; PR #1169 CI PASS; safe dummy-Supabase `npm run verify:pre-merge` PASS full lane.
+- `10/10 claim`: yes - all critical target categories reached `5/5` within the scoped performance-governance slice.
+
+| Category                            | Achieved Score | Evidence                                                                                                                                      | Gaps / Notes                                  |
+| ----------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Product goals and IA                | `5/5`          | One scoped governance outcome shipped: JS transfer default `390kb` -> `380kb`; no IA or workflow change.                                      | No gap.                                       |
+| Performance (CWV + payloads)        | `5/5`          | `npm run test:perf:budgets` PASS at `380kb`; route medians stayed below threshold with worst margin `15.7%`.                                  | No gap; wait for two new weekly green cycles. |
+| Performance                         | `5/5`          | Alias row for the critical-category parser; same evidence as `Performance (CWV + payloads)`.                                                  | No gap.                                       |
+| Content governance                  | `5/5`          | Performance runbook, maintenance cadence, testing strategy, testing coverage scorecard, and this closeout record state the new budget.        | No gap.                                       |
+| Stack-fit and dependency discipline | `5/5`          | Existing perf-budget script and docs were reused; no new dependency, route, runtime system, or measurement framework added.                   | No gap.                                       |
+| Testing and QA automation           | `5/5`          | `lint:briefs:all`, `verify:pre-pr`, PR #1169 CI, and `verify:pre-merge` all passed.                                                           | No gap.                                       |
+| Scalability and cost efficiency     | `5/5`          | The tighter threshold catches future JS growth earlier while preserving the documented `15%` practical headroom rule on latest route metrics. | No gap.                                       |
+| DevOps and rollback readiness       | `5/5`          | Rollback remains a one-line threshold reversal from `380kb` to `390kb` plus docs note; no migration, data cleanup, or release choreography.   | No gap.                                       |
