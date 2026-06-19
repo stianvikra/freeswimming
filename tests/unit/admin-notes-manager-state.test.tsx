@@ -279,6 +279,35 @@ describe("AdminNotesManager state rendering", () => {
     expect(screen.getByRole("button", { name: "Save note" }).className).toContain("fs-cta-primary");
   });
 
+  it("progressively reveals low-frequency create helpers without hiding their actions", async () => {
+    installFetchMock();
+
+    render(<AdminNotesManager />);
+
+    await screen.findByText("Primary note");
+    const createForm = screen.getByTestId("admin-notes-create-form");
+
+    expect(within(createForm).queryByRole("button", { name: "Use P1 template" })).toBeNull();
+    expect(
+      within(createForm).queryByRole("button", { name: "Paste image from clipboard" })
+    ).toBeNull();
+    expect(within(createForm).queryByTestId("admin-note-create-context-type")).toBeNull();
+
+    fireEvent.click(within(createForm).getByRole("button", { name: /Incident quick templates/ }));
+    fireEvent.click(within(createForm).getByRole("button", { name: "Use P1 template" }));
+    expect(within(createForm).getByLabelText("Category")).toHaveValue("Incident P1");
+
+    fireEvent.click(within(createForm).getByRole("button", { name: /Image \(optional\)/ }));
+    expect(
+      within(createForm).getByRole("button", { name: "Paste image from clipboard" })
+    ).toBeVisible();
+    expect(within(createForm).getByLabelText("Upload images")).toBeInTheDocument();
+
+    fireEvent.click(within(createForm).getByRole("button", { name: /Attach to \(optional\)/ }));
+    expect(within(createForm).getByTestId("admin-note-create-context-type")).toBeVisible();
+    expect(within(createForm).getByLabelText("Selected target")).toBeDisabled();
+  });
+
   it("announces create action errors politely without changing the payload", async () => {
     const fetchMock = installFetchMock({
       notesResponses: [

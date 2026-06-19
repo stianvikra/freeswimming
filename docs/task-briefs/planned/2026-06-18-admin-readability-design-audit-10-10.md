@@ -273,9 +273,13 @@ Planned child selected first by that audit:
 
 - `docs/task-briefs/planned/2026-06-19-admin-notes-open-count-navigation-indicator-10-10.md`
 
-Planned follow-up child from the same audit:
+Active follow-up child from the same audit:
 
-- `docs/task-briefs/planned/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-19-admin-notes-create-form-density-progressive-reveal-10-10.md`
+
+Additional planned Notes access child from owner follow-up:
+
+- `docs/task-briefs/planned/2026-06-19-admin-notes-floating-quick-access-10-10.md`
 
 Current boundary:
 
