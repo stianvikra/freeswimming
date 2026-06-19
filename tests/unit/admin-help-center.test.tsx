@@ -110,6 +110,13 @@ describe("AdminHelpCenter", () => {
     expect(screen.getByText("Change role:")).toBeVisible();
     expect(screen.getByText("Status actions:")).toBeVisible();
 
+    openDetailsSection("How Messages work");
+    expect(screen.getByText("Messages badge means Needs reply")).toBeVisible();
+    expect(screen.getByText(/not an unread counter/i)).toBeVisible();
+    expect(
+      screen.getAllByText(/normal email inbox remains the v1 reply workspace/i).length
+    ).toBeGreaterThanOrEqual(1);
+
     openDetailsSection("How the Content page works");
     expect(screen.getByText("Lesson fields editor")).toBeVisible();
     expect(screen.getByText(/Edit lesson keeps public fields first/i)).toBeVisible();

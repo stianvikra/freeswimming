@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AdminWorkspace from "@/components/admin/AdminWorkspace";
 
@@ -46,10 +46,12 @@ describe("AdminWorkspace shell", () => {
     pathnameValue.current = "/admin";
     searchParamsValue.current = "";
     replaceMock.mockClear();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(0)));
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
@@ -172,4 +174,70 @@ describe("AdminWorkspace shell", () => {
       "#change-log"
     );
   });
+
+  it("shows a Messages needs-reply badge from the shell summary count", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(3)));
+
+    render(<AdminWorkspace role="admin" />);
+
+    const messagesTab = screen.getByTestId("admin-tab-messages");
+    const badge = await screen.findByTestId("admin-tab-messages-needs-reply-badge");
+
+    expect(badge).toHaveTextContent("3");
+    expect(messagesTab).toHaveAttribute("aria-label", "Messages, 3 need reply");
+    expect(fetch).toHaveBeenCalledWith("/api/admin/messages/summary", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+  });
+
+  it("caps the Messages needs-reply badge without hiding the accessible meaning", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryResponse(12)));
+
+    render(<AdminWorkspace role="admin" />);
+
+    const messagesTab = screen.getByTestId("admin-tab-messages");
+    const badge = await screen.findByTestId("admin-tab-messages-needs-reply-badge");
+
+    expect(badge).toHaveTextContent("9+");
+    expect(messagesTab).toHaveAttribute("aria-label", "Messages, 9 or more need reply");
+  });
+
+  it("fails quiet when the Messages summary count is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(summaryErrorResponse()));
+
+    render(<AdminWorkspace role="admin" />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("admin-tab-messages-needs-reply-badge")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("admin-messages-summary-status")).toHaveTextContent(
+      "Messages needs-reply count unavailable."
+    );
+    expect(screen.getByTestId("admin-tab-messages")).toHaveAttribute("aria-label", "Messages");
+  });
 });
+
+function summaryResponse(needsReplyCount: number) {
+  return {
+    ok: true,
+    json: async () => ({
+      ok: true,
+      role: "admin",
+      schemaReady: true,
+      warning: null,
+      needsReplyCount,
+    }),
+  };
+}
+
+function summaryErrorResponse() {
+  return {
+    ok: false,
+    json: async () => ({
+      ok: false,
+      error: "Could not load message summary right now.",
+    }),
+  };
+}

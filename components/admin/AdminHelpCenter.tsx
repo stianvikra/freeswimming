@@ -374,6 +374,11 @@ const MESSAGE_WORKFLOW = [
       "Use New, Read, Needs reply, Replied, Archived, and Deleted filters to manage workflow state. Original message content stays immutable except later redaction/delete workflows.",
   },
   {
+    title: "Messages badge means Needs reply",
+    detail:
+      "The Messages menu badge counts active Needs reply rows only. It is not an unread counter and it does not include archived, deleted, replied, or merely new messages.",
+  },
+  {
     title: "Prefer archive before delete",
     detail:
       "Archive is the reversible default for done/no-action messages. Move to Deleted only when you intentionally want it out of the active workflow; restore brings it back as New.",
@@ -1031,7 +1036,7 @@ const DAILY_PLAYBOOKS: Playbook[] = [
   {
     title: "Triage inbound messages",
     steps: [
-      "Open Messages and scan New first.",
+      "Use the Messages menu badge as the Needs reply signal, then open Messages and scan New for fresh intake.",
       "Use Source and Search to find the relevant intake request.",
       "Open detail and confirm stored content plus notification diagnostics.",
       "Move to Needs reply when a human response is required, reply from the normal email inbox, then return and Mark replied.",

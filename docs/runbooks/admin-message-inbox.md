@@ -1,6 +1,6 @@
 # Admin Message Inbox Runbook
 
-Last updated: 2026-05-07
+Last updated: 2026-06-19
 
 ## Purpose
 
@@ -12,11 +12,12 @@ Use this runbook when an operator needs to confirm whether a public intake reque
 - `admin_message_delivery_attempts` is provider diagnostic evidence.
 - Email delivery is not the message system. A disabled or failed notification does not mean the request was lost.
 - For v1, the normal email inbox remains the daily reply workspace. `/admin?tab=messages` is the form-submission safety net and diagnostic view.
+- The admin menu Messages badge counts active `Needs reply` rows only. It is not an unread counter and does not count `New`, `Read`, `Replied`, `Archived`, or `Deleted` rows.
 
 ## Triage
 
-1. Open `/admin?tab=messages`.
-2. Start with the `New` filter, then use `Source` and search by submitter or message excerpt.
+1. Use the Messages menu badge as the `Needs reply` signal, then open `/admin?tab=messages`.
+2. Start with the `New` filter for fresh intake, then use `Source` and search by submitter or message excerpt.
 3. Open the message detail and verify stored content, structured intake, and request diagnostics.
 4. If a response is needed, set `Needs reply`, use `Open hello inbox` to open the One.com inbox in a new tab, and reply from email.
 5. After replying in email, mark the row `Replied`.
