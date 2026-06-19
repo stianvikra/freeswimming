@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-18-admin-messages-menu-new-message-indicator-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
 - `updated`: `2026-06-19`
@@ -189,3 +189,55 @@ Required and included in this slice because the admin navigation now exposes a s
 - `2026-06-19 | pre-pr-green | npm run verify:pre-pr passed on full lane: lint/quality gates, typecheck, unit, build, perf-budget, and Playwright completed with 111 passed and 567 skipped locally; perf-budget trend recommended tightening one stretch target after consecutive green runs, but this PR holds performance budgets unchanged because the active scope is the admin Messages indicator and records the tighten decision as a follow-up prompt in the PR summary | next: commit, push, open PR, monitor CI, run npm run verify:pre-merge, then merge if green`
 - `2026-06-19 | ci-blocker-fix | PR #1167 CI showed deploy-preview failed only at Vercel upload with api-upload-free limit after local verify:pre-pr and other CI checks were green; patched .github/workflows/vercel-preview.yml to use vercel deploy --prebuilt --archive=tgz --token, matching the Vercel CLI recommendation; no product-rendering files changed after final screenshot capture | next: rerun relevant local gates, commit workflow fix, refresh PR, and monitor CI again`
 - `2026-06-19 | workflow-pre-pr-green | npm run verify:pre-pr passed again on full lane after the Vercel preview archive upload workflow patch: lint/quality gates, typecheck, unit, build, perf-budget, and Playwright completed with 111 passed and 567 skipped locally; perf-budget still recommends tightening one stretch target and remains a separate follow-up decision outside this PR | next: commit workflow fix, refresh PR #1167, monitor CI, run npm run verify:pre-merge, then merge if green`
+- `2026-06-19 | merged | PR #1167 merged after CI was green and npm run verify:pre-merge passed; squash commit 9f6cb8ee1148049ecce2443f6f30b66082f8a91b is on main and post-merge:preflight surfaced this repo-managed docs-only closeout | next: close this brief in done with completion evidence`
+
+## Completion Record
+
+- `completed`: `2026-06-19`
+- `merged_pr`: `#1167`
+- `squash_commit`: `9f6cb8ee1148049ecce2443f6f30b66082f8a91b`
+- `result`: Closed the admin Messages navigation indicator by adding a privacy-safe `Needs reply` badge, admin-gated aggregate summary route, Help/runbook wording, targeted tests, and a Vercel preview upload hardening fix.
+- `validation`: Targeted Vitest suite passed with 29 tests, `npm run typecheck` passed, `npm run lint:briefs -- --all` passed, `git diff --check` passed, screenshot handoff was approved, `npm run verify:pre-pr` passed twice on the full lane, PR #1167 CI passed, and `npm run verify:pre-merge` passed with 111 Playwright tests passed and 567 skipped.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; no target category remains below the release gate.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Admin workflow and editability
+- Incident response and support operations
+- i18n operational readiness
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- Scalability and cost efficiency
+- DevOps and rollback readiness
+
+Canonical accessibility and performance targets also confirmed in the score table: `Accessibility (a11y)` and `Performance (CWV + payloads)` are both `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                             | Gaps / Notes                                                                 |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1167 implemented the owner-approved `needs_reply` indicator only, with Help/runbook wording and residual-intake scope alignment. | No gap.                                                                      |
+| UX flow clarity                               | `5/5`          | Shell tests and Help/runbook copy distinguish `Needs reply` from unread/new semantics and preserve the e-mail-first reply model.     | No gap.                                                                      |
+| Visual design quality                         | `5/5`          | Approved after/reference screenshot handoff covers desktop/mobile badge and zero-count reference states.                             | No product-rendering files changed after screenshot capture.                 |
+| Business logic correctness and data integrity | `5/5`          | Route tests cover aggregate count, schema-missing fallback, and deterministic status filtering without message payload loading.      | No gap.                                                                      |
+| Accessibility (a11y)                          | `5/5`          | Shell tests assert accessible tab labels for zero, count, capped `9+`, and error states.                                             | No gap.                                                                      |
+| Performance (CWV + payloads)                  | `5/5`          | Summary route returns count only, is `no-store`, and shell fetches once without polling; full pre-pr/pre-merge gates passed.         | Stretch-budget tighten prompt remains a separate platform hygiene follow-up. |
+| Data placement and sync boundaries            | `5/5`          | Brief and implementation keep message status server-canonical and shell count read-only/local.                                       | No gap.                                                                      |
+| Caching and invalidation strategy             | `5/5`          | `force-dynamic`/`no-store` route plus page-load-only refresh behavior is documented and tested.                                      | No gap.                                                                      |
+| Reliability and failure handling              | `5/5`          | Missing schema fails to count `0`; read failures return generic `500`; shell fails quiet without false badge certainty.              | No gap.                                                                      |
+| Security and authz                            | `5/5`          | Summary route is admin viewer-gated with deterministic unauthenticated/unauthorized coverage.                                        | No gap.                                                                      |
+| Privacy and compliance                        | `5/5`          | Shell receives aggregate count only; no body, e-mail, metadata, or diagnostics are exposed in the nav.                               | No gap.                                                                      |
+| Admin workflow and editability                | `5/5`          | Badge improves triage discovery while preserving existing Messages manager and e-mail reply workflow.                                | No gap.                                                                      |
+| Incident response and support operations      | `5/5`          | Admin Help and runbook now define the badge as a support triage signal for active messages needing reply.                            | No gap.                                                                      |
+| i18n operational readiness                    | `5/5`          | Count display is compact/capped and accessible labels are centralized in helper functions for future copy/localization changes.      | No gap.                                                                      |
+| Stack-fit and dependency discipline           | `5/5`          | Reused AdminWorkspace/admin message contracts, added no dependency, and kept the fix within Next/TypeScript/Tailwind patterns.       | No gap.                                                                      |
+| Testing and QA automation                     | `5/5`          | Targeted route/shell/Help tests, full `verify:pre-pr`, CI, and `verify:pre-merge` passed.                                            | No gap.                                                                      |
+| Scalability and cost efficiency               | `5/5`          | Count-only summary avoids loading all messages and explicitly avoids polling cost in this slice.                                     | No gap.                                                                      |
+| DevOps and rollback readiness                 | `5/5`          | No data migration or schema change is required; Vercel deploy upload now uses `--archive=tgz` and can be reverted independently.     | No gap.                                                                      |
