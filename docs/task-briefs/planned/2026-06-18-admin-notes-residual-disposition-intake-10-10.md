@@ -6,17 +6,17 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-06-18`
-- `updated`: `2026-06-18`
+- `updated`: `2026-06-19`
 - `execution_mode`: `plan only; captures live admin notes without runtime implementation`
 - `parent`: `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-18`
-- `base`: `main@a0a63d58`
+- `last_audited`: `2026-06-19`
+- `base`: `main@78a44ec1`
 - `audit_status`: `captured-and-source-notes-closed`
-- `decision`: Use this as the residual admin-note intake after PR `#1157` and closeout PR `#1158`; six live source notes were closed after owner approval because they are captured in audited repo briefs. Child implementation still requires its own pre-execution audit.
-- `reason`: A read-only live admin-note query on `2026-06-18` found six open notes that are not yet captured in a current planned child after the lesson editor, Help/Guide, and Analytics slices closed.
+- `decision`: Keep this as a closed residual intake; all admin-note children listed here are done except the separate pass-criteria scoring decision, and current admin-readability work returns to the parent audit.
+- `reason`: PR `#1167` and closeout PR `#1168` closed the Messages needs-reply child; the `2026-06-19` parent re-audit selected a new Operations support-copy child that is not sourced from the six residual notes.
 - `must_refresh_before_execution_if`: Refresh if `AdminWorkspace`, `AdminNoteQuickCaptureLauncher`, `AdminContentManager`, `AdminMessagesManager`, course lesson renderer, pass-criteria model, admin notes schema/status behavior, screenshot rules, or scorecard categories change before a child starts.
 
 ## Goal
@@ -51,12 +51,14 @@ Live query on `2026-06-18` returned six open notes. Bodies were used only to cla
 | Priority | Child Brief                                                                                           | Notes Covered          | Classification                   | Why                                                                                                                                     |
 | -------- | ----------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | 1        | `docs/task-briefs/done/2026-06-18-admin-shell-mobile-discoverability-and-quick-note-context-10-10.md` | `a4677939`, `89eacfbc` | `done`                           | Closed by PR `#1160` and closeout PR `#1161`: mobile exposes all admin tabs and Quick note context warning is clearer.                  |
-| 2        | `docs/task-briefs/in-progress/2026-06-18-admin-content-mirror-and-status-action-density-10-10.md`     | `a4677939`             | `bounded implementation child`   | Active next child: keeps Content-specific mirror/status action density out of the completed shell nav slice.                            |
+| 2        | `docs/task-briefs/done/2026-06-18-admin-content-mirror-and-status-action-density-10-10.md`            | `a4677939`             | `done`                           | Closed by PR `#1162` and closeout PR `#1163`: Content mirror/status density was reduced without changing lifecycle semantics.           |
 | 3        | `docs/task-briefs/done/2026-06-18-course-lesson-coach-check-and-action-clarity-followups-10-10.md`    | `63d7037f`, `46eae589` | `done`                           | Closed by PR `#1164`: Ready check owns completion, Coach check copy/layout is clearer, and stale Common mistakes coverage was replaced. |
 | 4        | `docs/task-briefs/planned/2026-06-18-course-lesson-pass-criteria-scoring-decision-10-10.md`           | `2832e67b`             | `deferred architecture decision` | Scoring/percent/color semantics affect completion logic and should not be folded into admin shell work.                                 |
-| 5        | `docs/task-briefs/in-progress/2026-06-18-admin-messages-menu-new-message-indicator-10-10.md`          | `833d64f7`             | `bounded implementation child`   | Owner selected `needs_reply` active-message semantics, a tiny summary endpoint, and no polling/unread model for this slice.             |
+| 5        | `docs/task-briefs/done/2026-06-18-admin-messages-menu-new-message-indicator-10-10.md`                 | `833d64f7`             | `done`                           | Closed by PR `#1167` and closeout PR `#1168`: Messages uses `needs_reply` aggregate badge semantics, not unread/new semantics.          |
 
-Recommended next implementation candidate after owner audit approval: `admin-content-mirror-and-status-action-density`.
+Recommended next implementation candidate from this residual intake: none. The remaining residual child is the planned pass-criteria scoring decision, which is a separate product/architecture decision and not an admin-readability UI child.
+
+Recommended admin-readability return path: use `docs/task-briefs/planned/2026-06-18-admin-readability-design-audit-10-10.md` for the current post-merge re-audit before selecting any new admin UI implementation child.
 
 ## Residual Notes Closure Policy
 
@@ -186,8 +188,10 @@ N/A for this intake because no product labels, runtime actions, recovery behavio
 
 ## Checkpoint Log
 
+- `2026-06-19 | parent-reaudit-return | parent admin-readability re-audit on main@78a44ec1 selected a new Operations support-copy compression child that is outside the six captured residual source notes; this intake remains closed except the separate planned pass-criteria scoring decision | next: use the parent admin-readability brief for Operations implementation approval`
 - `2026-06-18 | planned | captured six open live admin notes into a residual intake and split them into five planned child paths after admin lesson editor, Help/Guide, and Analytics closeouts | next: audit/improve briefs before owner-approved source-note closure`
 - `2026-06-18 | planned | owner approved recommended closeout; six listed live source notes were marked done as captured in audited briefs and verified with post-closure query open=0 | next: docs-only local gates, PR, merge when green, then start recommended admin shell mobile child`
 - `2026-06-18 | active-child-refresh | PR #1160 and repo-managed closeout PR #1161 closed the shell/Quick note child; live metadata re-check still shows the six captured note IDs done/open=0; Content mirror/status child moved to in-progress on branch feat/admin-content-mirror-status-density | next: implement the bounded Content density child without reopening source notes`
 - `2026-06-18 | active-child-refresh | PR #1162 and repo-managed closeout PR #1163 closed the Content mirror/status child; course lesson Coach check/action clarity child moved to in-progress on branch feat/course-lesson-action-clarity after owner approved the recommended scope | next: screenshot-reviewed public lesson implementation`
 - `2026-06-18 | child-closed | PR #1164 closed the course lesson Coach check/action clarity child with owner-approved screenshots, full pre-PR/pre-merge gates, and required CI green; non-required deploy-preview hit Vercel upload/rate-limit while the required Vercel status was green | next: remaining planned children stay queued for separate owner audit`
+- `2026-06-19 | status-refresh | PR #1167 and closeout PR #1168 closed the Messages needs-reply indicator child; all residual admin-note implementation children are now done except the planned pass-criteria scoring decision, which remains a separate product/architecture decision | next: return to the admin-readability parent for a current post-merge re-audit before selecting a new admin UI child`

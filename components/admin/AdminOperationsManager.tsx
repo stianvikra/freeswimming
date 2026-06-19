@@ -52,10 +52,15 @@ const secondaryActionClass =
   "fs-cta-secondary inline-flex min-h-10 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const compactSecondaryActionClass =
   "fs-cta-secondary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+const siteLockActionClass = `${compactSecondaryActionClass} w-full sm:w-auto`;
 const primaryActionClass =
   "fs-cta-primary inline-flex min-h-9 items-center justify-center px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 const metadataLabelClass =
   "text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase";
+const supportDetailsClass =
+  "mt-4 rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] bg-white/65 p-3 text-xs leading-5 text-[color:var(--fs-color-muted)]";
+const supportDetailsSummaryClass =
+  "cursor-pointer text-sm font-semibold text-[color:var(--fs-color-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 
 function runtimeFlagLabel(key: string): string {
   return key;
@@ -230,8 +235,8 @@ export default function AdminOperationsManager() {
             </span>
           </div>
           <p className={cx("mt-3", mutedTextClass)}>
-            This lock is read-only in Admin. It is controlled by environment variables in hosting
-            settings for security.
+            Read-only in Admin. Hosting environment variables control access; use the workflow or
+            runbook for planned changes.
           </p>
           <div className="mt-4 grid gap-3 text-xs text-[color:var(--fs-color-muted)] sm:grid-cols-3">
             <p>
@@ -249,22 +254,19 @@ export default function AdminOperationsManager() {
               {formatDuration(siteLock.sessionMaxAgeSeconds)}
             </p>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
             <a
               href={SITE_LOCK_WORKFLOW_URL}
               target="_blank"
               rel="noreferrer"
-              className={compactSecondaryActionClass}
+              className={siteLockActionClass}
             >
               Open lock operations workflow
             </a>
-            <Link href="/preview-access?next=%2Fadmin" className={compactSecondaryActionClass}>
+            <Link href="/preview-access?next=%2Fadmin" className={siteLockActionClass}>
               Open unlock page
             </Link>
-            <Link
-              href="/preview-access/clear?next=%2Fadmin"
-              className={compactSecondaryActionClass}
-            >
+            <Link href="/preview-access/clear?next=%2Fadmin" className={siteLockActionClass}>
               Sign out this browser
             </Link>
           </div>
@@ -279,20 +281,23 @@ export default function AdminOperationsManager() {
               docs/runbooks/site-lock-operations.md
             </a>
           </p>
-          <div className="mt-3 space-y-2 text-xs leading-5 text-[color:var(--fs-color-muted)]">
-            <p>
-              Signed-in admins are issued preview access automatically; the shared preview password
-              remains the fallback for non-admin preview access.
-            </p>
-            <p>
-              To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment settings
-              and redeploy.
-            </p>
-            <p>
-              Required env vars: <code>SITE_LOCK_ENABLED</code>,{" "}
-              <code>SITE_LOCK_PASSWORD_HASH</code>, <code>SITE_LOCK_BYPASS_TOKEN</code>.
-            </p>
-          </div>
+          <details className={supportDetailsClass} data-testid="admin-operations-site-lock-details">
+            <summary className={supportDetailsSummaryClass}>View access and env guidance</summary>
+            <div className="mt-3 space-y-2">
+              <p>
+                Signed-in admins are issued preview access automatically; the shared preview
+                password remains the fallback for non-admin preview access.
+              </p>
+              <p>
+                To turn this off: set <code>SITE_LOCK_ENABLED=0</code> in hosting environment
+                settings and redeploy.
+              </p>
+              <p>
+                Required env vars: <code>SITE_LOCK_ENABLED</code>,{" "}
+                <code>SITE_LOCK_PASSWORD_HASH</code>, <code>SITE_LOCK_BYPASS_TOKEN</code>.
+              </p>
+            </div>
+          </details>
         </article>
       ) : null}
 
