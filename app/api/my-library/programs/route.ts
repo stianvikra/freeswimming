@@ -6,6 +6,7 @@ import {
   buildProgramInsert,
   buildProgramSummary,
   PROGRAM_SELECT,
+  syncPlannedWorkoutInstancesForProgram,
   validateProgramWorkoutOwnership,
 } from "@/lib/programs/server";
 import {
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
   const starter = buildManualProgramStarterState();
   const hydratedBody: ProgramSaveRequestBody = {
     title: body?.title ?? starter.title,
+    startsOn: body?.startsOn ?? starter.startsOn,
     weeks: body?.weeks ?? starter.weeks,
     sourceKind: "manual",
   };
@@ -106,6 +108,13 @@ export async function POST(request: Request) {
   }
 
   const program = buildProgramEditorRecord(result.data);
+  const syncResult = await syncPlannedWorkoutInstancesForProgram(supabase, user.id, program);
+  if (!syncResult.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: syncResult.error }, { status: syncResult.status })
+    );
+  }
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,

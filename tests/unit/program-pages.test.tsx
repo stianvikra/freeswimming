@@ -73,6 +73,7 @@ function buildProgramLibrary(): ProgramLibrarySnapshot {
       updatedAt: "2026-03-25T12:05:00.000Z",
       sourceKind: "manual",
       status: "draft",
+      startsOn: "2026-06-22",
       title: "Manual race prep shell",
       weeks: [{ id: "week-1", label: "Week 1", assignments: [] }],
     },
@@ -81,6 +82,7 @@ function buildProgramLibrary(): ProgramLibrarySnapshot {
       {
         id: programId,
         title: "Manual race prep shell",
+        startsOn: "2026-06-22",
         weekCount: 1,
         assignmentCount: 0,
         updatedAt: "2026-03-25T12:05:00.000Z",

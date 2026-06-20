@@ -25,6 +25,7 @@ function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
     user_id: "user-1",
     source_kind: "manual",
     status: "draft",
+    starts_on: "2026-06-22",
     title: "Manual race prep shell",
     weeks: [
       {
@@ -49,6 +50,7 @@ function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
 function buildProgramBody(overrides?: Partial<ProgramSaveRequestBody>): ProgramSaveRequestBody {
   return {
     title: "Manual race prep shell",
+    startsOn: "2026-06-22",
     weeks: [
       {
         id: "week-1",
@@ -112,10 +114,18 @@ describe("programs routes", () => {
       error: null,
     });
     const workoutsFrom = vi.fn(() => ({ select: selectWorkouts }));
+    const plannedInstancesEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+    const plannedInstancesEqProgram = vi.fn(() => ({ eq: plannedInstancesEqStatus }));
+    const plannedInstancesEqUser = vi.fn(() => ({ eq: plannedInstancesEqProgram }));
+    const plannedInstancesSelect = vi.fn(() => ({ eq: plannedInstancesEqUser }));
+    const plannedInstancesFrom = vi.fn(() => ({ select: plannedInstancesSelect }));
     const programsFrom = vi.fn(() => ({ insert }));
     const from = vi.fn((table: string) => {
       if (table === "workouts") {
         return workoutsFrom();
+      }
+      if (table === "planned_workout_instances") {
+        return plannedInstancesFrom();
       }
       if (table === "programs") {
         return programsFrom();
@@ -155,6 +165,7 @@ describe("programs routes", () => {
         user_id: "user-1",
         source_kind: "manual",
         status: "draft",
+        starts_on: expect.any(String),
         title: "New program",
       })
     );
@@ -264,6 +275,12 @@ describe("programs routes", () => {
     const eqUserPrograms = vi.fn(() => ({ eq: eqProgramId }));
     const update = vi.fn(() => ({ eq: eqUserPrograms }));
 
+    const plannedInstancesEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
+    const plannedInstancesEqProgram = vi.fn(() => ({ eq: plannedInstancesEqStatus }));
+    const plannedInstancesEqUser = vi.fn(() => ({ eq: plannedInstancesEqProgram }));
+    const plannedInstancesSelect = vi.fn(() => ({ eq: plannedInstancesEqUser }));
+    const plannedInstancesUpsert = vi.fn().mockResolvedValue({ error: null });
+
     const inClause = vi.fn().mockResolvedValue({
       data: [{ id: "workout-1" }],
       error: null,
@@ -273,6 +290,12 @@ describe("programs routes", () => {
     const from = vi.fn((table: string) => {
       if (table === "programs") {
         return { update };
+      }
+      if (table === "planned_workout_instances") {
+        return {
+          select: plannedInstancesSelect,
+          upsert: plannedInstancesUpsert,
+        };
       }
       if (table === "workouts") {
         return { select: selectWorkouts };
@@ -334,8 +357,23 @@ describe("programs routes", () => {
     expect(response.status).toBe(200);
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
+        starts_on: "2026-06-22",
         title: "Updated manual race prep shell",
       })
+    );
+    expect(plannedInstancesUpsert).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          program_assignment_id: "assignment-1",
+          workout_id: "workout-1",
+          planned_on: "2026-06-24",
+          day_index: 2,
+          status: "planned",
+        }),
+      ],
+      {
+        onConflict: "program_id,program_assignment_id",
+      }
     );
     expect(payload.ok).toBe(true);
     expect(payload.program.title).toBe("Updated manual race prep shell");

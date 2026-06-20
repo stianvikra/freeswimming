@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isProgramSchemaMissing } from "@/lib/programs/schema";
 import {
+  isPlannedWorkoutInstanceSchemaMissing,
+  isProgramSchemaMissing,
+} from "@/lib/programs/schema";
+import {
+  buildProgramAssignmentDate,
   buildManualProgramStarterState,
   countProgramAssignments,
   normalizeProgramForPersistence,
@@ -25,6 +29,8 @@ type TypedSupabaseClient = SupabaseClient<Database>;
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
 type ProgramInsert = Database["public"]["Tables"]["programs"]["Insert"];
 type ProgramUpdate = Database["public"]["Tables"]["programs"]["Update"];
+type PlannedWorkoutInstanceInsert =
+  Database["public"]["Tables"]["planned_workout_instances"]["Insert"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 
 export const PROGRAM_SELECT = `
@@ -32,8 +38,26 @@ export const PROGRAM_SELECT = `
   user_id,
   source_kind,
   status,
+  starts_on,
   title,
   weeks,
+  created_at,
+  updated_at
+`;
+
+export const PLANNED_WORKOUT_INSTANCE_SELECT = `
+  id,
+  user_id,
+  program_id,
+  program_week_id,
+  program_week_index,
+  program_assignment_id,
+  workout_id,
+  planned_on,
+  day_index,
+  position,
+  status,
+  source_kind,
   created_at,
   updated_at
 `;
@@ -51,6 +75,7 @@ export function buildProgramInsert(
   const starter = buildManualProgramStarterState();
   const normalized = normalizeProgramForPersistence({
     title: body?.title ?? starter.title,
+    startsOn: body?.startsOn ?? starter.startsOn,
     weeks: body?.weeks ?? starter.weeks,
   });
 
@@ -62,6 +87,7 @@ export function buildProgramInsert(
     user_id: userId,
     source_kind: sourceKind,
     status: "draft",
+    starts_on: normalized.value.startsOn,
     title: normalized.value.title,
     weeks: programWeeksToJson(normalized.value.weeks),
   };
@@ -74,16 +100,23 @@ export function buildProgramUpdate(body: ProgramSaveRequestBody | null | undefin
   }
 
   return {
+    starts_on: normalized.value.startsOn,
     title: normalized.value.title,
     weeks: programWeeksToJson(normalized.value.weeks),
   };
 }
 
 export function buildProgramEditorRecord(row: ProgramRow): ProgramEditorRecord {
-  const normalized = normalizeProgramForPersistence({
-    title: row.title,
-    weeks: Array.isArray(row.weeks) ? (row.weeks as ProgramEditorRecord["weeks"]) : null,
-  });
+  const normalized = normalizeProgramForPersistence(
+    {
+      title: row.title,
+      startsOn: row.starts_on,
+      weeks: Array.isArray(row.weeks) ? (row.weeks as ProgramEditorRecord["weeks"]) : null,
+    },
+    {
+      requireStartsOn: false,
+    }
+  );
 
   if (!normalized.ok) {
     throw new Error(`Stored program ${row.id} is invalid: ${normalized.error}`);
@@ -95,6 +128,7 @@ export function buildProgramEditorRecord(row: ProgramRow): ProgramEditorRecord {
     updatedAt: row.updated_at,
     sourceKind: row.source_kind as ProgramSourceKind,
     status: row.status as ProgramStatus,
+    startsOn: normalized.value.startsOn,
     title: normalized.value.title,
     weeks: normalized.value.weeks,
   };
@@ -105,12 +139,123 @@ export function buildProgramSummary(row: ProgramRow): ProgramSummary {
   return {
     id: row.id,
     title: editor.title,
+    startsOn: editor.startsOn,
     weekCount: editor.weeks.length,
     assignmentCount: countProgramAssignments(editor.weeks),
     updatedAt: row.updated_at,
     sourceKind: row.source_kind as ProgramSourceKind,
     status: row.status as ProgramStatus,
   };
+}
+
+export function buildPlannedWorkoutInstanceInserts(
+  userId: string,
+  program: ProgramEditorRecord
+): PlannedWorkoutInstanceInsert[] {
+  if (!program.startsOn) return [];
+
+  return program.weeks.flatMap((week, weekIndex) =>
+    week.assignments.map((assignment) => ({
+      user_id: userId,
+      program_id: program.id,
+      program_week_id: week.id,
+      program_week_index: weekIndex,
+      program_assignment_id: assignment.id,
+      workout_id: assignment.workoutId,
+      planned_on: buildProgramAssignmentDate(program.startsOn!, weekIndex, assignment.dayIndex),
+      day_index: assignment.dayIndex,
+      position: assignment.position,
+      status: "planned",
+      source_kind: "program_assignment",
+    }))
+  );
+}
+
+export async function syncPlannedWorkoutInstancesForProgram(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  program: ProgramEditorRecord
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const nextInstances = buildPlannedWorkoutInstanceInserts(userId, program);
+  const existingResult = await supabase
+    .from("planned_workout_instances")
+    .select("id, program_assignment_id")
+    .eq("user_id", userId)
+    .eq("program_id", program.id)
+    .eq("status", "planned");
+
+  if (isPlannedWorkoutInstanceSchemaMissing(existingResult.error)) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Program calendar planning is still syncing in this environment.",
+    };
+  }
+
+  if (existingResult.error) {
+    console.error("[Programs] Could not load planned workout instances for sync", {
+      programId: program.id,
+      error: existingResult.error,
+    });
+    return { ok: false, status: 500, error: "Could not update planned calendar sessions." };
+  }
+
+  if (nextInstances.length > 0) {
+    const upsertResult = await supabase.from("planned_workout_instances").upsert(nextInstances, {
+      onConflict: "program_id,program_assignment_id",
+    });
+
+    if (isPlannedWorkoutInstanceSchemaMissing(upsertResult.error)) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Program calendar planning is still syncing in this environment.",
+      };
+    }
+
+    if (upsertResult.error) {
+      console.error("[Programs] Could not upsert planned workout instances", {
+        programId: program.id,
+        error: upsertResult.error,
+      });
+      return { ok: false, status: 500, error: "Could not update planned calendar sessions." };
+    }
+  }
+
+  const nextAssignmentIds = new Set(
+    nextInstances.map((instance) => instance.program_assignment_id)
+  );
+  const staleInstanceIds = (existingResult.data ?? [])
+    .filter((row) => !nextAssignmentIds.has(row.program_assignment_id))
+    .map((row) => row.id);
+
+  if (staleInstanceIds.length > 0) {
+    const deleteResult = await supabase
+      .from("planned_workout_instances")
+      .delete()
+      .eq("user_id", userId)
+      .eq("program_id", program.id)
+      .eq("status", "planned")
+      .in("id", staleInstanceIds);
+
+    if (isPlannedWorkoutInstanceSchemaMissing(deleteResult.error)) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Program calendar planning is still syncing in this environment.",
+      };
+    }
+
+    if (deleteResult.error) {
+      console.error("[Programs] Could not delete stale planned workout instances", {
+        programId: program.id,
+        error: deleteResult.error,
+      });
+      return { ok: false, status: 500, error: "Could not update planned calendar sessions." };
+    }
+  }
+
+  return { ok: true };
 }
 
 export async function validateProgramWorkoutOwnership(

@@ -1251,7 +1251,7 @@ describe("HabitPerfectDayHub", () => {
     const analysisLink = screen.getByRole("link", { name: "View Habits analysis" });
     expect(analysisLink).toHaveAttribute(
       "href",
-      "/my-library/calendar?source=habits&period=week&date=2026-05-10"
+      "/my-library/calendar?view=compare&source=habits&period=week&date=2026-05-10"
     );
     expect(analysisLink).toHaveClass("h-11", "w-11");
     expect(screen.getByRole("button", { name: "Show Weekly Overview" })).toHaveClass(
@@ -2956,7 +2956,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(card).queryByText("Before reset")).toBeNull();
     expect(within(card).getByRole("link", { name: "Calendar Comparison" })).toHaveAttribute(
       "href",
-      "/my-library/calendar?source=habits&period=week&date=2026-05-10"
+      "/my-library/calendar?view=compare&source=habits&period=week&date=2026-05-10"
     );
 
     const detailsActions = screen.getByTestId(
@@ -2972,7 +2972,7 @@ describe("HabitPerfectDayHub", () => {
     expect(within(confirm).getByText(/Motivation stats restart from May 10/)).toBeVisible();
     expect(within(confirm).getByRole("link", { name: "Calendar Comparison" })).toHaveAttribute(
       "href",
-      "/my-library/calendar?source=habits&period=week&date=2026-05-10"
+      "/my-library/calendar?view=compare&source=habits&period=week&date=2026-05-10"
     );
 
     fireEvent.click(within(confirm).getByRole("button", { name: "Reset stats" }));

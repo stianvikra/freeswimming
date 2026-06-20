@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-20`
-- `base`: `main@3891d188`
+- `base`: `main@1b8f87da`
 - `audit_status`: `ready`
 - `decision`: Use this refreshed brief as the parent contract only; create a narrower child brief before runtime implementation.
-- `reason`: Current `main` already has canonical programs, `/my-library/programs/[programId]`, program export, and `/my-library/calendar` as a private comparison report. The next safe calendar step is a bounded `Plan` view inside the existing calendar route, while completion/history remains owned by the separate training-history brief.
+- `reason`: Current `main` already has canonical programs, `/my-library/programs/[programId]`, program export, and `/my-library/calendar` as a private comparison report. The next safe calendar step is a bounded `Plan` view inside the existing calendar route with a persisted program start-date anchor, while completion/history remains owned by the separate training-history brief.
 - `must_refresh_before_execution_if`: Refresh again if `app/my-library/calendar/page.tsx`, `components/my-library/CalendarPeriodComparisonHub.tsx`, `components/my-library/programs/ProgramBuilderHub.tsx`, `lib/my-library/calendar*.ts`, `lib/programs/*`, `docs/quality/platform-10-10-scorecard.md`, Help/Guide contracts, route labels, verification lanes, or training-history scope change before a child slice starts.
 
 ## Goal
@@ -51,9 +51,14 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
   - `/my-library/calendar?view=compare` for the existing trend comparison report.
 - The calendar may show both planned and actual layers later, but it must not become the source of truth for actual completion.
 - Planned sessions come from canonical saved programs and assignments.
+- Program-level calendar anchoring should use a server-canonical start date and planned workout instances before later completion/history work depends on planned dates.
 - Actual outcomes come from canonical training-history entries when that slice exists.
 - Program-builder remains the edit/create surface for scheduling workouts into week/day slots.
 - Calendar `Plan` view should link users back to the relevant program/workout editor for edits rather than duplicating all editor controls.
+- Desktop should move toward a Garmin-style month overview once planned instance identity exists, with the selected day/week opening denser details instead of cramming every action into each month cell.
+- Mobile should stay day/week-first so controls remain readable and reachable.
+- Today must become a first-class calendar concept: mark today, provide a "Go to today" affordance when outside the current window, and avoid date math based on labels.
+- Micro sessions, habits, and Perfect Day belong as calendar layers/summaries after their canonical completed/summary data contracts are explicit; they should not be folded into swim-plan rows.
 
 ## Recommended First Child Slice
 
@@ -64,8 +69,10 @@ Suggested child path:
 First child scope:
 
 - Add a `Plan` view/mode to existing `/my-library/calendar`.
+- Add a persisted `programs.starts_on` calendar anchor so program week 1 has a real Monday start date.
+- Materialize planned workout instances from existing program assignments so each calendar occurrence has a stable row.
 - Reuse existing calendar date/window helpers and program-builder contracts.
-- Show planned swim sessions from canonical saved programs for the selected week.
+- Show planned swim sessions from canonical planned instances whose `planned_on` dates land in the selected week.
 - Keep the current comparison report available as `Compare`.
 - Show an explicit "history not connected yet" or equivalent empty/waiting state for actual outcomes.
 - Link edit actions to existing program/workout surfaces.
@@ -74,8 +81,40 @@ First child scope:
 Why this is the safe first step:
 
 - It gives the owner a useful swim comeback planning view for the week beginning Monday, June 22, 2026.
-- It reuses the shipped program foundation instead of creating parallel schedule state.
+- It reuses the shipped program foundation and adds a durable date anchor plus planned instances instead of relying on temporary display-only schedule state.
+- The frontend is still closed and there are no live users, so the small nullable migration is lower risk now than after history/reminders depend on plan dates.
 - It leaves the higher-risk planned-vs-actual truth to the history foundation brief.
+
+## Child Roadmap And Dependency Table
+
+| Child | Working title                                        | Owner scope                                                                                                                                                                                          | Depends on                                                                                                  | Must not include                                                               |
+| ----- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `A`   | Calendar Plan Anchor And Swim Comeback Week          | Add `programs.starts_on`, materialize `planned_workout_instances` from program week/day assignments, add `/my-library/calendar?view=plan`, preserve `Compare`, and show history-not-connected state. | canonical program foundation                                                                                | completion mutation, Garmin sync, AI generation, ad hoc per-instance overrides |
+| `B`   | Desktop Month Overview And Today Marker              | Add desktop month overview, today marker, "Go to today", selected-day detail, and mobile week/day fallback using existing planned instances.                                                         | Child `A`                                                                                                   | completion mutation, Garmin sync, habits/micro/Perfect Day layers              |
+| `C`   | Planned Instance Edit And Status Actions             | Let users edit, move, skip, delete, and recover planned-only instances before completion, with explicit status and rename/repurpose rules.                                                           | Child `A`; Child `B` if month/day-detail placement is used                                                  | actual completion events, provider sync, recurring drag/drop                   |
+| `D`   | Completion Events And Manual Mark Done               | Add canonical completed activity events, manual "mark as done", planned-vs-completed linkage, and safe status rendering.                                                                             | Child `A`; training-history brief                                                                           | Garmin reconciliation, habits aggregation, finance/admin dashboards            |
+| `E`   | Calendar Daily Layers For Micro, Habits, Perfect Day | Add compact daily calendar layers for completed micro sessions, habits overview, and Perfect Day score using each source's canonical summary contract.                                               | Child `D` or explicit source contracts for completed events/daily summaries                                 | editing source details inside calendar, provider sync                          |
+| `F`   | Plan Vs Actual Reconciliation And Insights           | Match planned sessions to actual outcomes, show missed/rescheduled/completed states, and add bounded overload/hole signals.                                                                          | Child `D`; Child `E` for cross-layer daily summaries                                                        | changing program/workout identity, Garmin delivery                             |
+| `G`   | Garmin Plan Export Or Sync                           | Send planned workouts/programs to Garmin and reconcile imported provider activities only when partner/API scope, auth, mapping, idempotency, and support diagnostics are concrete.                   | Garmin partner brief unblocked, Child `A`; likely Child `D`/`F` for completion and reconciliation semantics | blocked partner assumptions, importing activities without history contract     |
+
+Forward-compatibility intent: Child `A` must establish `starts_on`, stable program/week/assignment/workout IDs, and `planned_workout_instances.id` so later completion, edit-before-complete, Garmin, reminders, and plan-vs-actual features attach without replacing identity or duplicating schedule truth.
+
+## Calendar Capability Matrix
+
+| Capability                       | Canonical source of truth                                                 | First owning child | UI expectation                                                                                           | Guardrail                                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Planned swim sessions            | `planned_workout_instances` linked to program/week/assignment/workout IDs | `A`                | Week list now; later month/day detail reads the same rows.                                               | No title/date-label identity and no completion truth in planned rows.                       |
+| Today marker and "Go to today"   | Local date normalized through calendar helpers                            | `B`                | Desktop month and mobile week/day clearly mark today and can jump back to it.                            | Do not hardcode the current date; tests use deterministic injected dates.                   |
+| Desktop month overview           | Planned instances plus later activity layers                              | `B`                | Garmin-style month grid for scanning load, gaps, and upcoming sessions.                                  | Month cells stay compact; detailed actions live in day detail or existing editors.          |
+| Selected-day detail              | Planned instances and later source summaries filtered by date             | `B`                | Opens the day's sessions and summary chips with links to source surfaces.                                | Do not duplicate full program/workout/habit editors in the calendar.                        |
+| Edit planned session before done | Planned instance row plus source program/workout IDs                      | `C`                | Move, skip, delete, or revise planned-only sessions before completion.                                   | Completed/history-linked rows need explicit compatibility rules before mutation.            |
+| Status rendering                 | Planned instance status plus completed activity events                    | `C`/`D`            | `planned`, `completed`, `skipped`, `missed`, `rescheduled`, and unknown states render deterministically. | Unknown statuses fail closed and never count as completed.                                  |
+| Manual mark done                 | `completed_activity_events` / training-history contract                   | `D`                | User can mark a planned swim as completed without Garmin.                                                | Actual completion is separate from planned row identity.                                    |
+| Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                        |
+| Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                                 |
+| Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | `E`                | Daily score or badge that helps explain overall day quality.                                             | Score logic stays with Perfect Day owner, not the calendar renderer.                        |
+| Plan-vs-actual insights          | Planned instances plus completed events                                   | `F`                | Missed/rescheduled/completed signals and bounded load/gap indicators.                                    | No provider-specific assumptions; reconcile by canonical IDs/date rules.                    |
+| Garmin export/import/reconcile   | Provider sync tables plus planned/completed canonical records             | `G`                | Sync status, conflicts, and repair affordances after local truth is stable.                              | Official provider docs/SDK, least privilege, idempotency, retries, and support diagnostics. |
 
 ## Dependencies And Boundaries
 
@@ -132,7 +171,7 @@ Critical target categories for a `10/10` claim in implementation child slices:
 | Stack-fit and dependency discipline           | `target`     | Reuse existing Next.js App Router, TypeScript, Supabase, Tailwind, My Library primitives, calendar helpers, and program view-models; add no dependency for calendar basics.           | package diff + architecture review                     | `5/5`                   |
 | Testing and QA automation                     | `target`     | Child implementation includes targeted unit/component tests, auth negative paths where touched, relevant e2e, screenshot handoff for UI, `verify:pre-pr`, CI, and `verify:pre-merge`. | test matrix + gate outputs                             | `5/5`                   |
 | Scalability and cost efficiency               | `supporting` | Supporting only: plan reads should avoid N+1 workout/program loading and stay bounded by selected calendar window.                                                                    | loader review + targeted tests                         | `4/5`                   |
-| DevOps and rollback readiness                 | `target`     | Calendar Plan view can be disabled or reverted without schema migration and without corrupting programs or future history records.                                                    | reversible diff + rollback notes + PR validation       | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | Calendar Plan view and the nullable start-date anchor can be disabled or reverted without corrupting programs, comparison reports, or future history records.                         | reversible diff + rollback notes + PR validation       | `5/5`                   |
 
 ## Stack / Architecture Best-Practice Gate
 
@@ -146,8 +185,9 @@ Critical target categories for a `10/10` claim in implementation child slices:
   - normalize any future `view`, `source`, or `period` params through typed allowlists;
   - unknown values must fail safely to a supported mode or explicit unmapped state.
 - Supabase/data layer:
-  - first child should not require a migration;
-  - read only authenticated user's `programs` and referenced workouts through existing server helpers where possible;
+  - Child `A` uses explicit migrations for nullable `programs.starts_on` and owner-scoped `planned_workout_instances`;
+  - later children must use explicit migrations for completed activity events, source summaries, provider sync rows, and status transitions;
+  - read only authenticated user's programs, planned instances, completed events, summaries, and referenced workouts through owner-scoped server helpers;
   - cross-user references must stay rejected/fail-closed.
 - External services:
   - `N/A`; no Garmin, AI provider, Stripe, Vercel, or external SDK behavior belongs in the first Plan-view child.
@@ -184,6 +224,7 @@ Return path:
 
 - Server-canonical:
   - canonical `programs` rows,
+  - program start-date anchors,
   - nested program week and assignment IDs,
   - referenced canonical workouts,
   - future training-history entries when the history slice exists.
@@ -225,19 +266,27 @@ Return path:
 
 - Extensibility surfaces:
   - calendar modes,
+  - calendar views (`week`, `month`, day detail),
+  - calendar layers,
   - calendar comparison sources,
   - program source kinds,
   - workout/session intents,
   - future history outcome states,
+  - planned instance statuses,
+  - completed activity event source kinds,
   - export formats,
   - analytics event values,
   - localized labels.
 - Source of truth:
   - planned sessions derive from canonical program/workout data;
+  - planned calendar occurrences derive from `planned_workout_instances`;
+  - actual outcomes derive from completed activity events/training-history contracts;
+  - daily layer summaries derive from their owning source contracts;
   - comparison sources derive from `lib/my-library/calendar.ts`;
   - future actual outcomes derive from training-history entries.
 - Additive behavior:
   - new programs, weeks, assignments, and workouts should appear in Plan view automatically when they use canonical program/workout contracts;
+  - new layer source kinds should remain hidden or render as unknown/unmapped until a child explicitly maps their summary contract;
   - new comparison sources should remain isolated to Compare unless explicitly mapped into Plan;
   - new history outcomes should render through a generic actual-status renderer once the history slice exists.
 - Explicit mapping requirements:
@@ -334,7 +383,7 @@ For future implementation children:
 
 - Users can view upcoming planned swim sessions in `/my-library/calendar` without a parallel calendar.
 - The existing comparison report remains available.
-- Planned schedule rows derive from canonical program/workout IDs.
+- Planned schedule rows derive from canonical program start dates, program/week/assignment IDs, and workout IDs.
 - Calendar Plan view does not implement actual completion truth before training-history foundation.
 - Empty, loading, error, schema-sync, and missing-reference states are recoverable and accessible.
 - Relevant tests and screenshot handoff are completed before PR update.
@@ -387,3 +436,6 @@ Future Plan-view child:
 - `2026-03-25 | planning | split the minimal canonical program entity/API/editor bootstrap into the narrower \`docs/task-briefs/done/2026-03-25-canonical-program-foundation-and-library-shell-10-10.md\` so this brief can stay focused on richer planner calendar UX, summaries, and completion/history handoff after the base program surface exists | next: layer planner-specific UX and status behavior on top of the canonical foundation instead of recreating persistence contracts here`
 - `2026-05-01 | roadmap alignment | recorded the owner-driven program model: keep one canonical Program Builder with manual, weekly-pattern, and accepted AI proposal entrypoints; do not store completion truth as planner-local flags; planned days remain flexible guidance while actual done/moved/skipped outcomes come from the training-history brief | next: implement planner improvements only after V1 AI session and relevant history contracts are scoped`
 - `2026-06-20 | docs/calendar-brief-refresh-2026-06-20 | refreshed parent brief against clean \`main@3891d188\`; recorded existing calendar comparison route, canonical program foundation, Plan/Compare IA direction, first bounded Plan-view child, and explicit training-history boundary; no runtime code, performance budgets, scripts, or \`Ja.docx\` changes | next: run brief lint/docs gates, then package docs-only PR`
+- `2026-06-20 | planning | updated roadmap after owner confirmed there are no live users and the closed frontend makes a durable start-date anchor preferable now; parent now names Child A through F so completion/history, plan-vs-actual, edit-before-complete, direct reschedule, and Garmin sync are captured without expanding the first runtime slice | next: execute Child A only after explicit owner implementation instruction`
+- `2026-06-20 | planning | owner chose to make Child A persist planned workout instances now, not just virtual plan rows, because there are no live users and this gives future completion/Garmin/history work a stable row identity | next: complete Child A implementation on feature branch`
+- `2026-06-20 | planning | owner asked how to systematize a 10/10 calendar including desktop month, today marker, micro sessions, habits, Perfect Day, edit-before-done, and Garmin; added calendar capability matrix and expanded roadmap to Child A-G without expanding Child A runtime scope | next: keep Child A focused, then execute Child B/C/D/E briefs in order after approval`

@@ -1443,12 +1443,79 @@ export type Database = {
         };
         Relationships: [];
       };
+      planned_workout_instances: {
+        Row: {
+          created_at: string;
+          day_index: number;
+          id: string;
+          planned_on: string;
+          position: number;
+          program_assignment_id: string;
+          program_id: string;
+          program_week_id: string;
+          program_week_index: number;
+          source_kind: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+          workout_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          day_index: number;
+          id?: string;
+          planned_on: string;
+          position?: number;
+          program_assignment_id: string;
+          program_id: string;
+          program_week_id: string;
+          program_week_index: number;
+          source_kind?: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+          workout_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          day_index?: number;
+          id?: string;
+          planned_on?: string;
+          position?: number;
+          program_assignment_id?: string;
+          program_id?: string;
+          program_week_id?: string;
+          program_week_index?: number;
+          source_kind?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+          workout_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "planned_workout_instances_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "programs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "planned_workout_instances_workout_id_fkey";
+            columns: ["workout_id"];
+            isOneToOne: false;
+            referencedRelation: "workouts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       programs: {
         Row: {
           created_at: string;
           id: string;
           source_kind: string;
           status: string;
+          starts_on: string | null;
           title: string;
           updated_at: string;
           user_id: string;
@@ -1459,6 +1526,7 @@ export type Database = {
           id?: string;
           source_kind: string;
           status: string;
+          starts_on?: string | null;
           title: string;
           updated_at?: string;
           user_id: string;
@@ -1469,6 +1537,7 @@ export type Database = {
           id?: string;
           source_kind?: string;
           status?: string;
+          starts_on?: string | null;
           title?: string;
           updated_at?: string;
           user_id?: string;

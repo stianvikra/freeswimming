@@ -162,9 +162,9 @@ export default function MyLibraryHub({
                   testId="my-library-routines-row"
                   actionClassName={primaryActionClass}
                 />
-                <LibraryShortcut title="Comparison Report" href="/my-library/calendar">
+                <LibraryShortcut title="Calendar" href="/my-library/calendar">
                   <p className={cx("mt-2", mutedTextClass)}>
-                    Compare weeks, months, and years across tracked activity.
+                    Plan saved swim sessions or compare tracked activity.
                   </p>
                 </LibraryShortcut>
                 <LibraryShortcut title="My Swim Profile" href="/my-library/profile" />

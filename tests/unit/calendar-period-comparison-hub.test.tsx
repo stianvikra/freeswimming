@@ -115,11 +115,11 @@ describe("CalendarPeriodComparisonHub", () => {
     expect(screen.getByRole("link", { name: "All" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Month" })).toHaveAttribute(
       "href",
-      "/my-library/calendar?source=all&period=month&date=2026-06-05"
+      "/my-library/calendar?view=compare&source=all&period=month&date=2026-06-05"
     );
     expect(screen.getByRole("link", { name: "Previous" })).toHaveAttribute(
       "href",
-      "/my-library/calendar?source=all&period=week&date=2026-05-29"
+      "/my-library/calendar?view=compare&source=all&period=week&date=2026-05-29"
     );
 
     const habits = screen.getByTestId("calendar-source-habits");

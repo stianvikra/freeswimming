@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/types/database";
-import { loadProgramLibrarySnapshot } from "@/lib/programs/server";
+import {
+  buildPlannedWorkoutInstanceInserts,
+  loadProgramLibrarySnapshot,
+} from "@/lib/programs/server";
 import { WORKOUT_SELECT } from "@/lib/workouts/server";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 
@@ -13,6 +16,7 @@ function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
     user_id: "user-1",
     source_kind: "manual",
     status: "draft",
+    starts_on: "2026-06-22",
     title: "Week 1 base plan",
     weeks: [
       {
@@ -68,6 +72,66 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
 }
 
 describe("programs server", () => {
+  it("materializes planned workout instances from stable program assignment identity", () => {
+    const instances = buildPlannedWorkoutInstanceInserts("user-1", {
+      id: "11111111-1111-4111-8111-111111111111",
+      createdAt: "2026-06-20T10:00:00.000Z",
+      updatedAt: "2026-06-20T10:00:00.000Z",
+      sourceKind: "manual",
+      status: "draft",
+      startsOn: "2026-06-22",
+      title: "Swim comeback",
+      weeks: [
+        {
+          id: "week-1",
+          label: "Week 1",
+          assignments: [
+            {
+              id: "assignment-1",
+              workoutId: "22222222-2222-4222-8222-222222222222",
+              dayIndex: 0,
+              position: 0,
+            },
+          ],
+        },
+        {
+          id: "week-2",
+          label: "Week 2",
+          assignments: [
+            {
+              id: "assignment-2",
+              workoutId: "33333333-3333-4333-8333-333333333333",
+              dayIndex: 3,
+              position: 0,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(instances).toEqual([
+      expect.objectContaining({
+        user_id: "user-1",
+        program_id: "11111111-1111-4111-8111-111111111111",
+        program_week_id: "week-1",
+        program_week_index: 0,
+        program_assignment_id: "assignment-1",
+        workout_id: "22222222-2222-4222-8222-222222222222",
+        planned_on: "2026-06-22",
+        day_index: 0,
+        position: 0,
+        status: "planned",
+      }),
+      expect.objectContaining({
+        program_week_id: "week-2",
+        program_week_index: 1,
+        program_assignment_id: "assignment-2",
+        planned_on: "2026-07-02",
+        day_index: 3,
+      }),
+    ]);
+  });
+
   it("loads recent workouts for program planning with the full workout select", async () => {
     const recentProgramsLimit = vi.fn().mockResolvedValue({
       data: [buildProgramRow()],

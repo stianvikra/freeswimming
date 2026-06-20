@@ -6,6 +6,7 @@ import {
   buildProgramSummary,
   buildProgramUpdate,
   PROGRAM_SELECT,
+  syncPlannedWorkoutInstancesForProgram,
   validateProgramWorkoutOwnership,
 } from "@/lib/programs/server";
 import type { ProgramSaveApiResponse, ProgramSaveRequestBody } from "@/lib/programs/shared";
@@ -116,6 +117,13 @@ export async function PATCH(
   }
 
   const program = buildProgramEditorRecord(result.data);
+  const syncResult = await syncPlannedWorkoutInstancesForProgram(supabase, user.id, program);
+  if (!syncResult.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: syncResult.error }, { status: syncResult.status })
+    );
+  }
+
   return applySupabaseCookies(
     noStoreJson({
       ok: true,

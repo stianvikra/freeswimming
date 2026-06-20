@@ -1,0 +1,342 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  isPlannedWorkoutInstanceSchemaMissing,
+  isProgramSchemaMissing,
+} from "@/lib/programs/schema";
+import {
+  PLANNED_WORKOUT_INSTANCE_SELECT,
+  PROGRAM_SELECT,
+  buildProgramEditorRecord,
+  buildProgramSummary,
+} from "@/lib/programs/server";
+import { PROGRAM_WEEKDAY_LABELS, type ProgramSummary } from "@/lib/programs/shared";
+import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
+import { WORKOUT_SELECT, tryBuildWorkoutSummary } from "@/lib/workouts/server";
+import type { WorkoutSummary } from "@/lib/workouts/shared";
+import type { Database } from "@/types/database";
+import { addCalendarDays, buildMyLibraryCalendarWindow } from "@/lib/my-library/calendar";
+
+type TypedSupabaseClient = SupabaseClient<Database>;
+type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
+type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
+type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
+
+export type MyLibraryCalendarPlanSession = {
+  id: string;
+  date: string;
+  program: ProgramSummary | null;
+  weekId: string;
+  weekLabel: string;
+  weekIndex: number;
+  assignmentId: string;
+  workoutId: string | null;
+  dayIndex: number;
+  position: number;
+  workout: WorkoutSummary | null;
+};
+
+export type MyLibraryCalendarPlanDay = {
+  date: string;
+  dayIndex: number;
+  dayLabel: (typeof PROGRAM_WEEKDAY_LABELS)[number];
+  sessions: MyLibraryCalendarPlanSession[];
+};
+
+export type MyLibraryCalendarPlanModel = {
+  schemaReady: boolean;
+  loadError: string | null;
+  selectedDate: string;
+  window: ReturnType<typeof buildMyLibraryCalendarWindow>;
+  selectedProgramId: string | null;
+  selectedProgramMissing: boolean;
+  programs: ProgramSummary[];
+  unanchoredPrograms: ProgramSummary[];
+  missingWorkoutIds: string[];
+  days: MyLibraryCalendarPlanDay[];
+  sessionCount: number;
+};
+
+function emptyPlanModel(input: {
+  selectedDate: string;
+  selectedProgramId: string | null;
+  schemaReady: boolean;
+  loadError: string | null;
+}): MyLibraryCalendarPlanModel {
+  const window = buildMyLibraryCalendarWindow(input.selectedDate);
+
+  return {
+    schemaReady: input.schemaReady,
+    loadError: input.loadError,
+    selectedDate: input.selectedDate,
+    window,
+    selectedProgramId: input.selectedProgramId,
+    selectedProgramMissing: false,
+    programs: [],
+    unanchoredPrograms: [],
+    missingWorkoutIds: [],
+    days: buildEmptyPlanDays(window),
+    sessionCount: 0,
+  };
+}
+
+function buildEmptyPlanDays(
+  window: ReturnType<typeof buildMyLibraryCalendarWindow>
+): MyLibraryCalendarPlanDay[] {
+  return PROGRAM_WEEKDAY_LABELS.map((dayLabel, dayIndex) => ({
+    date: addCalendarDays(window.startDate, dayIndex),
+    dayIndex,
+    dayLabel,
+    sessions: [],
+  }));
+}
+
+function dedupeProgramRows(rows: ProgramRow[]): ProgramRow[] {
+  const byId = new Map<string, ProgramRow>();
+  for (const row of rows) {
+    byId.set(row.id, row);
+  }
+  return Array.from(byId.values());
+}
+
+function getProgramWeekLabel(program: ProgramRow | null, instance: PlannedWorkoutInstanceRow) {
+  if (!program || !Array.isArray(program.weeks)) {
+    return `Week ${instance.program_week_index + 1}`;
+  }
+
+  const weeks = program.weeks as Array<{ id?: string; label?: string }>;
+  const week = weeks.find((candidate) => candidate.id === instance.program_week_id);
+  return typeof week?.label === "string" && week.label.trim().length > 0
+    ? week.label
+    : `Week ${instance.program_week_index + 1}`;
+}
+
+async function loadMissingPrograms(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  knownRows: ProgramRow[],
+  instances: PlannedWorkoutInstanceRow[]
+): Promise<
+  { ok: true; rows: ProgramRow[] } | { ok: false; schemaReady: boolean; loadError: string | null }
+> {
+  const knownProgramIds = new Set(knownRows.map((row) => row.id));
+  const missingProgramIds = Array.from(
+    new Set(
+      instances
+        .map((instance) => instance.program_id)
+        .filter((programId) => !knownProgramIds.has(programId))
+    )
+  );
+
+  if (missingProgramIds.length === 0) {
+    return { ok: true, rows: [] };
+  }
+
+  const result = await supabase
+    .from("programs")
+    .select(PROGRAM_SELECT)
+    .eq("user_id", userId)
+    .in("id", missingProgramIds);
+
+  if (isProgramSchemaMissing(result.error)) {
+    return { ok: false, schemaReady: false, loadError: null };
+  }
+
+  if (result.error) {
+    console.error("[CalendarPlan] Could not load instance programs", result.error);
+    return {
+      ok: false,
+      schemaReady: true,
+      loadError: "Could not load planned program details right now.",
+    };
+  }
+
+  return { ok: true, rows: (result.data ?? []) as ProgramRow[] };
+}
+
+export async function loadMyLibraryCalendarPlan(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  input: {
+    selectedDate: string;
+    selectedProgramId: string | null;
+  }
+): Promise<MyLibraryCalendarPlanModel> {
+  const window = buildMyLibraryCalendarWindow(input.selectedDate);
+  let instancesQuery = supabase
+    .from("planned_workout_instances")
+    .select(PLANNED_WORKOUT_INSTANCE_SELECT)
+    .eq("user_id", userId)
+    .gte("planned_on", window.startDate)
+    .lte("planned_on", window.endDate);
+
+  if (input.selectedProgramId) {
+    instancesQuery = instancesQuery.eq("program_id", input.selectedProgramId);
+  }
+
+  const [recentProgramsResult, selectedProgramResult, instancesResult] = await Promise.all([
+    supabase
+      .from("programs")
+      .select(PROGRAM_SELECT)
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(12),
+    input.selectedProgramId
+      ? supabase
+          .from("programs")
+          .select(PROGRAM_SELECT)
+          .eq("user_id", userId)
+          .eq("id", input.selectedProgramId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    instancesQuery.order("planned_on", { ascending: true }).order("position", { ascending: true }),
+  ]);
+
+  if (
+    isProgramSchemaMissing(recentProgramsResult.error) ||
+    isProgramSchemaMissing(selectedProgramResult.error) ||
+    isPlannedWorkoutInstanceSchemaMissing(instancesResult.error)
+  ) {
+    return emptyPlanModel({
+      selectedDate: input.selectedDate,
+      selectedProgramId: input.selectedProgramId,
+      schemaReady: false,
+      loadError: null,
+    });
+  }
+
+  if (recentProgramsResult.error || selectedProgramResult.error || instancesResult.error) {
+    console.error("[CalendarPlan] Could not load planned calendar data", {
+      recentProgramsError: recentProgramsResult.error,
+      selectedProgramError: selectedProgramResult.error,
+      instancesError: instancesResult.error,
+    });
+    return emptyPlanModel({
+      selectedDate: input.selectedDate,
+      selectedProgramId: input.selectedProgramId,
+      schemaReady: true,
+      loadError: "Could not load planned program sessions right now.",
+    });
+  }
+
+  const baseProgramRows = dedupeProgramRows([
+    ...((selectedProgramResult.data ? [selectedProgramResult.data] : []) as ProgramRow[]),
+    ...((recentProgramsResult.data ?? []) as ProgramRow[]),
+  ]);
+  const instances = (instancesResult.data ?? []) as PlannedWorkoutInstanceRow[];
+  const missingProgramsResult = await loadMissingPrograms(
+    supabase,
+    userId,
+    baseProgramRows,
+    instances
+  );
+
+  if (!missingProgramsResult.ok) {
+    return emptyPlanModel({
+      selectedDate: input.selectedDate,
+      selectedProgramId: input.selectedProgramId,
+      schemaReady: missingProgramsResult.schemaReady,
+      loadError: missingProgramsResult.loadError,
+    });
+  }
+
+  const programRows = dedupeProgramRows([...baseProgramRows, ...missingProgramsResult.rows]);
+  let programSummaries: ProgramSummary[];
+  try {
+    programSummaries = programRows.map(buildProgramSummary);
+  } catch (error) {
+    console.error("[CalendarPlan] Stored program payload is invalid", error);
+    return emptyPlanModel({
+      selectedDate: input.selectedDate,
+      selectedProgramId: input.selectedProgramId,
+      schemaReady: true,
+      loadError: "A saved program could not be planned because its stored data is invalid.",
+    });
+  }
+
+  const programRowById = new Map(programRows.map((program) => [program.id, program]));
+  const programSummaryById = new Map(programSummaries.map((program) => [program.id, program]));
+  const unanchoredPrograms = programRows
+    .map((row) => {
+      try {
+        return buildProgramEditorRecord(row);
+      } catch {
+        return null;
+      }
+    })
+    .filter((program) => program && !program.startsOn)
+    .map((program) => (program ? programSummaryById.get(program.id) : null))
+    .filter((program): program is ProgramSummary => Boolean(program));
+  const workoutIds = Array.from(
+    new Set(
+      instances
+        .map((instance) => instance.workout_id)
+        .filter((workoutId): workoutId is string => Boolean(workoutId))
+    )
+  );
+
+  let workouts: WorkoutSummary[] = [];
+  let loadError: string | null = null;
+  if (workoutIds.length > 0) {
+    const workoutsResult = await supabase
+      .from("workouts")
+      .select(WORKOUT_SELECT)
+      .eq("user_id", userId)
+      .in("id", workoutIds);
+
+    if (isWorkoutSchemaMissing(workoutsResult.error)) {
+      workouts = [];
+    } else if (workoutsResult.error) {
+      console.error("[CalendarPlan] Could not load planned workouts", workoutsResult.error);
+      loadError = "Planned workouts could not be fully loaded right now.";
+      workouts = [];
+    } else {
+      workouts = (workoutsResult.data ?? [])
+        .map((row) => tryBuildWorkoutSummary(row as WorkoutRow, "calendar-plan workouts"))
+        .filter((workout): workout is WorkoutSummary => Boolean(workout));
+    }
+  }
+
+  const workoutsById = new Map(workouts.map((workout) => [workout.id, workout]));
+  const plannedSessions = instances
+    .map((instance) => {
+      const programRow = programRowById.get(instance.program_id) ?? null;
+      return {
+        id: instance.id,
+        date: instance.planned_on,
+        program: programSummaryById.get(instance.program_id) ?? null,
+        weekId: instance.program_week_id,
+        weekLabel: getProgramWeekLabel(programRow, instance),
+        weekIndex: instance.program_week_index,
+        assignmentId: instance.program_assignment_id,
+        workoutId: instance.workout_id,
+        dayIndex: instance.day_index,
+        position: instance.position,
+        workout: instance.workout_id ? (workoutsById.get(instance.workout_id) ?? null) : null,
+      };
+    })
+    .sort(
+      (left, right) =>
+        left.date.localeCompare(right.date) ||
+        left.position - right.position ||
+        (left.program?.title ?? "").localeCompare(right.program?.title ?? "")
+    );
+  const missingWorkoutIds = workoutIds.filter((workoutId) => !workoutsById.has(workoutId));
+  const days = buildEmptyPlanDays(window).map((day) => ({
+    ...day,
+    sessions: plannedSessions.filter((session) => session.date === day.date),
+  }));
+
+  return {
+    schemaReady: true,
+    loadError,
+    selectedDate: input.selectedDate,
+    window,
+    selectedProgramId: input.selectedProgramId,
+    selectedProgramMissing: Boolean(input.selectedProgramId && !selectedProgramResult.data),
+    programs: programSummaries,
+    unanchoredPrograms,
+    missingWorkoutIds,
+    days,
+    sessionCount: plannedSessions.length,
+  };
+}
