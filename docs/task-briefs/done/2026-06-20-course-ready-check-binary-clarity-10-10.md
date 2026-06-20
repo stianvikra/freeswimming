@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-20-course-ready-check-binary-clarity-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-20`
 - `updated`: `2026-06-20`
@@ -63,7 +63,7 @@ Return path:
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-Critical target categories for this slice: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Accessibility, Reliability and failure handling, Testing and QA automation, DevOps and rollback readiness.
+Critical target categories for this slice: Product goals and IA, UX flow clarity, Visual design quality, Business logic correctness and data integrity, Accessibility (a11y), Reliability and failure handling, Testing and QA automation, DevOps and rollback readiness.
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                  | Evidence                                                  | Expected Closeout Score |
 | --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------- |
@@ -73,6 +73,7 @@ Critical target categories for this slice: Product goals and IA, UX flow clarity
 | Business logic correctness and data integrity | `target`     | No change to completion persistence, local checklist normalization, API payloads, or done semantics.                                                | code diff review + existing progress tests                | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this slice does not change admin editing, content fields, publish controls, or admin workflows.                                         | explicit admin no-change review                           | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | New visible status/help copy remains text-based, keyboard-safe, and correctly associated with the existing controls.                                | Testing Library/Playwright assertions + screenshot review | `5/5`                   |
+| Accessibility                                 | `target`     | Lifecycle-lint alias for the canonical `Accessibility (a11y)` gate; same threshold and evidence.                                                    | Testing Library/Playwright assertions + screenshot review | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no dependency, media, route, or data-fetch expansion; keep client impact negligible.                                               | dependency diff + build/pre-pr gate                       | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Server-canonical progress remains lesson-level done state; local criteria checks stay local unlock state.                                           | diff review + progress tests                              | `5/5`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache, revalidation, CDN, or browser-cache behavior changes.                                                                   | explicit cache no-change review                           | `N/A`                   |
@@ -172,6 +173,45 @@ Critical target categories for this slice: Product goals and IA, UX flow clarity
 - PR CI required checks
 - `npm run verify:pre-merge` before merge recommendation
 
+## Completion Record
+
+- `merged_pr`: `#1184`
+- `merge_commit`: `bdf151d1`
+- `completed`: `2026-06-20`
+- `result`: Public course Ready check now shows a clear non-scored status/helper for not-started, in-progress, ready-to-complete, and done states while preserving the existing binary lesson completion model.
+- `validation`: targeted `npx playwright test tests/e2e/course-pass-criteria-visibility.spec.ts --project=desktop-chromium` PASS; `npm run verify:pre-pr` PASS on `a930e3e1` (`artifacts/test-runs/20260620-023215`, full-public lane); GitHub required checks PASS for PR #1184; `npm run gate:pre-merge` PASS on `a930e3e1` with `verify:pre-merge` marker `artifacts/verify-pre-merge/20260620-003944.json`.
+- `screenshot_handoff`: PASS; [Screenshot artifacts](/Users/stianvikra/freeswimming/output/course-ready-check-2026-06-20-020022), captured `2026-06-20 02:01`, owner approved in chat, and no product-rendering files changed after capture.
+- `preview_qa`: Waived by owner on `2026-06-20`; Vercel deployment/check was green, but preview `/course` rendered the Next error boundary because preview runtime lacked `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Local screenshot QA, CI, and pre-merge gates were used as release evidence for this UI-only slice.
+- `perf_budget_decision`: `hold`; `test:perf:budgets` passed and recommended `tighten`, but the planned performance ratchet remains deferred until at least two new green weekly cycles after `2026-06-19`.
+- `10/10 claim`: yes for the Course Ready Check Binary Clarity UI-only scope. Scoring, percentages, weights, persisted criterion identity, analytics score payloads, and admin editor changes remain intentionally out of scope.
+
+Critical target categories for `10/10` claim all achieved `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Accessibility (a11y)
+- Reliability and failure handling
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                         | Remaining Gap                                                                                     |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Ready check communicates existing binary completion with no score, percent, or weighting claim.                                  | Scoring remains deferred to the parent decision brief.                                            |
+| UX flow clarity                               | `5/5`          | Screenshots and E2E assertions cover not-started, in-progress, ready-to-complete, done, and undo states.                         | None for binary clarity scope.                                                                    |
+| Visual design quality                         | `5/5`          | Owner-approved mobile/desktop screenshot handoff shows compact status/helper and checked-row treatment.                          | None.                                                                                             |
+| Business logic correctness and data integrity | `5/5`          | Diff changes only derived UI copy/styling and tests; completion persistence, API payloads, and done semantics unchanged.         | No persisted per-criterion data by design.                                                        |
+| Accessibility (a11y)                          | `5/5`          | New state is visible text near existing controls; Playwright verifies user-observable state without hidden-only cues.            | None.                                                                                             |
+| Accessibility                                 | `5/5`          | Same accessibility closeout gate as the canonical `Accessibility (a11y)` row; the explicit alias satisfies lifecycle validation. | None.                                                                                             |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical progress stays lesson-level done; local pass criteria remain local checklist state.                             | None for this slice.                                                                              |
+| Reliability and failure handling              | `5/5`          | Loading, blocked, ready, done, and undo states remain deterministic and covered by targeted E2E assertions.                      | None.                                                                                             |
+| Content governance                            | `5/5`          | Copy avoids false precision and explicitly preserves non-scored binary readiness semantics.                                      | None.                                                                                             |
+| i18n operational readiness                    | `5/5`          | Short status/helper copy fits mobile screenshots and does not depend on hardcoded score language.                                | Future locale rollout still needs normal translation workflow.                                    |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing `app/course/page.tsx` state, Tailwind tokens, icons, and test surface; no dependency added.                      | None.                                                                                             |
+| Testing and QA automation                     | `5/5`          | Targeted E2E, full `verify:pre-pr`, GitHub CI, and full local `gate:pre-merge` passed on the PR head.                            | None.                                                                                             |
+| DevOps and rollback readiness                 | `5/5`          | One squash commit can be reverted; CI and local merge gates passed; Vercel preview QA waiver is recorded.                        | Preview env missing `NEXT_PUBLIC_SUPABASE_ANON_KEY` is an environment follow-up, not a slice gap. |
+
 ## Help / Guide Impact
 
 N/A for admin Help/Guide because this slice changes no admin workflow labels, support recovery behavior, or operator runbook steps. Public course visible copy is tested in the changed route.
@@ -198,3 +238,4 @@ Surfaces checked: `app/`, `components/`, `lib/`, `tests/`, `docs/user-flow-map.m
 - `2026-06-20 | in-progress | owner approved deferring scoring and implementing a UI-only Ready check clarity slice; branch created from clean synced main@f66a9525 | next: implement scoped UI patch and targeted tests, then screenshot handoff before pre-PR gate`
 - `2026-06-20 | implementation checkpoint | added a visible non-scored Ready check status/helper, clearer checked-row styling, and targeted e2e assertions for not started, in progress, ready to complete, done, and undo states; no progress API, persistence, analytics, admin editor, metadata, or scoring changes; validation passed: npm run lint:briefs:all, Prettier check, npx eslint app/course/page.tsx tests/e2e/course-pass-criteria-visibility.spec.ts, and npx playwright test tests/e2e/course-pass-criteria-visibility.spec.ts --project=desktop-chromium; route/label sweep found the existing user-flow contract still aligned | screenshots: output/course-ready-check-2026-06-20-020022 | next: owner visual approval before npm run verify:pre-pr`
 - `2026-06-20 | pre-pr gate fix | npm run verify:pre-pr initially failed quality-gate evidence because the brief did not explicitly name sweep identifiers/surfaces or the UI reference surface; added those evidence lines without changing runtime/UI files after screenshot capture | next: rerun npm run verify:pre-pr`
+- `2026-06-20 | merged | PR #1184 merged as bdf151d1 after green local gates, green GitHub checks, owner-approved screenshot handoff, and explicit Vercel preview QA waiver; post-merge preflight moved this brief to done and recorded completion evidence | next: validate docs-only closeout PR`
