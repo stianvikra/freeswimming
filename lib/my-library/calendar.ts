@@ -14,6 +14,10 @@ export const MY_LIBRARY_CALENDAR_PERIODS = ["week", "month", "year"] as const;
 export type MyLibraryCalendarPeriod = (typeof MY_LIBRARY_CALENDAR_PERIODS)[number];
 export type MyLibraryCalendarPeriodSelection = MyLibraryCalendarPeriod | "unmapped";
 
+export const MY_LIBRARY_CALENDAR_VIEWS = ["compare", "plan"] as const;
+
+export type MyLibraryCalendarView = (typeof MY_LIBRARY_CALENDAR_VIEWS)[number];
+
 export type MyLibraryCalendarWindow = {
   selectedDate: string;
   startDate: string;
@@ -135,6 +139,20 @@ export function normalizeMyLibraryCalendarPeriodParam(
   return isMyLibraryCalendarPeriod(rawValue) ? rawValue : "unmapped";
 }
 
+export function normalizeMyLibraryCalendarViewParam(value: unknown): MyLibraryCalendarView {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (rawValue === "plan") return "plan";
+  return "compare";
+}
+
+export function normalizeMyLibraryCalendarProgramIdParam(value: unknown): string | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (typeof rawValue !== "string") return null;
+  const normalized = rawValue.trim();
+  if (normalized.length === 0 || normalized.length > 120) return null;
+  return normalized;
+}
+
 export function getMyLibraryCalendarIsoWeek(dateKey: string): {
   weekNumber: number;
   weekYear: number;
@@ -193,6 +211,17 @@ export function normalizeOptionalMyLibraryCalendarDateParam(
   if (!parsed) return null;
   const dateKey = parsed.toISOString().slice(0, 10);
   return dateKey > todayDate ? todayDate : dateKey;
+}
+
+export function normalizeMyLibraryCalendarPlanDateParam(
+  value: unknown,
+  fallbackDate = getTodayCalendarDate()
+): string {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (typeof rawValue !== "string") return fallbackDate;
+  const parsed = parseCalendarDate(rawValue);
+  if (!parsed) return fallbackDate;
+  return parsed.toISOString().slice(0, 10);
 }
 
 export function buildMyLibraryCalendarWindow(
@@ -428,6 +457,20 @@ export function buildMyLibraryCalendarHref({
   return `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
 }
 
+export function buildMyLibraryCalendarPlanHref({
+  selectedDate,
+  programId,
+}: {
+  selectedDate: string;
+  programId?: string | null;
+}) {
+  const params = new URLSearchParams();
+  params.set("view", "plan");
+  params.set("date", selectedDate);
+  if (programId) params.set("programId", programId);
+  return `/my-library/calendar?${params.toString()}`;
+}
+
 export function buildMyLibraryCalendarComparisonHref({
   source,
   period,
@@ -440,6 +483,7 @@ export function buildMyLibraryCalendarComparisonHref({
   compareTo?: string | null;
 }) {
   const params = new URLSearchParams();
+  params.set("view", "compare");
   params.set("source", source);
   params.set("period", period);
   params.set("date", selectedDate);

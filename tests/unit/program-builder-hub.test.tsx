@@ -62,6 +62,7 @@ function buildProgramRecord(overrides?: Partial<ProgramEditorRecord>): ProgramEd
     updatedAt: "2026-03-25T12:05:00.000Z",
     sourceKind: "manual",
     status: "draft",
+    startsOn: "2026-06-22",
     title: "Manual race prep shell",
     weeks: [
       {
@@ -78,6 +79,7 @@ function buildProgramSummary(overrides?: Partial<ProgramSummary>): ProgramSummar
   return {
     id: "program-1",
     title: "Manual race prep shell",
+    startsOn: "2026-06-22",
     weekCount: 1,
     assignmentCount: 0,
     updatedAt: "2026-03-25T12:05:00.000Z",
@@ -217,6 +219,7 @@ describe("ProgramBuilderHub", () => {
 
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         title: string;
+        startsOn: string;
         weeks: ProgramEditorRecord["weeks"];
       };
 
@@ -226,10 +229,12 @@ describe("ProgramBuilderHub", () => {
           ok: true,
           program: buildProgramRecord({
             title: body.title,
+            startsOn: body.startsOn,
             weeks: body.weeks,
           }),
           summary: buildProgramSummary({
             title: body.title,
+            startsOn: body.startsOn,
             assignmentCount: body.weeks[0]?.assignments.length ?? 0,
           }),
         }),
@@ -249,6 +254,7 @@ describe("ProgramBuilderHub", () => {
       "All changes are saved."
     );
     expect(screen.getByTestId("program-draft-title")).toHaveClass("ui-field");
+    expect(screen.getByTestId("program-draft-starts-on")).toHaveClass("ui-field");
     expect(screen.getByTestId("program-week-0")).toHaveClass("fs-library-card");
     expect(screen.getByTestId("program-day-picker-week-0-day-0")).toHaveClass(
       "ui-field",
@@ -265,6 +271,9 @@ describe("ProgramBuilderHub", () => {
 
     fireEvent.change(screen.getByTestId("program-draft-title"), {
       target: { value: "Builder edited program" },
+    });
+    fireEvent.change(screen.getByTestId("program-draft-starts-on"), {
+      target: { value: "2026-06-29" },
     });
     fireEvent.change(screen.getByTestId("program-day-picker-week-0-day-0"), {
       target: { value: "workout-1" },
@@ -333,10 +342,12 @@ describe("ProgramBuilderHub", () => {
       );
     const fetchBody = JSON.parse(String(patchCall?.[1]?.body ?? "{}")) as {
       title: string;
+      startsOn: string;
       weeks: ProgramEditorRecord["weeks"];
     };
 
     expect(fetchBody.title).toBe("Builder edited program");
+    expect(fetchBody.startsOn).toBe("2026-06-29");
     expect(fetchBody.weeks[0]?.assignments).toHaveLength(1);
     expect(fetchBody.weeks[0]?.assignments[0]).toMatchObject({
       workoutId: "workout-1",
@@ -395,10 +406,12 @@ describe("ProgramBuilderHub", () => {
       );
     const fetchBody = JSON.parse(String(patchCall?.[1]?.body ?? "{}")) as {
       title: string;
+      startsOn: string;
       weeks: ProgramEditorRecord["weeks"];
     };
 
     expect(fetchBody.title).toBe("Unsaved race prep shell");
+    expect(fetchBody.startsOn).toBe("2026-06-22");
     expect(fetchBody.weeks).toEqual(buildProgramRecord().weeks);
   });
 

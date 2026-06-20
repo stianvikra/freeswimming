@@ -86,6 +86,7 @@ function buildProgramRecord(): ProgramEditorRecord {
     updatedAt: "2026-03-25T12:05:00.000Z",
     sourceKind: "manual",
     status: "draft",
+    startsOn: "2026-06-22",
     title: "Program export shell",
     weeks: [
       {

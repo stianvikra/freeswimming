@@ -3,6 +3,7 @@ import {
   buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarComparisonWindow,
   buildMyLibraryCalendarHref,
+  buildMyLibraryCalendarPlanHref,
   buildMyLibraryCalendarWindow,
   getMyLibraryCalendarPeriodEndDate,
   getMyLibraryCalendarPeriodStartDate,
@@ -13,7 +14,10 @@ import {
   MY_LIBRARY_CALENDAR_SOURCE_FILTERS,
   normalizeMyLibraryCalendarDateParam,
   normalizeMyLibraryCalendarPeriodParam,
+  normalizeMyLibraryCalendarPlanDateParam,
+  normalizeMyLibraryCalendarProgramIdParam,
   normalizeMyLibraryCalendarSourceParam,
+  normalizeMyLibraryCalendarViewParam,
 } from "@/lib/my-library/calendar";
 
 describe("my library calendar contract", () => {
@@ -40,13 +44,20 @@ describe("my library calendar contract", () => {
     expect(normalizeMyLibraryCalendarPeriodParam(undefined)).toBe("week");
     expect(normalizeMyLibraryCalendarPeriodParam("month")).toBe("month");
     expect(normalizeMyLibraryCalendarPeriodParam("quarter")).toBe("unmapped");
+    expect(normalizeMyLibraryCalendarViewParam(undefined)).toBe("compare");
+    expect(normalizeMyLibraryCalendarViewParam("plan")).toBe("plan");
+    expect(normalizeMyLibraryCalendarViewParam("timeline")).toBe("compare");
+    expect(normalizeMyLibraryCalendarProgramIdParam(" program-1 ")).toBe("program-1");
+    expect(normalizeMyLibraryCalendarProgramIdParam("")).toBeNull();
   });
 
-  it("normalizes invalid and future dates to today", () => {
+  it("normalizes comparison dates to today but allows future plan dates", () => {
     expect(normalizeMyLibraryCalendarDateParam("2026-05-04", "2026-05-10")).toBe("2026-05-04");
     expect(normalizeMyLibraryCalendarDateParam("2026-05-11", "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarDateParam("not-a-date", "2026-05-10")).toBe("2026-05-10");
     expect(normalizeMyLibraryCalendarDateParam(undefined, "2026-05-10")).toBe("2026-05-10");
+    expect(normalizeMyLibraryCalendarPlanDateParam("2026-06-22", "2026-05-10")).toBe("2026-06-22");
+    expect(normalizeMyLibraryCalendarPlanDateParam("not-a-date", "2026-05-10")).toBe("2026-05-10");
   });
 
   it("builds a seven-day selected-date window and route hrefs", () => {
@@ -74,7 +85,13 @@ describe("my library calendar contract", () => {
         period: "week",
         selectedDate: "2026-05-03",
       })
-    ).toBe("/my-library/calendar?source=habits&period=week&date=2026-05-03");
+    ).toBe("/my-library/calendar?view=compare&source=habits&period=week&date=2026-05-03");
+    expect(
+      buildMyLibraryCalendarPlanHref({
+        selectedDate: "2026-06-22",
+        programId: "program-1",
+      })
+    ).toBe("/my-library/calendar?view=plan&date=2026-06-22&programId=program-1");
   });
 
   it("keeps seven-day windows aligned to ISO Monday-Sunday weeks", () => {

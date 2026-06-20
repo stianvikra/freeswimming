@@ -317,6 +317,9 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     programLibrary.selectedProgram
   );
   const [draftTitle, setDraftTitle] = useState(programLibrary.selectedProgram?.title ?? "");
+  const [draftStartsOn, setDraftStartsOn] = useState(
+    programLibrary.selectedProgram?.startsOn ?? ""
+  );
   const [draftWeeks, setDraftWeeks] = useState(programLibrary.selectedProgram?.weeks ?? []);
   const [recentPrograms, setRecentPrograms] = useState(programLibrary.recentPrograms);
   const [availableWorkouts, setAvailableWorkouts] = useState(programLibrary.availableWorkouts);
@@ -335,9 +338,12 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   const [programExportError, setProgramExportError] = useState("");
   const [programPdfNotice, setProgramPdfNotice] = useState("");
   const [programPdfError, setProgramPdfError] = useState("");
+  const draftStartsOnValue = draftStartsOn || null;
   const hasUnsavedChanges = haveProgramDraftChanges(
-    savedProgram ? { title: draftTitle, weeks: draftWeeks } : null,
-    savedProgram ? { title: savedProgram.title, weeks: savedProgram.weeks } : null
+    savedProgram ? { title: draftTitle, startsOn: draftStartsOnValue, weeks: draftWeeks } : null,
+    savedProgram
+      ? { title: savedProgram.title, startsOn: savedProgram.startsOn, weeks: savedProgram.weeks }
+      : null
   );
 
   useEffect(() => {
@@ -347,6 +353,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
   useEffect(() => {
     setSavedProgram(programLibrary.selectedProgram);
     setDraftTitle(programLibrary.selectedProgram?.title ?? "");
+    setDraftStartsOn(programLibrary.selectedProgram?.startsOn ?? "");
     setDraftWeeks(programLibrary.selectedProgram?.weeks ?? []);
     setRecentPrograms(programLibrary.recentPrograms);
     setAvailableWorkouts(programLibrary.availableWorkouts);
@@ -518,6 +525,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
         },
         body: JSON.stringify({
           title: draftTitle,
+          startsOn: draftStartsOnValue,
           weeks: draftWeeks,
         }),
       });
@@ -534,6 +542,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
 
       setSavedProgram(responseBody.program);
       setDraftTitle(responseBody.program.title);
+      setDraftStartsOn(responseBody.program.startsOn ?? "");
       setDraftWeeks(responseBody.program.weeks);
       setRecentPrograms((current) => upsertRecentProgramSummary(current, responseBody.summary));
       setSuccess("Program saved.");
@@ -548,6 +557,7 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
     if (!savedProgram) return;
 
     setDraftTitle(savedProgram.title);
+    setDraftStartsOn(savedProgram.startsOn ?? "");
     setDraftWeeks(savedProgram.weeks);
     setPickerSelections({});
     setError("");
@@ -836,21 +846,44 @@ export default function ProgramBuilderHub({ programLibrary }: Props) {
         <div className="mt-6 space-y-6">
           <div className={mutedPanelClass}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="max-w-[48rem]">
-                <label htmlFor="program-draft-title" className={fieldLabelClass}>
-                  Program title
-                </label>
-                <input
-                  id="program-draft-title"
-                  data-testid="program-draft-title"
-                  type="text"
-                  value={draftTitle}
-                  onChange={(event) => {
-                    setDraftTitle(event.target.value);
-                    setSuccess("");
-                  }}
-                  className={`${fieldClass} w-full`}
-                />
+              <div className="min-w-0 flex-1">
+                <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(180px,1fr)]">
+                  <div className="min-w-0">
+                    <label htmlFor="program-draft-title" className={fieldLabelClass}>
+                      Program title
+                    </label>
+                    <input
+                      id="program-draft-title"
+                      data-testid="program-draft-title"
+                      type="text"
+                      value={draftTitle}
+                      onChange={(event) => {
+                        setDraftTitle(event.target.value);
+                        setSuccess("");
+                      }}
+                      className={`${fieldClass} w-full`}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <label htmlFor="program-draft-starts-on" className={fieldLabelClass}>
+                      Week 1 starts
+                    </label>
+                    <input
+                      id="program-draft-starts-on"
+                      data-testid="program-draft-starts-on"
+                      type="date"
+                      value={draftStartsOn}
+                      onChange={(event) => {
+                        setDraftStartsOn(event.target.value);
+                        setSuccess("");
+                      }}
+                      className={`${fieldClass} w-full`}
+                    />
+                    <p className="mt-2 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+                      Choose a Monday. Calendar Plan uses this date to place every workout.
+                    </p>
+                  </div>
+                </div>
                 <p
                   data-testid="program-editor-save-state"
                   className="mt-3 text-sm text-[color:var(--fs-color-muted)]"

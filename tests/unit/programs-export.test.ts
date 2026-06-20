@@ -75,6 +75,7 @@ function buildProgramRecord(overrides?: Partial<ProgramEditorRecord>): ProgramEd
     updatedAt: "2026-03-25T18:05:00.000Z",
     sourceKind: "manual",
     status: "draft",
+    startsOn: "2026-06-22",
     title: "Race prep week",
     weeks: [
       {

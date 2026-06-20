@@ -3,13 +3,18 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MyLibraryCalendarPage from "@/app/my-library/calendar/page";
 import type { MyLibraryCalendarComparisonModel } from "@/lib/my-library/calendar-comparison";
+import type { MyLibraryCalendarPlanModel } from "@/lib/my-library/calendar-plan";
 import { buildMyLibraryCalendarComparisonWindow } from "@/lib/my-library/calendar";
 
-const { getServerSupabaseUserIfAuthCookiePresentMock, loadMyLibraryCalendarComparisonMock } =
-  vi.hoisted(() => ({
-    getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
-    loadMyLibraryCalendarComparisonMock: vi.fn(),
-  }));
+const {
+  getServerSupabaseUserIfAuthCookiePresentMock,
+  loadMyLibraryCalendarComparisonMock,
+  loadMyLibraryCalendarPlanMock,
+} = vi.hoisted(() => ({
+  getServerSupabaseUserIfAuthCookiePresentMock: vi.fn(),
+  loadMyLibraryCalendarComparisonMock: vi.fn(),
+  loadMyLibraryCalendarPlanMock: vi.fn(),
+}));
 
 vi.mock("@/components/SiteChrome", () => ({
   default: ({ children }: { children: ReactNode }) => (
@@ -27,12 +32,26 @@ vi.mock("@/components/my-library/CalendarPeriodComparisonHub", () => ({
   ),
 }));
 
+vi.mock("@/components/my-library/CalendarPlanWeekHub", () => ({
+  default: ({ model }: { model: MyLibraryCalendarPlanModel }) => (
+    <div
+      data-testid="calendar-plan-week-hub"
+      data-selected-date={model.selectedDate}
+      data-selected-program-id={model.selectedProgramId ?? ""}
+    />
+  ),
+}));
+
 vi.mock("@/lib/supabase/server", () => ({
   getServerSupabaseUserIfAuthCookiePresent: getServerSupabaseUserIfAuthCookiePresentMock,
 }));
 
 vi.mock("@/lib/my-library/calendar-comparison", () => ({
   loadMyLibraryCalendarComparison: loadMyLibraryCalendarComparisonMock,
+}));
+
+vi.mock("@/lib/my-library/calendar-plan", () => ({
+  loadMyLibraryCalendarPlan: loadMyLibraryCalendarPlanMock,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -55,6 +74,31 @@ function buildModel(): MyLibraryCalendarComparisonModel {
   };
 }
 
+function buildPlanModel(): MyLibraryCalendarPlanModel {
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate: "2026-06-22",
+    window: {
+      selectedDate: "2026-06-22",
+      startDate: "2026-06-22",
+      endDate: "2026-06-28",
+      weekNumber: 26,
+      weekYear: 2026,
+      weekLabel: "Week 26, 2026",
+      previousWindowDate: "2026-06-15",
+      nextWindowDate: "2026-06-29",
+    },
+    selectedProgramId: "program-1",
+    selectedProgramMissing: false,
+    programs: [],
+    unanchoredPrograms: [],
+    missingWorkoutIds: [],
+    days: [],
+    sessionCount: 0,
+  };
+}
+
 const signedInUser = {
   id: "user-123",
   email: "swimmer@example.com",
@@ -67,6 +111,7 @@ describe("MyLibraryCalendarPage", () => {
       user: signedInUser,
     });
     loadMyLibraryCalendarComparisonMock.mockResolvedValue(buildModel());
+    loadMyLibraryCalendarPlanMock.mockResolvedValue(buildPlanModel());
   });
 
   afterEach(() => {
@@ -93,6 +138,10 @@ describe("MyLibraryCalendarPage", () => {
       "sm:pt-28"
     );
     expect(screen.getByRole("heading", { name: "Comparison Report", level: 1 })).toBeVisible();
+    expect(screen.getByTestId("calendar-mode-switch")).toBeVisible();
+    expect(
+      within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Plan" })
+    ).toHaveAttribute("href", "/my-library/calendar?view=plan&date=2026-05-20");
     const actions = screen.getByTestId("calendar-route-actions");
     expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
     expect(within(actions).getByRole("link", { name: "Back to My Library" })).toHaveAttribute(
@@ -135,6 +184,37 @@ describe("MyLibraryCalendarPage", () => {
         selectedPeriod: "unmapped",
       })
     );
+  });
+
+  it("routes plan mode through the planned-instance loader with future dates", async () => {
+    render(
+      await MyLibraryCalendarPage({
+        searchParams: Promise.resolve({
+          view: "plan",
+          date: "2026-06-22",
+          programId: "program-1",
+        }),
+      })
+    );
+
+    expect(screen.getByRole("heading", { name: "Calendar Plan", level: 1 })).toBeVisible();
+    expect(screen.getByTestId("calendar-plan-week-hub")).toHaveAttribute(
+      "data-selected-date",
+      "2026-06-22"
+    );
+    expect(screen.getByTestId("calendar-plan-week-hub")).toHaveAttribute(
+      "data-selected-program-id",
+      "program-1"
+    );
+    expect(loadMyLibraryCalendarPlanMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      signedInUser.id,
+      {
+        selectedDate: "2026-06-22",
+        selectedProgramId: "program-1",
+      }
+    );
+    expect(loadMyLibraryCalendarComparisonMock).not.toHaveBeenCalled();
   });
 
   it("preserves the anonymous auth redirect", async () => {

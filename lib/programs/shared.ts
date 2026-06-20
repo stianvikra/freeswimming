@@ -38,6 +38,7 @@ export type ProgramEditorRecord = {
   updatedAt: string;
   sourceKind: ProgramSourceKind;
   status: ProgramStatus;
+  startsOn: string | null;
   title: string;
   weeks: ProgramWeek[];
 };
@@ -45,6 +46,7 @@ export type ProgramEditorRecord = {
 export type ProgramSummary = {
   id: string;
   title: string;
+  startsOn: string | null;
   weekCount: number;
   assignmentCount: number;
   updatedAt: string;
@@ -64,6 +66,7 @@ export type ProgramLibrarySnapshot = {
 
 export type ProgramSaveRequestBody = {
   title?: string | null;
+  startsOn?: string | null;
   weeks?: ProgramWeek[] | null;
   sourceKind?: ProgramSourceKind | null;
 };
@@ -89,14 +92,18 @@ export function createProgramEntityId() {
   return `program-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 }
 
+type ProgramDraftChangeInput = Pick<ProgramEditorRecord, "title" | "startsOn" | "weeks">;
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 export function buildManualProgramStarterState(now = new Date()): {
   title: string;
+  startsOn: string;
   weeks: ProgramWeek[];
 } {
-  void now;
-
   return {
     title: "New program",
+    startsOn: getProgramWeekStartDate(now),
     weeks: [
       {
         id: createProgramEntityId(),
@@ -108,15 +115,15 @@ export function buildManualProgramStarterState(now = new Date()): {
 }
 
 export function buildProgramDraftChangeSignature(
-  draft: Pick<ProgramEditorRecord, "title" | "weeks"> | null | undefined
+  draft: ProgramDraftChangeInput | null | undefined
 ): string | null {
   if (!draft) return null;
   return JSON.stringify(draft);
 }
 
 export function haveProgramDraftChanges(
-  currentDraft: Pick<ProgramEditorRecord, "title" | "weeks"> | null | undefined,
-  savedDraft: Pick<ProgramEditorRecord, "title" | "weeks"> | null | undefined
+  currentDraft: ProgramDraftChangeInput | null | undefined,
+  savedDraft: ProgramDraftChangeInput | null | undefined
 ): boolean {
   const currentSignature = buildProgramDraftChangeSignature(currentDraft);
   const savedSignature = buildProgramDraftChangeSignature(savedDraft);
@@ -147,11 +154,19 @@ export function normalizeProgramForPersistence(
   input:
     | {
         title?: string | null;
+        startsOn?: string | null;
         weeks?: ProgramWeek[] | null;
       }
     | null
-    | undefined
-): { ok: true; value: { title: string; weeks: ProgramWeek[] } } | { ok: false; error: string } {
+    | undefined,
+  options: {
+    requireStartsOn?: boolean;
+  } = {}
+):
+  | { ok: true; value: { title: string; startsOn: string | null; weeks: ProgramWeek[] } }
+  | { ok: false; error: string } {
+  const requireStartsOn = options.requireStartsOn ?? true;
+
   if (!input) {
     return { ok: false, error: "Create and review a program shell before saving it." };
   }
@@ -159,6 +174,11 @@ export function normalizeProgramForPersistence(
   const title = normalizeRequiredText(input.title, 120);
   if (!title) {
     return { ok: false, error: "Add a program title before saving." };
+  }
+
+  const startsOn = normalizeProgramStartsOn(input.startsOn, { required: requireStartsOn });
+  if (!startsOn.ok) {
+    return { ok: false, error: startsOn.error };
   }
 
   if (!Array.isArray(input.weeks) || input.weeks.length === 0) {
@@ -262,6 +282,7 @@ export function normalizeProgramForPersistence(
     ok: true,
     value: {
       title,
+      startsOn: startsOn.value,
       weeks: normalizedWeeks,
     },
   };
@@ -271,6 +292,28 @@ export function programWeeksToJson(weeks: ProgramWeek[]): Json {
   return weeks as unknown as Json;
 }
 
+export function getProgramWeekStartDate(now = new Date()): string {
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - (weekday - 1));
+  return toDateKey(date);
+}
+
+export function buildProgramAssignmentDate(
+  startsOn: string,
+  weekIndex: number,
+  dayIndex: number
+): string {
+  const parsed = parseIsoDateKey(startsOn);
+  if (!parsed) {
+    throw new Error("Program start date must be a valid ISO date.");
+  }
+
+  const date = new Date(parsed);
+  date.setUTCDate(date.getUTCDate() + weekIndex * 7 + dayIndex);
+  return toDateKey(date);
+}
+
 function normalizeRequiredText(value: string | null | undefined, maxLength: number) {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
@@ -278,7 +321,46 @@ function normalizeRequiredText(value: string | null | undefined, maxLength: numb
   return normalized;
 }
 
+function normalizeProgramStartsOn(
+  value: string | null | undefined,
+  options: {
+    required: boolean;
+  }
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (value === null || value === undefined || value === "") {
+    if (!options.required) return { ok: true, value: null };
+    return { ok: false, error: "Choose a Monday start date for week 1 before saving." };
+  }
+
+  if (typeof value !== "string") {
+    return { ok: false, error: "Choose a Monday start date for week 1 before saving." };
+  }
+
+  const parsed = parseIsoDateKey(value);
+  if (!parsed) {
+    return { ok: false, error: "Use a valid ISO date for the program start week." };
+  }
+
+  if ((parsed.getUTCDay() || 7) !== 1) {
+    return { ok: false, error: "Week 1 start date must be a Monday." };
+  }
+
+  return { ok: true, value };
+}
+
 function normalizeInteger(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return Math.trunc(value);
+}
+
+function parseIsoDateKey(value: string): Date | null {
+  if (!ISO_DATE_PATTERN.test(value)) return null;
+  const parsed = Date.parse(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed)) return null;
+  const date = new Date(parsed);
+  return toDateKey(date) === value ? date : null;
+}
+
+function toDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }

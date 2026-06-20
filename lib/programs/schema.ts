@@ -26,5 +26,15 @@ function isSchemaMissing(error: PostgrestLikeError | null | undefined, markers: 
 }
 
 export function isProgramSchemaMissing(error: PostgrestLikeError | null | undefined): boolean {
-  return isSchemaMissing(error, ["programs", "source_kind", "weeks"]);
+  return isSchemaMissing(error, ["programs", "source_kind", "starts_on", "weeks"]);
+}
+
+export function isPlannedWorkoutInstanceSchemaMissing(
+  error: PostgrestLikeError | null | undefined
+): boolean {
+  return isSchemaMissing(error, [
+    "planned_workout_instances",
+    "planned_on",
+    "program_assignment_id",
+  ]);
 }
