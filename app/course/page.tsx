@@ -2565,6 +2565,7 @@ function CoursePageClient() {
   const doneGateRequired = showPassCriteria && !isLessonDone;
   const doneGateSatisfied =
     !doneGateRequired || passCriteria.every((criterion) => doneGateChecksSet.has(criterion));
+  const doneGateRemainingCount = Math.max(passCriteria.length - doneGateChecks.length, 0);
   const markDoneBlockedByGate = !lessonContentReady || (!isLessonDone && !doneGateSatisfied);
   const markDoneFeedbackId = "course-done-gate-feedback";
   const passCriteriaHelpId = "course-pass-criteria-help";
@@ -2601,6 +2602,39 @@ function CoursePageClient() {
             }
           : {
               label: "Not started",
+              className: "bg-slate-50 text-slate-700 ring-slate-200/75",
+            };
+  const readyCheckStatusMeta = !lessonContentReady
+    ? {
+        label: "Loading",
+        helper: "Ready check is refreshing before completion can change.",
+        className: "bg-slate-50 text-slate-700 ring-slate-200/75",
+      }
+    : isLessonDone
+      ? {
+          label: "Done",
+          helper: "Lesson is done. Press Done if you need to return it to In progress.",
+          className: "bg-emerald-50 text-emerald-700 ring-emerald-200/75",
+        }
+      : doneGateSatisfied
+        ? {
+            label: "Ready to complete",
+            helper: "All criteria are checked. Mark as done is available.",
+            className: "bg-blue-50 text-blue-700 ring-blue-100/80",
+          }
+        : activeLessonProgressStatus === "in_progress"
+          ? {
+              label: "In progress",
+              helper:
+                doneGateRemainingCount === 1
+                  ? "One criterion remains. Mark as done stays locked until every criterion is checked."
+                  : `${doneGateRemainingCount} criteria remain. Mark as done stays locked until every criterion is checked.`,
+              className: "bg-amber-50 text-amber-700 ring-amber-200/75",
+            }
+          : {
+              label: "Not started",
+              helper:
+                "Check each criterion when it feels true. Mark as done unlocks after all are checked.",
               className: "bg-slate-50 text-slate-700 ring-slate-200/75",
             };
   const doneConfirmedAt = doneConfirmationByLessonId[activeLesson.id] ?? null;
@@ -4234,6 +4268,7 @@ function CoursePageClient() {
                     {showPassCriteria ? (
                       <article
                         ref={readyCheckRef}
+                        data-testid="course-ready-check-card"
                         className={cx(
                           "p-5",
                           supportCardClass,
@@ -4269,6 +4304,28 @@ function CoursePageClient() {
                             {isLessonDone ? "Done" : "Mark as done"}
                           </button>
                         </div>
+                        <div className="mt-4 rounded-2xl bg-white/82 p-3 ring-1 ring-blue-100/80">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[12px] font-semibold text-slate-500">
+                              Current state
+                            </span>
+                            <span
+                              data-testid="course-ready-check-status"
+                              className={cx(
+                                "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
+                                readyCheckStatusMeta.className
+                              )}
+                            >
+                              {readyCheckStatusMeta.label}
+                            </span>
+                          </div>
+                          <p
+                            data-testid="course-ready-check-helper"
+                            className="mt-2 text-[13px] leading-6 font-medium text-slate-700"
+                          >
+                            {readyCheckStatusMeta.helper}
+                          </p>
+                        </div>
                         {!lessonContentReady ? (
                           <span className="sr-only">Pass criteria are refreshing.</span>
                         ) : null}
@@ -4284,7 +4341,12 @@ function CoursePageClient() {
                                 <li key={criterionId}>
                                   <label
                                     htmlFor={criterionId}
-                                    className="flex cursor-pointer items-start gap-3 rounded-2xl bg-white/88 px-3 py-3 ring-1 ring-blue-100/78 transition hover:bg-blue-50/44"
+                                    className={cx(
+                                      "flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 ring-1 transition",
+                                      checked
+                                        ? "bg-emerald-50/70 ring-emerald-100/90 hover:bg-emerald-50"
+                                        : "bg-white/88 ring-blue-100/78 hover:bg-blue-50/44"
+                                    )}
                                   >
                                     <input
                                       id={criterionId}
