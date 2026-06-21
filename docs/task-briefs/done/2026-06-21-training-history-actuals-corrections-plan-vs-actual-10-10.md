@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-21`
 - `updated`: `2026-06-21`
@@ -428,3 +428,55 @@ API failure-mode evidence:
 - `2026-06-21 | in-progress | owner approved screenshot handoff and raised shared-workout edit risk; documented that workout revisions, immutable snapshots, and Save as new revision vs Update shared workout belong to the workout data-contract brief before any Calendar/workout editor implies a reused workout can be safely edited in place | next: run verify:pre-pr, commit, push, open PR, monitor CI, then run verify:pre-merge before merge readiness`
 - `2026-06-21 | in-progress | first verify:pre-pr stopped on expected Supabase migration drift; confirmed linked project freeswimming-org-prod/sazgjhgxvmxcyowovond, migration list and dry-run showed exactly local-only 20260621143000_completed_activity_events_actual_corrections.sql, applied it with npx supabase db push --linked --yes, post-apply dry-run reported Remote database is up to date, post-apply migration list showed local/remote parity, and linked typegen to /tmp confirmed the completed_activity_events actual fields match types/database.ts | next: rerun verify:pre-pr`
 - `2026-06-21 | in-progress | verify:pre-pr passed after remote migration sync and quality-gate evidence updates; full lane completed branch-current, migration drift, lint, typecheck, 1682 unit tests, build, perf budgets, and e2e 111 passed / 567 skipped; perf gate recommended tightening after long green trend, but active decision remains HOLD because this workstream must wait for at least two new weekly green cycles after 2026-06-19 before ratcheting | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge readiness`
+- `2026-06-21 | done | PR #1200 merged as squash commit 2398d93b after local verify:pre-pr PASS, required GitHub CI PASS, and local verify:pre-merge PASS; post-merge preflight surfaced this repo-managed docs-only closeout | next: complete closeout PR and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-21`
+- `merged_pr`: `#1200`
+- `squash_commit`: `2398d93b5fc723250f69d7f0d4e8ca7441c582ab`
+- `result`: Closed the first actual-history correction slice. Calendar now preserves planned swim truth separately from actual-history truth, shows completed/partly-done rows as read-only plan-vs-actual overviews, and keeps actual editing/reconciliation behind the future `Review actual` path.
+- `validation`: `npm run verify:pre-pr` PASS on `3be86f3f`; required GitHub CI PASS on PR `#1200`; `npm run verify:pre-merge` PASS on `3be86f3f`; linked Supabase migration drift PASS after applying `20260621143000_completed_activity_events_actual_corrections.sql`; owner-approved screenshot handoff in `output/training-history-actuals-corrections-2026-06-21-195637`.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this bounded slice.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Incident response and support operations
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                         | Gaps / Notes                                                                                       |
+| --------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Calendar plan-vs-actual overview, route/view-model tests, screenshot approval.                                                                   | Future Garmin reconciliation remains in blocked Garmin brief.                                      |
+| UX flow clarity                               | `5/5`          | Actual rows are read-only, `Review actual` is disabled/future-facing, no inline actual editor or misleading `Open workout` on actual rows.       | Dedicated actual editor remains future scope.                                                      |
+| Visual design quality                         | `5/5`          | Owner-approved mobile/desktop `after/reference` screenshots.                                                                                     | No visual files changed after screenshot approval.                                                 |
+| Business logic correctness and data integrity | `5/5`          | Additive migration, owner-scoped route tests, stale/duplicate/unknown outcome coverage, and no plan/workout mutation from correction route.      | Workout revision UI deferred to workout data-contract brief.                                       |
+| Accessibility (a11y)                          | `5/5`          | Component coverage for read-only actual overview and stable actions plus full pre-pr/pre-merge e2e matrix.                                       | No separate manual screen-reader pass beyond existing automated/runtime gates.                     |
+| Performance (CWV + payloads)                  | `5/5`          | `test:perf:budgets` PASS in `verify:pre-pr` and `verify:pre-merge`; no new dependency.                                                           | Ratchet tightening held until at least two new weekly green cycles after `2026-06-19`.             |
+| Data placement and sync boundaries            | `5/5`          | Brief source-separation contract, nullable actual fields, server-canonical actual-history row, and future provider evidence boundary preserved.  | Garmin raw evidence tables remain future work.                                                     |
+| Caching and invalidation strategy             | `5/5`          | Current Calendar is force-dynamic/no-store mutation surface; client refresh remains sufficient for this slice and documented for future caching. | Cached history/Stats routes must add explicit invalidation later.                                  |
+| Reliability and failure handling              | `5/5`          | Negative-path tests for unauthenticated, cross-user/missing, invalid, stale, schema-missing, unsupported, and bounded unexpected DB failures.    | None for active slice.                                                                             |
+| Security and authz                            | `5/5`          | Owner-scoped RLS update policy, authz route tests, generic error responses.                                                                      | None for active slice.                                                                             |
+| Privacy and compliance                        | `5/5`          | Policy-impact checklist PASS; no new processor/tracker/export/delete route; payload excludes raw provider data.                                  | Public policy text unchanged because existing Supabase/app-owned progress disclosure covers scope. |
+| Analytics and KPI observability               | `5/5`          | No new unsafe event taxonomy; completion double-counting avoided by separate actual outcomes and documented KPI boundary.                        | Future analytics events need explicit mapping if added.                                            |
+| Incident response and support operations      | `5/5`          | Support runbook covers duplicate, stale, missing-reference, unknown, partial, another-day, and future provider-conflict states.                  | None for active slice.                                                                             |
+| i18n operational readiness                    | `5/5`          | Labels use display text separate from canonical outcome identifiers and tolerate future translation expansion.                                   | Locale implementation remains broader platform work.                                               |
+| Stack-fit and dependency discipline           | `5/5`          | Reused Next.js route handlers, TypeScript contracts, Supabase migration/RLS, Calendar/My Library surfaces, and no added package.                 | None for active slice.                                                                             |
+| Testing and QA automation                     | `5/5`          | Targeted unit/component/route tests, `verify:pre-pr` PASS, GitHub CI PASS, `verify:pre-merge` PASS.                                              | None for active slice.                                                                             |
+| Scalability and cost efficiency               | `5/5`          | Bounded/idempotent writes, existing Calendar window read path, no N+1-prone provider import or Stats aggregation added.                          | Stats aggregation remains out of scope.                                                            |
+| DevOps and rollback readiness                 | `5/5`          | Branch-current, Supabase drift, docs quality gates, CI, pre-merge gate, additive migration, and `git revert 2398d93b` rollback path.             | None for active slice.                                                                             |
+
+Remaining deferred product/architecture work:
+
+- Garmin received-activity reconciliation and raw provider evidence remain blocked until partner/API facts and samples exist.
+- `Review actual` / performed-session editing remains a dedicated future workflow.
+- Shared workout revision semantics remain in `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`.
+- Perfect Day remains a separate product decision before returning to Calendar.
