@@ -16,6 +16,10 @@ import {
   type ProgramStatus,
   type ProgramSummary,
 } from "@/lib/programs/shared";
+import {
+  isPlannedWorkoutInstanceStatus,
+  normalizePlannedWorkoutInstanceDateOverrideKind,
+} from "@/lib/my-library/planned-workout-instances";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import {
   buildWorkoutEditorRecord,
@@ -31,6 +35,7 @@ type ProgramInsert = Database["public"]["Tables"]["programs"]["Insert"];
 type ProgramUpdate = Database["public"]["Tables"]["programs"]["Update"];
 type PlannedWorkoutInstanceInsert =
   Database["public"]["Tables"]["planned_workout_instances"]["Insert"];
+type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 
 export const PROGRAM_SELECT = `
@@ -57,6 +62,7 @@ export const PLANNED_WORKOUT_INSTANCE_SELECT = `
   day_index,
   position,
   status,
+  date_override_kind,
   source_kind,
   created_at,
   updated_at
@@ -166,9 +172,51 @@ export function buildPlannedWorkoutInstanceInserts(
       day_index: assignment.dayIndex,
       position: assignment.position,
       status: "planned",
+      date_override_kind: "program_assignment",
       source_kind: "program_assignment",
     }))
   );
+}
+
+function preservePlannedInstanceUserOverrides(
+  nextInstances: PlannedWorkoutInstanceInsert[],
+  existingRows: Pick<
+    PlannedWorkoutInstanceRow,
+    | "id"
+    | "program_assignment_id"
+    | "planned_on"
+    | "day_index"
+    | "position"
+    | "status"
+    | "date_override_kind"
+  >[]
+): PlannedWorkoutInstanceInsert[] {
+  const existingByAssignmentId = new Map(
+    existingRows.map((row) => [row.program_assignment_id, row])
+  );
+
+  return nextInstances.flatMap((nextInstance) => {
+    const existing = existingByAssignmentId.get(nextInstance.program_assignment_id);
+    if (!existing) return [nextInstance];
+
+    if (!isPlannedWorkoutInstanceStatus(existing.status)) {
+      return [];
+    }
+
+    const dateOverrideKind = normalizePlannedWorkoutInstanceDateOverrideKind(
+      existing.date_override_kind
+    );
+
+    return [
+      {
+        ...nextInstance,
+        status: existing.status,
+        date_override_kind: dateOverrideKind,
+        planned_on: dateOverrideKind === "manual" ? existing.planned_on : nextInstance.planned_on,
+        day_index: dateOverrideKind === "manual" ? existing.day_index : nextInstance.day_index,
+      },
+    ];
+  });
 }
 
 export async function syncPlannedWorkoutInstancesForProgram(
@@ -179,10 +227,11 @@ export async function syncPlannedWorkoutInstancesForProgram(
   const nextInstances = buildPlannedWorkoutInstanceInserts(userId, program);
   const existingResult = await supabase
     .from("planned_workout_instances")
-    .select("id, program_assignment_id")
+    .select(
+      "id, program_assignment_id, planned_on, day_index, position, status, date_override_kind"
+    )
     .eq("user_id", userId)
-    .eq("program_id", program.id)
-    .eq("status", "planned");
+    .eq("program_id", program.id);
 
   if (isPlannedWorkoutInstanceSchemaMissing(existingResult.error)) {
     return {
@@ -200,8 +249,22 @@ export async function syncPlannedWorkoutInstancesForProgram(
     return { ok: false, status: 500, error: "Could not update planned calendar sessions." };
   }
 
-  if (nextInstances.length > 0) {
-    const upsertResult = await supabase.from("planned_workout_instances").upsert(nextInstances, {
+  const syncInstances = preservePlannedInstanceUserOverrides(
+    nextInstances,
+    (existingResult.data ?? []) as Pick<
+      PlannedWorkoutInstanceRow,
+      | "id"
+      | "program_assignment_id"
+      | "planned_on"
+      | "day_index"
+      | "position"
+      | "status"
+      | "date_override_kind"
+    >[]
+  );
+
+  if (syncInstances.length > 0) {
+    const upsertResult = await supabase.from("planned_workout_instances").upsert(syncInstances, {
       onConflict: "program_id,program_assignment_id",
     });
 
@@ -225,8 +288,13 @@ export async function syncPlannedWorkoutInstancesForProgram(
   const nextAssignmentIds = new Set(
     nextInstances.map((instance) => instance.program_assignment_id)
   );
-  const staleInstanceIds = (existingResult.data ?? [])
-    .filter((row) => !nextAssignmentIds.has(row.program_assignment_id))
+  const staleInstanceIds = (
+    (existingResult.data ?? []) as Pick<
+      PlannedWorkoutInstanceRow,
+      "id" | "program_assignment_id" | "status"
+    >[]
+  )
+    .filter((row) => row.status === "planned" && !nextAssignmentIds.has(row.program_assignment_id))
     .map((row) => row.id);
 
   if (staleInstanceIds.length > 0) {

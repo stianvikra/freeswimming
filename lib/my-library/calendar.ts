@@ -113,6 +113,18 @@ export function getTodayCalendarDate(now = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
 
+export function isValidMyLibraryCalendarDateKey(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const parsed = parseCalendarDate(value);
+  return Boolean(parsed && toDateKey(parsed) === value);
+}
+
+export function getMyLibraryCalendarDayIndex(dateKey: string): number {
+  const parsed = parseCalendarDate(dateKey);
+  if (!parsed) return 0;
+  return (parsed.getUTCDay() + 6) % 7;
+}
+
 export function addCalendarDays(dateKey: string, days: number): string {
   const parsed = parseCalendarDate(dateKey);
   const date = parsed ?? new Date();
