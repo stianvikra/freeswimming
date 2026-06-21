@@ -6,7 +6,7 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-22`
+- `updated`: `2026-06-21`
 
 ## Brief Audit Record
 
@@ -162,6 +162,24 @@ Define a canonical, Garmin-compatible workout schema and deterministic step engi
   - no production logic may infer canonical identity from editable labels or ordinal strings alone.
 - Observability and repair:
   - unresolved legacy/foreign identifiers must fail deterministically and be surfaced in validation or import logs rather than silently coerced.
+
+## Workout Revision And Shared Reference Contract
+
+Decision captured on `2026-06-21` from Calendar actual-history review:
+
+- A saved `workout` can be referenced by multiple plans, planned instances, Garmin send jobs, and actual-history rows.
+- Editing a shared workout in place can unintentionally change the meaning of older plans or future reused plans.
+- `workout_template` is reserved for a reusable template/source pattern and must not be used as a label for every concrete saved workout.
+- Future plan instances should be able to point to a specific workout revision or immutable workout snapshot, not only the mutable workout ID.
+- When a workout already has plan usage, send-job usage, actual-history usage, or multiple references, the edit flow should default to `Save as new revision`.
+- `Update shared workout` should be an explicit advanced choice that tells the user it changes every future/planned reference that still points to the mutable shared workout.
+- Existing actual-history and provider evidence must keep their original planned/workout snapshot semantics even if the source workout later receives a new revision.
+- Calendar should avoid implying that a planned workout edit is safe until this revision model exists; route actions should prefer view/read labels such as `View workout` for shared references, with actual edits happening in the dedicated workout editor under revision rules.
+- Acceptance criteria for this contract must include tests proving that:
+  - a plan instance can remain attached to the revision it was created with,
+  - saving a new revision does not rewrite older actual-history evidence,
+  - updating the shared workout requires explicit user intent,
+  - labels/slugs are not used as revision identity.
 
 ## Platform 10/10 Scorecard Mapping
 

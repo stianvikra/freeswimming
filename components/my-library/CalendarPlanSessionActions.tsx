@@ -59,13 +59,13 @@ export default function CalendarPlanSessionActions({ session }: Props) {
   const [plannedOn, setPlannedOn] = useState(session.date);
   const [pendingAction, setPendingAction] = useState<PlanAction | null>(null);
   const [state, setState] = useState<ActionState | null>(null);
-  const isCompleted = session.completion.selection === "manual_completed";
+  const hasManualActual = session.completion.selection === "manual_actual";
   const needsCompletionReview = session.completion.selection === "review";
   const canChangePlanned =
-    session.statusSelection === "planned" && !isCompleted && !needsCompletionReview;
+    session.statusSelection === "planned" && !hasManualActual && !needsCompletionReview;
   const canRecover =
     (session.statusSelection === "skipped" || session.statusSelection === "cancelled") &&
-    !isCompleted &&
+    !hasManualActual &&
     !needsCompletionReview;
   const canComplete =
     canChangePlanned && Boolean(session.workout) && session.completion.selection === "none";
@@ -134,16 +134,7 @@ export default function CalendarPlanSessionActions({ session }: Props) {
     void submitAction("move", plannedOn);
   }
 
-  if (isCompleted) {
-    return (
-      <p
-        data-testid={`calendar-plan-session-actions-${session.id}`}
-        className="mt-3 text-xs leading-5 font-semibold text-emerald-800"
-      >
-        Already marked done manually.
-      </p>
-    );
-  }
+  if (hasManualActual) return null;
 
   if (needsCompletionReview) {
     return (

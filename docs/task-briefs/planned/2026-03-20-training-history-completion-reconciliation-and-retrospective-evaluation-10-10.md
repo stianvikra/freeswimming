@@ -54,7 +54,7 @@ Training history must keep these layers separate:
    - Does not own: partial/cancelled/comments/Garmin.
    - Status: shipped in `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`.
 2. Actuals/corrections and plan-vs-actual child:
-   - Path: `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
+   - Path: `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
    - Owns: editable actual outcomes for completed-as-planned, completed-different, partial, completed-on-another-day, cancelled-as-actual, review-needed, and plan-vs-actual display.
    - Does not own: Garmin provider ingestion, AI evaluation, or source workout/program edits.
 3. Garmin Activity reconciliation child:
@@ -79,7 +79,7 @@ First shipped runtime child scope is intentionally narrower and owned by:
 
 Next local runtime child scope is owned by:
 
-- `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 
 ## Out Of Scope
 
@@ -285,7 +285,7 @@ Critical target categories for a `10/10` claim:
 ## Acceptance Criteria
 
 - Calendar Child `D` can safely use this parent as the canonical history boundary and has shipped as manual completion only.
-- The next local child is explicitly `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
+- The next local child is explicitly `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
 - Manual completion is defined as actual outcome truth, separate from planned rows and Garmin send state.
 - Actual-history corrections are defined as actual truth changes, not planned row changes.
 - Garmin send, Garmin received activity, and reconciliation/review responsibilities are separated before runtime work starts.
@@ -310,4 +310,4 @@ Critical target categories for a `10/10` claim:
 - `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon, explicit date window, and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
 - `2026-05-01 | roadmap alignment | captured owner real-life scheduling requirements: preserve planned and actual states separately, support completed-as-planned, completed-on-another-day, partly-completed, skipped/cancelled, and moved-forward outcomes, and keep later AI feedback/adaptive replanning dependent on canonical history instead of planner-local flags | next: keep AI session V1 free of history implementation while preserving these contracts for the later program/history slice`
 - `2026-06-21 | audit-refresh | refreshed after Calendar planned-instance identity and planned-only status actions shipped through PR #1191/#1192; narrowed the next runtime child to manual completed swim events and added explicit Garmin Training API send vs Activity API receive vs reconciliation boundary from official Garmin docs | next: execute Calendar Child D only after owner explicitly asks for runtime implementation`
-- `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next: validate docs-only audit and wait for owner to explicitly execute the actuals/corrections child`
+- `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next: active implementation is underway on branch training-history-actuals-corrections`

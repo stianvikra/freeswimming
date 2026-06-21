@@ -29,10 +29,14 @@ const actionClass =
 const calendarActionClass = cx(actionClass, "w-full sm:w-40");
 const calendarNavActionClass = cx(actionClass, "min-w-0 px-2 text-xs sm:w-40 sm:px-4 sm:text-sm");
 const sessionActionClass = cx(actionClass, "w-full sm:w-[9rem]");
+const disabledSessionActionClass = cx(
+  sessionActionClass,
+  "cursor-not-allowed opacity-60 hover:bg-white"
+);
 const primaryActionClass =
   "fs-cta-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const filterClass =
-  "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] border px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
+  "inline-flex min-h-10 w-full min-w-0 items-center justify-center rounded-[var(--fs-radius-control)] border px-3 text-center text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 sm:w-auto";
 const selectedFilterClass =
   "border-[color:var(--fs-color-brand-700)] bg-[color:var(--fs-color-brand-700)] text-white";
 const idleFilterClass =
@@ -86,8 +90,47 @@ function formatLayerCount(count: number) {
   return `${count} daily layer${count === 1 ? "" : "s"}`;
 }
 
+function getActualOutcomeLabel(outcome: string) {
+  switch (outcome) {
+    case "completed_as_planned":
+      return "As planned";
+    case "completed_different":
+      return "Changed";
+    case "partial":
+      return "Partly done";
+    case "completed_on_another_day":
+      return "Another day";
+    case "cancelled_as_actual":
+      return "Cancelled actual";
+    case "needs_review":
+      return "Review needed";
+    default:
+      return "Completion review";
+  }
+}
+
+function getActualOutcomeClass(session: MyLibraryCalendarPlanSession) {
+  if (session.completion.selection !== "manual_actual") return reviewChipClass;
+
+  switch (session.completion.outcome) {
+    case "completed_as_planned":
+      return statusChipClass;
+    case "completed_different":
+    case "completed_on_another_day":
+    case "partial":
+      return "inline-flex text-xs font-semibold text-amber-800";
+    case "cancelled_as_actual":
+      return "inline-flex text-xs font-semibold text-rose-800";
+    case "needs_review":
+    default:
+      return reviewChipClass;
+  }
+}
+
 function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
-  if (session.completion.selection === "manual_completed") return "Completed";
+  if (session.completion.selection === "manual_actual") {
+    return getActualOutcomeLabel(session.completion.outcome);
+  }
   if (session.completion.selection === "review") return "Completion review";
   if (!session.workout) return "Missing workout";
 
@@ -105,7 +148,7 @@ function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
 }
 
 function getSessionStatusClass(session: MyLibraryCalendarPlanSession) {
-  if (session.completion.selection === "manual_completed") return statusChipClass;
+  if (session.completion.selection === "manual_actual") return getActualOutcomeClass(session);
   if (session.completion.selection === "review") return reviewChipClass;
   if (!session.workout) return missingChipClass;
 
@@ -123,8 +166,8 @@ function getSessionStatusClass(session: MyLibraryCalendarPlanSession) {
 }
 
 function getSessionSupportText(session: MyLibraryCalendarPlanSession) {
-  if (session.completion.selection === "manual_completed") {
-    return `Marked done manually on ${formatPlanDateLabel(
+  if (session.completion.selection === "manual_actual") {
+    return `Manual actual recorded on ${formatPlanDateLabel(
       session.completion.completedOn
     )}. Planned identity stays linked for future reconciliation.`;
   }
@@ -156,7 +199,9 @@ function doesSessionNeedReview(session: MyLibraryCalendarPlanSession) {
   return (
     !session.workout ||
     session.statusSelection !== "planned" ||
-    session.completion.selection === "review"
+    session.completion.selection === "review" ||
+    (session.completion.selection === "manual_actual" &&
+      session.completion.outcome === "needs_review")
   );
 }
 
@@ -165,7 +210,7 @@ function shouldShowMonthStatusLabel(session: MyLibraryCalendarPlanSession) {
     !session.workout ||
     session.statusSelection !== "planned" ||
     session.dateOverrideKind === "manual" ||
-    session.completion.selection === "manual_completed" ||
+    session.completion.selection === "manual_actual" ||
     session.completion.selection === "review"
   );
 }
@@ -204,6 +249,33 @@ function formatDurationTotal(minutes: number | null) {
   return typeof minutes === "number" ? `~${minutes} min` : "Not set";
 }
 
+function formatActualDuration(seconds: number | null) {
+  if (typeof seconds !== "number") return "Not set";
+  const minutes = Math.round(seconds / 60);
+  return minutes === 1 ? "1 min" : `${minutes} min`;
+}
+
+function formatActualDistance(meters: number | null) {
+  if (typeof meters !== "number") return "Not set";
+  return `${meters.toFixed(meters % 1 === 0 ? 0 : 1)}m`;
+}
+
+function formatActualEnvironment(
+  completion: Extract<MyLibraryCalendarPlanSession["completion"], { selection: "manual_actual" }>
+) {
+  if (completion.actualEnvironment === "open_water") return "Open water";
+  if (completion.actualEnvironment === "pool") {
+    const length =
+      typeof completion.actualPoolLengthM === "number"
+        ? ` ${completion.actualPoolLengthM.toFixed(completion.actualPoolLengthM % 1 === 0 ? 0 : 1)}${
+            completion.actualPoolLengthUnit ?? "m"
+          }`
+        : "";
+    return `Pool${length}`;
+  }
+  return "Not set";
+}
+
 function getWeekSessions(days: MyLibraryCalendarPlanDay[]) {
   return days.flatMap((day) => day.sessions);
 }
@@ -219,8 +291,12 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     return typeof minutes === "number" ? (total ?? 0) + minutes : total;
   }, null);
   const reviewCount = sessions.filter(doesSessionNeedReview).length;
-  const completedCount = sessions.filter(
-    (session) => session.completion.selection === "manual_completed"
+  const actualCount = sessions.filter(
+    (session) => session.completion.selection === "manual_actual"
+  ).length;
+  const doneCount = sessions.filter(
+    (session) =>
+      session.completion.selection === "manual_actual" && session.completion.isDoneOutcome
   ).length;
 
   return {
@@ -228,7 +304,8 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     distanceMeters,
     durationMinutes,
     reviewCount,
-    completedCount,
+    actualCount,
+    doneCount,
   };
 }
 
@@ -408,6 +485,8 @@ function SessionRow({
   const programTitle = session.program?.title ?? "Missing plan";
   const statusLabel = getSessionStatusLabel(session);
   const statusClass = getSessionStatusClass(session);
+  const actualCompletion =
+    session.completion.selection === "manual_actual" ? session.completion : null;
 
   return (
     <div
@@ -435,13 +514,61 @@ function SessionRow({
           <p className="mt-1 text-xs font-medium text-[color:var(--fs-color-muted)]">
             {getSessionSupportText(session)}
           </p>
+          {actualCompletion ? (
+            <div
+              data-testid={`calendar-plan-session-actual-${session.id}`}
+              className="mt-3 rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-slate-50/80 p-3"
+            >
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <p className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                    Planned
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    {workoutSummary}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                    Completion date
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    {formatPlanDateLabel(actualCompletion.completedOn)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                    Actual load
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    {formatActualDistance(actualCompletion.actualDistanceM)} ·{" "}
+                    {formatActualDuration(actualCompletion.actualDurationSeconds)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                    Context
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+                    {formatActualEnvironment(actualCompletion)}
+                  </p>
+                </div>
+              </div>
+              {actualCompletion.correctionNote ? (
+                <p className="mt-3 text-xs leading-5 text-[color:var(--fs-color-muted)]">
+                  {actualCompletion.correctionNote}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <CalendarPlanSessionActions session={session} />
         </div>
         <div
+          data-testid={`calendar-plan-session-links-${session.id}`}
           className={cx(
             "grid gap-2 sm:flex sm:flex-wrap sm:items-center",
             !compact && "lg:justify-end",
-            session.workout ? "grid-cols-2" : "grid-cols-1"
+            session.workout || actualCompletion ? "grid-cols-2" : "grid-cols-1"
           )}
         >
           {session.program ? (
@@ -452,7 +579,16 @@ function SessionRow({
               Edit Plan
             </Link>
           ) : null}
-          {session.workout ? (
+          {actualCompletion ? (
+            <button
+              type="button"
+              className={disabledSessionActionClass}
+              disabled
+              aria-label="Review actual"
+            >
+              Review actual
+            </button>
+          ) : session.workout ? (
             <Link
               href={`/my-library/workouts/${session.workout.id}`}
               className={sessionActionClass}
@@ -682,7 +818,7 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
         totals.sessionCount
       )}, ${formatDistanceTotal(totals.distanceMeters)}, ${formatDurationTotal(
         totals.durationMinutes
-      )}, ${totals.completedCount} completed`}
+      )}, ${totals.actualCount} actual recorded`}
     >
       <p className="text-[11px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
         Week total
@@ -714,13 +850,13 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
               {formatDurationTotal(totals.durationMinutes)}
             </dd>
           </div>
-          {totals.completedCount > 0 ? (
+          {totals.actualCount > 0 ? (
             <div>
               <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
-                Done
+                Actual
               </dt>
               <dd className="text-sm font-semibold text-emerald-700">
-                {totals.completedCount} completed
+                {totals.actualCount} recorded
               </dd>
             </div>
           ) : null}
@@ -1015,7 +1151,7 @@ export default function CalendarPlanWeekHub({ model }: Props) {
       {model.programs.length > 0 ? (
         <div className={mutedCardClass}>
           <p className={eyebrowClass}>Saved plans</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Link
               href={buildMyLibraryCalendarPlanHref({ selectedDate: model.selectedDate })}
               aria-current={!model.selectedProgramId ? "true" : undefined}
