@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-r
 import { cx } from "@/components/ui/cx";
 import CalendarPlanSessionActions from "@/components/my-library/CalendarPlanSessionActions";
 import { buildMyLibraryCalendarPlanHref } from "@/lib/my-library/calendar";
+import type { MyLibraryCalendarDailyLayer } from "@/lib/my-library/calendar-daily-layers";
 import type {
   MyLibraryCalendarPlanDay,
   MyLibraryCalendarPlanMonthDay,
@@ -39,6 +40,8 @@ const idleFilterClass =
 const statusChipClass = "inline-flex text-xs font-semibold text-emerald-700";
 const missingChipClass = "inline-flex text-xs font-semibold text-amber-800";
 const reviewChipClass = "inline-flex text-xs font-semibold text-slate-600";
+const layerChipClass =
+  "block rounded-[6px] border px-2 py-1 text-left text-[11px] leading-4 font-semibold";
 
 const feedbackToneClasses: Record<FeedbackTone, string> = {
   warning: "border-amber-200 bg-amber-50/80 text-amber-950",
@@ -77,6 +80,10 @@ function formatCompactSessionCount(count: number) {
 
 function formatReviewCount(count: number) {
   return `${count} review item${count === 1 ? "" : "s"}`;
+}
+
+function formatLayerCount(count: number) {
+  return `${count} daily layer${count === 1 ? "" : "s"}`;
 }
 
 function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
@@ -161,6 +168,32 @@ function shouldShowMonthStatusLabel(session: MyLibraryCalendarPlanSession) {
     session.completion.selection === "manual_completed" ||
     session.completion.selection === "review"
   );
+}
+
+function shouldShowDailyLayer(layer: MyLibraryCalendarDailyLayer) {
+  return layer.status !== "no_data" && layer.status !== "future";
+}
+
+function getVisibleDailyLayers(layers: MyLibraryCalendarDailyLayer[]) {
+  return layers.filter(shouldShowDailyLayer);
+}
+
+function getDailyLayerToneClass(layer: MyLibraryCalendarDailyLayer) {
+  if (layer.status === "error") return "border-rose-200 bg-rose-50/90 text-rose-900";
+  if (layer.status === "schema_missing" || layer.status === "review" || layer.tone === "warning") {
+    return "border-amber-200 bg-amber-50/90 text-amber-950";
+  }
+  if (layer.tone === "positive") return "border-emerald-200 bg-emerald-50/90 text-emerald-800";
+  if (layer.tone === "muted") return "border-slate-200 bg-slate-50/90 text-slate-600";
+  return "border-blue-100 bg-blue-50/80 text-[color:var(--fs-color-brand-700)]";
+}
+
+function getDailyLayerMetricToneClass(metric: MyLibraryCalendarDailyLayer["metrics"][number]) {
+  if (metric.tone === "warning") return "text-amber-800";
+  if (metric.tone === "positive") return "text-emerald-700";
+  if (metric.tone === "error") return "text-rose-800";
+  if (metric.tone === "muted") return "text-[color:var(--fs-color-muted)]";
+  return "text-[color:var(--fs-color-ink-strong)]";
 }
 
 function formatDistanceTotal(meters: number | null) {
@@ -444,14 +477,23 @@ function MonthDayCell({
 }) {
   const visibleSessions = day.sessions.slice(0, 2);
   const hiddenSessionCount = Math.max(0, day.sessions.length - visibleSessions.length);
+  const visibleLayers = getVisibleDailyLayers(day.dailyLayers).slice(0, 3);
+  const hiddenLayerCount = Math.max(
+    0,
+    getVisibleDailyLayers(day.dailyLayers).length - visibleLayers.length
+  );
   const isPastDate = day.date < todayDate;
   const href = buildMyLibraryCalendarPlanHref({
     selectedDate: day.date,
     programId,
   });
+  const layerLabel =
+    visibleLayers.length > 0
+      ? `, ${visibleLayers.map((layer) => layer.compactLabel).join(", ")}`
+      : "";
   const ariaLabel = `${formatPlanDateLabel(day.date)}${day.isToday ? ", today" : ""}, ${formatSessionCount(
     day.sessions.length
-  )}`;
+  )}${layerLabel}`;
   const dayNumberClass = cx(
     "inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1 text-sm font-semibold",
     day.isToday
@@ -522,7 +564,109 @@ function MonthDayCell({
           No planned sessions
         </span>
       )}
+
+      {visibleLayers.length > 0 ? (
+        <ul className="mt-3 space-y-1.5" aria-label="Daily source signals">
+          {visibleLayers.map((layer) => (
+            <li key={layer.source} className={cx(layerChipClass, getDailyLayerToneClass(layer))}>
+              {layer.compactLabel}
+            </li>
+          ))}
+          {hiddenLayerCount > 0 ? (
+            <li className="px-1 text-xs font-semibold text-[color:var(--fs-color-muted)]">
+              +{hiddenLayerCount} more signals
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
     </Link>
+  );
+}
+
+function DailyLayerRows({
+  layers,
+  compact = false,
+  showNoData = false,
+}: {
+  layers: MyLibraryCalendarDailyLayer[];
+  compact?: boolean;
+  showNoData?: boolean;
+}) {
+  const displayLayers = showNoData ? layers : getVisibleDailyLayers(layers);
+
+  if (displayLayers.length === 0) return null;
+
+  return (
+    <div className="mt-5 border-t border-[color:var(--fs-border-soft)] pt-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className={eyebrowClass}>Daily layers</p>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+            Whole-day signals
+          </h3>
+        </div>
+        <span className="rounded-[var(--fs-radius-control)] bg-white/85 px-3 py-1 text-xs font-semibold text-[color:var(--fs-color-muted)] ring-1 ring-[color:var(--fs-border-soft)]">
+          {formatLayerCount(displayLayers.length)}
+        </span>
+      </div>
+
+      <div className="mt-3 divide-y divide-[color:var(--fs-border-soft)]">
+        {displayLayers.map((layer) => (
+          <div
+            key={layer.source}
+            data-testid={`calendar-daily-layer-${layer.source}`}
+            className={cx(
+              "py-3 first:pt-0 last:pb-0",
+              !compact && "lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-4"
+            )}
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cx(
+                    "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
+                    getDailyLayerToneClass(layer)
+                  )}
+                >
+                  {layer.label}
+                </span>
+                <span className="text-xs font-semibold text-[color:var(--fs-color-muted)]">
+                  {layer.compactLabel}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-[color:var(--fs-color-ink)]">
+                {layer.summary}
+              </p>
+              <p className="mt-1 text-xs leading-5 font-medium text-[color:var(--fs-color-muted)]">
+                {layer.supportLabel}
+              </p>
+              {layer.metrics.length > 0 ? (
+                <dl className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {layer.metrics.map((metric) => (
+                    <div key={metric.id}>
+                      <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                        {metric.label}
+                      </dt>
+                      <dd
+                        className={cx(
+                          "text-sm font-semibold",
+                          getDailyLayerMetricToneClass(metric)
+                        )}
+                      >
+                        {metric.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+            </div>
+            <Link href={layer.href} className={cx(sessionActionClass, "mt-3 sm:w-40 lg:mt-0")}>
+              Open source
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -533,7 +677,7 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
   return (
     <div
       data-testid={`calendar-plan-month-week-total-${weekStartDate}`}
-      className="flex min-h-[10.75rem] flex-col border-l border-[color:var(--fs-border-soft)] bg-slate-50/75 p-3 text-left"
+      className="flex min-h-[10.75rem] flex-col border-l-[3px] border-[color:var(--fs-color-brand-500)] bg-blue-50/70 p-3 text-left"
       aria-label={`Week total ${getWeekTotalRangeLabel(days)}, ${formatCompactSessionCount(
         totals.sessionCount
       )}, ${formatDistanceTotal(totals.distanceMeters)}, ${formatDurationTotal(
@@ -543,32 +687,30 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
       <p className="text-[11px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
         Week total
       </p>
-      <p className="mt-1 text-xs font-semibold text-[color:var(--fs-color-muted)]">
-        {getWeekTotalRangeLabel(days)}
-      </p>
+      <p className="mt-1 text-xs font-semibold text-slate-600">{getWeekTotalRangeLabel(days)}</p>
       {totals.sessionCount > 0 ? (
         <dl className="mt-3 space-y-2">
           <div>
-            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
               Sessions
             </dt>
-            <dd className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+            <dd className="text-sm font-semibold text-slate-950">
               {formatCompactSessionCount(totals.sessionCount)}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
               Distance
             </dt>
-            <dd className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+            <dd className="text-sm font-semibold text-slate-950">
               {formatDistanceTotal(totals.distanceMeters)}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
               Time
             </dt>
-            <dd className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
+            <dd className="text-sm font-semibold text-slate-950">
               {formatDurationTotal(totals.durationMinutes)}
             </dd>
           </div>
@@ -723,6 +865,8 @@ function SelectedDayDetail({
       ) : (
         <p className={cx("mt-4", mutedTextClass)}>No planned swim session on this date.</p>
       )}
+
+      <DailyLayerRows layers={day.dailyLayers} compact={compact} showNoData />
     </section>
   );
 }
@@ -751,6 +895,8 @@ function DayPlan({ day }: { day: MyLibraryCalendarPlanDay }) {
       ) : (
         <p className={cx("mt-4", mutedTextClass)}>No planned swim session on this date.</p>
       )}
+
+      <DailyLayerRows layers={day.dailyLayers} compact />
     </section>
   );
 }

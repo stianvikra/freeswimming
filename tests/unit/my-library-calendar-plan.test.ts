@@ -5,8 +5,12 @@ import type { Database } from "@/types/database";
 
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
 type CompletedActivityEventRow = Database["public"]["Tables"]["completed_activity_events"]["Row"];
+type HabitCheckInRow = Database["public"]["Tables"]["habit_check_ins"]["Row"];
+type HabitDefinitionRow = Database["public"]["Tables"]["habit_definitions"]["Row"];
+type HabitMotivationResetRow = Database["public"]["Tables"]["habit_motivation_resets"]["Row"];
 type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
+type DrylandMicroPlanRow = Database["public"]["Tables"]["dryland_micro_plans"]["Row"];
 
 function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
   return {
@@ -118,6 +122,101 @@ function buildCompletedActivityEvent(
   };
 }
 
+function buildHabitDefinitionRow(overrides?: Partial<HabitDefinitionRow>): HabitDefinitionRow {
+  return {
+    id: "55555555-5555-4555-8555-555555555555",
+    user_id: "user-1",
+    title: "Morning mobility",
+    notes: null,
+    habit_mode: "build",
+    habit_type: "binary",
+    category: "movement",
+    target_operator: "at_least",
+    target_value_numeric: null,
+    target_unit: null,
+    target_time: null,
+    start_date: "2026-06-01",
+    last_lapse_date: null,
+    timer_enabled: false,
+    timer_target_seconds: null,
+    cadence_period: "daily",
+    cadence_target_count: 1,
+    cadence_day_policy: "fixed",
+    schedule_days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    is_perfect_day_item: true,
+    status: "active",
+    sort_order: 0,
+    created_at: "2026-06-01T06:00:00.000Z",
+    updated_at: "2026-06-01T06:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildHabitCheckInRow(overrides?: Partial<HabitCheckInRow>): HabitCheckInRow {
+  return {
+    id: "66666666-6666-4666-8666-666666666666",
+    user_id: "user-1",
+    habit_id: "55555555-5555-4555-8555-555555555555",
+    check_in_date: "2026-06-22",
+    timezone: "Europe/Oslo",
+    value_numeric: null,
+    value_boolean: true,
+    value_time: null,
+    timer_seconds: 0,
+    manual_minutes: 0,
+    note: null,
+    source_kind: "manual",
+    source_dryland_micro_plan_id: null,
+    source_micro_block_id: null,
+    source_completed_at: null,
+    status: "logged",
+    completed_at: "2026-06-22T08:00:00.000Z",
+    created_at: "2026-06-22T08:00:00.000Z",
+    updated_at: "2026-06-22T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildHabitResetRow(overrides?: Partial<HabitMotivationResetRow>): HabitMotivationResetRow {
+  return {
+    id: "77777777-7777-4777-8777-777777777777",
+    user_id: "user-1",
+    habit_id: "55555555-5555-4555-8555-555555555555",
+    reset_type: "reset_stats",
+    status: "active",
+    effective_date: "2026-06-22",
+    created_by: "user-1",
+    created_at: "2026-06-22T09:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function buildMicroPlanRow(overrides?: Partial<DrylandMicroPlanRow>): DrylandMicroPlanRow {
+  return {
+    id: "88888888-8888-4888-8888-888888888888",
+    user_id: "user-1",
+    source_dryland_session_id: null,
+    source_session_title: "Shoulder prep",
+    title: "Shoulder prep micro",
+    session_kind: "strength",
+    status: "active",
+    timezone: "Europe/Oslo",
+    week_starts_at: "2026-06-15T00:00:00.000Z",
+    week_ends_at: "2026-06-22T00:00:00.000Z",
+    blocks: [
+      {
+        id: "micro-block-1",
+        status: "completed",
+        completedAt: "2026-06-20T07:00:00.000Z",
+        skippedAt: null,
+      },
+    ],
+    created_at: "2026-06-22T06:00:00.000Z",
+    updated_at: "2026-06-22T07:00:00.000Z",
+    ...overrides,
+  };
+}
+
 function buildSupabaseMock(input: {
   programs?: ProgramRow[];
   instances?: PlannedWorkoutInstanceRow[];
@@ -125,7 +224,39 @@ function buildSupabaseMock(input: {
   instancesError?: { code?: string; message?: string };
   completedActivityEvents?: CompletedActivityEventRow[];
   completedActivityError?: { code?: string; message?: string };
+  habitDefinitions?: HabitDefinitionRow[];
+  habitCheckIns?: HabitCheckInRow[];
+  habitResets?: HabitMotivationResetRow[];
+  microPlans?: DrylandMicroPlanRow[];
 }) {
+  const habitDefinitionsOrderUpdated = vi.fn().mockResolvedValue({
+    data: input.habitDefinitions ?? [],
+    error: null,
+  });
+  const habitDefinitionsOrderSort = vi.fn(() => ({ order: habitDefinitionsOrderUpdated }));
+  const habitDefinitionsEq = vi.fn(() => ({ order: habitDefinitionsOrderSort }));
+
+  const habitCheckInsLte = vi.fn().mockResolvedValue({
+    data: input.habitCheckIns ?? [],
+    error: null,
+  });
+  const habitCheckInsGte = vi.fn(() => ({ lte: habitCheckInsLte }));
+  const habitCheckInsEq = vi.fn(() => ({ gte: habitCheckInsGte }));
+
+  const habitResetsLte = vi.fn().mockResolvedValue({
+    data: input.habitResets ?? [],
+    error: null,
+  });
+  const habitResetsGte = vi.fn(() => ({ lte: habitResetsLte }));
+  const habitResetsEq = vi.fn(() => ({ gte: habitResetsGte }));
+
+  const microPlansGte = vi.fn().mockResolvedValue({
+    data: input.microPlans ?? [],
+    error: null,
+  });
+  const microPlansLte = vi.fn(() => ({ gte: microPlansGte }));
+  const microPlansEq = vi.fn(() => ({ lte: microPlansLte }));
+
   const programsLimit = vi.fn().mockResolvedValue({
     data: input.programs ?? [buildProgramRow()],
     error: null,
@@ -179,17 +310,64 @@ function buildSupabaseMock(input: {
       };
     }
 
+    if (table === "habit_definitions") {
+      return {
+        select: vi.fn(() => ({ eq: habitDefinitionsEq })),
+      };
+    }
+
+    if (table === "habit_check_ins") {
+      return {
+        select: vi.fn(() => ({ eq: habitCheckInsEq })),
+      };
+    }
+
+    if (table === "habit_motivation_resets") {
+      return {
+        select: vi.fn(() => ({ eq: habitResetsEq })),
+      };
+    }
+
+    if (table === "dryland_micro_plans") {
+      return {
+        select: vi.fn(() => ({ eq: microPlansEq })),
+      };
+    }
+
     throw new Error(`Unexpected table ${table}`);
   });
 
-  return { from, instancesGte, instancesLte, workoutsIn, completedActivityIn };
+  return {
+    from,
+    instancesGte,
+    instancesLte,
+    workoutsIn,
+    completedActivityIn,
+    habitCheckInsGte,
+    habitCheckInsLte,
+    microPlansLte,
+    microPlansGte,
+  };
 }
 
 describe("my library calendar plan loader", () => {
   it("hydrates planned workout instances for the selected week and month grid", async () => {
-    const { from, instancesGte, instancesLte, workoutsIn, completedActivityIn } = buildSupabaseMock(
-      {}
-    );
+    const {
+      from,
+      instancesGte,
+      instancesLte,
+      workoutsIn,
+      completedActivityIn,
+      habitCheckInsGte,
+      habitCheckInsLte,
+      microPlansLte,
+      microPlansGte,
+    } = buildSupabaseMock({
+      habitDefinitions: [buildHabitDefinitionRow()],
+      habitCheckIns: [buildHabitCheckInRow()],
+      habitResets: [buildHabitResetRow()],
+      microPlans: [buildMicroPlanRow()],
+    });
 
     const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
       selectedDate: "2026-06-22",
@@ -211,6 +389,10 @@ describe("my library calendar plan loader", () => {
     });
     expect(instancesGte).toHaveBeenCalledWith("planned_on", "2026-06-01");
     expect(instancesLte).toHaveBeenCalledWith("planned_on", "2026-07-05");
+    expect(habitCheckInsGte).toHaveBeenCalledWith("check_in_date", "2026-06-01");
+    expect(habitCheckInsLte).toHaveBeenCalledWith("check_in_date", "2026-06-20");
+    expect(microPlansLte).toHaveBeenCalledWith("week_starts_at", "2026-07-05T23:59:59.999Z");
+    expect(microPlansGte).toHaveBeenCalledWith("week_ends_at", "2026-06-01T00:00:00.000Z");
     expect(model.sessionCount).toBe(1);
     expect(model.completionSchemaReady).toBe(true);
     expect(model.days[0]?.sessions[0]).toMatchObject({
@@ -242,6 +424,21 @@ describe("my library calendar plan loader", () => {
       "33333333-3333-4333-8333-333333333333"
     );
     expect(model.selectedDay.sessions[0]?.id).toBe("33333333-3333-4333-8333-333333333333");
+    expect(model.selectedDay.dailyLayers.map((layer) => layer.source)).toEqual([
+      "habits",
+      "micro_sessions",
+    ]);
+    expect(model.selectedDay.dailyLayers.find((layer) => layer.source === "habits")).toMatchObject({
+      status: "future",
+    });
+    expect(
+      model.monthDays
+        .find((day) => day.date === "2026-06-20")
+        ?.dailyLayers.find((layer) => layer.source === "micro_sessions")
+    ).toMatchObject({
+      status: "mapped",
+      compactLabel: "1 micro unit",
+    });
     expect(workoutsIn).toHaveBeenCalledWith("id", ["22222222-2222-4222-8222-222222222222"]);
     expect(completedActivityIn).toHaveBeenCalledWith("planned_workout_instance_id", [
       "33333333-3333-4333-8333-333333333333",

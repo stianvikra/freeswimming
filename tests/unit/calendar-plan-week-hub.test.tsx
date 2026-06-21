@@ -7,6 +7,7 @@ import {
   buildMyLibraryCalendarMonthWindow,
   buildMyLibraryCalendarWindow,
 } from "@/lib/my-library/calendar";
+import type { MyLibraryCalendarDailyLayer } from "@/lib/my-library/calendar-daily-layers";
 import type {
   MyLibraryCalendarPlanDay,
   MyLibraryCalendarPlanModel,
@@ -82,7 +83,8 @@ function getDayIndex(dateKey: string) {
 
 function buildDay(
   date: string,
-  sessions: MyLibraryCalendarPlanSession[]
+  sessions: MyLibraryCalendarPlanSession[],
+  dailyLayers: MyLibraryCalendarDailyLayer[] = []
 ): MyLibraryCalendarPlanDay {
   const dayIndex = getDayIndex(date);
   return {
@@ -90,6 +92,7 @@ function buildDay(
     dayIndex,
     dayLabel: weekdayLabels[dayIndex],
     sessions,
+    dailyLayers,
   };
 }
 
@@ -156,6 +159,7 @@ function buildMonthDays({
 
 function buildModel(input?: {
   sessions?: MyLibraryCalendarPlanSession[];
+  dailyLayersByDate?: Record<string, MyLibraryCalendarDailyLayer[]>;
 }): MyLibraryCalendarPlanModel {
   const selectedDate = "2026-06-22";
   const todayDate = "2026-06-20";
@@ -189,12 +193,31 @@ function buildModel(input?: {
       const date = addCalendarDays(window.startDate, dayIndex);
       return buildDay(
         date,
-        sessions.filter((session) => session.date === date)
+        sessions.filter((session) => session.date === date),
+        input?.dailyLayersByDate?.[date] ?? []
       );
     }),
-    monthDays: buildMonthDays({ selectedDate, todayDate, sessions }),
-    selectedDay: buildDay(selectedDate, sessions),
+    monthDays: buildMonthDays({ selectedDate, todayDate, sessions }).map((day) => ({
+      ...day,
+      dailyLayers: input?.dailyLayersByDate?.[day.date] ?? [],
+    })),
+    selectedDay: buildDay(selectedDate, sessions, input?.dailyLayersByDate?.[selectedDate] ?? []),
     sessionCount: sessions.length,
+  };
+}
+
+function buildDailyLayer(
+  overrides: Partial<MyLibraryCalendarDailyLayer> &
+    Pick<MyLibraryCalendarDailyLayer, "source" | "label" | "compactLabel">
+): MyLibraryCalendarDailyLayer {
+  return {
+    status: "mapped",
+    tone: "neutral",
+    summary: `${overrides.label} summary`,
+    supportLabel: `${overrides.label} support`,
+    href: "/my-library/habits?date=2026-06-22",
+    metrics: [],
+    ...overrides,
   };
 }
 
@@ -277,6 +300,59 @@ describe("CalendarPlanWeekHub", () => {
     expect(
       within(selectedDay).getByText("This plan item needs review before it can be changed.")
     ).toBeVisible();
+    expect(within(selectedDay).queryByText("Whole-day signals")).not.toBeInTheDocument();
+  });
+
+  it("renders daily source layers in month cells and selected-day detail", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          dailyLayersByDate: {
+            "2026-06-22": [
+              buildDailyLayer({
+                source: "habits",
+                label: "Habits",
+                compactLabel: "3/4 habits",
+                summary: "3/4 Habit signals on target.",
+                metrics: [{ id: "due", label: "Due", value: "1 habit" }],
+              }),
+              buildDailyLayer({
+                source: "micro_sessions",
+                label: "Micro Sessions",
+                compactLabel: "2 micro units",
+                href: "/my-library/dryland",
+                summary: "2 completed micro units and 0 skipped units.",
+              }),
+            ],
+          },
+        })}
+      />
+    );
+
+    const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
+    expect(within(selectedCell).getByText("3/4 habits")).toBeVisible();
+    expect(within(selectedCell).queryByText(/perfect/i)).not.toBeInTheDocument();
+    expect(within(selectedCell).getByText("2 micro units")).toBeVisible();
+    expect(selectedCell).toHaveAccessibleName(/3\/4 habits/);
+    expect(selectedCell).not.toHaveAccessibleName(/perfect/i);
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    expect(within(selectedDay).getByText("Whole-day signals")).toBeVisible();
+    expect(within(selectedDay).getByTestId("calendar-daily-layer-habits")).toBeVisible();
+    expect(within(selectedDay).getByText("3/4 Habit signals on target.")).toBeVisible();
+    expect(within(selectedDay).getByText("Due")).toBeVisible();
+    expect(within(selectedDay).getByText("1 habit")).toBeVisible();
+    expect(within(selectedDay).getAllByRole("link", { name: "Open source" })[0]).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-06-22"
+    );
+    expect(
+      within(selectedDay).queryByTestId("calendar-daily-layer-perfect_day")
+    ).not.toBeInTheDocument();
+    expect(within(selectedDay).getAllByRole("link", { name: "Open source" })[1]).toHaveAttribute(
+      "href",
+      "/my-library/dryland"
+    );
   });
 
   it("renders recover actions for skipped selected-day items", () => {

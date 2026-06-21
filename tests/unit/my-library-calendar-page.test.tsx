@@ -110,6 +110,7 @@ function buildPlanModel(): MyLibraryCalendarPlanModel {
       dayIndex: 0,
       dayLabel: "Monday",
       sessions: [],
+      dailyLayers: [],
     },
     sessionCount: 0,
   };
