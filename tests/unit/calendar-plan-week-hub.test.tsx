@@ -394,7 +394,7 @@ describe("CalendarPlanWeekHub", () => {
     expect(within(selectedCell).getByText("Rescheduled")).toBeVisible();
   });
 
-  it("renders completed manual activity events without exposing more plan mutations", () => {
+  it("renders manual actual events as read-only overview without exposing plan mutations", () => {
     render(
       <CalendarPlanWeekHub
         model={buildModel({
@@ -403,12 +403,21 @@ describe("CalendarPlanWeekHub", () => {
               id: "session-completed",
               date: "2026-06-22",
               completion: {
-                selection: "manual_completed",
+                selection: "manual_actual",
                 eventId: "event-1",
                 completedOn: "2026-06-22",
+                actualStartedAt: null,
+                actualDurationSeconds: 2280,
+                actualDistanceM: 1800,
+                actualEnvironment: "pool",
+                actualPoolLengthM: 25,
+                actualPoolLengthUnit: "m",
+                correctionNote: null,
                 sourceKind: "manual",
-                outcome: "completed",
+                outcome: "completed_as_planned",
+                isDoneOutcome: true,
                 createdAt: "2026-06-22T17:30:00.000Z",
+                updatedAt: "2026-06-22T17:30:00.000Z",
               },
             }),
           ],
@@ -417,23 +426,87 @@ describe("CalendarPlanWeekHub", () => {
     );
 
     const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
-    expect(within(selectedDay).getByText("Completed")).toBeVisible();
+    expect(within(selectedDay).getAllByText("As planned")[0]).toBeVisible();
     expect(
       within(selectedDay).getByText(
-        "Marked done manually on Mon 22 Jun. Planned identity stays linked for future reconciliation."
+        "Manual actual recorded on Mon 22 Jun. Planned identity stays linked for future reconciliation."
       )
     ).toBeVisible();
-    expect(within(selectedDay).getByText("Already marked done manually.")).toBeVisible();
+    expect(
+      within(selectedDay).getByTestId("calendar-plan-session-actual-session-completed")
+    ).toBeVisible();
+    expect(within(selectedDay).getByText("1800m · 38 min")).toBeVisible();
+    expect(within(selectedDay).getByText("Pool 25m")).toBeVisible();
+    expect(within(selectedDay).queryByLabelText("Completion status")).not.toBeInTheDocument();
+    expect(within(selectedDay).queryByLabelText("Completion date")).not.toBeInTheDocument();
+    expect(
+      within(selectedDay).queryByRole("button", { name: "Save completion" })
+    ).not.toBeInTheDocument();
     expect(
       within(selectedDay).queryByRole("button", { name: "Mark done" })
     ).not.toBeInTheDocument();
     expect(within(selectedDay).queryByRole("button", { name: "Skip" })).not.toBeInTheDocument();
+    expect(within(selectedDay).getByRole("link", { name: "Edit Plan" })).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Review actual" })).toBeDisabled();
+    expect(
+      within(selectedDay).queryByRole("link", { name: "Open workout" })
+    ).not.toBeInTheDocument();
 
     const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
-    expect(within(selectedCell).getByText("Completed")).toBeVisible();
+    expect(within(selectedCell).getByText("As planned")).toBeVisible();
 
     const selectedWeekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
-    expect(within(selectedWeekTotal).getByText("1 completed")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("1 recorded")).toBeVisible();
+  });
+
+  it("keeps manual actual rows read-only in Calendar", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true, status: "corrected" }),
+      })
+    );
+
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          sessions: [
+            buildSession({
+              id: "session-correct",
+              date: "2026-06-22",
+              completion: {
+                selection: "manual_actual",
+                eventId: "event-1",
+                completedOn: "2026-06-22",
+                actualStartedAt: null,
+                actualDurationSeconds: 2280,
+                actualDistanceM: 1800,
+                actualEnvironment: "pool",
+                actualPoolLengthM: 25,
+                actualPoolLengthUnit: "m",
+                correctionNote: null,
+                sourceKind: "manual",
+                outcome: "completed_as_planned",
+                isDoneOutcome: true,
+                createdAt: "2026-06-22T17:30:00.000Z",
+                updatedAt: "2026-06-22T17:30:00.000Z",
+              },
+            }),
+          ],
+        })}
+      />
+    );
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    expect(
+      within(selectedDay).getByTestId("calendar-plan-session-actual-session-correct")
+    ).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Review actual" })).toBeDisabled();
+    expect(
+      within(selectedDay).queryByRole("button", { name: "Save completion" })
+    ).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("posts manual completion with the current planned-instance timestamp", async () => {

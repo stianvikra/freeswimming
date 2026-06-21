@@ -943,17 +943,26 @@ environment allowlist role from a profile-backed role.
     "plannedWorkoutInstanceId": "11111111-1111-4111-8111-111111111111",
     "workoutId": "33333333-3333-4333-8333-333333333333",
     "programId": "22222222-2222-4222-8222-222222222222",
-    "outcome": "completed",
+    "outcome": "completed_as_planned",
     "sourceKind": "manual",
     "completedOn": "2026-06-22",
-    "createdAt": "2026-06-22T17:30:00.000Z"
+    "actualStartedAt": null,
+    "actualDurationSeconds": 2280,
+    "actualDistanceM": 1800,
+    "actualEnvironment": "pool",
+    "actualPoolLengthM": 25,
+    "actualPoolLengthUnit": "m",
+    "correctionNote": null,
+    "createdAt": "2026-06-22T17:30:00.000Z",
+    "updatedAt": "2026-06-22T17:30:00.000Z"
   }
 }
 ```
 
 - `status`: `completed` for a new event, or `already_completed` when the same owner/planned instance already has a manual completion event.
-- Manual completion writes one owner-scoped `completed_activity_events` row and does not mutate `planned_workout_instances`.
+- Manual completion writes one owner-scoped `completed_activity_events` row and does not mutate `planned_workout_instances`, `workouts`, or `programs`.
 - `completed_activity_events.source_kind = manual` is the only source kind in this contract. Garmin send/import/reconciliation must not write through this route.
+- Legacy `outcome = completed` rows are read as `completed_as_planned`. New writes use the expanded outcome contract.
 - Unknown future completion source/outcome values fail closed to review and must not count as completed until explicitly mapped.
 
 ### Status Codes
@@ -965,6 +974,49 @@ environment allowlist role from a profile-backed role.
 - `409`: stale `updated_at`, skipped/cancelled/review status, missing workout/program reference, or unmapped existing completion state
 - `500`: bounded load/write failure
 - `503`: planned-instance, workout/program, or completed-activity schema still syncing
+
+## `PATCH /api/my-library/calendar/planned-instances/[instanceId]/completion`
+
+### Request
+
+- Auth: signed-in My Library user.
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "outcome": "partial",
+  "completedOn": "2026-06-23",
+  "actualStartedAt": "2026-06-23T16:00:00.000Z",
+  "actualDurationSeconds": 1800,
+  "actualDistanceM": 1200,
+  "actualEnvironment": "pool",
+  "actualPoolLengthM": 25,
+  "actualPoolLengthUnit": "m",
+  "correctionNote": "Stopped early.",
+  "expectedActualUpdatedAt": "2026-06-22T17:30:00.000Z"
+}
+```
+
+### Contract
+
+- Corrects the existing owner-scoped manual actual row linked to the planned instance.
+- Does not mutate the planned instance, source workout, source program, future provider evidence, or Stats mapping.
+- Supported outcomes are `completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, and `needs_review`.
+- `completedOn` is the actual date and remains the compatibility date field for Calendar reads.
+- Stale writes are guarded by `expectedActualUpdatedAt`.
+- Unknown outcomes, provider source kinds, duplicate rows, missing schema, cross-owner rows, and missing manual actuals fail closed.
+
+### Status Codes
+
+- `200`: corrected
+- `400`: invalid JSON, unsupported outcome, invalid date, invalid measured value, or missing `expectedActualUpdatedAt`
+- `401`: unauthenticated
+- `404`: planned instance not found for this owner
+- `409`: no manual actual yet, stale actual row, or existing completion state needs review
+- `500`: bounded load/write failure
+- `503`: planned-instance or completed-activity schema still syncing
 
 ## `POST /api/my-library/dryland/micro-plans`
 

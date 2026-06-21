@@ -112,9 +112,16 @@ function buildCompletedActivityEvent(
     planned_workout_instance_id: "33333333-3333-4333-8333-333333333333",
     workout_id: "22222222-2222-4222-8222-222222222222",
     program_id: "11111111-1111-4111-8111-111111111111",
-    outcome: "completed",
+    outcome: "completed_as_planned",
     source_kind: "manual",
     completed_on: "2026-06-22",
+    actual_started_at: null,
+    actual_duration_seconds: 2280,
+    actual_distance_m: 1800,
+    actual_environment: "pool",
+    actual_pool_length_m: 25,
+    actual_pool_length_unit: "m",
+    correction_note: null,
     planned_snapshot: {},
     created_at: "2026-06-22T17:30:00.000Z",
     updated_at: "2026-06-22T17:30:00.000Z",
@@ -457,11 +464,32 @@ describe("my library calendar plan loader", () => {
     });
 
     expect(model.selectedDay.sessions[0]?.completion).toMatchObject({
-      selection: "manual_completed",
+      selection: "manual_actual",
       eventId: "44444444-4444-4444-8444-444444444444",
       completedOn: "2026-06-22",
       sourceKind: "manual",
-      outcome: "completed",
+      outcome: "completed_as_planned",
+      isDoneOutcome: true,
+      actualDistanceM: 1800,
+      actualDurationSeconds: 2280,
+    });
+  });
+
+  it("treats legacy completed rows as completed-as-planned actuals", async () => {
+    const { from } = buildSupabaseMock({
+      completedActivityEvents: [buildCompletedActivityEvent({ outcome: "completed" })],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+
+    expect(model.selectedDay.sessions[0]?.completion).toMatchObject({
+      selection: "manual_actual",
+      outcome: "completed_as_planned",
+      isDoneOutcome: true,
     });
   });
 

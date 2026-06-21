@@ -28,9 +28,12 @@ import {
 } from "@/lib/my-library/calendar-daily-layers";
 import {
   COMPLETED_ACTIVITY_EVENT_SELECT,
+  isCompletedActivityEventDoneOutcome,
   isCompletedActivityEventSchemaMissing,
   isManualCompletedActivityEvent,
+  normalizeCompletedActivityEventOutcome,
   type CompletedActivityEventRow,
+  type CompletedActivityEventOutcome,
 } from "@/lib/my-library/completed-activity-events";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
@@ -68,12 +71,21 @@ export type MyLibraryCalendarCompletionState =
       selection: "none";
     }
   | {
-      selection: "manual_completed";
+      selection: "manual_actual";
       eventId: string;
       completedOn: string;
+      actualStartedAt: string | null;
+      actualDurationSeconds: number | null;
+      actualDistanceM: number | null;
+      actualEnvironment: string | null;
+      actualPoolLengthM: number | null;
+      actualPoolLengthUnit: string | null;
+      correctionNote: string | null;
       sourceKind: "manual";
-      outcome: "completed";
+      outcome: CompletedActivityEventOutcome;
+      isDoneOutcome: boolean;
       createdAt: string;
+      updatedAt: string;
     }
   | {
       selection: "review";
@@ -391,15 +403,46 @@ function buildCompletionState(
     return { selection: "none" };
   }
 
+  if (rows.length > 1) {
+    const firstRow = rows[0];
+    return {
+      selection: "review",
+      eventId: firstRow?.id ?? null,
+      completedOn: firstRow?.completed_on ?? null,
+      sourceKind: firstRow?.source_kind ?? "unknown",
+      outcome: firstRow?.outcome ?? "unknown",
+    };
+  }
+
   const manualCompleted = rows.find(isManualCompletedActivityEvent);
   if (manualCompleted) {
+    const outcome = normalizeCompletedActivityEventOutcome(manualCompleted.outcome);
+    if (outcome === "unmapped") {
+      return {
+        selection: "review",
+        eventId: manualCompleted.id,
+        completedOn: manualCompleted.completed_on,
+        sourceKind: manualCompleted.source_kind,
+        outcome: manualCompleted.outcome,
+      };
+    }
+
     return {
-      selection: "manual_completed",
+      selection: "manual_actual",
       eventId: manualCompleted.id,
       completedOn: manualCompleted.completed_on,
+      actualStartedAt: manualCompleted.actual_started_at,
+      actualDurationSeconds: manualCompleted.actual_duration_seconds,
+      actualDistanceM: manualCompleted.actual_distance_m,
+      actualEnvironment: manualCompleted.actual_environment,
+      actualPoolLengthM: manualCompleted.actual_pool_length_m,
+      actualPoolLengthUnit: manualCompleted.actual_pool_length_unit,
+      correctionNote: manualCompleted.correction_note,
       sourceKind: "manual",
-      outcome: "completed",
+      outcome,
+      isDoneOutcome: isCompletedActivityEventDoneOutcome(outcome),
       createdAt: manualCompleted.created_at,
+      updatedAt: manualCompleted.updated_at,
     };
   }
 

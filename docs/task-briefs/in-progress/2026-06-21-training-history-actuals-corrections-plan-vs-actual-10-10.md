@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-21`
 - `updated`: `2026-06-21`
-- `mode`: `planned runtime child / audit-ready`
+- `mode`: `runtime child / implementation`
 - `parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - `calendar_parent`: `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
 - `garmin_send_boundary`: `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
@@ -16,11 +16,41 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@ffd36d9e`
-- `audit_status`: `ready`
-- `decision`: Use this as the next local training-history child before any Garmin runtime work or provider reconciliation.
+- `base`: `main@03dcb023`
+- `audit_status`: `refreshed-ready`
+- `decision`: Use this as the next local training-history child before any Garmin runtime work or provider reconciliation. First runtime execution should additively extend `completed_activity_events`; do not create a separate `training_actuals` table in this slice.
 - `reason`: Calendar now has planned instances, planned-only edits, manual completion, and daily Habits/Micro layers. The next integrity gap is that actual swim history can differ from the plan and must be editable without rewriting the planned session or pretending Garmin data is authoritative.
 - `must_refresh_before_execution_if`: Refresh if `completed_activity_events`, `planned_workout_instances`, Calendar Plan rendering, workout/session step contracts, Garmin provider access/payload samples, Help/Guide support contracts, scorecard categories, or verification lanes change.
+
+## Execution Refresh Audit
+
+- `refreshed_on`: `2026-06-21`
+- `refreshed_base`: `main@03dcb023`
+- `local_surfaces_checked`:
+  - `supabase/migrations/20260621123000_completed_activity_events_manual_swim_completion.sql`
+  - `types/database.ts`
+  - `lib/my-library/completed-activity-events.ts`
+  - `lib/my-library/calendar-plan.ts`
+  - `app/api/my-library/calendar/planned-instances/[instanceId]/completion/route.ts`
+  - `components/my-library/CalendarPlanWeekHub.tsx`
+  - `components/my-library/CalendarPlanSessionActions.tsx`
+  - `tests/unit/calendar-completion-route.test.ts`
+  - `tests/unit/my-library-calendar-plan.test.ts`
+  - `tests/unit/calendar-plan-week-hub.test.tsx`
+  - `docs/api-contracts.md`
+  - `docs/user-flow-map.md`
+  - `docs/runbooks/auth-account-support.md`
+- `official_docs_checked`:
+  - Supabase RLS update policy guidance: update policies need both `using` and `with check` ownership conditions.
+  - Supabase generated TypeScript types guidance: schema changes must be reflected in generated database types.
+  - Next.js Route Handlers guidance: `POST`/`PATCH` handlers are not cached by default.
+  - Next.js `router.refresh` / `revalidatePath` guidance: `router.refresh()` refreshes the current route client cache, while server-side cache invalidation requires `revalidatePath`/tags when cached server data is introduced.
+- `recommended_first_runtime_slice`: Extend the existing manual completion row into the first actual-history row because it already owns the stable owner-scoped planned-instance link, unique duplicate guard, planned snapshot, Calendar loader, and tests. A new table would add migration/backfill/UI complexity before provider evidence exists.
+- `table_name_caveat`: `completed_activity_events` is a legacy name after this slice. Runtime/UI/docs should describe it as manual swim actual history, while future provider raw evidence and reconciliation still belong in separate future tables.
+- `legacy_outcome_policy`: Existing `outcome = completed` rows are a known legacy alias for `completed_as_planned`. New writes should use the expanded outcome contract, and runtime reads/tests must keep the legacy alias safe until a later cleanup explicitly removes it.
+- `cache_decision`: The current Calendar page is `force-dynamic` and mutation routes use no-store JSON, so the first slice can rely on `router.refresh()` after successful plan/manual-completion mutations. If a future actual-detail route adds cached history/Stats reads, it must add explicit `revalidatePath` or tag invalidation in the same PR.
+- `do_not_expand`: No Garmin runtime, Stats Swimming aggregation, source workout/program mutation, Perfect Day Calendar layer, performance-ratchet tightening, or `Ja.docx` change belongs in this execution.
+- `workout_revision_decision`: Calendar may link to the source workout for review, but this slice must not solve shared-workout edit semantics. Saved workout revisions and the `Save as new revision` vs `Update shared workout` decision are captured in `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`; until that contract ships, Calendar actual rows must not imply that editing the planned workout safely changes only one performed session.
 
 ## Goal
 
@@ -51,16 +81,18 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
 ## Scope
 
 - Extend the local actual-history contract beyond simple `completed`:
+  - legacy read alias: `completed` means `completed_as_planned`,
   - `completed_as_planned`,
   - `completed_different`,
   - `partial`,
   - `completed_on_another_day`,
   - `cancelled_as_actual`,
   - `needs_review`.
-- Let users correct an existing manual completed swim event without changing the planned instance.
-- Store actual date/time, actual duration and/or distance where available, actual pool/open-water context where available, and structured correction notes when this child implements runtime code.
+- Additively extend `completed_activity_events` for the first runtime slice rather than introducing a new table.
+- Add the server-side correction contract for an existing manual completed swim event without changing the planned instance.
+- Store the actual date through the existing `completed_on` field for compatibility, plus nullable actual-start time, duration, distance, pool/open-water context, pool length/unit, and bounded correction notes where supplied.
 - Preserve the planned snapshot and canonical planned/workout/program references for plan-vs-actual comparison.
-- Show plan and actual side by side in Calendar selected-day detail or a dedicated history detail surface, using the existing Calendar/My Library design language.
+- Show plan and actual side by side in Calendar selected-day detail as a read-only overview, with dedicated history review/editing deferred to the future `Review actual` surface.
 - Add deterministic plan-vs-actual signals:
   - as planned,
   - changed,
@@ -69,6 +101,7 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - missed/no actual yet,
   - review needed.
 - Keep Calendar month cells scan-first; detailed correction actions belong in selected-day detail or history detail.
+- In the first slice, show actual statuses on the linked planned day. Do not add standalone actual-date-only Calendar rows unless a dedicated history route is explicitly included.
 - Prepare the actual-history model so future Garmin received activities can be linked, detached, ignored, or reviewed without replacing manual history.
 
 ## Out Of Scope
@@ -77,6 +110,7 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
 - Automatic replanning of future workouts after an actual differs from plan.
 - AI retrospective evaluation or coaching recommendations.
 - Editing the canonical source workout/program from an actual-history correction.
+- Workout revision/versioning, including `Save as new revision` vs `Update shared workout` prompts for workouts reused across plans, Garmin sends, or actual history.
 - Stats Swimming aggregation unless explicitly included in the execution refresh.
 - Finance/admin dashboards, checkout, entitlement, or public SEO surfaces.
 - Performance-ratchet tightening before at least two new green weekly cycles after `2026-06-19`.
@@ -91,7 +125,9 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - workout/program references when available,
   - source kind (`manual` in this child),
   - actual outcome state,
-  - actual date/time and measured values when supplied,
+  - actual date through `completed_on`,
+  - nullable actual start timestamp when supplied,
+  - nullable actual distance, duration, environment, pool length/unit, and bounded correction note when supplied,
   - planned snapshot/reference payload needed for comparison,
   - correction audit timestamps.
 - Local-only:
@@ -106,6 +142,7 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - duplicate submissions stay idempotent for the same planned actual unless the user explicitly creates a separate actual record.
 - Conflict policy:
   - stale actual rows, stale planned references, unknown outcomes, duplicate actuals, and completed-vs-cancelled conflicts fail closed to review/retry states;
+  - correction routes must use the actual row `updated_at` as the stale-write guard, and must not require mutating the planned row;
   - corrections never mutate raw future provider evidence;
   - provider evidence later attaches through reconciliation, not actual-row overwrite.
 - Retention and sensitivity:
@@ -128,6 +165,9 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - correcting what happened updates the actual-history row or creates a new explicit actual row according to the execution refresh;
   - correcting the plan uses planned-instance actions, not actual-history fields;
   - changing the source workout/program after the fact must not rewrite existing actual evidence silently.
+- Shared workout revision rule:
+  - a future workout contract must decide whether a plan instance points to a mutable workout, immutable snapshot, or explicit revision;
+  - if a workout is already reused by other plans, sent to Garmin, or linked to actual history, future editing should default to saving a new revision unless the user explicitly chooses to update the shared workout.
 - Rename vs repurpose:
   - renaming a workout/program preserves references;
   - materially repurposing a workout/program should create a new canonical entity before future actuals attach.
@@ -175,7 +215,10 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - model outcomes, sources, correction actions, and reconciliation placeholders as typed allowlists;
   - unknown values fail closed to review states.
 - Supabase/data:
-  - runtime implementation needs explicit additive migrations or a documented reuse of `completed_activity_events`;
+  - runtime implementation should use explicit additive migrations on `completed_activity_events`;
+  - grant `update` only as needed and add owner-scoped `update` RLS with both `using` and `with check`;
+  - retain the existing unique duplicate guard for one manual actual per planned instance in this slice;
+  - generated DB types must include every schema change in the same PR;
   - RLS must be owner-scoped and negative-path tested;
   - generated DB types must be updated in the same PR if schema changes.
 - External services:
@@ -185,7 +228,38 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
   - reuse My Library/Calendar tokens, status chips, action density, and accessible form controls;
   - screenshot handoff is required before broad PR gates because this changes user-facing history/correction UI.
 - Testing:
-  - include route/action, data invariant, component, accessibility, stale/duplicate/unknown, and screenshot evidence.
+  - include route/action, data invariant, component, accessibility, stale/duplicate/unknown, migration/type, and screenshot evidence.
+
+## First Runtime Slice Recommendation
+
+Implement the first slice in this order:
+
+1. Additive migration and generated type update:
+   - widen `completed_activity_events.outcome` to include the expanded actual outcomes plus the legacy `completed` alias while the app is deploying,
+   - add nullable actual fields for started-at, duration, distance, environment, pool length/unit, and correction note,
+   - add `update` grant and owner-scoped update RLS with both `using` and `with check`,
+   - keep the existing `completed_activity_events_planned_unique` constraint.
+2. Domain/view-model update:
+   - centralize outcome/source normalization in `lib/my-library/completed-activity-events.ts`,
+   - treat legacy `completed` as `completed_as_planned`,
+   - expose deterministic plan-vs-actual signals without counting unknown outcomes as completed.
+3. Route update:
+   - keep `POST /completion` as the idempotent mark-as-done entrypoint, writing `completed_as_planned` for new rows,
+   - add `PATCH /completion` for correcting the existing owner-scoped manual actual row,
+   - validate supported outcomes and bounded measured fields,
+   - guard stale writes with actual-row `updated_at`,
+   - never update `planned_workout_instances`, `workouts`, or `programs` from the correction route.
+4. UI update:
+   - reuse Calendar selected-day session rows,
+   - keep month cells scan-first with compact statuses only,
+   - replace the completed-state dead end with read-only plan-vs-actual overview in Calendar,
+   - show `Review actual` as the future actual/reconciliation action, but do not expose inline actual editing in Calendar,
+   - keep `Open workout` scoped to source/planned workout truth, not what was performed,
+   - keep plan actions disabled after actual history exists.
+5. Docs/tests/screenshot:
+   - update API contract, user flow map, and support runbook,
+   - add route/component/view-model tests for as-planned, changed, partial, another-day, cancelled-as-actual, needs-review, legacy `completed`, unknown values, duplicate, stale, unauthenticated, and cross-owner paths,
+   - provide the required screenshot handoff before broad PR gates.
 
 ## Codex Skill / Stack Readiness Radar
 
@@ -231,11 +305,11 @@ Critical target categories for a `10/10` claim:
 | Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                      | Evidence                                        | Expected Closeout Score |
 | --------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------- |
 | Product goals and IA                          | `target`     | Users can distinguish planned, actual, changed, partial, missed, and review-needed swim states without Garmin assumptions.          | route/state map + UI tests + screenshot handoff | `5/5`                   |
-| UX flow clarity                               | `target`     | Correction actions have clear next steps and no dead ends for as-planned, changed, partial, another-day, and review states.         | component/e2e tests + copy review               | `5/5`                   |
+| UX flow clarity                               | `target`     | Calendar shows read-only plan-vs-actual truth with clear planned actions and an explicit future `Review actual` path.               | component/e2e tests + copy review               | `5/5`                   |
 | Visual design quality                         | `target`     | Plan-vs-actual detail is readable on mobile/desktop and does not crowd month cells.                                                 | responsive screenshot handoff                   | `5/5`                   |
 | Business logic correctness and data integrity | `target`     | Actual-history corrections are idempotent, owner-scoped, separate from planned rows, and preserve planned snapshots.                | migration/route/invariant tests                 | `5/5`                   |
 | Admin editor ergonomics                       | `supporting` | Supporting only: primary workflow is end-user history correction; admin tooling is not required in this child.                      | scope rationale                                 | `4/5`                   |
-| Accessibility (a11y)                          | `target`     | Correction forms, status chips, and review states are keyboard and screen-reader usable.                                            | a11y tests + keyboard QA                        | `5/5`                   |
+| Accessibility (a11y)                          | `target`     | Read-only actual overview rows, status chips, and review states are keyboard and screen-reader usable.                              | a11y tests + keyboard QA                        | `5/5`                   |
 | Performance (CWV + payloads)                  | `target`     | Calendar/history reads stay window-bounded and add no unnecessary dependency or large client payload.                               | query review + perf gate                        | `5/5`                   |
 | Data placement and sync boundaries            | `target`     | Planned, actual, sent, received, and reconciled truths remain separate with explicit invalidation.                                  | data contract + integration tests               | `5/5`                   |
 | Caching and invalidation strategy             | `target`     | Corrections refresh Calendar/history summaries predictably without stale success states.                                            | invalidation tests                              | `5/5`                   |
@@ -262,19 +336,68 @@ Critical target categories for a `10/10` claim:
 - Route/label/support sweep must include Calendar, History, planned/actual labels, partial/changed states, correction actions, Garmin/provider review labels, and analytics taxonomy.
 - If execution stays docs-only, record explicit `N/A` rationale for visible Help/Guide runtime updates.
 
+Route/label/support sweep evidence:
+
+- Identifiers searched:
+  - `Partial`,
+  - `Partly done`,
+  - `Save actual`,
+  - `Save completion`,
+  - `Open workout`,
+  - `Review actual`,
+  - `Actual outcome`,
+  - `Completion status`,
+  - `Completion date`,
+  - `completed_different`,
+  - `completed_on_another_day`,
+  - `cancelled_as_actual`,
+  - `needs_review`,
+  - `completed_activity_events`,
+  - `actual-history`,
+  - `actual history`,
+  - `plan-vs-actual`.
+- Surfaces checked / directories-surfaced:
+  - `app/`,
+  - `components/`,
+  - `lib/`,
+  - `tests/`,
+  - `docs/`,
+  - `docs/runbooks/`,
+  - `docs/task-briefs/planned/`,
+  - `docs/task-briefs/in-progress/`,
+  - `docs/task-briefs/done/`.
+- Fallout handled:
+  - active app/code/tests/docs use `Partly done`, read-only Calendar actual overview, and `Review actual` future action consistently;
+  - stale `Save actual` / `Save completion` Calendar UI references were removed from the runtime surface;
+  - `Open workout` is documented as source/planned truth only and must not imply actual editing;
+  - historical `done/` brief mentions remain as closed PR history.
+
+API failure-mode evidence:
+
+- No unexpected 500 behavior is allowed for known user/action states:
+  - unauthenticated returns `401`,
+  - cross-user/missing planned row returns `404`,
+  - invalid JSON/body/outcome returns `400`,
+  - stale planned/actual writes and unsupported future states return `409`,
+  - schema-missing or not-yet-mapped completion history returns `503`.
+- Unexpected database failures use bounded JSON `500` responses with generic copy and server logging only; targeted route tests include a completion insert failure-mode fixture that returns `Could not mark this session done right now.` without leaking database details.
+
 ## Screenshot Contract
 
 - This is UI work when executed.
+- Owner approved the latest `after/reference` handoff on `2026-06-21`.
+- Approved artifacts: `output/training-history-actuals-corrections-2026-06-21-195637`.
 - Capture `after/reference` screenshots comparing:
   - Calendar selected-day detail with plan-vs-actual,
-  - actual correction/edit state,
+  - read-only actual overview and disabled future `Review actual` action,
   - partial/changed/review state,
   - existing completed-as-planned reference.
 - Pause for owner visual approval before `npm run verify:pre-pr`, PR creation/update, and `npm run verify:pre-merge`.
 
 ## Acceptance Criteria
 
-- Users can correct a manual completed swim without mutating the planned instance.
+- Manual actual corrections can update actual-history state without mutating the planned instance.
+- Calendar actual rows stay read-only until the dedicated `Review actual` workflow owns performed-session editing.
 - Plan and actual versions are visible as separate truths.
 - Partial, changed, another-day, missed/no-actual, and review-needed states are deterministic.
 - Future Garmin received evidence can attach through reconciliation without overwriting manual actuals.
@@ -297,3 +420,11 @@ Critical target categories for a `10/10` claim:
 ## Checkpoint Log
 
 - `2026-06-21 | planned | created after owner asked how to handle planned sessions, manual actual corrections, Garmin returned activities that differ from plan, and the 10/10 boundary between planned, sent, received, and actually performed truth | next: keep this planned until owner explicitly asks for runtime execution`
+- `2026-06-21 | in-progress | owner approved the refreshed additive completed_activity_events runtime slice through screenshot handoff; moved brief to in-progress on branch training-history-actuals-corrections from main@03dcb023 | next: implement schema/domain/API/UI/tests/docs, run targeted QA, then stop for screenshot approval before broad PR gates`
+- `2026-06-21 | in-progress | additive actual-history schema/domain/API/UI/docs/tests implemented; targeted route/view-model/component tests, typecheck, lint, full unit suite, and all-brief lint are green; screenshot handoff captured in output/training-history-actuals-corrections-2026-06-21-192400 after removing the temporary visual harness route | next: wait for owner screenshot approval before verify:pre-pr, commit, push, PR, and merge-readiness gates`
+- `2026-06-21 | in-progress | owner requested visual copy/layout corrections after screenshot review; changed Partial to Partly done, renamed correction labels to Completion date/status, made start time time-only, tightened mobile two-column form layout, widened mobile save/filter controls, updated support docs/tests, and regenerated screenshots in output/training-history-actuals-corrections-2026-06-21-194054 after removing the temporary visual harness route | next: wait for owner screenshot approval before verify:pre-pr, commit, push, PR, and merge-readiness gates`
+- `2026-06-21 | in-progress | owner clarified Calendar must not edit performed workout structure because actual truth may be app-built, Garmin-built, sent to Garmin, and returned as provider evidence; removed inline actual form from Calendar, made actual rows read-only overview, kept source workout editing separate, and exposed disabled Review actual as the future dedicated actual/reconciliation action | next: regenerate screenshot handoff and wait for owner approval before verify:pre-pr, commit, push, PR, and merge-readiness gates`
+- `2026-06-21 | in-progress | regenerated after/reference screenshot handoff in output/training-history-actuals-corrections-2026-06-21-195637; actual Calendar row shows read-only plan-vs-actual details, disabled Review actual, no inline Save completion, and no Open workout on the actual row; temporary visual harness route was removed and confirmed 404; targeted route/model/component tests, typecheck, lint, and all-brief lint are green | next: wait for owner screenshot approval before verify:pre-pr, commit, push, PR, and merge-readiness gates`
+- `2026-06-21 | in-progress | owner approved screenshot handoff and raised shared-workout edit risk; documented that workout revisions, immutable snapshots, and Save as new revision vs Update shared workout belong to the workout data-contract brief before any Calendar/workout editor implies a reused workout can be safely edited in place | next: run verify:pre-pr, commit, push, open PR, monitor CI, then run verify:pre-merge before merge readiness`
+- `2026-06-21 | in-progress | first verify:pre-pr stopped on expected Supabase migration drift; confirmed linked project freeswimming-org-prod/sazgjhgxvmxcyowovond, migration list and dry-run showed exactly local-only 20260621143000_completed_activity_events_actual_corrections.sql, applied it with npx supabase db push --linked --yes, post-apply dry-run reported Remote database is up to date, post-apply migration list showed local/remote parity, and linked typegen to /tmp confirmed the completed_activity_events actual fields match types/database.ts | next: rerun verify:pre-pr`
+- `2026-06-21 | in-progress | verify:pre-pr passed after remote migration sync and quality-gate evidence updates; full lane completed branch-current, migration drift, lint, typecheck, 1682 unit tests, build, perf budgets, and e2e 111 passed / 567 skipped; perf gate recommended tightening after long green trend, but active decision remains HOLD because this workstream must wait for at least two new weekly green cycles after 2026-06-19 before ratcheting | next: commit, push, open PR, monitor CI, then run verify:pre-merge before merge readiness`

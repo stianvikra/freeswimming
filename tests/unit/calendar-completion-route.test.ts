@@ -9,7 +9,10 @@ vi.mock("@/lib/supabase/route-handler", () => ({
   createRouteHandlerSupabaseClient: createRouteHandlerSupabaseClientMock,
 }));
 
-import { POST as postCompletion } from "@/app/api/my-library/calendar/planned-instances/[instanceId]/completion/route";
+import {
+  PATCH as patchCompletion,
+  POST as postCompletion,
+} from "@/app/api/my-library/calendar/planned-instances/[instanceId]/completion/route";
 import type { Database } from "@/types/database";
 
 type CompletedActivityEventRow = Database["public"]["Tables"]["completed_activity_events"]["Row"];
@@ -110,9 +113,16 @@ function buildCompletionRow(
     planned_workout_instance_id: INSTANCE_ID,
     workout_id: "33333333-3333-4333-8333-333333333333",
     program_id: "22222222-2222-4222-8222-222222222222",
-    outcome: "completed",
+    outcome: "completed_as_planned",
     source_kind: "manual",
     completed_on: "2026-06-22",
+    actual_started_at: null,
+    actual_duration_seconds: 2280,
+    actual_distance_m: 1800,
+    actual_environment: "pool",
+    actual_pool_length_m: 25,
+    actual_pool_length_unit: "m",
+    correction_note: null,
     planned_snapshot: {},
     created_at: "2026-06-22T17:30:00.000Z",
     updated_at: "2026-06-22T17:30:00.000Z",
@@ -147,6 +157,8 @@ function buildSupabaseMock(input: {
   existingCompletionRows?: Array<CompletedActivityEventRow | null>;
   insertRow?: CompletedActivityEventRow | null;
   insertError?: { code?: string; message: string } | null;
+  updateRow?: CompletedActivityEventRow | null;
+  updateError?: { code?: string; message: string } | null;
   programRow?: ProgramRow | null;
   workoutRow?: WorkoutRow | null;
   completionLoadError?: { code?: string; message: string } | null;
@@ -187,12 +199,34 @@ function buildSupabaseMock(input: {
   const insertSelect = vi.fn(() => ({ single: insertSingle }));
   const insert = vi.fn(() => ({ select: insertSelect }));
 
+  const updateMaybeSingle = vi.fn().mockResolvedValue({
+    data:
+      input.updateRow === undefined
+        ? buildCompletionRow({
+            outcome: "partial",
+            completed_on: "2026-06-23",
+            actual_duration_seconds: 1800,
+            actual_distance_m: 1200,
+            correction_note: "Stopped early.",
+            updated_at: "2026-06-23T18:30:00.000Z",
+          })
+        : input.updateRow,
+    error: input.updateError ?? null,
+  });
+  const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+  const updateEqUpdatedAt = vi.fn(() => ({ select: updateSelect }));
+  const updateEqSourceKind = vi.fn(() => ({ eq: updateEqUpdatedAt }));
+  const updateEqId = vi.fn(() => ({ eq: updateEqSourceKind }));
+  const updateEqPlanned = vi.fn(() => ({ eq: updateEqId }));
+  const updateEqUser = vi.fn(() => ({ eq: updateEqPlanned }));
+  const update = vi.fn(() => ({ eq: updateEqUser }));
+
   const from = vi.fn((table: string) => {
     if (table === "planned_workout_instances") {
       return { select: plannedChain.select };
     }
     if (table === "completed_activity_events") {
-      return { select: completedSelect, insert };
+      return { select: completedSelect, insert, update };
     }
     if (table === "programs") {
       return { select: programChain.select };
@@ -215,11 +249,17 @@ function buildSupabaseMock(input: {
     applySupabaseCookies: applyResponseCookiesIdentity,
   });
 
-  return { from, insert, insertSingle };
+  return { from, insert, insertSingle, update, updateMaybeSingle };
 }
 
 async function post(body: Record<string, unknown>) {
   return postCompletion(buildRequest(body), {
+    params: Promise.resolve({ instanceId: INSTANCE_ID }),
+  });
+}
+
+async function patch(body: Record<string, unknown>) {
+  return patchCompletion(buildRequest(body), {
     params: Promise.resolve({ instanceId: INSTANCE_ID }),
   });
 }
@@ -270,9 +310,14 @@ describe("calendar completion route", () => {
         planned_workout_instance_id: INSTANCE_ID,
         workout_id: "33333333-3333-4333-8333-333333333333",
         program_id: "22222222-2222-4222-8222-222222222222",
-        outcome: "completed",
+        outcome: "completed_as_planned",
         source_kind: "manual",
         completed_on: "2026-06-22",
+        actual_duration_seconds: 1500,
+        actual_distance_m: 1000,
+        actual_environment: "pool",
+        actual_pool_length_m: 25,
+        actual_pool_length_unit: "m",
         planned_snapshot: expect.objectContaining({
           kind: "calendar_manual_completion_planned_snapshot_v1",
         }),
@@ -311,6 +356,26 @@ describe("calendar completion route", () => {
 
     expect(response.status).toBe(200);
     expect(payload.status).toBe("already_completed");
+  });
+
+  it("returns a bounded server error when completion insert unexpectedly fails", async () => {
+    buildSupabaseMock({
+      insertError: {
+        code: "PGRST500",
+        message: "unexpected database failure",
+      },
+    });
+
+    const response = await post({
+      expectedUpdatedAt: "2026-06-20T09:10:00.000Z",
+    });
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(500);
+    expect(payload).toMatchObject({
+      ok: false,
+      error: "Could not mark this session done right now.",
+    });
   });
 
   it("rejects stale completion attempts before insert", async () => {
@@ -407,5 +472,76 @@ describe("calendar completion route", () => {
     expect(unmappedResponse.status).toBe(409);
     expect(payload.error).toContain("needs review");
     expect(unmapped.insert).not.toHaveBeenCalled();
+  });
+
+  it("corrects an existing manual actual without updating the planned instance", async () => {
+    const { update, insert } = buildSupabaseMock({
+      existingCompletionRows: [buildCompletionRow()],
+    });
+
+    const response = await patch({
+      outcome: "partial",
+      completedOn: "2026-06-23",
+      actualStartedAt: "2026-06-23T16:00:00.000Z",
+      actualDurationSeconds: 1800,
+      actualDistanceM: 1200,
+      actualEnvironment: "pool",
+      actualPoolLengthM: 25,
+      actualPoolLengthUnit: "m",
+      correctionNote: "Stopped early.",
+      expectedActualUpdatedAt: "2026-06-22T17:30:00.000Z",
+    });
+    const payload = (await response.json()) as {
+      ok: boolean;
+      status: string;
+      event: { outcome: string; completedOn: string; actualDistanceM: number };
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      status: "corrected",
+      event: {
+        outcome: "partial",
+        completedOn: "2026-06-23",
+        actualDistanceM: 1200,
+      },
+    });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "partial",
+        completed_on: "2026-06-23",
+        actual_duration_seconds: 1800,
+        actual_distance_m: 1200,
+        correction_note: "Stopped early.",
+      })
+    );
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects stale and unsupported actual corrections", async () => {
+    const stale = buildSupabaseMock({
+      existingCompletionRows: [buildCompletionRow()],
+      updateRow: null,
+    });
+    const staleResponse = await patch({
+      outcome: "partial",
+      completedOn: "2026-06-23",
+      expectedActualUpdatedAt: "2026-06-22T17:29:00.000Z",
+    });
+    expect(staleResponse.status).toBe(409);
+    expect(stale.update).toHaveBeenCalled();
+
+    createRouteHandlerSupabaseClientMock.mockReset();
+    const unsupported = buildSupabaseMock({
+      existingCompletionRows: [buildCompletionRow()],
+    });
+    const unsupportedResponse = await patch({
+      outcome: "provider_pending",
+      completedOn: "2026-06-23",
+      expectedActualUpdatedAt: "2026-06-22T17:30:00.000Z",
+    });
+    expect(unsupportedResponse.status).toBe(400);
+    expect(unsupported.update).not.toHaveBeenCalled();
   });
 });

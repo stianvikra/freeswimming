@@ -708,7 +708,14 @@ export type Database = {
       };
       completed_activity_events: {
         Row: {
+          actual_distance_m: number | null;
+          actual_duration_seconds: number | null;
+          actual_environment: string | null;
+          actual_pool_length_m: number | null;
+          actual_pool_length_unit: string | null;
+          actual_started_at: string | null;
           completed_on: string;
+          correction_note: string | null;
           created_at: string;
           id: string;
           outcome: string;
@@ -721,7 +728,14 @@ export type Database = {
           workout_id: string;
         };
         Insert: {
+          actual_distance_m?: number | null;
+          actual_duration_seconds?: number | null;
+          actual_environment?: string | null;
+          actual_pool_length_m?: number | null;
+          actual_pool_length_unit?: string | null;
+          actual_started_at?: string | null;
           completed_on: string;
+          correction_note?: string | null;
           created_at?: string;
           id?: string;
           outcome?: string;
@@ -734,7 +748,14 @@ export type Database = {
           workout_id: string;
         };
         Update: {
+          actual_distance_m?: number | null;
+          actual_duration_seconds?: number | null;
+          actual_environment?: string | null;
+          actual_pool_length_m?: number | null;
+          actual_pool_length_unit?: string | null;
+          actual_started_at?: string | null;
           completed_on?: string;
+          correction_note?: string | null;
           created_at?: string;
           id?: string;
           outcome?: string;

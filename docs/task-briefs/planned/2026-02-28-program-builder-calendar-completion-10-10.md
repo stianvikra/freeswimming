@@ -77,7 +77,7 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
 
 Suggested child path:
 
-- `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 
 Next child scope:
 
@@ -137,7 +137,7 @@ Forward-compatibility intent: Child `A` must establish `starts_on`, stable progr
 - Downstream actual-outcome owner:
   - `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Next local actual-history child:
-  - `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+  - `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 - Related AI generation guardrail:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - Related epic:
@@ -454,4 +454,4 @@ Future Plan-view child:
 - `2026-06-20 | planning | owner chose to make Child A persist planned workout instances now, not just virtual plan rows, because there are no live users and this gives future completion/Garmin/history work a stable row identity | next: complete Child A implementation on feature branch`
 - `2026-06-20 | planning | owner asked how to systematize a 10/10 calendar including desktop month, today marker, micro sessions, habits, Perfect Day, edit-before-done, and Garmin; added calendar capability matrix and expanded roadmap to Child A-G without expanding Child A runtime scope | next: keep Child A focused, then execute Child B/C/D/E briefs in order after approval`
 - `2026-06-21 | audit-refresh | refreshed parent on clean main@de761db3 after Child A/B/C shipped and closeout PR #1192 merged; next runtime child is manual Calendar completion Child D, while Garmin Training API send and Activity API received-history reconciliation are now explicit separate blocked provider tracks | next: complete docs-only audit PR, then wait for owner to explicitly execute Child D runtime implementation`
-- `2026-06-21 | systemic-actuals-audit | refreshed on clean main@ffd36d9e after Calendar Child D/E and closeouts #1195/#1198 merged; next local child is docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md so manual actual differences and plan-vs-actual are modeled before Garmin received evidence can attach; Garmin send and Activity reconciliation remain separate blocked provider tracks | next: validate docs-only audit and wait for owner to explicitly execute the actuals/corrections child`
+- `2026-06-21 | systemic-actuals-audit | refreshed on clean main@ffd36d9e after Calendar Child D/E and closeouts #1195/#1198 merged; next local child is docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md so manual actual differences and plan-vs-actual are modeled before Garmin received evidence can attach; Garmin send and Activity reconciliation remain separate blocked provider tracks | next: active implementation is underway on branch training-history-actuals-corrections`
