@@ -18,13 +18,35 @@ import {
   addCalendarDays,
   buildMyLibraryCalendarMonthWindow,
   buildMyLibraryCalendarWindow,
+  getMyLibraryCalendarPeriodStartDate,
 } from "@/lib/my-library/calendar";
+import {
+  buildMyLibraryCalendarDailyLayers,
+  partitionCalendarHabitRows,
+  type MyLibraryCalendarDailyLayer,
+  type MyLibraryCalendarDailyLayersByDate,
+} from "@/lib/my-library/calendar-daily-layers";
 import {
   COMPLETED_ACTIVITY_EVENT_SELECT,
   isCompletedActivityEventSchemaMissing,
   isManualCompletedActivityEvent,
   type CompletedActivityEventRow,
 } from "@/lib/my-library/completed-activity-events";
+import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
+import { isHabitsSchemaMissing } from "@/lib/habits/schema";
+import {
+  HABIT_CHECK_IN_SELECT,
+  HABIT_DEFINITION_SELECT,
+  HABIT_MOTIVATION_RESET_SELECT,
+} from "@/lib/habits/server";
+import {
+  buildHabitCheckInView,
+  buildHabitDefinitionView,
+  buildHabitMotivationResetView,
+  type HabitCheckInRow,
+  type HabitDefinitionRow,
+  type HabitMotivationResetRow,
+} from "@/lib/habits/shared";
 import {
   normalizePlannedWorkoutInstanceDateOverrideKind,
   normalizePlannedWorkoutInstanceStatus,
@@ -36,6 +58,10 @@ type TypedSupabaseClient = SupabaseClient<Database>;
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
 type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
+type DrylandMicroPlanRow = Pick<
+  Database["public"]["Tables"]["dryland_micro_plans"]["Row"],
+  "id" | "blocks"
+>;
 
 export type MyLibraryCalendarCompletionState =
   | {
@@ -84,6 +110,7 @@ export type MyLibraryCalendarPlanDay = {
   dayIndex: number;
   dayLabel: (typeof PROGRAM_WEEKDAY_LABELS)[number];
   sessions: MyLibraryCalendarPlanSession[];
+  dailyLayers: MyLibraryCalendarDailyLayer[];
 };
 
 export type MyLibraryCalendarPlanMonthDay = MyLibraryCalendarPlanDay & {
@@ -152,7 +179,8 @@ function getPlanDayIndex(dateKey: string): number {
 
 function buildPlanDay(
   date: string,
-  sessions: MyLibraryCalendarPlanSession[]
+  sessions: MyLibraryCalendarPlanSession[],
+  dailyLayers: MyLibraryCalendarDailyLayer[] = []
 ): MyLibraryCalendarPlanDay {
   const dayIndex = getPlanDayIndex(date);
   return {
@@ -160,6 +188,7 @@ function buildPlanDay(
     dayIndex,
     dayLabel: PROGRAM_WEEKDAY_LABELS[dayIndex],
     sessions,
+    dailyLayers,
   };
 }
 
@@ -190,6 +219,134 @@ function buildEmptyPlanMonthDays(
     isSelected: day.date === month.selectedDate,
     isToday: day.date === month.todayDate,
   }));
+}
+
+function buildDateKeys(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  let date = startDate;
+
+  while (date <= endDate) {
+    dates.push(date);
+    date = addCalendarDays(date, 1);
+  }
+
+  return dates;
+}
+
+function dateToIsoEnd(dateKey: string) {
+  return `${dateKey}T23:59:59.999Z`;
+}
+
+async function loadCalendarDailyLayers(
+  supabase: TypedSupabaseClient,
+  userId: string,
+  input: {
+    month: ReturnType<typeof buildMyLibraryCalendarMonthWindow>;
+    todayDate: string;
+  }
+): Promise<MyLibraryCalendarDailyLayersByDate> {
+  const dateKeys = buildDateKeys(input.month.gridStartDate, input.month.gridEndDate);
+  const habitHistoryStart = getMyLibraryCalendarPeriodStartDate(input.month.gridStartDate, "month");
+  const habitHistoryEnd =
+    input.month.gridEndDate < input.todayDate ? input.month.gridEndDate : input.todayDate;
+
+  const [habitResult, microPlanResult] = await Promise.all([
+    supabase
+      .from("habit_definitions")
+      .select(HABIT_DEFINITION_SELECT)
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: true })
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("dryland_micro_plans")
+      .select("id, blocks, week_starts_at, week_ends_at")
+      .eq("user_id", userId)
+      .lte("week_starts_at", dateToIsoEnd(input.month.gridEndDate))
+      .gte("week_ends_at", `${input.month.gridStartDate}T00:00:00.000Z`),
+  ]);
+
+  let habitLayerState: Parameters<typeof buildMyLibraryCalendarDailyLayers>[0]["habits"];
+  if (isHabitsSchemaMissing(habitResult.error)) {
+    habitLayerState = { status: "schema_missing" };
+  } else if (habitResult.error) {
+    console.error("[CalendarPlan] Could not load daily Habits layers", habitResult.error);
+    habitLayerState = { status: "error" };
+  } else {
+    const { supportedRows, unsupported } = partitionCalendarHabitRows(
+      (habitResult.data ?? []) as HabitDefinitionRow[]
+    );
+    const habits = supportedRows
+      .map(buildHabitDefinitionView)
+      .filter((habit) => habit.status === "active");
+    const [checkInResult, resetResult] = await Promise.all([
+      habitHistoryEnd >= habitHistoryStart
+        ? supabase
+            .from("habit_check_ins")
+            .select(HABIT_CHECK_IN_SELECT)
+            .eq("user_id", userId)
+            .gte("check_in_date", habitHistoryStart)
+            .lte("check_in_date", habitHistoryEnd)
+        : Promise.resolve({ data: [], error: null }),
+      habitHistoryEnd >= habitHistoryStart
+        ? supabase
+            .from("habit_motivation_resets")
+            .select(HABIT_MOTIVATION_RESET_SELECT)
+            .eq("user_id", userId)
+            .gte("effective_date", habitHistoryStart)
+            .lte("effective_date", habitHistoryEnd)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (isHabitsSchemaMissing(checkInResult.error)) {
+      habitLayerState = { status: "schema_missing" };
+    } else if (checkInResult.error) {
+      console.error("[CalendarPlan] Could not load daily Habit check-ins", checkInResult.error);
+      habitLayerState = { status: "error" };
+    } else {
+      if (resetResult.error && !isHabitsSchemaMissing(resetResult.error)) {
+        console.error("[CalendarPlan] Could not load daily Habit reset markers", resetResult.error);
+      }
+
+      habitLayerState = {
+        status: "ready",
+        habits,
+        checkIns: ((checkInResult.data ?? []) as HabitCheckInRow[]).map(buildHabitCheckInView),
+        resetEvents:
+          resetResult.error || isHabitsSchemaMissing(resetResult.error)
+            ? []
+            : ((resetResult.data ?? []) as HabitMotivationResetRow[]).map(
+                buildHabitMotivationResetView
+              ),
+        unsupported,
+      };
+    }
+  }
+
+  const microLayerState: Parameters<typeof buildMyLibraryCalendarDailyLayers>[0]["microSessions"] =
+    isDrylandSchemaMissing(microPlanResult.error)
+      ? { status: "schema_missing" }
+      : microPlanResult.error
+        ? (() => {
+            console.error(
+              "[CalendarPlan] Could not load daily Micro Sessions layers",
+              microPlanResult.error
+            );
+            return { status: "error" as const };
+          })()
+        : {
+            status: "ready",
+            plans: ((microPlanResult.data ?? []) as DrylandMicroPlanRow[]).map((row) => ({
+              id: row.id,
+              blocks: row.blocks,
+            })),
+          };
+
+  return buildMyLibraryCalendarDailyLayers({
+    dateKeys,
+    todayDate: input.todayDate,
+    habits: habitLayerState,
+    microSessions: microLayerState,
+  });
 }
 
 function dedupeProgramRows(rows: ProgramRow[]): ProgramRow[] {
@@ -312,6 +469,10 @@ export async function loadMyLibraryCalendarPlan(
   const todayDate = input.todayDate ?? input.selectedDate;
   const month = buildMyLibraryCalendarMonthWindow({
     selectedDate: input.selectedDate,
+    todayDate,
+  });
+  const dailyLayersByDate = await loadCalendarDailyLayers(supabase, userId, {
+    month,
     todayDate,
   });
   let instancesQuery = supabase
@@ -516,14 +677,17 @@ export async function loadMyLibraryCalendarPlan(
   const days = buildEmptyPlanDays(window).map((day) => ({
     ...day,
     sessions: plannedSessions.filter((session) => session.date === day.date),
+    dailyLayers: dailyLayersByDate[day.date] ?? [],
   }));
   const monthDays = buildEmptyPlanMonthDays(month).map((day) => ({
     ...day,
     sessions: plannedSessions.filter((session) => session.date === day.date),
+    dailyLayers: dailyLayersByDate[day.date] ?? [],
   }));
   const selectedDay = buildPlanDay(
     input.selectedDate,
-    plannedSessions.filter((session) => session.date === input.selectedDate)
+    plannedSessions.filter((session) => session.date === input.selectedDate),
+    dailyLayersByDate[input.selectedDate] ?? []
   );
   const visibleMonthSessionCount = plannedSessions.filter(
     (session) => session.date >= month.startDate && session.date <= month.endDate
