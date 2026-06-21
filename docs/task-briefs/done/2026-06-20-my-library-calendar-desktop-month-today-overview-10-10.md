@@ -3,10 +3,10 @@
 ## Metadata
 
 - `id`: `2026-06-20-my-library-calendar-desktop-month-today-overview-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-20`
-- `updated`: `2026-06-20`
+- `updated`: `2026-06-21`
 - `mode`: `planned implementation child`
 - `parent`: `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
 - `child`: `B`
@@ -130,3 +130,47 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-06-20 | route-label-support-surface-impact-sweep | identifiers searched: Calendar, Plan, Stats, Week total, Selected day, Today, Previous, Next, planned_workout_instances, past date, date dot, Review status, Help, Guide, support surface | surfaces checked: app/, components/, lib/, tests/, docs/, docs/runbooks/, active/planned/done task briefs, scripts, package.json, and Help/Guide-adjacent references surfaced by rg | fallout handled: updated docs/user-flow-map.md and docs/runbooks/auth-account-support.md for the Garmin-style Week total column and muted past-date numbers; no Help/Guide runtime assertions, admin workflow docs, SEO metadata, sitemap, analytics taxonomy, API route, auth, payment, or recovery-path update required because this slice changes a private My Library visual calendar surface only | next: screenshot approval before npm run verify:pre-pr`
 - `2026-06-20 | visual handoff | captured after/reference screenshots under output/playwright/calendar-past-date-muted-2026-06-20-201946; desktop/laptop show muted date numbers for days before today, Today keeps the blue date dot, future/selected dates remain readable, and mobile remains week/day cards | validation: calendar-plan-week-hub test passed, typecheck passed before and after screenshot-only harness removal | next: owner screenshot approval before npm run verify:pre-pr`
 - `2026-06-20 | local validation | npm run lint:briefs:all passed; targeted calendar unit/component/page tests passed 17/17; npm run typecheck passed; npm run lint passed with 7 existing output/ warnings and 0 errors | rendering files unchanged after the latest screenshot capture; only docs/brief evidence was updated | next: owner screenshot approval before npm run verify:pre-pr`
+- `2026-06-21 | done | PR #1189 merged with squash commit 8ed26eff after required GitHub checks, npm run verify:pre-pr, npm run verify:pre-merge, and final screenshot refresh passed | final screenshot artifacts: output/playwright/calendar-final-current-2026-06-21-083000 | Ja.docx untouched | next: docs-only closeout`
+
+## Completion Record
+
+- `completed`: `2026-06-21`
+- `merged_pr`: `#1189`
+- `squash_commit`: `8ed26eff478d46fcbcc273d16b95cdf2c09e13f0`
+- `result`: Closed Child B with a readable Calendar Plan surface: desktop now uses a wide month grid with a Garmin-style `Week total` column after Sunday, a single Today date dot, muted past dates, selected-day detail below the grid, and mobile keeps the simpler week/day cards.
+- `validation`: Required GitHub checks passed; `npm run verify:pre-pr` passed on `f95550ca` with full-public lane, 251 unit files / 1647 tests and 111 E2E tests; `npm run verify:pre-merge` passed on `f95550ca`; screenshot artifacts refreshed at `output/playwright/calendar-final-current-2026-06-21-083000`.
+- `performance_ratchet`: hold - the gate recommended tightening, but this brief intentionally did not change budgets because the performance-ratchet brief must wait for at least two new green weekly cycles after `2026-06-19`.
+- `known_caveat`: screenshots used the temporary local visual harness because real dev-login/Supabase egress blocks screenshot-only capture locally; the harness was removed before gates and merge, and no tracked rendering files changed after the final capture.
+- `10/10 claim`: yes - all critical target categories are scored `5/5`.
+
+Critical target categories for the 10/10 claim:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+Each listed critical target category is confirmed `5/5` below. The canonical target rows `Accessibility (a11y)` and `Performance (CWV + payloads)` are also confirmed `5/5` in the same closeout table.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                 | Gaps / Notes                                                    |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1189, final screenshots, calendar route/component tests, and `verify:pre-pr` pass show desktop month scan, today, day detail, and mobile week/day access.                            | No remaining gap for this child.                                |
+| UX flow clarity                               | `5/5`          | Final screenshots show distinct Today, selected day, past dates, empty days, week totals, and selected-day detail without extra instructional copy.                                      | No remaining gap for this child.                                |
+| Visual design quality                         | `5/5`          | Screenshot artifacts `output/playwright/calendar-final-current-2026-06-21-083000` show wide desktop layout, readable event rows, balanced header controls, and mobile one-line controls. | No remaining gap for this child.                                |
+| Business logic correctness and data integrity | `5/5`          | Calendar helper/view-model tests passed inside `npm run verify:pre-pr`; sessions key from `planned_workout_instances.id` and deterministic date helpers.                                 | No remaining gap for this child.                                |
+| Accessibility (a11y)                          | `5/5`          | Route/component tests and final UI use semantic buttons/links, clear labels for Plan/Stats, Previous/Today/Next, day selection, and session actions.                                     | No remaining gap for this child.                                |
+| Performance (CWV + payloads)                  | `5/5`          | `npm run verify:pre-pr` performance gate passed for the full-public lane; no new dependency or broad data fetch was added.                                                               | Ratchet tightening intentionally deferred by owner instruction. |
+| Data placement and sync boundaries            | `5/5`          | Brief contract and tests keep selected date/month in URL/local state while planned sessions stay server-canonical.                                                                       | No remaining gap for this child.                                |
+| Caching and invalidation strategy             | `5/5`          | Route behavior preserves the existing private dynamic Calendar boundary; no static cache or stale public surface was introduced.                                                         | No remaining gap for this child.                                |
+| Reliability and failure handling              | `5/5`          | Tests cover empty/no-plan states, selected day, today/month navigation, review status, and week totals; `verify:pre-pr` and CI passed.                                                   | No remaining gap for this child.                                |
+| Security and authz                            | `5/5`          | Private authenticated route boundary was preserved; CI `site-lock-smoke` passed and no policy/auth/user-data-rights paths changed.                                                       | No remaining gap for this child.                                |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Next.js, TypeScript, Tailwind, My Library route/components, and calendar helpers; no new calendar library or package dependency.                                         | No remaining gap for this child.                                |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr` passed, required CI checks passed, `npm run verify:pre-merge` passed, and final screenshots were refreshed after pre-commit formatting.                          | No remaining gap for this child.                                |
+| DevOps and rollback readiness                 | `5/5`          | PR body recorded rollback by reverting `f95550ca`; `verify:pre-merge` confirmed branch current with `origin/main` before merge.                                                          | No remaining gap for this child.                                |
