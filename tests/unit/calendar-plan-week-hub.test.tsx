@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CalendarPlanWeekHub from "@/components/my-library/CalendarPlanWeekHub";
@@ -120,6 +120,7 @@ function buildSession(
     dayIndex: getDayIndex(date),
     position: 0,
     workout,
+    completion: { selection: "none" },
     ...rest,
   };
 }
@@ -180,6 +181,7 @@ function buildModel(input?: {
     month: buildMyLibraryCalendarMonthWindow({ selectedDate, todayDate }),
     selectedProgramId: program.id,
     selectedProgramMissing: false,
+    completionSchemaReady: true,
     programs: [program],
     unanchoredPrograms: [],
     missingWorkoutIds: [],
@@ -199,6 +201,8 @@ function buildModel(input?: {
 describe("CalendarPlanWeekHub", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
   it("renders desktop month overview with today marker and selected-day detail", () => {
@@ -267,6 +271,7 @@ describe("CalendarPlanWeekHub", () => {
     expect(
       within(selectedDay).getByRole("button", { name: "Reschedule planned session" })
     ).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Mark done" })).toBeVisible();
     expect(within(selectedDay).getByRole("button", { name: "Skip" })).toBeVisible();
     expect(within(selectedDay).getByRole("button", { name: "Cancel" })).toBeVisible();
     expect(
@@ -311,5 +316,81 @@ describe("CalendarPlanWeekHub", () => {
 
     const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
     expect(within(selectedCell).getByText("Rescheduled")).toBeVisible();
+  });
+
+  it("renders completed manual activity events without exposing more plan mutations", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          sessions: [
+            buildSession({
+              id: "session-completed",
+              date: "2026-06-22",
+              completion: {
+                selection: "manual_completed",
+                eventId: "event-1",
+                completedOn: "2026-06-22",
+                sourceKind: "manual",
+                outcome: "completed",
+                createdAt: "2026-06-22T17:30:00.000Z",
+              },
+            }),
+          ],
+        })}
+      />
+    );
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    expect(within(selectedDay).getByText("Completed")).toBeVisible();
+    expect(
+      within(selectedDay).getByText(
+        "Marked done manually on Mon 22 Jun. Planned identity stays linked for future reconciliation."
+      )
+    ).toBeVisible();
+    expect(within(selectedDay).getByText("Already marked done manually.")).toBeVisible();
+    expect(
+      within(selectedDay).queryByRole("button", { name: "Mark done" })
+    ).not.toBeInTheDocument();
+    expect(within(selectedDay).queryByRole("button", { name: "Skip" })).not.toBeInTheDocument();
+
+    const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
+    expect(within(selectedCell).getByText("Completed")).toBeVisible();
+
+    const selectedWeekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(selectedWeekTotal).getByText("1 completed")).toBeVisible();
+  });
+
+  it("posts manual completion with the current planned-instance timestamp", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true, status: "completed" }),
+      })
+    );
+
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          sessions: [buildSession({ id: "session-complete", date: "2026-06-22" })],
+        })}
+      />
+    );
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    fireEvent.click(within(selectedDay).getByRole("button", { name: "Mark done" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/calendar/planned-instances/session-complete/completion",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            expectedUpdatedAt: "2026-06-20T09:10:00.000Z",
+          }),
+        })
+      );
+    });
+    expect(await screen.findByText("Session marked done.")).toBeVisible();
   });
 });

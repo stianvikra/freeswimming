@@ -32,7 +32,7 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 - Calendar can reschedule, skip, cancel, and recover planned-only instances without creating actual outcome truth.
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
 - No saved-swim completed-history table exists yet.
-- Existing Calendar Compare shows Swimming as not included until saved swim sessions have a canonical completed-on date.
+- Existing Calendar Compare shows Swimming as not included until completed swim activity events are explicitly mapped into Stats.
 
 ## Source Separation Contract
 

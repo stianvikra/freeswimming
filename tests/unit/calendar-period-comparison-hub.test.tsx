@@ -72,7 +72,7 @@ function buildModel(): MyLibraryCalendarComparisonModel {
         status: "unmapped",
         summary: "This source needs better history before it can be compared.",
         supportLabel:
-          "Swimming will be included after saved swim sessions have a canonical completed-on date.",
+          "Swimming will be included after completed swim activity events are mapped into Stats.",
         metrics: [],
       },
     ],
@@ -136,7 +136,7 @@ describe("CalendarPeriodComparisonHub", () => {
 
     const swimming = screen.getByTestId("calendar-source-swimming");
     expect(within(swimming).getByText("Not included yet")).toBeVisible();
-    expect(within(swimming).getByText(/canonical completed-on date/i)).toBeVisible();
+    expect(within(swimming).getByText(/completed swim activity events/i)).toBeVisible();
 
     expect(screen.getByText("Detailed numbers")).toBeVisible();
   });

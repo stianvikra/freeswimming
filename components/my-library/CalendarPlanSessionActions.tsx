@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CalendarClock, RotateCcw, SkipForward, XCircle } from "lucide-react";
+import { CalendarClock, CheckCircle2, RotateCcw, SkipForward, XCircle } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { cx } from "@/components/ui/cx";
 import type { MyLibraryCalendarPlanSession } from "@/lib/my-library/calendar-plan";
@@ -15,7 +15,7 @@ type ActionState = {
   message: string;
 };
 
-type PlanAction = "move" | "skip" | "cancel" | "recover";
+type PlanAction = "move" | "skip" | "cancel" | "recover" | "complete";
 
 const smallButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--fs-radius-control)] border px-3 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55";
@@ -34,6 +34,10 @@ const cancelButtonClass = cx(
 const recoverButtonClass = cx(
   smallButtonClass,
   "w-full border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 sm:w-auto"
+);
+const completeButtonClass = cx(
+  smallButtonClass,
+  "border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100"
 );
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -55,9 +59,16 @@ export default function CalendarPlanSessionActions({ session }: Props) {
   const [plannedOn, setPlannedOn] = useState(session.date);
   const [pendingAction, setPendingAction] = useState<PlanAction | null>(null);
   const [state, setState] = useState<ActionState | null>(null);
-  const canChangePlanned = session.statusSelection === "planned";
+  const isCompleted = session.completion.selection === "manual_completed";
+  const needsCompletionReview = session.completion.selection === "review";
+  const canChangePlanned =
+    session.statusSelection === "planned" && !isCompleted && !needsCompletionReview;
   const canRecover =
-    session.statusSelection === "skipped" || session.statusSelection === "cancelled";
+    (session.statusSelection === "skipped" || session.statusSelection === "cancelled") &&
+    !isCompleted &&
+    !needsCompletionReview;
+  const canComplete =
+    canChangePlanned && Boolean(session.workout) && session.completion.selection === "none";
   const canMutate = canChangePlanned || canRecover;
 
   async function submitAction(action: PlanAction, nextDate?: string) {
@@ -65,20 +76,47 @@ export default function CalendarPlanSessionActions({ session }: Props) {
     setState(null);
 
     try {
-      const response = await fetch(`/api/my-library/calendar/planned-instances/${session.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action,
-          plannedOn: nextDate,
-          expectedUpdatedAt: session.updatedAt,
-        }),
-      });
+      const isCompletionAction = action === "complete";
+      const response = await fetch(
+        `/api/my-library/calendar/planned-instances/${session.id}${
+          isCompletionAction ? "/completion" : ""
+        }`,
+        {
+          method: isCompletionAction ? "POST" : "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            isCompletionAction
+              ? {
+                  expectedUpdatedAt: session.updatedAt,
+                }
+              : {
+                  action,
+                  plannedOn: nextDate,
+                  expectedUpdatedAt: session.updatedAt,
+                }
+          ),
+        }
+      );
 
       if (!response.ok) {
         setState({ tone: "error", message: await readErrorMessage(response) });
+        return;
+      }
+
+      if (isCompletionAction) {
+        const payload = (await response.json().catch(() => null)) as {
+          status?: unknown;
+        } | null;
+        setState({
+          tone: "success",
+          message:
+            payload?.status === "already_completed"
+              ? "Already marked done."
+              : "Session marked done.",
+        });
+        router.refresh();
         return;
       }
 
@@ -94,6 +132,28 @@ export default function CalendarPlanSessionActions({ session }: Props) {
   function handleReschedule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submitAction("move", plannedOn);
+  }
+
+  if (isCompleted) {
+    return (
+      <p
+        data-testid={`calendar-plan-session-actions-${session.id}`}
+        className="mt-3 text-xs leading-5 font-semibold text-emerald-800"
+      >
+        Already marked done manually.
+      </p>
+    );
+  }
+
+  if (needsCompletionReview) {
+    return (
+      <p
+        data-testid={`calendar-plan-session-actions-${session.id}`}
+        className="mt-3 text-xs leading-5 font-medium text-[color:var(--fs-color-muted)]"
+      >
+        Completion state needs review before this plan item can be changed.
+      </p>
+    );
   }
 
   if (!canMutate) {
@@ -136,6 +196,17 @@ export default function CalendarPlanSessionActions({ session }: Props) {
             <CalendarClock className="h-4 w-4" aria-hidden="true" />
             Reschedule
           </button>
+          {canComplete ? (
+            <button
+              type="button"
+              className={completeButtonClass}
+              disabled={pendingAction !== null}
+              onClick={() => void submitAction("complete")}
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Mark done
+            </button>
+          ) : null}
           <button
             type="button"
             className={warningButtonClass}

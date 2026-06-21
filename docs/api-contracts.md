@@ -917,6 +917,55 @@ environment allowlist role from a profile-backed role.
 - `500`: service-role/RPC/audit/update failure
 - `503`: users schema not live in the environment
 
+## `POST /api/my-library/calendar/planned-instances/[instanceId]/completion`
+
+### Request
+
+- Auth: signed-in My Library user.
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "expectedUpdatedAt": "2026-06-20T09:10:00.000Z"
+}
+```
+
+### Response
+
+```json
+{
+  "ok": true,
+  "status": "completed",
+  "event": {
+    "id": "44444444-4444-4444-8444-444444444444",
+    "plannedWorkoutInstanceId": "11111111-1111-4111-8111-111111111111",
+    "workoutId": "33333333-3333-4333-8333-333333333333",
+    "programId": "22222222-2222-4222-8222-222222222222",
+    "outcome": "completed",
+    "sourceKind": "manual",
+    "completedOn": "2026-06-22",
+    "createdAt": "2026-06-22T17:30:00.000Z"
+  }
+}
+```
+
+- `status`: `completed` for a new event, or `already_completed` when the same owner/planned instance already has a manual completion event.
+- Manual completion writes one owner-scoped `completed_activity_events` row and does not mutate `planned_workout_instances`.
+- `completed_activity_events.source_kind = manual` is the only source kind in this contract. Garmin send/import/reconciliation must not write through this route.
+- Unknown future completion source/outcome values fail closed to review and must not count as completed until explicitly mapped.
+
+### Status Codes
+
+- `200`: completed or already completed
+- `400`: invalid JSON or missing `expectedUpdatedAt`
+- `401`: unauthenticated
+- `404`: planned instance not found for this owner
+- `409`: stale `updated_at`, skipped/cancelled/review status, missing workout/program reference, or unmapped existing completion state
+- `500`: bounded load/write failure
+- `503`: planned-instance, workout/program, or completed-activity schema still syncing
+
 ## `POST /api/my-library/dryland/micro-plans`
 
 ### Request
