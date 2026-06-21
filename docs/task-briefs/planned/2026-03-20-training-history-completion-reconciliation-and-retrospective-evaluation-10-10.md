@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@de761db3`
+- `base`: `main@ffd36d9e`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract for Calendar Child `D`; do not execute the whole parent as one implementation slice.
-- `reason`: Calendar now has stable planned instances and planned-only edit/status actions. The next safe runtime step is manual completed swim history only, while partial/cancelled history, comments, Garmin Activity API ingestion, provider reconciliation, and retrospective AI stay in later bounded children.
+- `decision`: Use this as the training-history parent contract; the next local child is actual-history correction and plan-vs-actual before Garmin provider reconciliation.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, and read-only Habits/Micro daily layers. The next safe runtime step is to let actual swim history differ from the plan without rewriting planned rows; Garmin Activity API ingestion, provider reconciliation, and retrospective AI stay in later bounded children.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -30,9 +30,11 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 
 - `planned_workout_instances` is the current planned-session identity layer.
 - Calendar can reschedule, skip, cancel, and recover planned-only instances without creating actual outcome truth.
+- `completed_activity_events` now stores owner-scoped manual completed swim events from Calendar.
+- Calendar Plan can show manual completion plus read-only Habits and Micro Session daily layers.
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
-- No saved-swim completed-history table exists yet.
 - Existing Calendar Compare shows Swimming as not included until completed swim activity events are explicitly mapped into Stats.
+- Manual completion currently covers a simple `completed` outcome; it does not yet let users record partial, changed, another-day, or corrected actual details.
 
 ## Source Separation Contract
 
@@ -42,7 +44,7 @@ Training history must keep these layers separate:
 | -------------------------- | ------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
 | Planned occurrence         | `planned_workout_instances`                 | What the user intended to do on a date.             | Must not become actual outcome truth.                      |
 | Garmin send job            | future Garmin Training API provider tables  | What FreeSwimming sent or tried to send to Garmin.  | Must not count as completed.                               |
-| Completed activity/history | this training-history contract              | What actually happened.                             | Must not overwrite planned identity or provider send logs. |
+| Completed activity/history | this training-history contract              | What actually happened, including corrections.      | Must not overwrite planned identity or provider send logs. |
 | Reconciliation/review      | future Garmin Activity reconciliation child | How sent/received/manual records match or conflict. | Must not silently coerce conflicts.                        |
 
 ## Child Slice Sequencing
@@ -50,11 +52,14 @@ Training history must keep these layers separate:
 1. Calendar Child `D`: manual completed swim event from planned Calendar rows.
    - Owns: `completed` outcome for eligible planned swims, idempotency, owner scope, Calendar rendering.
    - Does not own: partial/cancelled/comments/Garmin.
-2. History expansion child:
-   - Owns: manual comments, cancelled-as-history, completed-on-another-day, partly-completed, moved-forward outcome records, history list/detail.
+   - Status: shipped in `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`.
+2. Actuals/corrections and plan-vs-actual child:
+   - Path: `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
+   - Owns: editable actual outcomes for completed-as-planned, completed-different, partial, completed-on-another-day, cancelled-as-actual, review-needed, and plan-vs-actual display.
+   - Does not own: Garmin provider ingestion, AI evaluation, or source workout/program edits.
 3. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
-   - Blocked by: Garmin partner/API access, provider payload examples, and provider branding/consent requirements.
+   - Blocked by: Garmin partner/API access, provider payload examples, local actual-correction semantics, and provider branding/consent requirements.
 4. Retrospective evaluation child:
    - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 
@@ -68,9 +73,13 @@ Parent scope:
 - Define compatibility for future Garmin Activity API reconciliation.
 - Define tests and support diagnostics required by child slices.
 
-First runtime child scope is intentionally narrower and owned by:
+First shipped runtime child scope is intentionally narrower and owned by:
 
-- `docs/task-briefs/planned/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`
+- `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`
+
+Next local runtime child scope is owned by:
+
+- `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 
 ## Out Of Scope
 
@@ -106,19 +115,22 @@ Current interpretation from official sources:
 ## Garmin Send/Receive/Reconcile Contract
 
 - Sending a planned workout to Garmin creates provider send state only.
+- Send jobs should store local planned/workout/program IDs, a payload snapshot/fingerprint, idempotency/correlation values where Garmin supports them, and any provider aliases Garmin returns.
+- Local correlation IDs may help matching, but future reconciliation must not depend on Garmin returning them; matching also needs provider alias, date/time, sport/sub-sport, distance/duration, and available FIT/lap/step evidence.
 - Receiving a Garmin activity creates provider activity evidence only.
-- A completed history entry is created or linked only after deterministic manual action, provider match, or explicit review.
+- A completed history entry is created, corrected, or linked only after deterministic manual action, provider match, or explicit review.
 - Future reconciliation should compare:
   - planned instance ID,
   - FreeSwimming workout ID,
   - Garmin send job ID / provider workout alias,
+  - outbound payload fingerprint/correlation values where available,
   - activity date/time,
   - sport/sub-sport,
   - pool/open-water context,
   - distance/duration,
   - available FIT/lap/step evidence when mapped.
 - Conflicts such as manual `completed` vs provider mismatch, manual `cancelled` vs provider activity, duplicate provider matches, or ambiguous activity-to-plan matches enter `needs_review`.
-- Review/edit affordances must edit reconciliation state or history correction state, not silently rewrite provider evidence.
+- Review/edit affordances must show planned, sent, received, and actual versions separately, then edit reconciliation state or history correction state, not silently rewrite provider evidence.
 - Garmin attribution/branding requirements must be followed on Garmin-sourced or Garmin-derived displays.
 
 ## Data Placement And Sync Contract
@@ -130,7 +142,8 @@ Current interpretation from official sources:
   - workout/program references when available,
   - outcome state,
   - source kind (`manual`, future `garmin_activity_api`, future `system_reconciled`),
-  - actual completion date/time where known,
+  - actual completion date/time and measured values where known,
+  - actual outcome state (`completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, or mapped future values),
   - planned snapshot/references needed for plan-vs-actual,
   - provider aliases and raw-file references only in future provider-specific tables,
   - reconciliation status and review metadata in later children.
@@ -141,10 +154,12 @@ Current interpretation from official sources:
 - Sync behavior:
   - planned rows stay planning truth;
   - history rows stay actual outcome truth;
+  - correcting history updates actual truth and does not rewrite the plan;
   - provider send/import state never overrides either without explicit reconciliation rules;
   - history mutations invalidate Calendar completion indicators, history lists/details, comparison summaries, and later retrospective AI inputs.
 - Conflict policy:
   - duplicate manual completion is idempotent;
+  - actual-history correction is explicit and auditable;
   - duplicate provider match, provider/manual disagreement, missing plan reference, unknown source, or stale planned row becomes review/retry state;
   - provider re-sync must not delete manual notes or rebind history entries silently.
 - Retention and sensitivity:
@@ -161,6 +176,7 @@ Current interpretation from official sources:
   - workout/program names, labels, and calendar headings are presentation only.
 - Mutability rules:
   - a correction for the same underlying scheduled session should update/review the same canonical history entry unless a later versioning policy says otherwise;
+  - editing the actual result changes actual-history fields only and leaves the planned occurrence intact;
   - provider re-sync cannot rebind a history entry to a different planned session implicitly.
 - Rename vs repurpose:
   - renaming a workout/program in place preserves history linkage;
@@ -169,6 +185,7 @@ Current interpretation from official sources:
   - analytics, exports, comments, provider reconciliation, and AI review resolve canonical IDs, not titles or order.
 - Observability and repair:
   - duplicate matches, orphan history entries, provider drift, unknown sources, and stale planned references must be measurable and supportable.
+  - partial/changed/another-day actuals must be diagnosable separately from skipped/cancelled planned rows.
 
 ## Forward Compatibility Contract
 
@@ -248,7 +265,7 @@ Critical target categories for a `10/10` claim:
   - Calendar child slices should reuse current Calendar selected-day detail and My Library route shells.
   - History list/detail should be a later route or component with a shared view-model, not Calendar-local ad hoc state.
 - TypeScript/domain:
-  - outcome/source/reconciliation statuses must be typed allowlists with unknown-value review fallback.
+  - outcome/source/correction/reconciliation statuses must be typed allowlists with unknown-value review fallback.
   - provider data must be parsed through explicit adapters.
 - Supabase:
   - use additive migrations, RLS, owner-scoped indexes, generated type updates, and negative-path tests.
@@ -257,7 +274,7 @@ Critical target categories for a `10/10` claim:
   - Garmin runtime work must re-check official docs and partner credentials before implementation.
   - use least-privilege OAuth scopes, encrypted token storage, idempotency, retry/backoff, attribution/branding compliance, and support-visible diagnostics.
 - Testing:
-  - manual history: unit/integration/component/e2e;
+  - manual history and actual corrections: unit/integration/component/e2e;
   - provider reconciliation: adapter fixtures, malformed payloads, duplicate matching, authz, replay, and review-state tests.
 
 ## Help/Guide And Support-Surface Impact
@@ -267,8 +284,10 @@ Critical target categories for a `10/10` claim:
 
 ## Acceptance Criteria
 
-- Calendar Child `D` can safely use this parent as the canonical history boundary.
+- Calendar Child `D` can safely use this parent as the canonical history boundary and has shipped as manual completion only.
+- The next local child is explicitly `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
 - Manual completion is defined as actual outcome truth, separate from planned rows and Garmin send state.
+- Actual-history corrections are defined as actual truth changes, not planned row changes.
 - Garmin send, Garmin received activity, and reconciliation/review responsibilities are separated before runtime work starts.
 - Future provider/manual conflicts must enter review state, not silent overwrite.
 - Scorecard, data placement, identity, forward compatibility, and support impact are explicit.
@@ -278,6 +297,7 @@ Critical target categories for a `10/10` claim:
 - `npm run lint:briefs`
 - Future child implementation:
   - targeted unit/integration tests for completion state transitions and conflict handling,
+  - targeted tests for actual correction outcomes and plan-vs-actual rendering,
   - negative-path tests for unauthorized/forbidden mutations,
   - e2e for planner to complete/history review flow where UI changes,
   - `npm run verify:pre-pr`,
@@ -290,3 +310,4 @@ Critical target categories for a `10/10` claim:
 - `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon, explicit date window, and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
 - `2026-05-01 | roadmap alignment | captured owner real-life scheduling requirements: preserve planned and actual states separately, support completed-as-planned, completed-on-another-day, partly-completed, skipped/cancelled, and moved-forward outcomes, and keep later AI feedback/adaptive replanning dependent on canonical history instead of planner-local flags | next: keep AI session V1 free of history implementation while preserving these contracts for the later program/history slice`
 - `2026-06-21 | audit-refresh | refreshed after Calendar planned-instance identity and planned-only status actions shipped through PR #1191/#1192; narrowed the next runtime child to manual completed swim events and added explicit Garmin Training API send vs Activity API receive vs reconciliation boundary from official Garmin docs | next: execute Calendar Child D only after owner explicitly asks for runtime implementation`
+- `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next: validate docs-only audit and wait for owner to explicitly execute the actuals/corrections child`

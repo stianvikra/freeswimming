@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@de761db3`
+- `base`: `main@ffd36d9e`
 - `audit_status`: `blocked`
 - `decision`: Keep live Garmin Training API implementation blocked; use this brief as the send-to-Garmin provider boundary until partner/API prerequisites are concrete.
-- `reason`: Official Garmin docs confirm Training API is the workout/training-plan publish path and Activity API is the received-activity path, but partner approval, credentials, swim mapping signoff, brand/attribution requirements, and provider test evidence are not available in the repo.
+- `reason`: Official Garmin docs confirm Training API is the workout/training-plan publish path and Activity API is the received-activity path, but partner approval, credentials, swim mapping signoff, provider correlation/alias behavior, brand/attribution requirements, and provider test evidence are not available in the repo.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner approval, credentials, swim mapping capability, OAuth requirements, brand guidelines, provider payload samples, scorecard categories, verification lanes, or FreeSwimming workout/program/history contracts change.
 
 ## Goal
@@ -57,6 +57,7 @@ This work requires external prerequisites not guaranteed by code alone:
 - Confirmed swim workout and training-plan upload scope/limits.
 - Signed-off swim step mapping matrix across Garmin-documented and observed swim concepts.
 - Provider test environment or approved production-throttled evaluation path.
+- Confirmed whether Garmin accepts or returns client/local correlation values, and which provider IDs/aliases are available after send.
 - Rollback/runbook approved by owner.
 
 ## Unblock Criteria
@@ -68,8 +69,9 @@ All of the following must be true:
 3. OAuth 2.0 connect/disconnect/revocation flow is approved.
 4. Supported workout/program step-mapping matrix is signed off across Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, `SPORT_SWIMMING`, `SUB_SPORT_LAP_SWIMMING`, `SUB_SPORT_OPEN_WATER`, interval/rest structure, and the observed Garmin Connect UI swim concepts such as `Main`, lap-button, fixed-rest, send-off, CSS-based pacing, `Choice`, and `RIMO` workflows.
 5. Garmin branding/attribution requirements are understood for Garmin-sourced and Garmin-derived data.
-6. Queue/retry/idempotency and provider support diagnostics are approved.
-7. Rollback/disable/token-revocation runbook is approved.
+6. Provider alias/correlation behavior is confirmed, including whether FreeSwimming can send a local planned-instance/send-job reference and whether Garmin returns it or only provider IDs.
+7. Queue/retry/idempotency and provider support diagnostics are approved.
+8. Rollback/disable/token-revocation runbook is approved.
 
 ## Planned Scope After Unblock
 
@@ -77,10 +79,20 @@ All of the following must be true:
 - Owner-scoped provider connection state.
 - Send workout and training-plan endpoints with queue/retry handling.
 - Deterministic Garmin Training API adapter for supported FreeSwimming workouts/programs.
-- Provider send job table with stable local job ID, provider aliases, payload snapshot/fingerprint, status, retries, and redacted provider error details.
+- Provider send job table with stable local job ID, planned/workout/program references, local correlation/idempotency value where supported, provider aliases, payload snapshot/fingerprint, status, retries, and redacted provider error details.
 - Sync status model such as `not_connected`, `ready`, `queued`, `sent`, `failed_retryable`, `failed_final`, and `needs_attention`.
 - Deterministic failure UX and support/admin/audit visibility.
 - Explicit guarantee that send status does not mark sessions complete or move them into training history.
+
+## Provider Correlation And Payload Identity Contract
+
+- FreeSwimming must create its own immutable send job ID before calling Garmin.
+- The send job must store canonical `planned_workout_instances.id`, workout/program IDs, outbound payload snapshot, payload fingerprint, attempted timestamp, and idempotency key or equivalent retry token.
+- If Garmin supports a client-provided correlation/reference field, send the local send job or planned-instance reference there.
+- If Garmin does not return that local reference later, reconciliation must still match through provider aliases, send job timestamps, workout payload fingerprint, sport/sub-sport, date/time, distance/duration, and received Activity/FIT evidence.
+- Garmin-facing titles may include helpful user text, but titles must not be the matching key.
+- Re-sending a materially changed workout must use an explicit policy: update existing Garmin target, create a new Garmin target, or supersede the old send job.
+- Send state is provider delivery truth only and never marks the planned or actual session completed.
 
 ## Explicit Non-Scope While Blocked
 
@@ -105,6 +117,7 @@ That brief depends on this send boundary but must remain separate because Activi
   - Garmin connection status,
   - encrypted tokens,
   - send job state,
+  - local correlation/idempotency values where supported,
   - payload snapshots/fingerprints,
   - provider aliases,
   - redacted audit history,
@@ -119,6 +132,7 @@ That brief depends on this send boundary but must remain separate because Activi
   - connect/disconnect/send/retry operations invalidate provider status and pending send views.
 - Conflict policy:
   - duplicate send attempts use idempotency and existing send job state where possible;
+  - stale or mismatched payload fingerprints block with needs-attention instead of silently updating the provider target;
   - provider rejection/failure stays provider state, not workout corruption;
   - incompatible workout mappings block with review state before send.
 - Retention and sensitivity:
@@ -129,7 +143,7 @@ That brief depends on this send boundary but must remain separate because Activi
 ## Identity And Rename Contract
 
 - FreeSwimming workout/program/planned-instance IDs remain the canonical local source of truth.
-- Garmin provider workout IDs, calendar IDs, and send job IDs are foreign aliases only.
+- FreeSwimming send job IDs are local provider-delivery identity; Garmin provider workout IDs, calendar IDs, and activity IDs are foreign aliases only.
 - Garmin-facing titles may be user-friendly presentation strings but cannot replace canonical IDs.
 - Renaming a workout in FreeSwimming must not create a new local canonical entity.
 - Re-sending after material workout changes requires an explicit policy: update existing provider target, create new provider target, or mark old provider send as superseded.
@@ -229,3 +243,4 @@ Critical target categories for a `10/10` claim after unblock:
 - `2026-03-20 | planning | tightened this blocked brief around Garmin Training API send-to-calendar/device delivery for workouts and programs, and explicitly separated later completed-session/history ingestion into a different history track that can depend on Garmin Activity API | next: keep this brief blocked until partner approval, auth setup, and mapping matrix signoff are concrete`
 - `2026-03-22 | planning | tightened the unblock contract after reviewing Garmin swim-builder patterns so partner signoff must explicitly cover Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, swim sport/sub-sport, interval/rest structure, and Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, `Choice`, and `RIMO` workflows before live send work starts | next: do not unblock provider delivery on generic Garmin-ready language alone; require a concrete step-mapping matrix`
 - `2026-06-21 | audit-refresh | refreshed on main@de761db3 with official Garmin Developer Program, Training API, Activity API, FAQ, Brand Guidelines, and FIT SDK source baseline; kept live send integration blocked and separated future Activity API received-history reconciliation into docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md | next: execute Calendar Child D manual completion only after owner asks for runtime implementation`
+- `2026-06-21 | systemic-correlation-audit | refreshed on main@ffd36d9e after owner asked how Garmin returned activities should match planned/sent workouts; added the requirement for local send-job identity, optional Garmin-supported correlation/reference values, payload fingerprints, explicit resend/supersede policy, and no completion side effect from send state | next: keep blocked until Garmin partner/API access confirms alias/correlation behavior and swim mapping`

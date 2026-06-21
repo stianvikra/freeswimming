@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@de761db3`
+- `base`: `main@ffd36d9e`
 - `audit_status`: `ready`
-- `decision`: Use this as the parent roadmap contract only; execute the refreshed Child `D` manual completion brief next only after explicit owner runtime approval.
-- `reason`: Calendar children `A`, `B`, and `C` shipped stable planned instances, month/day-detail placement, and planned-only edit/status actions. Manual completion is now the next bounded child, while Garmin send and received-history reconciliation remain separate provider-boundary work.
+- `decision`: Use this as the parent roadmap contract only; the next local child is actual-history correction and plan-vs-actual, while Garmin send/receive remains separate blocked provider work.
+- `reason`: Calendar children `A` through `E` shipped planned instances, month/day-detail placement, planned-only actions, manual completion, and read-only Habits/Micro daily layers. The remaining local integrity gap is that an actual swim can differ from the plan and must be editable without rewriting planned rows or future provider evidence.
 - `must_refresh_before_execution_if`: Refresh again if `app/my-library/calendar/page.tsx`, `components/my-library/CalendarPeriodComparisonHub.tsx`, `components/my-library/programs/ProgramBuilderHub.tsx`, `lib/my-library/calendar*.ts`, `lib/programs/*`, `docs/quality/platform-10-10-scorecard.md`, Help/Guide contracts, route labels, verification lanes, or training-history scope change before a child slice starts.
 
 ## Goal
@@ -39,6 +39,10 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
   - `planned_workout_instances` stores owner-scoped planned occurrences.
   - Calendar month/day detail reads the same planned rows.
   - Planned-only actions now cover `Reschedule`, `Skip`, `Cancel`, and `Recover`.
+- Existing completion and daily layer foundation:
+  - `completed_activity_events` stores owner-scoped manual completed swim events.
+  - Calendar Plan can show completed swim state, Habits daily summaries, and completed Micro Session units.
+  - Perfect Day is intentionally not a separate Calendar layer until a later product decision gives it a distinct Calendar meaning.
 - Existing canonical program foundation:
   - `lib/programs/shared.ts`
   - `lib/programs/server.ts`
@@ -65,63 +69,64 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
 - Desktop should move toward a Garmin-style month overview once planned instance identity exists, with the selected day/week opening denser details instead of cramming every action into each month cell.
 - Mobile should stay day/week-first so controls remain readable and reachable.
 - Today must become a first-class calendar concept: mark today, provide a "Go to today" affordance when outside the current window, and avoid date math based on labels.
-- Micro sessions, habits, and Perfect Day belong as calendar layers/summaries after their canonical completed/summary data contracts are explicit; they should not be folded into swim-plan rows.
+- Micro sessions and habits now appear as read-only daily layers from their source-owned contracts; Perfect Day remains deferred until it has a distinct Calendar product meaning.
+- Plan-vs-actual must keep the planned version and actual version visible as separate truths when the user did not do exactly what was planned.
+- Future Garmin send/receive matching must attach to planned and actual records through provider aliases, payload fingerprints, and review states; it must never silently overwrite either the plan or manual actual history.
 
-## Recommended First Child Slice
+## Current Recommended Next Child
 
 Suggested child path:
 
-- `docs/task-briefs/planned/2026-06-20-my-library-calendar-plan-view-swim-comeback-10-10.md`
+- `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 
-First child scope:
+Next child scope:
 
-- Add a `Plan` view/mode to existing `/my-library/calendar`.
-- Add a persisted `programs.starts_on` calendar anchor so program week 1 has a real Monday start date.
-- Materialize planned workout instances from existing program assignments so each calendar occurrence has a stable row.
-- Reuse existing calendar date/window helpers and program-builder contracts.
-- Show planned swim sessions from canonical planned instances whose `planned_on` dates land in the selected week.
-- Keep the current comparison report available as `Compare`.
-- Show an explicit "history not connected yet" or equivalent empty/waiting state for actual outcomes.
-- Link edit actions to existing program/workout surfaces.
-- Do not add `mark done`, `cancel`, `partial`, comments, Garmin sync, AI generation, or new history storage.
+- Let users correct what actually happened after a manual completion without mutating the planned occurrence.
+- Add or refine actual outcomes such as `completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, and `needs_review`.
+- Show plan and actual side by side in Calendar selected-day detail or a dedicated history detail surface.
+- Preserve planned instance identity, actual-history identity, and planned snapshots for future Garmin/provider reconciliation.
+- Keep Calendar month cells scan-first and move correction actions into selected-day or history detail.
+- Do not add Garmin runtime, provider ingestion, AI retrospective review, Perfect Day, finance/admin reporting, or performance-ratchet changes.
 
-Why this is the safe first step:
+Why this is the safe next step:
 
-- It gives the owner a useful swim comeback planning view for the week beginning Monday, June 22, 2026.
-- It reuses the shipped program foundation and adds a durable date anchor plus planned instances instead of relying on temporary display-only schedule state.
-- The frontend is still closed and there are no live users, so the small nullable migration is lower risk now than after history/reminders depend on plan dates.
-- It leaves the higher-risk planned-vs-actual truth to the history foundation brief.
+- It closes the local data-integrity gap the owner identified: real swim sessions often differ from the plan.
+- It creates the correction semantics Garmin will later need before received device evidence can be safely linked or reviewed.
+- It keeps provider risk out of the next local slice while still designing for future send/receive matching.
 
 ## Child Roadmap And Dependency Table
 
-| Child | Working title                                        | Owner scope                                                                                                                                                                                                   | Depends on                                                                                           | Must not include                                                               |
-| ----- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `A`   | Calendar Plan Anchor And Swim Comeback Week          | Shipped: add `programs.starts_on`, materialize `planned_workout_instances` from program week/day assignments, add `/my-library/calendar?view=plan`, preserve `Compare`, and show history-not-connected state. | canonical program foundation                                                                         | completion mutation, Garmin sync, AI generation, ad hoc per-instance overrides |
-| `B`   | Desktop Month Overview And Today Marker              | Shipped: add desktop month overview, today marker, "Go to today", selected-day detail, and mobile week/day fallback using existing planned instances.                                                         | Child `A`                                                                                            | completion mutation, Garmin sync, habits/micro/Perfect Day layers              |
-| `C`   | Planned Instance Edit And Status Actions             | Shipped: let users reschedule, skip, cancel, and recover planned-only instances before completion, with explicit status and rename/repurpose rules.                                                           | Child `A`; Child `B`                                                                                 | actual completion events, provider sync, recurring drag/drop                   |
-| `D`   | Completion Events And Manual Mark Done               | Add canonical completed activity events, manual "mark as done", planned-vs-completed linkage, and safe status rendering.                                                                                      | Child `A`; Child `B`; Child `C`; refreshed training-history boundary                                 | Garmin reconciliation, habits aggregation, finance/admin dashboards            |
-| `E`   | Calendar Daily Layers For Micro, Habits, Perfect Day | Add compact daily calendar layers for completed micro sessions, habits overview, and Perfect Day score using each source's canonical summary contract.                                                        | Child `D` or explicit source contracts for completed events/daily summaries                          | editing source details inside calendar, provider sync                          |
-| `F`   | Plan Vs Actual Reconciliation And Insights           | Match planned sessions to actual outcomes, show missed/rescheduled/completed states, and add bounded overload/hole signals.                                                                                   | Child `D`; Child `E` for cross-layer daily summaries                                                 | changing program/workout identity, Garmin delivery                             |
-| `G`   | Garmin Plan Export Or Sync                           | Send planned workouts/programs to Garmin only when partner/API scope, auth, mapping, idempotency, attribution, and support diagnostics are concrete; received-activity reconciliation is tracked separately.  | Garmin partner brief unblocked, Child `A`; likely Child `D`/`F`; blocked Garmin reconciliation brief | blocked partner assumptions, importing activities without history contract     |
+| Child | Working title                                             | Owner scope                                                                                                                                                                                                   | Depends on                                                                  | Must not include                                                               |
+| ----- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `A`   | Calendar Plan Anchor And Swim Comeback Week               | Shipped: add `programs.starts_on`, materialize `planned_workout_instances` from program week/day assignments, add `/my-library/calendar?view=plan`, preserve `Compare`, and show history-not-connected state. | canonical program foundation                                                | completion mutation, Garmin sync, AI generation, ad hoc per-instance overrides |
+| `B`   | Desktop Month Overview And Today Marker                   | Shipped: add desktop month overview, today marker, "Go to today", selected-day detail, and mobile week/day fallback using existing planned instances.                                                         | Child `A`                                                                   | completion mutation, Garmin sync, habits/micro/Perfect Day layers              |
+| `C`   | Planned Instance Edit And Status Actions                  | Shipped: let users reschedule, skip, cancel, and recover planned-only instances before completion, with explicit status and rename/repurpose rules.                                                           | Child `A`; Child `B`                                                        | actual completion events, provider sync, recurring drag/drop                   |
+| `D`   | Completion Events And Manual Mark Done                    | Shipped: add canonical completed activity events, manual "mark as done", planned-vs-completed linkage, and safe status rendering.                                                                             | Child `A`; Child `B`; Child `C`; refreshed training-history boundary        | Garmin reconciliation, habits aggregation, finance/admin dashboards            |
+| `E`   | Calendar Daily Layers For Micro And Habits                | Shipped: add compact read-only daily calendar layers for completed Micro Session units and Habits overview; defer Perfect Day until it has a distinct Calendar product meaning.                               | Child `D` or explicit source contracts for completed events/daily summaries | editing source details inside calendar, provider sync, duplicate Perfect Day   |
+| `F`   | Training History Actuals, Corrections, And Plan Vs Actual | Let users correct actual swim history when the performed session differs from the plan, and show planned vs actual as separate truths.                                                                        | Child `D`; Child `E`; training-history parent                               | Garmin runtime, provider ingestion, changing source workout/program identity   |
+| `G`   | Garmin Plan Export Or Sync                                | Send planned workouts/programs to Garmin only when partner/API scope, auth, mapping, correlation, idempotency, attribution, and support diagnostics are concrete.                                             | Garmin partner brief unblocked, Child `A`; likely Child `F`                 | blocked partner assumptions, importing activities without history contract     |
+| `H`   | Garmin Activity Reconciliation And Review                 | Import received Garmin swim activities as provider evidence, match them against planned/sent/manual actual records, and route conflicts to review without silent overwrites.                                  | Garmin Activity API access, provider samples, Child `F`, likely Child `G`   | treating send status as completion, silently replacing manual actual history   |
 
 Forward-compatibility intent: Child `A` must establish `starts_on`, stable program/week/assignment/workout IDs, and `planned_workout_instances.id` so later completion, edit-before-complete, Garmin, reminders, and plan-vs-actual features attach without replacing identity or duplicating schedule truth.
 
 ## Calendar Capability Matrix
 
-| Capability                       | Canonical source of truth                                                 | First owning child | UI expectation                                                                                           | Guardrail                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Planned swim sessions            | `planned_workout_instances` linked to program/week/assignment/workout IDs | `A`                | Week list now; later month/day detail reads the same rows.                                               | No title/date-label identity and no completion truth in planned rows.                       |
-| Today marker and "Go to today"   | Local date normalized through calendar helpers                            | `B`                | Desktop month and mobile week/day clearly mark today and can jump back to it.                            | Do not hardcode the current date; tests use deterministic injected dates.                   |
-| Desktop month overview           | Planned instances plus later activity layers                              | `B`                | Garmin-style month grid for scanning load, gaps, and upcoming sessions.                                  | Month cells stay compact; detailed actions live in day detail or existing editors.          |
-| Selected-day detail              | Planned instances and later source summaries filtered by date             | `B`                | Opens the day's sessions and summary chips with links to source surfaces.                                | Do not duplicate full program/workout/habit editors in the calendar.                        |
-| Edit planned session before done | Planned instance row plus source program/workout IDs                      | `C`                | Move, skip, delete, or revise planned-only sessions before completion.                                   | Completed/history-linked rows need explicit compatibility rules before mutation.            |
-| Status rendering                 | Planned instance status plus completed activity events                    | `C`/`D`            | `planned`, `completed`, `skipped`, `missed`, `rescheduled`, and unknown states render deterministically. | Unknown statuses fail closed and never count as completed.                                  |
-| Manual mark done                 | `completed_activity_events` / training-history contract                   | `D`                | User can mark a planned swim as completed without Garmin.                                                | Actual completion is separate from planned row identity.                                    |
-| Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                        |
-| Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                                 |
-| Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | `E`                | Daily score or badge that helps explain overall day quality.                                             | Score logic stays with Perfect Day owner, not the calendar renderer.                        |
-| Plan-vs-actual insights          | Planned instances plus completed events                                   | `F`                | Missed/rescheduled/completed signals and bounded load/gap indicators.                                    | No provider-specific assumptions; reconcile by canonical IDs/date rules.                    |
-| Garmin export/import/reconcile   | Provider sync tables plus planned/completed canonical records             | `G`                | Sync status, conflicts, and repair affordances after local truth is stable.                              | Official provider docs/SDK, least privilege, idempotency, retries, and support diagnostics. |
+| Capability                       | Canonical source of truth                                                 | First owning child     | UI expectation                                                                                           | Guardrail                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Planned swim sessions            | `planned_workout_instances` linked to program/week/assignment/workout IDs | `A`                    | Week list now; later month/day detail reads the same rows.                                               | No title/date-label identity and no completion truth in planned rows.                 |
+| Today marker and "Go to today"   | Local date normalized through calendar helpers                            | `B`                    | Desktop month and mobile week/day clearly mark today and can jump back to it.                            | Do not hardcode the current date; tests use deterministic injected dates.             |
+| Desktop month overview           | Planned instances plus later activity layers                              | `B`                    | Garmin-style month grid for scanning load, gaps, and upcoming sessions.                                  | Month cells stay compact; detailed actions live in day detail or existing editors.    |
+| Selected-day detail              | Planned instances and later source summaries filtered by date             | `B`                    | Opens the day's sessions and summary chips with links to source surfaces.                                | Do not duplicate full program/workout/habit editors in the calendar.                  |
+| Edit planned session before done | Planned instance row plus source program/workout IDs                      | `C`                    | Move, skip, delete, or revise planned-only sessions before completion.                                   | Completed/history-linked rows need explicit compatibility rules before mutation.      |
+| Status rendering                 | Planned instance status plus completed activity events                    | `C`/`D`                | `planned`, `completed`, `skipped`, `missed`, `rescheduled`, and unknown states render deterministically. | Unknown statuses fail closed and never count as completed.                            |
+| Manual mark done                 | `completed_activity_events` / training-history contract                   | `D`                    | User can mark a planned swim as completed without Garmin.                                                | Actual completion is separate from planned row identity.                              |
+| Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                    | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                  |
+| Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                    | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                           |
+| Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | later product decision | Daily score or badge only if it becomes distinct from Habits in Calendar.                                | Score logic stays with Perfect Day owner; do not add a duplicate Habits chip.         |
+| Actual-history corrections       | Completed activity events / training-history actuals                      | `F`                    | Users can correct actual date, distance/duration, partial/changed outcome, and review state.             | Corrections mutate actual history, not planned rows or source workouts.               |
+| Plan-vs-actual insights          | Planned instances plus actual-history records                             | `F`                    | Planned and actual versions can be compared side by side with missed/changed/partial signals.            | No provider-specific assumptions; reconcile by canonical IDs/date rules.              |
+| Garmin export/send               | Provider send job tables plus planned/workout/program references          | `G`                    | Send status, retry, payload fingerprint, and support diagnostics after partner unblock.                  | Send status never counts as completed.                                                |
+| Garmin receive/reconcile         | Provider evidence tables plus reconciliation links to actual history      | `H`                    | Received activity evidence, candidate matches, conflicts, and review affordances.                        | Provider evidence is immutable/reviewed and never silently overwrites manual actuals. |
 
 ## Dependencies And Boundaries
 
@@ -131,6 +136,8 @@ Forward-compatibility intent: Child `A` must establish `starts_on`, stable progr
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Downstream actual-outcome owner:
   - `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
+- Next local actual-history child:
+  - `docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 - Related AI generation guardrail:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - Related epic:
@@ -447,3 +454,4 @@ Future Plan-view child:
 - `2026-06-20 | planning | owner chose to make Child A persist planned workout instances now, not just virtual plan rows, because there are no live users and this gives future completion/Garmin/history work a stable row identity | next: complete Child A implementation on feature branch`
 - `2026-06-20 | planning | owner asked how to systematize a 10/10 calendar including desktop month, today marker, micro sessions, habits, Perfect Day, edit-before-done, and Garmin; added calendar capability matrix and expanded roadmap to Child A-G without expanding Child A runtime scope | next: keep Child A focused, then execute Child B/C/D/E briefs in order after approval`
 - `2026-06-21 | audit-refresh | refreshed parent on clean main@de761db3 after Child A/B/C shipped and closeout PR #1192 merged; next runtime child is manual Calendar completion Child D, while Garmin Training API send and Activity API received-history reconciliation are now explicit separate blocked provider tracks | next: complete docs-only audit PR, then wait for owner to explicitly execute Child D runtime implementation`
+- `2026-06-21 | systemic-actuals-audit | refreshed on clean main@ffd36d9e after Calendar Child D/E and closeouts #1195/#1198 merged; next local child is docs/task-briefs/planned/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md so manual actual differences and plan-vs-actual are modeled before Garmin received evidence can attach; Garmin send and Activity reconciliation remain separate blocked provider tracks | next: validate docs-only audit and wait for owner to explicitly execute the actuals/corrections child`
