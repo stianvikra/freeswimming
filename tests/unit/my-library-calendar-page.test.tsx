@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MyLibraryCalendarPage from "@/app/my-library/calendar/page";
 import type { MyLibraryCalendarComparisonModel } from "@/lib/my-library/calendar-comparison";
 import type { MyLibraryCalendarPlanModel } from "@/lib/my-library/calendar-plan";
-import { buildMyLibraryCalendarComparisonWindow } from "@/lib/my-library/calendar";
+import {
+  buildMyLibraryCalendarComparisonWindow,
+  buildMyLibraryCalendarMonthWindow,
+} from "@/lib/my-library/calendar";
 
 const {
   getServerSupabaseUserIfAuthCookiePresentMock,
@@ -79,6 +82,7 @@ function buildPlanModel(): MyLibraryCalendarPlanModel {
     schemaReady: true,
     loadError: null,
     selectedDate: "2026-06-22",
+    todayDate: "2026-06-20",
     window: {
       selectedDate: "2026-06-22",
       startDate: "2026-06-22",
@@ -89,12 +93,23 @@ function buildPlanModel(): MyLibraryCalendarPlanModel {
       previousWindowDate: "2026-06-15",
       nextWindowDate: "2026-06-29",
     },
+    month: buildMyLibraryCalendarMonthWindow({
+      selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
+    }),
     selectedProgramId: "program-1",
     selectedProgramMissing: false,
     programs: [],
     unanchoredPrograms: [],
     missingWorkoutIds: [],
     days: [],
+    monthDays: [],
+    selectedDay: {
+      date: "2026-06-22",
+      dayIndex: 0,
+      dayLabel: "Monday",
+      sessions: [],
+    },
     sessionCount: 0,
   };
 }
@@ -134,20 +149,21 @@ describe("MyLibraryCalendarPage", () => {
     expect(screen.getByTestId("site-chrome")).toBeInTheDocument();
     expect(screen.getByTestId("calendar-workspace")).toHaveClass(
       "max-w-[1080px]",
-      "pt-24",
-      "sm:pt-28"
+      "pt-16",
+      "sm:pt-24"
     );
-    expect(screen.getByRole("heading", { name: "Comparison Report", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Calendar", level: 1 })).toBeVisible();
     expect(screen.getByTestId("calendar-mode-switch")).toBeVisible();
     expect(
       within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Plan" })
     ).toHaveAttribute("href", "/my-library/calendar?view=plan&date=2026-05-20");
-    const actions = screen.getByTestId("calendar-route-actions");
-    expect(actions).toHaveClass("grid", "w-full", "grid-cols-1");
-    expect(within(actions).getByRole("link", { name: "Back to My Library" })).toHaveAttribute(
+    expect(
+      within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Stats" })
+    ).toHaveAttribute(
       "href",
-      "/my-library"
+      "/my-library/calendar?view=compare&source=habits&period=month&date=2026-05-20&compareTo=2026-04-20"
     );
+    expect(screen.queryByRole("link", { name: "Back to My Library" })).not.toBeInTheDocument();
     expect(screen.getByTestId("calendar-period-comparison-hub")).toHaveAttribute(
       "data-selected-source",
       "habits"
@@ -197,7 +213,8 @@ describe("MyLibraryCalendarPage", () => {
       })
     );
 
-    expect(screen.getByRole("heading", { name: "Calendar Plan", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Calendar", level: 1 })).toBeVisible();
+    expect(screen.getByTestId("calendar-workspace")).toHaveClass("max-w-[1680px]");
     expect(screen.getByTestId("calendar-plan-week-hub")).toHaveAttribute(
       "data-selected-date",
       "2026-06-22"
@@ -211,6 +228,7 @@ describe("MyLibraryCalendarPage", () => {
       signedInUser.id,
       {
         selectedDate: "2026-06-22",
+        todayDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
         selectedProgramId: "program-1",
       }
     );

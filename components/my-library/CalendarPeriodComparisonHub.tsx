@@ -322,11 +322,11 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
       <section className={cardClass} data-testid="calendar-period-controls">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <div>
-            <p className={eyebrowClass}>Comparison view</p>
+            <p className={eyebrowClass}>Stats view</p>
             <p className="mt-2 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
               Source
             </p>
-            <nav aria-label="Comparison Report sources" className="mt-2 flex flex-wrap gap-2">
+            <nav aria-label="Stats sources" className="mt-2 flex flex-wrap gap-2">
               {MY_LIBRARY_CALENDAR_SOURCE_FILTERS.map((source) => {
                 const isActive = model.selectedSource === source;
                 return (
@@ -355,10 +355,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
 
           <div>
             <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">Period</p>
-            <nav
-              aria-label="Comparison Report periods"
-              className="mt-2 grid max-w-[420px] grid-cols-3 gap-2"
-            >
+            <nav aria-label="Stats periods" className="mt-2 grid max-w-[420px] grid-cols-3 gap-2">
               {MY_LIBRARY_CALENDAR_PERIODS.map((period) => {
                 const isActive = model.selectedPeriod === period;
                 return (
@@ -393,7 +390,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             />
             <div>
               <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-                Current comparison
+                Current period
               </p>
               <p className={mutedTextClass}>
                 {reportSourceLabel} / {reportPeriodLabel} / {model.window.current.shortLabel}
@@ -414,7 +411,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
       <section className={cardClass} data-testid="calendar-insight-summary">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className={eyebrowClass}>Comparison insight</p>
+            <p className={eyebrowClass}>Stats insight</p>
             <h2 className="mt-2 text-2xl font-semibold text-[color:var(--fs-color-ink-strong)]">
               {primaryInsight.title}
             </h2>
@@ -485,7 +482,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
         </div>
       </section>
 
-      <section aria-label="Comparison Report key takeaways" className="grid gap-4 md:grid-cols-3">
+      <section aria-label="Stats key takeaways" className="grid gap-4 md:grid-cols-3">
         {insightCards.map((card) => {
           return (
             <article

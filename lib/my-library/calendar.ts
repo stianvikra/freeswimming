@@ -29,6 +29,19 @@ export type MyLibraryCalendarWindow = {
   nextWindowDate: string;
 };
 
+export type MyLibraryCalendarMonthWindow = {
+  selectedDate: string;
+  todayDate: string;
+  startDate: string;
+  endDate: string;
+  gridStartDate: string;
+  gridEndDate: string;
+  label: string;
+  previousMonthDate: string;
+  nextMonthDate: string;
+  containsToday: boolean;
+};
+
 export type MyLibraryCalendarPeriodRange = {
   period: MyLibraryCalendarPeriod;
   anchorDate: string;
@@ -57,6 +70,11 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_WINDOW_DAYS = 7;
 const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const FULL_MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
   year: "numeric",
   timeZone: "UTC",
 });
@@ -319,6 +337,34 @@ export function addMyLibraryCalendarPeriods(
     Math.min(originalDay, getDaysInUtcMonth(date.getUTCFullYear(), date.getUTCMonth()))
   );
   return toDateKey(date);
+}
+
+export function buildMyLibraryCalendarMonthWindow({
+  selectedDate,
+  todayDate = getTodayCalendarDate(),
+}: {
+  selectedDate: string;
+  todayDate?: string;
+}): MyLibraryCalendarMonthWindow {
+  const safeSelectedDate = normalizeMyLibraryCalendarPlanDateParam(selectedDate, todayDate);
+  const safeTodayDate = normalizeMyLibraryCalendarPlanDateParam(todayDate, todayDate);
+  const startDate = getMyLibraryCalendarPeriodStartDate(safeSelectedDate, "month");
+  const endDate = getMyLibraryCalendarPeriodEndDate(safeSelectedDate, "month");
+  const gridStartDate = getMyLibraryCalendarPeriodStartDate(startDate, "week");
+  const gridEndDate = getMyLibraryCalendarPeriodEndDate(endDate, "week");
+
+  return {
+    selectedDate: safeSelectedDate,
+    todayDate: safeTodayDate,
+    startDate,
+    endDate,
+    gridStartDate,
+    gridEndDate,
+    label: FULL_MONTH_LABEL_FORMATTER.format(parseCalendarDate(safeSelectedDate) ?? new Date()),
+    previousMonthDate: addMyLibraryCalendarPeriods(safeSelectedDate, "month", -1),
+    nextMonthDate: addMyLibraryCalendarPeriods(safeSelectedDate, "month", 1),
+    containsToday: safeTodayDate >= startDate && safeTodayDate <= endDate,
+  };
 }
 
 function formatCalendarDateLabel(dateKey: string): string {

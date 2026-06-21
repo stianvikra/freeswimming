@@ -93,7 +93,7 @@ describe("CalendarPeriodComparisonHub", () => {
     const insight = screen.getByTestId("calendar-insight-summary");
     expect(hub.firstElementChild).toBe(controls);
     expect(controls.nextElementSibling).toBe(insight);
-    expect(within(controls).getByText("Comparison view")).toBeVisible();
+    expect(within(controls).getByText("Stats view")).toBeVisible();
     expect(within(controls).getByText("All / Week / 1 Jun - 5 Jun")).toBeVisible();
 
     expect(within(insight).getByText("Consistency improved")).toBeVisible();
