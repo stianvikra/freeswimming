@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-20-my-library-calendar-planned-instance-edit-status-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-20`
 - `updated`: `2026-06-21`
@@ -15,7 +15,7 @@
 
 - `last_audited`: `2026-06-21`
 - `base`: `main@6e173c20`
-- `audit_status`: `execution_started_after_child_b`
+- `audit_status`: `merged`
 - `decision`: Execute now after Child `A` shipped planned workout instances and Child `B` shipped the month/day-detail placement. Scope is planned-instance-only mutation from selected-day detail.
 - `reason`: Planned sessions need safe mutation semantics before completion/history can be added. This child must let users correct the plan without creating actual outcome truth.
 - `must_refresh_before_execution_if`: Refresh if planned instance schema, Program Builder edit behavior, completion/history contracts, month/day-detail UX, screenshot handoff rules, verification lanes, or route-label support-surface rules change.
@@ -130,3 +130,44 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-06-21 | remote-schema-applied | first npm run verify:pre-pr failed on expected Supabase migration drift for 20260621100000_planned_workout_instance_status_actions.sql; migration list and dry-run showed exactly that one pending migration, npx supabase db push --linked --yes applied it, post-apply dry-run reported Remote database is up to date, and sequential migration list confirmed local/remote parity at 20260621100000 | next: rerun npm run verify:pre-pr`
 - `2026-06-21 | quality-gate-fix | npm run verify:pre-pr rerun passed Supabase drift but stopped on missing quality-gate evidence keywords for unexpected 500/failure-mode, route-label/support sweep, and reference surface; added bounded 500 route tests plus explicit reference surface, session-step N/A, Help/Guide support surface, identifiers searched, surfaces checked, and fallout handled evidence | next: rerun targeted tests and npm run verify:pre-pr`
 - `2026-06-21 | pre-pr-green | npm run verify:pre-pr passed full lane in artifacts/test-runs/20260621-113123/verify.log: branch-current, Supabase drift, quality gates, lint, typecheck, 1659 unit tests, build, perf budgets, and Playwright 111 passed / 567 skipped | perf-ratchet: script recommended tighten after 10 green runs, but owner direction holds the performance-ratchet brief until at least two new green weekly cycles after 2026-06-19 | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge`
+- `2026-06-21 | pre-merge-green | PR #1191 required GitHub checks passed on 1cd2e023; local npm run verify:pre-merge passed in artifacts/test-runs/20260621-115949/verify.log with marker artifacts/verify-pre-merge/20260621-100642.json after a targeted retry confirmed the first header-menu Playwright failure was a retry-cleared existing-route flake outside this Calendar slice | next: merge PR #1191`
+- `2026-06-21 | merged | PR #1191 squash-merged to main as c4d01a12 after owner approved merge on good tests; local main synced and npm run post-merge:preflight surfaced this single repo-managed docs-only closeout | next: merge closeout PR, sync main, rerun post-merge:preflight, then complete mandatory chat-handoff assessment`
+
+## Completion Record
+
+- `completed`: `2026-06-21`
+- `merged_pr`: `#1191`
+- `squash_commit`: `c4d01a12`
+- `result`: Closed My Library Calendar Planned Instance Edit And Status Actions. Users can now reschedule, skip, cancel, and recover planned Calendar workouts before completion without turning plan changes into completion history.
+- `validation`: targeted Vitest action/calendar/program/route packs, `npm run lint:briefs:all`, `npm run typecheck`, `npm run lint` with 7 existing output warnings, `git diff --check`, Supabase linked drift/apply/dry-run parity for migration `20260621100000`, `npm run verify:pre-pr` PASS in `artifacts/test-runs/20260621-113123/verify.log`, approved screenshot handoff at `output/playwright/calendar-planned-actions-reschedule-2026-06-21-112249`, GitHub PR #1191 required checks green, targeted Playwright retry PASS for the existing header-menu flake, and `npm run verify:pre-merge` PASS in `artifacts/test-runs/20260621-115949/verify.log`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remain intentionally non-critical and were not used to claim 10/10.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- UX flow clarity
+- Visual design quality
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Caching and invalidation strategy
+- Reliability and failure handling
+- Security and authz
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                                                  | Gaps / Notes                                                                                               |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Selected-day Calendar actions now cover reschedule, skip, cancel, recover, edit plan, and open workout without completion/history coupling; PR #1191 merged at `c4d01a12`.                | No remaining target gap.                                                                                   |
+| UX flow clarity                               | `5/5`          | Reschedule/Rescheduled terminology replaced Move/Moved; skipped/cancelled copy says this is not completion history; owner approved Recover mobile width correction.                       | No remaining target gap.                                                                                   |
+| Visual design quality                         | `5/5`          | Screenshot handoff approved at `output/playwright/calendar-planned-actions-reschedule-2026-06-21-112249` for desktop, tablet, mobile reschedule controls, and mobile recover controls.    | Existing tablet month overflow/no visible week-total column was recorded as pre-existing and out of scope. |
+| Business logic correctness and data integrity | `5/5`          | Route/program tests cover owner scope, stale conflict, invalid date, unknown status review, skip/cancel/recover/reschedule, manual `date_override_kind`, and sync preservation.           | No remaining target gap.                                                                                   |
+| Accessibility (a11y)                          | `5/5`          | Action controls use button/form semantics, accessible labels, focusable date input, and full E2E includes AW-006 public keyboard/a11y coverage; `verify:pre-merge` PASS.                  | No remaining target gap.                                                                                   |
+| Performance (CWV + payloads)                  | `5/5`          | `npm run verify:pre-pr` and `npm run verify:pre-merge` perf budgets PASS; no new dependency added.                                                                                        | Perf ratchet remains intentionally held until at least two new green weekly cycles after `2026-06-19`.     |
+| Data placement and sync boundaries            | `5/5`          | Contract keeps planned instance rows server-canonical, UI state local-only, manual date overrides explicit, and completion/history external to this child.                                | No remaining target gap.                                                                                   |
+| Caching and invalidation strategy             | `5/5`          | Client action flow refreshes after successful mutation and route tests cover conflict/failure paths without stale success.                                                                | No remaining target gap.                                                                                   |
+| Reliability and failure handling              | `5/5`          | Negative-path tests cover unauthenticated, cross-user/not found, stale conflict, invalid date, unknown future status, schema missing 503, load 500, and update 500 with bounded messages. | No remaining target gap.                                                                                   |
+| Security and authz                            | `5/5`          | API route is owner-scoped and fails closed for unauthenticated/cross-user mutation; no secrets or raw env values added.                                                                   | No remaining target gap.                                                                                   |
+| Stack-fit and dependency discipline           | `5/5`          | Reused App Router route patterns, Supabase typed contracts, existing Calendar hub/action styling, and added no dependency.                                                                | No remaining target gap.                                                                                   |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr` PASS, CI green, targeted retry PASS for the one local existing-route flake, and `npm run verify:pre-merge` PASS.                                                  | No remaining target gap.                                                                                   |
+| DevOps and rollback readiness                 | `5/5`          | Rollback is bounded to revert `c4d01a12`; migration is additive and status/action route/UI changes are isolated to planned Calendar instances.                                            | No remaining target gap.                                                                                   |
