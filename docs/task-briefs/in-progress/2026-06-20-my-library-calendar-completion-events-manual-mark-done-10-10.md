@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-20`
 - `updated`: `2026-06-21`
@@ -17,9 +17,9 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@de761db3`
+- `base`: `main@cae82cf5`
 - `audit_status`: `ready`
-- `decision`: Use this as the next bounded Calendar/My Library implementation child after owner explicitly asks for runtime implementation.
+- `decision`: Implement this as the active bounded Calendar/My Library child after owner confirmed scope with `start`.
 - `reason`: Child `A` shipped stable `planned_workout_instances`, Child `B` shipped the month/day-detail placement, Child `C` shipped planned-only edit/status actions, and the training-history/Garmin boundary is now explicit enough for a manual completion slice.
 - `must_refresh_before_execution_if`: Refresh if `planned_workout_instances`, workout/session export contracts, training-history scope, Garmin official API docs, Garmin partner status, support diagnostics, scorecard categories, route labels, screenshot rules, or verification lanes change before implementation starts.
 
@@ -251,7 +251,30 @@ Critical target categories for a `10/10` claim:
 - GitHub CI required checks.
 - `npm run verify:pre-merge`
 
+## Quality Gate Evidence Notes
+
+- API failure-mode evidence: route tests and runtime guards cover invalid UUID,
+  unauthenticated, cross-user/missing row, stale update, skipped/cancelled,
+  unknown planned status, missing workout/program references, duplicate insert
+  race, and schema-missing cases; no unexpected 500 is expected for known
+  failure modes.
+- Route-label/support sweep evidence: identifiers searched included
+  `completed_activity_events`, `Mark done`, `already_completed`,
+  `Completion review`, planned-instance action labels, old
+  completion-not-connected copy, and Swimming completed-on copy; surfaces checked
+  included `app/`, `components/`, `lib/`, `tests/`, `docs/`,
+  `docs/runbooks/`, active/planned task briefs, scripts, and `package.json`.
+- UI evidence: screenshot approval stop completed on 2026-06-21 after owner
+  screenshot approval for the linked `after/reference` artifacts; no
+  product-rendering files changed after capture except removal of the temporary
+  local visual harness route.
+
 ## Checkpoint Log
 
 - `2026-06-20 | planned | created as Child D after owner asked whether workouts can be marked as performed | next: refresh training-history boundary before execution`
 - `2026-06-21 | audit-refresh | refreshed on clean main@de761db3 after Calendar children A/B/C and closeout PR #1192 merged; tightened manual completion around canonical history identity, idempotency, selected-day action placement, and explicit Garmin Training API vs Activity API boundary | next: owner may explicitly execute runtime implementation after this docs-only audit PR is merged`
+- `2026-06-21 | implementation-start | moved to in-progress on branch child-d-calendar-manual-completion from clean main@cae82cf5 after PR #1193 merged and no post-merge closeout remained; owner confirmed scope with start | next: implement canonical manual completion storage/action/UI, then screenshot handoff before PR gates`
+- 2026-06-21 | implementation-checkpoint | added completed_activity_events storage/types, manual completion API, Calendar completion state loader, selected-day Mark done, completed/review/schema-missing UI states, API contract, user-flow docs, and support runbook updates; Stats Swimming copy now says completed activity events still need an explicit comparison mapping | validation: targeted Vitest calendar/completion pack PASS 7 files/38 tests, npm run typecheck PASS, git diff --check PASS; route-label/support sweep searched old completion-not-connected strings, completed_activity_events, Mark done, already_completed, Completion review, planned-instance action labels, and Swimming completed-on copy across app/components/lib/tests/docs/scripts/package.json; stale active/runtime/planned references fixed, historical done/ brief references intentionally left as PR history | next: capture screenshot handoff and stop for owner visual approval before npm run verify:pre-pr
+- 2026-06-21 | screenshot-handoff | captured after/reference screenshot artifacts in output/calendar-manual-completion-2026-06-21-130344 using a temporary local visual harness, then removed the harness route from the repo diff and stopped the dev server | validation: manual image review confirmed Mark done, completed state, mobile completion-review state, and planned recover reference render without visible overlap; no product-rendering files changed after capture except removal of the temporary harness route | next: owner visual approval or requested corrections before npm run verify:pre-pr
+- 2026-06-21 | remote-schema-applied | first npm run verify:pre-pr failed because 20260621123000_completed_activity_events_manual_swim_completion.sql was pending on linked remote; Supabase projects list confirmed linked project freeswimming-org-prod/sazgjhgxvmxcyowovond, migration list showed exactly that local-only migration, dry-run showed exactly that file, npx supabase db push --linked --yes applied it, post-apply dry-run reported Remote database is up to date, and linked typegen confirmed the completed_activity_events block matches the scoped types/database.ts update; one post-apply migration-list rerun hit the known temporary Supabase pooler auth circuit breaker, so subsequent Supabase checks should run sequentially | next: rerun npm run verify:pre-pr
+- 2026-06-21 | pre-pr-first-pass | npm run verify:pre-pr passed full lane after Supabase drift was resolved: lint/quality gates/typecheck/unit/build/perf/E2E were green with 111 passed and 567 skipped E2E tests; perf budget recommended tightening after 10 consecutive weekly green runs, but performance-ratchet remains hold because owner instruction requires at least two new green weekly cycles after 2026-06-19 before tightening; after the pass, removed a new unused mock-parameter warning in tests/unit/calendar-completion-route.test.ts and revalidated that file with npx eslint plus vitest 9/9 PASS | next: rerun npm run verify:pre-pr before commit

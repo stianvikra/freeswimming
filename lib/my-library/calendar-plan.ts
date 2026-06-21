@@ -20,6 +20,12 @@ import {
   buildMyLibraryCalendarWindow,
 } from "@/lib/my-library/calendar";
 import {
+  COMPLETED_ACTIVITY_EVENT_SELECT,
+  isCompletedActivityEventSchemaMissing,
+  isManualCompletedActivityEvent,
+  type CompletedActivityEventRow,
+} from "@/lib/my-library/completed-activity-events";
+import {
   normalizePlannedWorkoutInstanceDateOverrideKind,
   normalizePlannedWorkoutInstanceStatus,
   type PlannedWorkoutInstanceDateOverrideKind,
@@ -30,6 +36,29 @@ type TypedSupabaseClient = SupabaseClient<Database>;
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
 type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
+
+export type MyLibraryCalendarCompletionState =
+  | {
+      selection: "none";
+    }
+  | {
+      selection: "manual_completed";
+      eventId: string;
+      completedOn: string;
+      sourceKind: "manual";
+      outcome: "completed";
+      createdAt: string;
+    }
+  | {
+      selection: "review";
+      eventId: string | null;
+      completedOn: string | null;
+      sourceKind: string;
+      outcome: string;
+    }
+  | {
+      selection: "schema_missing";
+    };
 
 export type MyLibraryCalendarPlanSession = {
   id: string;
@@ -47,6 +76,7 @@ export type MyLibraryCalendarPlanSession = {
   dayIndex: number;
   position: number;
   workout: WorkoutSummary | null;
+  completion: MyLibraryCalendarCompletionState;
 };
 
 export type MyLibraryCalendarPlanDay = {
@@ -71,6 +101,7 @@ export type MyLibraryCalendarPlanModel = {
   month: ReturnType<typeof buildMyLibraryCalendarMonthWindow>;
   selectedProgramId: string | null;
   selectedProgramMissing: boolean;
+  completionSchemaReady: boolean;
   programs: ProgramSummary[];
   unanchoredPrograms: ProgramSummary[];
   missingWorkoutIds: string[];
@@ -102,6 +133,7 @@ function emptyPlanModel(input: {
     month,
     selectedProgramId: input.selectedProgramId,
     selectedProgramMissing: false,
+    completionSchemaReady: true,
     programs: [],
     unanchoredPrograms: [],
     missingWorkoutIds: [],
@@ -178,6 +210,50 @@ function getProgramWeekLabel(program: ProgramRow | null, instance: PlannedWorkou
   return typeof week?.label === "string" && week.label.trim().length > 0
     ? week.label
     : `Week ${instance.program_week_index + 1}`;
+}
+
+function groupCompletedEventsByPlannedInstance(rows: CompletedActivityEventRow[]) {
+  const byPlannedInstanceId = new Map<string, CompletedActivityEventRow[]>();
+  for (const row of rows) {
+    const existing = byPlannedInstanceId.get(row.planned_workout_instance_id) ?? [];
+    existing.push(row);
+    byPlannedInstanceId.set(row.planned_workout_instance_id, existing);
+  }
+  return byPlannedInstanceId;
+}
+
+function buildCompletionState(
+  rows: CompletedActivityEventRow[],
+  completionSchemaReady: boolean
+): MyLibraryCalendarCompletionState {
+  if (!completionSchemaReady) {
+    return { selection: "schema_missing" };
+  }
+
+  if (rows.length === 0) {
+    return { selection: "none" };
+  }
+
+  const manualCompleted = rows.find(isManualCompletedActivityEvent);
+  if (manualCompleted) {
+    return {
+      selection: "manual_completed",
+      eventId: manualCompleted.id,
+      completedOn: manualCompleted.completed_on,
+      sourceKind: "manual",
+      outcome: "completed",
+      createdAt: manualCompleted.created_at,
+    };
+  }
+
+  const firstRow = rows[0];
+  return {
+    selection: "review",
+    eventId: firstRow?.id ?? null,
+    completedOn: firstRow?.completed_on ?? null,
+    sourceKind: firstRow?.source_kind ?? "unknown",
+    outcome: firstRow?.outcome ?? "unknown",
+  };
 }
 
 async function loadMissingPrograms(
@@ -377,6 +453,32 @@ export async function loadMyLibraryCalendarPlan(
   }
 
   const workoutsById = new Map(workouts.map((workout) => [workout.id, workout]));
+  let completionSchemaReady = true;
+  let completedActivityRows: CompletedActivityEventRow[] = [];
+  const plannedInstanceIds = instances.map((instance) => instance.id);
+
+  if (plannedInstanceIds.length > 0) {
+    const completedActivityResult = await supabase
+      .from("completed_activity_events")
+      .select(COMPLETED_ACTIVITY_EVENT_SELECT)
+      .eq("user_id", userId)
+      .in("planned_workout_instance_id", plannedInstanceIds);
+
+    if (isCompletedActivityEventSchemaMissing(completedActivityResult.error)) {
+      completionSchemaReady = false;
+    } else if (completedActivityResult.error) {
+      console.error(
+        "[CalendarPlan] Could not load completed activity events",
+        completedActivityResult.error
+      );
+      loadError = loadError ?? "Completed swim history could not be fully loaded right now.";
+    } else {
+      completedActivityRows = (completedActivityResult.data ?? []) as CompletedActivityEventRow[];
+    }
+  }
+
+  const completionsByPlannedInstanceId =
+    groupCompletedEventsByPlannedInstance(completedActivityRows);
   const plannedSessions = instances
     .map((instance) => {
       const programRow = programRowById.get(instance.program_id) ?? null;
@@ -398,6 +500,10 @@ export async function loadMyLibraryCalendarPlan(
         dayIndex: instance.day_index,
         position: instance.position,
         workout: instance.workout_id ? (workoutsById.get(instance.workout_id) ?? null) : null,
+        completion: buildCompletionState(
+          completionsByPlannedInstanceId.get(instance.id) ?? [],
+          completionSchemaReady
+        ),
       };
     })
     .sort(
@@ -432,6 +538,7 @@ export async function loadMyLibraryCalendarPlan(
     month,
     selectedProgramId: input.selectedProgramId,
     selectedProgramMissing: Boolean(input.selectedProgramId && !selectedProgramResult.data),
+    completionSchemaReady,
     programs: programSummaries,
     unanchoredPrograms,
     missingWorkoutIds,

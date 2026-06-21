@@ -706,6 +706,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      completed_activity_events: {
+        Row: {
+          completed_on: string;
+          created_at: string;
+          id: string;
+          outcome: string;
+          planned_snapshot: Json;
+          planned_workout_instance_id: string;
+          program_id: string;
+          source_kind: string;
+          updated_at: string;
+          user_id: string;
+          workout_id: string;
+        };
+        Insert: {
+          completed_on: string;
+          created_at?: string;
+          id?: string;
+          outcome?: string;
+          planned_snapshot?: Json;
+          planned_workout_instance_id: string;
+          program_id: string;
+          source_kind?: string;
+          updated_at?: string;
+          user_id: string;
+          workout_id: string;
+        };
+        Update: {
+          completed_on?: string;
+          created_at?: string;
+          id?: string;
+          outcome?: string;
+          planned_snapshot?: Json;
+          planned_workout_instance_id?: string;
+          program_id?: string;
+          source_kind?: string;
+          updated_at?: string;
+          user_id?: string;
+          workout_id?: string;
+        };
+        Relationships: [];
+      };
       course_progress: {
         Row: {
           done: boolean;

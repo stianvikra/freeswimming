@@ -80,6 +80,8 @@ function formatReviewCount(count: number) {
 }
 
 function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
+  if (session.completion.selection === "manual_completed") return "Completed";
+  if (session.completion.selection === "review") return "Completion review";
   if (!session.workout) return "Missing workout";
 
   switch (session.statusSelection) {
@@ -96,6 +98,8 @@ function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
 }
 
 function getSessionStatusClass(session: MyLibraryCalendarPlanSession) {
+  if (session.completion.selection === "manual_completed") return statusChipClass;
+  if (session.completion.selection === "review") return reviewChipClass;
   if (!session.workout) return missingChipClass;
 
   switch (session.statusSelection) {
@@ -112,30 +116,50 @@ function getSessionStatusClass(session: MyLibraryCalendarPlanSession) {
 }
 
 function getSessionSupportText(session: MyLibraryCalendarPlanSession) {
+  if (session.completion.selection === "manual_completed") {
+    return `Marked done manually on ${formatPlanDateLabel(
+      session.completion.completedOn
+    )}. Planned identity stays linked for future reconciliation.`;
+  }
+
+  if (session.completion.selection === "review") {
+    return "Completion state needs review before this item can count as done.";
+  }
+
+  if (session.completion.selection === "schema_missing") {
+    return "Completed swim history is still syncing in this environment.";
+  }
+
   switch (session.statusSelection) {
     case "planned":
       return session.dateOverrideKind === "manual"
-        ? "Rescheduled manually. Completion history is not connected yet."
-        : "Completion history is not connected yet.";
+        ? "Rescheduled manually. Ready to mark done from this plan item."
+        : "Ready to mark done from this plan item.";
     case "skipped":
       return "Skipped in the plan. This is not completion history.";
     case "cancelled":
       return "Cancelled in the plan. Recover it if it should stay scheduled.";
     case "unmapped":
     default:
-      return "Plan status needs review before completion history is connected.";
+      return "Plan status needs review before this item can be marked done.";
   }
 }
 
 function doesSessionNeedReview(session: MyLibraryCalendarPlanSession) {
-  return !session.workout || session.statusSelection !== "planned";
+  return (
+    !session.workout ||
+    session.statusSelection !== "planned" ||
+    session.completion.selection === "review"
+  );
 }
 
 function shouldShowMonthStatusLabel(session: MyLibraryCalendarPlanSession) {
   return (
     !session.workout ||
     session.statusSelection !== "planned" ||
-    session.dateOverrideKind === "manual"
+    session.dateOverrideKind === "manual" ||
+    session.completion.selection === "manual_completed" ||
+    session.completion.selection === "review"
   );
 }
 
@@ -162,12 +186,16 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     return typeof minutes === "number" ? (total ?? 0) + minutes : total;
   }, null);
   const reviewCount = sessions.filter(doesSessionNeedReview).length;
+  const completedCount = sessions.filter(
+    (session) => session.completion.selection === "manual_completed"
+  ).length;
 
   return {
     sessionCount: sessions.length,
     distanceMeters,
     durationMinutes,
     reviewCount,
+    completedCount,
   };
 }
 
@@ -510,7 +538,7 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
         totals.sessionCount
       )}, ${formatDistanceTotal(totals.distanceMeters)}, ${formatDurationTotal(
         totals.durationMinutes
-      )}`}
+      )}, ${totals.completedCount} completed`}
     >
       <p className="text-[11px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
         Week total
@@ -544,6 +572,16 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
               {formatDurationTotal(totals.durationMinutes)}
             </dd>
           </div>
+          {totals.completedCount > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
+                Done
+              </dt>
+              <dd className="text-sm font-semibold text-emerald-700">
+                {totals.completedCount} completed
+              </dd>
+            </div>
+          ) : null}
         </dl>
       ) : (
         <p className="mt-3 text-sm leading-5 text-[color:var(--fs-color-muted)]">No sessions</p>
@@ -731,6 +769,12 @@ export default function CalendarPlanWeekHub({ model }: Props) {
       {!model.schemaReady ? (
         <Feedback tone="warning" testId="calendar-plan-schema-warning">
           Program calendar planning is still syncing in this environment.
+        </Feedback>
+      ) : null}
+
+      {!model.completionSchemaReady ? (
+        <Feedback tone="warning" testId="calendar-plan-completion-schema-warning">
+          Completed swim history is still syncing in this environment.
         </Feedback>
       ) : null}
 

@@ -99,6 +99,7 @@ function buildPlanModel(): MyLibraryCalendarPlanModel {
     }),
     selectedProgramId: "program-1",
     selectedProgramMissing: false,
+    completionSchemaReady: true,
     programs: [],
     unanchoredPrograms: [],
     missingWorkoutIds: [],

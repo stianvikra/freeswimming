@@ -4,6 +4,7 @@ import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 import type { Database } from "@/types/database";
 
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
+type CompletedActivityEventRow = Database["public"]["Tables"]["completed_activity_events"]["Row"];
 type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 
@@ -98,11 +99,32 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
   };
 }
 
+function buildCompletedActivityEvent(
+  overrides?: Partial<CompletedActivityEventRow>
+): CompletedActivityEventRow {
+  return {
+    id: "44444444-4444-4444-8444-444444444444",
+    user_id: "user-1",
+    planned_workout_instance_id: "33333333-3333-4333-8333-333333333333",
+    workout_id: "22222222-2222-4222-8222-222222222222",
+    program_id: "11111111-1111-4111-8111-111111111111",
+    outcome: "completed",
+    source_kind: "manual",
+    completed_on: "2026-06-22",
+    planned_snapshot: {},
+    created_at: "2026-06-22T17:30:00.000Z",
+    updated_at: "2026-06-22T17:30:00.000Z",
+    ...overrides,
+  };
+}
+
 function buildSupabaseMock(input: {
   programs?: ProgramRow[];
   instances?: PlannedWorkoutInstanceRow[];
   workouts?: WorkoutRow[];
   instancesError?: { code?: string; message?: string };
+  completedActivityEvents?: CompletedActivityEventRow[];
+  completedActivityError?: { code?: string; message?: string };
 }) {
   const programsLimit = vi.fn().mockResolvedValue({
     data: input.programs ?? [buildProgramRow()],
@@ -126,6 +148,12 @@ function buildSupabaseMock(input: {
   });
   const workoutsEq = vi.fn(() => ({ in: workoutsIn }));
 
+  const completedActivityIn = vi.fn().mockResolvedValue({
+    data: input.completedActivityEvents ?? [],
+    error: input.completedActivityError ?? null,
+  });
+  const completedActivityEq = vi.fn(() => ({ in: completedActivityIn }));
+
   const from = vi.fn((table: string) => {
     if (table === "programs") {
       return {
@@ -145,15 +173,23 @@ function buildSupabaseMock(input: {
       };
     }
 
+    if (table === "completed_activity_events") {
+      return {
+        select: vi.fn(() => ({ eq: completedActivityEq })),
+      };
+    }
+
     throw new Error(`Unexpected table ${table}`);
   });
 
-  return { from, instancesGte, instancesLte, workoutsIn };
+  return { from, instancesGte, instancesLte, workoutsIn, completedActivityIn };
 }
 
 describe("my library calendar plan loader", () => {
   it("hydrates planned workout instances for the selected week and month grid", async () => {
-    const { from, instancesGte, instancesLte, workoutsIn } = buildSupabaseMock({});
+    const { from, instancesGte, instancesLte, workoutsIn, completedActivityIn } = buildSupabaseMock(
+      {}
+    );
 
     const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
       selectedDate: "2026-06-22",
@@ -176,6 +212,7 @@ describe("my library calendar plan loader", () => {
     expect(instancesGte).toHaveBeenCalledWith("planned_on", "2026-06-01");
     expect(instancesLte).toHaveBeenCalledWith("planned_on", "2026-07-05");
     expect(model.sessionCount).toBe(1);
+    expect(model.completionSchemaReady).toBe(true);
     expect(model.days[0]?.sessions[0]).toMatchObject({
       id: "33333333-3333-4333-8333-333333333333",
       date: "2026-06-22",
@@ -191,6 +228,9 @@ describe("my library calendar plan loader", () => {
         totalDistanceM: 1000,
         estimatedDurationMin: 25,
       },
+      completion: {
+        selection: "none",
+      },
     });
     expect(model.monthDays).toHaveLength(35);
     expect(model.monthDays.find((day) => day.date === "2026-06-20")).toMatchObject({
@@ -203,6 +243,70 @@ describe("my library calendar plan loader", () => {
     );
     expect(model.selectedDay.sessions[0]?.id).toBe("33333333-3333-4333-8333-333333333333");
     expect(workoutsIn).toHaveBeenCalledWith("id", ["22222222-2222-4222-8222-222222222222"]);
+    expect(completedActivityIn).toHaveBeenCalledWith("planned_workout_instance_id", [
+      "33333333-3333-4333-8333-333333333333",
+    ]);
+  });
+
+  it("hydrates manual completed activity events as actual outcome truth", async () => {
+    const { from } = buildSupabaseMock({
+      completedActivityEvents: [buildCompletedActivityEvent()],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+
+    expect(model.selectedDay.sessions[0]?.completion).toMatchObject({
+      selection: "manual_completed",
+      eventId: "44444444-4444-4444-8444-444444444444",
+      completedOn: "2026-06-22",
+      sourceKind: "manual",
+      outcome: "completed",
+    });
+  });
+
+  it("treats unknown completed activity event source or outcome as review state", async () => {
+    const { from } = buildSupabaseMock({
+      completedActivityEvents: [
+        buildCompletedActivityEvent({
+          outcome: "provider_pending",
+          source_kind: "garmin_activity_api",
+        }),
+      ],
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+
+    expect(model.selectedDay.sessions[0]?.completion).toMatchObject({
+      selection: "review",
+      sourceKind: "garmin_activity_api",
+      outcome: "provider_pending",
+    });
+  });
+
+  it("keeps planned sessions visible when completed-activity schema is still syncing", async () => {
+    const { from } = buildSupabaseMock({
+      completedActivityError: {
+        code: "42P01",
+        message: "relation completed_activity_events missing",
+      },
+    });
+
+    const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
+      selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
+      selectedProgramId: null,
+    });
+
+    expect(model.completionSchemaReady).toBe(false);
+    expect(model.selectedDay.sessions[0]?.completion).toEqual({ selection: "schema_missing" });
   });
 
   it("treats missing planned-instance schema as recoverable sync state", async () => {

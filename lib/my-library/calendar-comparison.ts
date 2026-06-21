@@ -595,7 +595,7 @@ function buildSourceComparisons(input: {
       ),
     swimming: buildUnmappedSource(
       "swimming",
-      "Swimming will be included after saved swim sessions have a canonical completed-on date."
+      "Swimming will be included after completed swim activity events are mapped into Stats."
     ),
     unmapped: buildUnmappedSource(
       "unmapped",
