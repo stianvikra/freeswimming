@@ -147,25 +147,38 @@ function buildSupabaseMock(input: {
     throw new Error(`Unexpected table ${table}`);
   });
 
-  return { from, workoutsIn };
+  return { from, instancesGte, instancesLte, workoutsIn };
 }
 
 describe("my library calendar plan loader", () => {
-  it("hydrates planned workout instances for the selected week", async () => {
-    const { from, workoutsIn } = buildSupabaseMock({});
+  it("hydrates planned workout instances for the selected week and month grid", async () => {
+    const { from, instancesGte, instancesLte, workoutsIn } = buildSupabaseMock({});
 
     const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
       selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
       selectedProgramId: null,
     });
 
     expect(model.schemaReady).toBe(true);
     expect(model.window.startDate).toBe("2026-06-22");
     expect(model.window.endDate).toBe("2026-06-28");
+    expect(model.todayDate).toBe("2026-06-20");
+    expect(model.month).toMatchObject({
+      label: "June 2026",
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+      gridStartDate: "2026-06-01",
+      gridEndDate: "2026-07-05",
+      containsToday: true,
+    });
+    expect(instancesGte).toHaveBeenCalledWith("planned_on", "2026-06-01");
+    expect(instancesLte).toHaveBeenCalledWith("planned_on", "2026-07-05");
     expect(model.sessionCount).toBe(1);
     expect(model.days[0]?.sessions[0]).toMatchObject({
       id: "33333333-3333-4333-8333-333333333333",
       date: "2026-06-22",
+      status: "planned",
       weekLabel: "Week 1",
       assignmentId: "assignment-1",
       workoutId: "22222222-2222-4222-8222-222222222222",
@@ -175,6 +188,16 @@ describe("my library calendar plan loader", () => {
         estimatedDurationMin: 25,
       },
     });
+    expect(model.monthDays).toHaveLength(35);
+    expect(model.monthDays.find((day) => day.date === "2026-06-20")).toMatchObject({
+      isToday: true,
+      isSelected: false,
+      isCurrentMonth: true,
+    });
+    expect(model.monthDays.find((day) => day.date === "2026-06-22")?.sessions[0]?.id).toBe(
+      "33333333-3333-4333-8333-333333333333"
+    );
+    expect(model.selectedDay.sessions[0]?.id).toBe("33333333-3333-4333-8333-333333333333");
     expect(workoutsIn).toHaveBeenCalledWith("id", ["22222222-2222-4222-8222-222222222222"]);
   });
 
@@ -185,6 +208,7 @@ describe("my library calendar plan loader", () => {
 
     const model = await loadMyLibraryCalendarPlan({ from } as never, "user-1", {
       selectedDate: "2026-06-22",
+      todayDate: "2026-06-20",
       selectedProgramId: null,
     });
 

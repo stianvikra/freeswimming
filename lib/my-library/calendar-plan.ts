@@ -14,7 +14,11 @@ import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
 import { WORKOUT_SELECT, tryBuildWorkoutSummary } from "@/lib/workouts/server";
 import type { WorkoutSummary } from "@/lib/workouts/shared";
 import type { Database } from "@/types/database";
-import { addCalendarDays, buildMyLibraryCalendarWindow } from "@/lib/my-library/calendar";
+import {
+  addCalendarDays,
+  buildMyLibraryCalendarMonthWindow,
+  buildMyLibraryCalendarWindow,
+} from "@/lib/my-library/calendar";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
@@ -24,6 +28,7 @@ type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 export type MyLibraryCalendarPlanSession = {
   id: string;
   date: string;
+  status: string;
   program: ProgramSummary | null;
   weekId: string;
   weekLabel: string;
@@ -42,51 +47,107 @@ export type MyLibraryCalendarPlanDay = {
   sessions: MyLibraryCalendarPlanSession[];
 };
 
+export type MyLibraryCalendarPlanMonthDay = MyLibraryCalendarPlanDay & {
+  isCurrentMonth: boolean;
+  isSelected: boolean;
+  isToday: boolean;
+};
+
 export type MyLibraryCalendarPlanModel = {
   schemaReady: boolean;
   loadError: string | null;
   selectedDate: string;
+  todayDate: string;
   window: ReturnType<typeof buildMyLibraryCalendarWindow>;
+  month: ReturnType<typeof buildMyLibraryCalendarMonthWindow>;
   selectedProgramId: string | null;
   selectedProgramMissing: boolean;
   programs: ProgramSummary[];
   unanchoredPrograms: ProgramSummary[];
   missingWorkoutIds: string[];
   days: MyLibraryCalendarPlanDay[];
+  monthDays: MyLibraryCalendarPlanMonthDay[];
+  selectedDay: MyLibraryCalendarPlanDay;
   sessionCount: number;
 };
 
 function emptyPlanModel(input: {
   selectedDate: string;
+  todayDate: string;
   selectedProgramId: string | null;
   schemaReady: boolean;
   loadError: string | null;
 }): MyLibraryCalendarPlanModel {
   const window = buildMyLibraryCalendarWindow(input.selectedDate);
+  const month = buildMyLibraryCalendarMonthWindow({
+    selectedDate: input.selectedDate,
+    todayDate: input.todayDate,
+  });
 
   return {
     schemaReady: input.schemaReady,
     loadError: input.loadError,
     selectedDate: input.selectedDate,
+    todayDate: input.todayDate,
     window,
+    month,
     selectedProgramId: input.selectedProgramId,
     selectedProgramMissing: false,
     programs: [],
     unanchoredPrograms: [],
     missingWorkoutIds: [],
     days: buildEmptyPlanDays(window),
+    monthDays: buildEmptyPlanMonthDays(month),
+    selectedDay: buildPlanDay(input.selectedDate, []),
     sessionCount: 0,
   };
+}
+
+function getPlanDayIndex(dateKey: string): number {
+  const parsed = new Date(`${dateKey}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return 0;
+  return (parsed.getUTCDay() + 6) % 7;
+}
+
+function buildPlanDay(
+  date: string,
+  sessions: MyLibraryCalendarPlanSession[]
+): MyLibraryCalendarPlanDay {
+  const dayIndex = getPlanDayIndex(date);
+  return {
+    date,
+    dayIndex,
+    dayLabel: PROGRAM_WEEKDAY_LABELS[dayIndex],
+    sessions,
+  };
+}
+
+function buildPlanDays(startDate: string, endDate: string): MyLibraryCalendarPlanDay[] {
+  const days: MyLibraryCalendarPlanDay[] = [];
+  let date = startDate;
+
+  while (date <= endDate) {
+    days.push(buildPlanDay(date, []));
+    date = addCalendarDays(date, 1);
+  }
+
+  return days;
 }
 
 function buildEmptyPlanDays(
   window: ReturnType<typeof buildMyLibraryCalendarWindow>
 ): MyLibraryCalendarPlanDay[] {
-  return PROGRAM_WEEKDAY_LABELS.map((dayLabel, dayIndex) => ({
-    date: addCalendarDays(window.startDate, dayIndex),
-    dayIndex,
-    dayLabel,
-    sessions: [],
+  return buildPlanDays(window.startDate, window.endDate);
+}
+
+function buildEmptyPlanMonthDays(
+  month: ReturnType<typeof buildMyLibraryCalendarMonthWindow>
+): MyLibraryCalendarPlanMonthDay[] {
+  return buildPlanDays(month.gridStartDate, month.gridEndDate).map((day) => ({
+    ...day,
+    isCurrentMonth: day.date >= month.startDate && day.date <= month.endDate,
+    isSelected: day.date === month.selectedDate,
+    isToday: day.date === month.todayDate,
   }));
 }
 
@@ -158,16 +219,22 @@ export async function loadMyLibraryCalendarPlan(
   userId: string,
   input: {
     selectedDate: string;
+    todayDate?: string;
     selectedProgramId: string | null;
   }
 ): Promise<MyLibraryCalendarPlanModel> {
   const window = buildMyLibraryCalendarWindow(input.selectedDate);
+  const todayDate = input.todayDate ?? input.selectedDate;
+  const month = buildMyLibraryCalendarMonthWindow({
+    selectedDate: input.selectedDate,
+    todayDate,
+  });
   let instancesQuery = supabase
     .from("planned_workout_instances")
     .select(PLANNED_WORKOUT_INSTANCE_SELECT)
     .eq("user_id", userId)
-    .gte("planned_on", window.startDate)
-    .lte("planned_on", window.endDate);
+    .gte("planned_on", month.gridStartDate)
+    .lte("planned_on", month.gridEndDate);
 
   if (input.selectedProgramId) {
     instancesQuery = instancesQuery.eq("program_id", input.selectedProgramId);
@@ -198,6 +265,7 @@ export async function loadMyLibraryCalendarPlan(
   ) {
     return emptyPlanModel({
       selectedDate: input.selectedDate,
+      todayDate,
       selectedProgramId: input.selectedProgramId,
       schemaReady: false,
       loadError: null,
@@ -212,6 +280,7 @@ export async function loadMyLibraryCalendarPlan(
     });
     return emptyPlanModel({
       selectedDate: input.selectedDate,
+      todayDate,
       selectedProgramId: input.selectedProgramId,
       schemaReady: true,
       loadError: "Could not load planned program sessions right now.",
@@ -233,6 +302,7 @@ export async function loadMyLibraryCalendarPlan(
   if (!missingProgramsResult.ok) {
     return emptyPlanModel({
       selectedDate: input.selectedDate,
+      todayDate,
       selectedProgramId: input.selectedProgramId,
       schemaReady: missingProgramsResult.schemaReady,
       loadError: missingProgramsResult.loadError,
@@ -247,6 +317,7 @@ export async function loadMyLibraryCalendarPlan(
     console.error("[CalendarPlan] Stored program payload is invalid", error);
     return emptyPlanModel({
       selectedDate: input.selectedDate,
+      todayDate,
       selectedProgramId: input.selectedProgramId,
       schemaReady: true,
       loadError: "A saved program could not be planned because its stored data is invalid.",
@@ -303,6 +374,7 @@ export async function loadMyLibraryCalendarPlan(
       return {
         id: instance.id,
         date: instance.planned_on,
+        status: instance.status,
         program: programSummaryById.get(instance.program_id) ?? null,
         weekId: instance.program_week_id,
         weekLabel: getProgramWeekLabel(programRow, instance),
@@ -325,18 +397,33 @@ export async function loadMyLibraryCalendarPlan(
     ...day,
     sessions: plannedSessions.filter((session) => session.date === day.date),
   }));
+  const monthDays = buildEmptyPlanMonthDays(month).map((day) => ({
+    ...day,
+    sessions: plannedSessions.filter((session) => session.date === day.date),
+  }));
+  const selectedDay = buildPlanDay(
+    input.selectedDate,
+    plannedSessions.filter((session) => session.date === input.selectedDate)
+  );
+  const visibleMonthSessionCount = plannedSessions.filter(
+    (session) => session.date >= month.startDate && session.date <= month.endDate
+  ).length;
 
   return {
     schemaReady: true,
     loadError,
     selectedDate: input.selectedDate,
+    todayDate,
     window,
+    month,
     selectedProgramId: input.selectedProgramId,
     selectedProgramMissing: Boolean(input.selectedProgramId && !selectedProgramResult.data),
     programs: programSummaries,
     unanchoredPrograms,
     missingWorkoutIds,
     days,
-    sessionCount: plannedSessions.length,
+    monthDays,
+    selectedDay,
+    sessionCount: visibleMonthSessionCount,
   };
 }

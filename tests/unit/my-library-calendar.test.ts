@@ -3,6 +3,7 @@ import {
   buildMyLibraryCalendarComparisonHref,
   buildMyLibraryCalendarComparisonWindow,
   buildMyLibraryCalendarHref,
+  buildMyLibraryCalendarMonthWindow,
   buildMyLibraryCalendarPlanHref,
   buildMyLibraryCalendarWindow,
   getMyLibraryCalendarPeriodEndDate,
@@ -104,6 +105,37 @@ describe("my library calendar contract", () => {
       weekLabel: "Week 23, 2026",
       previousWindowDate: "2026-05-29",
       nextWindowDate: "2026-06-12",
+    });
+  });
+
+  it("builds a deterministic month window with a full Monday-Sunday grid", () => {
+    expect(
+      buildMyLibraryCalendarMonthWindow({
+        selectedDate: "2026-06-20",
+        todayDate: "2026-06-20",
+      })
+    ).toEqual({
+      selectedDate: "2026-06-20",
+      todayDate: "2026-06-20",
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+      gridStartDate: "2026-06-01",
+      gridEndDate: "2026-07-05",
+      label: "June 2026",
+      previousMonthDate: "2026-05-20",
+      nextMonthDate: "2026-07-20",
+      containsToday: true,
+    });
+    expect(
+      buildMyLibraryCalendarMonthWindow({
+        selectedDate: "2026-07-20",
+        todayDate: "2026-06-20",
+      })
+    ).toMatchObject({
+      selectedDate: "2026-07-20",
+      startDate: "2026-07-01",
+      gridStartDate: "2026-06-29",
+      containsToday: false,
     });
   });
 

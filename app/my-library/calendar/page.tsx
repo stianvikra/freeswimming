@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import SiteChrome from "@/components/SiteChrome";
 import CalendarPeriodComparisonHub from "@/components/my-library/CalendarPeriodComparisonHub";
 import CalendarPlanWeekHub from "@/components/my-library/CalendarPlanWeekHub";
-import { getMobileActionGroupClass, mobileActionItemClass } from "@/components/ui/actionLayout";
 import { loadMyLibraryCalendarComparison } from "@/lib/my-library/calendar-comparison";
 import { loadMyLibraryCalendarPlan } from "@/lib/my-library/calendar-plan";
 import {
@@ -26,8 +25,6 @@ type MyLibraryCalendarPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const routeActionClass =
-  "fs-cta-secondary inline-flex min-h-11 shrink-0 items-center justify-center px-4 text-sm font-semibold transition-colors hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const modeLinkClass =
   "inline-flex min-h-10 items-center justify-center rounded-[var(--fs-radius-control)] border px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const activeModeLinkClass =
@@ -69,6 +66,7 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
       <CalendarPlanWeekHub
         model={await loadMyLibraryCalendarPlan(supabase, user.id, {
           selectedDate: planSelectedDate,
+          todayDate,
           selectedProgramId,
         })}
       />
@@ -88,26 +86,30 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
     <SiteChrome>
       <section
         data-testid="calendar-workspace"
-        className="mx-auto min-h-screen w-full max-w-[1080px] px-4 pt-24 pb-20 sm:px-6 sm:pt-28"
+        className={`mx-auto min-h-screen w-full px-4 pt-16 pb-20 sm:px-6 sm:pt-24 ${
+          selectedView === "plan" ? "max-w-[1680px]" : "max-w-[1080px]"
+        }`}
       >
         <header className="border-b border-[color:var(--fs-border-brand)] pb-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-[color:var(--fs-color-brand-700)]">
                 My Library
               </p>
               <h1 className="mt-2 text-[30px] leading-none font-semibold text-[color:var(--fs-color-ink-strong)] sm:text-[34px]">
-                {selectedView === "plan" ? "Calendar Plan" : "Comparison Report"}
+                Calendar
               </h1>
               <p className="mt-3 max-w-[62ch] text-sm leading-6 text-[color:var(--fs-color-muted)]">
                 {selectedView === "plan"
-                  ? "Inspect planned swim sessions from saved programs before completion history is connected."
-                  : "Compare private activity trends across selected My Library sources."}
+                  ? "Scan planned swim sessions by month and open a day for details."
+                  : "Review private activity trends across selected My Library sources."}
               </p>
+            </div>
+            <div className="grid gap-3 sm:flex sm:flex-wrap sm:items-center lg:grid lg:justify-items-end">
               <nav
                 data-testid="calendar-mode-switch"
                 aria-label="Calendar mode"
-                className="mt-5 flex flex-wrap gap-2"
+                className="flex flex-wrap gap-2 lg:justify-end"
               >
                 <Link
                   href={buildMyLibraryCalendarPlanHref({ selectedDate: planSelectedDate })}
@@ -130,14 +132,9 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
                     selectedView === "compare" ? activeModeLinkClass : inactiveModeLinkClass
                   }`}
                 >
-                  Compare
+                  Stats
                 </Link>
               </nav>
-            </div>
-            <div data-testid="calendar-route-actions" className={getMobileActionGroupClass(1)}>
-              <Link href="/my-library" className={`${routeActionClass} ${mobileActionItemClass}`}>
-                Back to My Library
-              </Link>
             </div>
           </div>
         </header>

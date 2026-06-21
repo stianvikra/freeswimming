@@ -1,0 +1,251 @@
+import { cleanup, render, screen, within } from "@testing-library/react";
+import type React from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import CalendarPlanWeekHub from "@/components/my-library/CalendarPlanWeekHub";
+import {
+  addCalendarDays,
+  buildMyLibraryCalendarMonthWindow,
+  buildMyLibraryCalendarWindow,
+} from "@/lib/my-library/calendar";
+import type {
+  MyLibraryCalendarPlanDay,
+  MyLibraryCalendarPlanModel,
+  MyLibraryCalendarPlanMonthDay,
+  MyLibraryCalendarPlanSession,
+} from "@/lib/my-library/calendar-plan";
+import type { ProgramSummary } from "@/lib/programs/shared";
+import type { WorkoutSummary } from "@/lib/workouts/shared";
+
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
+const weekdayLabels = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+const program: ProgramSummary = {
+  id: "program-1",
+  title: "Swim comeback plan",
+  startsOn: "2026-06-22",
+  weekCount: 4,
+  assignmentCount: 8,
+  updatedAt: "2026-06-20T09:05:00.000Z",
+  sourceKind: "manual",
+  status: "draft",
+};
+
+const workout: WorkoutSummary = {
+  id: "workout-1",
+  title: "Comeback threshold swim",
+  environment: "pool",
+  poolLengthUnit: "m",
+  poolLengthM: 25,
+  sessionType: "threshold_css",
+  effort: "moderate",
+  totalDistanceM: 1800,
+  estimatedDurationMin: 38,
+  updatedAt: "2026-06-20T08:02:00.000Z",
+  acceptedAt: "2026-06-20T08:01:00.000Z",
+  sourceKind: "manual",
+  status: "accepted",
+};
+
+function getDayIndex(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  return (date.getUTCDay() + 6) % 7;
+}
+
+function buildDay(
+  date: string,
+  sessions: MyLibraryCalendarPlanSession[]
+): MyLibraryCalendarPlanDay {
+  const dayIndex = getDayIndex(date);
+  return {
+    date,
+    dayIndex,
+    dayLabel: weekdayLabels[dayIndex],
+    sessions,
+  };
+}
+
+function buildSession(
+  overrides: Partial<MyLibraryCalendarPlanSession> &
+    Pick<MyLibraryCalendarPlanSession, "id" | "date">
+): MyLibraryCalendarPlanSession {
+  const { id, date, ...rest } = overrides;
+
+  return {
+    id,
+    date,
+    status: rest.status ?? "planned",
+    program,
+    weekId: "week-1",
+    weekLabel: "Week 1",
+    weekIndex: 0,
+    assignmentId: `assignment-${id}`,
+    workoutId: workout.id,
+    dayIndex: getDayIndex(date),
+    position: 0,
+    workout,
+    ...rest,
+  };
+}
+
+function buildMonthDays({
+  selectedDate,
+  todayDate,
+  sessions,
+}: {
+  selectedDate: string;
+  todayDate: string;
+  sessions: MyLibraryCalendarPlanSession[];
+}): MyLibraryCalendarPlanMonthDay[] {
+  const month = buildMyLibraryCalendarMonthWindow({ selectedDate, todayDate });
+  const days: MyLibraryCalendarPlanMonthDay[] = [];
+  let date = month.gridStartDate;
+
+  while (date <= month.gridEndDate) {
+    days.push({
+      ...buildDay(
+        date,
+        sessions.filter((session) => session.date === date)
+      ),
+      isCurrentMonth: date >= month.startDate && date <= month.endDate,
+      isSelected: date === selectedDate,
+      isToday: date === todayDate,
+    });
+    date = addCalendarDays(date, 1);
+  }
+
+  return days;
+}
+
+function buildModel(): MyLibraryCalendarPlanModel {
+  const selectedDate = "2026-06-22";
+  const todayDate = "2026-06-20";
+  const sessions = [
+    buildSession({ id: "session-1", date: selectedDate }),
+    buildSession({
+      id: "session-2",
+      date: selectedDate,
+      status: "provider_pending",
+      workout: { ...workout, id: "workout-2", title: "Technique review swim" },
+      workoutId: "workout-2",
+      position: 1,
+    }),
+  ];
+  const window = buildMyLibraryCalendarWindow(selectedDate);
+
+  return {
+    schemaReady: true,
+    loadError: null,
+    selectedDate,
+    todayDate,
+    window,
+    month: buildMyLibraryCalendarMonthWindow({ selectedDate, todayDate }),
+    selectedProgramId: program.id,
+    selectedProgramMissing: false,
+    programs: [program],
+    unanchoredPrograms: [],
+    missingWorkoutIds: [],
+    days: Array.from({ length: 7 }, (_, dayIndex) => {
+      const date = addCalendarDays(window.startDate, dayIndex);
+      return buildDay(
+        date,
+        sessions.filter((session) => session.date === date)
+      );
+    }),
+    monthDays: buildMonthDays({ selectedDate, todayDate, sessions }),
+    selectedDay: buildDay(selectedDate, sessions),
+    sessionCount: sessions.length,
+  };
+}
+
+describe("CalendarPlanWeekHub", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders desktop month overview with today marker and selected-day detail", () => {
+    render(<CalendarPlanWeekHub model={buildModel()} />);
+
+    const monthOverview = screen.getByTestId("calendar-plan-month-overview");
+    expect(within(monthOverview).getByRole("heading", { name: "June 2026" })).toBeVisible();
+    expect(within(monthOverview).queryByText("Today")).not.toBeInTheDocument();
+
+    const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
+    expect(selectedCell).toHaveAttribute("aria-current", "page");
+    expect(selectedCell).toHaveAttribute(
+      "href",
+      "/my-library/calendar?view=plan&date=2026-06-22&programId=program-1"
+    );
+    expect(within(selectedCell).getByText("Comeback threshold swim")).toBeVisible();
+    expect(within(selectedCell).queryByRole("link", { name: "Edit Plan" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("calendar-plan-month-day-number-2026-06-22")).toHaveClass(
+      "text-[color:var(--fs-color-ink-strong)]"
+    );
+    expect(screen.getByTestId("calendar-plan-month-day-number-2026-06-19")).toHaveClass(
+      "text-[color:var(--fs-color-muted)]"
+    );
+
+    const todayLinks = screen.getAllByRole("link", { name: "Today" });
+    expect(todayLinks[0]).toHaveAttribute(
+      "href",
+      "/my-library/calendar?view=plan&date=2026-06-20&programId=program-1"
+    );
+    expect(screen.getByTestId("calendar-plan-month-day-2026-06-20")).toHaveAttribute(
+      "data-today",
+      "true"
+    );
+    expect(screen.getByTestId("calendar-plan-month-day-number-2026-06-20")).toHaveClass(
+      "bg-[color:var(--fs-color-brand-700)]",
+      "text-white"
+    );
+    expect(screen.getByTestId("calendar-plan-month-day-2026-06-20")).not.toHaveAttribute(
+      "data-selected"
+    );
+
+    expect(within(monthOverview).getByRole("columnheader", { name: "Week total" })).toBeVisible();
+    expect(screen.getAllByTestId(/^calendar-plan-month-week-total-/)).toHaveLength(5);
+
+    const selectedWeekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(selectedWeekTotal).getByText("Week total")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("22 Jun-28 Jun")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("2 sessions")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("3600m")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("~76 min")).toBeVisible();
+    expect(within(selectedWeekTotal).getByText("1 review item needs review.")).toBeVisible();
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    expect(within(selectedDay).getByRole("heading", { name: "Mon 22 Jun" })).toBeVisible();
+    expect(within(selectedDay).getByText("2 sessions")).toBeVisible();
+    expect(within(selectedDay).getByText("Review status")).toBeVisible();
+    expect(within(selectedDay).getAllByRole("link", { name: "Edit Plan" })[0]).toHaveAttribute(
+      "href",
+      "/my-library/programs/program-1"
+    );
+    expect(within(selectedDay).getAllByRole("link", { name: "Open workout" })[0]).toHaveAttribute(
+      "href",
+      "/my-library/workouts/workout-1"
+    );
+  });
+});
