@@ -6,106 +6,252 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-06-20`
-- `updated`: `2026-06-20`
+- `updated`: `2026-06-21`
 - `mode`: `planned implementation child`
 - `parent`: `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
+- `training_history_parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
+- `garmin_provider_boundary`: `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
+- `garmin_reconciliation_follow_up`: `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`
 - `child`: `D`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-20`
-- `base`: `main@1b8f87da`
-- `audit_status`: `ready_after_child_a`
-- `decision`: Execute after planned instances exist and the training-history/completion boundary is refreshed.
-- `reason`: Marking a workout as done must create actual outcome truth, not mutate planned rows into history.
-- `must_refresh_before_execution_if`: Refresh if training-history brief, planned instance schema, workout execution contract, Garmin scope, or support diagnostics change.
+- `last_audited`: `2026-06-21`
+- `base`: `main@de761db3`
+- `audit_status`: `ready`
+- `decision`: Use this as the next bounded Calendar/My Library implementation child after owner explicitly asks for runtime implementation.
+- `reason`: Child `A` shipped stable `planned_workout_instances`, Child `B` shipped the month/day-detail placement, Child `C` shipped planned-only edit/status actions, and the training-history/Garmin boundary is now explicit enough for a manual completion slice.
+- `must_refresh_before_execution_if`: Refresh if `planned_workout_instances`, workout/session export contracts, training-history scope, Garmin official API docs, Garmin partner status, support diagnostics, scorecard categories, route labels, screenshot rules, or verification lanes change before implementation starts.
 
 ## Goal
 
-Add canonical completed activity events and a manual "mark as done" flow for planned swim sessions, linking actual outcomes to planned instances without replacing planned identity.
+Add canonical manual completion events for planned swim sessions so Calendar can show a planned workout as actually completed without overwriting planned-instance identity or pretending Garmin sync has happened.
 
 ## Pre-Implementation Owner Explanation
 
-Codex skal gjøre det mulig å markere en planlagt økt som utført manuelt. Det er viktig fordi faktisk trening må lagres som egen historikk, ikke som en omskriving av planen. Utenfor scope er Garmin-import, habits/micro/Perfect Day layers, avansert analyse og økonomi/adminrapportering.
+Codex skal gjøre det mulig å markere en planlagt svømmeøkt som gjennomført manuelt. Det betyr noe fordi faktisk trening må lagres som egen historikk, ikke som en omskriving av planen. Utenfor scope er Garmin-kobling, Garmin-import, sammenligning av sendt og mottatt Garmin-aktivitet, habits/micro/Perfect Day-lag, partial/cancelled historikk, avansert analyse, økonomi/adminrapportering, performance-ratchet og `Ja.docx`.
+
+## Current Repo State
+
+- `planned_workout_instances` exists and is owner-scoped with stable IDs, program/workout references, `planned_on`, reversible planned-only statuses, and manual date override support.
+- `/my-library/calendar` has `Plan` and `Stats` modes, a desktop month view, selected-day detail, and planned-only actions: `Reschedule`, `Skip`, `Cancel`, and `Recover`.
+- Calendar support docs already state that planned actions are not completion history.
+- Workout and program Garmin-ready JSON exports exist, but they are export/handoff artifacts only and do not send anything to Garmin.
+- No canonical completed swim history table exists yet for saved swim sessions.
 
 ## Scope
 
-- Add canonical completed activity event storage or update the training-history contract if it already owns this table.
-- Let a user mark a planned swim as completed from the calendar detail flow.
-- Link completed event to `planned_workout_instances.id` and `workout.id`.
-- Render planned vs completed state deterministically.
-- Add correction/recovery copy for duplicate, stale, or forbidden completion attempts.
-- Add negative-path authz and duplicate/idempotency tests.
+- Add canonical completed activity storage owned by the training-history contract, scoped to manual swim completion from Calendar.
+- Let a signed-in user mark an eligible planned swim as completed from selected-day detail.
+- Link each completed event to:
+  - `completed_activity_event.id` or equivalent immutable history ID,
+  - `planned_workout_instances.id`,
+  - `workout.id` where present,
+  - `program.id`/program assignment context where available,
+  - user ownership.
+- Store enough planned snapshot metadata to support future plan-vs-actual and Garmin reconciliation without using labels as identity.
+- Keep `planned_workout_instances.id` stable; completion creates actual outcome truth and does not replace planned rows.
+- Render planned vs completed state deterministically in Calendar day/month/detail surfaces.
+- Make completion idempotent for repeat submissions of the same planned instance.
+- Block completion for skipped/cancelled/review-status/stale/cross-user/missing-reference rows with bounded recovery copy.
+- Add tests for schema/contract behavior, mutation invariants, idempotency, authz, stale conflict, unknown future status, and UI state rendering.
+- Update Help/Guide/support runbooks if user recovery behavior labels change.
 
 ## Out Of Scope
 
-- Garmin import/reconcile.
+- Garmin OAuth, credentials, Training API send jobs, Activity API ingestion, provider webhooks, or provider backfill.
+- Comparing Garmin sent workout payloads against received Garmin activity history.
+- Editing/reconciling Garmin-provider matches or conflicts.
+- Partial completion, completed-on-another-day, manual comments, cancelled-as-history, or broader training-history timeline unless explicitly added to a later child.
 - Habit, micro session, or Perfect Day aggregation.
-- Editing completed history as if it were planned-only.
-- Broad analytics dashboards or finance/admin reporting.
+- AI retrospective review, adaptive replanning, finance/admin dashboards, or public SEO surfaces.
 - Touching `Ja.docx`.
+
+## Garmin Boundary For This Child
+
+Official Garmin source baseline checked on `2026-06-21`:
+
+- Garmin Connect Developer Program overview: https://developer.garmin.com/gc-developer-program/overview/
+- Garmin Training API: https://developer.garmin.com/gc-developer-program/training-api/
+- Garmin Activity API: https://developer.garmin.com/gc-developer-program/activity-api/
+- Garmin Program FAQ: https://developer.garmin.com/gc-developer-program/program-faq/
+- Garmin API Brand Guidelines: https://developer.garmin.com/brand-guidelines/api-brand-guidelines/
+
+Contract:
+
+- Garmin Training API is the future send/publish path for workouts and training plans.
+- Garmin Activity API is the future receive path for actual completed activities.
+- A `sent`, `queued`, or `synced-to-Garmin` provider state must never count as `completed`.
+- Manual completion in this child uses `source_kind = manual` or equivalent and no Garmin provider identifiers.
+- Future Garmin Activity API ingestion must reconcile into the canonical completed-history layer, not mutate planned rows directly.
+- Future Garmin attribution/branding requirements must be handled when Garmin-sourced or Garmin-derived data is displayed; this child should not introduce Garmin-derived data.
+- Unknown provider states, future source kinds, or imported activity states must fail closed and stay out of completion counts until explicitly mapped.
 
 ## Data Placement And Sync Contract
 
-- Server-canonical: planned instance, completed activity event, workout reference, user ownership.
-- Local-only: confirmation dialog state and pending form input.
-- Idempotency: repeated mark-done attempts for the same planned instance must not create duplicate actual truth.
-- Invalidation: calendar day/month/week summaries refresh after completion mutation.
+- Server-canonical:
+  - planned instance identity,
+  - completed activity/history identity,
+  - manual source kind,
+  - completion outcome (`completed`) and completion date,
+  - planned snapshot needed for future comparison,
+  - user ownership,
+  - timestamps.
+- Local-only:
+  - confirmation dialog state,
+  - pending form state,
+  - transient optimistic UI while the mutation is in flight.
+- Sync and conflict policy:
+  - completion writes are idempotent by planned instance and user,
+  - stale `updated_at`/status mismatches fail closed and ask for refresh,
+  - skipped/cancelled/review-status planned rows cannot be silently marked complete,
+  - duplicate attempts return the existing completed event or a deterministic already-completed state,
+  - unexpected provider fields are ignored or blocked because provider sync is not active.
+- Cache/invalidation:
+  - Calendar month/week/day plan summaries refresh after completion mutation,
+  - later training-history lists and plan-vs-actual summaries must also invalidate from the same canonical event.
+- Retention and sensitivity:
+  - completion data is private user-owned training history,
+  - payloads and logs must not include raw provider files, prompt data, private notes, or unrelated profile data.
 
 ## Identity And Forward Compatibility Contract
 
 - `planned_workout_instances.id` identifies the intended planned occurrence.
-- Completed event ID identifies actual outcome truth.
-- Future provider imports reconcile into completed events, not directly into planned rows.
-- Unknown provider/completion states fail closed until explicitly mapped.
+- Completed event/history ID identifies actual outcome truth.
+- Workout/program titles are presentation only and may change without breaking history.
+- Manual completion can later coexist with provider activity aliases, but provider IDs remain foreign aliases only.
+- Future Garmin send jobs need a send snapshot/fingerprint that can be compared against later Garmin Activity API data; this child must not prevent that by collapsing plan and completion identity.
+- Future source kinds expected by the platform include `manual`, `garmin_activity_api`, and `system_reconciled`; new source kinds require typed mapping, support copy, and tests.
+- Unknown or deprecated outcomes/source kinds render as review/unmapped states and never count as completed.
+
+## Stack / Architecture Best-Practice Gate
+
+- React/Next.js:
+  - reuse `/my-library/calendar` selected-day detail as the action placement;
+  - month cells remain scan-first and do not become mutation surfaces;
+  - keep protected-route behavior aligned with current My Library auth redirects.
+- TypeScript/domain contracts:
+  - introduce typed completion outcome/source/status unions;
+  - normalize action input through allowlists;
+  - model unknown future statuses as review states, not truthy completion.
+- Supabase/data layer:
+  - use an explicit additive migration for completed activity/history storage;
+  - use owner-scoped RLS and negative-path tests;
+  - add uniqueness/idempotency constraints for manual planned-instance completion;
+  - update generated DB types in the same implementation PR.
+- External services:
+  - Garmin is a future provider boundary only in this child;
+  - do not add Garmin credentials, provider SDKs, webhook routes, or network calls.
+- UI system:
+  - reuse current My Library button/action density and Calendar status styling;
+  - screenshot handoff is required before `verify:pre-pr` because this changes UI state/action labels.
+- Testing:
+  - include route/action, data invariant, authz, duplicate/idempotency, stale-row, unknown-status, component, and screenshot evidence.
+
+## Codex Skill / Stack Readiness Radar
+
+Skill/capability audit:
+
+- Available now: local shell tools, repo lint/verify scripts, `playwright` skill for screenshot handoff, official web sources for Garmin provider facts.
+- Evaluate later: no new Codex skills/plugins are needed for manual completion; Garmin provider work may need fresh official-doc review and possibly integration stubs after partner approval.
+- Install/config changes: none; do not install or configure local Codex capabilities for this slice.
+
+Systemic findings:
+
+| Surface                   | Finding                                                                                                                       | Severity | Recommended Type               | Owner Decision Needed | Follow-Up Brief Path                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------ | --------------------- | ---------------------------------------------------------------------------------------- |
+| Training-history boundary | Manual completion needs its own canonical history identity before Calendar can safely show completed swim sessions.           | `high`   | `bounded implementation child` | `no`                  | this brief                                                                               |
+| Garmin provider boundary  | Garmin send and Garmin received activity are separate official API directions and must not share a completion flag.           | `high`   | `bounded implementation child` | `no`                  | `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md` |
+| Support/recovery states   | Duplicate, stale, skipped/cancelled, unknown status, and missing-reference completion failures affect user recovery behavior. | `medium` | `bounded implementation child` | `no`                  | this brief                                                                               |
+
+Return path:
+
+- Parent: `docs/task-briefs/planned/2026-02-28-program-builder-calendar-completion-10-10.md`
+- Last merged workstream: PR `#1191` and closeout PR `#1192`, with clean `main@de761db3`.
+- Next product step after this docs-only audit: owner may explicitly execute this Child D implementation.
 
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                        | Evidence                                    | Expected Closeout Score |
-| --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | Users can mark a planned swim as completed and see the distinction between plan and actual outcome.                   | route/component tests + screenshot handoff  | `5/5`                   |
-| UX flow clarity                               | `target`     | Completion, duplicate, correction, and already-completed states are clear without docs.                               | copy review + tests                         | `5/5`                   |
-| Visual design quality                         | `target`     | Completion actions fit the day/detail surface and do not crowd month cells or planned cards.                          | responsive screenshots                      | `5/5`                   |
-| Business logic correctness and data integrity | `target`     | Completed events are canonical, idempotent, owner-scoped, and linked to planned instances without replacing them.     | mutation/invariant tests                    | `5/5`                   |
-| Admin editor ergonomics                       | `N/A`        | N/A because this is an end-user completion flow and no admin editor changes.                                          | explicit admin non-scope rationale          | `N/A`                   |
-| Accessibility (a11y)                          | `target`     | Completion dialogs/actions are keyboard reachable and announce success/error/destructive states.                      | a11y + keyboard tests                       | `5/5`                   |
-| Performance (CWV + payloads)                  | `target`     | Completion flow avoids material bundle growth and keeps reads bounded to selected calendar windows.                   | bundle/query review                         | `5/5`                   |
-| Data placement and sync boundaries            | `target`     | Planned data and actual completion data stay separate with explicit linkage.                                          | data contract + tests                       | `5/5`                   |
-| Caching and invalidation strategy             | `target`     | Calendar views refresh after completion and do not show stale planned-only status.                                    | invalidation tests                          | `5/5`                   |
-| Reliability and failure handling              | `target`     | Duplicate, stale, missing-ref, invalid-state, and load failures show deterministic recovery paths.                    | negative-path tests                         | `5/5`                   |
-| Security and authz                            | `target`     | Anonymous/cross-user completion attempts fail closed with `401`/`403`.                                                | authz tests                                 | `5/5`                   |
-| Privacy and compliance                        | `supporting` | Supporting only: completed event payloads include private owner-scoped training data only.                            | payload review                              | `4/5`                   |
-| Content governance                            | `supporting` | Supporting only: workout/program source content remains owned upstream.                                               | scope review                                | `4/5`                   |
-| Admin workflow and editability                | `N/A`        | N/A because no admin workflow labels, operator actions, or role-gated CRUD change.                                    | explicit admin workflow non-scope rationale | `N/A`                   |
-| SEO and crawlability                          | `N/A`        | N/A because completion data is private and no public metadata/crawl surfaces change.                                  | private-route rationale                     | `N/A`                   |
-| AI discoverability                            | `N/A`        | N/A because completed activity events are private user data and not public AI-discoverable content.                   | private-data rationale                      | `N/A`                   |
-| Analytics and KPI observability               | `target`     | Completion events use stable event/status taxonomy and avoid double-counting duplicates.                              | event tests or analytics no-op rationale    | `5/5`                   |
-| Commerce and revenue ops                      | `supporting` | Supporting only: completion has no checkout, billing, or entitlement mutation.                                        | scope review                                | `4/5`                   |
-| Incident response and support operations      | `supporting` | Supporting only: support can distinguish duplicate, forbidden, stale, and missing-reference completion failures.      | support-copy/log review                     | `4/5`                   |
-| Finance and reporting operations              | `N/A`        | N/A because this child does not touch revenue, invoices, refunds, payouts, entitlement reporting, or accounting data. | explicit finance non-scope rationale        | `N/A`                   |
-| i18n operational readiness                    | `supporting` | Supporting only: completed, already completed, and correction labels avoid identity coupling for localization.        | copy review                                 | `4/5`                   |
-| Stack-fit and dependency discipline           | `target`     | Reuse existing App Router, Supabase/RLS patterns, TypeScript validation, and UI primitives; add no unnecessary deps.  | package diff + architecture review          | `5/5`                   |
-| Testing and QA automation                     | `target`     | Include schema, mutation, authz, component, screenshot, `verify:pre-pr`, CI, and `verify:pre-merge`.                  | validation outputs                          | `5/5`                   |
-| Scalability and cost efficiency               | `supporting` | Supporting only: completion writes are idempotent/bounded and summary reads avoid N+1.                                | query tests                                 | `4/5`                   |
-| DevOps and rollback readiness                 | `target`     | Completion storage/actions can be rolled back without corrupting planned instances.                                   | rollback notes + PR validation              | `5/5`                   |
+Critical target categories for a `10/10` claim:
+
+- Product goals and IA
+- UX flow clarity
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Mapping      | Target Threshold (if `target`)                                                                                                        | Evidence                                       | Expected Closeout Score |
+| --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------- |
+| Product goals and IA                          | `target`     | Users can manually mark an eligible planned swim completed and see planned vs actual truth clearly.                                   | route/component tests + screenshot handoff     | `5/5`                   |
+| UX flow clarity                               | `target`     | Completion, already-completed, blocked, stale, and recovery states are understandable without docs.                                   | copy review + component tests                  | `5/5`                   |
+| Visual design quality                         | `target`     | Completion actions fit selected-day detail and do not crowd month cells or mobile cards.                                              | responsive screenshots                         | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Completed events are canonical, idempotent, owner-scoped, linked to planned instances, and separate from Garmin send state.           | migration/route/invariant tests                | `5/5`                   |
+| Admin editor ergonomics                       | `N/A`        | N/A because this is an end-user Calendar completion flow and no admin editor changes.                                                 | explicit admin non-scope rationale             | `N/A`                   |
+| Accessibility (a11y)                          | `target`     | Completion actions/dialogs are keyboard reachable and announce success/error/review states.                                           | a11y + keyboard tests                          | `5/5`                   |
+| Performance (CWV + payloads)                  | `target`     | Completion flow keeps Calendar reads window-bounded and avoids material client bundle growth.                                         | query/bundle review + perf gate                | `5/5`                   |
+| Data placement and sync boundaries            | `target`     | Planned rows, manual completion history, and future Garmin provider aliases remain separate.                                          | data contract + tests                          | `5/5`                   |
+| Caching and invalidation strategy             | `target`     | Calendar summaries refresh after completion and do not show stale planned-only state.                                                 | invalidation tests                             | `5/5`                   |
+| Reliability and failure handling              | `target`     | Duplicate, stale, missing-ref, skipped/cancelled, unknown-status, schema-missing, and unexpected failure paths have bounded recovery. | negative-path tests                            | `5/5`                   |
+| Security and authz                            | `target`     | Anonymous and cross-user completion attempts fail closed with `401`/`403` and no data leakage.                                        | authz tests                                    | `5/5`                   |
+| Privacy and compliance                        | `target`     | Completion payloads minimize private training data and exclude raw provider files, prompt data, and unrelated notes.                  | payload/log review + tests                     | `5/5`                   |
+| Content governance                            | `supporting` | Supporting only: workout/program source content remains owned upstream and history stores references/snapshots only.                  | scope review                                   | `4/5`                   |
+| Admin workflow and editability                | `N/A`        | N/A because no admin workflow labels, operator actions, or role-gated CRUD change.                                                    | explicit admin workflow non-scope rationale    | `N/A`                   |
+| SEO and crawlability                          | `N/A`        | N/A because completion history is private user data and no public metadata/crawl surfaces change.                                     | private-route rationale                        | `N/A`                   |
+| AI discoverability                            | `N/A`        | N/A because completed activity events are private user data and not public AI-discoverable content.                                   | private-data rationale                         | `N/A`                   |
+| Analytics and KPI observability               | `target`     | Completion events use stable outcome/source taxonomy and avoid duplicate counting.                                                    | event tests or explicit no-new-event rationale | `5/5`                   |
+| Commerce and revenue ops                      | `supporting` | Supporting only: completion has no checkout, billing, or entitlement mutation.                                                        | scope review                                   | `4/5`                   |
+| Incident response and support operations      | `target`     | Support can distinguish duplicate, forbidden, stale, skipped/cancelled, unknown-status, schema, and missing-reference failures.       | support-copy/runbook review                    | `5/5`                   |
+| Finance and reporting operations              | `N/A`        | N/A because this child does not touch revenue, invoices, refunds, payouts, entitlement reporting, or accounting data.                 | explicit finance non-scope rationale           | `N/A`                   |
+| i18n operational readiness                    | `target`     | Completion, already-completed, blocked, source, and review labels avoid identity coupling and tolerate copy expansion.                | copy review + responsive tests                 | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Reuse existing App Router, Supabase/RLS, TypeScript validation, Calendar components, and UI primitives; add no unnecessary deps.      | package diff + architecture review             | `5/5`                   |
+| Testing and QA automation                     | `target`     | Include migration/type, mutation, authz, duplicate, stale, component, screenshot, `verify:pre-pr`, CI, and `verify:pre-merge`.        | validation outputs                             | `5/5`                   |
+| Scalability and cost efficiency               | `target`     | Completion writes are idempotent/bounded and summary reads avoid N+1 across Calendar windows.                                         | query tests/review                             | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | Completion storage/action rollout can be reverted or disabled without corrupting planned instances or future Garmin state.            | rollback notes + PR validation                 | `5/5`                   |
+
+## Help/Guide And Support-Surface Impact
+
+- This implementation changes user recovery behavior and must run the route/label/support sweep before broad gates.
+- Update `docs/user-flow-map.md`, `docs/runbooks/auth-account-support.md`, and any Help/Guide-facing assertion if completion labels, recovery copy, or support diagnostics change.
+- If no runtime Help/Guide surface exists for the changed action, record the explicit `N/A` rationale in the active checkpoint.
+
+## Screenshot Contract
+
+- This is UI work when implemented.
+- Capture `after/reference` screenshots comparing:
+  - Calendar selected-day detail with completion action,
+  - completed state after mutation,
+  - blocked/already-completed state where practical,
+  - current planned action reference surface.
+- Pause for owner visual approval before `npm run verify:pre-pr`, PR creation/update, and `npm run verify:pre-merge`.
 
 ## Acceptance Criteria
 
-- A planned swim can be manually marked completed.
-- Duplicate completion attempts are idempotent or safely rejected.
+- A planned swim can be manually marked completed from Calendar selected-day detail.
+- Duplicate completion attempts do not create duplicate actual truth.
 - Planned and actual identity remain separate.
-- Calendar views reflect completion after mutation.
+- Calendar renders planned vs completed state after mutation.
+- Future Garmin send/import/reconcile remains possible without schema or identity rewrite.
+- Unknown future completion/provider states fail closed and do not count as completed.
 
 ## Validation Plan
 
 - `npm run lint:briefs`
-- Schema/mutation/authz tests.
+- Schema/migration/generated-type validation.
+- Route/mutation/authz/idempotency/stale-conflict tests.
 - Component/page tests and screenshot handoff.
+- Route-label/support-surface impact sweep.
 - `npm run verify:pre-pr`
+- GitHub CI required checks.
 - `npm run verify:pre-merge`
 
 ## Checkpoint Log
 
 - `2026-06-20 | planned | created as Child D after owner asked whether workouts can be marked as performed | next: refresh training-history boundary before execution`
+- `2026-06-21 | audit-refresh | refreshed on clean main@de761db3 after Calendar children A/B/C and closeout PR #1192 merged; tightened manual completion around canonical history identity, idempotency, selected-day action placement, and explicit Garmin Training API vs Activity API boundary | next: owner may explicitly execute runtime implementation after this docs-only audit PR is merged`

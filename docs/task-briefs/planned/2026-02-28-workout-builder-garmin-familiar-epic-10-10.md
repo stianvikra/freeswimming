@@ -6,15 +6,15 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-03-22`
+- `updated`: `2026-06-21`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-15`
-- `base`: `main@b2a211f`
+- `last_audited`: `2026-06-21`
+- `base`: `main@de761db3`
 - `audit_status`: `revise-before-use`
-- `decision`: Refresh this brief before execution.
-- `reason`: Existing lifecycle brief predates the Brief Audit Record standard and was not fully re-audited in this governance slice; current scope, paths, scorecard mapping, validation lane, Help/Guide impact, and support-surface impact must be checked before use.
+- `decision`: Keep this as an epic-level roadmap only; execute narrower child briefs for Calendar completion, training history, and Garmin provider work.
+- `reason`: Calendar planned-instance children A/B/C have shipped, manual completion Child D is now the next bounded runtime child, and Garmin send/receive/reconciliation boundaries are refreshed in dedicated provider briefs. This broad epic still needs a full refresh before it can be used as a direct implementation brief.
 - `must_refresh_before_execution_if`: Always refresh before use, and refresh again if AGENTS.md, scorecard categories, verification lanes, route labels, Help/Guide, runbooks, support surfaces, provider facts, or relevant repo paths change.
 
 ## Goal
@@ -159,6 +159,7 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | expanded the automatic-generator direction so users can explicitly choose `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`, and made competition-date planning carry explicit peak/taper intent rather than hidden logic | next: keep the AI generator, data contract, builder handoff, and history briefs aligned to the same plan-intent metadata before implementation starts`
 - `2026-03-20 | planning | tightened the first generator milestone around one editable AI session draft with explicit pool/open-water, pool-length, duration, session-intent, and effort choices so the epic proves the canonical workout model before expanding into larger program horizons | next: add and use a dedicated AI session generator v1 brief before broader program-generation implementation starts`
 - `2026-03-22 | planning | tightened the epic-level Garmin-familiar contract after reviewing manual Garmin swim-builder patterns so downstream briefs now need explicit support for confirmed public Garmin semantics like `WorkoutIntensity`, `open`, `swim_stroke`, and swim sub-sport plus explicit mapping of Connect-UI labels like `Main`, lap-button, `Choice`, and `RIMO` before the planner track becomes the next major implementation focus | next: continue the manual workout-builder track before the weekly calendar/program-builder track`
+- `2026-06-21 | audit-refresh | refreshed epic audit state on clean main@de761db3 after Calendar planned-instance children A/B/C shipped; Garmin Training API send remains blocked in docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md, Garmin Activity API sent-vs-received reconciliation is captured in docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md, and manual completion remains the next bounded Calendar child | next: complete docs-only audit PR and do not execute this broad epic directly`
 
 ## Completion Criteria For Epic
 
