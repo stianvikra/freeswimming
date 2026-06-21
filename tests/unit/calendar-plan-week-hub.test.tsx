@@ -32,6 +32,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
+
 const weekdayLabels = [
   "Monday",
   "Tuesday",
@@ -97,6 +103,14 @@ function buildSession(
     id,
     date,
     status: rest.status ?? "planned",
+    statusSelection:
+      rest.status === "skipped" || rest.status === "cancelled"
+        ? rest.status
+        : rest.status && rest.status !== "planned"
+          ? "unmapped"
+          : "planned",
+    dateOverrideKind: rest.dateOverrideKind ?? "program_assignment",
+    updatedAt: rest.updatedAt ?? "2026-06-20T09:10:00.000Z",
     program,
     weekId: "week-1",
     weekLabel: "Week 1",
@@ -139,10 +153,12 @@ function buildMonthDays({
   return days;
 }
 
-function buildModel(): MyLibraryCalendarPlanModel {
+function buildModel(input?: {
+  sessions?: MyLibraryCalendarPlanSession[];
+}): MyLibraryCalendarPlanModel {
   const selectedDate = "2026-06-22";
   const todayDate = "2026-06-20";
-  const sessions = [
+  const sessions = input?.sessions ?? [
     buildSession({ id: "session-1", date: selectedDate }),
     buildSession({
       id: "session-2",
@@ -247,5 +263,53 @@ describe("CalendarPlanWeekHub", () => {
       "href",
       "/my-library/workouts/workout-1"
     );
+    expect(within(selectedDay).getByLabelText("Reschedule to")).toHaveValue("2026-06-22");
+    expect(
+      within(selectedDay).getByRole("button", { name: "Reschedule planned session" })
+    ).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Skip" })).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Cancel" })).toBeVisible();
+    expect(
+      within(selectedDay).getByText("This plan item needs review before it can be changed.")
+    ).toBeVisible();
+  });
+
+  it("renders recover actions for skipped selected-day items", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          sessions: [
+            buildSession({ id: "session-skipped", date: "2026-06-22", status: "skipped" }),
+          ],
+        })}
+      />
+    );
+
+    const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
+    expect(within(selectedDay).getByText("Skipped")).toBeVisible();
+    expect(
+      within(selectedDay).getByText("Skipped in the plan. This is not completion history.")
+    ).toBeVisible();
+    expect(within(selectedDay).getByRole("button", { name: "Recover" })).toBeVisible();
+    expect(within(selectedDay).queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+  });
+
+  it("surfaces rescheduled plan items in month scan targets", () => {
+    render(
+      <CalendarPlanWeekHub
+        model={buildModel({
+          sessions: [
+            buildSession({
+              id: "session-rescheduled",
+              date: "2026-06-22",
+              dateOverrideKind: "manual",
+            }),
+          ],
+        })}
+      />
+    );
+
+    const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
+    expect(within(selectedCell).getByText("Rescheduled")).toBeVisible();
   });
 });

@@ -19,6 +19,12 @@ import {
   buildMyLibraryCalendarMonthWindow,
   buildMyLibraryCalendarWindow,
 } from "@/lib/my-library/calendar";
+import {
+  normalizePlannedWorkoutInstanceDateOverrideKind,
+  normalizePlannedWorkoutInstanceStatus,
+  type PlannedWorkoutInstanceDateOverrideKind,
+  type PlannedWorkoutInstanceStatusSelection,
+} from "@/lib/my-library/planned-workout-instances";
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
@@ -29,6 +35,9 @@ export type MyLibraryCalendarPlanSession = {
   id: string;
   date: string;
   status: string;
+  statusSelection: PlannedWorkoutInstanceStatusSelection;
+  dateOverrideKind: PlannedWorkoutInstanceDateOverrideKind;
+  updatedAt: string;
   program: ProgramSummary | null;
   weekId: string;
   weekLabel: string;
@@ -375,6 +384,11 @@ export async function loadMyLibraryCalendarPlan(
         id: instance.id,
         date: instance.planned_on,
         status: instance.status,
+        statusSelection: normalizePlannedWorkoutInstanceStatus(instance.status),
+        dateOverrideKind: normalizePlannedWorkoutInstanceDateOverrideKind(
+          instance.date_override_kind
+        ),
+        updatedAt: instance.updated_at,
         program: programSummaryById.get(instance.program_id) ?? null,
         weekId: instance.program_week_id,
         weekLabel: getProgramWeekLabel(programRow, instance),

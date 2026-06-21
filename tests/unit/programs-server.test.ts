@@ -3,11 +3,13 @@ import type { Database } from "@/types/database";
 import {
   buildPlannedWorkoutInstanceInserts,
   loadProgramLibrarySnapshot,
+  syncPlannedWorkoutInstancesForProgram,
 } from "@/lib/programs/server";
 import { WORKOUT_SELECT } from "@/lib/workouts/server";
 import { buildManualWorkoutEmptyDraft } from "@/lib/workouts/manual";
 
 type ProgramRow = Database["public"]["Tables"]["programs"]["Row"];
+type PlannedWorkoutInstanceRow = Database["public"]["Tables"]["planned_workout_instances"]["Row"];
 type WorkoutRow = Database["public"]["Tables"]["workouts"]["Row"];
 
 function buildProgramRow(overrides?: Partial<ProgramRow>): ProgramRow {
@@ -71,6 +73,29 @@ function buildWorkoutRow(overrides?: Partial<WorkoutRow>): WorkoutRow {
   };
 }
 
+function buildPlannedInstanceRow(
+  overrides?: Partial<PlannedWorkoutInstanceRow>
+): PlannedWorkoutInstanceRow {
+  return {
+    id: "planned-1",
+    user_id: "user-1",
+    program_id: "program-1",
+    program_week_id: "week-1",
+    program_week_index: 0,
+    program_assignment_id: "assignment-1",
+    workout_id: "workout-1",
+    planned_on: "2026-06-22",
+    day_index: 0,
+    position: 0,
+    status: "planned",
+    date_override_kind: "program_assignment",
+    source_kind: "program_assignment",
+    created_at: "2026-06-20T09:10:00.000Z",
+    updated_at: "2026-06-20T09:10:00.000Z",
+    ...overrides,
+  };
+}
+
 describe("programs server", () => {
   it("materializes planned workout instances from stable program assignment identity", () => {
     const instances = buildPlannedWorkoutInstanceInserts("user-1", {
@@ -121,6 +146,7 @@ describe("programs server", () => {
         day_index: 0,
         position: 0,
         status: "planned",
+        date_override_kind: "program_assignment",
       }),
       expect.objectContaining({
         program_week_id: "week-2",
@@ -130,6 +156,70 @@ describe("programs server", () => {
         day_index: 3,
       }),
     ]);
+  });
+
+  it("preserves skipped status and manual date overrides during program sync", async () => {
+    const existingEqProgram = vi.fn().mockResolvedValue({
+      data: [
+        buildPlannedInstanceRow({
+          status: "skipped",
+          date_override_kind: "manual",
+          planned_on: "2026-06-24",
+          day_index: 2,
+          position: 9,
+        }),
+      ],
+      error: null,
+    });
+    const existingEqUser = vi.fn(() => ({ eq: existingEqProgram }));
+    const select = vi.fn(() => ({ eq: existingEqUser }));
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const from = vi.fn((table: string) => {
+      if (table === "planned_workout_instances") {
+        return { select, upsert };
+      }
+
+      throw new Error(`Unexpected table ${table}`);
+    });
+
+    const result = await syncPlannedWorkoutInstancesForProgram({ from } as never, "user-1", {
+      id: "program-1",
+      createdAt: "2026-06-20T10:00:00.000Z",
+      updatedAt: "2026-06-20T10:00:00.000Z",
+      sourceKind: "manual",
+      status: "draft",
+      startsOn: "2026-06-22",
+      title: "Swim comeback",
+      weeks: [
+        {
+          id: "week-1",
+          label: "Week 1",
+          assignments: [
+            {
+              id: "assignment-1",
+              workoutId: "workout-1",
+              dayIndex: 0,
+              position: 0,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(upsert).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          program_assignment_id: "assignment-1",
+          planned_on: "2026-06-24",
+          day_index: 2,
+          position: 0,
+          status: "skipped",
+          date_override_kind: "manual",
+        }),
+      ],
+      { onConflict: "program_id,program_assignment_id" }
+    );
   });
 
   it("loads recent workouts for program planning with the full workout select", async () => {

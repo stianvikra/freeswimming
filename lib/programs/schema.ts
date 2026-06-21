@@ -36,5 +36,6 @@ export function isPlannedWorkoutInstanceSchemaMissing(
     "planned_workout_instances",
     "planned_on",
     "program_assignment_id",
+    "date_override_kind",
   ]);
 }

@@ -1446,6 +1446,7 @@ export type Database = {
       planned_workout_instances: {
         Row: {
           created_at: string;
+          date_override_kind: string;
           day_index: number;
           id: string;
           planned_on: string;
@@ -1462,6 +1463,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          date_override_kind?: string;
           day_index: number;
           id?: string;
           planned_on: string;
@@ -1478,6 +1480,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          date_override_kind?: string;
           day_index?: number;
           id?: string;
           planned_on?: string;

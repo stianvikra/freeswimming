@@ -114,8 +114,7 @@ describe("programs routes", () => {
       error: null,
     });
     const workoutsFrom = vi.fn(() => ({ select: selectWorkouts }));
-    const plannedInstancesEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
-    const plannedInstancesEqProgram = vi.fn(() => ({ eq: plannedInstancesEqStatus }));
+    const plannedInstancesEqProgram = vi.fn().mockResolvedValue({ data: [], error: null });
     const plannedInstancesEqUser = vi.fn(() => ({ eq: plannedInstancesEqProgram }));
     const plannedInstancesSelect = vi.fn(() => ({ eq: plannedInstancesEqUser }));
     const plannedInstancesFrom = vi.fn(() => ({ select: plannedInstancesSelect }));
@@ -275,8 +274,7 @@ describe("programs routes", () => {
     const eqUserPrograms = vi.fn(() => ({ eq: eqProgramId }));
     const update = vi.fn(() => ({ eq: eqUserPrograms }));
 
-    const plannedInstancesEqStatus = vi.fn().mockResolvedValue({ data: [], error: null });
-    const plannedInstancesEqProgram = vi.fn(() => ({ eq: plannedInstancesEqStatus }));
+    const plannedInstancesEqProgram = vi.fn().mockResolvedValue({ data: [], error: null });
     const plannedInstancesEqUser = vi.fn(() => ({ eq: plannedInstancesEqProgram }));
     const plannedInstancesSelect = vi.fn(() => ({ eq: plannedInstancesEqUser }));
     const plannedInstancesUpsert = vi.fn().mockResolvedValue({ error: null });
@@ -369,6 +367,7 @@ describe("programs routes", () => {
           planned_on: "2026-06-24",
           day_index: 2,
           status: "planned",
+          date_override_kind: "program_assignment",
         }),
       ],
       {

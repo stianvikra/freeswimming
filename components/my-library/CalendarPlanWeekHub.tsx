@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { cx } from "@/components/ui/cx";
+import CalendarPlanSessionActions from "@/components/my-library/CalendarPlanSessionActions";
 import { buildMyLibraryCalendarPlanHref } from "@/lib/my-library/calendar";
 import type {
   MyLibraryCalendarPlanDay,
@@ -78,6 +79,66 @@ function formatReviewCount(count: number) {
   return `${count} review item${count === 1 ? "" : "s"}`;
 }
 
+function getSessionStatusLabel(session: MyLibraryCalendarPlanSession) {
+  if (!session.workout) return "Missing workout";
+
+  switch (session.statusSelection) {
+    case "planned":
+      return session.dateOverrideKind === "manual" ? "Rescheduled" : "Planned";
+    case "skipped":
+      return "Skipped";
+    case "cancelled":
+      return "Cancelled";
+    case "unmapped":
+    default:
+      return "Review status";
+  }
+}
+
+function getSessionStatusClass(session: MyLibraryCalendarPlanSession) {
+  if (!session.workout) return missingChipClass;
+
+  switch (session.statusSelection) {
+    case "planned":
+      return statusChipClass;
+    case "skipped":
+      return "inline-flex text-xs font-semibold text-amber-800";
+    case "cancelled":
+      return "inline-flex text-xs font-semibold text-rose-800";
+    case "unmapped":
+    default:
+      return reviewChipClass;
+  }
+}
+
+function getSessionSupportText(session: MyLibraryCalendarPlanSession) {
+  switch (session.statusSelection) {
+    case "planned":
+      return session.dateOverrideKind === "manual"
+        ? "Rescheduled manually. Completion history is not connected yet."
+        : "Completion history is not connected yet.";
+    case "skipped":
+      return "Skipped in the plan. This is not completion history.";
+    case "cancelled":
+      return "Cancelled in the plan. Recover it if it should stay scheduled.";
+    case "unmapped":
+    default:
+      return "Plan status needs review before completion history is connected.";
+  }
+}
+
+function doesSessionNeedReview(session: MyLibraryCalendarPlanSession) {
+  return !session.workout || session.statusSelection !== "planned";
+}
+
+function shouldShowMonthStatusLabel(session: MyLibraryCalendarPlanSession) {
+  return (
+    !session.workout ||
+    session.statusSelection !== "planned" ||
+    session.dateOverrideKind === "manual"
+  );
+}
+
 function formatDistanceTotal(meters: number | null) {
   return typeof meters === "number" ? `${meters}m` : "Not set";
 }
@@ -100,9 +161,7 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     const minutes = session.workout?.estimatedDurationMin;
     return typeof minutes === "number" ? (total ?? 0) + minutes : total;
   }, null);
-  const reviewCount = sessions.filter(
-    (session) => !session.workout || session.status !== "planned"
-  ).length;
+  const reviewCount = sessions.filter(doesSessionNeedReview).length;
 
   return {
     sessionCount: sessions.length,
@@ -286,16 +345,8 @@ function SessionRow({
         .join(" · ")
     : (session.workoutId ?? "Missing workout reference");
   const programTitle = session.program?.title ?? "Missing plan";
-  const statusLabel = session.workout
-    ? session.status === "planned"
-      ? "Planned"
-      : "Review status"
-    : "Missing workout";
-  const statusClass = session.workout
-    ? session.status === "planned"
-      ? statusChipClass
-      : reviewChipClass
-    : missingChipClass;
+  const statusLabel = getSessionStatusLabel(session);
+  const statusClass = getSessionStatusClass(session);
 
   return (
     <div
@@ -321,10 +372,9 @@ function SessionRow({
           </h3>
           <p className="mt-1 text-sm text-[color:var(--fs-color-muted)]">{workoutSummary}</p>
           <p className="mt-1 text-xs font-medium text-[color:var(--fs-color-muted)]">
-            {session.status === "planned"
-              ? "Completion history is not connected yet."
-              : "Plan status needs review before completion history is connected."}
+            {getSessionSupportText(session)}
           </p>
+          <CalendarPlanSessionActions session={session} />
         </div>
         <div
           className={cx(
@@ -417,7 +467,7 @@ function MonthDayCell({
               className={cx(
                 "rounded-[6px] border bg-white/90 px-2.5 py-2 text-left text-[12px] leading-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)]",
                 session.workout
-                  ? session.status === "planned"
+                  ? session.statusSelection === "planned"
                     ? "border-l-[3px] border-slate-200 border-l-[color:var(--fs-color-brand-500)]"
                     : "border-l-[3px] border-amber-200 border-l-amber-500"
                   : "border-l-[3px] border-rose-200 border-l-rose-500"
@@ -426,11 +476,11 @@ function MonthDayCell({
               <span className="line-clamp-2 font-semibold break-words text-[color:var(--fs-color-ink-strong)]">
                 {session.workout?.title ?? "Workout needs review"}
               </span>
-              {session.workout && session.status === "planned" ? null : (
+              {shouldShowMonthStatusLabel(session) ? (
                 <span className="mt-1 block text-[11px] font-semibold text-[color:var(--fs-color-muted)]">
-                  Review
+                  {getSessionStatusLabel(session)}
                 </span>
-              )}
+              ) : null}
             </li>
           ))}
           {hiddenSessionCount > 0 ? (
