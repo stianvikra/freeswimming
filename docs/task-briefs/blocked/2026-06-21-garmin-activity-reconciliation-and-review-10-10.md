@@ -14,9 +14,9 @@
   - `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`
   - `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
   - `docs/task-briefs/done/2026-06-21-review-actual-editor-v1-10-10.md`
-  - `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
+  - `docs/task-briefs/done/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
   - `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`
-  - `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`
+  - `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`
 
 ## Brief Audit Record
 
@@ -24,7 +24,7 @@
 - `base`: `main@84222be4`
 - `audit_status`: `blocked`
 - `decision`: Keep Garmin received-activity reconciliation blocked until Garmin partner/API access, provider payload examples, send/import product decisions, alias/correlation facts, and matching thresholds exist.
-- `reason`: Official Garmin docs confirm Activity API can provide detailed activity data, and FreeSwimming now has manual actual-history correction, Review Actual editing, and a provider-evidence schema foundation. It still lacks Garmin send jobs, credentials, consent flow, provider samples, confirmed provider correlation behavior, and attribution signoff.
+- `reason`: Official Garmin docs confirm Activity API can provide detailed activity data, and FreeSwimming now has manual actual-history correction, Review Actual editing, completed provider-evidence boundary/schema work, and a disabled-by-default fixture import proof. It still lacks Garmin send jobs, credentials, consent flow, provider samples, confirmed provider correlation behavior, matching thresholds, and attribution signoff.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Activity API payloads, FIT parsing requirements, brand/attribution rules, Garmin partner status, training-history schema, send-job schema, Calendar completion behavior, scorecard categories, or support/Help contracts change.
 
 ## Goal
@@ -59,7 +59,7 @@ This work is blocked until all remaining blockers are true:
 
 - Garmin partner/API access and credentials are available.
 - Activity API sample payloads and FIT files for swim activities are available.
-- FreeSwimming has a provider-evidence boundary/schema contract implemented from `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`, `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`, and `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`; real provider runtime remains blocked.
+- FreeSwimming has a provider-evidence boundary/schema contract implemented from `docs/task-briefs/done/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`, `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`, and `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`; real provider runtime remains blocked.
 - FreeSwimming has Garmin send-job/provider alias storage, or this brief is explicitly reduced to import-only matching.
 - Provider alias/correlation behavior is confirmed, including whether Garmin returns client/local references or only provider IDs.
 - Matching thresholds are signed off by owner.
@@ -279,5 +279,6 @@ Critical target categories for a `10/10` claim after unblock:
 
 - `2026-06-21 | blocked | created during Calendar completion/Garmin audit after owner asked to keep future Garmin send, received history, sent-vs-received comparison, and review/edit workflow at 10/10 | next: keep blocked until Garmin partner/API access, provider payload samples, local manual completion history, and provider send-job contract exist`
 - `2026-06-21 | systemic-actuals-audit | refreshed on main@ffd36d9e after owner asked how returned Garmin activities should match planned/sent workouts and how mismatches should be corrected; added local actual-correction dependency, provider correlation/fingerprint requirements, four-fact review model, and explicit no-silent-overwrite policy for wrong stroke, stopped/partial activity, or distance/duration mismatch | next: keep blocked until Garmin partner/API access, provider payload samples, provider alias/correlation behavior, local actual corrections, and send-job contract exist`
-- `2026-06-22 | blocker refresh | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; local manual actual editing is no longer the blocker, but runtime Garmin reconciliation remains blocked until provider evidence boundary/schema, Garmin partner/API access, payload/FIT samples, send-job or import-only decision, alias/correlation behavior, matching thresholds, and attribution/branding requirements are concrete | next: complete docs/schema-intake PR for provider-evidence boundary, then keep this brief blocked until owner/provider facts unblock runtime`
-- `2026-06-22 | fixture-import dependency linked | refreshed after Provider Evidence Schema Foundation V1 PR #1206 and closeout PR #1207 merged; provider evidence schema is no longer the blocker, but real Garmin reconciliation remains blocked until Garmin partner/API access, payload/FIT samples, send-job or import-only decision, alias/correlation behavior, matching thresholds, and attribution/branding requirements are concrete; linked docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md as an optional bounded runtime proof before real provider import | next: keep this brief blocked`
+- `2026-06-22 | blocker refresh | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; local manual actual editing is no longer the blocker, but runtime Garmin reconciliation remains blocked until provider evidence boundary/schema, Garmin partner/API access, payload/FIT samples, send-job or import-only decision, alias/correlation behavior, matching thresholds, and attribution/branding requirements are concrete | next: complete provider-evidence boundary and fixture prerequisites, then keep this brief blocked until owner/provider facts unblock runtime`
+- `2026-06-22 | fixture-import dependency linked | refreshed after Provider Evidence Schema Foundation V1 PR #1206 and closeout PR #1207 merged; provider evidence schema is no longer the blocker, but real Garmin reconciliation remains blocked until Garmin partner/API access, payload/FIT samples, send-job or import-only decision, alias/correlation behavior, matching thresholds, and attribution/branding requirements are concrete; linked docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md as a completed bounded runtime proof before real provider import | next: keep this brief blocked`
+- `2026-06-22 | provider roadmap lock | refreshed after Provider Evidence Boundary Intake, Schema Foundation, and Fixture Import V1 all moved to done; real Garmin/provider runtime is still blocked because no Garmin partner/API access, swim payload/FIT samples, alias/correlation facts, matching thresholds, send-job/import-only decision, or attribution signoff exists | next: keep this brief blocked until owner/provider facts unblock runtime`
