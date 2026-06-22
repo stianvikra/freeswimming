@@ -43,6 +43,7 @@ export const COMPLETED_ACTIVITY_EVENT_SELECT = `
   actual_environment,
   actual_pool_length_m,
   actual_pool_length_unit,
+  actual_session_snapshot,
   correction_note,
   planned_snapshot,
   created_at,
@@ -77,6 +78,7 @@ export function isCompletedActivityEventSchemaMissing(
     blob.includes("actual_distance_m") ||
     blob.includes("actual_environment") ||
     blob.includes("actual_pool_length") ||
+    blob.includes("actual_session_snapshot") ||
     blob.includes("correction_note") ||
     blob.includes("source_kind")
   );

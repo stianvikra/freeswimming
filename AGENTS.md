@@ -71,6 +71,14 @@ This file defines how coding agents should collaborate in this repository.
   - whether each identifier is immutable, write-once, or intentionally renameable,
   - `rename` vs `repurpose` policy (when to edit in place vs create a new row/entity),
   - compatibility/alias/redirect behavior if legacy identifiers may still be read anywhere.
+- For every brief that touches an existing domain object, workflow, editor, review surface, import/export, provider sync, admin workflow, or user-facing correction flow, include an explicit domain granularity contract:
+  - user's mental object, for example session, workout, program, habit, invoice, entitlement, provider activity, or admin content item,
+  - canonical persisted object(s) and child object(s),
+  - mature reference surface and view-model/component contract,
+  - all relevant levels of detail, for example summary, section/block, repeat, step, set, check-in, line item, invoice row, provider evidence, note, or attachment,
+  - for each level, whether the active slice supports `view`, `edit`, `create`, `delete`, `reorder`, `reconcile`, or is explicitly out of scope,
+  - if a domain object has child structure, the active slice must at least show the child structure read-only when that structure is part of the user's mental model, or include a concrete `N/A` rationale.
+- Do not claim `10/10` for a workflow if the UI, tests, or screenshot handoff operate only at a summary level while the user-facing object is built, reviewed, reconciled, or trusted at a child-object level.
 - Every new or refreshed implementation brief must include a forward compatibility contract:
   - which future additions should be data-driven automatically, for example products, catalog rows, categories, workflow states, locales, export formats, or analytics payload values,
   - which future additions require an explicit mapping or owner decision,
@@ -191,6 +199,7 @@ This file defines how coding agents should collaborate in this repository.
 
 - Before building or materially changing a UI surface that represents an existing domain object or workflow, identify the most mature reference surface in this repo.
 - Reuse the same component, view-model contract, or renderer first. If direct reuse is not practical, adapt the new data into the same display contract.
+- Before choosing a summary-only UI for an existing object, compare the UI granularity against the reference surface and the user's mental object. If the reference object is built from children, such as swim-session steps/repeats, dryland exercises/sets, program weeks/days/assignments, habit cadence/check-ins, admin content modules/lessons/fields, commerce customer/session/invoice/entitlement records, or provider sent/received/reconciled evidence, the brief must state why each child level is viewable, editable, deferred, or irrelevant.
 - If the new surface intentionally differs from the reference, document the reason in the active brief and screenshot handoff.
 - For swim-session step UI, use `docs/design/session-step-surface-contract.md` and the manual pool session builder as the reference for `Edit`, `Rearrange`, and `View`.
 - Screenshot handoff for parity work must include `after/reference` artifacts where practical, not only standalone after-screenshots.

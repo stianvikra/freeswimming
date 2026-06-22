@@ -92,7 +92,7 @@ Codex skal senere gjøre faktisk utførte svømmeøkter redigerbare som egen his
 - Add the server-side correction contract for an existing manual completed swim event without changing the planned instance.
 - Store the actual date through the existing `completed_on` field for compatibility, plus nullable actual-start time, duration, distance, pool/open-water context, pool length/unit, and bounded correction notes where supplied.
 - Preserve the planned snapshot and canonical planned/workout/program references for plan-vs-actual comparison.
-- Show plan and actual side by side in Calendar selected-day detail as a read-only overview, with dedicated history review/editing deferred to the future `Review actual` surface.
+- Show plan and actual side by side in Calendar selected-day detail as a read-only overview; dedicated history review/editing is owned by the follow-up `Review actual` surface.
 - Add deterministic plan-vs-actual signals:
   - as planned,
   - changed,

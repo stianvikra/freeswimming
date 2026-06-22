@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-06-21`
+- `updated`: `2026-06-22`
 - `mode`: `parent boundary / plan only`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@ffd36d9e`
+- `base`: `main@a417271c`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the next local child is actual-history correction and plan-vs-actual before Garmin provider reconciliation.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, and read-only Habits/Micro daily layers. The next safe runtime step is to let actual swim history differ from the plan without rewriting planned rows; Garmin Activity API ingestion, provider reconciliation, and retrospective AI stay in later bounded children.
+- `decision`: Use this as the training-history parent contract; the next local child is `Review actual editor v1` before Garmin provider reconciliation.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, and read-only plan-vs-actual overview. The next safe runtime step is a dedicated actual-history editor that keeps planned rows and source workouts unchanged while preparing for future provider evidence.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -34,7 +34,7 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 - Calendar Plan can show manual completion plus read-only Habits and Micro Session daily layers.
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
 - Existing Calendar Compare shows Swimming as not included until completed swim activity events are explicitly mapped into Stats.
-- Manual completion currently covers a simple `completed` outcome; it does not yet let users record partial, changed, another-day, or corrected actual details.
+- Manual actual history now supports completed-as-planned, changed, partly done, another-day, cancelled-as-actual, and review-needed outcomes, with Calendar showing read-only plan-vs-actual overview. A dedicated `Review actual` editor is still needed for the user-facing editing workflow.
 
 ## Source Separation Contract
 
@@ -54,13 +54,17 @@ Training history must keep these layers separate:
    - Does not own: partial/cancelled/comments/Garmin.
    - Status: shipped in `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`.
 2. Actuals/corrections and plan-vs-actual child:
-   - Path: `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
-   - Owns: editable actual outcomes for completed-as-planned, completed-different, partial, completed-on-another-day, cancelled-as-actual, review-needed, and plan-vs-actual display.
+   - Path: `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
+   - Owns: actual outcome storage and read-only Calendar plan-vs-actual display for completed-as-planned, completed-different, partial, completed-on-another-day, cancelled-as-actual, review-needed, and legacy completed alias.
    - Does not own: Garmin provider ingestion, AI evaluation, or source workout/program edits.
-3. Garmin Activity reconciliation child:
+3. Review actual editor v1 child:
+   - Path: `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`.
+   - Owns: dedicated user-facing manual actual editor, plan-vs-actual edit flow, source badge, stale-write recovery, support diagnostics, and provider-ready contracts for future Garmin/Strava/Apple Health/Health Connect style integrations.
+   - Does not own: provider runtime, provider imports, raw FIT parsing, source workout/program edits, or AI evaluation.
+4. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
-   - Blocked by: Garmin partner/API access, provider payload examples, local actual-correction semantics, and provider branding/consent requirements.
-4. Retrospective evaluation child:
+   - Blocked by: Garmin partner/API access, provider payload examples, local actual editor semantics, and provider branding/consent requirements.
+5. Retrospective evaluation child:
    - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 
 ## Scope
@@ -77,9 +81,13 @@ First shipped runtime child scope is intentionally narrower and owned by:
 
 - `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`
 
+Last shipped actual-history child scope is owned by:
+
+- `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+
 Next local runtime child scope is owned by:
 
-- `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`
 
 ## Out Of Scope
 
@@ -195,6 +203,9 @@ Current interpretation from official sources:
   - provider aliases,
   - Garmin send statuses,
   - Garmin Activity API activity types/files,
+  - Strava activity/webhook identifiers,
+  - Apple Health workout source metadata,
+  - Android Health Connect client record/source metadata,
   - reconciliation statuses,
   - review actions,
   - analytics event values,

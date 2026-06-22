@@ -713,6 +713,7 @@ export type Database = {
           actual_environment: string | null;
           actual_pool_length_m: number | null;
           actual_pool_length_unit: string | null;
+          actual_session_snapshot: Json | null;
           actual_started_at: string | null;
           completed_on: string;
           correction_note: string | null;
@@ -733,6 +734,7 @@ export type Database = {
           actual_environment?: string | null;
           actual_pool_length_m?: number | null;
           actual_pool_length_unit?: string | null;
+          actual_session_snapshot?: Json | null;
           actual_started_at?: string | null;
           completed_on: string;
           correction_note?: string | null;
@@ -753,6 +755,7 @@ export type Database = {
           actual_environment?: string | null;
           actual_pool_length_m?: number | null;
           actual_pool_length_unit?: string | null;
+          actual_session_snapshot?: Json | null;
           actual_started_at?: string | null;
           completed_on?: string;
           correction_note?: string | null;

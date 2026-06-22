@@ -447,7 +447,10 @@ describe("CalendarPlanWeekHub", () => {
     ).not.toBeInTheDocument();
     expect(within(selectedDay).queryByRole("button", { name: "Skip" })).not.toBeInTheDocument();
     expect(within(selectedDay).getByRole("link", { name: "Edit Plan" })).toBeVisible();
-    expect(within(selectedDay).getByRole("button", { name: "Review actual" })).toBeDisabled();
+    expect(within(selectedDay).getByRole("link", { name: "Review actual" })).toHaveAttribute(
+      "href",
+      "/my-library/calendar/actuals/session-completed?date=2026-06-22&programId=program-1"
+    );
     expect(
       within(selectedDay).queryByRole("link", { name: "Open workout" })
     ).not.toBeInTheDocument();
@@ -502,7 +505,10 @@ describe("CalendarPlanWeekHub", () => {
     expect(
       within(selectedDay).getByTestId("calendar-plan-session-actual-session-correct")
     ).toBeVisible();
-    expect(within(selectedDay).getByRole("button", { name: "Review actual" })).toBeDisabled();
+    expect(within(selectedDay).getByRole("link", { name: "Review actual" })).toHaveAttribute(
+      "href",
+      "/my-library/calendar/actuals/session-correct?date=2026-06-22&programId=program-1"
+    );
     expect(
       within(selectedDay).queryByRole("button", { name: "Save completion" })
     ).not.toBeInTheDocument();

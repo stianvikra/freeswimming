@@ -121,6 +121,7 @@ function buildCompletedActivityEvent(
     actual_environment: "pool",
     actual_pool_length_m: 25,
     actual_pool_length_unit: "m",
+    actual_session_snapshot: null,
     correction_note: null,
     planned_snapshot: {},
     created_at: "2026-06-22T17:30:00.000Z",

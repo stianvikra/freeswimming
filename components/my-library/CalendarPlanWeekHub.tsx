@@ -29,10 +29,6 @@ const actionClass =
 const calendarActionClass = cx(actionClass, "w-full sm:w-40");
 const calendarNavActionClass = cx(actionClass, "min-w-0 px-2 text-xs sm:w-40 sm:px-4 sm:text-sm");
 const sessionActionClass = cx(actionClass, "w-full sm:w-[9rem]");
-const disabledSessionActionClass = cx(
-  sessionActionClass,
-  "cursor-not-allowed opacity-60 hover:bg-white"
-);
 const primaryActionClass =
   "fs-cta-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2";
 const filterClass =
@@ -487,6 +483,11 @@ function SessionRow({
   const statusClass = getSessionStatusClass(session);
   const actualCompletion =
     session.completion.selection === "manual_actual" ? session.completion : null;
+  const reviewActualHref = actualCompletion
+    ? `/my-library/calendar/actuals/${session.id}?date=${session.date}${
+        session.program ? `&programId=${session.program.id}` : ""
+      }`
+    : null;
 
   return (
     <div
@@ -579,15 +580,10 @@ function SessionRow({
               Edit Plan
             </Link>
           ) : null}
-          {actualCompletion ? (
-            <button
-              type="button"
-              className={disabledSessionActionClass}
-              disabled
-              aria-label="Review actual"
-            >
+          {actualCompletion && reviewActualHref ? (
+            <Link href={reviewActualHref} className={sessionActionClass} aria-label="Review actual">
               Review actual
-            </button>
+            </Link>
           ) : session.workout ? (
             <Link
               href={`/my-library/workouts/${session.workout.id}`}

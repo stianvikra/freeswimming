@@ -952,6 +952,7 @@ environment allowlist role from a profile-backed role.
     "actualEnvironment": "pool",
     "actualPoolLengthM": 25,
     "actualPoolLengthUnit": "m",
+    "actualSessionDraft": null,
     "correctionNote": null,
     "createdAt": "2026-06-22T17:30:00.000Z",
     "updatedAt": "2026-06-22T17:30:00.000Z"
@@ -961,6 +962,8 @@ environment allowlist role from a profile-backed role.
 
 - `status`: `completed` for a new event, or `already_completed` when the same owner/planned instance already has a manual completion event.
 - Manual completion writes one owner-scoped `completed_activity_events` row and does not mutate `planned_workout_instances`, `workouts`, or `programs`.
+- The stored `planned_snapshot.workout` includes read-only planned workout summary, `previewSections`, and the source workout draft when it can be summarized, so Review Actual can show the planned step/repeat structure without mutating the source workout.
+- The manual event may also store `actual_session_snapshot`, initialized from the planned/source workout. This is the corrected performed-session truth and is separate from the planned snapshot.
 - `completed_activity_events.source_kind = manual` is the only source kind in this contract. Garmin send/import/reconciliation must not write through this route.
 - Legacy `outcome = completed` rows are read as `completed_as_planned`. New writes use the expanded outcome contract.
 - Unknown future completion source/outcome values fail closed to review and must not count as completed until explicitly mapped.
@@ -974,6 +977,20 @@ environment allowlist role from a profile-backed role.
 - `409`: stale `updated_at`, skipped/cancelled/review status, missing workout/program reference, or unmapped existing completion state
 - `500`: bounded load/write failure
 - `503`: planned-instance, workout/program, or completed-activity schema still syncing
+
+## Private route `/my-library/calendar/actuals/[instanceId]`
+
+### Contract
+
+- Auth: signed-in My Library user.
+- Loads one owner-scoped planned workout instance and its linked manual `completed_activity_events` row.
+- Preserves Calendar return context through `date` and `programId` query params.
+- Shows planned truth and actual truth side by side, with source badge, actual-history ID, planned-instance ID, last-updated timestamp, planned workout step/repeat structure read-only when available, and an editable actual session builder for the performed session.
+- Editable in v1 only when the linked actual row is `source_kind = manual` and has a mapped outcome.
+- Edits actual session steps/repeats through the same swim-session builder semantics used for manual pool sessions. Planned steps stay read-only.
+- Does not expose provider evidence reconciliation in v1.
+- Saves through `PATCH /api/my-library/calendar/planned-instances/[instanceId]/completion` with `expectedActualUpdatedAt` stale-write protection.
+- Missing actuals, duplicate rows, missing planned references, schema drift, provider/future source rows, and unknown outcomes fail closed to review/support states instead of editing.
 
 ## `PATCH /api/my-library/calendar/planned-instances/[instanceId]/completion`
 
@@ -1001,7 +1018,11 @@ environment allowlist role from a profile-backed role.
 
 ### Contract
 
+- This correction contract is used by the private `Review actual` editor at `/my-library/calendar/actuals/[instanceId]`; Calendar itself remains a read-only overview once a manual actual exists.
 - Corrects the existing owner-scoped manual actual row linked to the planned instance.
+- When `actualSessionDraft` is provided, the route validates it with the canonical swim-session draft persistence rules, stores it in `completed_activity_events.actual_session_snapshot`, and derives actual distance, duration, environment, pool length, and pool unit from that draft.
+- Summary measured fields remain accepted for backward-compatible correction calls, but Review Actual V1 should send the actual session draft so the performed workout can be corrected at step/repeat granularity.
+- The `actualSessionDraft` payload is the full canonical `SessionDraft` shape used by the swim-session builder; abbreviated drafts with missing required fields or empty `steps` are rejected.
 - Does not mutate the planned instance, source workout, source program, future provider evidence, or Stats mapping.
 - Supported outcomes are `completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, and `needs_review`.
 - `completedOn` is the actual date and remains the compatibility date field for Calendar reads.

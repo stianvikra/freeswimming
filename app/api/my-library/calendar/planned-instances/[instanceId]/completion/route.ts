@@ -8,6 +8,11 @@ import {
   type CompletedActivityEventRow,
   type CompletedActivityEventOutcome,
 } from "@/lib/my-library/completed-activity-events";
+import {
+  buildReviewActualSessionSnapshot,
+  readReviewActualSessionDraft,
+  serializeReviewActualSessionSnapshot,
+} from "@/lib/my-library/review-actual-session";
 import { isValidMyLibraryCalendarDateKey } from "@/lib/my-library/calendar";
 import { isPlannedWorkoutInstanceStatus } from "@/lib/my-library/planned-workout-instances";
 import {
@@ -17,7 +22,15 @@ import {
 import { PLANNED_WORKOUT_INSTANCE_SELECT, PROGRAM_SELECT } from "@/lib/programs/server";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler";
 import { isWorkoutSchemaMissing } from "@/lib/workouts/schema";
-import { tryBuildWorkoutSummary, WORKOUT_SELECT } from "@/lib/workouts/server";
+import {
+  buildWorkoutEditorRecord,
+  tryBuildWorkoutSummary,
+  WORKOUT_SELECT,
+} from "@/lib/workouts/server";
+import {
+  resolveSessionDraftPoolLengthUnit,
+  type SessionDraft,
+} from "@/lib/session-generator-v1/shared";
 import type { Database, Json } from "@/types/database";
 
 type CompletedActivityEventInsert =
@@ -48,6 +61,7 @@ type CompletionResponse =
         actualEnvironment: string | null;
         actualPoolLengthM: number | null;
         actualPoolLengthUnit: string | null;
+        actualSessionDraft: SessionDraft | null;
         correctionNote: string | null;
         createdAt: string;
         updatedAt: string;
@@ -165,7 +179,9 @@ function normalizeCorrectionNote(
 
 function normalizeCorrectionPayload(
   body: Record<string, unknown>
-): { ok: true; value: CompletedActivityEventUpdate } | { ok: false; error: string } {
+):
+  | { ok: true; value: CompletedActivityEventUpdate; actualSessionDraft: SessionDraft | null }
+  | { ok: false; error: string } {
   const outcome = normalizeActualOutcome(body.outcome);
   if (!outcome || !COMPLETED_ACTIVITY_EVENT_OUTCOMES.includes(outcome)) {
     return { ok: false, error: "Choose a supported actual outcome." };
@@ -218,8 +234,14 @@ function normalizeCorrectionPayload(
   const correctionNote = normalizeCorrectionNote(body.correctionNote);
   if (!correctionNote.ok) return correctionNote;
 
+  const actualSessionDraft =
+    body.actualSessionDraft === undefined || body.actualSessionDraft === null
+      ? null
+      : body.actualSessionDraft;
+
   return {
     ok: true,
+    actualSessionDraft: actualSessionDraft as SessionDraft | null,
     value: {
       outcome,
       completed_on: completedOn,
@@ -260,11 +282,61 @@ function buildEventResponse(row: CompletedActivityEventRow, status: CompletionSt
       actualEnvironment: row.actual_environment,
       actualPoolLengthM: row.actual_pool_length_m,
       actualPoolLengthUnit: row.actual_pool_length_unit,
+      actualSessionDraft: readReviewActualSessionDraft(row.actual_session_snapshot),
       correctionNote: row.correction_note,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     },
   });
+}
+
+function buildWorkoutDraftSnapshot(workout: WorkoutRow): SessionDraft | null {
+  try {
+    return buildWorkoutEditorRecord(workout).draft;
+  } catch (error) {
+    console.warn("[CalendarCompletionApi] Could not adapt workout draft for actual snapshot", {
+      workoutId: workout.id,
+      error,
+    });
+    return null;
+  }
+}
+
+function buildActualSessionUpdate(input: {
+  draft: SessionDraft;
+  source: "planned_session_default" | "manual_actual_edit";
+  plannedWorkoutInstanceId: string;
+  actualEventId?: string | null;
+}):
+  | { ok: true; value: CompletedActivityEventUpdate; draft: SessionDraft }
+  | { ok: false; error: string } {
+  const snapshot = buildReviewActualSessionSnapshot({
+    draft: input.draft,
+    source: input.source,
+    plannedWorkoutInstanceId: input.plannedWorkoutInstanceId,
+    actualEventId: input.actualEventId ?? null,
+  });
+  if (!snapshot.ok) return snapshot;
+
+  return {
+    ok: true,
+    draft: snapshot.draft,
+    value: {
+      actual_session_snapshot: serializeReviewActualSessionSnapshot(snapshot.snapshot),
+      actual_duration_seconds:
+        typeof snapshot.draft.estimatedDurationMin === "number"
+          ? Math.round(snapshot.draft.estimatedDurationMin * 60)
+          : null,
+      actual_distance_m: snapshot.draft.totalDistanceM,
+      actual_environment: snapshot.draft.environment,
+      actual_pool_length_m:
+        snapshot.draft.environment === "pool" ? snapshot.draft.poolLengthM : null,
+      actual_pool_length_unit:
+        snapshot.draft.environment === "pool"
+          ? resolveSessionDraftPoolLengthUnit(snapshot.draft.poolLengthUnit)
+          : null,
+    },
+  };
 }
 
 function buildPlannedSnapshot(input: {
@@ -273,6 +345,7 @@ function buildPlannedSnapshot(input: {
   workout: WorkoutRow;
 }): Json {
   const workoutSummary = tryBuildWorkoutSummary(input.workout, "calendar completion snapshot");
+  const workoutDraft = buildWorkoutDraftSnapshot(input.workout);
 
   return {
     version: 1,
@@ -306,6 +379,8 @@ function buildPlannedSnapshot(input: {
           sessionType: workoutSummary.sessionType,
           totalDistanceM: workoutSummary.totalDistanceM,
           estimatedDurationMin: workoutSummary.estimatedDurationMin,
+          previewSections: workoutSummary.previewSections ?? [],
+          draft: workoutDraft,
           sourceKind: workoutSummary.sourceKind,
           status: workoutSummary.status,
           updatedAt: workoutSummary.updatedAt,
@@ -313,6 +388,7 @@ function buildPlannedSnapshot(input: {
       : {
           id: input.workout.id,
           title: input.workout.title,
+          draft: workoutDraft,
           updatedAt: input.workout.updated_at,
         },
   };
@@ -534,6 +610,23 @@ export async function POST(request: Request, { params }: Props) {
 
   const workoutRow = workoutResult.data as WorkoutRow;
   const workoutSummary = tryBuildWorkoutSummary(workoutRow, "calendar completion actual defaults");
+  const workoutDraft = buildWorkoutDraftSnapshot(workoutRow);
+  const actualSessionDefaults = workoutDraft
+    ? buildActualSessionUpdate({
+        draft: workoutDraft,
+        source: "planned_session_default",
+        plannedWorkoutInstanceId: instance.id,
+      })
+    : null;
+  if (actualSessionDefaults && !actualSessionDefaults.ok) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "This workout needs review before it can be marked done." },
+        { status: 409 }
+      )
+    );
+  }
+
   const insertPayload: CompletedActivityEventInsert = {
     user_id: user.id,
     planned_workout_instance_id: instance.id,
@@ -550,6 +643,7 @@ export async function POST(request: Request, { params }: Props) {
     actual_environment: workoutSummary?.environment ?? null,
     actual_pool_length_m: workoutSummary?.poolLengthM ?? null,
     actual_pool_length_unit: workoutSummary?.poolLengthUnit ?? null,
+    ...(actualSessionDefaults?.ok ? actualSessionDefaults.value : {}),
     planned_snapshot: buildPlannedSnapshot({
       instance,
       program: programResult.data as ProgramRow,
@@ -713,9 +807,28 @@ export async function PATCH(request: Request, { params }: Props) {
     );
   }
 
+  const actualSessionUpdate = correctionPayload.actualSessionDraft
+    ? buildActualSessionUpdate({
+        draft: correctionPayload.actualSessionDraft,
+        source: "manual_actual_edit",
+        plannedWorkoutInstanceId: instance.id,
+        actualEventId: existingEvent.id,
+      })
+    : null;
+  if (actualSessionUpdate && !actualSessionUpdate.ok) {
+    return applySupabaseCookies(
+      noStoreJson({ ok: false, error: actualSessionUpdate.error }, { status: 400 })
+    );
+  }
+
+  const updatePayload: CompletedActivityEventUpdate = {
+    ...correctionPayload.value,
+    ...(actualSessionUpdate?.ok ? actualSessionUpdate.value : {}),
+  };
+
   const updateResult = await supabase
     .from("completed_activity_events")
-    .update(correctionPayload.value)
+    .update(updatePayload)
     .eq("user_id", user.id)
     .eq("planned_workout_instance_id", instance.id)
     .eq("id", existingEvent.id)

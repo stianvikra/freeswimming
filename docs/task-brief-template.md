@@ -23,6 +23,7 @@ Use this quick check so the task execution is precise:
 - State platform scorecard mapping (`docs/quality/platform-10-10-scorecard.md`)
 - State whether the Codex skill/stack readiness radar applies (`docs/runbooks/codex-skill-stack-readiness-radar.md`) and, when it does, include capability audit, top-three findings, and return path
 - State stack/architecture best-practice impact (React/Next, TypeScript, Supabase, external services, UI primitives, tests)
+- State domain granularity contract when the work touches an existing object/workflow/editor/review/import/export/provider/admin/user correction surface: user's mental object, canonical objects, child levels, reference surface, and view/edit/create/delete/reorder/reconcile/out-of-scope status per level
 - State forward compatibility contract: what future products/labels/workflows/data values follow automatically, what needs explicit mapping, and how unknown values fail safely
 - State Help/Guide impact rule (required update or explicit `N/A` rationale for workflow changes)
 - State visual artifact rule for UI/print/layout/brand changes, including folder path and `before/after` or `after/reference` naming
@@ -182,6 +183,38 @@ If the correct architecture improvement is larger than the current slice, record
 - the minimal safe behavior shipped now,
 - the explicit exception,
 - the follow-up brief path that owns the systemic refactor.
+
+## Domain Granularity Gate (Required When Existing Domain Objects Or Workflows Are Touched)
+
+Use this gate for any brief that changes how users or admins view, edit, review, reconcile, import,
+export, or support an existing domain object. The goal is to prevent summary-level UI or tests from
+missing the actual object level the user trusts.
+
+Define:
+
+- User's mental object:
+  - what the user thinks they are reviewing or editing, for example swim session, workout, program,
+    habit, invoice, entitlement, provider activity, admin content item, or support case.
+- Canonical object(s):
+  - persisted source-of-truth entities and their stable IDs.
+- Child object levels:
+  - relevant detail levels such as summary, section/block, repeat, step, set, check-in, line item,
+    invoice row, entitlement row, provider evidence, note, attachment, route param, or workflow state.
+- Mature reference surface:
+  - existing route/component/view-model/contract that already shows or edits this object at the
+    right level.
+- Granularity decision per level:
+  - mark each level as `view`, `edit`, `create`, `delete`, `reorder`, `reconcile`, `support-only`,
+    or `out of scope`.
+- Child-structure rule:
+  - if the user's mental object is built from child records, the active slice must show those child
+    records read-only, or include a concrete `N/A` rationale explaining why child-level visibility is
+    not part of this workflow.
+- 10/10 gate:
+  - do not claim `10/10` if the UI, tests, or screenshot handoff only prove a summary view while the
+    trusted object is built, edited, or reconciled at a child level.
+
+If not applicable, write `N/A` with a concrete rationale.
 
 ## Data Placement And Sync Contract (Required For Stateful Features)
 
