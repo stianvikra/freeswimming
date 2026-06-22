@@ -587,14 +587,26 @@ Sweep locations:
 - `2026-06-22 | working tree | owner approved runtime implementation; branch provider-evidence-schema-foundation created and brief moved to in-progress | next: implement schema/domain/export/delete/docs/tests`
 - `2026-06-22 | working tree | implemented additive provider_connections/provider_import_runs/provider_activity_evidence schema with owner/provider composite integrity, typed domain helpers, export/delete docs, support/privacy contracts, export route schema-drift fallback, and route/domain/export tests; targeted Vitest, typecheck, brief lint --all, and git diff --check pass | next: run npm run verify:pre-pr`
 - `2026-06-22 | working tree | linked Supabase migration drift resolved by applying 20260622170000_provider_evidence_schema_foundation.sql; npm run verify:pre-pr passed full lane; perf budget reported 11 consecutive weekly green runs and recommended tightening, but decision is hold because the performance-ratchet brief must wait for at least two new green weekly cycles after 2026-06-19 | next: commit, push, open PR, monitor CI`
+- `2026-06-22 | merged | PR #1206 merged at 1cac3a94 after required CI, npm run verify:pre-merge, and npm run merge:preflight passed; post-merge preflight surfaced this repo-managed docs-only lifecycle closeout | next: closeout PR`
 
 ## Completion Record
 
-- `PR`: TBD
-- `merge`: TBD
-- `result`: TBD
-- `10/10 claim`: TBD
+- `completed`: `2026-06-22`
+- `merged_pr`: `#1206`
+- `squash_commit`: `1cac3a94`
+- `result`: Closed Provider Evidence Schema Foundation V1 with additive owner-scoped provider connection, import run, and provider activity evidence tables; typed provider evidence contracts; export/delete privacy coverage; support/GDPR documentation; and regression tests. Garmin/provider runtime reconciliation, OAuth, raw file storage, Calendar/Stats counting, UI review surfaces, and Perfect Day remain intentionally deferred.
+- `validation`: `npm run verify:pre-pr` PASS full lane; required CI PASS (`Analyze`, `size-check`, `verify`); `npm run verify:pre-merge` PASS full lane; `npm run merge:preflight -- --assert-ready` PASS; linked Supabase migration drift PASS after applying `20260622170000_provider_evidence_schema_foundation.sql`.
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting categories remained within release gate and no scoped target category is below `5/5`.
 
-| Category            | Achieved Score | Evidence | Gaps / Notes |
-| ------------------- | -------------- | -------- | ------------ |
-| `<target category>` | `TBD`          | `TBD`    | `TBD`        |
+| Category                                      | Achieved Score | Evidence                                                                                                                          | Gaps / Notes |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                          | `5/5`          | Provider evidence, provider connection, import run, manual actuals, sent jobs, and reconciliation decisions stay separate.        | None scoped. |
+| Business logic correctness and data integrity | `5/5`          | Migration constraints, typed normalization, provider domain tests, and Calendar/Review Actual regressions passed.                 | None scoped. |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical provider evidence, raw-file deferral, export/delete boundary, and manual-history separation documented.          | None scoped. |
+| Reliability and failure handling              | `5/5`          | Duplicate, malformed, unsupported, revoked/disabled, and unknown-value states have deterministic non-500 handling.                | None scoped. |
+| Security and authz                            | `5/5`          | RLS-enabled owner policies, least-privilege grants, composite owner/provider keys, and protected export route tests.              | None scoped. |
+| Privacy and compliance                        | `5/5`          | No tokens/raw provider payloads/raw files are stored; export/delete and GDPR runbook cover redacted evidence summaries.           | None scoped. |
+| Incident response and support operations      | `5/5`          | Support runbook and external-service matrix cover revoked, disabled, duplicate, malformed, unsupported, and deferred file states. | None scoped. |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Next.js/Supabase/TypeScript patterns reused; no new dependency added; official provider docs baseline recorded.          | None scoped. |
+| Testing and QA automation                     | `5/5`          | Targeted unit/regression tests, `npm run verify:pre-pr`, required CI, and `npm run verify:pre-merge` passed.                      | None scoped. |
+| DevOps and rollback readiness                 | `5/5`          | Additive migration, linked Supabase drift check, no runtime provider activation, and merge-preflight passed.                      | None scoped. |
