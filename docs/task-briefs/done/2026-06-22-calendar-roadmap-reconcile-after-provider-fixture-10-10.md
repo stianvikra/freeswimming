@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-22-calendar-roadmap-reconcile-after-provider-fixture-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
@@ -206,3 +206,32 @@ Docs-only lane is expected while the diff stays limited to Markdown docs.
 - `2026-06-22 | in-progress | started from clean synced main@77bf42d5 after Provider Evidence Fixture Import V1 PR #1209, closeout PR #1210, and roadmap refresh PR #1211; owner confirmed the docs-only roadmap reconcile after Codex identified stale Calendar parent references to Review Actual Editor V1 as current/in-progress | next: repair roadmap docs, run targeted sweeps and docs-only validation, then open PR without selecting the next product/runtime slice`
 - `2026-06-22 | targeted validation | repaired Calendar parent roadmap status, provider blocked wording, and active docs-only reconcile brief; validation passed: npm run lint:briefs:all, git diff --check, git diff --cached --check, and targeted stale-reference sweeps for the old Review Actual in-progress path, Current Recommended Next Child, Next local actual editor child, and manual_fixture planned-proof wording; npm run lint:briefs ran but reported no changed task briefs in this lane, while all-brief lint covered the new in-progress brief | next: rerun final staged checks, run npm run verify:pre-pr, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
 - `2026-06-22 | pre-pr gate | npm run verify:pre-pr passed the docs-only lane; branch-current confirmed docs-calendar-roadmap-reconcile contains origin/main@77bf42d5, changed files are the four Markdown docs/governance files, docs-only verify passed, quality-gate evidence passed with human sufficiency review notes for docs/provider keywords, and artifact log is artifacts/test-runs/20260622-164940/verify.log | next: rerun verify:pre-pr after this checkpoint update, then commit, push, open PR, monitor CI, and run npm run verify:pre-merge`
+- `2026-06-22 | done | PR #1212 merged as squash commit 162019e750dfd05565c1e390f43f9af996f781bc after docs-only verify:pre-pr PASS, required GitHub CI PASS, and verify:pre-merge PASS; post-merge preflight surfaced this repo-managed docs-only closeout | next: complete closeout PR and rerun post-merge preflight`
+- `2026-06-22 | closeout pre-pr gate | closeout branch docs-closeout-calendar-roadmap-reconcile-1212 moved the brief from in-progress to done and added this Completion Record; npm run lint:briefs:all passed and npm run verify:pre-pr passed the docs-only lane | next: commit, push, open closeout PR, monitor CI, run verify:pre-merge, merge, sync main, and rerun post-merge preflight`
+
+## Completion Record
+
+- `completed`: `2026-06-22`
+- `merged_pr`: `#1212`
+- `squash_commit`: `162019e750dfd05565c1e390f43f9af996f781bc`
+- `result`: Closed the docs-only Calendar roadmap reconcile after the provider fixture proof. The Calendar parent no longer presents Review Actual Editor V1 as active/current work, the provider fixture import is recorded as shipped, and no new Calendar/provider/runtime slice is selected.
+- `validation`: `npm run verify:pre-pr` PASS on PR branch `docs-calendar-roadmap-reconcile`; required GitHub CI PASS on PR `#1212`; `npm run verify:pre-merge` PASS with marker `artifacts/verify-pre-merge/20260622-145326.json`; post-merge preflight surfaced this lifecycle closeout only.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this bounded docs-only roadmap reconcile.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- Reliability and failure handling
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                            | Achieved Score | Evidence                                                                                                                        | Gaps / Notes                                                                            |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Product goals and IA                | `5/5`          | Calendar parent and active reconcile brief state Review Actual Editor V1 and provider fixture import are shipped.               | Next product/runtime slice remains intentionally unselected.                            |
+| Reliability and failure handling    | `5/5`          | Targeted stale-reference sweeps, brief lint, PR CI, and post-merge preflight showed only this lifecycle closeout.               | Real Garmin/provider reconciliation remains blocked by the provider facts prerequisite. |
+| Content governance                  | `5/5`          | Calendar parent, training-history roadmap, and Garmin blocked briefs agree on shipped provider fixture evidence.                | Perfect Day remains a later product decision before Calendar adoption.                  |
+| Stack-fit and dependency discipline | `5/5`          | Diff stayed limited to Markdown lifecycle/roadmap docs; no runtime code, scripts, configs, tests, or assets changed.            | None for active slice.                                                                  |
+| Testing and QA automation           | `5/5`          | `npm run verify:pre-pr` PASS, required GitHub CI PASS, and `npm run verify:pre-merge` PASS.                                     | Closeout PR runs the docs-only lifecycle gates separately.                              |
+| DevOps and rollback readiness       | `5/5`          | Squash commit `162019e750dfd05565c1e390f43f9af996f781bc` is docs-only and revertable without migration or deploy config impact. | None for active slice.                                                                  |
