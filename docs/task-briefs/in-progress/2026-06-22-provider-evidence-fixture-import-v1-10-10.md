@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-22-provider-evidence-fixture-import-v1-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
-- `mode`: `runtime fixture import / planned implementation`
+- `mode`: `runtime fixture import / implementation`
 - `parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - `predecessor`: `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`
 - `related_blocked_briefs`:
@@ -17,7 +17,7 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-22`
-- `base`: `main@00de10cb`
+- `base`: `main@da01bb18`
 - `audit_status`: `ready`
 - `decision`: Use this as the next bounded runtime slice if the owner wants to prove provider-evidence writes before real Garmin/OAuth/provider runtime.
 - `reason`: Provider Evidence Schema Foundation V1 is merged and gives separate tables, export/delete coverage, typed helpers, and support docs, but the app still has no route-owned write path proving sanitized provider evidence can be inserted/upserted without becoming completion truth.
@@ -415,6 +415,20 @@ Because future implementation will touch runtime code, tests, routes, docs, and 
 - Push only after `npm run verify:pre-pr` passes.
 - Do not merge without explicit owner approval.
 
+## Implementation Evidence
+
+- Failure-mode / no unexpected 500 evidence: `tests/unit/provider-evidence-fixture-import-route.test.ts` covers disabled `403`, unauthenticated `401`, unsupported content type `415`, unsupported provider `400`, oversized payload `400`, provider schema missing `503`, malformed/unsupported row warning counts, and unexpected provider evidence write failure returning bounded `500` with support-safe code `provider_connection_write_failed`.
+- Validation/invariant evidence: route tests verify caller-supplied `user_id`/`userId` is ignored, writes use authenticated `user-1`, duplicate provider activity aliases upsert idempotently, `completed_activity_events` is never touched, and redacted summaries do not persist caller `access_token`.
+- Export artifact evidence: actual consumed artifact is the JSON account export payload built by `GET /api/user/export`; `tests/unit/user-export-route.test.ts` verifies imported `manual_fixture` provider connection, activity evidence, import run, and redacted summary are exported without raw token fields.
+- Owner screenshot approval / visual review stop: N/A because this slice changes no rendered UI, print layout, brand asset, screenshot surface, or browser-visible provider copy; screenshot approval stop is not required unless a later provider UI/print/layout/brand surface is added.
+- High-cost UI/export debug path: `ui-debug-hypothesis-and-handoff` is N/A for UI because no visual surface changed; export validation used the actual consumed artifact JSON payload test rather than a browser preview.
+- Route/label/support sweep evidence: identifiers searched were `fixture import`, `manual_fixture`, `provider evidence`, `provider_activity_evidence`, `provider_connections`, `provider_import_runs`, `completed_activity_events`, `source_kind`, `Review actual`, `Calendar`, `Stats`, `export`, `delete`, `Garmin`, `OAuth`, `FIT`, `raw provider`, `needs_review`, and `unmapped`.
+- Route/label/support sweep surfaces checked: directories/surfaces checked were `app/`, `components/`, `lib/`, `tests/`, `types/`, `supabase/migrations/`, `docs/`, active task briefs, planned task briefs, blocked task briefs, and done task briefs. Fallout handled in `docs/api-contracts.md`, `docs/architecture/data-access-authz-cache-contract-registry.md`, `docs/architecture/secret-config-inventory.md`, `docs/runbooks/auth-account-support.md`, route tests, export tests, and this active brief.
+- Unknown runtime or repository surface classification rationale: `app/api/my-library/provider-evidence/fixture-import/route.ts` is a private authenticated API/server action surface; `lib/my-library/provider-evidence.ts` is the provider-evidence domain contract; docs changes are route/support/config governance; tests are QA automation. No runtime UI, migration, workflow, analytics, external provider, OAuth, storage bucket, or config-secret value is introduced.
+- Local gate evidence: `npm run verify:pre-pr` passed on `2026-06-22` with branch-current, brief quality gate, lint, typecheck, unit, build, performance budgets, and Playwright open gate green (`111 passed`, `567 skipped` locally due environment/dev-auth gating). Performance trend reported continued green history, but tightening is intentionally held because the owner set performance-ratchet to wait for at least two new weekly green cycles after `2026-06-19`.
+
 ## Checkpoint Log
 
 - `2026-06-22 | planned | created from clean main@00de10cb after provider schema foundation PR #1206 and closeout PR #1207 merged; audit confirmed schema/export/delete foundations are ready, Garmin/OAuth/reconciliation remain blocked, and the next safe runtime child is a bounded manual_fixture import proof with no UI or real provider calls | next: wait for owner approval to execute runtime implementation`
+- `2026-06-22 | in-progress | owner approved execution from clean main@da01bb18; moved brief to in-progress and implemented POST /api/my-library/provider-evidence/fixture-import with disabled-by-default flag, auth gate, service-role writes after payload preflight, manual_fixture-only parsing, duplicate/idempotent upsert behavior, malformed/unsupported counts, redacted summaries, export route coverage, Calendar/Review Actual/Stats no-count regressions, API/registry/support/config docs; targeted Vitest passed for provider fixture import route, provider evidence contract, user export route/payload, Calendar plan, Review Actual editor, and Calendar comparison | next: run route-label/support sweep, lint/type/format checks, verify:pre-pr, commit, push, PR`
+- `2026-06-22 | in-progress | route-label/support sweep, lint:briefs:all, typecheck, lint, targeted Vitest, and npm run verify:pre-pr passed; performance-ratchet hold recorded per post-2026-06-19 weekly-cycle policy | next: commit, push, open PR, monitor CI, then run verify:pre-merge`
