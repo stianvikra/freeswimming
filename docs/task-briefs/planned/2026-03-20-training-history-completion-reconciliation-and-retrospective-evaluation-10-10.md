@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-22`
-- `base`: `main@84222be4`
+- `base`: `main@2b1d7c00`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the next selected child is the bounded Provider Evidence Fixture Import V1 proof before real Garmin/provider runtime reconciliation.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, and a merged provider-evidence schema foundation. The next safe runtime step is a `manual_fixture` evidence import proof before any Garmin import, OAuth, FIT parsing, or matching runtime.
+- `decision`: Use this as the training-history parent contract; no active provider/runtime child is selected after Provider Evidence Fixture Import V1 shipped and closed.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, provider-evidence schema foundation, and a disabled-by-default `manual_fixture` provider-evidence import proof. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -34,8 +34,9 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 - Calendar Plan can show manual completion plus read-only Habits and Micro Session daily layers.
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
 - Existing Calendar Compare shows Swimming as not included until completed swim activity events are explicitly mapped into Stats.
-- Manual actual history now supports completed-as-planned, changed, partly done, another-day, cancelled-as-actual, and review-needed outcomes, with Calendar showing read-only plan-vs-actual overview. A dedicated `Review actual` editor is still needed for the user-facing editing workflow.
+- Manual actual history now supports completed-as-planned, changed, partly done, another-day, cancelled-as-actual, and review-needed outcomes, with Calendar showing read-only plan-vs-actual overview and a dedicated `Review actual` editor for manual actual corrections.
 - Provider Evidence Schema Foundation V1 now stores provider connection, import-run, and activity evidence summaries separately from manual actual history, with export/delete coverage and no Calendar/Stats counting.
+- Provider Evidence Fixture Import V1 now proves a disabled-by-default authenticated `manual_fixture` route can write private provider evidence idempotently without creating completion truth.
 
 ## Source Separation Contract
 
@@ -73,9 +74,10 @@ Training history must keep these layers separate:
    - Does not own: provider imports, OAuth, raw files, matching, UI, Calendar/Stats counting, or reconciliation actions.
    - Status: shipped in PR `#1206` and closed by PR `#1207`.
 6. Provider evidence fixture import v1 child:
-   - Path: `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
+   - Path: `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
    - Owns: bounded authenticated `manual_fixture` provider-evidence import proof with idempotency, redaction, export/delete coverage, and no completion side effects.
    - Does not own: Garmin/OAuth/live provider calls, FIT storage/parsing, matching, UI, Calendar/Stats, or reconciliation actions.
+   - Status: shipped in PR `#1209` and closed by PR `#1210`.
 7. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
    - Blocked by: Garmin partner/API access, provider payload examples, send-job/import-only decision, provider alias/correlation behavior, matching thresholds, and provider branding/consent requirements.
@@ -108,9 +110,11 @@ Last shipped provider evidence schema child scope is owned by:
 
 - `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`
 
-Next selected provider evidence fixture child scope is owned by:
+Last shipped provider evidence fixture child scope is owned by:
 
-- `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`
+- `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`
+
+No active provider/runtime child is currently selected. The next provider/runtime slice requires an owner decision and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
 
 ## Out Of Scope
 
@@ -319,7 +323,7 @@ Critical target categories for a `10/10` claim:
 ## Acceptance Criteria
 
 - Calendar Child `D` can safely use this parent as the canonical history boundary and has shipped as manual completion only.
-- Actuals/corrections, Review Actual Editor V1, and Provider Evidence Schema Foundation V1 have shipped, and the next selected runtime-proof child is explicitly `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
+- Actuals/corrections, Review Actual Editor V1, Provider Evidence Schema Foundation V1, and Provider Evidence Fixture Import V1 have shipped, and no active provider/runtime child is selected.
 - Manual completion is defined as actual outcome truth, separate from planned rows and Garmin send state.
 - Actual-history corrections are defined as actual truth changes, not planned row changes.
 - Garmin send, Garmin received activity, and reconciliation/review responsibilities are separated before runtime work starts.
@@ -347,3 +351,4 @@ Critical target categories for a `10/10` claim:
 - `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next at the time: implement training-history actuals corrections`
 - `2026-06-22 | provider-evidence intake selected | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; added docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md as the next docs/schema-intake child before any provider import, OAuth, FIT parsing, matching, or reconciliation runtime | next: complete docs-only PR for provider-evidence boundary, then keep Garmin runtime blocked until owner/provider facts unblock it`
 - `2026-06-22 | fixture-import child selected | refreshed after Provider Evidence Schema Foundation V1 PR #1206 and closeout PR #1207 merged; added docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md as the next bounded runtime proof before any real Garmin/provider OAuth, FIT parsing, matching, UI, or reconciliation runtime | next: execute fixture-import child only after owner explicitly approves runtime implementation`
+- `2026-06-22 | roadmap refresh | refreshed after Provider Evidence Fixture Import V1 PR #1209 and closeout PR #1210 merged; fixture import is now closed in done, no active provider/runtime child is selected, performance-ratchet still waits for two new green weekly cycles after 2026-06-19, Perfect Day remains a separate product decision before Calendar work, and Garmin/provider runtime reconciliation remains blocked | next: choose a new bounded slice from clean main after owner decision`

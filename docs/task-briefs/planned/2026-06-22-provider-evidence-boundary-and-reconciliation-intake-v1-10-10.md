@@ -141,9 +141,9 @@ Systemic findings:
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- Last merged workstream: PR `#1203` (`1b0f9e83`) and closeout PR `#1204` (`84222be4`).
-- Current slice: docs/schema-intake only.
-- Next product step after schema foundation PR `#1206` and closeout PR `#1207`: choose the bounded `manual_fixture` provider evidence import proof, Garmin partner/API unblock, or keep real provider runtime blocked.
+- Last merged workstream: Provider Evidence Fixture Import V1 PR `#1209` (`6f813fc0`) and closeout PR `#1210` (`2b1d7c00`).
+- Current slice status: docs/schema-intake has been followed by Provider Evidence Schema Foundation V1 and Provider Evidence Fixture Import V1.
+- Next product step after fixture import closeout: no active provider/runtime child is selected; keep real Garmin/provider runtime blocked until owner/provider prerequisites exist, or choose a separate bounded docs/product slice.
 
 ## Platform 10/10 Scorecard Mapping
 
