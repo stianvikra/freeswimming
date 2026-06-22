@@ -6,21 +6,23 @@
 - `status`: `blocked`
 - `owner`: `stianvikra`
 - `created`: `2026-06-21`
-- `updated`: `2026-06-21`
+- `updated`: `2026-06-22`
 - `mode`: `blocked provider reconciliation child`
 - `depends_on`:
   - `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
   - `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
   - `docs/task-briefs/done/2026-06-20-my-library-calendar-completion-events-manual-mark-done-10-10.md`
-  - `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+  - `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+  - `docs/task-briefs/done/2026-06-21-review-actual-editor-v1-10-10.md`
+  - `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-21`
-- `base`: `main@ffd36d9e`
+- `last_audited`: `2026-06-22`
+- `base`: `main@84222be4`
 - `audit_status`: `blocked`
-- `decision`: Keep Garmin received-activity reconciliation blocked until Garmin partner/API access, provider payload examples, and local training-history foundations exist.
-- `reason`: Official Garmin docs confirm Activity API can provide detailed activity data, but FreeSwimming does not yet have Garmin send jobs, credentials, consent flow, provider samples, confirmed provider correlation behavior, or local actual-history correction semantics beyond basic manual completion.
+- `decision`: Keep Garmin received-activity reconciliation blocked until Garmin partner/API access, provider payload examples, provider-evidence boundary/schema, and matching/product decisions exist.
+- `reason`: Official Garmin docs confirm Activity API can provide detailed activity data. FreeSwimming now has manual actual-history correction and Review Actual editing, but still lacks Garmin send jobs, credentials, consent flow, provider samples, confirmed provider correlation behavior, provider-evidence schema, service/secret/export contracts, and attribution signoff.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Activity API payloads, FIT parsing requirements, brand/attribution rules, Garmin partner status, training-history schema, send-job schema, Calendar completion behavior, scorecard categories, or support/Help contracts change.
 
 ## Goal
@@ -51,12 +53,11 @@ Current interpretation:
 
 ## Why Blocked
 
-This work is blocked until all are true:
+This work is blocked until all remaining blockers are true:
 
 - Garmin partner/API access and credentials are available.
 - Activity API sample payloads and FIT files for swim activities are available.
-- FreeSwimming has canonical completed-history storage.
-- FreeSwimming has local actual-history correction semantics for performed sessions that differ from the plan.
+- FreeSwimming has a provider-evidence boundary/schema contract implemented from `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`.
 - FreeSwimming has Garmin send-job/provider alias storage, or this brief is explicitly reduced to import-only matching.
 - Provider alias/correlation behavior is confirmed, including whether Garmin returns client/local references or only provider IDs.
 - Matching thresholds are signed off by owner.
@@ -276,3 +277,4 @@ Critical target categories for a `10/10` claim after unblock:
 
 - `2026-06-21 | blocked | created during Calendar completion/Garmin audit after owner asked to keep future Garmin send, received history, sent-vs-received comparison, and review/edit workflow at 10/10 | next: keep blocked until Garmin partner/API access, provider payload samples, local manual completion history, and provider send-job contract exist`
 - `2026-06-21 | systemic-actuals-audit | refreshed on main@ffd36d9e after owner asked how returned Garmin activities should match planned/sent workouts and how mismatches should be corrected; added local actual-correction dependency, provider correlation/fingerprint requirements, four-fact review model, and explicit no-silent-overwrite policy for wrong stroke, stopped/partial activity, or distance/duration mismatch | next: keep blocked until Garmin partner/API access, provider payload samples, provider alias/correlation behavior, local actual corrections, and send-job contract exist`
+- `2026-06-22 | blocker refresh | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; local manual actual editing is no longer the blocker, but runtime Garmin reconciliation remains blocked until provider evidence boundary/schema, Garmin partner/API access, payload/FIT samples, send-job or import-only decision, alias/correlation behavior, matching thresholds, and attribution/branding requirements are concrete | next: complete docs/schema-intake PR for provider-evidence boundary, then keep this brief blocked until owner/provider facts unblock runtime`

@@ -11,11 +11,11 @@
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-21`
-- `base`: `main@a417271c`
+- `last_audited`: `2026-06-22`
+- `base`: `main@84222be4`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the next local child is `Review actual editor v1` before Garmin provider reconciliation.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, and read-only plan-vs-actual overview. The next safe runtime step is a dedicated actual-history editor that keeps planned rows and source workouts unchanged while preparing for future provider evidence.
+- `decision`: Use this as the training-history parent contract; the next selected child is the docs/schema-intake provider-evidence boundary before Garmin/provider runtime reconciliation.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, and a dedicated Review Actual editor with performed-session editing. The next safe step is provider-evidence boundary planning before any provider import, OAuth, FIT parsing, or matching runtime.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -58,13 +58,18 @@ Training history must keep these layers separate:
    - Owns: actual outcome storage and read-only Calendar plan-vs-actual display for completed-as-planned, completed-different, partial, completed-on-another-day, cancelled-as-actual, review-needed, and legacy completed alias.
    - Does not own: Garmin provider ingestion, AI evaluation, or source workout/program edits.
 3. Review actual editor v1 child:
-   - Path: `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`.
+   - Path: `docs/task-briefs/done/2026-06-21-review-actual-editor-v1-10-10.md`.
    - Owns: dedicated user-facing manual actual editor, plan-vs-actual edit flow, source badge, stale-write recovery, support diagnostics, and provider-ready contracts for future Garmin/Strava/Apple Health/Health Connect style integrations.
    - Does not own: provider runtime, provider imports, raw FIT parsing, source workout/program edits, or AI evaluation.
-4. Garmin Activity reconciliation child:
+   - Status: shipped in PR `#1203` and closed by PR `#1204`.
+4. Provider evidence boundary and reconciliation intake v1 child:
+   - Path: `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`.
+   - Owns: docs/schema-intake contract for provider evidence storage boundaries, OAuth/secrets, RLS, export/privacy, support, service-matrix, and runtime blockers before any provider import.
+   - Does not own: provider runtime, OAuth, credentials, raw FIT parsing, send jobs, matching, UI, or reconciliation actions.
+5. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
-   - Blocked by: Garmin partner/API access, provider payload examples, local actual editor semantics, and provider branding/consent requirements.
-5. Retrospective evaluation child:
+   - Blocked by: Garmin partner/API access, provider payload examples, provider evidence boundary/schema, send-job/import-only decision, provider alias/correlation behavior, and provider branding/consent requirements.
+6. Retrospective evaluation child:
    - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 
 ## Scope
@@ -85,9 +90,13 @@ Last shipped actual-history child scope is owned by:
 
 - `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
 
-Next local runtime child scope is owned by:
+Last shipped manual actual editor child scope is owned by:
 
-- `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`
+- `docs/task-briefs/done/2026-06-21-review-actual-editor-v1-10-10.md`
+
+Next selected docs/schema-intake child scope is owned by:
+
+- `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
 
 ## Out Of Scope
 
@@ -296,7 +305,7 @@ Critical target categories for a `10/10` claim:
 ## Acceptance Criteria
 
 - Calendar Child `D` can safely use this parent as the canonical history boundary and has shipped as manual completion only.
-- The next local child is explicitly `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`.
+- Actuals/corrections and Review Actual Editor V1 have shipped, and the next selected docs/schema-intake child is explicitly `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`.
 - Manual completion is defined as actual outcome truth, separate from planned rows and Garmin send state.
 - Actual-history corrections are defined as actual truth changes, not planned row changes.
 - Garmin send, Garmin received activity, and reconciliation/review responsibilities are separated before runtime work starts.
@@ -321,4 +330,5 @@ Critical target categories for a `10/10` claim:
 - `2026-03-20 | planning | clarified that retrospective evaluation should retain original plan-intent context such as planning horizon, explicit date window, and explicit competition-date peak/taper intent, so future AI review can judge sessions against what the plan was actually trying to do | next: keep later history schema and AI evaluation slices aligned to canonical plan-intent metadata rather than mutable week labels`
 - `2026-05-01 | roadmap alignment | captured owner real-life scheduling requirements: preserve planned and actual states separately, support completed-as-planned, completed-on-another-day, partly-completed, skipped/cancelled, and moved-forward outcomes, and keep later AI feedback/adaptive replanning dependent on canonical history instead of planner-local flags | next: keep AI session V1 free of history implementation while preserving these contracts for the later program/history slice`
 - `2026-06-21 | audit-refresh | refreshed after Calendar planned-instance identity and planned-only status actions shipped through PR #1191/#1192; narrowed the next runtime child to manual completed swim events and added explicit Garmin Training API send vs Activity API receive vs reconciliation boundary from official Garmin docs | next: execute Calendar Child D only after owner explicitly asks for runtime implementation`
-- `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next: active implementation is underway on branch training-history-actuals-corrections`
+- `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next at the time: implement training-history actuals corrections`
+- `2026-06-22 | provider-evidence intake selected | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; added docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md as the next docs/schema-intake child before any provider import, OAuth, FIT parsing, matching, or reconciliation runtime | next: complete docs-only PR for provider-evidence boundary, then keep Garmin runtime blocked until owner/provider facts unblock it`
