@@ -6,16 +6,16 @@
 - `status`: `blocked`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-21`
+- `updated`: `2026-06-22`
 - `mode`: `blocked provider integration`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-21`
-- `base`: `main@ffd36d9e`
+- `last_audited`: `2026-06-22`
+- `base`: `main@84222be4`
 - `audit_status`: `blocked`
 - `decision`: Keep live Garmin Training API implementation blocked; use this brief as the send-to-Garmin provider boundary until partner/API prerequisites are concrete.
-- `reason`: Official Garmin docs confirm Training API is the workout/training-plan publish path and Activity API is the received-activity path, but partner approval, credentials, swim mapping signoff, provider correlation/alias behavior, brand/attribution requirements, and provider test evidence are not available in the repo.
+- `reason`: Official Garmin docs confirm Training API is the workout/training-plan publish path and Activity API is the received-activity path, but partner approval, credentials, swim mapping signoff, provider correlation/alias behavior, brand/attribution requirements, provider-evidence boundary/schema, and provider test evidence are not available in the repo.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner approval, credentials, swim mapping capability, OAuth requirements, brand guidelines, provider payload samples, scorecard categories, verification lanes, or FreeSwimming workout/program/history contracts change.
 
 ## Goal
@@ -107,9 +107,10 @@ All of the following must be true:
 
 Future Garmin received-activity matching and review is owned by:
 
+- `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
 - `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`
 
-That brief depends on this send boundary but must remain separate because Activity API ingestion and review/edit semantics are different from Training API publish semantics.
+Those briefs depend on this send boundary but must remain separate because Activity API ingestion, provider-evidence storage, and review/edit semantics are different from Training API publish semantics.
 
 ## Data Placement And Sync Contract
 
@@ -244,3 +245,4 @@ Critical target categories for a `10/10` claim after unblock:
 - `2026-03-22 | planning | tightened the unblock contract after reviewing Garmin swim-builder patterns so partner signoff must explicitly cover Garmin-documented `WorkoutIntensity`, `time`, `distance`, `open`, `swim_stroke`, swim sport/sub-sport, interval/rest structure, and Garmin Connect UI swim concepts like `Main`, lap-button, fixed-rest, send-off, `Choice`, and `RIMO` workflows before live send work starts | next: do not unblock provider delivery on generic Garmin-ready language alone; require a concrete step-mapping matrix`
 - `2026-06-21 | audit-refresh | refreshed on main@de761db3 with official Garmin Developer Program, Training API, Activity API, FAQ, Brand Guidelines, and FIT SDK source baseline; kept live send integration blocked and separated future Activity API received-history reconciliation into docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md | next: execute Calendar Child D manual completion only after owner asks for runtime implementation`
 - `2026-06-21 | systemic-correlation-audit | refreshed on main@ffd36d9e after owner asked how Garmin returned activities should match planned/sent workouts; added the requirement for local send-job identity, optional Garmin-supported correlation/reference values, payload fingerprints, explicit resend/supersede policy, and no completion side effect from send state | next: keep blocked until Garmin partner/API access confirms alias/correlation behavior and swim mapping`
+- `2026-06-22 | provider-evidence boundary linked | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204; linked docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md as the provider-evidence docs/schema-intake prerequisite before any received-activity matching can depend on send-job aliases or payload fingerprints | next: keep Training API runtime blocked until Garmin partner/API access, swim mapping, provider evidence boundary, and alias/correlation behavior are concrete`
