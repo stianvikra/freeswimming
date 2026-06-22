@@ -297,6 +297,99 @@
 - `401`: unauthorized
 - `500`: failed to build export payload
 
+## `POST /api/my-library/provider-evidence/fixture-import`
+
+### Request
+
+- Auth: signed-in user session required
+- Config: `PROVIDER_EVIDENCE_FIXTURE_IMPORT_ENABLED=1`
+- Headers:
+  - `Content-Type: application/json`
+- Body:
+
+```json
+{
+  "providerKey": "manual_fixture",
+  "activities": [
+    {
+      "providerActivityId": "fixture-activity-1",
+      "title": "Morning fixture swim",
+      "activityStartedAt": "2026-06-22T06:30:00.000Z",
+      "activityType": "lap_swimming",
+      "sportType": "swimming",
+      "subSportType": "pool_swimming",
+      "durationSeconds": 1800,
+      "distanceM": 1200,
+      "poolLengthM": 25,
+      "poolLengthUnit": "m",
+      "fileState": "available_from_provider",
+      "availableFileKinds": ["fit"]
+    }
+  ]
+}
+```
+
+- Only `manual_fixture` is accepted.
+- The route ignores caller-supplied `user_id` or `userId` and writes rows for the authenticated
+  user only.
+- `activities` is bounded to 1-10 rows.
+- Unknown provider/status/file/sport values fail closed to deterministic `400` errors or warning
+  counts; unsupported fixture activity rows may be stored only as `unsupported_activity`.
+- Stored summaries are redacted fixture summaries only. The route must not store, log, return, or
+  export OAuth tokens, provider secrets, raw provider payloads, cookies, IP addresses, User-Agent
+  strings, raw FIT/GPX/TCX files, or raw response bodies.
+
+### Response
+
+- Success:
+
+```json
+{
+  "ok": true,
+  "status": "completed_with_warnings",
+  "providerKey": "manual_fixture",
+  "providerConnectionId": "provider-connection-id",
+  "importRunId": "provider-import-run-id",
+  "evidenceIds": ["provider-activity-evidence-id"],
+  "counts": {
+    "totalActivityCount": 2,
+    "importedCount": 1,
+    "duplicateCount": 1,
+    "malformedCount": 0,
+    "unsupportedCount": 0
+  },
+  "warnings": ["duplicate_provider_activity_id"]
+}
+```
+
+- Failure:
+
+```json
+{
+  "ok": false,
+  "code": "fixture_import_disabled",
+  "error": "Provider evidence fixture import is disabled."
+}
+```
+
+### Status Codes
+
+- `200`: fixture import run recorded
+- `400`: invalid payload, unsupported provider, empty/oversized activities, or wholly invalid
+  request
+- `401`: unauthenticated
+- `403`: fixture import disabled
+- `415`: unsupported content type
+- `503`: provider evidence schema not ready
+- `500`: unexpected provider evidence write failure
+
+### Completion Boundary
+
+- The route writes only `provider_connections`, `provider_import_runs`, and
+  `provider_activity_evidence`.
+- It never writes `completed_activity_events`, planned rows, Calendar, Review Actual, Stats,
+  streaks, Perfect Day, analytics KPIs, Garmin state, OAuth tokens, webhooks, or raw provider files.
+
 ## `POST /api/user/delete`
 
 ### Request
