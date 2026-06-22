@@ -260,11 +260,74 @@ describe("buildUserExportPayload", () => {
           updated_at: "2026-03-20T08:40:00.000Z",
         },
       ],
+      providerConnections: [
+        {
+          id: "provider-connection-1",
+          provider_key: "garmin_activity_api",
+          status: "connected_metadata_only",
+          provider_user_id: "garmin-user-1",
+          provider_display_name: "Garmin Connect",
+          connected_at: "2026-06-22T07:00:00.000Z",
+          revoked_at: null,
+          disabled_at: null,
+          last_successful_sync_at: "2026-06-22T07:15:00.000Z",
+          last_sync_error_code: null,
+          redacted_metadata: { source: "activity_api" },
+          created_at: "2026-06-22T07:00:00.000Z",
+          updated_at: "2026-06-22T07:15:00.000Z",
+        },
+      ],
+      providerActivityEvidence: [
+        {
+          id: "provider-activity-1",
+          provider_connection_id: "provider-connection-1",
+          import_run_id: "provider-import-run-1",
+          provider_key: "garmin_activity_api",
+          provider_activity_id: "garmin-activity-1",
+          status: "needs_review",
+          activity_started_at: "2026-06-22T06:30:00.000Z",
+          activity_date: "2026-06-22",
+          activity_type: "swimming",
+          sport_type: "swimming",
+          sub_sport_type: "pool",
+          duration_seconds: 1800,
+          distance_m: 1200,
+          pool_length_m: 25,
+          pool_length_unit: "m",
+          file_state: "available_from_provider",
+          available_file_kinds: ["fit"],
+          redacted_summary: { source: "provider_summary" },
+          first_seen_at: "2026-06-22T07:15:00.000Z",
+          last_seen_at: "2026-06-22T07:15:00.000Z",
+          created_at: "2026-06-22T07:15:00.000Z",
+          updated_at: "2026-06-22T07:15:00.000Z",
+        },
+      ],
+      providerImportRuns: [
+        {
+          id: "provider-import-run-1",
+          provider_connection_id: "provider-connection-1",
+          provider_key: "garmin_activity_api",
+          run_kind: "manual_fixture",
+          status: "completed_with_warnings",
+          started_at: "2026-06-22T07:14:00.000Z",
+          finished_at: "2026-06-22T07:15:00.000Z",
+          total_activity_count: 1,
+          imported_count: 1,
+          duplicate_count: 0,
+          malformed_count: 0,
+          unsupported_count: 0,
+          error_code: null,
+          redacted_diagnostics: { warning: "needs_review" },
+          created_at: "2026-06-22T07:14:00.000Z",
+          updated_at: "2026-06-22T07:15:00.000Z",
+        },
+      ],
     });
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-05-12-habits-v2-export",
+      schemaVersion: "2026-06-22-provider-evidence-export",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -522,6 +585,69 @@ describe("buildUserExportPayload", () => {
           updatedAt: "2026-03-20T08:40:00.000Z",
         },
       ],
+      providerConnections: [
+        {
+          id: "provider-connection-1",
+          providerKey: "garmin_activity_api",
+          status: "connected_metadata_only",
+          providerUserId: "garmin-user-1",
+          providerDisplayName: "Garmin Connect",
+          connectedAt: "2026-06-22T07:00:00.000Z",
+          revokedAt: null,
+          disabledAt: null,
+          lastSuccessfulSyncAt: "2026-06-22T07:15:00.000Z",
+          lastSyncErrorCode: null,
+          redactedMetadata: { source: "activity_api" },
+          createdAt: "2026-06-22T07:00:00.000Z",
+          updatedAt: "2026-06-22T07:15:00.000Z",
+        },
+      ],
+      providerActivityEvidence: [
+        {
+          id: "provider-activity-1",
+          providerConnectionId: "provider-connection-1",
+          importRunId: "provider-import-run-1",
+          providerKey: "garmin_activity_api",
+          providerActivityId: "garmin-activity-1",
+          status: "needs_review",
+          activityStartedAt: "2026-06-22T06:30:00.000Z",
+          activityDate: "2026-06-22",
+          activityType: "swimming",
+          sportType: "swimming",
+          subSportType: "pool",
+          durationSeconds: 1800,
+          distanceM: 1200,
+          poolLengthM: 25,
+          poolLengthUnit: "m",
+          fileState: "available_from_provider",
+          availableFileKinds: ["fit"],
+          redactedSummary: { source: "provider_summary" },
+          firstSeenAt: "2026-06-22T07:15:00.000Z",
+          lastSeenAt: "2026-06-22T07:15:00.000Z",
+          createdAt: "2026-06-22T07:15:00.000Z",
+          updatedAt: "2026-06-22T07:15:00.000Z",
+        },
+      ],
+      providerImportRuns: [
+        {
+          id: "provider-import-run-1",
+          providerConnectionId: "provider-connection-1",
+          providerKey: "garmin_activity_api",
+          runKind: "manual_fixture",
+          status: "completed_with_warnings",
+          startedAt: "2026-06-22T07:14:00.000Z",
+          finishedAt: "2026-06-22T07:15:00.000Z",
+          totalActivityCount: 1,
+          importedCount: 1,
+          duplicateCount: 0,
+          malformedCount: 0,
+          unsupportedCount: 0,
+          errorCode: null,
+          redactedDiagnostics: { warning: "needs_review" },
+          createdAt: "2026-06-22T07:14:00.000Z",
+          updatedAt: "2026-06-22T07:15:00.000Z",
+        },
+      ],
     });
   });
 
@@ -547,6 +673,9 @@ describe("buildUserExportPayload", () => {
       habitDefinitions: [],
       habitCheckIns: [],
       workouts: [],
+      providerConnections: [],
+      providerActivityEvidence: [],
+      providerImportRuns: [],
     });
 
     expect(payload.profile).toBeNull();
@@ -560,5 +689,8 @@ describe("buildUserExportPayload", () => {
     expect(payload.habitDefinitions).toEqual([]);
     expect(payload.habitCheckIns).toEqual([]);
     expect(payload.workouts).toEqual([]);
+    expect(payload.providerConnections).toEqual([]);
+    expect(payload.providerActivityEvidence).toEqual([]);
+    expect(payload.providerImportRuns).toEqual([]);
   });
 });
