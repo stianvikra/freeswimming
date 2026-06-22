@@ -59,7 +59,7 @@ This work is blocked until all remaining blockers are true:
 
 - Garmin partner/API access and credentials are available.
 - Activity API sample payloads and FIT files for swim activities are available.
-- FreeSwimming has a provider-evidence boundary/schema contract implemented from `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md` and `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`; a bounded `manual_fixture` write proof remains planned separately before real provider runtime.
+- FreeSwimming has a provider-evidence boundary/schema contract implemented from `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`, `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`, and `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`; real provider runtime remains blocked.
 - FreeSwimming has Garmin send-job/provider alias storage, or this brief is explicitly reduced to import-only matching.
 - Provider alias/correlation behavior is confirmed, including whether Garmin returns client/local references or only provider IDs.
 - Matching thresholds are signed off by owner.
