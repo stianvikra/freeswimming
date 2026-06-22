@@ -143,7 +143,7 @@ Return path:
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Last merged workstream: PR `#1203` (`1b0f9e83`) and closeout PR `#1204` (`84222be4`).
 - Current slice: docs/schema-intake only.
-- Next product step after this PR: choose either provider evidence schema foundation, Garmin partner/API unblock, or keep provider runtime blocked.
+- Next product step after schema foundation PR `#1206` and closeout PR `#1207`: choose the bounded `manual_fixture` provider evidence import proof, Garmin partner/API unblock, or keep real provider runtime blocked.
 
 ## Platform 10/10 Scorecard Mapping
 

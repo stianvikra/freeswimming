@@ -14,8 +14,8 @@
 - `last_audited`: `2026-06-22`
 - `base`: `main@84222be4`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the next selected child is the docs/schema-intake provider-evidence boundary before Garmin/provider runtime reconciliation.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, and a dedicated Review Actual editor with performed-session editing. The next safe step is provider-evidence boundary planning before any provider import, OAuth, FIT parsing, or matching runtime.
+- `decision`: Use this as the training-history parent contract; the next selected child is the bounded Provider Evidence Fixture Import V1 proof before real Garmin/provider runtime reconciliation.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, and a merged provider-evidence schema foundation. The next safe runtime step is a `manual_fixture` evidence import proof before any Garmin import, OAuth, FIT parsing, or matching runtime.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -35,6 +35,7 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
 - Existing Calendar Compare shows Swimming as not included until completed swim activity events are explicitly mapped into Stats.
 - Manual actual history now supports completed-as-planned, changed, partly done, another-day, cancelled-as-actual, and review-needed outcomes, with Calendar showing read-only plan-vs-actual overview. A dedicated `Review actual` editor is still needed for the user-facing editing workflow.
+- Provider Evidence Schema Foundation V1 now stores provider connection, import-run, and activity evidence summaries separately from manual actual history, with export/delete coverage and no Calendar/Stats counting.
 
 ## Source Separation Contract
 
@@ -66,10 +67,19 @@ Training history must keep these layers separate:
    - Path: `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`.
    - Owns: docs/schema-intake contract for provider evidence storage boundaries, OAuth/secrets, RLS, export/privacy, support, service-matrix, and runtime blockers before any provider import.
    - Does not own: provider runtime, OAuth, credentials, raw FIT parsing, send jobs, matching, UI, or reconciliation actions.
-5. Garmin Activity reconciliation child:
+5. Provider evidence schema foundation v1 child:
+   - Path: `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`.
+   - Owns: provider connection, import-run, and activity evidence schema foundation, typed helpers, export/delete privacy coverage, and support/GDPR docs.
+   - Does not own: provider imports, OAuth, raw files, matching, UI, Calendar/Stats counting, or reconciliation actions.
+   - Status: shipped in PR `#1206` and closed by PR `#1207`.
+6. Provider evidence fixture import v1 child:
+   - Path: `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
+   - Owns: bounded authenticated `manual_fixture` provider-evidence import proof with idempotency, redaction, export/delete coverage, and no completion side effects.
+   - Does not own: Garmin/OAuth/live provider calls, FIT storage/parsing, matching, UI, Calendar/Stats, or reconciliation actions.
+7. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
-   - Blocked by: Garmin partner/API access, provider payload examples, provider evidence boundary/schema, send-job/import-only decision, provider alias/correlation behavior, and provider branding/consent requirements.
-6. Retrospective evaluation child:
+   - Blocked by: Garmin partner/API access, provider payload examples, send-job/import-only decision, provider alias/correlation behavior, matching thresholds, and provider branding/consent requirements.
+8. Retrospective evaluation child:
    - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 
 ## Scope
@@ -94,9 +104,13 @@ Last shipped manual actual editor child scope is owned by:
 
 - `docs/task-briefs/done/2026-06-21-review-actual-editor-v1-10-10.md`
 
-Next selected docs/schema-intake child scope is owned by:
+Last shipped provider evidence schema child scope is owned by:
 
-- `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
+- `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md`
+
+Next selected provider evidence fixture child scope is owned by:
+
+- `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`
 
 ## Out Of Scope
 
@@ -305,7 +319,7 @@ Critical target categories for a `10/10` claim:
 ## Acceptance Criteria
 
 - Calendar Child `D` can safely use this parent as the canonical history boundary and has shipped as manual completion only.
-- Actuals/corrections and Review Actual Editor V1 have shipped, and the next selected docs/schema-intake child is explicitly `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`.
+- Actuals/corrections, Review Actual Editor V1, and Provider Evidence Schema Foundation V1 have shipped, and the next selected runtime-proof child is explicitly `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
 - Manual completion is defined as actual outcome truth, separate from planned rows and Garmin send state.
 - Actual-history corrections are defined as actual truth changes, not planned row changes.
 - Garmin send, Garmin received activity, and reconciliation/review responsibilities are separated before runtime work starts.
@@ -332,3 +346,4 @@ Critical target categories for a `10/10` claim:
 - `2026-06-21 | audit-refresh | refreshed after Calendar planned-instance identity and planned-only status actions shipped through PR #1191/#1192; narrowed the next runtime child to manual completed swim events and added explicit Garmin Training API send vs Activity API receive vs reconciliation boundary from official Garmin docs | next: execute Calendar Child D only after owner explicitly asks for runtime implementation`
 - `2026-06-21 | systemic-actuals-audit | refreshed after Calendar manual completion and daily layers shipped through PR #1194/#1197 and closeouts #1195/#1198; added docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md as the next local child so users can correct actual sessions that differ from plan before Garmin provider evidence is attached | next at the time: implement training-history actuals corrections`
 - `2026-06-22 | provider-evidence intake selected | refreshed after Review Actual Editor V1 PR #1203 and closeout PR #1204 merged; added docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md as the next docs/schema-intake child before any provider import, OAuth, FIT parsing, matching, or reconciliation runtime | next: complete docs-only PR for provider-evidence boundary, then keep Garmin runtime blocked until owner/provider facts unblock it`
+- `2026-06-22 | fixture-import child selected | refreshed after Provider Evidence Schema Foundation V1 PR #1206 and closeout PR #1207 merged; added docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md as the next bounded runtime proof before any real Garmin/provider OAuth, FIT parsing, matching, UI, or reconciliation runtime | next: execute fixture-import child only after owner explicitly approves runtime implementation`

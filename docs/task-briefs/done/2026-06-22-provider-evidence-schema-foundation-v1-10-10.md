@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-22-provider-evidence-schema-foundation-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
-- `mode`: `runtime schema foundation / active implementation`
+- `mode`: `runtime schema foundation / done`
 - `parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - `predecessor`: `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
 - `related_blocked_briefs`:
@@ -19,8 +19,8 @@
 - `last_audited`: `2026-06-22`
 - `base`: `main@509b75c1`
 - `audit_status`: `ready`
-- `decision`: Use this as the next bounded runtime schema foundation before any provider OAuth, live Garmin calls, FIT parsing, webhook handling, matching, Calendar UI, or Stats mapping work.
-- `reason`: Manual actual history is now owner-scoped, editable, and fail-closed for future provider rows, while the app still lacks separate provider evidence tables, generated types, domain guards, export/delete handling, and service/support documentation for received activity evidence.
+- `decision`: Completed as the bounded runtime schema foundation before any provider OAuth, live Garmin calls, FIT parsing, webhook handling, matching, Calendar UI, or Stats mapping work.
+- `reason`: Manual actual history is owner-scoped, editable, and fail-closed for future provider rows; this slice added separate provider evidence tables, generated types, domain guards, export/delete handling, and service/support documentation for received activity evidence.
 - `must_refresh_before_execution_if`: Refresh if `completed_activity_events`, `planned_workout_instances`, Review Actual, Calendar Plan, Calendar Comparison/Stats, account export/delete, Supabase RLS/storage guidance, Garmin/Strava/Health Connect/HealthKit provider docs, route registry, external-service matrix, secret inventory, scorecard categories, or verification lanes change.
 
 ## Goal
@@ -283,8 +283,9 @@ Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Last merged workstream: PR `#1205` (`509b75c1`) created the provider evidence intake brief.
-- Current planned child: this schema foundation.
-- Next product step after this brief ships: choose between OAuth/provider connection runtime, raw file evidence storage, or keep Garmin reconciliation blocked until partner/API samples exist.
+- Completed child: this schema foundation shipped in PR `#1206` and was closed by PR `#1207`.
+- Next planned child after audit: `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
+- Next product step after this brief: choose between the bounded `manual_fixture` import proof, OAuth/provider connection runtime, raw file evidence storage, or keeping Garmin reconciliation blocked until partner/API samples exist.
 
 ## Domain Granularity Gate
 
