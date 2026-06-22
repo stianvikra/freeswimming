@@ -1300,6 +1300,15 @@ environment allowlist role from a profile-backed role.
 
 ## Habits Tracking And Recovery
 
+### Habit Definition Eligibility
+
+`POST /api/my-library/habits` and `PATCH /api/my-library/habits/[habitId]`
+accept `isPerfectDayItem`.
+
+- Missing `isPerfectDayItem` defaults to `true` on create and is preserved on update when omitted.
+- `true` means the habit participates in Perfect Day denominator, streak, and consistency calculations when it is scheduled for a date.
+- `false` means the habit is tracking-only for Perfect Day math; normal check-ins, history, source-backed credit, and habit detail editing still work.
+
 ### Check-In Request
 
 `POST /api/my-library/habits/check-ins`

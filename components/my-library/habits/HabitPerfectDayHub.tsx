@@ -87,6 +87,7 @@ type HabitDraft = {
   habitMode: HabitMode;
   habitType: HabitType;
   category: string;
+  isPerfectDayItem: boolean;
   targetValueNumeric: string;
   targetUnit: HabitUnit;
   targetTime: string;
@@ -214,6 +215,7 @@ function buildDefaultDraft(selectedDate: string): HabitDraft {
     habitMode: "build",
     habitType: "binary",
     category: "movement",
+    isPerfectDayItem: true,
     targetValueNumeric: "10",
     targetUnit: "minutes",
     targetTime: "05:00",
@@ -262,6 +264,7 @@ function buildDraftFromHabit(habit: HabitDefinitionView): HabitDraft {
     habitType:
       habitMode === "quit" ? "avoidance" : habitMode === "timed" ? "duration" : habit.habitType,
     category: habit.category,
+    isPerfectDayItem: habit.isPerfectDayItem,
     targetValueNumeric:
       habitMode === "quit"
         ? "0"
@@ -2057,7 +2060,7 @@ export default function HabitPerfectDayHub({
           cadenceDayPolicy: draft.cadenceDayPolicy,
           scheduleDays: getScheduleDaysForDraft(draft),
           selectedDate: snapshot.selectedDate,
-          isPerfectDayItem: true,
+          isPerfectDayItem: draft.isPerfectDayItem,
         }),
       });
       const nextSnapshot = await applyResponse(response, "Could not create that habit right now.");
@@ -2123,6 +2126,7 @@ export default function HabitPerfectDayHub({
           cadenceTargetCount: getCadenceTargetCountForDraft(editDraft),
           cadenceDayPolicy: editDraft.cadenceDayPolicy,
           scheduleDays: getScheduleDaysForDraft(editDraft),
+          isPerfectDayItem: editDraft.isPerfectDayItem,
           selectedDate: snapshot.selectedDate,
         }),
       });
@@ -2758,6 +2762,33 @@ export default function HabitPerfectDayHub({
           ))}
         </div>
       </fieldset>
+    );
+  }
+
+  function renderPerfectDayEligibilityControl(
+    currentDraft: HabitDraft,
+    updateDraft: (updater: (current: HabitDraft) => HabitDraft) => void
+  ) {
+    return (
+      <label className="flex min-h-14 items-start gap-3 rounded-[var(--fs-radius-control)] border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 shadow-sm md:col-span-2">
+        <input
+          type="checkbox"
+          checked={currentDraft.isPerfectDayItem}
+          onChange={(event) =>
+            updateDraft((current) => ({
+              ...current,
+              isPerfectDayItem: event.target.checked,
+            }))
+          }
+          className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+        />
+        <span className="min-w-0">
+          <span className="block font-semibold text-slate-900">Counts toward Perfect Day</span>
+          <span className="mt-1 block leading-5 text-slate-500">
+            Turn off for tracking-only habits that should not decide whether the day was perfect.
+          </span>
+        </span>
+      </label>
     );
   }
 
@@ -3572,11 +3603,12 @@ export default function HabitPerfectDayHub({
               >
                 <p>
                   <strong className="font-semibold text-slate-800">Perfect days</strong> are days
-                  where every habit scheduled for that day was completed.
+                  where every Perfect Day-counting habit scheduled for that day was completed.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Perfect-day streak</strong> is
-                  days in a row where every habit scheduled for each day was completed.
+                  days in a row where every Perfect Day-counting habit scheduled for each day was
+                  completed.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Best perfect-day streak</strong>{" "}
@@ -3588,7 +3620,7 @@ export default function HabitPerfectDayHub({
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">0/0</strong> means there were no
-                  scheduled Perfect Day habits in the selected period.
+                  scheduled Perfect Day-counting habits in the selected period.
                 </p>
                 <p>
                   <strong className="font-semibold text-slate-800">Rest days</strong> are
@@ -3930,6 +3962,8 @@ export default function HabitPerfectDayHub({
                 ) : null}
 
                 {renderScheduleControls(draft, setDraft, "Add habit")}
+
+                {renderPerfectDayEligibilityControl(draft, setDraft)}
 
                 <label className="block md:col-span-2">
                   <span className={habitLabelClass}>Note</span>
@@ -4570,6 +4604,10 @@ export default function HabitPerfectDayHub({
                           (updater) =>
                             setEditDraft((current) => (current ? updater(current) : current)),
                           "Edit habit"
+                        )}
+
+                        {renderPerfectDayEligibilityControl(editDraft, (updater) =>
+                          setEditDraft((current) => (current ? updater(current) : current))
                         )}
 
                         <label className="block md:col-span-2">

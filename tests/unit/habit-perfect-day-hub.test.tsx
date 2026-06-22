@@ -104,9 +104,16 @@ function buildSnapshot(options?: {
   withHabit?: boolean;
   completed?: boolean;
   selectedDate?: string;
+  perfectDayItem?: boolean;
 }): HabitSnapshot {
   const selectedDate = options?.selectedDate ?? "2026-05-10";
-  const habit = options?.withHabit ? buildHabitDefinitionView(buildHabitRow()) : null;
+  const habit = options?.withHabit
+    ? buildHabitDefinitionView(
+        buildHabitRow({
+          is_perfect_day_item: options.perfectDayItem ?? true,
+        })
+      )
+    : null;
   const checkIns =
     habit && options?.completed
       ? [
@@ -1630,6 +1637,7 @@ describe("HabitPerfectDayHub", () => {
     expect(screen.getByRole("button", { name: "Daily" })).toHaveClass(
       "rounded-[var(--fs-radius-control)]"
     );
+    expect(screen.getByLabelText(/Counts toward Perfect Day/)).toBeChecked();
     expect(screen.getByRole("button", { name: "Create habit" })).toHaveClass("fs-cta-primary");
     expect(screen.getByRole("button", { name: "Create habit" })).toHaveClass("w-full");
   });
@@ -1667,8 +1675,10 @@ describe("HabitPerfectDayHub", () => {
     });
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
       habitMode: string;
+      isPerfectDayItem: boolean;
     };
     expect(body.habitMode).toBe("build");
+    expect(body.isPerfectDayItem).toBe(true);
     const createdStatus = await screen.findByRole("status");
     expect(createdStatus).toHaveAttribute("aria-live", "polite");
     expect(createdStatus).toHaveTextContent("Habit added");
@@ -1677,6 +1687,40 @@ describe("HabitPerfectDayHub", () => {
       "aria-expanded",
       "false"
     );
+  });
+
+  it("creates a tracking-only habit that does not count toward Perfect Day", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: buildSnapshot({ withHabit: true, perfectDayItem: false }),
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={buildSnapshot()} />);
+
+    openAddHabitForm();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Journal mood" },
+    });
+    fireEvent.click(screen.getByLabelText(/Counts toward Perfect Day/));
+    fireEvent.click(screen.getByRole("button", { name: "Create habit" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits",
+        expect.objectContaining({
+          method: "POST",
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      title: string;
+      isPerfectDayItem: boolean;
+    };
+    expect(body.title).toBe("Journal mood");
+    expect(body.isPerfectDayItem).toBe(false);
   });
 
   it("creates count targets with a full-row stepper instead of native number arrows", async () => {
@@ -2769,7 +2813,9 @@ describe("HabitPerfectDayHub", () => {
     fireEvent.click(definitionsButton);
     expect(definitionsButton).toHaveAttribute("aria-expanded", "true");
     expect(within(history).getByText("What counts?")).toBeVisible();
-    expect(within(history).getAllByText(/every habit scheduled/i).length).toBeGreaterThan(0);
+    expect(
+      within(history).getAllByText(/every Perfect Day-counting habit scheduled/i).length
+    ).toBeGreaterThan(0);
     expect(
       within(history).getByText("Reset habit stats", { selector: "strong" }).closest("p")
     ).toHaveTextContent(
@@ -2782,7 +2828,7 @@ describe("HabitPerfectDayHub", () => {
       within(history).getByText("Slips", { selector: "strong" }).closest("p")
     ).toHaveTextContent("Slips are logged misses for Quit habits.");
     expect(within(history).getByText("0/0").closest("p")).toHaveTextContent(
-      "0/0 means there were no scheduled Perfect Day habits in the selected period."
+      "0/0 means there were no scheduled Perfect Day-counting habits in the selected period."
     );
     expect(within(history).queryByText("Early data")).toBeNull();
     expect(within(history).queryByText("Micro Sessions")).toBeNull();
@@ -3326,14 +3372,48 @@ describe("HabitPerfectDayHub", () => {
       cadenceDayPolicy: string;
       cadenceTargetCount: number;
       scheduleDays: string[];
+      isPerfectDayItem: boolean;
     };
     expect(body.title).toBe("Read deeply");
     expect(body.cadencePeriod).toBe("weekly");
     expect(body.cadenceDayPolicy).toBe("fixed");
     expect(body.cadenceTargetCount).toBe(3);
     expect(body.scheduleDays).toEqual(["monday", "wednesday", "friday"]);
+    expect(body.isPerfectDayItem).toBe(true);
     expect(
       await screen.findByText("Habit updated. Check-ins and history were kept.")
     ).toBeVisible();
+  });
+
+  it("keeps a tracking-only habit out of Perfect Day when edited", async () => {
+    const snapshot = buildSnapshot({ withHabit: true, perfectDayItem: false });
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot,
+      }),
+    } as Response);
+
+    render(<HabitPerfectDayHub initialSnapshot={snapshot} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit this habit" }));
+    const editForm = screen.getByTestId("habit-edit-form-11111111-1111-4111-8111-111111111111");
+    expect(within(editForm).getByLabelText(/Counts toward Perfect Day/)).not.toBeChecked();
+    fireEvent.click(within(editForm).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/11111111-1111-4111-8111-111111111111",
+        expect.objectContaining({
+          method: "PATCH",
+        })
+      );
+    });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string) as {
+      isPerfectDayItem: boolean;
+    };
+    expect(body.isPerfectDayItem).toBe(false);
   });
 });
