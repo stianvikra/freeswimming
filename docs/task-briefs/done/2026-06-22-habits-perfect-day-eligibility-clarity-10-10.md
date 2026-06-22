@@ -296,3 +296,27 @@ After screenshot approval:
 - `2026-06-22 | screenshot checkpoint | screenshot handoff captured at output/habits-perfect-day-eligibility-2026-06-22-180142 using a temporary local visual harness because dev-login was blocked by local Supabase egress guard; harness/script were removed and only screenshot artifacts remain | next: owner visual approval, then run npm run verify:pre-pr before commit/push/PR`
 - `2026-06-22 | owner screenshot approval stop satisfied | owner approved screenshot handoff in chat; no product-rendering files changed after capture | next: run npm run verify:pre-pr, commit, push, open PR, monitor CI, then run npm run verify:pre-merge for merge readiness`
 - `2026-06-22 | pre-PR gate passed | npm run verify:pre-pr passed after the owner screenshot approval stop; route perf budgets passed, and the perf-budget tighten recommendation is held out of scope because the active performance-ratchet decision waits for two new green weekly cycles after 2026-06-19 | next: commit, push, open PR, monitor CI, then run npm run verify:pre-merge for merge readiness`
+
+## Completion Record
+
+- `completed`: `2026-06-22`
+- `merged_pr`: `#1214`
+- `squash_commit`: `dd688866`
+- `result`: Closed Habits Perfect Day eligibility clarity. Perfect Day now means all scheduled habits that count toward Perfect Day are satisfied, while tracking-only habits can remain habits without breaking the day.
+- `validation`: focused Habits Vitest passed; `npm run lint:briefs:all` passed; `git diff --check` passed; owner approved screenshot handoff; `npm run verify:pre-pr` passed; GitHub CI for PR #1214 passed; `npm run verify:pre-merge` passed on `ead70b25` before merge.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+- `remaining gaps`: none for this slice. Performance ratchet was intentionally held out of scope because the active ratchet decision waits for two new green weekly cycles after 2026-06-19.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                           | Gaps / Notes                                                         |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Add/Edit Habit exposes `Counts toward Perfect Day`; user-flow docs define Perfect Day-counting habits; PR #1214 merged.            | None.                                                                |
+| UX flow clarity                               | `5/5`          | Screenshot handoff covered Add/Edit and Motivation reference surfaces; owner approved in chat.                                     | None.                                                                |
+| Visual design quality                         | `5/5`          | Screenshot artifacts in `output/habits-perfect-day-eligibility-2026-06-22-180142`; no rendering files changed after approval.      | Local dev-login was blocked, so a temporary visual harness was used. |
+| Business logic correctness and data integrity | `5/5`          | Focused component tests prove create/update preserve `isPerfectDayItem: false` and default new habits to true.                     | None.                                                                |
+| Accessibility (a11y)                          | `5/5`          | Checkbox is queryable by accessible label in tests; full verification and e2e public matrix passed.                                | None.                                                                |
+| Data placement and sync boundaries            | `5/5`          | API/user-flow docs keep Habits as source of truth and Calendar/provider writes out of scope.                                       | None.                                                                |
+| Reliability and failure handling              | `5/5`          | Existing server defaults remain unchanged; focused tests guard false-value preservation.                                           | None.                                                                |
+| Content governance                            | `5/5`          | Product-decision audit brief and user-flow/API docs were updated consistently.                                                     | None.                                                                |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub`, existing API field, TypeScript contracts, and Tailwind form patterns; no dependency change.           | None.                                                                |
+| Testing and QA automation                     | `5/5`          | `npm run verify:pre-pr`, GitHub CI, and `npm run verify:pre-merge` passed; screenshot approval stop was satisfied before PR gates. | None.                                                                |
+| DevOps and rollback readiness                 | `5/5`          | No migration, env, workflow, or dependency change; rollback is normal revert of merge commit `dd688866`.                           | None.                                                                |
