@@ -3,19 +3,19 @@
 ## Metadata
 
 - `id`: `2026-06-22-perfect-day-calendar-product-decision-audit-10-10`
-- `status`: `planned`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
-- `mode`: `product decision / plan only`
+- `mode`: `product decision / docs-only closeout`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-22`
-- `base`: `main@48fbff4b`
-- `audit_status`: `ready`
-- `decision`: Use this as the next bounded product-decision brief before any Perfect Day Calendar runtime/UI slice.
-- `reason`: Calendar children `A` through `G`, manual actual review, provider evidence schema, and provider fixture import have shipped, but the Calendar parent still defers Perfect Day until a separate product review gives it a distinct Calendar meaning.
+- `base`: `main@a482449d`
+- `audit_status`: `done`
+- `decision`: Close this product decision as `keep Perfect Day in Habits/Motivation; do not build a Calendar Perfect Day chip now`.
+- `reason`: The product review is complete, Habits Add/Edit now exposes per-habit `Counts toward Perfect Day` eligibility through PR `#1214`, and the remaining Calendar value would duplicate existing Habits daily layers unless a fresh owner-selected runtime brief creates a distinct read-only Calendar meaning later.
 - `must_refresh_before_execution_if`: Refresh if `/my-library/habits`, `/my-library/calendar`, `HabitPerfectDayHub`, `lib/habits/*`, `lib/my-library/calendar*`, `docs/user-flow-map.md`, Calendar parent briefs, provider evidence contracts, scorecard categories, Help/Guide copy, or online competitive/source assumptions change before a runtime slice starts.
 
 ## Goal
@@ -40,7 +40,7 @@ Codex skal sammenligne dagens FreeSwimming-app med relevante trenings- og habit-
   - reset markers that restart Motivation stats without deleting check-ins.
 - Calendar Plan already shows read-only daily layers for Habits and Micro Sessions.
 - Calendar explicitly does not edit Habits, Perfect Day rules, Micro Session units, source workouts, or actual swim evidence.
-- Calendar parent and user-flow docs state that Perfect Day remains in Habits/Motivation until a product decision gives it a distinct Calendar meaning.
+- Calendar parent and user-flow docs state that the product decision is closed for now: Perfect Day remains in Habits/Motivation, and no Calendar chip is selected.
 - Calendar Compare already includes Habits perfect-day metrics through comparison reporting, while Calendar Plan does not show Perfect Day as its own layer.
 - Unknown Habit modes, cadence values, check-in statuses, reset states, and Micro Session statuses must fail closed and must not improve counts.
 
@@ -75,19 +75,22 @@ Product interpretation:
 - FreeSwimming should not turn Perfect Day into a generic health/readiness score, provider-derived wellness score, or swim performance KPI.
 - A Calendar Perfect Day chip must be read-only, source-attributed to Habits, and unable to improve swim completion, Stats Swimming, provider evidence, streaks outside Habits, analytics KPIs, or AI replanning unless a later mapping explicitly says so.
 
-## Product Recommendation
+## Final Product Decision
 
-Recommended decision: keep Perfect Day owned by Habits/Motivation now, and create a later small UI child only if the owner wants a read-only Calendar chip with this narrow meaning:
+Decision: keep Perfect Day owned by Habits/Motivation now. Do not create a Calendar Perfect Day chip from this review.
+
+If a future owner-selected runtime brief reopens a read-only Calendar chip, it must use this narrow meaning:
 
 > Perfect Day on Calendar means the user's scheduled Habits that count toward Perfect Day for that date were all completed according to the Habits source contract.
 
-Recommended Calendar behavior for a future runtime child:
+Required Calendar behavior for any future runtime child:
 
 - Month cell: optional compact read-only signal only when it adds information beyond the existing `x/y habits` daily layer.
 - Selected-day detail: explain it as a Habits-owned routine signal, not training completion.
 - Action: `Open source` links to Habits for editing/checking details.
 - Empty/unmapped state: hide the chip or show `Review needed`; never count as success.
 - No provider influence: Garmin, Apple Health, Strava, Health Connect, or manual fixture evidence cannot create a Perfect Day.
+- Fresh scope: create a new bounded runtime brief, screenshot handoff, Help/Guide impact decision, and focused tests before any Calendar UI is built.
 
 Do not build yet:
 
@@ -105,6 +108,7 @@ Do not build yet:
 - Current shipped Habits Motivation/Perfect Day depth children: `docs/task-briefs/done/2026-06-05-aw-006-habits-advanced-motivation-history-depth-10-10.md`, `docs/task-briefs/done/2026-06-06-aw-006-habits-reset-stats-motivation-reset-10-10.md`, and later Habits recovery/motivation polish briefs.
 - Provider runtime remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
 - Performance ratchet remains held by `docs/task-briefs/planned/2026-06-19-next-performance-budget-ratchet-maintenance-10-10.md`.
+- Owner decision outcome: keep Perfect Day in Habits/Motivation only for now; no active Calendar chip/runtime child is selected.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -181,17 +185,17 @@ Capability audit:
 
 Systemic findings:
 
-| Surface                     | Finding                                                                                                                          | Severity | Recommended Type                 | Owner Decision Needed                                      | Follow-Up Brief Path    |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------- | ---------------------------------------------------------- | ----------------------- |
-| Perfect Day product meaning | Current app has a strong Habits-owned meaning, but no Calendar-specific meaning beyond existing Habits daily layers.             | `high`   | `deferred architecture decision` | `yes`; owner must choose whether Calendar chip is worth it | this brief              |
-| Calendar source boundaries  | Online examples reward simple daily signals, but FreeSwimming must not merge habit success, swim completion, and provider truth. | `high`   | `bounded implementation child`   | `yes` before runtime UI                                    | TBD after decision      |
-| Provider/runtime pressure   | Device ecosystems can broaden daily scoring quickly; FreeSwimming provider evidence must remain out of Perfect Day until mapped. | `medium` | `do not do`                      | `no`; already blocked                                      | blocked provider briefs |
+| Surface                     | Finding                                                                                                                          | Severity | Recommended Type                 | Owner Decision Needed                            | Follow-Up Brief Path    |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------- | ------------------------------------------------ | ----------------------- |
+| Perfect Day product meaning | Owner chose to keep Perfect Day in Habits/Motivation now after eligibility clarity shipped.                                      | `high`   | `safe process/docs update`       | `no`; decision is closed for now                 | this brief              |
+| Calendar source boundaries  | Online examples reward simple daily signals, but FreeSwimming must not merge habit success, swim completion, and provider truth. | `high`   | `deferred architecture decision` | `yes` only if a future Calendar chip is reopened | Fresh runtime brief TBD |
+| Provider/runtime pressure   | Device ecosystems can broaden daily scoring quickly; FreeSwimming provider evidence must remain out of Perfect Day until mapped. | `medium` | `do not do`                      | `no`; already blocked                            | blocked provider briefs |
 
 Return path:
 
-- If owner chooses `keep in Habits only`, update Calendar parent/user-flow docs only if needed.
-- If owner chooses `Calendar chip`, create a fresh bounded runtime brief for read-only Calendar display and screenshot handoff.
-- If owner chooses `broader daily readiness score`, create a separate product strategy brief, not a Calendar child.
+- Owner chose `keep in Habits only`; this closeout updates Calendar parent/user-flow docs and moves the product decision to done.
+- If owner later chooses `Calendar chip`, create a fresh bounded runtime brief for read-only Calendar display and screenshot handoff.
+- If owner later chooses `broader daily readiness score`, create a separate product strategy brief, not a Calendar child.
 
 ## Domain Granularity Gate
 
@@ -340,7 +344,7 @@ Future runtime must sweep before broad gates:
 
 ## Scope
 
-This planned docs-only slice owns:
+This docs-only decision slice owns:
 
 - Local FreeSwimming app audit for Perfect Day/Habits/Calendar boundaries.
 - Online product audit of comparable daily motivation, training calendar, swim coaching, and health data ecosystems.
@@ -355,7 +359,7 @@ This planned docs-only slice owns:
 - Provider runtime, Garmin OAuth, Strava/Apple/Health Connect integration, FIT parsing, matching, or reconciliation.
 - AI readiness/recovery scoring, automated replanning, or health/medical claims.
 - Performance-ratchet tightening.
-- PR/merge work.
+- Runtime PR/merge work beyond packaging this docs-only decision closeout.
 - Touching `Ja.docx`.
 
 ## Acceptance Criteria
@@ -364,14 +368,19 @@ This planned docs-only slice owns:
 2. Brief records online audit sources and product interpretation for comparable services.
 3. Brief recommends one safe next product direction and names alternatives that must not be built accidentally.
 4. Brief states data/source boundaries, identity, forward compatibility, and unknown-value fail-closed behavior.
-5. Brief passes changed-brief lint and diff checks.
+5. Calendar parent and user-flow docs no longer treat the Perfect Day Calendar decision as still waiting for this review.
+6. Brief passes changed-brief lint and diff checks.
 
 ## Validation
 
 Docs-only validation for this slice:
 
 - `npm run lint:briefs`
+- `npm run lint:briefs:all`
 - `git diff --check`
+- `npm run verify:pre-pr`
+- GitHub CI
+- `npm run verify:pre-merge`
 
 Future runtime validation if owner later selects a Calendar chip:
 
@@ -389,3 +398,33 @@ Future runtime validation if owner later selects a Calendar chip:
 
 - `2026-06-22 | planned | created from clean main@48fbff4b after PR #1213 closeout; owner asked for app audit plus online audit of similar services and a brief, without runtime implementation. Local audit confirmed Perfect Day is Habits/Motivation-owned and Calendar read-only; online audit covered Apple Activity, TrainingPeaks, MySwimPro, Android Health Connect, and Garmin/Strava market context | next: run changed-brief lint and diff check, then owner chooses keep-in-Habits-only, create a Calendar chip child, or broader daily-readiness product strategy`
 - `2026-06-22 | owner decision | owner clarified that some habits are not meaningful enough to count toward Perfect Day and approved the recommended path: keep Perfect Day, define it as only selected eligible habits for that date, and implement explicit Add/Edit Habits eligibility before any Calendar chip | next: execute docs/task-briefs/in-progress/2026-06-22-habits-perfect-day-eligibility-clarity-10-10.md`
+- `2026-06-22 | closeout selected | PR #1214 and closeout #1215 merged; owner approved the recommendation to close the product decision as keep Perfect Day in Habits/Motivation only for now, with no Calendar chip/runtime child selected | next: update Calendar parent/user-flow docs, run docs validation, commit, push, open PR, monitor CI, and run pre-merge gate`
+- `2026-06-22 | pre-pr gate | local docs-only validation passed: npm run lint:briefs skipped changed-brief detection for the lifecycle move, npm run lint:briefs:all passed, git diff --check passed, stale current Perfect Day Calendar decision sweeps passed, and npm run verify:pre-pr passed on the docs-only lane | next: commit, push, open PR, monitor CI, and run pre-merge gate`
+
+## Completion Record
+
+- `completed`: `2026-06-22`
+- `merged_pr`: `TBD until closeout PR merges`
+- `result`: Closed the Perfect Day Calendar product decision. Perfect Day remains a Habits/Motivation-owned routine signal based on selected Perfect Day-counting habits; Calendar gets no separate Perfect Day chip now.
+- `validation`: `npm run lint:briefs:all` PASS, `git diff --check` PASS, targeted stale current-reference sweeps PASS, and `npm run verify:pre-pr` PASS on the docs-only lane; PR CI and `npm run verify:pre-merge` remain required before merge readiness.
+- `10/10 claim`: yes - all critical target categories are scoped to this docs-only decision and have direct closeout evidence.
+
+Critical target categories confirmed `5/5`:
+
+- Product goals and IA
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Content governance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                     | Gaps / Notes                                                                 |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Product decision is explicit: keep Perfect Day in Habits/Motivation and do not select a Calendar chip/runtime child now.                     | Future Calendar chip requires a fresh owner-selected brief.                  |
+| Business logic correctness and data integrity | `5/5`          | Brief and user-flow docs keep Perfect Day out of swim completion, Stats Swimming, provider truth, analytics KPI truth, and AI replanning.    | None for this docs-only decision.                                            |
+| Data placement and sync boundaries            | `5/5`          | Habits remains source-of-truth; Calendar can only read source-owned Habits daily summaries and must not write Perfect Day results.           | None for this docs-only decision.                                            |
+| Reliability and failure handling              | `5/5`          | Unknown habit/provider/calendar values remain fail-closed and cannot improve Perfect Day or Calendar completion.                             | Future runtime must add focused unknown-value tests if reopened.             |
+| Content governance                            | `5/5`          | Product audit, owner decision, Calendar parent, and user-flow docs are aligned around no Calendar Perfect Day layer now.                     | None for active slice.                                                       |
+| Stack-fit and dependency discipline           | `5/5`          | Diff stays Markdown-only, reuses existing Habits/Calendar contracts, and adds no dependency, script, runtime code, migration, or UI surface. | None for active slice.                                                       |
+| Testing and QA automation                     | `5/5`          | `npm run lint:briefs:all`, `git diff --check`, stale current-reference sweeps, and `npm run verify:pre-pr` passed on the docs-only lane.     | PR CI and `npm run verify:pre-merge` remain required before merge readiness. |
+| DevOps and rollback readiness                 | `5/5`          | Decision closeout is docs-only and revertable by normal git revert, with no migration, env, deploy, package, or generated artifact impact.   | `merged_pr` remains `TBD` until the closeout PR exists.                      |

@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-22`
-- `base`: `main@77bf42d5`
+- `base`: `main@a482449d`
 - `audit_status`: `ready`
-- `decision`: Use this as the parent roadmap contract only; no active Calendar/provider/runtime child is selected after Review Actual Editor V1, Provider Evidence Schema Foundation V1, and Provider Evidence Fixture Import V1 shipped and closed.
-- `reason`: Calendar children `A` through `G` shipped planned instances, month/day-detail placement, planned-only actions, manual completion, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, and the dedicated Review Actual editor. Provider evidence schema and disabled-by-default fixture import proof now exist, but real Garmin/provider runtime remains blocked and Perfect Day still needs a separate product decision before Calendar work.
+- `decision`: Use this as the parent roadmap contract only; no active Calendar/provider/runtime child is selected after Review Actual Editor V1, provider fixture proof, and Perfect Day Calendar product decision closeout.
+- `reason`: Calendar children `A` through `G` shipped planned instances, month/day-detail placement, planned-only actions, manual completion, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, and the dedicated Review Actual editor. Provider evidence schema and disabled-by-default fixture import proof now exist, real Garmin/provider runtime remains blocked, and the Perfect Day product decision is closed as Habits/Motivation-owned with no Calendar chip selected now.
 - `must_refresh_before_execution_if`: Refresh again if `app/my-library/calendar/page.tsx`, `components/my-library/CalendarPeriodComparisonHub.tsx`, `components/my-library/programs/ProgramBuilderHub.tsx`, `lib/my-library/calendar*.ts`, `lib/programs/*`, `docs/quality/platform-10-10-scorecard.md`, Help/Guide contracts, route labels, verification lanes, or training-history scope change before a child slice starts.
 
 ## Goal
@@ -44,7 +44,7 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
   - Calendar Plan can show completed swim state, Habits daily summaries, and completed Micro Session units.
   - Review Actual Editor V1 lets users edit manual actual-history truth without rewriting planned rows or source workouts.
   - Provider Evidence Schema Foundation V1 and Provider Evidence Fixture Import V1 prove private provider evidence can exist separately from Calendar/Stats completion truth.
-  - Perfect Day is intentionally not a separate Calendar layer until a later product decision gives it a distinct Calendar meaning.
+  - Perfect Day is intentionally not a separate Calendar layer after the product decision closed as Habits/Motivation-owned for now.
 - Existing canonical program foundation:
   - `lib/programs/shared.ts`
   - `lib/programs/server.ts`
@@ -71,7 +71,7 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
 - Desktop should move toward a Garmin-style month overview once planned instance identity exists, with the selected day/week opening denser details instead of cramming every action into each month cell.
 - Mobile should stay day/week-first so controls remain readable and reachable.
 - Today must become a first-class calendar concept: mark today, provide a "Go to today" affordance when outside the current window, and avoid date math based on labels.
-- Micro sessions and habits now appear as read-only daily layers from their source-owned contracts; Perfect Day remains deferred until it has a distinct Calendar product meaning.
+- Micro sessions and habits now appear as read-only daily layers from their source-owned contracts; Perfect Day remains in Habits/Motivation and is not a Calendar layer now.
 - Plan-vs-actual must keep the planned version and actual version visible as separate truths when the user did not do exactly what was planned.
 - Future Garmin send/receive matching must attach to planned and actual records through provider aliases, payload fingerprints, and review states; it must never silently overwrite either the plan or manual actual history.
 
@@ -88,7 +88,7 @@ Completed local child state:
 Blocked or deferred next paths:
 
 - Garmin Training API send and Garmin Activity reconciliation remain blocked by partner/API access, provider samples, alias/correlation behavior, attribution, and owner product decisions.
-- Perfect Day remains a separate product decision before it becomes a Calendar layer.
+- Perfect Day Calendar product decision is closed as keep-in-Habits-only for now; a Calendar chip requires a fresh owner-selected runtime brief.
 - Performance-ratchet work remains held until at least two new weekly green cycles after `2026-06-19`.
 
 Next product/runtime work must start from a fresh owner-selected child brief rather than inheriting this parent as an implementation brief.
@@ -101,7 +101,7 @@ Next product/runtime work must start from a fresh owner-selected child brief rat
 | `B`   | Desktop Month Overview And Today Marker                   | Shipped: add desktop month overview, today marker, "Go to today", selected-day detail, and mobile week/day fallback using existing planned instances.                                                             | Child `A`                                                                                                                                   | completion mutation, Garmin sync, habits/micro/Perfect Day layers              |
 | `C`   | Planned Instance Edit And Status Actions                  | Shipped: let users reschedule, skip, cancel, and recover planned-only instances before completion, with explicit status and rename/repurpose rules.                                                               | Child `A`; Child `B`                                                                                                                        | actual completion events, provider sync, recurring drag/drop                   |
 | `D`   | Completion Events And Manual Mark Done                    | Shipped: add canonical completed activity events, manual "mark as done", planned-vs-completed linkage, and safe status rendering.                                                                                 | Child `A`; Child `B`; Child `C`; refreshed training-history boundary                                                                        | Garmin reconciliation, habits aggregation, finance/admin dashboards            |
-| `E`   | Calendar Daily Layers For Micro And Habits                | Shipped: add compact read-only daily calendar layers for completed Micro Session units and Habits overview; defer Perfect Day until it has a distinct Calendar product meaning.                                   | Child `D` or explicit source contracts for completed events/daily summaries                                                                 | editing source details inside calendar, provider sync, duplicate Perfect Day   |
+| `E`   | Calendar Daily Layers For Micro And Habits                | Shipped: add compact read-only daily calendar layers for completed Micro Session units and Habits overview; keep Perfect Day in Habits/Motivation after product-decision closeout.                                | Child `D` or explicit source contracts for completed events/daily summaries                                                                 | editing source details inside calendar, provider sync, duplicate Perfect Day   |
 | `F`   | Training History Actuals, Corrections, And Plan Vs Actual | Shipped: actual outcome storage, correction route contract, and read-only Calendar plan-vs-actual overview.                                                                                                       | Child `D`; Child `E`; training-history parent                                                                                               | Garmin runtime, provider ingestion, changing source workout/program identity   |
 | `G`   | Review Actual Editor V1                                   | Shipped: dedicated manual actual editor with plan-vs-actual comparison, source badge, stale-write recovery, and provider-ready contracts for future Garmin/Strava/Apple Health/Health Connect style integrations. | Child `F`; training-history parent                                                                                                          | provider runtime, raw provider evidence, source workout/program editing        |
 | `H`   | Garmin Plan Export Or Sync                                | Send planned workouts/programs to Garmin only when partner/API scope, auth, mapping, correlation, idempotency, attribution, and support diagnostics are concrete.                                                 | Garmin partner brief unblocked, Child `A`; likely Child `G`                                                                                 | blocked partner assumptions, importing activities without history contract     |
@@ -111,23 +111,23 @@ Forward-compatibility intent: Child `A` must establish `starts_on`, stable progr
 
 ## Calendar Capability Matrix
 
-| Capability                       | Canonical source of truth                                                 | First owning child     | UI expectation                                                                                           | Guardrail                                                                             |
-| -------------------------------- | ------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Planned swim sessions            | `planned_workout_instances` linked to program/week/assignment/workout IDs | `A`                    | Week list now; later month/day detail reads the same rows.                                               | No title/date-label identity and no completion truth in planned rows.                 |
-| Today marker and "Go to today"   | Local date normalized through calendar helpers                            | `B`                    | Desktop month and mobile week/day clearly mark today and can jump back to it.                            | Do not hardcode the current date; tests use deterministic injected dates.             |
-| Desktop month overview           | Planned instances plus later activity layers                              | `B`                    | Garmin-style month grid for scanning load, gaps, and upcoming sessions.                                  | Month cells stay compact; detailed actions live in day detail or existing editors.    |
-| Selected-day detail              | Planned instances and later source summaries filtered by date             | `B`                    | Opens the day's sessions and summary chips with links to source surfaces.                                | Do not duplicate full program/workout/habit editors in the calendar.                  |
-| Edit planned session before done | Planned instance row plus source program/workout IDs                      | `C`                    | Move, skip, delete, or revise planned-only sessions before completion.                                   | Completed/history-linked rows need explicit compatibility rules before mutation.      |
-| Status rendering                 | Planned instance status plus completed activity events                    | `C`/`D`                | `planned`, `completed`, `skipped`, `missed`, `rescheduled`, and unknown states render deterministically. | Unknown statuses fail closed and never count as completed.                            |
-| Manual mark done                 | `completed_activity_events` / training-history contract                   | `D`                    | User can mark a planned swim as completed without Garmin.                                                | Actual completion is separate from planned row identity.                              |
-| Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                    | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                  |
-| Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                    | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                           |
-| Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | later product decision | Daily score or badge only if it becomes distinct from Habits in Calendar.                                | Score logic stays with Perfect Day owner; do not add a duplicate Habits chip.         |
-| Actual-history corrections       | Completed activity events / training-history actuals                      | `F`/`G`                | Calendar shows read-only overview; Review actual owns the dedicated edit surface.                        | Corrections mutate actual history, not planned rows or source workouts.               |
-| Plan-vs-actual insights          | Planned instances plus actual-history records                             | `F`/`G`                | Planned and actual versions can be compared side by side with missed/changed/partial signals.            | No provider-specific assumptions; reconcile by canonical IDs/date rules.              |
-| Provider-ready source status     | Actual-history source kind now; future provider evidence/reconciliation   | `G`                    | Source badge, stale/review states, and future sync/backfill/revoked-provider language are ready.         | No fake connected-provider states and no provider runtime in v1.                      |
-| Garmin export/send               | Provider send job tables plus planned/workout/program references          | `H`                    | Send status, retry, payload fingerprint, and support diagnostics after partner unblock.                  | Send status never counts as completed.                                                |
-| Garmin receive/reconcile         | Provider evidence tables plus reconciliation links to actual history      | `I`                    | Received activity evidence, candidate matches, conflicts, and review affordances.                        | Provider evidence is immutable/reviewed and never silently overwrites manual actuals. |
+| Capability                       | Canonical source of truth                                                 | First owning child | UI expectation                                                                                           | Guardrail                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Planned swim sessions            | `planned_workout_instances` linked to program/week/assignment/workout IDs | `A`                | Week list now; later month/day detail reads the same rows.                                               | No title/date-label identity and no completion truth in planned rows.                 |
+| Today marker and "Go to today"   | Local date normalized through calendar helpers                            | `B`                | Desktop month and mobile week/day clearly mark today and can jump back to it.                            | Do not hardcode the current date; tests use deterministic injected dates.             |
+| Desktop month overview           | Planned instances plus later activity layers                              | `B`                | Garmin-style month grid for scanning load, gaps, and upcoming sessions.                                  | Month cells stay compact; detailed actions live in day detail or existing editors.    |
+| Selected-day detail              | Planned instances and later source summaries filtered by date             | `B`                | Opens the day's sessions and summary chips with links to source surfaces.                                | Do not duplicate full program/workout/habit editors in the calendar.                  |
+| Edit planned session before done | Planned instance row plus source program/workout IDs                      | `C`                | Move, skip, delete, or revise planned-only sessions before completion.                                   | Completed/history-linked rows need explicit compatibility rules before mutation.      |
+| Status rendering                 | Planned instance status plus completed activity events                    | `C`/`D`            | `planned`, `completed`, `skipped`, `missed`, `rescheduled`, and unknown states render deterministically. | Unknown statuses fail closed and never count as completed.                            |
+| Manual mark done                 | `completed_activity_events` / training-history contract                   | `D`                | User can mark a planned swim as completed without Garmin.                                                | Actual completion is separate from planned row identity.                              |
+| Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                  |
+| Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                           |
+| Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | not selected now   | No Calendar score or badge after the product decision closeout; future chip requires a fresh brief.      | Score logic stays with Habits/Motivation; do not add a duplicate Habits chip.         |
+| Actual-history corrections       | Completed activity events / training-history actuals                      | `F`/`G`            | Calendar shows read-only overview; Review actual owns the dedicated edit surface.                        | Corrections mutate actual history, not planned rows or source workouts.               |
+| Plan-vs-actual insights          | Planned instances plus actual-history records                             | `F`/`G`            | Planned and actual versions can be compared side by side with missed/changed/partial signals.            | No provider-specific assumptions; reconcile by canonical IDs/date rules.              |
+| Provider-ready source status     | Actual-history source kind now; future provider evidence/reconciliation   | `G`                | Source badge, stale/review states, and future sync/backfill/revoked-provider language are ready.         | No fake connected-provider states and no provider runtime in v1.                      |
+| Garmin export/send               | Provider send job tables plus planned/workout/program references          | `H`                | Send status, retry, payload fingerprint, and support diagnostics after partner unblock.                  | Send status never counts as completed.                                                |
+| Garmin receive/reconcile         | Provider evidence tables plus reconciliation links to actual history      | `I`                | Received activity evidence, candidate matches, conflicts, and review affordances.                        | Provider evidence is immutable/reviewed and never silently overwrites manual actuals. |
 
 ## Dependencies And Boundaries
 
@@ -236,9 +236,9 @@ Systemic findings:
 
 Return path:
 
-- Last merged provider/training-history workstream: Provider Evidence Fixture Import V1 PR `#1209`, closeout PR `#1210`, and roadmap refresh PR `#1211`, with `main@77bf42d5` clean and synced.
+- Last merged provider/training-history workstream: Provider Evidence Fixture Import V1 PR `#1209`, closeout PR `#1210`, roadmap refresh PR `#1211`, and Perfect Day eligibility PR/closeout `#1214`/`#1215`, with `main@a482449d` clean and synced.
 - Current parent: this refreshed brief remains in `docs/task-briefs/planned/`.
-- Exact next planning step: owner selects one bounded child from clean `main`; this parent does not select Calendar, provider, Perfect Day, or performance runtime work.
+- Exact next planning step: owner selects one bounded child from clean `main`; this parent does not select Calendar, provider, Perfect Day chip, or performance runtime work.
 
 ## Data Placement And Sync Contract
 
@@ -384,6 +384,7 @@ Implementation scope for future children:
 - New training-history persistence beyond the shipped manual actual/editor/provider-evidence foundation, including retrospective evaluation logic.
 - Owning planned-vs-actual truth locally inside the calendar or planner.
 - A second AI-specific program builder or program identity model.
+- Calendar Perfect Day chip/runtime work.
 - Performance-budget ratchet changes before at least two new post-`2026-06-19` green weekly cycles.
 - Touching `Ja.docx`.
 
@@ -391,7 +392,7 @@ Implementation scope for future children:
 
 For this parent refresh:
 
-- Brief audit is current to `main@77bf42d5`.
+- Brief audit is current to `main@a482449d`.
 - Existing repo state and shipped program/calendar surfaces are named.
 - Review Actual Editor V1 and Provider Evidence Fixture Import V1 are recorded as shipped, not active.
 - No active Calendar/provider/runtime child is selected.
@@ -462,4 +463,5 @@ Future Plan-view child:
 - `2026-06-20 | planning | owner asked how to systematize a 10/10 calendar including desktop month, today marker, micro sessions, habits, Perfect Day, edit-before-done, and Garmin; added calendar capability matrix and expanded roadmap to Child A-G without expanding Child A runtime scope | next: keep Child A focused, then execute Child B/C/D/E briefs in order after approval`
 - `2026-06-21 | audit-refresh | refreshed parent on clean main@de761db3 after Child A/B/C shipped and closeout PR #1192 merged; next runtime child is manual Calendar completion Child D, while Garmin Training API send and Activity API received-history reconciliation are now explicit separate blocked provider tracks | next: complete docs-only audit PR, then wait for owner to explicitly execute Child D runtime implementation`
 - `2026-06-21 | systemic-actuals-audit | refreshed on clean main@ffd36d9e after Calendar Child D/E and closeouts #1195/#1198 merged; next local child is docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md so manual actual differences and plan-vs-actual are modeled before Garmin received evidence can attach; Garmin send and Activity reconciliation remain separate blocked provider tracks | next: active implementation is underway on branch training-history-actuals-corrections`
-- `2026-06-22 | roadmap-reconcile | refreshed on clean main@77bf42d5 after Review Actual Editor V1, Provider Evidence Schema Foundation V1, Provider Evidence Fixture Import V1, and provider roadmap refresh PR #1211 shipped; Calendar parent no longer selects Review Actual as active/next, Garmin/provider runtime remains blocked, performance-ratchet still waits for at least two new weekly green cycles after 2026-06-19, and Perfect Day remains a separate product decision before Calendar work | next: owner selects the next bounded slice from clean main`
+- `2026-06-22 | roadmap-reconcile | refreshed on clean main@77bf42d5 after Review Actual Editor V1, Provider Evidence Schema Foundation V1, Provider Evidence Fixture Import V1, and provider roadmap refresh PR #1211 shipped; Calendar parent no longer selects Review Actual as active/next, Garmin/provider runtime remains blocked, performance-ratchet still waits for at least two new weekly green cycles after 2026-06-19, and the Perfect Day Calendar decision was still pending at that checkpoint | next: owner selects the next bounded slice from clean main`
+- `2026-06-22 | perfect-day-decision-closeout | refreshed on clean main@a482449d after Perfect Day eligibility PR #1214 and closeout #1215 merged; product decision is closed as keep Perfect Day in Habits/Motivation only for now, no Calendar chip/runtime child is selected, Garmin/provider runtime remains blocked, and performance-ratchet still waits for at least two new weekly green cycles after 2026-06-19 | next: owner selects the next bounded slice from clean main`
