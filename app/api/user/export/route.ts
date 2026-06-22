@@ -8,6 +8,12 @@ import {
 import { loadPublishedCourseModulesCached } from "@/lib/admin/content-course";
 import { normalizeCourseProgressRows } from "@/lib/course/progress";
 import {
+  PROVIDER_ACTIVITY_EVIDENCE_SELECT,
+  PROVIDER_CONNECTION_SELECT,
+  PROVIDER_IMPORT_RUN_SELECT,
+  isProviderEvidenceSchemaMissing,
+} from "@/lib/my-library/provider-evidence";
+import {
   buildCanonicalCourseLessonIdMap,
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
@@ -65,6 +71,9 @@ export async function GET() {
     habitDefinitionsResult,
     habitCheckInsResult,
     workoutsResult,
+    providerConnectionsResult,
+    providerActivityEvidenceResult,
+    providerImportRunsResult,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -172,6 +181,22 @@ export async function GET() {
       )
       .eq("user_id", userId)
       .order("updated_at", { ascending: false }),
+    supabase
+      .from("provider_connections")
+      .select(PROVIDER_CONNECTION_SELECT)
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("provider_activity_evidence")
+      .select(PROVIDER_ACTIVITY_EVIDENCE_SELECT)
+      .eq("user_id", userId)
+      .order("activity_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("provider_import_runs")
+      .select(PROVIDER_IMPORT_RUN_SELECT)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
   ]);
 
   const normalizedAthleteProfile =
@@ -215,6 +240,21 @@ export async function GET() {
     habitCheckInsResult.error && isHabitsSchemaMissing(habitCheckInsResult.error)
       ? []
       : (habitCheckInsResult.data ?? []);
+  const normalizedProviderConnections =
+    providerConnectionsResult.error &&
+    isProviderEvidenceSchemaMissing(providerConnectionsResult.error)
+      ? []
+      : (providerConnectionsResult.data ?? []);
+  const normalizedProviderActivityEvidence =
+    providerActivityEvidenceResult.error &&
+    isProviderEvidenceSchemaMissing(providerActivityEvidenceResult.error)
+      ? []
+      : (providerActivityEvidenceResult.data ?? []);
+  const normalizedProviderImportRuns =
+    providerImportRunsResult.error &&
+    isProviderEvidenceSchemaMissing(providerImportRunsResult.error)
+      ? []
+      : (providerImportRunsResult.data ?? []);
 
   const failedQuery =
     profileResult.error ??
@@ -254,6 +294,18 @@ export async function GET() {
       : null) ??
     (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
       ? workoutsResult.error
+      : null) ??
+    (providerConnectionsResult.error &&
+    !isProviderEvidenceSchemaMissing(providerConnectionsResult.error)
+      ? providerConnectionsResult.error
+      : null) ??
+    (providerActivityEvidenceResult.error &&
+    !isProviderEvidenceSchemaMissing(providerActivityEvidenceResult.error)
+      ? providerActivityEvidenceResult.error
+      : null) ??
+    (providerImportRunsResult.error &&
+    !isProviderEvidenceSchemaMissing(providerImportRunsResult.error)
+      ? providerImportRunsResult.error
       : null);
 
   if (failedQuery) {
@@ -290,6 +342,9 @@ export async function GET() {
       habitDefinitions: normalizedHabitDefinitions,
       habitCheckIns: normalizedHabitCheckIns,
       workouts: normalizedWorkouts,
+      providerConnections: normalizedProviderConnections,
+      providerActivityEvidence: normalizedProviderActivityEvidence,
+      providerImportRuns: normalizedProviderImportRuns,
       generatedAt,
     }),
   });

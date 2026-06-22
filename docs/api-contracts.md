@@ -227,7 +227,7 @@
   "ok": true,
   "export": {
     "generatedAt": "2026-02-17T14:00:00.000Z",
-    "schemaVersion": "2026-05-11-dryland-legacy-focus-export",
+    "schemaVersion": "2026-06-22-provider-evidence-export",
     "user": {
       "id": "user-id",
       "email": "swimmer@example.com"
@@ -270,12 +270,17 @@
         "updatedAt": "2026-05-08T08:10:00.000Z"
       }
     ],
-    "workouts": []
+    "workouts": [],
+    "providerConnections": [],
+    "providerActivityEvidence": [],
+    "providerImportRuns": []
   }
 }
 ```
 
 - `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
+- `providerConnections`, `providerActivityEvidence`, and `providerImportRuns` contain private provider evidence summaries only. They never include OAuth tokens, provider secrets, raw provider payloads, raw FIT/GPX/TCX files, cookies, IP addresses, User-Agent strings, or full provider response bodies.
+- Provider activity evidence is received evidence only. It is not Calendar completion truth, Stats Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth until a later reconciliation slice explicitly maps it.
 
 - Failure:
 
@@ -334,6 +339,12 @@
 - `401`: unauthorized
 - `415`: unsupported content type
 - `500`: failed to delete user data
+
+### Provider Evidence Deletion Boundary
+
+- Provider evidence foundation rows are user-owned and reference `auth.users(id)` with `on delete cascade`.
+- Account deletion removes provider connections, provider activity evidence summaries, and provider import-run diagnostics with the user account.
+- V1 stores no raw provider files and no OAuth tokens, so there is no provider file bucket or token vault deletion path in this contract.
 
 ## `POST /api/analytics/event`
 

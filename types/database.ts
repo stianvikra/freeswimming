@@ -1578,6 +1578,218 @@ export type Database = {
           },
         ];
       };
+      provider_activity_evidence: {
+        Row: {
+          activity_date: string | null;
+          activity_started_at: string | null;
+          activity_type: string | null;
+          available_file_kinds: string[];
+          created_at: string;
+          distance_m: number | null;
+          duration_seconds: number | null;
+          file_state: string;
+          first_seen_at: string;
+          id: string;
+          import_run_id: string | null;
+          last_seen_at: string;
+          pool_length_m: number | null;
+          pool_length_unit: string | null;
+          provider_activity_id: string;
+          provider_connection_id: string | null;
+          provider_key: string;
+          redacted_summary: Json;
+          sport_type: string | null;
+          status: string;
+          sub_sport_type: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          activity_date?: string | null;
+          activity_started_at?: string | null;
+          activity_type?: string | null;
+          available_file_kinds?: string[];
+          created_at?: string;
+          distance_m?: number | null;
+          duration_seconds?: number | null;
+          file_state?: string;
+          first_seen_at?: string;
+          id?: string;
+          import_run_id?: string | null;
+          last_seen_at?: string;
+          pool_length_m?: number | null;
+          pool_length_unit?: string | null;
+          provider_activity_id: string;
+          provider_connection_id?: string | null;
+          provider_key: string;
+          redacted_summary?: Json;
+          sport_type?: string | null;
+          status?: string;
+          sub_sport_type?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          activity_date?: string | null;
+          activity_started_at?: string | null;
+          activity_type?: string | null;
+          available_file_kinds?: string[];
+          created_at?: string;
+          distance_m?: number | null;
+          duration_seconds?: number | null;
+          file_state?: string;
+          first_seen_at?: string;
+          id?: string;
+          import_run_id?: string | null;
+          last_seen_at?: string;
+          pool_length_m?: number | null;
+          pool_length_unit?: string | null;
+          provider_activity_id?: string;
+          provider_connection_id?: string | null;
+          provider_key?: string;
+          redacted_summary?: Json;
+          sport_type?: string | null;
+          status?: string;
+          sub_sport_type?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "provider_activity_evidence_connection_user_provider_fkey";
+            columns: ["provider_connection_id", "user_id", "provider_key"];
+            isOneToOne: false;
+            referencedRelation: "provider_connections";
+            referencedColumns: ["id", "user_id", "provider_key"];
+          },
+          {
+            foreignKeyName: "provider_activity_evidence_import_run_user_provider_fkey";
+            columns: ["import_run_id", "user_id", "provider_key"];
+            isOneToOne: false;
+            referencedRelation: "provider_import_runs";
+            referencedColumns: ["id", "user_id", "provider_key"];
+          },
+        ];
+      };
+      provider_connections: {
+        Row: {
+          connected_at: string | null;
+          created_at: string;
+          disabled_at: string | null;
+          id: string;
+          last_successful_sync_at: string | null;
+          last_sync_error_code: string | null;
+          provider_display_name: string | null;
+          provider_key: string;
+          provider_user_id: string | null;
+          redacted_metadata: Json;
+          revoked_at: string | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          connected_at?: string | null;
+          created_at?: string;
+          disabled_at?: string | null;
+          id?: string;
+          last_successful_sync_at?: string | null;
+          last_sync_error_code?: string | null;
+          provider_display_name?: string | null;
+          provider_key: string;
+          provider_user_id?: string | null;
+          redacted_metadata?: Json;
+          revoked_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          connected_at?: string | null;
+          created_at?: string;
+          disabled_at?: string | null;
+          id?: string;
+          last_successful_sync_at?: string | null;
+          last_sync_error_code?: string | null;
+          provider_display_name?: string | null;
+          provider_key?: string;
+          provider_user_id?: string | null;
+          redacted_metadata?: Json;
+          revoked_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      provider_import_runs: {
+        Row: {
+          created_at: string;
+          duplicate_count: number;
+          error_code: string | null;
+          finished_at: string | null;
+          id: string;
+          imported_count: number;
+          malformed_count: number;
+          provider_connection_id: string | null;
+          provider_key: string;
+          redacted_diagnostics: Json;
+          run_kind: string;
+          started_at: string | null;
+          status: string;
+          total_activity_count: number;
+          unsupported_count: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          duplicate_count?: number;
+          error_code?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          imported_count?: number;
+          malformed_count?: number;
+          provider_connection_id?: string | null;
+          provider_key: string;
+          redacted_diagnostics?: Json;
+          run_kind?: string;
+          started_at?: string | null;
+          status?: string;
+          total_activity_count?: number;
+          unsupported_count?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          duplicate_count?: number;
+          error_code?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          imported_count?: number;
+          malformed_count?: number;
+          provider_connection_id?: string | null;
+          provider_key?: string;
+          redacted_diagnostics?: Json;
+          run_kind?: string;
+          started_at?: string | null;
+          status?: string;
+          total_activity_count?: number;
+          unsupported_count?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "provider_import_runs_connection_user_provider_fkey";
+            columns: ["provider_connection_id", "user_id", "provider_key"];
+            isOneToOne: false;
+            referencedRelation: "provider_connections";
+            referencedColumns: ["id", "user_id", "provider_key"];
+          },
+        ];
+      };
       programs: {
         Row: {
           created_at: string;

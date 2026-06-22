@@ -222,6 +222,69 @@ type WorkoutRow = Pick<
   | "updated_at"
 >;
 
+type ProviderConnectionRow = Pick<
+  Database["public"]["Tables"]["provider_connections"]["Row"],
+  | "id"
+  | "provider_key"
+  | "status"
+  | "provider_user_id"
+  | "provider_display_name"
+  | "connected_at"
+  | "revoked_at"
+  | "disabled_at"
+  | "last_successful_sync_at"
+  | "last_sync_error_code"
+  | "redacted_metadata"
+  | "created_at"
+  | "updated_at"
+>;
+
+type ProviderActivityEvidenceRow = Pick<
+  Database["public"]["Tables"]["provider_activity_evidence"]["Row"],
+  | "id"
+  | "provider_connection_id"
+  | "import_run_id"
+  | "provider_key"
+  | "provider_activity_id"
+  | "status"
+  | "activity_started_at"
+  | "activity_date"
+  | "activity_type"
+  | "sport_type"
+  | "sub_sport_type"
+  | "duration_seconds"
+  | "distance_m"
+  | "pool_length_m"
+  | "pool_length_unit"
+  | "file_state"
+  | "available_file_kinds"
+  | "redacted_summary"
+  | "first_seen_at"
+  | "last_seen_at"
+  | "created_at"
+  | "updated_at"
+>;
+
+type ProviderImportRunRow = Pick<
+  Database["public"]["Tables"]["provider_import_runs"]["Row"],
+  | "id"
+  | "provider_connection_id"
+  | "provider_key"
+  | "run_kind"
+  | "status"
+  | "started_at"
+  | "finished_at"
+  | "total_activity_count"
+  | "imported_count"
+  | "duplicate_count"
+  | "malformed_count"
+  | "unsupported_count"
+  | "error_code"
+  | "redacted_diagnostics"
+  | "created_at"
+  | "updated_at"
+>;
+
 export type BuildUserExportPayloadInput = {
   userId: string;
   userEmail: string | null;
@@ -242,6 +305,9 @@ export type BuildUserExportPayloadInput = {
   habitDefinitions: HabitDefinitionRow[];
   habitCheckIns: HabitCheckInRow[];
   workouts: WorkoutRow[];
+  providerConnections: ProviderConnectionRow[];
+  providerActivityEvidence: ProviderActivityEvidenceRow[];
+  providerImportRuns: ProviderImportRunRow[];
   generatedAt?: string;
 };
 
@@ -250,7 +316,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-05-12-habits-v2-export",
+    schemaVersion: "2026-06-22-provider-evidence-export",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -471,6 +537,63 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       steps: row.steps,
       generatedAt: row.generated_at,
       acceptedAt: row.accepted_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    providerConnections: input.providerConnections.map((row) => ({
+      id: row.id,
+      providerKey: row.provider_key,
+      status: row.status,
+      providerUserId: row.provider_user_id,
+      providerDisplayName: row.provider_display_name,
+      connectedAt: row.connected_at,
+      revokedAt: row.revoked_at,
+      disabledAt: row.disabled_at,
+      lastSuccessfulSyncAt: row.last_successful_sync_at,
+      lastSyncErrorCode: row.last_sync_error_code,
+      redactedMetadata: row.redacted_metadata,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    providerActivityEvidence: input.providerActivityEvidence.map((row) => ({
+      id: row.id,
+      providerConnectionId: row.provider_connection_id,
+      importRunId: row.import_run_id,
+      providerKey: row.provider_key,
+      providerActivityId: row.provider_activity_id,
+      status: row.status,
+      activityStartedAt: row.activity_started_at,
+      activityDate: row.activity_date,
+      activityType: row.activity_type,
+      sportType: row.sport_type,
+      subSportType: row.sub_sport_type,
+      durationSeconds: row.duration_seconds,
+      distanceM: row.distance_m,
+      poolLengthM: row.pool_length_m,
+      poolLengthUnit: row.pool_length_unit,
+      fileState: row.file_state,
+      availableFileKinds: row.available_file_kinds,
+      redactedSummary: row.redacted_summary,
+      firstSeenAt: row.first_seen_at,
+      lastSeenAt: row.last_seen_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    providerImportRuns: input.providerImportRuns.map((row) => ({
+      id: row.id,
+      providerConnectionId: row.provider_connection_id,
+      providerKey: row.provider_key,
+      runKind: row.run_kind,
+      status: row.status,
+      startedAt: row.started_at,
+      finishedAt: row.finished_at,
+      totalActivityCount: row.total_activity_count,
+      importedCount: row.imported_count,
+      duplicateCount: row.duplicate_count,
+      malformedCount: row.malformed_count,
+      unsupportedCount: row.unsupported_count,
+      errorCode: row.error_code,
+      redactedDiagnostics: row.redacted_diagnostics,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),
