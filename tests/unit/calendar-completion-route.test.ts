@@ -122,6 +122,7 @@ function buildCompletionRow(
     actual_environment: "pool",
     actual_pool_length_m: 25,
     actual_pool_length_unit: "m",
+    actual_session_snapshot: null,
     correction_note: null,
     planned_snapshot: {},
     created_at: "2026-06-22T17:30:00.000Z",
@@ -318,8 +319,28 @@ describe("calendar completion route", () => {
         actual_environment: "pool",
         actual_pool_length_m: 25,
         actual_pool_length_unit: "m",
+        actual_session_snapshot: expect.objectContaining({
+          kind: "manual_actual_session_snapshot_v1",
+          draft: expect.objectContaining({
+            steps: expect.any(Array),
+          }),
+        }),
         planned_snapshot: expect.objectContaining({
           kind: "calendar_manual_completion_planned_snapshot_v1",
+          workout: expect.objectContaining({
+            draft: expect.objectContaining({
+              steps: expect.any(Array),
+            }),
+            previewSections: expect.arrayContaining([
+              expect.objectContaining({
+                rows: expect.arrayContaining([
+                  expect.objectContaining({
+                    text: expect.any(String),
+                  }),
+                ]),
+              }),
+            ]),
+          }),
         }),
       })
     );
@@ -475,6 +496,12 @@ describe("calendar completion route", () => {
   });
 
   it("corrects an existing manual actual without updating the planned instance", async () => {
+    const actualDraft = {
+      ...buildManualWorkoutEmptyDraft(new Date("2026-06-20T08:00:00.000Z")),
+      steps: buildManualWorkoutEmptyDraft(new Date("2026-06-20T08:00:00.000Z")).steps.map(
+        (step, index) => (index === 0 ? { ...step, stroke: "butterfly" as const } : step)
+      ),
+    };
     const { update, insert } = buildSupabaseMock({
       existingCompletionRows: [buildCompletionRow()],
     });
@@ -488,6 +515,7 @@ describe("calendar completion route", () => {
       actualEnvironment: "pool",
       actualPoolLengthM: 25,
       actualPoolLengthUnit: "m",
+      actualSessionDraft: actualDraft,
       correctionNote: "Stopped early.",
       expectedActualUpdatedAt: "2026-06-22T17:30:00.000Z",
     });
@@ -511,8 +539,15 @@ describe("calendar completion route", () => {
       expect.objectContaining({
         outcome: "partial",
         completed_on: "2026-06-23",
-        actual_duration_seconds: 1800,
-        actual_distance_m: 1200,
+        actual_duration_seconds: 1500,
+        actual_distance_m: 1000,
+        actual_session_snapshot: expect.objectContaining({
+          kind: "manual_actual_session_snapshot_v1",
+          source: "manual_actual_edit",
+          draft: expect.objectContaining({
+            steps: expect.arrayContaining([expect.objectContaining({ stroke: "butterfly" })]),
+          }),
+        }),
         correction_note: "Stopped early.",
       })
     );

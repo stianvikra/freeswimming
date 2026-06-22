@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-06-21`
+- `updated`: `2026-06-22`
 - `mode`: `parent refresh / plan only`
 
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-21`
-- `base`: `main@ffd36d9e`
+- `base`: `main@a417271c`
 - `audit_status`: `ready`
-- `decision`: Use this as the parent roadmap contract only; the next local child is actual-history correction and plan-vs-actual, while Garmin send/receive remains separate blocked provider work.
-- `reason`: Calendar children `A` through `E` shipped planned instances, month/day-detail placement, planned-only actions, manual completion, and read-only Habits/Micro daily layers. The remaining local integrity gap is that an actual swim can differ from the plan and must be editable without rewriting planned rows or future provider evidence.
+- `decision`: Use this as the parent roadmap contract only; the next local child is `Review actual editor v1`, while Garmin send/receive remains separate blocked provider work.
+- `reason`: Calendar children `A` through `F` shipped planned instances, month/day-detail placement, planned-only actions, manual completion, read-only Habits/Micro daily layers, and read-only plan-vs-actual overview. The remaining local integrity gap is a dedicated actual editor that changes actual-history truth without rewriting planned rows, source workouts, or future provider evidence.
 - `must_refresh_before_execution_if`: Refresh again if `app/my-library/calendar/page.tsx`, `components/my-library/CalendarPeriodComparisonHub.tsx`, `components/my-library/programs/ProgramBuilderHub.tsx`, `lib/my-library/calendar*.ts`, `lib/programs/*`, `docs/quality/platform-10-10-scorecard.md`, Help/Guide contracts, route labels, verification lanes, or training-history scope change before a child slice starts.
 
 ## Goal
@@ -77,22 +77,22 @@ Codex skal friske opp kalender-briefen slik at neste arbeid kan starte trygt ute
 
 Suggested child path:
 
-- `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`
 
 Next child scope:
 
-- Let users correct what actually happened after a manual completion without mutating the planned occurrence.
-- Add or refine actual outcomes such as `completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, and `needs_review`.
-- Show plan and actual side by side in Calendar selected-day detail or a dedicated history detail surface.
-- Preserve planned instance identity, actual-history identity, and planned snapshots for future Garmin/provider reconciliation.
-- Keep Calendar month cells scan-first and move correction actions into selected-day or history detail.
-- Do not add Garmin runtime, provider ingestion, AI retrospective review, Perfect Day, finance/admin reporting, or performance-ratchet changes.
+- Enable the Calendar `Review actual` action for editable manual actual rows.
+- Add a dedicated My Library actual editor surface, not inline Calendar editing.
+- Let users correct manual actual outcome/date/time/distance/duration/context/note without mutating the planned occurrence or source workout/program.
+- Show plan and actual side by side, including a `Manual` source badge and provider-ready evidence/status placeholders.
+- Preserve planned instance identity, actual-history identity, planned snapshots, and stale-write guards for future Garmin/Strava/Apple Health/Health Connect style reconciliation.
+- Do not add Garmin runtime, Strava runtime, Apple Health runtime, Health Connect runtime, provider ingestion, AI retrospective review, Perfect Day, finance/admin reporting, or performance-ratchet changes.
 
 Why this is the safe next step:
 
-- It closes the local data-integrity gap the owner identified: real swim sessions often differ from the plan.
-- It creates the correction semantics Garmin will later need before received device evidence can be safely linked or reviewed.
-- It keeps provider risk out of the next local slice while still designing for future send/receive matching.
+- It closes the remaining user-facing gap after Calendar made actual rows read-only.
+- It creates the editing and source-attribution semantics providers will later need before received device evidence can be safely linked or reviewed.
+- It keeps provider risk out of the next local slice while still designing for future send/receive/import matching.
 
 ## Child Roadmap And Dependency Table
 
@@ -103,9 +103,10 @@ Why this is the safe next step:
 | `C`   | Planned Instance Edit And Status Actions                  | Shipped: let users reschedule, skip, cancel, and recover planned-only instances before completion, with explicit status and rename/repurpose rules.                                                           | Child `A`; Child `B`                                                        | actual completion events, provider sync, recurring drag/drop                   |
 | `D`   | Completion Events And Manual Mark Done                    | Shipped: add canonical completed activity events, manual "mark as done", planned-vs-completed linkage, and safe status rendering.                                                                             | Child `A`; Child `B`; Child `C`; refreshed training-history boundary        | Garmin reconciliation, habits aggregation, finance/admin dashboards            |
 | `E`   | Calendar Daily Layers For Micro And Habits                | Shipped: add compact read-only daily calendar layers for completed Micro Session units and Habits overview; defer Perfect Day until it has a distinct Calendar product meaning.                               | Child `D` or explicit source contracts for completed events/daily summaries | editing source details inside calendar, provider sync, duplicate Perfect Day   |
-| `F`   | Training History Actuals, Corrections, And Plan Vs Actual | Let users correct actual swim history when the performed session differs from the plan, and show planned vs actual as separate truths.                                                                        | Child `D`; Child `E`; training-history parent                               | Garmin runtime, provider ingestion, changing source workout/program identity   |
-| `G`   | Garmin Plan Export Or Sync                                | Send planned workouts/programs to Garmin only when partner/API scope, auth, mapping, correlation, idempotency, attribution, and support diagnostics are concrete.                                             | Garmin partner brief unblocked, Child `A`; likely Child `F`                 | blocked partner assumptions, importing activities without history contract     |
-| `H`   | Garmin Activity Reconciliation And Review                 | Import received Garmin swim activities as provider evidence, match them against planned/sent/manual actual records, and route conflicts to review without silent overwrites.                                  | Garmin Activity API access, provider samples, Child `F`, likely Child `G`   | treating send status as completion, silently replacing manual actual history   |
+| `F`   | Training History Actuals, Corrections, And Plan Vs Actual | Shipped: actual outcome storage, correction route contract, and read-only Calendar plan-vs-actual overview.                                                                                                   | Child `D`; Child `E`; training-history parent                               | Garmin runtime, provider ingestion, changing source workout/program identity   |
+| `G`   | Review Actual Editor V1                                   | Dedicated manual actual editor with plan-vs-actual comparison, source badge, stale-write recovery, and provider-ready contracts for future Garmin/Strava/Apple Health/Health Connect style integrations.      | Child `F`; training-history parent                                          | provider runtime, raw provider evidence, source workout/program editing        |
+| `H`   | Garmin Plan Export Or Sync                                | Send planned workouts/programs to Garmin only when partner/API scope, auth, mapping, correlation, idempotency, attribution, and support diagnostics are concrete.                                             | Garmin partner brief unblocked, Child `A`; likely Child `G`                 | blocked partner assumptions, importing activities without history contract     |
+| `I`   | Garmin Activity Reconciliation And Review                 | Import received Garmin swim activities as provider evidence, match them against planned/sent/manual actual records, and route conflicts to review without silent overwrites.                                  | Garmin Activity API access, provider samples, Child `G`, likely Child `H`   | treating send status as completion, silently replacing manual actual history   |
 
 Forward-compatibility intent: Child `A` must establish `starts_on`, stable program/week/assignment/workout IDs, and `planned_workout_instances.id` so later completion, edit-before-complete, Garmin, reminders, and plan-vs-actual features attach without replacing identity or duplicating schedule truth.
 
@@ -123,10 +124,11 @@ Forward-compatibility intent: Child `A` must establish `starts_on`, stable progr
 | Completed micro sessions layer   | Canonical micro session completion records or daily summary               | `E`                    | Compact count/chip per day and day-detail links to micro-session source.                                 | Calendar displays summary only; source owns editing.                                  |
 | Habits overview layer            | Habit check-in/daily summary contract                                     | `E`                    | Compact `x/y habits` daily signal with day detail.                                                       | Avoid per-habit editing inside month cells.                                           |
 | Perfect Day overview layer       | Perfect Day daily score/summary contract                                  | later product decision | Daily score or badge only if it becomes distinct from Habits in Calendar.                                | Score logic stays with Perfect Day owner; do not add a duplicate Habits chip.         |
-| Actual-history corrections       | Completed activity events / training-history actuals                      | `F`                    | Users can correct actual date, distance/duration, partial/changed outcome, and review state.             | Corrections mutate actual history, not planned rows or source workouts.               |
-| Plan-vs-actual insights          | Planned instances plus actual-history records                             | `F`                    | Planned and actual versions can be compared side by side with missed/changed/partial signals.            | No provider-specific assumptions; reconcile by canonical IDs/date rules.              |
-| Garmin export/send               | Provider send job tables plus planned/workout/program references          | `G`                    | Send status, retry, payload fingerprint, and support diagnostics after partner unblock.                  | Send status never counts as completed.                                                |
-| Garmin receive/reconcile         | Provider evidence tables plus reconciliation links to actual history      | `H`                    | Received activity evidence, candidate matches, conflicts, and review affordances.                        | Provider evidence is immutable/reviewed and never silently overwrites manual actuals. |
+| Actual-history corrections       | Completed activity events / training-history actuals                      | `F`/`G`                | Calendar shows read-only overview; Review actual owns the dedicated edit surface.                        | Corrections mutate actual history, not planned rows or source workouts.               |
+| Plan-vs-actual insights          | Planned instances plus actual-history records                             | `F`/`G`                | Planned and actual versions can be compared side by side with missed/changed/partial signals.            | No provider-specific assumptions; reconcile by canonical IDs/date rules.              |
+| Provider-ready source status     | Actual-history source kind now; future provider evidence/reconciliation   | `G`                    | Source badge, stale/review states, and future sync/backfill/revoked-provider language are ready.         | No fake connected-provider states and no provider runtime in v1.                      |
+| Garmin export/send               | Provider send job tables plus planned/workout/program references          | `H`                    | Send status, retry, payload fingerprint, and support diagnostics after partner unblock.                  | Send status never counts as completed.                                                |
+| Garmin receive/reconcile         | Provider evidence tables plus reconciliation links to actual history      | `I`                    | Received activity evidence, candidate matches, conflicts, and review affordances.                        | Provider evidence is immutable/reviewed and never silently overwrites manual actuals. |
 
 ## Dependencies And Boundaries
 
@@ -136,8 +138,10 @@ Forward-compatibility intent: Child `A` must establish `starts_on`, stable progr
   - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
 - Downstream actual-outcome owner:
   - `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- Next local actual-history child:
-  - `docs/task-briefs/in-progress/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- Last shipped actual-history child:
+  - `docs/task-briefs/done/2026-06-21-training-history-actuals-corrections-plan-vs-actual-10-10.md`
+- Next local actual editor child:
+  - `docs/task-briefs/in-progress/2026-06-21-review-actual-editor-v1-10-10.md`
 - Related AI generation guardrail:
   - `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
 - Related epic:

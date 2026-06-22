@@ -159,7 +159,7 @@ type Props = {
   workoutHrefBuilder?: (workoutId: string) => string;
   saveButtonTestId?: string;
   showPdfPanel?: boolean;
-  copyVariant?: "default" | "generator";
+  copyVariant?: "default" | "generator" | "actual";
   manualBuilderMode?: ManualWorkoutBuilderMode | null;
   forceMetadataOpenOnLoad?: boolean;
   onRequestDeleteCurrent?: (() => void) | null;
@@ -802,7 +802,8 @@ export default function WorkoutEditor({
 }: Props) {
   const draftTotals = computeSessionDraftDerivedTotals(draft);
   const stepGroups = buildStepRenderGroups(draft.steps);
-  const showCalmBuilderLayout = copyVariant === "default" || copyVariant === "generator";
+  const showCalmBuilderLayout =
+    copyVariant === "default" || copyVariant === "generator" || copyVariant === "actual";
   const isManualMetadataMode = showCalmBuilderLayout && savedWorkout?.sourceKind === "manual";
   const resolvedManualBuilderMode = manualBuilderMode
     ? manualBuilderMode
@@ -892,20 +893,34 @@ export default function WorkoutEditor({
           savedWorkoutSavedState: "All changes are saved to this session.",
           unsavedDraftPendingState: "This generated session is not saved to My Swim Sessions yet.",
         }
-      : {
-          loadedDraftBanner:
-            "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout.",
-          unsavedDraftBanner:
-            "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready.",
-          savedWorkoutDescription:
-            "This workout is canonical now. Saving here updates the same workout instead of creating a new copy.",
-          unsavedDraftDescription:
-            "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it.",
-          savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
-          savedWorkoutSavedState: "All changes are saved to this session.",
-          unsavedDraftPendingState: "This session is not saved yet.",
-        };
-  const unsavedSaveButtonLabel = "Save session";
+      : copyVariant === "actual"
+        ? {
+            loadedDraftBanner:
+              "Actual session loaded: edit what was performed, then save it back to actual history.",
+            unsavedDraftBanner:
+              "Actual session draft: edit what was performed, then save it back to actual history.",
+            savedWorkoutDescription:
+              "Saving here updates actual history only. The planned workout stays unchanged.",
+            unsavedDraftDescription:
+              "Edit the performed session below. Saving does not update the planned workout.",
+            savedWorkoutPendingState: "Unsaved actual changes stay local until you save.",
+            savedWorkoutSavedState: "Actual history is saved.",
+            unsavedDraftPendingState: "Unsaved actual changes stay local until you save.",
+          }
+        : {
+            loadedDraftBanner:
+              "Canonical workout loaded: edit everything below, then save changes back into the same owner-scoped workout.",
+            unsavedDraftBanner:
+              "Local draft only: review and edit everything below, then accept it into the canonical workout layer when you are ready.",
+            savedWorkoutDescription:
+              "This workout is canonical now. Saving here updates the same workout instead of creating a new copy.",
+            unsavedDraftDescription:
+              "Review the draft carefully, then accept it into the canonical workout layer when you are happy with it.",
+            savedWorkoutPendingState: "Unsaved changes stay local until you save this session.",
+            savedWorkoutSavedState: "All changes are saved to this session.",
+            unsavedDraftPendingState: "This session is not saved yet.",
+          };
+  const unsavedSaveButtonLabel = copyVariant === "actual" ? "Save actual session" : "Save session";
   const poolLengthQuickChoices =
     poolLengthUnit === "yd" ? YARD_POOL_SIZE_QUICK_CHOICES : MANUAL_POOL_SIZE_QUICK_CHOICES;
   const parsedPoolLengthInput = parsePoolLengthInput(poolLengthInput, poolLengthUnit);
@@ -1036,7 +1051,9 @@ export default function WorkoutEditor({
           draft.warnings.length === 1 ? "" : "s"
         } still need review here.`
       : null;
-  const showInlinePdfAction = showCalmBuilderLayout || !showPdfPanel;
+  const showInlinePdfAction =
+    copyVariant === "actual" ? false : showCalmBuilderLayout || !showPdfPanel;
+  const showSupportTools = copyVariant !== "actual";
   const integratedSupportSectionClass = "border-t border-slate-200/80 pt-4";
   const supportSummaryItemClass = "rounded-xl bg-slate-100/80 p-3 sm:p-4";
   const desktopRepeatControlRowClass = "grid gap-3";
@@ -4243,27 +4260,28 @@ export default function WorkoutEditor({
     </>
   );
 
-  const poolsideNotePanel = showCalmBuilderLayout ? (
-    <PoolsideNotePanel
-      className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
-      testIdPrefix="workout-editor-poolside"
-      swimmerName={swimmerName}
-      focusOptions={trainingFocusOptions}
-      selectedFocusIds={selectedPoolsideFocusIds}
-      onToggleFocus={togglePoolsideFocusSelection}
-      actionSlot={
-        <button
-          type="button"
-          onClick={() => openWorkoutPdfPrintView("poolside")}
-          data-testid="workout-editor-poolside-pdf-open"
-          aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
-          className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
-        >
-          Print Preview
-        </button>
-      }
-    />
-  ) : null;
+  const poolsideNotePanel =
+    showCalmBuilderLayout && copyVariant !== "actual" ? (
+      <PoolsideNotePanel
+        className="rounded-2xl border border-blue-200/80 bg-blue-50/60 p-4 sm:p-5"
+        testIdPrefix="workout-editor-poolside"
+        swimmerName={swimmerName}
+        focusOptions={trainingFocusOptions}
+        selectedFocusIds={selectedPoolsideFocusIds}
+        onToggleFocus={togglePoolsideFocusSelection}
+        actionSlot={
+          <button
+            type="button"
+            onClick={() => openWorkoutPdfPrintView("poolside")}
+            data-testid="workout-editor-poolside-pdf-open"
+            aria-describedby={workoutPdfFeedback ? workoutPdfFeedbackId : undefined}
+            className={cx(workoutEditorSecondaryActionClass, mobileActionItemClass)}
+          >
+            Print Preview
+          </button>
+        }
+      />
+    ) : null;
   const supportStatusSectionList = <div className="space-y-4">{supportStatusSections}</div>;
   const showMetadataToggleAction = isEditMode;
   const showMetadataPdfAction = showInlinePdfAction;
@@ -4403,7 +4421,7 @@ export default function WorkoutEditor({
         </div>
       ) : null}
 
-      {!showCalmBuilderLayout ? supportToolsPanel : null}
+      {!showCalmBuilderLayout && showSupportTools ? supportToolsPanel : null}
 
       {showCalmBuilderLayout ? (
         <section data-testid="workout-editor-metadata-panel" className="fs-library-card p-3 sm:p-4">
@@ -4729,7 +4747,7 @@ export default function WorkoutEditor({
         </>
       ) : null}
 
-      {showCalmBuilderLayout ? supportToolsPanel : null}
+      {showCalmBuilderLayout && showSupportTools ? supportToolsPanel : null}
 
       {showDiscardUndoNotice && onUndoDiscardChanges ? (
         <div className="fixed inset-x-0 bottom-4 z-[85] flex justify-center px-4">
