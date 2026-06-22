@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-22-provider-evidence-fixture-import-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
@@ -18,9 +18,9 @@
 
 - `last_audited`: `2026-06-22`
 - `base`: `main@da01bb18`
-- `audit_status`: `ready`
-- `decision`: Use this as the next bounded runtime slice if the owner wants to prove provider-evidence writes before real Garmin/OAuth/provider runtime.
-- `reason`: Provider Evidence Schema Foundation V1 is merged and gives separate tables, export/delete coverage, typed helpers, and support docs, but the app still has no route-owned write path proving sanitized provider evidence can be inserted/upserted without becoming completion truth.
+- `audit_status`: `done`
+- `decision`: Closed as the bounded runtime proof for provider-evidence writes before real Garmin/OAuth/provider runtime.
+- `reason`: Provider Evidence Fixture Import V1 shipped in PR `#1209` and closed in PR `#1210`, proving a disabled-by-default authenticated `manual_fixture` route can write sanitized provider evidence idempotently without becoming completion truth.
 - `must_refresh_before_execution_if`: Refresh if provider evidence schema, `completed_activity_events`, account export/delete, route registry, support runbooks, Supabase RLS/service-role guidance, official provider docs, scorecard categories, verification lanes, or owner product decisions around Garmin/OAuth/UI/reconciliation change.
 
 ## Goal
@@ -221,9 +221,9 @@ Systemic findings:
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- Last merged workstream: PR `#1206` (`1cac3a94`) and closeout PR `#1207` (`00de10cb`).
-- Current planned child: this fixture import brief.
-- Next product step after this brief: owner may execute this bounded fixture import, or keep provider runtime blocked until real provider prerequisites exist.
+- Last merged workstream: PR `#1209` (`6f813fc0`) and closeout PR `#1210` (`2b1d7c00`).
+- Current child status: this fixture import brief is closed in `docs/task-briefs/done/`.
+- Next product step after this brief: no active provider/runtime child is selected; keep Garmin/provider runtime blocked until owner/provider prerequisites exist, or choose a separate bounded docs/product slice.
 
 ## Domain Granularity Gate
 
