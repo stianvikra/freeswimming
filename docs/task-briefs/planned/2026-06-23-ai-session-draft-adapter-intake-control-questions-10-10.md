@@ -8,7 +8,7 @@
 - `created`: `2026-06-23`
 - `updated`: `2026-06-23`
 - `parent_brief`: `docs/task-briefs/planned/2026-02-28-ai-plan-generator-json-guardrails-10-10.md`
-- `prerequisite_audit`: `docs/task-briefs/in-progress/2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10.md`
+- `prerequisite_audit`: `docs/task-briefs/done/2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10.md`
 - `mode`: `plan only / implementation-ready child brief`
 
 ## Brief Audit Record
@@ -649,4 +649,4 @@ Canonical recovery order:
 ## Checkpoint Log
 
 - `2026-06-23 | planned | created after owner clarified that 10/10 AI session generation must collect goal/current-state/load/drill data, offer import/manual/not-sure control-question choices, standardize prompting, use FreeSwimming-known drills first, and keep GPT runtime blocked until a bounded single-session child is explicitly executed | next: validate docs-only brief, open PR, then wait for owner approval before runtime implementation`
-- `2026-06-23 | prerequisite audit in progress | linked docs/task-briefs/in-progress/2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10.md after owner requested an app/data readiness audit before runtime; downstream implementation must read that audit result first and keep Garmin/provider/history data deferred unless a later child explicitly unblocks it | next: wait for audit PR to close before AI adapter runtime execution`
+- `2026-06-23 | prerequisite audit done | linked docs/task-briefs/done/2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10.md after owner requested an app/data readiness audit before runtime; downstream implementation must read that audit result first and keep Garmin/provider/history data deferred unless a later child explicitly unblocks it | next: wait for owner approval before AI adapter runtime execution`

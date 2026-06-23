@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-23`
 - `updated`: `2026-06-23`
@@ -502,7 +502,7 @@ Required fallout:
 
 ## Validation
 
-Docs-only validation required for this in-progress brief:
+Docs-only validation required for this done brief:
 
 - `npm run lint:briefs`
 - `npm run lint:briefs:all`
@@ -562,3 +562,33 @@ Canonical recovery order:
 
 - `2026-06-23 | planned | created after owner asked whether to audit current app shape, reused surfaces, new contracts, Garmin import/deferred boundaries, and remaining 10/10 gaps before AI runtime; no runtime, UI, OpenAI, or Garmin work started | next: owner decides whether to execute this docs-only audit or move directly to the downstream AI adapter child`
 - `2026-06-23 | in-progress | owner requested execution on branch ai-app-data-readiness-audit-v1; moved this brief to in-progress and completed local app/data audit across generator route, generator intake, SessionDraft/rule-engine validation, Swim Profile, Goals, guide/course drills, training_activity_events, provider evidence, Garmin packets, API docs, and tests; result keeps profile/goals/capability data as use_now, rule_engine_v1 as fallback_only, drill catalogs as catalog_map_first, history as deferred_history, and all Garmin/provider data as deferred_provider | next: validate docs-only lane, commit, push, open PR, monitor CI, and run pre-merge gate`
+- `2026-06-23 | done | merged PR #1231 at 270871aa and moved brief to done in repo-managed post-merge closeout; downstream child now treats this completed audit as prerequisite evidence | next: decide whether to execute the AI single-session adapter runtime child`
+
+## Completion Record
+
+- `completed`: `2026-06-23`
+- `merged_pr`: `#1231`
+- `squash_commit`: `270871aa`
+- `result`: Closed the AI app/data readiness audit. The app is ready for a bounded AI single-session runtime only after the downstream child builds explicit AI intake/source flags, model-adapter boundaries, drill-catalog mapping, privacy-safe diagnostics, and failure/fallback contracts. Garmin/provider/history data remains deferred.
+- `validation`: `npm run verify:docs-only` PASS; `npm run verify:pre-pr` PASS; GitHub CI PASS for Analyze, CodeQL, Vercel, deploy-preview, e2e-smoke, site-lock-smoke, size-check, and verify; `npm run verify:pre-merge` PASS; post-merge preflight identified this one docs-only closeout.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this docs-only audit.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                                 | Gaps / Notes                                                |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Source classification result separates AI V1 session generation from program, history, and Garmin/provider work; PR #1231 and CI passed.                 | No gap for docs-only audit.                                 |
+| UX flow clarity                               | `5/5`          | Audit defines import/manual/not-sure/deferred states for future control-question UI; no UI was changed.                                                  | Future runtime UI still requires screenshot handoff.        |
+| Business logic correctness and data integrity | `5/5`          | Prompt-ready sources require typed/source-flagged/bounded data; `rule_engine_v1` remains fallback/invariant oracle.                                      | Runtime implementation remains future child scope.          |
+| Performance (CWV + payloads)                  | `5/5`          | Runtime contract requires payload minimization, timeout, no-store behavior, cost buckets, and no core-route JS bloat.                                    | No runtime payload changed now.                             |
+| Data placement and sync boundaries            | `5/5`          | Audit separates server-canonical, provisional/local, not-stored, deferred-history, and deferred-provider data.                                           | No persistence change now.                                  |
+| Caching and invalidation strategy             | `5/5`          | Audit preserves existing no-store route pattern and names future save/invalidation expectations.                                                         | No cache behavior changed now.                              |
+| Reliability and failure handling              | `5/5`          | Runtime blockers include missing source/config, timeout, invalid schema, unknown values, fallback, and retry.                                            | Runtime handling remains future child scope.                |
+| Security and authz                            | `5/5`          | Future route must stay owner-scoped/server-only; secrets and raw provider data are blocked.                                                              | No auth/runtime code changed now.                           |
+| Privacy and compliance                        | `5/5`          | Raw prompts/responses, Garmin/provider files, secrets, exact GPS, and sensitive history dumps are excluded.                                              | Garmin/provider prompt input remains blocked.               |
+| Content governance                            | `5/5`          | AI drills must come from governed FreeSwimming catalogs or be rejected/deferred until mapped.                                                            | Drill-catalog adapter remains future child scope.           |
+| Analytics and KPI observability               | `5/5`          | Audit permits only safe status/cost/failure buckets and blocks sensitive payload analytics.                                                              | Runtime instrumentation remains future child scope.         |
+| Incident response and support operations      | `5/5`          | Audit requires disable/fallback/support diagnostics and keeps Garmin/provider incidents deferred.                                                        | No support UI changed now.                                  |
+| i18n operational readiness                    | `5/5`          | Future visible labels/errors must be typed/locale-ready; generated free text remains draft content.                                                      | No locale files changed now.                                |
+| Stack-fit and dependency discipline           | `5/5`          | Audit reuses existing generator route/intake, `SessionDraft`, rule engine, guide/course evidence, and provider-history contracts; no dependency changes. | No gap for docs-only audit.                                 |
+| Testing and QA automation                     | `5/5`          | `lint:briefs`, `lint:briefs:all`, docs-only lane, pre-PR, CI, and pre-merge all passed.                                                                  | Future runtime needs targeted unit/schema/adapter/UI tests. |
+| Scalability and cost efficiency               | `5/5`          | Audit requires bounded payload/output/retry/timeout/rate-limit/token-cost behavior and excludes raw provider files.                                      | Runtime cost controls remain future child scope.            |
+| DevOps and rollback readiness                 | `5/5`          | Future runtime must be disabled by default, fallback-capable, no-secret, and rollback-safe.                                                              | No runtime rollout changed now.                             |
