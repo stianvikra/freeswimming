@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-23`
 - `updated`: `2026-06-23`
@@ -271,7 +271,7 @@ Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Prerequisite contract: `docs/task-briefs/planned/2026-06-23-training-history-multi-sport-activity-contract-v1-10-10.md`
-- Current step: execute this brief on branch `training-history-generic-activity-data-model-v1`.
+- Closed by PR #1219 on `2026-06-23`; future provider/runtime/history UI children must build on the `training_activity_events` foundation and keep unmapped/unsupported activity rows out of swim Stats until explicit mapping exists.
 
 ## Help/Guide And Support Impact
 
@@ -347,3 +347,44 @@ Implementation validation:
 - `2026-06-23 | in-progress | audited existing planned-swim actuals, provider evidence, export/delete, generated DB types, Calendar Plan, and Review Actual boundaries; chose a separate owner-scoped training_activity_events foundation because additive completed_activity_events evolution would weaken swim-plan invariants; implemented migration, generated types, typed helper/adapters, export payload/query support, support/privacy docs, and targeted tests | next: run lint/typecheck/targeted tests and broad pre-PR gate`
 - `2026-06-23 | in-progress | targeted Vitest, typecheck, lint:briefs:all, lint:quality-gates, and git diff --check passed; first verify:pre-pr correctly stopped on pending linked Supabase migration, then npx supabase db push --linked applied 20260623140000_training_activity_events_foundation.sql to the linked remote | next: rerun verify:pre-pr after migration drift is clean`
 - `2026-06-23 | in-progress | npm run verify:pre-pr passed full lane after migration drift was clean: lint/quality/typecheck/unit/build/perf/e2e green, with Playwright reporting 111 passed and 567 skipped in the configured matrix; performance trend recommended tightening after 11 green runs, but this data-model slice records hold/defer because budget ratcheting belongs in docs/task-briefs/planned/2026-06-19-next-performance-budget-ratchet-maintenance-10-10.md, not this schema/export PR | next: commit, push, open PR, and monitor CI`
+- `2026-06-23 | done | PR #1219 merged as b59f000c after green CI, npm run verify:pre-merge, and npm run merge:preflight -- --assert-ready; post-merge preflight surfaced this repo-managed docs-only closeout | next: move brief to done and record completion evidence`
+
+## Completion Record
+
+- `completed`: `2026-06-23`
+- `merged_pr`: `#1219`
+- `squash_commit`: `b59f000c76039fc498035b54d047a37e2e234ff3`
+- `result`: Closed the generic training activity data-model foundation. FreeSwimming now has a private, owner-scoped `training_activity_events` base for future multi-sport activity history while existing swim Calendar, Review Actual, and Stats behavior stays swim-first and unchanged.
+- `validation`: Targeted Vitest, `npm run typecheck`, `npm run lint:briefs:all`, `npm run lint:quality-gates`, `git diff --check`, linked Supabase migration apply/drift check, `npm run verify:pre-pr`, required CI on PR #1219, `npm run verify:pre-merge`, and `npm run merge:preflight -- --assert-ready` all passed.
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this non-UI data-model slice.
+
+Critical target categories:
+
+- Product goals and IA
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                          | Gaps / Notes                                                           |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | PR #1219 diff + migration/helper/export docs; `verify:pre-pr`; CI; `verify:pre-merge`                                             | No gap for data foundation scope.                                      |
+| UX flow clarity                               | `5/5`          | Typed status taxonomy for `trusted`, `needs_review`, `unmapped`, `unsupported`, duplicate/orphan/schema-drift states + tests/docs | No user-facing UI in this slice.                                       |
+| Business logic correctness and data integrity | `5/5`          | `training_activity_events` migration, adapter tests, export tests, typecheck, unit suite                                          | Provider/runtime and Stats mapping intentionally deferred.             |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical model, owner RLS, export/delete cascade docs, support/GDPR docs                                                  | No local sync surface in this slice.                                   |
+| Caching and invalidation strategy             | `5/5`          | Export/API contract and future no-store/private-read boundary documented                                                          | No new rendered read route.                                            |
+| Reliability and failure handling              | `5/5`          | Unknown/future values fail closed; missing schema export degradation test; unrelated read failures still fail export              | No provider runtime retry path in scope.                               |
+| Security and authz                            | `5/5`          | Owner-scoped RLS, authenticated grants, export route tests, API/security gate                                                     | No cross-user activity UI or write route yet.                          |
+| Privacy and compliance                        | `5/5`          | Redacted/minimized export payload, GDPR/delete runbook updates, no raw provider files/tokens                                      | Raw provider retention still requires separate runtime brief.          |
+| Content governance                            | `5/5`          | Parent/prerequisite briefs updated; canonical data-model decision recorded                                                        | No gap.                                                                |
+| Analytics and KPI observability               | `5/5`          | Explicit no-Stats/no-KPI counting boundary and safe unmapped fallback                                                             | Future KPI mappings require explicit child brief.                      |
+| Incident response and support operations      | `5/5`          | Support diagnostics documented for missing schema, unmapped source/sport, duplicates, orphans, unsupported detail                 | No live provider operations yet.                                       |
+| i18n operational readiness                    | `5/5`          | Typed mappings and unknown-safe fallbacks, not display labels as identity                                                         | Future user-facing labels require locale/copy child.                   |
+| Stack-fit and dependency discipline           | `5/5`          | Existing Supabase migration/RLS/export/test patterns; no new dependencies                                                         | No gap.                                                                |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest + full local gates + CI + pre-merge gate                                                                          | No screenshot handoff needed because no UI/print/layout change.        |
+| Scalability and cost efficiency               | `5/5`          | Indexed owner/date/source access; no raw provider payload reads in core export                                                    | Future provider import volume needs own runtime brief.                 |
+| DevOps and rollback readiness                 | `5/5`          | Explicit migration, linked remote applied, drift clean, read-through compatibility, no destructive history rewrite                | Rollback is table/export foundation removal before runtime dependence. |
