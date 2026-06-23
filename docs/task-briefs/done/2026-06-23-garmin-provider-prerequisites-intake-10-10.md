@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-23-garmin-provider-prerequisites-intake-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-23`
 - `updated`: `2026-06-23`
@@ -497,3 +497,46 @@ Canonical recovery order:
 
 - `2026-06-23 | planned | created from clean synced main@fe4d632a after Garmin/provider data scope audit PR #1223 merged and post-merge preflight found no closeout; owner confirmed creating a prerequisites-intake brief before any Garmin runtime; decision: document the evidence packet and runtime blockers for provider access, sample payloads, consent/terms, duplicate policy, retention, AI use, and support/rollback | next: validate docs-only changes and wait for owner decision on whether to package as PR or collect provider facts`
 - `2026-06-23 | in-progress | owner explicitly approved executing the docs-only prerequisites/evidence-fill slice from clean main@1f3b74ac; moved this brief to in-progress and expanded it with official-source refresh, current runtime-blocked status, evidence packet tracker, safe defaults, runtime readiness, and owner decision register | next: update linked parent/audit references, run docs-only validation, commit, push, open PR, and keep Garmin runtime blocked`
+- `2026-06-23 | done | PR #1225 merged as squash commit 2247dcf3; post-merge preflight requested repo-managed docs-only closeout; moved this brief to done and recorded completion evidence | next: keep Garmin runtime blocked until provider access, sample payloads, consent/terms, duplicate policy, retention, AI-use, and support/rollback facts are collected`
+
+## Completion Record
+
+- `completed`: `2026-06-23`
+- `merged_pr`: `#1225`
+- `squash_commit`: `2247dcf3`
+- `result`: Closed the Garmin provider prerequisites intake by turning the planned shell into an actionable evidence packet with official-source refresh, current blocked status, missing-provider facts, owner-decision register, safe defaults, and runtime-path readiness gates. No Garmin runtime, OAuth, imports, FIT parsing, raw storage, AI calls, UI, migrations, credentials, secrets, or sample payloads were added.
+- `validation`: `npm run verify:docs-only` PASS (`artifacts/test-runs/20260623-142548`), `npm run verify:pre-pr` PASS on `aad7ded9`, GitHub CI PASS for PR `#1225`, `npm run verify:pre-merge` PASS (`artifacts/verify-pre-merge/20260623-122836.json`).
+- `10/10 claim`: yes - all critical target categories reached `5/5` for this docs-only planning artifact; runtime remains intentionally blocked.
+
+Critical target categories:
+
+- Product goals and IA
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Incident response and support operations
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Achieved Score | Evidence                                                                                                                            | Gaps / Notes                                                               |
+| --------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Evidence tracker, runtime readiness table, owner decision register, PR `#1225`.                                                     | No gap for docs-only intake; provider runtime remains blocked.             |
+| UX flow clarity                               | `5/5`          | Safe defaults and owner-facing next action in the done brief.                                                                       | No UI changed; future consent/review UI needs its own screenshot handoff.  |
+| Business logic correctness and data integrity | `5/5`          | Provider evidence, canonical history, health context, AI feature views, send jobs, and reconciliation remain separated.             | No runtime data changed; future mappings need provider samples and tests.  |
+| Performance (CWV + payloads)                  | `5/5`          | Brief blocks raw files, raw JSON, high-cardinality samples, and AI payloads from hot routes.                                        | Runtime storage/query budgets still require a future child.                |
+| Data placement and sync boundaries            | `5/5`          | Data placement contract and evidence packet tracker define every future data class boundary.                                        | Provider OAuth/raw storage remains blocked.                                |
+| Caching and invalidation strategy             | `5/5`          | Future provider reads must be private/no-store and mapped writes list affected surfaces.                                            | No runtime cache changed.                                                  |
+| Reliability and failure handling              | `5/5`          | Unknown, duplicate, malformed, revoked, deleted, unsupported, and sensitive provider values fail closed.                            | Runtime retry/replay tests are future work after provider facts.           |
+| Security and authz                            | `5/5`          | Least-privilege OAuth, encrypted token handling, owner-scoped routes, and no provider/browser ID trust are required before runtime. | No secrets, credentials, tokens, or routes were added.                     |
+| Privacy and compliance                        | `5/5`          | Terms, consent, AI use, retention, export/delete/disconnect, sensitive categories, and attribution are blocked until decided.       | Legal/provider decisions still required before runtime.                    |
+| Content governance                            | `5/5`          | Brief is now the source-of-truth gate before Garmin/provider runtime.                                                               | No gap for docs-only closeout.                                             |
+| Analytics and KPI observability               | `5/5`          | Future KPI inclusion requires source/status taxonomy and safe payload mapping.                                                      | No analytics runtime changed.                                              |
+| Incident response and support operations      | `5/5`          | Runtime must define disable flag, replay, cleanup, redacted diagnostics, support runbook, and rollback before release.              | Future support runbook update required only when runtime path is selected. |
+| i18n operational readiness                    | `5/5`          | Future provider/source/status labels must be typed and translation-ready before visible copy ships.                                 | No visible copy changed.                                                   |
+| Stack-fit and dependency discipline           | `5/5`          | Uses existing Next/Supabase/provider-evidence/activity-history contracts and blocks parser/provider dependencies.                   | No new dependency added.                                                   |
+| Testing and QA automation                     | `5/5`          | `verify:docs-only`, `verify:pre-pr`, GitHub CI, and `verify:pre-merge` all passed.                                                  | Runtime fixture/negative-path tests remain future work.                    |
+| Scalability and cost efficiency               | `5/5`          | Raw/high-volume provider data must use storage/TTL/aggregation and avoid hot route scans.                                           | Runtime cleanup jobs remain future work after owner decisions.             |
+| DevOps and rollback readiness                 | `5/5`          | Docs-only rollback is revert of `2247dcf3`; future runtime must be disabled-by-default and replay-safe.                             | No runtime rollback path needed in this PR.                                |
