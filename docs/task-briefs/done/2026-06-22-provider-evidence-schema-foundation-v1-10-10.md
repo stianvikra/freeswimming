@@ -9,7 +9,7 @@
 - `updated`: `2026-06-22`
 - `mode`: `runtime schema foundation / done`
 - `parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- `predecessor`: `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
+- `predecessor`: `docs/task-briefs/done/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md`
 - `related_blocked_briefs`:
   - `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`
   - `docs/task-briefs/blocked/2026-02-28-garmin-training-api-partner-integration-10-10.md`
@@ -284,7 +284,7 @@ Return path:
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Last merged workstream: PR `#1205` (`509b75c1`) created the provider evidence intake brief.
 - Completed child: this schema foundation shipped in PR `#1206` and was closed by PR `#1207`.
-- Next planned child after audit: `docs/task-briefs/planned/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
+- Next child after audit: `docs/task-briefs/done/2026-06-22-provider-evidence-fixture-import-v1-10-10.md`.
 - Next product step after this brief: choose between the bounded `manual_fixture` import proof, OAuth/provider connection runtime, raw file evidence storage, or keeping Garmin reconciliation blocked until partner/API samples exist.
 
 ## Domain Granularity Gate

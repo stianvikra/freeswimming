@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10`
-- `status`: `planned`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-22`
 - `updated`: `2026-06-22`
-- `mode`: `docs/schema intake / plan only`
+- `mode`: `docs/schema intake / done`
 - `parent`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - `related_blocked_briefs`:
   - `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`
@@ -16,11 +16,11 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-22`
-- `base`: `main@84222be4`
-- `audit_status`: `ready`
-- `decision`: Use this as the next bounded docs/schema-intake slice before any provider runtime, Garmin import, OAuth, FIT parsing, or reconciliation matching work.
-- `reason`: Review Actual Editor V1 is merged and manual actual truth is now editable, but the app still has no provider-evidence storage, provider connection contract, secret/config family, export/privacy deletion contract, or external-service matrix row for Garmin-style activity evidence.
-- `must_refresh_before_execution_if`: Refresh if Garmin official docs, OAuth/security guidance, Supabase RLS guidance, `completed_activity_events`, `planned_workout_instances`, Review Actual, Calendar Plan, Calendar Comparison/Stats, export/privacy deletion, route registry, Help/Guide/support docs, scorecard categories, or verification lanes change.
+- `base`: `main@ba4e6024`
+- `audit_status`: `done`
+- `decision`: Close this docs/schema-intake as the provider-evidence boundary prerequisite now that schema foundation and fixture import proof are both shipped.
+- `reason`: The intake contract has been carried through Provider Evidence Schema Foundation V1 and Provider Evidence Fixture Import V1; provider evidence can now be stored/exported/deleted and fixture-written without becoming Calendar, Stats, Perfect Day, or manual actual truth. Real Garmin/provider runtime remains blocked by external provider facts and owner decisions.
+- `must_refresh_before_execution_if`: This done brief should not be re-executed. Create or refresh a new child if Garmin official docs, OAuth/security guidance, Supabase RLS guidance, `completed_activity_events`, `planned_workout_instances`, Review Actual, Calendar Plan, Calendar Comparison/Stats, export/privacy deletion, route registry, Help/Guide/support docs, scorecard categories, verification lanes, or owner product decisions change before provider runtime.
 
 ## Goal
 
@@ -32,13 +32,13 @@ Codex skal lage en trygg kontrakt for hvordan fremtidige provider-data skal skil
 
 ## Current App Baseline
 
-- `completed_activity_events` is manual actual history only. The DB constraint and TypeScript source-kind union currently allow only `manual`.
+- `completed_activity_events` remains manual actual history only. Provider evidence is still separate from completed-training truth.
 - `Review actual` edits only owner-scoped manual actual rows and fails closed for provider-like rows or unmapped outcomes.
 - Calendar Plan renders unknown/duplicate/non-manual completion rows as review states and does not treat them as completed history.
 - `docs/api-contracts.md` explicitly states that Garmin send/import/reconciliation must not write through the manual completion route.
-- The Garmin Activity reconciliation brief remains blocked until partner/API access, payload/FIT samples, alias/correlation behavior, and attribution requirements are confirmed.
-- External service and secret/config docs do not yet define Garmin/provider activity connection families.
-- Account export currently includes workouts, dryland, habits, goals, training context, and commerce/support data, but not provider-evidence tables because those tables do not exist yet.
+- Provider Evidence Schema Foundation V1 now provides owner-scoped `provider_connections`, `provider_import_runs`, and `provider_activity_evidence` storage with export/delete coverage and no Calendar/Stats counting.
+- Provider Evidence Fixture Import V1 now proves a disabled-by-default authenticated `manual_fixture` route can write private provider evidence idempotently without creating completion truth.
+- External service, secret/config, route registry, API contract, GDPR, and support docs now include the provider-evidence fixture boundary, while live Garmin/OAuth/provider runtime remains blocked.
 
 ## Official Source Baseline
 
@@ -132,17 +132,17 @@ Future provider runtime can affect these surfaces and must be explicitly mapped 
 
 Systemic findings:
 
-| Surface                 | Finding                                                                                            | Severity | Recommended Type                                            | Owner Decision Needed                     | Follow-Up Brief Path                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Provider data model     | Runtime reconciliation needs provider-evidence tables separate from manual actual history.         | `high`   | `bounded implementation child`                              | no for contract; yes before runtime scope | `docs/task-briefs/planned/2026-06-22-provider-evidence-boundary-and-reconciliation-intake-v1-10-10.md` |
-| Provider security/ops   | OAuth/secrets/service-matrix/export/privacy are not yet modeled for Garmin/provider activity data. | `high`   | `safe process/docs update` now; later bounded runtime child | yes before OAuth/runtime                  | Future provider connection/runtime brief                                                               |
-| Product matching policy | Sent-vs-received matching depends on Garmin alias/correlation facts or an import-only reduction.   | `high`   | `deferred architecture decision`                            | yes                                       | Existing blocked Garmin briefs                                                                         |
+| Surface                 | Finding                                                                                                                                  | Severity | Recommended Type                 | Owner Decision Needed    | Follow-Up Brief Path                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| Provider data model     | Runtime reconciliation needs provider-evidence tables separate from manual actual history.                                               | `high`   | `completed prerequisite`         | yes before runtime scope | `docs/task-briefs/done/2026-06-22-provider-evidence-schema-foundation-v1-10-10.md` |
+| Provider security/ops   | OAuth/secrets/service-matrix/export/privacy are modeled for fixture evidence, but live OAuth/provider runtime still needs a fresh child. | `high`   | `deferred architecture decision` | yes before OAuth/runtime | Future provider connection/runtime brief                                           |
+| Product matching policy | Sent-vs-received matching depends on Garmin alias/correlation facts or an import-only reduction.                                         | `high`   | `deferred architecture decision` | yes                      | Existing blocked Garmin briefs                                                     |
 
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Last merged workstream: Provider Evidence Fixture Import V1 PR `#1209` (`6f813fc0`) and closeout PR `#1210` (`2b1d7c00`).
-- Current slice status: docs/schema-intake has been followed by Provider Evidence Schema Foundation V1 and Provider Evidence Fixture Import V1.
+- Current slice status: this docs/schema-intake is closed in `docs/task-briefs/done/`.
 - Next product step after fixture import closeout: no active provider/runtime child is selected; keep real Garmin/provider runtime blocked until owner/provider prerequisites exist, or choose a separate bounded docs/product slice.
 
 ## Platform 10/10 Scorecard Mapping
@@ -387,3 +387,25 @@ Future runtime validation:
 ## Checkpoint Log
 
 - `2026-06-22 | planned | created from clean main@84222be4 after PR #1203 and closeout #1204 merged; owner approved the audit recommendation to create a docs/schema-intake brief only, not provider runtime. Scope records provider-evidence boundary, official-source baseline, app-impact sweep, scorecard, data/identity/forward-compat contracts, and explicit runtime blockers for Garmin/OAuth/FIT/reconciliation | next: link parent/blocked briefs, run docs validation, commit, push, open PR, monitor CI, and run pre-merge gate`
+- `2026-06-22 | done | closed after Provider Evidence Schema Foundation V1 PR #1206/#1207 and Provider Evidence Fixture Import V1 PR #1209/#1210 shipped, after roadmap refresh PR #1211 and Perfect Day decision PR #1216 left no active provider/runtime child selected; runtime Garmin/provider reconciliation remains blocked | next: keep provider runtime blocked until owner/provider facts unblock it, or create a fresh bounded docs/product child`
+
+## Completion Record
+
+- `completed`: `2026-06-22`
+- `merged_pr`: `TBD until this roadmap lock PR merges`
+- `result`: Closed the provider-evidence boundary intake as a completed prerequisite. The app now has separate provider-evidence schema, export/delete coverage, support/config/API documentation, and a disabled-by-default `manual_fixture` write proof, while Garmin/OAuth/live provider runtime, FIT/raw-file storage, matching, UI review, Calendar/Stats counting, Perfect Day, and performance-ratchet work stay out of scope.
+- `validation`: Local docs-only validation passed: `npm run lint:briefs`, `npm run lint:briefs:all`, `git diff --check`, and `npm run verify:pre-pr`. PR CI and `npm run verify:pre-merge` remain required before merge readiness.
+- `10/10 claim`: yes - all critical target categories remain docs-only and are `5/5` on local validation.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                     | Gaps / Notes                                                             |
+| --------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Product goals and IA                          | `5/5`          | The roadmap now shows boundary intake, schema foundation, and fixture import as closed prerequisites, with no active provider/runtime child. | Runtime provider product scope still needs a fresh owner-selected child. |
+| Business logic correctness and data integrity | `5/5`          | Provider evidence remains separate from manual actual history, planned rows, source workouts/programs, send jobs, Stats, and Perfect Day.    | Real reconciliation matching remains blocked by provider facts.          |
+| Data placement and sync boundaries            | `5/5`          | Done schema/fixture briefs prove provider connection, import-run, evidence, export/delete, and manual actual boundaries.                     | Raw provider files and OAuth tokens remain deferred.                     |
+| Reliability and failure handling              | `5/5`          | Fixture route proof covers duplicate, malformed, unsupported, disabled, schema-missing, and bounded failure states.                          | Live provider replay/backfill remains future scope.                      |
+| Security and authz                            | `5/5`          | Done schema/fixture work uses owner scope, RLS, authenticated route gate, and service-role writes only after auth/payload preflight.         | Future OAuth/token work requires a fresh security review.                |
+| Privacy and compliance                        | `5/5`          | Provider fixture evidence stores redacted summaries only, exports/deletes evidence, and excludes raw provider payloads/tokens/files.         | Raw FIT/GPX/TCX retention/deletion remains deferred.                     |
+| Incident response and support operations      | `5/5`          | Support docs name fixture run IDs/counts/states and no-completion side effects without exposing raw provider data.                           | Live provider disconnect/backfill support copy remains future scope.     |
+| Stack-fit and dependency discipline           | `5/5`          | This closeout is docs-only and references already-shipped Next/Supabase/provider-evidence patterns with no dependency changes.               | None scoped.                                                             |
+| Testing and QA automation                     | `5/5`          | Changed briefs are covered by brief lint/docs-only verification and prior schema/fixture targeted tests.                                     | Final PR CI and `verify:pre-merge` required before merge readiness.      |
+| DevOps and rollback readiness                 | `5/5`          | Roadmap closeout is Markdown-only and reversible; fixture route remains disabled by default and does not depend on external provider state.  | None scoped.                                                             |
