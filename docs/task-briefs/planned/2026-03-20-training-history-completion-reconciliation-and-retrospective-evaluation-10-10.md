@@ -14,8 +14,8 @@
 - `last_audited`: `2026-06-23`
 - `base`: `main@fe4d632a`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the current next child is the Garmin provider prerequisites intake before any retrospective evaluation, broad history UI, AI feature-view, or provider/runtime work.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, a completed generic `training_activity_events` foundation, Calendar Trends `Swimming` mapped from trusted manual swim actuals, and a merged Garmin/provider data scope audit in PR `#1223`. The next step is a docs-only prerequisites intake so owner/provider facts can be collected before any Garmin OAuth, import, FIT parsing, raw storage, AI, or reconciliation runtime brief. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
+- `decision`: Use this as the training-history parent contract; the current in-progress child is the Garmin provider prerequisites evidence-fill intake before any retrospective evaluation, broad history UI, AI feature-view, or provider/runtime work.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, a completed generic `training_activity_events` foundation, Calendar Trends `Swimming` mapped from trusted manual swim actuals, a merged Garmin/provider data scope audit in PR `#1223`, and a planned Garmin prerequisites shell from PR `#1224`. The current step is an in-progress docs-only evidence-fill intake so owner/provider facts can be collected before any Garmin OAuth, import, FIT parsing, raw storage, AI, or reconciliation runtime brief. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -104,10 +104,10 @@ Training history must keep these layers separate:
 
 11. Garmin provider prerequisites intake child:
 
-- Path: `docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`.
-- Owns: docs-only evidence packet and decision checklist for Garmin partner access, API scopes, terms, credentials path, sample payloads/FIT, consent/revocation, source provenance, duplicate policy, retention, AI use, attribution, support, and rollback.
+- Path: `docs/task-briefs/in-progress/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`.
+- Owns: docs-only evidence packet, current blocked status, safe defaults, owner decision register, and decision checklist for Garmin partner access, API scopes, terms, credentials path, sample payloads/FIT, consent/revocation, source provenance, duplicate policy, retention, AI use, attribution, support, and rollback.
 - Does not own: runtime code, migrations, OAuth, provider calls, raw file storage, FIT parsing, UI, screenshots, AI calls, or reconciliation.
-- Status: planned after owner confirmed this as the next bounded step from clean `main@fe4d632a`.
+- Status: in-progress after owner explicitly approved the docs-only prerequisites/evidence-fill slice from clean `main@1f3b74ac`.
 
 12. Garmin Activity reconciliation child:
 
@@ -159,7 +159,7 @@ Last shipped Calendar Trends swim actuals mapping child scope is owned by:
 
 Next prepared Garmin/provider prerequisites intake child is owned by:
 
-- `docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`
+- `docs/task-briefs/in-progress/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`
 
 No active provider/runtime child is currently selected. The next provider/runtime slice requires the Garmin/provider data scope audit, this prerequisites intake, an owner decision, and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
 
