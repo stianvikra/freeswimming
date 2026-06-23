@@ -132,7 +132,7 @@ export default async function MyLibraryCalendarPage({ searchParams }: MyLibraryC
                     selectedView === "compare" ? activeModeLinkClass : inactiveModeLinkClass
                   }`}
                 >
-                  Stats
+                  Trends
                 </Link>
               </nav>
             </div>
