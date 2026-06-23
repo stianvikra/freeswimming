@@ -1,4 +1,4 @@
-# Task Brief: AI Plan Generator JSON Guardrails (10/10)
+# Task Brief: AI Session And Program Generator GPT-5.5 Readiness (10/10)
 
 ## Metadata
 
@@ -6,250 +6,443 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-02-28`
-- `updated`: `2026-05-01`
+- `updated`: `2026-06-23`
+- `mode`: `plan only / docs-only app audit and OpenAI docs readiness`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-05-15`
-- `base`: `main@b2a211f`
-- `audit_status`: `revise-before-use`
-- `decision`: Refresh this brief before execution.
-- `reason`: Existing lifecycle brief predates the Brief Audit Record standard and was not fully re-audited in this governance slice; current scope, paths, scorecard mapping, validation lane, Help/Guide impact, and support-surface impact must be checked before use.
-- `must_refresh_before_execution_if`: Always refresh before use, and refresh again if AGENTS.md, scorecard categories, verification lanes, route labels, Help/Guide, runbooks, support surfaces, provider facts, or relevant repo paths change.
+- `last_audited`: `2026-06-23`
+- `base`: `main@bca17f5a`
+- `audit_status`: `ready`
+- `decision`: Use this refreshed brief as the planning contract before any GPT-5.5/OpenAI-backed session or program generation runtime.
+- `reason`: The existing app has a protected, deterministic `rule_engine_v1` AI session generator with strong typed validation and canonical workout save flow, but no OpenAI runtime, no Responses API integration, no live model prompts, and no enabled program generation. Official OpenAI docs checked on `2026-06-23` identify GPT-5.5 as the current latest-model guide and point to Responses API, prompt guidance, and Structured Outputs as the right implementation baseline.
+- `must_refresh_before_execution_if`: Refresh if OpenAI model docs, Responses API behavior, Structured Outputs schema rules, OpenAI SDK/API versions, model availability/pricing, app generator routes, Program Builder contracts, workout/session step schema, `SessionDraft`, `training_activity_events`, privacy/export/delete routes, Help/Guide surfaces, scorecard categories, or verification lanes change.
 
 ## Goal
 
-Generate AI-authored swim session/program drafts across explicit planning horizons so users can choose anything from one session to a fixed-duration, custom date-range, or competition-date plan while keeping deterministic safety, schema correctness, Garmin-ready step structure, threshold-based targeting, and predictable quality.
+Define how FreeSwimming should move from the current local session generator toward GPT-5.5-assisted swim session and program generation without creating invalid workouts, leaking sensitive training context, bypassing canonical builders, or hardcoding today's model or schema assumptions.
 
-## Dependencies And Boundaries
+## Pre-Implementation Owner Explanation
 
-- Upstream bridge slice for user-reviewed generator input:
-  - `docs/task-briefs/done/2026-03-19-my-library-generator-intake-and-prefill-foundation-10-10.md`
-- Upstream canonical workout/entity contract:
-  - `docs/task-briefs/planned/2026-02-28-workout-data-contract-and-step-engine-10-10.md`
-- This brief should consume a deterministic generator-intake handoff payload rather than querying raw My Library source entities ad hoc.
-- This brief owns AI generation behavior, not manual workout/session/program building.
-- This brief is not responsible for:
-  - defining My Library prefill UX,
-  - editing athlete profile/goals/preferences/personal records,
-  - manual builder ergonomics for user-authored sessions/programs,
-  - or deciding which saved user context should be included for a specific generation run.
+Codex skal lage en oppdatert plan, ikke AI-runtime. Vi sjekker hvordan appen allerede lager og lagrer AI-okt-forslag, og sammenligner det med dagens OpenAI-dokumentasjon for GPT-5.5, Responses API og schema-sikre svar. Det betyr noe fordi AI kan gi bedre okter og treningsprogrammer, men forslagene ma fortsatt valideres, redigeres og lagres som vanlige FreeSwimming-okter/programmer. Utenfor scope er OpenAI-nokler, live API-kall, UI-endringer, database-migrasjoner, Garmin, provider-data, adaptive historikkfeedback og habits-smatterier.
 
-## Scope
+## Product Decision
 
-- Input contract:
-  - canonical generator-intake handoff payload,
-  - explicit `planning_horizon` selection:
-    - `session`,
-    - `week`,
-    - `month`,
-    - `three_months`,
-    - `six_months`,
-    - `twelve_months`,
-    - `date_range`,
-    - `to_competition_date`,
-  - selected goal/focus/profile/metric/preference context from intake,
-  - explicit generation-intent fields for the chosen horizon, such as:
-    - environment:
-      - `pool`,
-      - `open_water`,
-    - when `pool` is selected, explicit `pool_length_m`:
-      - `12.5`,
-      - `25`,
-      - `50`,
-    - preferred planning unit:
-      - `distance`,
-      - `estimated_time`,
-    - explicit duration target for the run:
-      - `target_distance_m`,
-      - or `target_time_min`,
-    - desired session/program intent such as:
-      - `recovery`,
-      - `endurance`,
-      - `technique`,
-      - `threshold_css`,
-      - `speed`,
-      - `race_pace`,
-    - user-facing effort selection:
-      - `easy`,
-      - `moderate`,
-      - `hard`,
-      - `very_hard`,
-      - `race_pace`,
-    - allowed stroke list for the current swimmer/run,
-    - whether drills and/or kick work should be included,
-    - optional allowed-equipment constraints where product chooses to support them,
-  - optional calendar framing for date-based generations:
-    - `start_date`,
-    - `end_date`,
-    - for rolling horizons, default start is the generation date unless the user explicitly overrides it,
-  - optional competition planning intent for competition-driven generations:
-    - target competition date,
-    - optional competition label,
-    - explicit `peak_for_competition` / taper intent instead of hidden AI inference,
-    - optional explicit training start date when the user does not want the plan to begin immediately,
-  - available time/sessions,
-  - per-run constraints.
-- Output contract:
-  - strict JSON schema only,
-  - one `session -> steps` draft for `session` horizon,
-  - `weeks -> sessions -> steps` for multi-session horizons,
-  - plan-level metadata that preserves selected planning horizon and competition intent when present,
-  - editable title/name suggestions rather than fixed AI-authored names,
-  - draft-first output state so generated content can be reviewed/edited before acceptance,
-  - Garmin-compatible duration/target/repeat semantics,
-  - threshold-based swim-zone or pace targets when threshold context is available,
-  - user-facing effort presets may stay simpler than exact zones, but canonical output must still map cleanly onto the shared threshold-based method when context exists.
-- Guardrails:
-  - horizon-specific progression and recovery rules,
-  - progression caps,
-  - recovery rules,
-  - taper/peak logic only when competition-date intent explicitly requests it,
-  - step-count budget for export compatibility,
-  - no unsupported ad hoc zone system outside the canonical threshold-based method,
-  - no hidden competition/taper assumptions when the user did not select a competition-driven horizon,
-  - no hidden calendar-window assumptions when the user selected a custom date range.
-- Fallback UX when AI response is invalid/unavailable.
+Recommendation: resume AI generation before Garmin runtime, but do it in a staged way.
 
-## Child Slice Sequencing
+Preferred sequence:
 
-1. AI session generator:
-   - one-session horizon,
-   - Garmin-minimum swim workout structure,
-   - explicit pool/open-water, duration, session-type, and effort inputs,
-   - clean single-session draft review/edit handoff.
-2. AI short-horizon program generator:
-   - one week,
-   - one month,
-   - progression/recovery across short cycles.
-3. AI medium- and long-horizon program generator:
-   - three months,
-   - six months,
-   - twelve months,
-   - custom `date_range`,
-   - explicit calendar window handling.
-4. AI competition-target generator:
-   - to competition date,
-   - explicit peak/taper intent and periodization guardrails.
+1. This refreshed docs-only readiness brief.
+2. A future `GPT-5.5 session draft adapter` child that can call OpenAI only for a single swim-session draft and must output the existing `SessionDraft` contract.
+3. A future `AI session eval/golden-output hardening` child that compares GPT output against deterministic rule-engine invariants before broader rollout.
+4. A future `weekly-pattern program proposal` child that creates program proposals from reviewed session drafts and converges into the canonical Program Builder.
+5. A future `full AI program planning` child only after one-session generation, Program Builder editing, Calendar planned-instance sync, and planned-vs-actual history are stable.
 
-## Program And Coach Roadmap Model
+Do not start with full multi-month program generation. A full program contains weeks, days, sessions, steps, progression, recovery, taper, and calendar assumptions. That is too much blast radius before GPT-generated single sessions pass schema, coaching-quality, cost, privacy, and save-flow gates.
 
-- Use one canonical program model and one canonical Program Builder, not separate manual and AI program identity systems.
-- Supported long-term entrypoints should converge into the same saved program review/edit/save surface:
-  - `Build manually`: user places existing My Swim Sessions into week/day slots.
-  - `Create from weekly pattern`: user picks sessions per week, repeat duration, preferred days, and whether to repeat or progress sessions.
-  - `Let AI suggest full program`: AI proposes sessions and placements from goals, availability, date window, and competition intent.
-- AI-generated programs are proposals until reviewed and accepted.
-- Accepted AI-generated programs must be editable in the same manual Program Builder as manually assembled programs.
-- Weekly-pattern generation is a lower-risk bridge before full AI program planning:
-  - e.g. `3 sessions/week for 8 weeks`,
-  - optional preferred days,
-  - repeat the same sessions or apply simple progression,
-  - no hidden calendar or taper assumptions.
-- Full AI program planning should wait until one-session AI generation, canonical program editing, and planned-vs-actual history are stable.
-- Future adaptive coaching should consume canonical history and program intent; it must not silently rewrite planned programs without explicit user review.
+Do not create a second AI-only planning system. AI output remains a proposal until the user reviews and accepts it into normal FreeSwimming entities.
 
-## Out Of Scope
+## Current App Audit
 
-- Fine-tuning custom model.
-- Full coaching recommendation engine.
-- Adaptive replanning of future schedules from completed-history signals without explicit user review.
-- Retrospective AI evaluation of completed history entries after execution.
-- Creating a second AI-only planner or AI-only program identity model separate from the canonical Program Builder.
+Audited on `2026-06-23` from local repo files.
 
-## Data Placement And Sync Contract (Required)
+| Surface                | Current evidence                                                                                                                                                                                                                                                                       | Readiness implication                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generator route        | `app/api/my-library/generator/session-draft/route.ts` is authenticated, returns `no-store` JSON, loads owner-scoped generator intake, validates request input, builds one draft, validates generated output, and returns `401`/`400`/`422` for expected failure paths.                 | Good route boundary for a future AI adapter, but no OpenAI call belongs there until prompt/schema/rate-limit/secret handling are defined.                  |
+| Program target         | The same route rejects `targetType = program` with `422`: "Program generation stays deferred in this slice."                                                                                                                                                                           | Program generation is intentionally blocked and must stay blocked until a separate program-proposal child exists.                                          |
+| Generator intake       | `lib/generator-intake/shared.ts` builds a versioned handoff from preferences, CSS pace, personal records, goals, capability limits, target type, desired count/minutes, focus text, and constraints; notes are explicitly `notesIncluded: false`.                                      | Strong prompt-input boundary. Future GPT prompts should use this minimized handoff, not query raw My Library entities ad hoc.                              |
+| Session draft contract | `lib/session-generator-v1/shared.ts` defines typed inputs, environments, pool lengths, session types, effort presets, strokes, equipment, step categories, duration modes, target modes, repeats, pool units, and `SessionDraft`.                                                      | GPT output should target this contract or a strict schema-derived successor, with unknown values rejected or mapped explicitly.                            |
+| Generator kind         | `SessionDraft.generatorKind` is currently only `"rule_engine_v1"`.                                                                                                                                                                                                                     | Future model output needs an explicit generator/source contract, for example a typed model-assisted kind, without weakening existing rule-engine fixtures. |
+| Rule engine            | `lib/session-generator-v1/server.ts` builds deterministic drafts, applies open-water guardrails, estimates pace/distance/duration, builds steps/repeats/rests, and validates output.                                                                                                   | Keep this as fallback and invariant oracle. Do not replace it with raw model output.                                                                       |
+| Save flow              | `components/my-library/generator/SessionGeneratorPanel.tsx` previews the generated draft and saves through normal workout routes; accepted sessions become My Swim Sessions, not AI-only records.                                                                                      | Correct canonical ownership. GPT output must preserve review/edit/save and not auto-save.                                                                  |
+| Tests                  | `tests/unit/session-generator-route.test.ts`, `tests/unit/session-generator-server.test.ts`, `tests/unit/session-generator-panel.test.tsx`, and `tests/e2e/my-library-generator-intake.spec.ts` cover auth, program deferral, generation, validation, preview, save, and reopen flows. | Future GPT work must add model-adapter tests, schema/golden tests, mocked OpenAI failures, and no-secret/no-raw-prompt assertions.                         |
+| OpenAI runtime         | `rg` found no OpenAI SDK/API runtime, model config, Responses API calls, live prompts, or OpenAI env handling in app code.                                                                                                                                                             | Runtime starts from zero and needs explicit secret, cost, disable, retry, observability, and fallback design.                                              |
 
-- Server-canonical:
-  - validated generated plans/sessions/steps that are explicitly accepted for persistence,
-  - schema version, validation outcome, and any canonical entity references used during save.
-- Local-only:
-  - accepted generator-intake handoff for the current run,
-  - prompt draft input derived from that handoff,
-  - selected planning horizon and one-run calendar/competition intent before save,
-  - transient preview of generated output,
-  - temporary user edits before save/confirm.
-- Sync behavior:
-  - AI output remains provisional until schema/invariant validation and explicit save succeed,
-  - invalid or stale generated output must never be treated as canonical,
-  - regeneration must not silently overwrite an accepted canonical plan without explicit user workflow.
-- Invalidation:
-  - accepting/regenerating/deleting a generated plan invalidates dependent planner/builder/export reads for the affected plan.
+## Official OpenAI Source Baseline
+
+Checked online from official OpenAI documentation on `2026-06-23`:
+
+- Latest model guide / GPT-5.5: https://developers.openai.com/api/docs/guides/latest-model
+- GPT-5.5 prompting guide: https://developers.openai.com/api/docs/guides/prompt-guidance
+- Responses API guide: https://developers.openai.com/api/docs/guides/responses
+- Structured Outputs guide: https://developers.openai.com/api/docs/guides/structured-outputs
+- API models reference: https://platform.openai.com/docs/models
+
+Current interpretation:
+
+- GPT-5.5 is the current official latest-model guidance target as of this audit.
+- Future implementation should use the Responses API unless an execution-time official-doc refresh gives a better OpenAI-recommended surface.
+- Generated sessions/programs must use Structured Outputs or equivalent strict schema enforcement rather than free-form JSON parsing.
+- Prompts should be short, outcome-first, and explicit about validation boundaries; older long prompts should not be copied forward unchanged.
+- A model ID is a replaceable runtime/config decision, not canonical product identity.
+- Implementation must re-check availability, model name, SDK/API shape, limits, pricing/cost exposure, and structured-output support before code starts.
+
+This docs baseline is enough to plan. It is not permission to add live OpenAI calls, keys, model config, SDK dependencies, billing assumptions, prompt logs, or production rollout.
+
+## Target Architecture
+
+### Runtime Shape
+
+Future GPT runtime should be a small adapter behind existing app contracts:
+
+1. Load the existing generator intake handoff.
+2. Build a minimized prompt payload from included blocks only.
+3. Call OpenAI through a server-only adapter with a disable flag and timeout.
+4. Request strict structured output matching a schema-owned draft contract.
+5. Normalize and validate the model output using existing FreeSwimming invariants.
+6. Return a provisional draft only.
+7. Save only after user review through canonical workout/program routes.
+8. Fall back to `rule_engine_v1` or a clear retry/error state when model generation fails.
+
+### Model Policy
+
+- First implementation target: `gpt-5.5`, only after execution-time doc refresh confirms availability and the owner approves live OpenAI runtime.
+- Model config must live in a typed server-only config boundary.
+- Unknown, unavailable, deprecated, or unauthorized model values fail closed to disabled/error state.
+- The app must not store raw prompts, raw model responses, API keys, request IDs containing sensitive data, or full training context in product tables.
+- Logs and diagnostics may include redacted status, schema version, model label, latency bucket, token/cost bucket, and failure class only.
+
+### Schema Policy
+
+- GPT output must be narrower than product state.
+- Required session output: title suggestion, coach rationale, warnings, and steps using the current `SessionDraft` child levels.
+- Required program output, future only: program proposal metadata plus weeks, days, sessions, and steps that can be reviewed before Program Builder save.
+- Free-text coach rationale is advisory copy, not canonical logic.
+- All distances, durations, rest, repeat counts, targets, strokes, equipment, and pool/open-water assumptions must pass deterministic validation before preview/save.
+
+## Domain Granularity Contract
+
+User's mental objects:
+
+- "An AI-suggested swim session I can inspect, edit, and save."
+- Later: "An AI-suggested training program I can inspect, edit, schedule, and save."
+
+Canonical objects:
+
+- Current draft object: `SessionDraft` from `lib/session-generator-v1/shared.ts`.
+- Current accepted session: normal workout/My Swim Session record saved through existing workout routes.
+- Future accepted program: normal Program Builder program and planned workout instances.
+- Future history feedback: `training_activity_events`, out of scope here.
+
+Child object levels:
+
+| Level                     | Active/future support                                     | Decision                                                                                       |
+| ------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Generator intake block    | `view`, future `prompt-input`                             | Use existing handoff and included/omitted block flags; no raw ad hoc queries.                  |
+| Session summary           | `view`, future `edit` before save                         | AI can suggest title/rationale/warnings, but save uses canonical workout routes.               |
+| Session step              | `view`, future `edit`, `reorder` through existing builder | Every generated step must be visible and valid; no summary-only session acceptance.            |
+| Repeat/rest target        | `view`, future `edit`                                     | GPT output must preserve repeat/rest semantics that exports/builders can understand.           |
+| Program week/day/session  | future `view`, `edit`, `reorder`                          | Program generation remains blocked until a dedicated child proves Program Builder convergence. |
+| Calendar placement        | future `view`, `edit`                                     | No hidden date/taper assumptions; date windows require explicit user input.                    |
+| Training-history feedback | `out of scope`                                            | No adaptive replanning or actual-history evaluation in this brief.                             |
+| Garmin/provider context   | `out of scope`                                            | Garmin remains paused/blocked by provider facts packet.                                        |
+
+Mature reference surfaces:
+
+- Session generator: `/my-library/generator`, `GeneratorIntakeHub`, `SessionGeneratorPanel`.
+- Workout persistence/edit: existing My Swim Sessions/workout builder routes.
+- Program convergence: Program Builder and `/api/my-library/programs`.
+- Step contract: workout/session step model and `SessionDraft` typed helpers.
+
+10/10 granularity rule:
+
+- A GPT session or program cannot claim 10/10 if the review UI, tests, or schema only proves a summary while the trusted object is made of steps, repeats, rests, weeks, days, and sessions.
+
+## Data Placement And Sync Contract
+
+Server-canonical future data:
+
+- accepted workouts/programs only after explicit user save;
+- validated generator metadata such as schema version, generator source kind, model label, status, latency bucket, and validation outcome if a future child adds persistence.
+
+Local/provisional data:
+
+- current generated draft preview,
+- user edits before save,
+- selected generator intake blocks and one-run constraints,
+- transient retry/error state.
+
+Not stored in repo or hot product tables:
+
+- OpenAI API keys or raw env values,
+- raw prompts,
+- raw model responses,
+- raw sensitive profile/training context,
+- raw provider/Garmin data,
+- token-level traces or full request/response bodies.
+
+Sync/conflict policy:
+
+- AI output never mutates canonical workouts/programs until explicit save.
+- Regeneration does not overwrite a saved workout/program unless the user explicitly edits and saves the same canonical object.
+- Program proposals do not create planned instances until accepted through the Program Builder contract.
+- Model failure, invalid schema, unsafe values, or unsupported horizon returns retry/fallback and cannot create canonical data.
+
+Retention and sensitivity:
+
+- Provisional drafts should be short-lived unless explicitly saved.
+- Any future persisted generation diagnostics must be redacted and retention-bounded.
+- User profile, goals, CSS, capability limits, and program/history context are private training data and must be minimized before prompts.
+
+Cache/invalidation:
+
+- Protected AI generation routes must be dynamic/no-store.
+- Accepted workout/program saves invalidate the existing builder/library/calendar reads through their current save paths.
 
 ## Identity And Rename Contract
 
-- Canonical stable IDs:
-  - AI-generated plans/sessions/steps must either create new canonical IDs explicitly or map to existing canonical IDs via validated references; the model must never invent implicit identity from titles or week labels alone.
-- Human-readable identifiers:
-  - generated titles/labels, week labels such as `build`/`taper`, date-window labels, and competition display names are editable presentation fields and must not be treated as canonical keys during later edits/saves.
-- Mutability rules:
-  - post-generation edits may change titles/copy without rewriting canonical IDs for already-persisted entities.
-- Rename vs repurpose:
-  - regenerating or materially replacing a plan/session should create a new entity/version unless the workflow explicitly confirms in-place overwrite against the same canonical object.
-  - changing the saved planning horizon, date window, or competition target/peak intent after persistence should be treated as a material repurpose unless the workflow explicitly supports a versioned rewrite.
-- Compatibility contract:
-  - generate -> validate -> save flows must reject unresolved references deterministically; no silent rebinding of AI output onto the wrong existing entity.
-- Observability and repair:
-  - unresolved IDs, dropped references, and schema-driven rewrites must be logged/measured so operator support can see when AI output was corrected or rejected.
+- Canonical stable ID: existing workout/program IDs after user save.
+- AI draft identity: transient draft only; not a durable product ID unless a later brief creates a versioned draft table.
+- Model ID: runtime/config metadata, never app identity.
+- Human-readable titles: editable suggestions only.
+- Program week labels and session labels: presentation only; not keys.
+- Rename vs repurpose: materially regenerated sessions/programs should remain new proposals unless a future workflow explicitly confirms in-place edit of the same canonical object.
+- Compatibility: existing `rule_engine_v1` drafts and tests must keep working while GPT is introduced behind a separate source path or feature flag.
+- Repair: unresolved schema versions, unknown model kinds, invalid generated references, and rejected outputs must be measurable and support-visible.
+
+## Forward Compatibility Contract
+
+Future values expected:
+
+- new OpenAI models,
+- new Responses API parameters,
+- new structured-output schema capabilities,
+- new session types, strokes, equipment, step durations, target modes, pool units, planning horizons, program shapes, locales, analytics events, and generator sources.
+
+Automatic behavior:
+
+- New models can be mapped through server config when they support the same schema and tests.
+- New optional prompt context can be added as named intake blocks without changing canonical save identity.
+- New generated copy can remain draft/advisory when schema-valid.
+
+Explicit mapping required:
+
+- any new model default,
+- any new schema version,
+- any new generated field that reaches saved workouts/programs,
+- any new sport or non-swim program type,
+- any adaptive history feedback,
+- any provider/Garmin-derived prompt input,
+- any new analytics payload value,
+- any new visible Help/Guide label.
+
+Safe fallback:
+
+- unknown model/config/schema values fail closed to disabled/error;
+- unknown generated enum values are rejected, not coerced silently;
+- unsupported program horizons stay blocked;
+- provider/Garmin data remains excluded until the Garmin facts packet unblocks it.
+
+Proof required in future runtime:
+
+- schema/golden tests,
+- mocked OpenAI success/failure/timeout tests,
+- prompt payload minimization tests,
+- validation rejection tests for unknown values,
+- save-flow tests proving canonical workout/program ownership,
+- no-secret/no-raw-prompt logging checks.
 
 ## Platform 10/10 Scorecard Mapping
 
 Reference: `docs/quality/platform-10-10-scorecard.md`
 
-| Category                                      | Mapping      | Target Threshold                                                                                                                                                       | Evidence                              |
-| --------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Product goals and IA                          | `target`     | AI plan generation fits a clear select-horizon -> generate -> inspect -> edit -> accept workflow with no ambiguity about save, calendar window, or competition intent. | UX contract + flow diagrams           |
-| UX flow clarity                               | `target`     | Users always understand whether output is draft, invalid, accepted, or needs retry, and which planning horizon/calendar/competition assumptions are active.            | e2e + manual QA                       |
-| Visual design quality                         | `supporting` | Supporting only: visual presentation of generated output is owned by later builder/planner UI slices.                                                                  | scope rationale                       |
-| Business logic correctness and data integrity | `target`     | Invalid AI output never reaches canonical data store and accepted plans preserve canonical identity rules.                                                             | schema tests + save invariants        |
-| Admin editor ergonomics                       | `supporting` | Supporting only: no direct admin editing workflow is introduced in this slice.                                                                                         | scope rationale                       |
-| Accessibility (a11y)                          | `supporting` | Supporting only: user-facing review UI belongs to downstream workflow slices, but error states must stay accessible.                                                   | scope rationale + downstream contract |
-| Performance (CWV + payloads)                  | `supporting` | Supporting only: generation latency and preview payloads must not obviously degrade core builder flows.                                                                | perf notes + scope rationale          |
-| Data placement and sync boundaries            | `target`     | Generated output remains local/provisional until validated save; server-canonical ownership is explicit.                                                               | data contract + integration tests     |
-| Caching and invalidation strategy             | `supporting` | Supporting only: accepted/regenerated output must define deterministic invalidation of stale preview state.                                                            | flow contract + scope rationale       |
-| Reliability and failure handling              | `target`     | Users always get actionable fallback on AI failure and no dead-end invalid-output state.                                                                               | e2e + integration                     |
-| Security and authz                            | `target`     | AI endpoints are input-validated, rate-limited where needed, and protected save paths fail closed.                                                                     | API tests                             |
-| Privacy and compliance                        | `supporting` | Supporting only: prompts and telemetry must avoid unnecessary sensitive data leakage.                                                                                  | payload review + scope rationale      |
-| Content governance                            | `supporting` | Supporting only: canonical plan/workout governance is defined by data-contract and program-builder slices.                                                             | linked brief + scope rationale        |
-| Admin workflow and editability                | `supporting` | Supporting only: no admin workflow is directly changed in this AI guardrail slice.                                                                                     | scope rationale                       |
-| SEO and crawlability                          | `supporting` | Supporting only: generated plans are not primary public crawl surfaces in this slice.                                                                                  | scope rationale                       |
-| AI discoverability                            | `supporting` | Supporting only: this slice governs AI generation safety, not public AI-discoverable content surfaces.                                                                 | scope rationale                       |
-| Analytics and KPI observability               | `supporting` | Supporting only: generation success/failure/acceptance events must stay available with safe payloads.                                                                  | event contract notes                  |
-| Commerce and revenue ops                      | `supporting` | Supporting only: no direct commerce mutation ships in this AI generation guardrail slice.                                                                              | scope rationale                       |
-| Incident response and support operations      | `supporting` | Supporting only: rejected/rewritten AI output must leave support-visible diagnostics and operator guidance.                                                            | error contract + scope rationale      |
-| Finance and reporting operations              | `supporting` | Supporting only: no finance/reporting mutation in this AI-only slice.                                                                                                  | scope rationale                       |
-| i18n operational readiness                    | `supporting` | Supporting only: generated labels and validation copy must remain locale-extensible later.                                                                             | copy/schema review + scope rationale  |
-| Stack-fit and dependency discipline           | `target`     | Use existing schema-validation and app stack patterns; avoid unnecessary AI orchestration dependencies.                                                                | dependency diff + code review         |
-| Testing and QA automation                     | `target`     | Golden tests, schema tests, and generate->validate->save integration coverage pass before merge.                                                                       | CI + verify outputs                   |
-| Scalability and cost efficiency               | `supporting` | Supporting only: generation flow should avoid obvious runaway retries or oversized prompt/output churn.                                                                | scope rationale + usage notes         |
-| DevOps and rollback readiness                 | `target`     | AI generation can be disabled or rolled back without corrupting canonical saved plans.                                                                                 | rollout notes + release checklist     |
+Strict 10/10 mode for this docs-only readiness brief: every `target` category must close at `5/5`.
+
+Critical target categories:
+
+- Product goals and IA
+- Business logic correctness and data integrity
+- Data placement and sync boundaries
+- Reliability and failure handling
+- Security and authz
+- Privacy and compliance
+- Stack-fit and dependency discipline
+- Testing and QA automation
+- DevOps and rollback readiness
+
+| Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                               | Evidence                                    | Expected Closeout Score |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------------- |
+| Product goals and IA                          | `target`     | Brief defines staged AI session/program generation and keeps AI proposals inside canonical builder/save flows.                                                                   | product decision + domain contract          | `5/5`                   |
+| UX flow clarity                               | `target`     | User states are explicit: intake, generate, preview, invalid, retry/fallback, edit, save, and program-deferred.                                                                  | target architecture + acceptance criteria   | `5/5`                   |
+| Visual design quality                         | `supporting` | Supporting only: future UI must reuse generator/workout/program surfaces, but this docs-only refresh changes no rendered layout.                                                 | UI reference-surface rule                   | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Model output remains provisional and must pass typed schema plus deterministic invariants before preview/save.                                                                   | schema policy + data contract               | `5/5`                   |
+| Admin editor ergonomics                       | `N/A`        | N/A because this brief changes no admin editor, admin CRUD, publish workflow, or operator edit surface.                                                                          | explicit admin non-scope rationale          | `N/A`                   |
+| Accessibility (a11y)                          | `supporting` | Supporting only: future generator UI changes need accessible controls/states and screenshot handoff; no UI changes now.                                                          | future UI rule                              | `5/5`                   |
+| Performance (CWV + payloads)                  | `target`     | Future runtime must define timeout, payload minimization, no-store protected routes, and no core-route JS bloat before code.                                                     | stack gate + target architecture            | `5/5`                   |
+| Data placement and sync boundaries            | `target`     | Drafts, prompts, model metadata, accepted workouts/programs, and history/provider data have separate ownership.                                                                  | data placement contract                     | `5/5`                   |
+| Caching and invalidation strategy             | `target`     | Future AI routes are private/no-store; accepted saves invalidate through existing workout/program save paths.                                                                    | cache/invalidation section                  | `5/5`                   |
+| Reliability and failure handling              | `target`     | Timeout, invalid schema, unsupported horizon, model unavailable, and config errors fail closed to retry/fallback with no save.                                                   | runtime shape + safe fallback               | `5/5`                   |
+| Security and authz                            | `target`     | Future routes must be authenticated, owner-scoped, server-only for secrets, input-validated, and negative-path tested.                                                           | stack gate + current route audit            | `5/5`                   |
+| Privacy and compliance                        | `target`     | Prompt payloads are minimized, raw prompts/responses/secrets are not stored, and provider data stays excluded.                                                                   | data placement + model policy               | `5/5`                   |
+| Content governance                            | `target`     | AI-generated coaching copy remains advisory until accepted into canonical workout/program content.                                                                               | schema policy + identity contract           | `5/5`                   |
+| Admin workflow and editability                | `N/A`        | N/A because no admin workflow or operator editability changes in this docs-only readiness slice.                                                                                 | explicit admin workflow non-scope rationale | `N/A`                   |
+| SEO and crawlability                          | `N/A`        | N/A because generated sessions/programs are private authenticated data and no public crawl surface changes.                                                                      | private-route rationale                     | `N/A`                   |
+| AI discoverability                            | `N/A`        | N/A because this governs private AI generation, not public AI-discoverable pages, schema markup, or crawlable docs.                                                              | private AI workflow rationale               | `N/A`                   |
+| Analytics and KPI observability               | `target`     | Future runtime must define safe events/status buckets for generate, validation fail, fallback, accept, and program deferral.                                                     | acceptance criteria + forward compatibility | `5/5`                   |
+| Commerce and revenue ops                      | `N/A`        | N/A because no checkout, entitlement, pricing, invoice, refund, payout, or revenue workflow changes.                                                                             | explicit commerce non-scope rationale       | `N/A`                   |
+| Incident response and support operations      | `target`     | Future runtime must include disable flag, redacted diagnostics, failure classes, cost/latency buckets, and rollback path.                                                        | stack radar + support rules                 | `5/5`                   |
+| Finance and reporting operations              | `N/A`        | N/A because this docs-only brief does not mutate finance, reporting, invoices, payouts, refunds, entitlements, or accounting data; model cost is a future ops budget input only. | explicit finance non-scope rationale        | `N/A`                   |
+| i18n operational readiness                    | `target`     | Future visible generated labels/errors must use typed labels and locale-ready copy boundaries; generated free text is user draft content.                                        | forward compatibility + schema policy       | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Use existing Next route, TypeScript validation, generator handoff, workout/program save contracts, and official OpenAI docs; no dependency added in this brief.                  | app audit + OpenAI baseline                 | `5/5`                   |
+| Testing and QA automation                     | `target`     | Docs-only brief passes brief lint; future runtime requires schema/golden, mocked API, negative-path, save-flow, and no-secret tests.                                             | validation section                          | `5/5`                   |
+| Scalability and cost efficiency               | `target`     | Future runtime must bound payload size, retries, output size, timeout, rate limits, and model-cost exposure before release.                                                      | target architecture + acceptance criteria   | `5/5`                   |
+| DevOps and rollback readiness                 | `target`     | GPT runtime must be disable-able, fallback-capable, config-gated, and rollback-safe before production.                                                                           | model policy + safe fallback                | `5/5`                   |
+
+## Stack / Architecture Best-Practice Gate
+
+- React/Next.js:
+  - reuse `/my-library/generator`, `GeneratorIntakeHub`, `SessionGeneratorPanel`, workout builder, and Program Builder surfaces;
+  - future API route remains protected, server-only, `no-store`, and owner-scoped;
+  - no client-side OpenAI calls or exposed API keys.
+- TypeScript/domain:
+  - keep typed allowlists for every generated enum;
+  - use schema validation before preview and before save;
+  - treat unknown values as validation failures.
+- Supabase/data:
+  - no migration in this docs-only brief;
+  - future persistence for diagnostics/drafts needs migration, RLS, generated types, export/delete review, and negative-path tests.
+- External services:
+  - use official OpenAI docs and SDK/API shape at execution time;
+  - secrets stay server-only;
+  - define timeout, retry, idempotency, rate-limit, cost, observability, and disable behavior before runtime.
+- UI system:
+  - future visible generator changes require screenshot handoff;
+  - preserve existing My Library workspace visual language and accessible controls.
+- Testing:
+  - docs-only: task-brief lint and diff checks;
+  - future runtime: unit/schema/golden tests, mocked OpenAI failure tests, e2e preview/save, authz negative paths, no-secret diagnostics checks, and `verify:pre-pr`.
+
+## Codex Skill / Stack Readiness Radar
+
+Capability audit:
+
+- Available now: local shell, `rg`, repo brief linting, `openai-docs` skill, official OpenAI web fallback, existing app generator tests.
+- Not needed now: browser/screenshot tooling, Stripe plugin, Garmin/provider credentials, OpenAI API key, live model calls.
+- Install/config changes: none unless owner explicitly approves.
+
+Systemic findings:
+
+| Surface            | Finding                                                                                | Severity | Recommended Type                 | Owner Decision Needed                                  | Follow-Up Brief Path                         |
+| ------------------ | -------------------------------------------------------------------------------------- | -------- | -------------------------------- | ------------------------------------------------------ | -------------------------------------------- |
+| OpenAI runtime     | App has no OpenAI adapter/config/secret boundary today.                                | `high`   | `bounded implementation child`   | yes, approve live OpenAI runtime and model/cost policy | future `GPT-5.5 session draft adapter` brief |
+| Program generation | Program target exists in intake but is intentionally rejected by route.                | `high`   | `deferred architecture decision` | yes, choose weekly-pattern vs full-program first child | future AI program proposal brief             |
+| Prompt/privacy     | Generator intake is minimized, but raw prompts/responses would be sensitive if stored. | `high`   | `bounded implementation child`   | yes, approve prompt retention/diagnostic policy        | future OpenAI runtime brief                  |
+
+Return path:
+
+- Parent: this planned brief.
+- Related done roadmap: `docs/task-briefs/done/2026-05-01-ai-swim-coach-roadmap-alignment-10-10.md`.
+- Related runtime foundation: `docs/task-briefs/done/2026-03-20-ai-session-generator-v1-garmin-minimum-draft-review-10-10.md`.
+- Garmin/provider path remains paused at `docs/task-briefs/planned/2026-06-23-garmin-provider-facts-collection-packet-v1-10-10.md`.
+- Next planning step after this docs refresh: owner decides whether to execute a bounded GPT-5.5 session-draft adapter child or look at small Habits items.
+
+## Help/Guide And Support Impact
+
+Current docs-only refresh:
+
+- No Help/Guide update required because no visible workflow, label, route, or support behavior changes.
+
+Future runtime:
+
+- Update Help/Guide and support runbooks when AI labels, generation failures, fallback behavior, saved-session provenance, program proposal status, or user recovery behavior changes.
+- Include user-safe copy for AI limitations, retry/fallback, generated draft review, and no auto-save/no auto-replan.
+
+## Route / Label / Support Surface Sweep
+
+No route/label/support sweep is required for this docs-only refresh.
+
+Before any future runtime/UI child, run a targeted sweep for:
+
+- `AI session generator`, `AI swim session generator`, `generatorKind`, `rule_engine_v1`, `targetType`, `program generation`, `SessionDraft`, `coach rationale`, `OpenAI`, `GPT`, `Responses API`, `Structured Outputs`, `model`, `prompt`, `fallback`, `retry`, `save to My Swim Sessions`, `Program Builder`, `Help/Guide`, and support runbooks.
+
+## Scope
+
+- Refresh this planned AI generator brief for current repo rules.
+- Add local app audit of existing generator/intake/save/test surfaces.
+- Add official online OpenAI docs baseline for GPT-5.5, Responses API, prompt guidance, and Structured Outputs.
+- Define readiness gates for session and program generation.
+- Keep future implementation blocked until the owner explicitly asks to execute a bounded child.
+
+## Out Of Scope
+
+- Runtime code.
+- OpenAI API calls.
+- OpenAI SDK/package changes.
+- API keys, env changes, billing setup, or model configuration.
+- UI changes or screenshots.
+- Database migrations.
+- Program Builder runtime changes.
+- Garmin/provider contact, Garmin runtime, provider samples, or provider-derived prompt input.
+- Retrospective history evaluation or adaptive replanning.
+- Habits fixes.
+- Touching `Ja.docx`.
 
 ## Acceptance Criteria
 
-- AI output always passes schema/invariant checks before save.
-- AI generation consumes canonical generator-intake handoff payloads without re-guessing raw My Library context or mutable labels.
-- AI goal-based generation remains a distinct flow from manual workout/session/program building.
-- Users explicitly choose the planning horizon before generation rather than the model inferring `session` vs `program` implicitly.
-- Supported horizon choices include `session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, and `to_competition_date`.
-- Generation input includes explicit environment, pool-length, effort, duration, and session/program intent fields where relevant for the chosen horizon rather than relying on hidden AI assumptions.
-- If `date_range` is selected, explicit start/end dates are required or deterministically defaulted by product rules; the model must not guess a hidden calendar window.
-- If `to_competition_date` is selected, competition date and explicit peak/taper intent are required inputs rather than hidden AI assumptions.
-- Generated sessions/programs use the canonical Garmin-compatible step model and do not invent incompatible repeat/target structures.
-- When threshold context is available, generated intensity targets use the shared threshold-based swim-zone/pace model rather than a parallel AI-only zone scheme, even if the user-facing input surface starts with simpler effort presets such as `easy`/`moderate`/`hard`.
-- Generated output preserves plan-level horizon/competition metadata so later builder, export, and history slices can understand original plan intent.
-- Users can edit generated plan without data loss.
-- Generated titles are suggestions only and can be edited before acceptance.
-- Generated output is treated as draft until the user reviews and accepts it.
-- Manual, weekly-pattern, and AI-assisted program starts converge into one canonical Program Builder after acceptance; no separate AI-only planner truth is introduced.
-- Full AI program generation preserves original goal, horizon, competition, and schedule assumptions so later planned-vs-actual history can evaluate the plan truthfully.
-- Failures are explicit and recoverable.
-- AI output never mutates canonical entity identity implicitly through renamed labels or reordered weeks/sessions.
-- Brief is scorecard-complete and identity-safe before implementation starts.
+1. Brief states the current app audit and correctly identifies the deterministic `rule_engine_v1` generator boundary.
+2. Brief records the current official OpenAI docs baseline and requires refresh before runtime.
+3. Brief defines a staged path from single-session GPT generation to future program proposals.
+4. Brief preserves canonical workout/program ownership and rejects AI-only identity.
+5. Brief requires Structured Outputs or equivalent strict schema enforcement, plus deterministic validation.
+6. Brief blocks raw prompt/response/secrets storage and provider/Garmin prompt input.
+7. Brief includes scorecard mapping, app stack gate, radar findings, data placement, identity, domain granularity, and forward compatibility.
+8. Changed brief passes task-brief lint and diff checks.
 
 ## Validation
 
-- golden JSON tests + schema tests
-- integration for generate->validate->save
-- `npm run verify:pre-pr`
+Docs-only validation required for this brief refresh:
+
+- `npm run lint:briefs`
+- `npm run lint:briefs:all`
+- `git diff --check`
+
+Optional PR packaging validation:
+
+- `npm run verify:docs-only`
+- `npm run verify:pre-pr` docs-only lane before PR update.
+- `npm run verify:pre-merge` docs-only lane before merge recommendation.
+
+Future runtime validation:
+
+- schema/golden tests for valid/invalid GPT output,
+- mocked OpenAI success/failure/timeout tests,
+- no-secret/no-raw-prompt diagnostic tests,
+- authz negative-path tests,
+- e2e preview/edit/save tests,
+- route/label/support sweep,
+- screenshot handoff for UI changes,
+- full `npm run verify:pre-pr`.
+
+## Local Tooling Prerequisite
+
+- Use repo-pinned Node/npm from `.nvmrc` and `packageManager`.
+- Before reporting `npm`/`node` missing, bootstrap through `nvm use --silent`.
+
+## Manual QA Environments
+
+`N/A`; this is a docs-only refresh with no UI, runtime route, browser behavior, deployment behavior, print/export rendering, or visible route behavior changes.
+
+No screenshot handoff is required now. Future generator UI changes require screenshot handoff before PR gates.
+
+## Constraints
+
+- Do not add OpenAI runtime from this brief.
+- Do not commit API keys, env values, raw prompts, raw model responses, user training context dumps, provider payloads, or secrets.
+- Do not weaken existing `rule_engine_v1` tests.
+- Do not enable program generation in the existing route until a dedicated program proposal child exists.
+- Do not auto-save or auto-replan from model output.
+- Do not use Garmin/provider data while Garmin remains paused.
+- Do not touch `Ja.docx`.
+
+## Session Continuity And Recovery
+
+Canonical recovery order:
+
+1. `git status -sb`
+2. `git log --oneline -n 10`
+3. Reopen this brief and the done AI roadmap alignment brief.
+4. Reopen `app/api/my-library/generator/session-draft/route.ts`, `lib/generator-intake/shared.ts`, `lib/session-generator-v1/shared.ts`, and `lib/session-generator-v1/server.ts`.
+5. Refresh official OpenAI docs before runtime.
 
 ## Checkpoint Log
 
@@ -258,3 +451,4 @@ Reference: `docs/quality/platform-10-10-scorecard.md`
 - `2026-03-20 | planning | expanded generator UX to require an explicit planning-horizon choice (`session`, `week`, `month`, `three_months`, `six_months`, `twelve_months`, `date_range`, or `to_competition_date`), added calendar-window inputs for date-range planning, and kept competition-date generation on explicit peak/taper intent instead of hidden AI assumptions | next: decide which subset of the full horizon matrix ships first and keep the data contract/builder/history briefs aligned to the same plan-intent metadata`
 - `2026-03-20 | planning | added explicit generation-intent expectations for environment, pool length, duration mode, session/program intent, effort presets, drills/kick inclusion, and editable draft-first naming so the first AI session slice can stay Garmin-familiar without forcing raw zone-picking UX on day one | next: land a dedicated AI session generator v1 brief that turns these assumptions into one implementation-ready child slice`
 - `2026-05-01 | roadmap alignment | captured the canonical program roadmap from owner coaching notes: manual builder, weekly-pattern builder, and AI-assisted program generation should be different entrypoints into one canonical Program Builder, with full AI program planning deferred until one-session AI, program editing, and planned-vs-actual history are stable | next: keep V1 AI session implementation small and preserve these V2/V3 constraints for later program/history work`
+- `2026-06-23 | GPT-5.5 readiness refresh | owner asked to postpone retrospective/Garmin work and look at AI generation of sessions/programs using ChatGPT/GPT-5.5, with app audit and online docs check included; refreshed this planned brief from clean synced main@bca17f5a with current app audit, official OpenAI docs baseline, staged session-before-program recommendation, and explicit no-runtime constraints | next: validate docs-only brief, then wait for owner decision on whether to execute a bounded GPT-5.5 session-draft adapter child or look at small Habits items`
