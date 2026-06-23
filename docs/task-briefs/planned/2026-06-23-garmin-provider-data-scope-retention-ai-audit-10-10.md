@@ -22,21 +22,31 @@
 - `last_audited`: `2026-06-23`
 - `base`: `main@847a88d9`
 - `audit_status`: `ready`
-- `decision`: Use this docs-only audit before any Garmin Activity API, Health API, FIT parsing, provider runtime, AI-retrospective, or broad health-context implementation.
-- `reason`: Official Garmin docs show Activity, Health, Training, Courses, and Women's Health are separate data/product surfaces, while the app currently has provider-evidence summaries and generic activity-history rows but no token storage, raw file storage, health-context model, or AI-safe feature view. A 10/10 solution needs explicit data minimization, retention, AI-use, and database performance boundaries before requesting or storing broad Garmin data.
-- `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner/application status, API access terms, sample payloads, FIT SDK requirements, provider schemas, `training_activity_events`, `provider_activity_evidence`, export/delete routes, privacy/cookie copy, scorecard categories, or verification lanes change.
+- `decision`: Use this docs-only audit before any Garmin Activity API, Health API, FIT parsing, provider runtime, AI-retrospective, multi-provider adapter, or broad health-context implementation.
+- `reason`: Official Garmin docs show Activity, Health, Training, Courses, and Women's Health are separate data/product surfaces, while the app currently has provider-evidence summaries and generic activity-history rows but no token storage, raw file storage, health-context model, or AI-safe feature view. A 10/10 solution needs a Garmin-first provider model that preserves Garmin richness without hardcoding FreeSwimming to Garmin-only, plus explicit data minimization, retention, AI-use, terms, and database performance boundaries before requesting or storing broad provider data.
+- `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner/application status, API access terms, sample payloads, FIT SDK requirements, provider schemas, Apple HealthKit, Android Health Connect, Strava, Polar, Suunto, Wahoo, WHOOP, Oura, Fitbit/Google Health, swim-wearable partner/export docs, `training_activity_events`, `provider_activity_evidence`, export/delete routes, privacy/cookie copy, scorecard categories, or verification lanes change.
 
 ## Goal
 
-Define the 10/10 Garmin/provider data scope, retention, and AI-readiness contract so FreeSwimming can later request rich Garmin data without making the database slow, storing unused sensitive data indefinitely, or letting provider data silently become training truth.
+Define the 10/10 Garmin/provider data scope, retention, and AI-readiness contract so FreeSwimming can later request rich Garmin data without making the database slow, storing unused sensitive data indefinitely, letting provider data silently become training truth, or blocking future Apple Health, Android Health Connect, Strava, Polar, Suunto, Wahoo, WHOOP/Oura/Fitbit, or swim-wearable adapters.
 
 ## Pre-Implementation Owner Explanation
 
-Codex skal lage en audit-plan, ikke Garmin-kode. Vi avklarer hva Garmin kan levere, hva appen vår bør hente, hva som bare skal brukes som kortvarig rådata, hva som skal bli treningshistorikk, og hva ChatGPT/AI trygt kan bruke som sammendrag. Det betyr noe fordi mer data kan gi bedre programmer for utøverne, men helse- og aktivitetsdata må minimeres, slettes eller aggregeres riktig. Utenfor scope nå er OAuth, provider-import, FIT-parsing, UI, database-migrasjoner, nye API-ruter, og at Garmin-data teller som fasit.
+Codex skal lage en audit-plan, ikke Garmin-kode. Vi avklarer hva Garmin kan levere, hva appen vår bør hente, hva som bare skal brukes som kortvarig rådata, hva som skal bli treningshistorikk, og hva ChatGPT/AI trygt kan bruke som sammendrag. Garmin skal være første dype kilde, men modellen skal ikke låse oss til Garmin alene når Apple Health, Health Connect, Strava, Polar, Suunto, Wahoo, recovery-wearables eller swim wearables kan bli aktuelle senere. Det betyr noe fordi mer data kan gi bedre programmer for utøverne, men helse- og aktivitetsdata må minimeres, slettes eller aggregeres riktig. Utenfor scope nå er OAuth, provider-import, FIT-parsing, UI, database-migrasjoner, nye API-ruter, og at Garmin-data teller som fasit.
 
 ## Product Decision
 
 Recommendation: ask Garmin for broad enough access to support future coaching quality, but implement a strict product-owned data funnel.
+
+Principle: Garmin-first, not Garmin-only.
+
+This means:
+
+- keep Garmin as the first deep provider audit and expected primary training-data source;
+- preserve Garmin-specific richness where permitted, including FIT/activity detail and health-context summaries when approved;
+- avoid reducing Garmin to the lowest common denominator of weaker providers;
+- map only trusted, normalized facts into canonical FreeSwimming activity history and AI feature views;
+- let future providers plug in as adapters that create evidence/context through the same product-owned model.
 
 Do not implement "store everything forever".
 
@@ -90,6 +100,49 @@ Current interpretation:
 - Garmin-sourced and Garmin-derived displays, exports, and secondary screens can require Garmin attribution.
 
 This baseline is sufficient for this docs-only scope decision. It is not sufficient to implement live OAuth, webhook/polling import, raw file storage, FIT parsing, Health API runtime, or AI prompts without provider sample payloads and a fresh implementation brief.
+
+## Future Provider Landscape Baseline
+
+Checked on `2026-06-23` from official/provider-controlled sources where available:
+
+- Apple HealthKit: https://developer.apple.com/documentation/healthkit
+- Android Health Connect: https://developer.android.com/health-and-fitness/health-connect
+- Strava API docs: https://developers.strava.com/docs/
+- Strava API Agreement: https://www.strava.com/legal/api
+- Polar AccessLink API: https://www.polar.com/accesslink-api/
+- Suunto API Zone: https://apizone.suunto.com/
+- Wahoo Developer Portal: https://developers.wahooligan.com/
+- WHOOP Developer Platform: https://developer.whoop.com/
+- Oura API docs: https://cloud.ouraring.com/docs/
+- Fitbit Web API: https://dev.fitbit.com/build/reference/web-api/
+
+Current interpretation:
+
+| Provider class                    | Examples                                | Strategic role                                                                                                                         | First FreeSwimming treatment                                                                                            |
+| --------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Garmin deep source                | Garmin Activity, Health, Training, FIT  | First priority and expected richest training/provider source.                                                                          | Deep official-doc audit first; preserve Garmin-specific evidence while mapping only trusted facts to canonical history. |
+| Phone health hubs                 | Apple HealthKit, Android Health Connect | High-value aggregation channels, especially when athletes use several devices.                                                         | Future hub adapters; treat as health/activity evidence with strict consent, attribution, delete, and source provenance. |
+| Social/activity networks          | Strava                                  | Useful activity source and athlete ecosystem, but terms, rate limits, display/disclosure, and deletion rules are high-risk for AI use. | Future adapter only after terms audit; not primary completion truth and not raw AI source by default.                   |
+| Device ecosystems                 | Polar, Suunto, Wahoo                    | Relevant for endurance athletes and multi-sport context; some providers expose workouts, FIT files, OAuth, or webhook-style updates.   | Later adapter candidates; provider-specific audits required before roadmap or implementation commitment.                |
+| Recovery/wellness wearables       | WHOOP, Oura, Fitbit/Google Health       | Useful sleep, recovery, strain, readiness, HRV, and wellness context; weaker as completed swim truth.                                  | Separate health-context adapters; summarized AI context only after consent/legal/privacy review.                        |
+| Swim-specific wearables/platforms | FORM, FINIS/CIYE, TritonWear, Swim.com  | Potentially valuable for swimming detail, technique, and pool-specific evidence.                                                       | No public-API assumption; audit partner access, export formats, FIT/CSV paths, or hub availability first.               |
+
+Provider priority recommendation:
+
+1. Garmin first, because it is the expected richest near-term training and health-context provider for this product direction.
+2. Apple HealthKit and Android Health Connect next as hub adapters, because they can reduce the need for one-off device integrations.
+3. Strava only after a dedicated terms/API audit, because it is useful but sensitive for AI, display, redistribution, and data-retention assumptions.
+4. Polar, Suunto, and Wahoo after Garmin/hub foundations, as endurance and multi-sport adapter candidates.
+5. WHOOP, Oura, and Fitbit/Google Health as recovery/health-context candidates, not completed-session truth.
+6. Swim-specific wearables after partner/export/API evidence proves that reliable ingestion is available.
+
+10/10 provider architecture rule:
+
+- do not create one schema per provider unless the provider has genuinely unique durable facts that the product uses;
+- do keep provider-specific raw/evidence metadata outside canonical hot tables;
+- do normalize trusted common facts into `training_activity_events` and future typed detail/health-context summaries;
+- do store provider terms constraints, attribution rules, consent scope, source confidence, and deletion obligations per provider;
+- do let AI consume compact feature views that include provenance/confidence, not raw provider timelines.
 
 ## Current Local App Audit
 
@@ -256,7 +309,7 @@ Cache/invalidation:
 Future values expected:
 
 - new Garmin devices, API fields, metrics, sport types, sub-sports, file kinds, activity details, health metrics, women's health fields, courses, and provider statuses;
-- new providers such as Strava, Apple Health, Android Health Connect, or manual imports;
+- new providers such as Apple HealthKit, Android Health Connect, Strava, Polar, Suunto, Wahoo, WHOOP, Oura, Fitbit/Google Health, swim-specific wearables, or manual imports;
 - new AI prompt feature fields, languages, privacy copy, consent states, export formats, and support diagnostics.
 
 Automatic behavior:
@@ -268,6 +321,8 @@ Automatic behavior:
 Explicit mapping required:
 
 - any new sport/source/status entering Calendar, Trends, AI recommendations, KPIs, or user-facing labels;
+- every provider's terms, attribution, consent, AI-use, retention, disconnect, export, and deletion rules before runtime use;
+- provider-specific rich fields that cannot safely fit the common activity/evidence model;
 - health metrics used for coaching decisions;
 - women's health data collection or AI use;
 - raw file storage, parser selection, file repair, and retention;
@@ -277,12 +332,14 @@ Explicit mapping required:
 Safe fallback:
 
 - unknown or deprecated Garmin values are preserved only as redacted evidence or diagnostics;
+- unknown or deprecated non-Garmin provider values follow the same evidence-only fallback and cannot force the common model to shrink Garmin data quality;
 - unmapped values do not count as completed, do not improve KPI totals, and do not drive AI replanning;
 - unsupported sensitive data is ignored or blocked until a future product/legal decision exists.
 
 Proof required in future runtime:
 
 - provider sample fixtures for Activity API and Health API;
+- provider sample fixtures and terms reviews for every non-Garmin adapter before implementation;
 - unknown-value tests for source/sport/metric/file kinds;
 - privacy/export/delete tests for every stored data class;
 - retention tests or cleanup job evidence for raw files/payloads;
@@ -310,10 +367,10 @@ Critical target categories:
 
 | Category                                      | Mapping      | Target Threshold / Scope Rationale                                                                                                                                                                       | Evidence                                  | Expected Closeout Score |
 | --------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------- |
-| Product goals and IA                          | `target`     | Audit defines why "collect everything" is unsafe and replaces it with an API/data-scope funnel for better AI coaching.                                                                                   | official-doc audit + local app audit      | `5/5`                   |
+| Product goals and IA                          | `target`     | Audit defines why "collect everything" is unsafe and replaces it with a Garmin-first, multi-provider-ready API/data-scope funnel for better AI coaching.                                                 | official-doc audit + local app audit      | `5/5`                   |
 | UX flow clarity                               | `target`     | Future user consent/review states are separated: activity, health, women's health, send-to-Garmin, evidence, mapped truth, and AI use.                                                                   | consent/scope contract                    | `5/5`                   |
 | Visual design quality                         | `N/A`        | N/A because this docs-only audit changes no UI, layout, print, export rendering, screenshots, or brand assets.                                                                                           | explicit non-visual scope rationale       | `N/A`                   |
-| Business logic correctness and data integrity | `target`     | Provider data remains evidence/context until explicit mapping; Health API data cannot complete workouts; AI cannot mutate plans silently.                                                                | data scope + AI contract                  | `5/5`                   |
+| Business logic correctness and data integrity | `target`     | Provider data remains evidence/context until explicit mapping; Health API and wellness-hub data cannot complete workouts; AI cannot mutate plans silently.                                               | data scope + AI contract                  | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because no admin editor, CRUD flow, publishing workflow, or operator editing surface changes.                                                                                                        | explicit admin-editor non-scope rationale | `N/A`                   |
 | Accessibility (a11y)                          | `N/A`        | N/A because no rendered UI or accessibility semantics change in this docs-only audit.                                                                                                                    | explicit non-UI rationale                 | `N/A`                   |
 | Performance (CWV + payloads)                  | `target`     | Future runtime must keep raw files/payloads out of hot route queries and read bounded summaries only.                                                                                                    | retention/performance contract            | `5/5`                   |
@@ -321,17 +378,17 @@ Critical target categories:
 | Caching and invalidation strategy             | `target`     | Future provider/health reads are private/no-store and mapped writes list affected Calendar/history/AI/export surfaces.                                                                                   | cache contract                            | `5/5`                   |
 | Reliability and failure handling              | `target`     | Unknown, unsupported, malformed, duplicate, missing timezone/unit, and provider-unavailable states fail closed to review/diagnostics.                                                                    | fallback contract                         | `5/5`                   |
 | Security and authz                            | `target`     | Future provider routes must be owner-scoped, token-safe, least-privilege, and must not trust provider/browser IDs for ownership.                                                                         | stack gate + future validation contract   | `5/5`                   |
-| Privacy and compliance                        | `target`     | Sensitive health data, women's health data, raw files, prompt payloads, export/delete, and retention are minimized before runtime.                                                                       | privacy/retention contract                | `5/5`                   |
+| Privacy and compliance                        | `target`     | Sensitive health data, women's health data, raw files, prompt payloads, provider terms, export/delete, and retention are minimized before runtime.                                                       | privacy/retention contract                | `5/5`                   |
 | Content governance                            | `target`     | This planned brief becomes the source-of-truth gate before Garmin/provider/AI runtime.                                                                                                                   | parent checkpoint + related brief links   | `5/5`                   |
 | Admin workflow and editability                | `supporting` | Supporting only: future support/admin diagnostics are required, but no admin workflow is changed now.                                                                                                    | support impact section                    | `5/5`                   |
 | SEO and crawlability                          | `N/A`        | N/A because Garmin/provider/health data is private authenticated data and creates no public crawl surface.                                                                                               | private-data rationale                    | `N/A`                   |
 | AI discoverability                            | `N/A`        | N/A because this audit does not create public AI-discoverable pages; AI use here is private model context.                                                                                               | private AI-context rationale              | `N/A`                   |
 | Analytics and KPI observability               | `target`     | Future provider and AI metrics need stable typed taxonomy; unmapped values cannot enter KPIs.                                                                                                            | forward compatibility + AI contract       | `5/5`                   |
-| Commerce and revenue ops                      | `supporting` | Supporting only: Garmin access may have commercial/license terms, but no checkout, entitlement, invoice, refund, payout, or revenue behavior changes.                                                    | official-doc commercial caveat            | `5/5`                   |
+| Commerce and revenue ops                      | `supporting` | Supporting only: Garmin and other provider access may have commercial/license terms, but no checkout, entitlement, invoice, refund, payout, or revenue behavior changes.                                 | official-doc commercial caveat            | `5/5`                   |
 | Incident response and support operations      | `target`     | Support must be able to diagnose sync, duplicate, retention, delete/export, attribution, and unmapped-state issues before runtime.                                                                       | support/runbook requirements              | `5/5`                   |
 | Finance and reporting operations              | `N/A`        | N/A because this docs-only audit does not change revenue recognition, payouts, invoices, refunds, or accounting data; Garmin license-cost review is product/vendor scope, not finance reporting runtime. | explicit finance non-scope rationale      | `N/A`                   |
 | i18n operational readiness                    | `target`     | Future provider/source/metric labels must derive from typed mappings and tolerate translated consent/support copy.                                                                                       | label mapping contract                    | `5/5`                   |
-| Stack-fit and dependency discipline           | `target`     | Use official Garmin docs, existing Supabase/provider-evidence/activity-history patterns, storage for raw files, and no new dependency now.                                                               | architecture gate                         | `5/5`                   |
+| Stack-fit and dependency discipline           | `target`     | Use official provider docs, existing Supabase/provider-evidence/activity-history patterns, storage for raw files, and no new dependency now.                                                             | architecture gate                         | `5/5`                   |
 | Testing and QA automation                     | `target`     | Docs-only validation passes brief lint; future runtime requires provider fixtures, retention tests, export/delete tests, AI prompt minimization tests, and release gates.                                | validation section                        | `5/5`                   |
 | Scalability and cost efficiency               | `target`     | Raw/high-cardinality provider data must use storage/TTL/aggregation and avoid hot route scans.                                                                                                           | retention/performance contract            | `5/5`                   |
 | DevOps and rollback readiness                 | `target`     | This audit is reversible docs-only; future provider runtime must have disable flags, replay-safe jobs, cleanup jobs, and rollback notes.                                                                 | scope + future runtime gate               | `5/5`                   |
@@ -349,7 +406,8 @@ Critical target categories:
   - use separate tables/storage for raw files, health context, cleanup jobs, and token vault decisions;
   - future runtime requires migrations, RLS, generated types, and negative-path tests.
 - External services:
-  - use official Garmin docs and provider sample payloads before runtime;
+  - use official Garmin docs and provider sample payloads before Garmin runtime;
+  - use official docs, terms, partner/application requirements, and sample payloads before every non-Garmin adapter;
   - OAuth tokens need encrypted secret storage, refresh/revoke handling, least privilege, and no logs;
   - provider imports need idempotency, retries/backoff, rate-limit handling, and redacted observability.
 - UI system:
@@ -368,17 +426,18 @@ Skill/capability audit:
 
 Systemic findings:
 
-| Surface              | Finding                                                                                                                                         | Severity | Recommended Type                                                   | Owner Decision Needed               | Follow-Up Brief Path                 |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------------ |
-| Garmin data scope    | Garmin can expose much more than completed swims; broad collection needs explicit data minimization, consent, retention, and AI-use boundaries. | `high`   | `bounded implementation child` for future runtime after this audit | yes, scope/consent/product terms    | this brief first                     |
-| Database performance | Raw files, raw JSON, and high-frequency samples would be expensive if stored in hot tables.                                                     | `high`   | `deferred architecture decision`                                   | yes, storage/TTL/aggregation policy | future raw-file/health-context child |
-| AI readiness         | ChatGPT should consume summarized feature views, not raw provider payloads or sensitive wellness data.                                          | `high`   | `bounded implementation child` later                               | yes, allowed AI context and consent | future AI feature-view child         |
+| Surface              | Finding                                                                                                                                                             | Severity | Recommended Type                                                   | Owner Decision Needed               | Follow-Up Brief Path                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------------ |
+| Garmin data scope    | Garmin can expose much more than completed swims; broad collection needs explicit data minimization, consent, retention, and AI-use boundaries.                     | `high`   | `bounded implementation child` for future runtime after this audit | yes, scope/consent/product terms    | this brief first                     |
+| Multi-provider scope | Future Strava, Apple/Google health hubs, Polar, Suunto, Wahoo, recovery wearables, and swim wearables need one adapter/evidence model, not one-off product schemas. | `high`   | `deferred architecture decision`                                   | yes, provider priority and terms    | future provider-adapter roadmap      |
+| Database performance | Raw files, raw JSON, and high-frequency samples would be expensive if stored in hot tables.                                                                         | `high`   | `deferred architecture decision`                                   | yes, storage/TTL/aggregation policy | future raw-file/health-context child |
+| AI readiness         | ChatGPT should consume summarized feature views, not raw provider payloads or sensitive wellness data.                                                              | `high`   | `bounded implementation child` later                               | yes, allowed AI context and consent | future AI feature-view child         |
 
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - Last merged workstream: PR `#1221` and docs-only closeout PR `#1222`, with `main@847a88d9` clean and synced.
-- Next step after this docs-only audit: owner decides whether to create a future runtime child for Garmin partner/OAuth readiness, raw file storage/retention, health-context model, or AI feature-view summaries. Garmin reconciliation remains blocked until provider access, sample payloads, alias/correlation facts, attribution/consent, and matching thresholds are concrete.
+- Next step after this docs-only audit: owner decides whether to create a future runtime child for Garmin partner/OAuth readiness, raw file storage/retention, health-context model, AI feature-view summaries, or a separate multi-provider adapter roadmap. Garmin reconciliation remains blocked until provider access, sample payloads, alias/correlation facts, attribution/consent, and matching thresholds are concrete.
 
 ## Help/Guide And Support Impact
 
@@ -395,12 +454,13 @@ Future runtime:
 
 Required before any future runtime or UI child:
 
-- `rg -n "Garmin|provider evidence|training_activity_events|provider_activity_evidence|Health API|Activity API|FIT|AI retrospective|retention|export/delete|delete|privacy|Calendar Trends|Swimming" app components lib tests docs supabase types`
+- `rg -n "Garmin|Strava|Apple Health|HealthKit|Health Connect|Polar|Suunto|Wahoo|WHOOP|Oura|Fitbit|Google Health|FORM|provider evidence|training_activity_events|provider_activity_evidence|Health API|Activity API|FIT|AI retrospective|retention|export/delete|delete|privacy|Calendar Trends|Swimming" app components lib tests docs supabase types`
 - Check at minimum `app/`, `components/`, `lib/`, `tests/`, `types/`, `supabase/migrations/`, `docs/api-contracts.md`, `docs/runbooks/auth-account-support.md`, `docs/runbooks/gdpr-data-rights.md`, `docs/architecture/external-service-contract-matrix.md`, active/planned/blocked/done task briefs, and Help/Guide assertions when relevant.
 
 ## Scope
 
 - Audit current official Garmin docs across Activity, Health, Training, Courses, Women's Health, FIT, Program FAQ, and API Brand Guidelines.
+- Add a preliminary multi-provider landscape for Apple HealthKit, Android Health Connect, Strava, Polar, Suunto, Wahoo, WHOOP, Oura, Fitbit/Google Health, and swim-wearable candidates without authorizing runtime implementation.
 - Audit local app boundaries for provider evidence, canonical activity history, Calendar Trends, export/delete, GDPR runbook, and AI readiness.
 - Define 10/10 data-scope, retention, database performance, AI feature-view, privacy, support, and forward-compatibility contracts.
 - Update the training-history parent checkpoint so the next selected step is this audit, not the already-merged Trends child.
@@ -412,6 +472,7 @@ Required before any future runtime or UI child:
 - OAuth, tokens, secrets, provider jobs, webhooks, polling, Garmin API calls, raw file storage, FIT/GPX/TCX parsing, parser dependencies, or cleanup jobs.
 - Calendar/Trends UI changes, screenshots, Help/Guide runtime copy, or user-facing consent UI.
 - AI prompt implementation, model calls, adaptive replanning, or schedule mutations.
+- Strava, Apple HealthKit, Health Connect, Polar, Suunto, Wahoo, WHOOP, Oura, Fitbit/Google Health, FORM, FINIS/CIYE, TritonWear, Swim.com, or other non-Garmin provider implementation.
 - Finance/reporting implementation.
 - Touching `Ja.docx`.
 
@@ -422,9 +483,10 @@ Required before any future runtime or UI child:
 3. The brief audits current FreeSwimming provider-evidence, `training_activity_events`, Calendar Trends, export/delete, and GDPR boundaries.
 4. The brief recommends storing durable summaries and deleting/aggregating raw unused data instead of storing everything forever.
 5. The brief defines AI/ChatGPT-safe feature views and blocks raw/sensitive data from default prompts.
-6. The brief includes data placement, identity, forward compatibility, retention, support, stack, and scorecard contracts.
-7. The parent training-history brief points to this audit as the current next planning step.
-8. Changed briefs pass task-brief lint and diff checks.
+6. The brief states that the architecture is Garmin-first, not Garmin-only, and that future providers must use the same adapter/evidence/feature-view discipline without lowering Garmin data quality.
+7. The brief includes data placement, identity, forward compatibility, retention, support, stack, and scorecard contracts.
+8. The parent training-history brief points to this audit as the current next planning step.
+9. Changed briefs pass task-brief lint and diff checks.
 
 ## Validation
 
@@ -469,3 +531,4 @@ Canonical recovery order:
 ## Checkpoint Log
 
 - `2026-06-23 | planned | created from clean synced main@847a88d9 after owner asked whether Garmin should provide as much data as possible for AI/ChatGPT programming, whether that would make the database slow, whether unused old data should be auto-deleted, and whether a Garmin/app audit should happen first; decision: audit first, keep runtime blocked, and define scope/retention/AI-readiness before any provider implementation | next: run docs validation, commit, push, open PR, and wait for merge approval after gates`
+- `2026-06-23 | planned | PR #1223 update requested by owner after discussing future providers such as Strava, Apple Health, Android Health Connect, Polar, Suunto, Wahoo, recovery wearables, and swim wearables; decision: keep Garmin-first, not Garmin-only, preserve Garmin richness, and add a multi-provider adapter/terms/AI/retention boundary without implementing integrations | next: run docs validation, commit, push PR update, monitor CI, and wait for merge approval after gates`
