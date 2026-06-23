@@ -3,11 +3,11 @@
 ## Metadata
 
 - `id`: `2026-06-23-garmin-provider-prerequisites-intake-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-06-23`
 - `updated`: `2026-06-23`
-- `mode`: `plan only / docs-only provider prerequisite intake`
+- `mode`: `docs-only provider prerequisite evidence fill`
 - `parent_brief`: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
 - `depends_on`:
   - `docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md`
@@ -21,10 +21,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@fe4d632a`
+- `base`: `main@1f3b74ac`
 - `audit_status`: `ready`
-- `decision`: Use this docs-only intake as the next bounded step after the Garmin/provider data scope audit, before creating any Garmin OAuth, import, FIT parsing, raw storage, AI feature-view, or reconciliation runtime brief.
-- `reason`: PR `#1223` established the data-scope, retention, AI-use, and multi-provider architecture boundaries, but runtime remains blocked until owner/provider prerequisites are collected: Garmin partner access, API terms, credentials path, sample payloads/FIT files, consent/revocation rules, duplicate/source-precedence policy, retention windows, AI processor allowance, and support/rollback requirements.
+- `decision`: Execute this docs-only evidence-fill slice now; keep every Garmin/provider runtime path blocked until the required external evidence and owner decisions are complete.
+- `reason`: PR `#1223` established the data-scope, retention, AI-use, and multi-provider architecture boundaries, and PR `#1224` created the intake shell. This slice turns the shell into an actionable evidence packet that separates confirmed public-source facts from missing provider facts, owner decisions, and runtime blockers.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner/application status, API access terms, credentials handling, sample payloads, FIT SDK requirements, provider schemas, source/duplicate policies, retention decisions, AI/model processor rules, privacy/cookie copy, `training_activity_events`, `provider_activity_evidence`, export/delete routes, scorecard categories, or verification lanes change.
 
 ## Goal
@@ -34,6 +34,44 @@ Create a concrete prerequisite intake checklist and decision record that tells t
 ## Pre-Implementation Owner Explanation
 
 Codex skal lage en forberedelsesbrief, ikke Garmin-kode. Vi samler hva som må være på plass før vi kan bygge Garmin-kobling: tilgang, prøvepayloads, FIT-filer, samtykke/terms, duplicate-regler, retention, AI-bruk og support. Det betyr noe fordi runtime uten disse faktaene kan lagre for mye sensitiv data, telle feil, bryte provider-vilkår eller gjøre databasen treg. Utenfor scope nå er OAuth, importer, migrasjoner, UI, råfil-lagring, AI-kall og reconciliation.
+
+## Current Execution Status
+
+This in-progress slice is docs-only and evidence-only.
+
+Confirmed from public official sources:
+
+- Garmin Connect Developer Program APIs are business/enterprise provider APIs, not public no-approval endpoints.
+- Activity API is the receive-side activity source and can expose detailed activity data plus FIT/GPX/TCX files after user consent and device sync.
+- Health API is all-day health/wellness context and includes sensitive wellness/biometric metrics; it is not completed-workout truth.
+- Training API and Courses API are send/publish surfaces; they do not prove a workout was completed.
+- Program APIs use OAuth 2.0 and may be combined in one application after approval.
+- Garmin brand/attribution requirements apply to Garmin-sourced and Garmin-derived displays, exports, and secondary surfaces.
+- FIT is compact, extensible, and forward-compatible, but parser/dependency selection remains blocked until sample files and retention decisions exist.
+
+Missing before runtime:
+
+- approved Garmin partner/application access and credential path;
+- actual app-specific API scopes, terms, and commercial/license constraints;
+- representative swim Activity API JSON and FIT files;
+- source provenance and alias/correlation facts from samples;
+- owner-approved duplicate/source-precedence thresholds;
+- retention/export/delete/disconnect decisions for every stored data class;
+- provider terms and user consent decision for AI/model processor use;
+- support/rollback checklist and disabled-by-default runtime gate.
+
+Runtime status:
+
+- `Garmin import-only proof`: blocked.
+- `Garmin Training API send proof`: blocked.
+- `Raw file storage and retention foundation`: blocked.
+- `Health-context summaries`: blocked.
+- `AI feature-view summaries`: blocked.
+- `Provider reconciliation UI`: blocked.
+
+Next owner-facing action after this slice:
+
+- collect the Garmin/provider evidence packet below, then choose exactly one future runtime child or keep runtime blocked.
 
 ## Product Decision
 
@@ -50,6 +88,34 @@ Runtime remains blocked until the intake has enough evidence to choose one of th
 
 Do not choose a runtime path until the intake can state which Garmin surfaces are approved, what sample data proves, what provider terms allow, and what data may be retained or used in AI.
 
+## Official Source Refresh
+
+Checked on `2026-06-23` from public Garmin sources:
+
+- Activity API: https://developer.garmin.com/gc-developer-program/activity-api/
+- Health API: https://developer.garmin.com/gc-developer-program/health-api/
+- Training API: https://developer.garmin.com/gc-developer-program/training-api/
+- Courses API: https://developer.garmin.com/gc-developer-program/courses-api/
+- Women's Health API: https://developer.garmin.com/gc-developer-program/womens-health-api/
+- Program FAQ: https://developer.garmin.com/gc-developer-program/program-faq/
+- API Brand Guidelines: https://developer.garmin.com/brand-guidelines/api-brand-guidelines/
+- FIT SDK overview: https://developer.garmin.com/fit/overview/
+
+Current interpretation:
+
+| Source               | Public-source fact                                                                                           | Intake consequence                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Activity API         | Activity data includes running, cycling, swimming, yoga, strength, activity details, and FIT/GPX/TCX files.  | Activity import can be first candidate, but only after sample swim JSON/FIT evidence and consent are known. |
+| Health API           | Health data includes all-day metrics such as steps, sleep, heart rate, stress, Pulse Ox, and blood pressure. | Health context must be separate from activity truth and blocked from default AI/runtime until approved.     |
+| Training API         | Training API publishes workouts and training plans to Garmin Connect/device sync.                            | Send state is provider delivery only and cannot count as completion.                                        |
+| Courses API          | Courses API publishes courses and course points.                                                             | Courses remain out of first swim-coaching runtime unless owner selects route/course scope.                  |
+| Women's Health API   | Women's Health covers menstrual cycle and pregnancy tracking context.                                        | Blocked by default until explicit product/legal/privacy/consent approval.                                   |
+| Program FAQ          | APIs use OAuth 2.0; multiple API families can be used in one application after approval.                     | OAuth/least-privilege scopes and API-family selection are prerequisite decisions.                           |
+| API Brand Guidelines | Garmin attribution can be required for title-level, secondary, exported, derived, and shared displays.       | Visible UI/export/support/AI-derived copy cannot ship until attribution rules are approved.                 |
+| FIT SDK              | FIT is compact, interoperable, extensible, and supports activity, course, and workout files.                 | FIT parser/storage choice must wait for sample files, dependency review, and retention/export/delete rules. |
+
+This refresh is enough for the docs-only intake. It is not enough to implement OAuth, API routes, provider calls, FIT parsing, raw file storage, consent UI, AI prompts, or reconciliation.
+
 ## Prerequisite Intake Matrix
 
 | Intake area                       | Required evidence before runtime                                                                                                                                                       | Runtime blocked if missing                     |
@@ -65,6 +131,75 @@ Do not choose a runtime path until the intake can state which Garmin surfaces ar
 | Retention and deletion            | Raw file TTL, raw JSON TTL, unmapped evidence retention, health summary windows, tombstone retention, disconnect behavior, export/delete behavior.                                     | Yes, for raw storage and health context.       |
 | Attribution and display           | Garmin branding/attribution requirements for UI, exports, secondary screens, support diagnostics, and AI-derived summaries.                                                            | Yes, for visible surfaces.                     |
 | Support and rollback              | Disable flags, retry/backoff expectations, redacted diagnostics, owner/support runbook, replay policy, cleanup jobs, and rollback criteria.                                            | Yes, for production runtime.                   |
+
+## Evidence Packet Tracker
+
+Status meanings:
+
+- `confirmed_public`: confirmed by public official docs only; still needs app-specific approval before runtime.
+- `missing_provider`: requires Garmin partner portal, approval packet, sample payload, credential path, or non-public terms.
+- `owner_decision_needed`: requires a product/privacy/support decision before runtime.
+- `runtime_blocked`: no runtime child may start until this is resolved for the selected path.
+
+| Evidence item                         | Current status          | Required artifact or decision                                                                                                          | Gates runtime path                                              |
+| ------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Garmin partner/application status     | `missing_provider`      | Approval status, approved app/project, evaluation/production access model, commercial/license constraints.                             | All live Garmin calls.                                          |
+| Approved API families                 | `owner_decision_needed` | Select first path: Activity, Training, Health, Courses, Women's Health, FIT files, or explicit deferral.                               | All runtime scoping.                                            |
+| Credentials path                      | `missing_provider`      | Secure preview/prod secret handling plan; no credentials committed to repo.                                                            | OAuth/connect/import/send.                                      |
+| OAuth scope and lifecycle             | `missing_provider`      | Exact scopes, refresh/revoke behavior, disconnect obligations, token expiration handling, least-privilege review.                      | OAuth/connect/import/send.                                      |
+| Consent and privacy copy requirements | `missing_provider`      | Required user-facing consent text, revocation/delete copy, privacy/cookie/processor disclosure impact.                                 | Visible consent and private provider routes.                    |
+| Activity API swim JSON sample         | `missing_provider`      | One representative pool swim payload plus malformed/unknown/timezone/unit examples where available.                                    | Import-only proof, reconciliation, AI summaries.                |
+| Swim FIT file sample                  | `missing_provider`      | One representative FIT swim file plus file metadata; sample is handled outside repo unless explicitly redacted and approved.           | FIT parsing, raw file storage, lap/step detail.                 |
+| Health API sample summary             | `missing_provider`      | Only if Health API is selected: sample sleep/stress/recovery/body metrics with exact field and sensitivity review.                     | Health-context summaries, AI readiness.                         |
+| Source provenance fields              | `missing_provider`      | Provider user/activity/file IDs, device/source/original-hub fields, last-seen/deleted/revoked markers from samples.                    | Duplicate detection, reconciliation, support diagnostics.       |
+| Training alias/correlation behavior   | `missing_provider`      | Whether Garmin accepts local references on send and whether returned activities include any local/provider correlation aliases.        | Send proof, sent-vs-received matching.                          |
+| Duplicate/source precedence policy    | `owner_decision_needed` | Thresholds for exact, likely, ambiguous, duplicate, provider-only, manual-conflict, ignored, and hub-vs-direct precedence.             | Calendar/Stats/KPI inclusion, reconciliation, AI feature views. |
+| Retention windows                     | `owner_decision_needed` | Raw file TTL, raw JSON TTL, unmapped evidence TTL, health summary window, tombstone window, AI prompt/cache retention.                 | Raw storage, health context, AI, export/delete.                 |
+| Export/delete/disconnect behavior     | `owner_decision_needed` | Data class matrix for account export, account delete, Garmin disconnect, provider delete/revocation, tombstone retention, raw purge.   | OAuth runtime, storage, GDPR support.                           |
+| AI/model processor allowance          | `owner_decision_needed` | Provider terms + user consent + privacy disclosure decision for whether summarized provider data can enter model context.              | AI feature-view summaries and derived coaching.                 |
+| Attribution/display requirement       | `missing_provider`      | Approved Garmin attribution rules for UI, exports, secondary screens, support diagnostics, AI-derived summaries, and shared artifacts. | Any visible Garmin-derived surface.                             |
+| Support/rollback checklist            | `owner_decision_needed` | Disable flag, retry/backoff, replay, cleanup, redacted diagnostics, support runbook, incident owner, rollback criteria.                | Production runtime.                                             |
+| Runtime path choice                   | `owner_decision_needed` | Choose exactly one next implementation child after evidence is complete, or keep runtime blocked.                                      | PR creation for any runtime child.                              |
+
+## Safe Defaults Until Evidence Exists
+
+- Runtime stays disabled and no Garmin/provider runtime branch should be started.
+- No provider payloads, FIT/GPX/TCX files, OAuth tokens, credentials, raw health data, exact GPS routes, or model prompt payloads are committed.
+- Manual swim actuals remain the only trusted Calendar Trends `Swimming` source.
+- Provider evidence remains private evidence only and cannot mark completion.
+- Health API and Women's Health API data stay blocked from default storage and AI use.
+- Courses API remains out of scope unless route/course navigation becomes explicit product scope.
+- Raw files are treated as short-lived private artifacts outside hot product tables.
+- AI gets no provider data until terms, consent, processor allowance, minimization, and redaction are explicitly approved.
+- Unknown, deprecated, duplicate, malformed, revoked, deleted, unsupported, or sensitive provider values fail closed to `unmapped`, `unsupported`, `needs_review`, `blocked`, or `ignored_duplicate`.
+
+## Runtime Path Readiness
+
+| Candidate runtime child                     | Current readiness | Missing before a runtime brief can start                                                                                                    | Default recommendation                                                           |
+| ------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Garmin import-only proof`                  | `blocked`         | Partner approval, Activity API scope, sample swim JSON, sample swim FIT or explicit FIT deferral, consent, retention, support/rollback.     | First runtime candidate only if Activity API samples arrive before send details. |
+| `Garmin Training API send proof`            | `blocked`         | Training API access, credentials, OAuth lifecycle, swim mapping, local correlation behavior, payload fingerprint policy, attribution.       | Keep blocked until partner access and send/alias facts exist.                    |
+| `Raw file storage and retention foundation` | `blocked`         | Approved raw-file purpose, TTL, storage bucket/access pattern, export/delete/disconnect behavior, parser/dependency decision, cleanup job.  | Do only when FIT/raw files are needed for a selected import/review path.         |
+| `Health-context summaries`                  | `blocked`         | Health API approval, metric-level purpose, consent, retention, sensitive/medical exclusions, sample summaries, export/delete, support copy. | Keep blocked until health context is explicitly selected.                        |
+| `AI feature-view summaries`                 | `blocked`         | Provider terms, user consent, privacy disclosure, model-processor allowance, feature minimization, redaction tests, no raw payload use.     | Keep blocked until terms/consent approve exact model use.                        |
+| `Provider reconciliation UI`                | `blocked`         | Received evidence samples, send-job or import-only decision, alias/correlation facts, duplicate thresholds, attribution, review UX brief.   | Do after import/send facts, not before.                                          |
+
+## Owner Decision Register
+
+Open decisions before runtime:
+
+| Decision                  | Recommended default now                                                                                                   | Owner/provider input needed                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| First Garmin runtime path | Prefer `Garmin import-only proof` only if Activity API swim JSON/FIT samples are available first; otherwise keep blocked. | Which API family Garmin approves and which sample data arrives first.                                  |
+| Health API scope          | Block by default.                                                                                                         | Whether sleep/stress/recovery/body metrics are product scope and legally/contractually allowed.        |
+| Women's Health scope      | Block by default.                                                                                                         | Separate product/legal/privacy/consent approval.                                                       |
+| Courses API scope         | Out of scope by default.                                                                                                  | Explicit route/course-navigation product decision.                                                     |
+| Duplicate precedence      | Manual reviewed/canonical history wins; exact provider matches can attach as evidence; likely/ambiguous requires review.  | Thresholds for exact/likely/ambiguous/manual-conflict/ignored and hub-vs-direct precedence.            |
+| Raw retention             | Treat raw FIT/GPX/TCX as short-lived private artifacts outside hot tables.                                                | Exact TTLs for raw files, raw JSON, unmapped evidence, tombstones, health summaries, and AI artifacts. |
+| AI/model use              | Block provider data from prompts by default.                                                                              | Provider terms, user consent text, privacy/processor allowance, and minimization evidence.             |
+| Disconnect/delete         | Preserve only user-approved canonical history by default; purge raw/provider artifacts under retention rules.             | Garmin-specific delete/revocation obligations and product policy for disconnect vs account delete.     |
+| Attribution               | Do not expose Garmin-derived UI/export/support labels until attribution is approved.                                      | Approved brand-guideline treatment for every visible/exported/derived surface.                         |
+| Support/rollback          | Runtime must be disabled by default, replay-safe, and diagnostically redacted.                                            | Incident owner, disable flag, retry/backoff, replay, cleanup, support runbook, and rollback criteria.  |
 
 ## Minimum Evidence Packet
 
@@ -297,9 +432,9 @@ Before any future runtime or UI child, run a targeted sweep for:
 
 ## Scope
 
-- Create a planned docs-only intake brief for provider prerequisites.
-- Convert the PR `#1223` audit outcome into an actionable evidence packet.
-- Update the training-history parent so the next recommended step is prerequisite intake, not runtime.
+- Move the planned docs-only intake brief to in-progress and turn it into an actionable evidence packet.
+- Convert the PR `#1223` and PR `#1224` audit outcomes into explicit current-status, missing-evidence, and owner-decision trackers.
+- Update the training-history parent and linked provider-scope audit so the current path points to this in-progress intake, not runtime.
 - Keep real Garmin/provider runtime blocked.
 
 ## Out Of Scope
@@ -310,12 +445,12 @@ Before any future runtime or UI child, run a targeted sweep for:
 
 ## Acceptance Criteria
 
-1. Planned prerequisites-intake brief exists and links to the parent and Garmin/provider data scope audit.
-2. Intake matrix covers provider access, scopes, sample payloads, terms/AI, OAuth/consent, source provenance, alias/correlation, duplicate policy, retention, attribution, support, and rollback.
-3. The brief states clear runtime blockers and selectable future runtime paths.
-4. Data placement, identity, forward compatibility, support, stack, and scorecard contracts are explicit.
-5. Parent checkpoint points to this prerequisites intake as the recommended next decision step.
-6. Changed briefs pass task-brief lint and diff checks.
+1. In-progress prerequisites-intake brief exists and links to the parent and Garmin/provider data scope audit.
+2. Intake matrix and evidence tracker cover provider access, scopes, sample payloads, terms/AI, OAuth/consent, source provenance, alias/correlation, duplicate policy, retention, attribution, support, and rollback.
+3. The brief states clear runtime blockers, safe defaults, owner decisions, and selectable future runtime paths.
+4. Data placement, identity, forward compatibility, support, stack, and scorecard contracts remain explicit.
+5. Parent and related audit references point to this in-progress intake as the current evidence-fill step.
+6. Changed briefs pass task-brief lint, docs-only verification, and diff checks.
 
 ## Validation
 
@@ -323,6 +458,7 @@ Docs-only validation required:
 
 - `npm run lint:briefs`
 - `npm run lint:briefs:all`
+- `npm run verify:docs-only`
 - `git diff --check`
 
 Optional PR packaging validation:
@@ -360,3 +496,4 @@ Canonical recovery order:
 ## Checkpoint Log
 
 - `2026-06-23 | planned | created from clean synced main@fe4d632a after Garmin/provider data scope audit PR #1223 merged and post-merge preflight found no closeout; owner confirmed creating a prerequisites-intake brief before any Garmin runtime; decision: document the evidence packet and runtime blockers for provider access, sample payloads, consent/terms, duplicate policy, retention, AI use, and support/rollback | next: validate docs-only changes and wait for owner decision on whether to package as PR or collect provider facts`
+- `2026-06-23 | in-progress | owner explicitly approved executing the docs-only prerequisites/evidence-fill slice from clean main@1f3b74ac; moved this brief to in-progress and expanded it with official-source refresh, current runtime-blocked status, evidence packet tracker, safe defaults, runtime readiness, and owner decision register | next: update linked parent/audit references, run docs-only validation, commit, push, open PR, and keep Garmin runtime blocked`
