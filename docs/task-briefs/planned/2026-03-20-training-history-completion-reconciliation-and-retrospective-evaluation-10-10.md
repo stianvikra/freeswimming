@@ -6,16 +6,16 @@
 - `status`: `planned`
 - `owner`: `stianvikra`
 - `created`: `2026-03-20`
-- `updated`: `2026-06-22`
+- `updated`: `2026-06-23`
 - `mode`: `parent boundary / plan only`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-22`
-- `base`: `main@ba4e6024`
+- `last_audited`: `2026-06-23`
+- `base`: `main@9637237b`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; no active provider/runtime child is selected after Provider Evidence Boundary Intake, Schema Foundation, and Fixture Import V1 all shipped and closed.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary intake, provider-evidence schema foundation, and a disabled-by-default `manual_fixture` provider-evidence import proof. Perfect Day is closed as Habits-only for now. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
+- `decision`: Use this as the training-history parent contract; the next selected planning child is the multi-sport activity-history contract before retrospective evaluation or provider/runtime work.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary intake, provider-evidence schema foundation, and a disabled-by-default `manual_fixture` provider-evidence import proof. Perfect Day is closed as Habits-only for now. A 2026-06-23 app and Garmin audit found the future history contract must support running, cycling, walking, strength/yoga, and other activity types instead of building retrospective evaluation on swim-only actual-history assumptions. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -79,11 +79,17 @@ Training history must keep these layers separate:
    - Owns: bounded authenticated `manual_fixture` provider-evidence import proof with idempotency, redaction, export/delete coverage, and no completion side effects.
    - Does not own: Garmin/OAuth/live provider calls, FIT storage/parsing, matching, UI, Calendar/Stats, or reconciliation actions.
    - Status: shipped in PR `#1209` and closed by PR `#1210`.
-7. Garmin Activity reconciliation child:
+7. Multi-sport activity-history contract child:
+   - Path: `docs/task-briefs/planned/2026-06-23-training-history-multi-sport-activity-contract-v1-10-10.md`.
+   - Owns: docs-only app/Garmin audit, generic activity-history contract, sport/source taxonomy, optional planned links, provider evidence boundary, unknown-value fallback, and future validation requirements before broad history runtime.
+   - Does not own: runtime code, migrations, UI, Stats counting, provider import, OAuth, FIT parsing, reconciliation, or AI-retrospective evaluation.
+   - Status: planned after owner asked to audit app and Garmin online before deciding what to do next.
+8. Garmin Activity reconciliation child:
    - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
    - Blocked by: Garmin partner/API access, provider payload examples, send-job/import-only decision, provider alias/correlation behavior, matching thresholds, and provider branding/consent requirements.
-8. Retrospective evaluation child:
+9. Retrospective evaluation child:
    - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
+   - Depends on: a generic multi-sport activity-history contract so evaluation is not swim-only unless the owner explicitly narrows scope.
 
 ## Scope
 
@@ -355,3 +361,4 @@ Critical target categories for a `10/10` claim:
 - `2026-06-22 | roadmap refresh | refreshed after Provider Evidence Fixture Import V1 PR #1209 and closeout PR #1210 merged; fixture import is now closed in done, no active provider/runtime child is selected, performance-ratchet still waits for two new green weekly cycles after 2026-06-19, the Perfect Day Calendar decision was still pending at that checkpoint, and Garmin/provider runtime reconciliation remains blocked | next: choose a new bounded slice from clean main after owner decision`
 - `2026-06-22 | perfect-day decision closeout | refreshed after Perfect Day eligibility PR #1214 and closeout #1215 merged; Perfect Day Calendar product decision is closed as keep-in-Habits-only for now, no Calendar chip/runtime child is selected, performance-ratchet still waits for two new green weekly cycles after 2026-06-19, and Garmin/provider runtime reconciliation remains blocked | next: choose a new bounded slice from clean main after owner decision`
 - `2026-06-22 | provider roadmap lock | closed the Provider Evidence Boundary Intake path as done after schema foundation, fixture import, roadmap refresh, and Perfect Day decision closeout; no active provider/runtime, Calendar chip, or performance-ratchet child is selected | next: keep Garmin/provider runtime blocked until owner/provider facts unblock it, or choose a fresh bounded docs/product child`
+- `2026-06-23 | multi-sport audit selected | owner asked to audit the app and Garmin online before retrospective/provider work because history must later cover running, cycling, walking, strength/yoga, and other activities; created docs/task-briefs/planned/2026-06-23-training-history-multi-sport-activity-contract-v1-10-10.md as a docs-only 10/10 contract child; Garmin/provider runtime remains blocked | next: validate the docs-only child, then wait for owner decision on a future data/model implementation child`
