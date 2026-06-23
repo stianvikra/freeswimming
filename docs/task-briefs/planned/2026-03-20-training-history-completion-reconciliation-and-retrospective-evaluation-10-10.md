@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@847a88d9`
+- `base`: `main@fe4d632a`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the current next child is the Garmin provider data scope, retention, and AI readiness audit before retrospective evaluation, broad history UI, or provider/runtime work.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, a completed generic `training_activity_events` foundation, and Calendar Trends `Swimming` mapped from trusted manual swim actuals. Perfect Day is closed as Habits-only for now. The owner asked whether Garmin should provide as much activity/health data as possible for AI/ChatGPT programming and whether unused old data should be auto-deleted; the next step is a docs-only Garmin/app audit to define data scope, retention, database performance, and AI feature-view boundaries. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
+- `decision`: Use this as the training-history parent contract; the current next child is the Garmin provider prerequisites intake before any retrospective evaluation, broad history UI, AI feature-view, or provider/runtime work.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, a completed generic `training_activity_events` foundation, Calendar Trends `Swimming` mapped from trusted manual swim actuals, and a merged Garmin/provider data scope audit in PR `#1223`. The next step is a docs-only prerequisites intake so owner/provider facts can be collected before any Garmin OAuth, import, FIT parsing, raw storage, AI, or reconciliation runtime brief. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -100,14 +100,21 @@ Training history must keep these layers separate:
 - Path: `docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md`.
 - Owns: docs-only official Garmin and local app audit for Activity API, Health API, Training API, Courses API, Women's Health API, FIT, provider scope, retention, database performance, export/delete, and AI-safe feature-view boundaries.
 - Does not own: runtime code, OAuth, provider import jobs, raw file storage, FIT parsing, UI, consent screens, AI model calls, or provider reconciliation.
-- Status: planned after owner explicitly asked to audit Garmin/app scope before runtime.
+- Status: shipped as docs-only audit in PR `#1223`; remains in planned as the active source-of-truth scope contract until a future lifecycle closeout decision.
 
-11. Garmin Activity reconciliation child:
+11. Garmin provider prerequisites intake child:
+
+- Path: `docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`.
+- Owns: docs-only evidence packet and decision checklist for Garmin partner access, API scopes, terms, credentials path, sample payloads/FIT, consent/revocation, source provenance, duplicate policy, retention, AI use, attribution, support, and rollback.
+- Does not own: runtime code, migrations, OAuth, provider calls, raw file storage, FIT parsing, UI, screenshots, AI calls, or reconciliation.
+- Status: planned after owner confirmed this as the next bounded step from clean `main@fe4d632a`.
+
+12. Garmin Activity reconciliation child:
 
 - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
 - Blocked by: Garmin partner/API access, provider payload examples, send-job/import-only decision, provider alias/correlation behavior, matching thresholds, and provider branding/consent requirements.
 
-12. Retrospective evaluation child:
+13. Retrospective evaluation child:
 
 - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 - Depends on: a generic multi-sport activity-history contract so evaluation is not swim-only unless the owner explicitly narrows scope.
@@ -150,11 +157,11 @@ Last shipped Calendar Trends swim actuals mapping child scope is owned by:
 
 - `docs/task-briefs/done/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md`
 
-Next prepared Garmin/provider data scope audit child is owned by:
+Next prepared Garmin/provider prerequisites intake child is owned by:
 
-- `docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md`
+- `docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md`
 
-No active provider/runtime child is currently selected. The next provider/runtime slice requires this audit, an owner decision, and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
+No active provider/runtime child is currently selected. The next provider/runtime slice requires the Garmin/provider data scope audit, this prerequisites intake, an owner decision, and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
 
 ## Out Of Scope
 
@@ -400,3 +407,4 @@ Critical target categories for a `10/10` claim:
 - `2026-06-23 | Trends mapping child prepared | refreshed after generic activity data/model foundation PR #1219 and docs-only closeout #1220 merged; created docs/task-briefs/planned/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md as the next recommended bounded runtime candidate so trusted manual swim actuals can later count in Calendar Trends while provider/non-swim/unmapped rows remain excluded | next: wait for explicit owner instruction before implementation`
 - `2026-06-23 | Trends mapping child in progress | owner said "execute Calendar Stats swim actuals mapping v1"; moved child to docs/task-briefs/in-progress/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md on branch calendar-stats-swim-actuals-v1 | next: implement the bounded Swimming source mapping and stop for screenshot handoff before pre-PR gates`
 - `2026-06-23 | Trends mapping closed and Garmin/provider audit selected | refreshed after Calendar Trends swim actuals mapping PR #1221 and closeout PR #1222 merged; Trends now counts trusted manual swim actuals while provider/non-swim/needs-review/unmapped/unsupported rows stay excluded; owner asked whether Garmin should provide broad activity/health data for AI/ChatGPT programming and whether old unused data should auto-delete; created docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md as the docs-only audit gate before runtime | next: validate and review the docs-only audit, then keep Garmin runtime blocked until owner/provider prerequisites are concrete`
+- `2026-06-23 | Garmin provider prerequisites intake selected | refreshed after Garmin/provider data scope audit PR #1223 merged and post-merge preflight found no closeout; owner confirmed the next bounded step should be a docs-only prerequisites intake for provider access, sample payloads, consent/terms, duplicate policy, retention, AI use, attribution, support, and rollback before any Garmin runtime | next: validate the docs-only prerequisites intake, then collect owner/provider facts or keep Garmin runtime blocked`
