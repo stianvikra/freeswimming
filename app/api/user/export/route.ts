@@ -14,6 +14,10 @@ import {
   isProviderEvidenceSchemaMissing,
 } from "@/lib/my-library/provider-evidence";
 import {
+  TRAINING_ACTIVITY_EVENT_SELECT,
+  isTrainingActivityEventSchemaMissing,
+} from "@/lib/my-library/training-activity-events";
+import {
   buildCanonicalCourseLessonIdMap,
   canonicalizeCourseLessonRuntimeId,
 } from "@/lib/course/runtime-identity";
@@ -71,6 +75,7 @@ export async function GET() {
     habitDefinitionsResult,
     habitCheckInsResult,
     workoutsResult,
+    trainingActivityEventsResult,
     providerConnectionsResult,
     providerActivityEvidenceResult,
     providerImportRunsResult,
@@ -182,6 +187,12 @@ export async function GET() {
       .eq("user_id", userId)
       .order("updated_at", { ascending: false }),
     supabase
+      .from("training_activity_events")
+      .select(TRAINING_ACTIVITY_EVENT_SELECT)
+      .eq("user_id", userId)
+      .order("activity_local_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    supabase
       .from("provider_connections")
       .select(PROVIDER_CONNECTION_SELECT)
       .eq("user_id", userId)
@@ -228,6 +239,11 @@ export async function GET() {
     workoutsResult.error && isWorkoutSchemaMissing(workoutsResult.error)
       ? []
       : (workoutsResult.data ?? []);
+  const normalizedTrainingActivityEvents =
+    trainingActivityEventsResult.error &&
+    isTrainingActivityEventSchemaMissing(trainingActivityEventsResult.error)
+      ? []
+      : (trainingActivityEventsResult.data ?? []);
   const normalizedDrylandSessions =
     drylandSessionsResult.error && isDrylandSchemaMissing(drylandSessionsResult.error)
       ? []
@@ -295,6 +311,10 @@ export async function GET() {
     (workoutsResult.error && !isWorkoutSchemaMissing(workoutsResult.error)
       ? workoutsResult.error
       : null) ??
+    (trainingActivityEventsResult.error &&
+    !isTrainingActivityEventSchemaMissing(trainingActivityEventsResult.error)
+      ? trainingActivityEventsResult.error
+      : null) ??
     (providerConnectionsResult.error &&
     !isProviderEvidenceSchemaMissing(providerConnectionsResult.error)
       ? providerConnectionsResult.error
@@ -342,6 +362,7 @@ export async function GET() {
       habitDefinitions: normalizedHabitDefinitions,
       habitCheckIns: normalizedHabitCheckIns,
       workouts: normalizedWorkouts,
+      trainingActivityEvents: normalizedTrainingActivityEvents,
       providerConnections: normalizedProviderConnections,
       providerActivityEvidence: normalizedProviderActivityEvidence,
       providerImportRuns: normalizedProviderImportRuns,

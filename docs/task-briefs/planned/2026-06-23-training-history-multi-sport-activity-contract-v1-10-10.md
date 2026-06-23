@@ -16,9 +16,9 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@9637237b`
+- `base`: `main@db7da479`
 - `audit_status`: `ready`
-- `decision`: Use this brief before retrospective evaluation, Stats activity mapping, provider reconciliation, or broad history UI work so training history is not locked to swimming-only assumptions.
+- `decision`: Use this brief as the prerequisite contract before the generic activity data/model foundation, retrospective evaluation, Stats activity mapping, provider reconciliation, or broad history UI work so training history is not locked to swimming-only assumptions.
 - `reason`: Local audit found provider evidence already accepts generic activity metadata, while manual actual history, Calendar completion, Review Actual, and Stats copy are still swim-plan-oriented. Garmin Activity API is explicitly multi-activity, including running, cycling, swimming, yoga, and strength training, and FIT activity files are forward-compatible across sport/fitness data.
 - `must_refresh_before_execution_if`: Refresh if `completed_activity_events`, provider-evidence schema/helpers, Calendar Plan/Stats routes, Review Actual editor, workout/program identity, dryland/micro-session history, Garmin official docs, scorecard categories, or verification lanes change before execution.
 
@@ -315,17 +315,17 @@ Skill/capability audit:
 
 Systemic findings:
 
-| Surface                     | Finding                                                                                                                                                         | Severity | Recommended Type               | Owner Decision Needed                             | Follow-Up Brief Path                   |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------- | -------------------------------------- |
-| Training-history data model | Current manual actual table requires planned/workout/program refs and swim-specific context, while future provider activities may be unplanned and multi-sport. | `high`   | `bounded implementation child` | yes, table evolution vs new canonical table       | TBD future data/model foundation child |
-| Provider evidence taxonomy  | Schema has generic `activity_type`/`sport_type`/`sub_sport_type`, but fixture parser is swim-only and evidence is intentionally not completion truth.           | `high`   | `bounded implementation child` | yes, first supported sport set and mapping policy | Future provider fixture/mapping child  |
-| Calendar/Review Actual UI   | Mature surface is excellent for planned swim correction, but direct reuse would hardcode swim assumptions into run/ride/walk history.                           | `medium` | `bounded implementation child` | yes, generic shell vs sport-specific editors      | Future multi-sport history UI child    |
+| Surface                     | Finding                                                                                                                                                         | Severity | Recommended Type               | Owner Decision Needed                             | Follow-Up Brief Path                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Training-history data model | Current manual actual table requires planned/workout/program refs and swim-specific context, while future provider activities may be unplanned and multi-sport. | `high`   | `bounded implementation child` | yes, table evolution vs new canonical table       | `docs/task-briefs/in-progress/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md` |
+| Provider evidence taxonomy  | Schema has generic `activity_type`/`sport_type`/`sub_sport_type`, but fixture parser is swim-only and evidence is intentionally not completion truth.           | `high`   | `bounded implementation child` | yes, first supported sport set and mapping policy | Future provider fixture/mapping child                                                                         |
+| Calendar/Review Actual UI   | Mature surface is excellent for planned swim correction, but direct reuse would hardcode swim assumptions into run/ride/walk history.                           | `medium` | `bounded implementation child` | yes, generic shell vs sport-specific editors      | Future multi-sport history UI child                                                                           |
 
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- Last merged workstream: PR `#1217`, `main@9637237b`.
-- Next planning step after this docs-only contract: owner decides whether to create a data/model foundation child or keep this as planning only.
+- Last merged workstream: PR `#1218`, `main@db7da479`.
+- Next step after this docs-only contract: use `docs/task-briefs/in-progress/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md`, now explicitly approved for execution by owner.
 
 ## Platform 10/10 Scorecard Mapping
 
@@ -459,3 +459,5 @@ Future implementation validation, not required for this docs-only slice:
 ## Checkpoint Log
 
 - `2026-06-23 | planned | created from clean synced main@9637237b after owner asked to audit app and Garmin online before any runtime; local audit found provider evidence generic but manual actual history and Review Actual swim-plan-specific; official Garmin Activity API confirms multi-activity scope; this docs-only child defines the 10/10 multi-sport activity contract before retrospective evaluation or provider reconciliation | next: run brief lint/docs validation, then wait for owner decision on whether to create a future data/model implementation child`
+- `2026-06-23 | planned | owner confirmed the next planning step after PR #1218; prepared docs/task-briefs/planned/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md as the future data/model foundation child; no runtime implementation had started | next at the time: use that child only after explicit owner execution approval`
+- `2026-06-23 | planned | owner explicitly approved executing the generic activity data-model foundation child; child moved to docs/task-briefs/in-progress/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md | next: keep this multi-sport contract as prerequisite reference while the bounded data foundation runs`

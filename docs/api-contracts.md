@@ -227,7 +227,7 @@
   "ok": true,
   "export": {
     "generatedAt": "2026-02-17T14:00:00.000Z",
-    "schemaVersion": "2026-06-22-provider-evidence-export",
+    "schemaVersion": "2026-06-23-training-activity-export",
     "user": {
       "id": "user-id",
       "email": "swimmer@example.com"
@@ -271,6 +271,7 @@
       }
     ],
     "workouts": [],
+    "trainingActivityEvents": [],
     "providerConnections": [],
     "providerActivityEvidence": [],
     "providerImportRuns": []
@@ -279,6 +280,8 @@
 ```
 
 - `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
+- `trainingActivityEvents` contains private canonical activity-history foundation rows and compatibility aliases only. It never includes raw provider files, OAuth tokens, raw provider payloads, cookies, IP addresses, User-Agent strings, or full provider responses.
+- Generic training activity rows are not Calendar completion truth, Stats Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth unless a later slice explicitly maps the row and its source/sport/status. Unknown, unmapped, unsupported, duplicate, orphaned, and schema-drift rows stay out of swim Stats and completion totals.
 - `providerConnections`, `providerActivityEvidence`, and `providerImportRuns` contain private provider evidence summaries only. They never include OAuth tokens, provider secrets, raw provider payloads, raw FIT/GPX/TCX files, cookies, IP addresses, User-Agent strings, or full provider response bodies.
 - Provider activity evidence is received evidence only. It is not Calendar completion truth, Stats Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth until a later reconciliation slice explicitly maps it.
 
@@ -433,10 +436,12 @@
 - `415`: unsupported content type
 - `500`: failed to delete user data
 
-### Provider Evidence Deletion Boundary
+### Activity And Provider Evidence Deletion Boundary
 
 - Provider evidence foundation rows are user-owned and reference `auth.users(id)` with `on delete cascade`.
+- Generic training activity foundation rows are user-owned and reference `auth.users(id)` with `on delete cascade`.
 - Account deletion removes provider connections, provider activity evidence summaries, and provider import-run diagnostics with the user account.
+- Account deletion also removes generic `training_activity_events` rows with the user account; compatibility links to planned swim actuals are aliases, not separate retained identity.
 - V1 stores no raw provider files and no OAuth tokens, so there is no provider file bucket or token vault deletion path in this contract.
 
 ## `POST /api/analytics/event`
@@ -1069,6 +1074,7 @@ environment allowlist role from a profile-backed role.
 - The stored `planned_snapshot.workout` includes read-only planned workout summary, `previewSections`, and the source workout draft when it can be summarized, so Review Actual can show the planned step/repeat structure without mutating the source workout.
 - The manual event may also store `actual_session_snapshot`, initialized from the planned/source workout. This is the corrected performed-session truth and is separate from the planned snapshot.
 - `completed_activity_events.source_kind = manual` is the only source kind in this contract. Garmin send/import/reconciliation must not write through this route.
+- The generic `training_activity_events` foundation may read existing planned swim actuals through a compatibility adapter, but this route does not write generic rows, non-swim activities, provider evidence, or Stats mapping.
 - Legacy `outcome = completed` rows are read as `completed_as_planned`. New writes use the expanded outcome contract.
 - Unknown future completion source/outcome values fail closed to review and must not count as completed until explicitly mapped.
 

@@ -90,6 +90,7 @@ describe("/api/user/export route", () => {
       ok: boolean;
       export: {
         schemaVersion: string;
+        trainingActivityEvents: unknown[];
         providerConnections: unknown[];
         providerActivityEvidence: unknown[];
         providerImportRuns: unknown[];
@@ -98,11 +99,13 @@ describe("/api/user/export route", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.export.schemaVersion).toBe("2026-06-22-provider-evidence-export");
+    expect(payload.export.schemaVersion).toBe("2026-06-23-training-activity-export");
+    expect(payload.export.trainingActivityEvents).toEqual([]);
     expect(payload.export.providerConnections).toEqual([]);
     expect(payload.export.providerActivityEvidence).toEqual([]);
     expect(payload.export.providerImportRuns).toEqual([]);
     expect(supabase.from).toHaveBeenCalledWith("provider_connections");
+    expect(supabase.from).toHaveBeenCalledWith("training_activity_events");
     expect(supabase.from).toHaveBeenCalledWith("provider_activity_evidence");
     expect(supabase.from).toHaveBeenCalledWith("provider_import_runs");
   });
@@ -121,6 +124,42 @@ describe("/api/user/export route", () => {
       },
       athlete_profiles: { data: null, error: null },
       training_preferences: { data: null, error: null },
+      training_activity_events: {
+        data: [
+          {
+            id: "training-activity-1",
+            user_id: "user-1",
+            source_kind: "manual",
+            activity_category: "workout",
+            canonical_sport: "swimming",
+            canonical_sub_sport: "pool_swim",
+            mapping_status: "trusted",
+            outcome: "completed_as_planned",
+            activity_started_at: "2026-06-22T06:30:00.000Z",
+            activity_ended_at: null,
+            activity_local_date: "2026-06-22",
+            activity_timezone: null,
+            timezone_source: "unknown",
+            duration_seconds: 1800,
+            distance_m: 1200,
+            elevation_m: null,
+            energy_kcal: null,
+            average_heart_rate_bpm: null,
+            training_load: null,
+            planned_workout_instance_id: "planned-instance-1",
+            workout_id: "workout-1",
+            program_id: "program-1",
+            completed_activity_event_id: "completed-activity-1",
+            provider_activity_evidence_id: null,
+            detail_kind: "none",
+            detail_snapshot: {},
+            support_diagnostics: {},
+            created_at: "2026-06-22T09:00:00.000Z",
+            updated_at: "2026-06-22T09:00:00.000Z",
+          },
+        ],
+        error: null,
+      },
       provider_connections: {
         data: [
           {
@@ -215,6 +254,11 @@ describe("/api/user/export route", () => {
     const payload = (await response.json()) as {
       ok: boolean;
       export: {
+        trainingActivityEvents: Array<{
+          sourceKind: string;
+          canonicalSport: string;
+          completedActivityEventId: string | null;
+        }>;
         providerConnections: Array<{ providerKey: string; redactedMetadata: unknown }>;
         providerActivityEvidence: Array<{
           providerKey: string;
@@ -227,6 +271,11 @@ describe("/api/user/export route", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
+    expect(payload.export.trainingActivityEvents[0]).toMatchObject({
+      sourceKind: "manual",
+      canonicalSport: "swimming",
+      completedActivityEventId: "completed-activity-1",
+    });
     expect(payload.export.providerConnections[0]).toMatchObject({
       providerKey: "manual_fixture",
       redactedMetadata: {

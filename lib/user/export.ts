@@ -239,6 +239,38 @@ type ProviderConnectionRow = Pick<
   | "updated_at"
 >;
 
+type TrainingActivityEventRow = Pick<
+  Database["public"]["Tables"]["training_activity_events"]["Row"],
+  | "id"
+  | "source_kind"
+  | "activity_category"
+  | "canonical_sport"
+  | "canonical_sub_sport"
+  | "mapping_status"
+  | "outcome"
+  | "activity_started_at"
+  | "activity_ended_at"
+  | "activity_local_date"
+  | "activity_timezone"
+  | "timezone_source"
+  | "duration_seconds"
+  | "distance_m"
+  | "elevation_m"
+  | "energy_kcal"
+  | "average_heart_rate_bpm"
+  | "training_load"
+  | "planned_workout_instance_id"
+  | "workout_id"
+  | "program_id"
+  | "completed_activity_event_id"
+  | "provider_activity_evidence_id"
+  | "detail_kind"
+  | "detail_snapshot"
+  | "support_diagnostics"
+  | "created_at"
+  | "updated_at"
+>;
+
 type ProviderActivityEvidenceRow = Pick<
   Database["public"]["Tables"]["provider_activity_evidence"]["Row"],
   | "id"
@@ -305,6 +337,7 @@ export type BuildUserExportPayloadInput = {
   habitDefinitions: HabitDefinitionRow[];
   habitCheckIns: HabitCheckInRow[];
   workouts: WorkoutRow[];
+  trainingActivityEvents: TrainingActivityEventRow[];
   providerConnections: ProviderConnectionRow[];
   providerActivityEvidence: ProviderActivityEvidenceRow[];
   providerImportRuns: ProviderImportRunRow[];
@@ -316,7 +349,7 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
 
   return {
     generatedAt,
-    schemaVersion: "2026-06-22-provider-evidence-export",
+    schemaVersion: "2026-06-23-training-activity-export",
     user: {
       id: input.userId,
       email: input.userEmail,
@@ -537,6 +570,36 @@ export function buildUserExportPayload(input: BuildUserExportPayloadInput) {
       steps: row.steps,
       generatedAt: row.generated_at,
       acceptedAt: row.accepted_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+    trainingActivityEvents: input.trainingActivityEvents.map((row) => ({
+      id: row.id,
+      sourceKind: row.source_kind,
+      activityCategory: row.activity_category,
+      canonicalSport: row.canonical_sport,
+      canonicalSubSport: row.canonical_sub_sport,
+      mappingStatus: row.mapping_status,
+      outcome: row.outcome,
+      activityStartedAt: row.activity_started_at,
+      activityEndedAt: row.activity_ended_at,
+      activityLocalDate: row.activity_local_date,
+      activityTimezone: row.activity_timezone,
+      timezoneSource: row.timezone_source,
+      durationSeconds: row.duration_seconds,
+      distanceM: row.distance_m,
+      elevationM: row.elevation_m,
+      energyKcal: row.energy_kcal,
+      averageHeartRateBpm: row.average_heart_rate_bpm,
+      trainingLoad: row.training_load,
+      plannedWorkoutInstanceId: row.planned_workout_instance_id,
+      workoutId: row.workout_id,
+      programId: row.program_id,
+      completedActivityEventId: row.completed_activity_event_id,
+      providerActivityEvidenceId: row.provider_activity_evidence_id,
+      detailKind: row.detail_kind,
+      detailSnapshot: row.detail_snapshot,
+      supportDiagnostics: row.support_diagnostics,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),
