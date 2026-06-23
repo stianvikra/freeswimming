@@ -772,6 +772,117 @@ export type Database = {
         };
         Relationships: [];
       };
+      training_activity_events: {
+        Row: {
+          activity_category: string;
+          activity_ended_at: string | null;
+          activity_local_date: string | null;
+          activity_started_at: string | null;
+          activity_timezone: string | null;
+          average_heart_rate_bpm: number | null;
+          canonical_sport: string;
+          canonical_sub_sport: string;
+          completed_activity_event_id: string | null;
+          created_at: string;
+          detail_kind: string;
+          detail_snapshot: Json;
+          distance_m: number | null;
+          duration_seconds: number | null;
+          elevation_m: number | null;
+          energy_kcal: number | null;
+          id: string;
+          mapping_status: string;
+          outcome: string;
+          planned_workout_instance_id: string | null;
+          program_id: string | null;
+          provider_activity_evidence_id: string | null;
+          source_kind: string;
+          support_diagnostics: Json;
+          timezone_source: string;
+          training_load: number | null;
+          updated_at: string;
+          user_id: string;
+          workout_id: string | null;
+        };
+        Insert: {
+          activity_category?: string;
+          activity_ended_at?: string | null;
+          activity_local_date?: string | null;
+          activity_started_at?: string | null;
+          activity_timezone?: string | null;
+          average_heart_rate_bpm?: number | null;
+          canonical_sport?: string;
+          canonical_sub_sport?: string;
+          completed_activity_event_id?: string | null;
+          created_at?: string;
+          detail_kind?: string;
+          detail_snapshot?: Json;
+          distance_m?: number | null;
+          duration_seconds?: number | null;
+          elevation_m?: number | null;
+          energy_kcal?: number | null;
+          id?: string;
+          mapping_status?: string;
+          outcome?: string;
+          planned_workout_instance_id?: string | null;
+          program_id?: string | null;
+          provider_activity_evidence_id?: string | null;
+          source_kind?: string;
+          support_diagnostics?: Json;
+          timezone_source?: string;
+          training_load?: number | null;
+          updated_at?: string;
+          user_id: string;
+          workout_id?: string | null;
+        };
+        Update: {
+          activity_category?: string;
+          activity_ended_at?: string | null;
+          activity_local_date?: string | null;
+          activity_started_at?: string | null;
+          activity_timezone?: string | null;
+          average_heart_rate_bpm?: number | null;
+          canonical_sport?: string;
+          canonical_sub_sport?: string;
+          completed_activity_event_id?: string | null;
+          created_at?: string;
+          detail_kind?: string;
+          detail_snapshot?: Json;
+          distance_m?: number | null;
+          duration_seconds?: number | null;
+          elevation_m?: number | null;
+          energy_kcal?: number | null;
+          id?: string;
+          mapping_status?: string;
+          outcome?: string;
+          planned_workout_instance_id?: string | null;
+          program_id?: string | null;
+          provider_activity_evidence_id?: string | null;
+          source_kind?: string;
+          support_diagnostics?: Json;
+          timezone_source?: string;
+          training_load?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          workout_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "training_activity_events_completed_activity_event_id_fkey";
+            columns: ["completed_activity_event_id"];
+            isOneToOne: false;
+            referencedRelation: "completed_activity_events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "training_activity_events_provider_activity_evidence_id_fkey";
+            columns: ["provider_activity_evidence_id"];
+            isOneToOne: false;
+            referencedRelation: "provider_activity_evidence";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       course_progress: {
         Row: {
           done: boolean;

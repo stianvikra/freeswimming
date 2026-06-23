@@ -260,6 +260,38 @@ describe("buildUserExportPayload", () => {
           updated_at: "2026-03-20T08:40:00.000Z",
         },
       ],
+      trainingActivityEvents: [
+        {
+          id: "training-activity-1",
+          source_kind: "manual",
+          activity_category: "workout",
+          canonical_sport: "swimming",
+          canonical_sub_sport: "pool_swim",
+          mapping_status: "trusted",
+          outcome: "completed_as_planned",
+          activity_started_at: "2026-06-22T06:30:00.000Z",
+          activity_ended_at: "2026-06-22T07:08:00.000Z",
+          activity_local_date: "2026-06-22",
+          activity_timezone: "Europe/Oslo",
+          timezone_source: "manual",
+          duration_seconds: 2280,
+          distance_m: 1800,
+          elevation_m: null,
+          energy_kcal: null,
+          average_heart_rate_bpm: null,
+          training_load: null,
+          planned_workout_instance_id: "planned-instance-1",
+          workout_id: "workout-1",
+          program_id: "program-1",
+          completed_activity_event_id: "completed-activity-1",
+          provider_activity_evidence_id: null,
+          detail_kind: "swim_session_snapshot",
+          detail_snapshot: { kind: "manual_actual_session_snapshot_v1" },
+          support_diagnostics: {},
+          created_at: "2026-06-22T07:10:00.000Z",
+          updated_at: "2026-06-22T07:10:00.000Z",
+        },
+      ],
       providerConnections: [
         {
           id: "provider-connection-1",
@@ -327,7 +359,7 @@ describe("buildUserExportPayload", () => {
 
     expect(payload).toEqual({
       generatedAt: "2026-02-17T12:00:00.000Z",
-      schemaVersion: "2026-06-22-provider-evidence-export",
+      schemaVersion: "2026-06-23-training-activity-export",
       user: {
         id: "user-1",
         email: "swimmer@example.com",
@@ -585,6 +617,38 @@ describe("buildUserExportPayload", () => {
           updatedAt: "2026-03-20T08:40:00.000Z",
         },
       ],
+      trainingActivityEvents: [
+        {
+          id: "training-activity-1",
+          sourceKind: "manual",
+          activityCategory: "workout",
+          canonicalSport: "swimming",
+          canonicalSubSport: "pool_swim",
+          mappingStatus: "trusted",
+          outcome: "completed_as_planned",
+          activityStartedAt: "2026-06-22T06:30:00.000Z",
+          activityEndedAt: "2026-06-22T07:08:00.000Z",
+          activityLocalDate: "2026-06-22",
+          activityTimezone: "Europe/Oslo",
+          timezoneSource: "manual",
+          durationSeconds: 2280,
+          distanceM: 1800,
+          elevationM: null,
+          energyKcal: null,
+          averageHeartRateBpm: null,
+          trainingLoad: null,
+          plannedWorkoutInstanceId: "planned-instance-1",
+          workoutId: "workout-1",
+          programId: "program-1",
+          completedActivityEventId: "completed-activity-1",
+          providerActivityEvidenceId: null,
+          detailKind: "swim_session_snapshot",
+          detailSnapshot: { kind: "manual_actual_session_snapshot_v1" },
+          supportDiagnostics: {},
+          createdAt: "2026-06-22T07:10:00.000Z",
+          updatedAt: "2026-06-22T07:10:00.000Z",
+        },
+      ],
       providerConnections: [
         {
           id: "provider-connection-1",
@@ -673,6 +737,7 @@ describe("buildUserExportPayload", () => {
       habitDefinitions: [],
       habitCheckIns: [],
       workouts: [],
+      trainingActivityEvents: [],
       providerConnections: [],
       providerActivityEvidence: [],
       providerImportRuns: [],
@@ -689,6 +754,7 @@ describe("buildUserExportPayload", () => {
     expect(payload.habitDefinitions).toEqual([]);
     expect(payload.habitCheckIns).toEqual([]);
     expect(payload.workouts).toEqual([]);
+    expect(payload.trainingActivityEvents).toEqual([]);
     expect(payload.providerConnections).toEqual([]);
     expect(payload.providerActivityEvidence).toEqual([]);
     expect(payload.providerImportRuns).toEqual([]);

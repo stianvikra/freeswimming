@@ -37,8 +37,8 @@ Define the operational workflow for privacy rights handling in freeswimming.org:
 2. Verification:
    - confirm requester identity before processing manual access/rectification requests.
 3. Fulfillment:
-   - `export`: direct user to authenticated export flow or provide verified export bundle; saved dryland sessions are included, historical dryland Focus cue values appear only as read-only `legacyFocusText`, and provider evidence appears only as redacted connection/run/activity summaries.
-   - `delete`: direct user to authenticated delete flow or perform verified backend-assisted deletion; owner-scoped provider evidence rows cascade with the account user, and V1 has no provider token bucket or raw FIT/GPX/TCX file path to purge.
+   - `export`: direct user to authenticated export flow or provide verified export bundle; saved dryland sessions are included, historical dryland Focus cue values appear only as read-only `legacyFocusText`, generic training activity rows appear as private foundation/review data, and provider evidence appears only as redacted connection/run/activity summaries.
+   - `delete`: direct user to authenticated delete flow or perform verified backend-assisted deletion; owner-scoped training activity and provider evidence rows cascade with the account user, and V1 has no provider token bucket or raw FIT/GPX/TCX file path to purge.
    - `rectification/objection`: apply data correction or processing limitation according to request and legal basis.
 4. Stripe/payment retention note:
    - communicate clearly that app-owned account data can be removed, but Stripe may retain payment records under legal/accounting obligations.
