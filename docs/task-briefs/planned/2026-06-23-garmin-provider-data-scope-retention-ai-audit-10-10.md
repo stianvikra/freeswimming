@@ -20,7 +20,7 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@847a88d9`
+- `base`: `main@fe4d632a`
 - `audit_status`: `ready`
 - `decision`: Use this docs-only audit before any Garmin Activity API, Health API, FIT parsing, provider runtime, AI-retrospective, multi-provider adapter, or broad health-context implementation.
 - `reason`: Official Garmin docs show Activity, Health, Training, Courses, and Women's Health are separate data/product surfaces, while the app currently has provider-evidence summaries and generic activity-history rows but no token storage, raw file storage, health-context model, or AI-safe feature view. A 10/10 solution needs a Garmin-first provider model that preserves Garmin richness without hardcoding FreeSwimming to Garmin-only, plus explicit data minimization, retention, AI-use, terms, source-provenance, deletion/revocation, and database performance boundaries before requesting or storing broad provider data.
@@ -494,8 +494,8 @@ Systemic findings:
 Return path:
 
 - Parent: `docs/task-briefs/planned/2026-03-20-training-history-completion-reconciliation-and-retrospective-evaluation-10-10.md`
-- Last merged workstream: PR `#1221` and docs-only closeout PR `#1222`, with `main@847a88d9` clean and synced.
-- Next step after this docs-only audit: owner decides whether to create a future runtime child for Garmin partner/OAuth readiness, raw file storage/retention, health-context model, AI feature-view summaries, or a separate multi-provider adapter roadmap. Garmin reconciliation remains blocked until provider access, sample payloads, alias/correlation facts, source provenance, duplicate-correlation thresholds, deletion/revocation rules, attribution/consent, and matching thresholds are concrete.
+- Last merged workstream: Garmin/provider data scope audit PR `#1223`, with `main@fe4d632a` clean and synced.
+- Next step after this docs-only audit: `docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md` captures the evidence packet needed before any future runtime child for Garmin partner/OAuth readiness, raw file storage/retention, health-context model, AI feature-view summaries, or a separate multi-provider adapter roadmap. Garmin reconciliation remains blocked until provider access, sample payloads, alias/correlation facts, source provenance, duplicate-correlation thresholds, deletion/revocation rules, attribution/consent, and matching thresholds are concrete.
 
 ## Help/Guide And Support Impact
 
@@ -595,3 +595,4 @@ Canonical recovery order:
 - `2026-06-23 | planned | created from clean synced main@847a88d9 after owner asked whether Garmin should provide as much data as possible for AI/ChatGPT programming, whether that would make the database slow, whether unused old data should be auto-deleted, and whether a Garmin/app audit should happen first; decision: audit first, keep runtime blocked, and define scope/retention/AI-readiness before any provider implementation | next: run docs validation, commit, push, open PR, and wait for merge approval after gates`
 - `2026-06-23 | planned | PR #1223 update requested by owner after discussing future providers such as Strava, Apple Health, Android Health Connect, Polar, Suunto, Wahoo, recovery wearables, and swim wearables; decision: keep Garmin-first, not Garmin-only, preserve Garmin richness, and add a multi-provider adapter/terms/AI/retention boundary without implementing integrations | next: run docs validation, commit, push PR update, monitor CI, and wait for merge approval after gates`
 - `2026-06-23 | planned | owner requested pre-merge audit of PR #1223 to ensure the brief includes everything important; decision: strengthen the docs-only brief with source provenance, duplicate prevention, provider lifecycle/delete/revocation, medical/location blocking, AI processor/terms gating, HealthKit/Health Connect mobile-bridge caveat, and Google Fit/Fitbit migration risk | next: run docs validation, commit, push PR update, monitor CI, run pre-merge, and wait for merge approval after gates`
+- `2026-06-23 | prerequisites intake linked | refreshed after Garmin/provider data scope audit PR #1223 merged; linked docs/task-briefs/planned/2026-06-23-garmin-provider-prerequisites-intake-10-10.md as the next docs-only evidence-packet step before any Garmin/provider runtime brief | next: collect owner/provider facts or keep Garmin runtime blocked`
