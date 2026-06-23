@@ -12,10 +12,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@37179e90`
+- `base`: `main@847a88d9`
 - `audit_status`: `ready`
-- `decision`: Use this as the training-history parent contract; the active child is Calendar Trends swim actuals mapping before retrospective evaluation, broad history UI, or provider/runtime work.
-- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, and a completed generic `training_activity_events` foundation. Perfect Day is closed as Habits-only for now. A 2026-06-23 app and Garmin audit found future history must support running, cycling, walking, strength/yoga, and other activity types without building on swim-only actual-history assumptions. The active Calendar Trends child maps trusted manual swim actuals only, and real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
+- `decision`: Use this as the training-history parent contract; the current next child is the Garmin provider data scope, retention, and AI readiness audit before retrospective evaluation, broad history UI, or provider/runtime work.
+- `reason`: Calendar now has stable planned instances, planned-only edit/status actions, manual completion events, read-only Habits/Micro daily layers, read-only plan-vs-actual overview, a dedicated Review Actual editor, completed provider-evidence boundary/schema/fixture proof, a docs-only multi-sport activity contract, a completed generic `training_activity_events` foundation, and Calendar Trends `Swimming` mapped from trusted manual swim actuals. Perfect Day is closed as Habits-only for now. The owner asked whether Garmin should provide as much activity/health data as possible for AI/ChatGPT programming and whether unused old data should be auto-deleted; the next step is a docs-only Garmin/app audit to define data scope, retention, database performance, and AI feature-view boundaries. Real Garmin/provider runtime remains blocked until owner/provider decisions and external prerequisites are concrete.
 - `must_refresh_before_execution_if`: Refresh again if `planned_workout_instances`, workout/session data contracts, Garmin official API docs, Garmin partner status, provider payload samples, Help/Guide/support surfaces, scorecard categories, verification lanes, or route labels change.
 
 ## Goal
@@ -33,7 +33,7 @@ Codex skal sikre at faktisk trening lagres som historikk, ikke som endringer dir
 - `completed_activity_events` now stores owner-scoped manual completed swim events from Calendar.
 - Calendar Plan can show manual completion plus read-only Habits and Micro Session daily layers.
 - Workout/program Garmin-ready exports are handoff JSON/PDF surfaces only; they do not call Garmin APIs.
-- Calendar Trends Swimming is being mapped from trusted manual swim actuals only; provider, non-swim, unknown, unsupported, duplicate, orphaned, schema-drift, and needs-review rows stay excluded.
+- Calendar Trends Swimming is mapped from trusted manual swim actuals only; provider, non-swim, unknown, unsupported, duplicate, orphaned, schema-drift, and needs-review rows stay excluded.
 - Manual actual history now supports completed-as-planned, changed, partly done, another-day, cancelled-as-actual, and review-needed outcomes, with Calendar showing read-only plan-vs-actual overview and a dedicated `Review actual` editor for manual actual corrections.
 - Provider Evidence Schema Foundation V1 now stores provider connection, import-run, and activity evidence summaries separately from manual actual history, with export/delete coverage and no Calendar/Trends counting.
 - Provider Evidence Fixture Import V1 now proves a disabled-by-default authenticated `manual_fixture` route can write private provider evidence idempotently without creating completion truth.
@@ -91,16 +91,23 @@ Training history must keep these layers separate:
    - Does not own: Garmin/provider runtime, OAuth, FIT parsing, UI, Trends counting, reconciliation actions, health metrics, or AI-retrospective evaluation.
    - Status: shipped in PR `#1219` and closed by docs-only closeout PR `#1220`.
 9. Calendar Trends swim actuals mapping child:
-   - Path: `docs/task-briefs/in-progress/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md`.
+   - Path: `docs/task-briefs/done/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md`.
    - Owns: mapping trusted manual swim actuals into Calendar Trends `Swimming` through the generic activity-history boundary.
    - Does not own: provider evidence counting, Garmin/provider runtime, OAuth, FIT parsing, broad history UI, non-swim dashboards, or AI-retrospective evaluation.
-   - Status: in progress after owner explicitly asked to execute this brief.
-10. Garmin Activity reconciliation child:
+   - Status: shipped in PR `#1221` and closed by docs-only closeout PR `#1222`.
+10. Garmin provider data scope, retention, and AI readiness audit child:
+
+- Path: `docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md`.
+- Owns: docs-only official Garmin and local app audit for Activity API, Health API, Training API, Courses API, Women's Health API, FIT, provider scope, retention, database performance, export/delete, and AI-safe feature-view boundaries.
+- Does not own: runtime code, OAuth, provider import jobs, raw file storage, FIT parsing, UI, consent screens, AI model calls, or provider reconciliation.
+- Status: planned after owner explicitly asked to audit Garmin/app scope before runtime.
+
+11. Garmin Activity reconciliation child:
 
 - Owns: Activity API ingestion, provider activity aliases, sent-vs-received matching, conflict/review workflow, and edit/reconcile affordances.
 - Blocked by: Garmin partner/API access, provider payload examples, send-job/import-only decision, provider alias/correlation behavior, matching thresholds, and provider branding/consent requirements.
 
-11. Retrospective evaluation child:
+12. Retrospective evaluation child:
 
 - Owns: AI/read-only review of completed history and long-term goals without mutating history truth.
 - Depends on: a generic multi-sport activity-history contract so evaluation is not swim-only unless the owner explicitly narrows scope.
@@ -139,11 +146,15 @@ Last shipped generic activity data/model foundation child scope is owned by:
 
 - `docs/task-briefs/done/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md`
 
-Next prepared Trends mapping child scope is owned by:
+Last shipped Calendar Trends swim actuals mapping child scope is owned by:
 
-- `docs/task-briefs/in-progress/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md`
+- `docs/task-briefs/done/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md`
 
-No active provider/runtime child is currently selected. The next provider/runtime slice requires an owner decision and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
+Next prepared Garmin/provider data scope audit child is owned by:
+
+- `docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md`
+
+No active provider/runtime child is currently selected. The next provider/runtime slice requires this audit, an owner decision, and the relevant provider prerequisites; Garmin reconciliation remains blocked by `docs/task-briefs/blocked/2026-06-21-garmin-activity-reconciliation-and-review-10-10.md`.
 
 ## Out Of Scope
 
@@ -388,3 +399,4 @@ Critical target categories for a `10/10` claim:
 - `2026-06-23 | generic data-model child in progress | owner explicitly said "execute generic activity data-model foundation brief"; moved child to docs/task-briefs/in-progress/2026-06-23-training-history-generic-activity-data-model-foundation-v1-10-10.md on branch training-history-generic-activity-data-model-v1 | next: audit current data/export/Calendar contracts and implement only the bounded foundation`
 - `2026-06-23 | Trends mapping child prepared | refreshed after generic activity data/model foundation PR #1219 and docs-only closeout #1220 merged; created docs/task-briefs/planned/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md as the next recommended bounded runtime candidate so trusted manual swim actuals can later count in Calendar Trends while provider/non-swim/unmapped rows remain excluded | next: wait for explicit owner instruction before implementation`
 - `2026-06-23 | Trends mapping child in progress | owner said "execute Calendar Stats swim actuals mapping v1"; moved child to docs/task-briefs/in-progress/2026-06-23-calendar-stats-swim-actuals-mapping-v1-10-10.md on branch calendar-stats-swim-actuals-v1 | next: implement the bounded Swimming source mapping and stop for screenshot handoff before pre-PR gates`
+- `2026-06-23 | Trends mapping closed and Garmin/provider audit selected | refreshed after Calendar Trends swim actuals mapping PR #1221 and closeout PR #1222 merged; Trends now counts trusted manual swim actuals while provider/non-swim/needs-review/unmapped/unsupported rows stay excluded; owner asked whether Garmin should provide broad activity/health data for AI/ChatGPT programming and whether old unused data should auto-delete; created docs/task-briefs/planned/2026-06-23-garmin-provider-data-scope-retention-ai-audit-10-10.md as the docs-only audit gate before runtime | next: validate and review the docs-only audit, then keep Garmin runtime blocked until owner/provider prerequisites are concrete`
