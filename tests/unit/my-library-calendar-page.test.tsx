@@ -160,7 +160,7 @@ describe("MyLibraryCalendarPage", () => {
       within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Plan" })
     ).toHaveAttribute("href", "/my-library/calendar?view=plan&date=2026-05-20");
     expect(
-      within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Stats" })
+      within(screen.getByTestId("calendar-mode-switch")).getByRole("link", { name: "Trends" })
     ).toHaveAttribute(
       "href",
       "/my-library/calendar?view=compare&source=habits&period=month&date=2026-05-20&compareTo=2026-04-20"

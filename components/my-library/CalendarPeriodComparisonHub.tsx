@@ -19,6 +19,7 @@ import {
   MY_LIBRARY_CALENDAR_PERIODS,
   MY_LIBRARY_CALENDAR_SOURCE_FILTERS,
 } from "@/lib/my-library/calendar";
+import CalendarTrendSourceSelect from "@/components/my-library/CalendarTrendSourceSelect";
 
 type Props = {
   model: MyLibraryCalendarComparisonModel;
@@ -30,6 +31,12 @@ type InsightTone = SourceMetric["tone"] | "warning";
 type MetricHighlight = {
   source: SourceComparison;
   metric: SourceMetric;
+};
+type PrimaryInsight = {
+  tone: InsightTone;
+  value: string;
+  title: string;
+  body: string;
 };
 
 const cardClass = "fs-library-card p-4 sm:p-5";
@@ -132,12 +139,113 @@ function getSourceCountLabel(model: MyLibraryCalendarComparisonModel) {
   };
 }
 
-function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
-  tone: InsightTone;
-  value: string;
-  title: string;
-  body: string;
-} {
+function capitalizeFirst(value: string): string {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+function getCurrentPeriodPhrase(model: MyLibraryCalendarComparisonModel): string {
+  const periodLabel = getMyLibraryCalendarPeriodLabel(
+    getSafePeriod(model.selectedPeriod)
+  ).toLowerCase();
+  return model.window.selectedDate === model.window.todayDate
+    ? `this ${periodLabel}`
+    : `selected ${periodLabel}`;
+}
+
+function getComparisonPeriodPhrase(model: MyLibraryCalendarComparisonModel): string {
+  if (model.window.comparisonMode === "explicit") return "selected comparison";
+  const periodLabel = getMyLibraryCalendarPeriodLabel(
+    getSafePeriod(model.selectedPeriod)
+  ).toLowerCase();
+  return model.window.selectedDate === model.window.todayDate
+    ? `last ${periodLabel}`
+    : `previous ${periodLabel}`;
+}
+
+function getSelectedRangePeriodLabel(model: MyLibraryCalendarComparisonModel): string {
+  const phrase = capitalizeFirst(getCurrentPeriodPhrase(model));
+  const isPartialPeriod = model.window.current.endDate < model.window.current.fullEndDate;
+  return isPartialPeriod && model.window.selectedDate === model.window.todayDate
+    ? `${phrase} so far`
+    : phrase;
+}
+
+function getComparisonRangeHeading(model: MyLibraryCalendarComparisonModel): string {
+  const phrase = capitalizeFirst(getComparisonPeriodPhrase(model));
+  const isPartialPeriod = model.window.current.endDate < model.window.current.fullEndDate;
+  return isPartialPeriod && model.window.comparisonMode === "previous"
+    ? `${phrase}, same days`
+    : phrase;
+}
+
+function buildMetricPeriodSentence(
+  model: MyLibraryCalendarComparisonModel,
+  metric: SourceMetric
+): string {
+  const comparisonValue =
+    metric.id === "swim_activities"
+      ? metric.comparisonLabel.replace(/ completed swims?$/, "")
+      : metric.comparisonLabel;
+  return `${capitalizeFirst(getCurrentPeriodPhrase(model))} ${metric.currentLabel} vs ${comparisonValue} ${getComparisonPeriodPhrase(model)}.`;
+}
+
+function getMetricCardBody(
+  model: MyLibraryCalendarComparisonModel,
+  highlight: MetricHighlight
+): string {
+  return model.sourceComparisons.length === 1
+    ? highlight.metric.label
+    : `${highlight.source.label}: ${highlight.metric.label}`;
+}
+
+function getPrimaryInsightTitle(model: MyLibraryCalendarComparisonModel, lead: MetricHighlight) {
+  if (lead.source.source === "swimming" && lead.metric.id === "swim_activities") {
+    return "Completed Swim Sessions";
+  }
+  if (lead.metric.tone === "positive") return `${getMetricCardBody(model, lead)} improved`;
+  if (lead.metric.tone === "negative") return `${getMetricCardBody(model, lead)} needs attention`;
+  return `${getMetricCardBody(model, lead)} is steady`;
+}
+
+function getPrimarySourceDetails(source: SourceComparison) {
+  if (!source.details) return [];
+  if (source.source !== "swimming") return source.details;
+  return source.details.filter((detail) => detail.id === "trusted_swim_rows");
+}
+
+function getPrimarySourceMetrics(source: SourceComparison) {
+  if (source.source !== "swimming") return source.metrics;
+  return source.metrics;
+}
+
+function getComparisonDetailsSummaryLabel(model: MyLibraryCalendarComparisonModel) {
+  if (model.sourceComparisons.length !== 1) return "All source comparison details";
+  const source = model.sourceComparisons[0];
+  if (source.source === "swimming") return "Swim calculation details";
+  if (source.source === "micro_sessions") return "Micro Session comparison details";
+  return `${source.label} comparison details`;
+}
+
+function isSingleSourceSwimming(model: MyLibraryCalendarComparisonModel): boolean {
+  return model.sourceComparisons.length === 1 && model.sourceComparisons[0].source === "swimming";
+}
+
+function getDetailsSourceDetails(source: SourceComparison) {
+  if (!source.details) return [];
+  if (source.source !== "swimming") return source.details;
+  return source.details.filter((detail) => detail.id !== "trusted_swim_rows");
+}
+
+function shouldShowInsightCards(model: MyLibraryCalendarComparisonModel): boolean {
+  return !isSingleSourceSwimming(model);
+}
+
+function buildSwimmingHeroBody(model: MyLibraryCalendarComparisonModel, metric: SourceMetric) {
+  const comparisonValue = metric.comparisonLabel.replace(/ completed swims?$/, "");
+  return `${metric.currentLabel} ${getCurrentPeriodPhrase(model)} vs ${comparisonValue} ${getComparisonPeriodPhrase(model)}.`;
+}
+
+function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): PrimaryInsight {
   if (model.problemLabel) {
     return {
       tone: "warning",
@@ -152,12 +260,7 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
   const negative = highlights.find((highlight) => highlight.metric.tone === "negative");
   const neutral = highlights.find((highlight) => highlight.metric.tone === "neutral");
   const lead = positive ?? negative ?? neutral;
-  const periodLabel = getMyLibraryCalendarPeriodLabel(getSafePeriod(model.selectedPeriod));
-  const comparisonLabel =
-    model.window.comparisonMode === "explicit" ? "selected comparison" : "previous period";
-  const periodPhrase = periodLabel.toLowerCase();
-  const comparisonPeriodPhrase =
-    model.window.comparisonMode === "explicit" ? "the selected comparison" : `last ${periodPhrase}`;
+  const comparisonPeriodPhrase = getComparisonPeriodPhrase(model);
 
   if (!lead) {
     return {
@@ -199,8 +302,11 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
     return {
       tone: "positive",
       value: lead.metric.deltaLabel,
-      title: `${lead.source.label}: ${lead.metric.label} improved`,
-      body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
+      title: getPrimaryInsightTitle(model, lead),
+      body:
+        lead.source.source === "swimming" && lead.metric.id === "swim_activities"
+          ? buildSwimmingHeroBody(model, lead.metric)
+          : buildMetricPeriodSentence(model, lead.metric),
     };
   }
 
@@ -208,16 +314,22 @@ function buildPrimaryInsight(model: MyLibraryCalendarComparisonModel): {
     return {
       tone: "negative",
       value: lead.metric.deltaLabel,
-      title: `${lead.source.label}: ${lead.metric.label} needs attention`,
-      body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
+      title: getPrimaryInsightTitle(model, lead),
+      body:
+        lead.source.source === "swimming" && lead.metric.id === "swim_activities"
+          ? buildSwimmingHeroBody(model, lead.metric)
+          : buildMetricPeriodSentence(model, lead.metric),
     };
   }
 
   return {
     tone: "neutral",
     value: lead.metric.deltaLabel,
-    title: `${lead.source.label}: ${lead.metric.label} is steady`,
-    body: `${lead.metric.currentLabel} in the current ${periodLabel.toLowerCase()}, compared with ${lead.metric.comparisonLabel} in the ${comparisonLabel}.`,
+    title: getPrimaryInsightTitle(model, lead),
+    body:
+      lead.source.source === "swimming" && lead.metric.id === "swim_activities"
+        ? buildSwimmingHeroBody(model, lead.metric)
+        : buildMetricPeriodSentence(model, lead.metric),
   };
 }
 
@@ -226,6 +338,8 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
   const positive = highlights.find((highlight) => highlight.metric.tone === "positive");
   const negative = highlights.find((highlight) => highlight.metric.tone === "negative");
   const sourceCount = getSourceCountLabel(model);
+  const singleSource = model.sourceComparisons.length === 1 ? model.sourceComparisons[0] : null;
+  const comparisonPhrase = getComparisonPeriodPhrase(model);
 
   return [
     {
@@ -234,33 +348,42 @@ function buildInsightCards(model: MyLibraryCalendarComparisonModel) {
       label: "Best signal",
       value: positive?.metric.deltaLabel ?? "No improvement yet",
       body: positive
-        ? `${positive.source.label}: ${positive.metric.label}`
+        ? getMetricCardBody(model, positive)
         : "No tracked metric is better than the comparison period.",
     },
     {
       id: "watch-next",
       tone: negative ? ("negative" as const) : ("neutral" as const),
       label: "Needs attention",
-      value: negative?.metric.deltaLabel ?? "No drop flagged",
+      value: negative?.metric.deltaLabel ?? "Nothing dropped",
       body: negative
-        ? `${negative.source.label}: ${negative.metric.label}`
-        : "No mapped metric is currently worse than its comparison.",
+        ? getMetricCardBody(model, negative)
+        : singleSource
+          ? `Nothing is lower than ${comparisonPhrase}.`
+          : `No selected number is lower than ${comparisonPhrase}.`,
     },
     {
       id: "included-sources",
       tone:
         sourceCount.included === sourceCount.total ? ("positive" as const) : ("warning" as const),
-      label: "Included sources",
-      value: sourceCount.label,
+      label: singleSource ? "Comparison data" : "Sources compared",
+      value:
+        singleSource && sourceCount.included === sourceCount.total
+          ? "Ready"
+          : singleSource
+            ? "Needs data"
+            : `${sourceCount.included} of ${sourceCount.total}`,
       body:
-        sourceCount.included === sourceCount.total
-          ? "All selected sources have comparison data."
-          : "Some sources need better history before they can be compared.",
+        singleSource && sourceCount.included === sourceCount.total
+          ? `${singleSource.label} has data for this comparison.`
+          : singleSource
+            ? `${singleSource.label} needs data in both ranges before the trend is useful.`
+            : `${sourceCount.included} of ${sourceCount.total} selected sources have comparison data.`,
     },
   ];
 }
 
-function renderMetricSummary(metric: SourceMetric) {
+function renderMetricSummary(metric: SourceMetric, model: MyLibraryCalendarComparisonModel) {
   return (
     <div
       key={metric.id}
@@ -271,7 +394,7 @@ function renderMetricSummary(metric: SourceMetric) {
           {metric.label}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-[color:var(--fs-color-muted)]">
-          Current: {metric.currentLabel}. Compare: {metric.comparisonLabel}.
+          {buildMetricPeriodSentence(model, metric)}
         </p>
       </div>
       <p className={cx("text-sm font-bold whitespace-nowrap", getDeltaClass(metric.tone))}>
@@ -281,20 +404,68 @@ function renderMetricSummary(metric: SourceMetric) {
   );
 }
 
-function renderSourceDetails(source: SourceComparison) {
-  if (!source.details || source.details.length === 0) return null;
+function getSwimmingMetricValue(metric: SourceMetric): string {
+  if (metric.id !== "swim_activities") return metric.currentLabel;
+  return metric.currentLabel.replace(/ completed swims?$/, "");
+}
+
+function renderSwimmingSummary(
+  source: SourceComparison,
+  model: MyLibraryCalendarComparisonModel,
+  options: { flushTop?: boolean } = {}
+) {
+  return (
+    <dl
+      className={cx(
+        "grid gap-0 md:grid-cols-3 md:divide-x md:divide-[color:var(--fs-border-soft)]",
+        options.flushTop ? "" : "mt-4 border-t border-[color:var(--fs-border-soft)] pt-2"
+      )}
+    >
+      {source.metrics.slice(0, 3).map((metric) => (
+        <div key={metric.id} className="py-3 md:px-5 md:first:pl-0 md:last:pr-0">
+          <dt className="text-[11px] font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
+            {metric.label}
+          </dt>
+          <dd className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-2xl font-semibold tracking-normal text-[color:var(--fs-color-ink-strong)]">
+              {getSwimmingMetricValue(metric)}
+            </span>
+            <span className={cx("text-sm font-semibold", getDeltaClass(metric.tone))}>
+              {metric.deltaLabel} vs {getComparisonPeriodPhrase(model)}
+            </span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function renderSourceDetails(
+  source: SourceComparison,
+  details = source.details ?? [],
+  options: { showSupport?: boolean } = {}
+) {
+  if (details.length === 0) return null;
+  const showSupport = options.showSupport !== false;
 
   return (
-    <dl className="mt-4 grid gap-3 border-t border-[color:var(--fs-border-soft)] pt-4 sm:grid-cols-3">
-      {source.details.map((detail) => (
-        <div key={detail.id} className="min-w-0">
+    <dl
+      className={cx(
+        "mt-4 grid border-t border-[color:var(--fs-border-soft)] pt-2",
+        details.length === 2
+          ? "divide-y divide-[color:var(--fs-border-soft)] sm:grid-cols-2 sm:divide-x sm:divide-y-0"
+          : "gap-3 sm:grid-cols-3"
+      )}
+    >
+      {details.map((detail) => (
+        <div key={detail.id} className="min-w-0 py-3 sm:px-5 sm:first:pl-0 sm:last:pr-0">
           <dt className="text-[11px] font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
             {detail.label}
           </dt>
           <dd className="mt-1 text-sm font-semibold break-words text-[color:var(--fs-color-ink-strong)]">
             {detail.value}
           </dd>
-          {detail.supportLabel ? (
+          {showSupport && detail.supportLabel ? (
             <dd className="mt-1 text-xs leading-relaxed text-[color:var(--fs-color-muted)]">
               {detail.supportLabel}
             </dd>
@@ -310,23 +481,28 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
   const safePeriod = getSafePeriod(model.selectedPeriod);
   const primaryInsight = buildPrimaryInsight(model);
   const insightCards = buildInsightCards(model);
-  const compareLabel =
-    model.window.comparisonMode === "explicit"
-      ? "selected comparison"
-      : `last ${getMyLibraryCalendarPeriodLabel(safePeriod).toLowerCase()}`;
+  const showInsightCards = shouldShowInsightCards(model);
+  const singleSourceSwimming = isSingleSourceSwimming(model);
   const reportSourceLabel = getCalendarSourceSelectionLabel(model.selectedSource);
-  const reportPeriodLabel = getMyLibraryCalendarPeriodLabel(safePeriod);
+  const reportPeriodLabel = getSelectedRangePeriodLabel(model);
+  const useSourceSignalGrid = model.sourceComparisons.length > 1;
+  const comparisonDetailsSummaryLabel = getComparisonDetailsSummaryLabel(model);
 
   return (
     <div className="space-y-6" data-testid="calendar-period-comparison-hub">
       <section className={cardClass} data-testid="calendar-period-controls">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-end">
           <div>
-            <p className={eyebrowClass}>Stats view</p>
+            <p className={eyebrowClass}>Trend view</p>
             <p className="mt-2 text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
               Source
             </p>
-            <nav aria-label="Stats sources" className="mt-2 flex flex-wrap gap-2">
+            <CalendarTrendSourceSelect
+              selectedDate={model.window.selectedDate}
+              selectedSource={model.selectedSource}
+              period={safePeriod}
+            />
+            <nav aria-label="Trend sources" className="mt-2 hidden flex-wrap gap-2 sm:flex">
               {MY_LIBRARY_CALENDAR_SOURCE_FILTERS.map((source) => {
                 const isActive = model.selectedSource === source;
                 return (
@@ -355,7 +531,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
 
           <div>
             <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">Period</p>
-            <nav aria-label="Stats periods" className="mt-2 grid max-w-[420px] grid-cols-3 gap-2">
+            <nav aria-label="Trend periods" className="mt-2 grid max-w-[420px] grid-cols-3 gap-2">
               {MY_LIBRARY_CALENDAR_PERIODS.map((period) => {
                 const isActive = model.selectedPeriod === period;
                 return (
@@ -390,7 +566,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             />
             <div>
               <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
-                Current period
+                Selected range
               </p>
               <p className={mutedTextClass}>
                 {reportSourceLabel} / {reportPeriodLabel} / {model.window.current.shortLabel}
@@ -401,7 +577,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             <p className="text-sm font-semibold text-[color:var(--fs-color-ink-strong)]">
               {model.window.comparisonMode === "explicit"
                 ? "Selected comparison"
-                : `Last ${reportPeriodLabel.toLowerCase()}`}
+                : getComparisonRangeHeading(model)}
             </p>
             <p className={mutedTextClass}>{model.window.comparison.label}</p>
           </div>
@@ -411,10 +587,12 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
       <section className={cardClass} data-testid="calendar-insight-summary">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className={eyebrowClass}>Stats insight</p>
-            <h2 className="mt-2 text-2xl font-semibold text-[color:var(--fs-color-ink-strong)]">
-              {primaryInsight.title}
-            </h2>
+            <p className={eyebrowClass}>Trend insight</p>
+            {!singleSourceSwimming ? (
+              <h2 className="mt-2 text-2xl font-semibold text-[color:var(--fs-color-ink-strong)]">
+                {primaryInsight.title}
+              </h2>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -462,46 +640,46 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
 
         <div
           className={cx(
-            "mt-5 rounded-[var(--fs-radius-panel)] border p-4 sm:grid sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-4 sm:p-5",
+            "mt-5 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-[var(--fs-radius-panel)] border p-4 sm:gap-4 sm:p-5",
             getTonePanelClass(primaryInsight.tone)
           )}
         >
-          <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/80 ring-1 ring-current/10 sm:mb-0">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/80 ring-1 ring-current/10">
             <ToneIcon tone={primaryInsight.tone} className="h-5 w-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[26px] leading-tight font-bold tracking-normal break-words sm:text-[34px]">
-              {primaryInsight.value}
+          <div className="min-w-0 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
+            <p>
+              <span className="text-[26px] leading-tight font-bold tracking-normal break-words sm:text-[34px]">
+                {primaryInsight.value}
+              </span>
             </p>
-            <p className="mt-2 max-w-[70ch] text-sm leading-6">{primaryInsight.body}</p>
-            <p className="mt-3 text-xs leading-relaxed opacity-80">
-              Current: {model.window.current.shortLabel}. Compared with {compareLabel}:{" "}
-              {model.window.comparison.shortLabel}.
-            </p>
+            <p className="mt-1 max-w-[70ch] text-sm leading-6 sm:mt-0">{primaryInsight.body}</p>
           </div>
         </div>
       </section>
 
-      <section aria-label="Stats key takeaways" className="grid gap-4 md:grid-cols-3">
-        {insightCards.map((card) => {
-          return (
-            <article
-              key={card.id}
-              className={cx(cardClass, "border", getTonePanelClass(card.tone))}
-              data-testid={`calendar-insight-card-${card.id}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold tracking-wide uppercase opacity-75">
-                  {card.label}
-                </p>
-                <ToneIcon tone={card.tone} className="h-4 w-4 shrink-0" />
-              </div>
-              <p className="mt-3 text-2xl font-bold tracking-normal">{card.value}</p>
-              <p className="mt-2 text-sm leading-6 opacity-85">{card.body}</p>
-            </article>
-          );
-        })}
-      </section>
+      {showInsightCards ? (
+        <section aria-label="Trend key takeaways" className="grid gap-4 md:grid-cols-3">
+          {insightCards.map((card) => {
+            return (
+              <article
+                key={card.id}
+                className={cx(cardClass, "border", getTonePanelClass(card.tone))}
+                data-testid={`calendar-insight-card-${card.id}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold tracking-wide uppercase opacity-75">
+                    {card.label}
+                  </p>
+                  <ToneIcon tone={card.tone} className="h-4 w-4 shrink-0" />
+                </div>
+                <p className="mt-3 text-2xl font-bold tracking-normal">{card.value}</p>
+                <p className="mt-2 text-sm leading-6 opacity-85">{card.body}</p>
+              </article>
+            );
+          })}
+        </section>
+      ) : null}
 
       <section aria-labelledby="calendar-source-comparison-heading" className="space-y-4">
         <div>
@@ -510,43 +688,74 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
             id="calendar-source-comparison-heading"
             className="mt-2 text-lg font-semibold text-[color:var(--fs-color-ink-strong)]"
           >
-            Source signals
+            {singleSourceSwimming ? "Swim summary" : "Training summary"}
           </h2>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div
+          data-testid="calendar-source-comparison-grid"
+          className={cx("grid gap-4", useSourceSignalGrid && "lg:grid-cols-2")}
+        >
           {model.sourceComparisons.map((source) => (
             <article
               key={source.source}
               data-testid={`calendar-source-${source.source}`}
               className={cardClass}
             >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
-                    {source.label}
-                  </h3>
-                  <p className={cx("mt-2", mutedTextClass)}>{source.summary}</p>
-                </div>
-                <span
-                  className={cx(
-                    "rounded-[var(--fs-radius-control)] px-2.5 py-1 text-xs font-semibold ring-1",
-                    getStatusClass(source.status)
-                  )}
-                >
-                  {getStatusLabel(source.status)}
-                </span>
-              </div>
+              {(() => {
+                const showSourceSummary = !(
+                  source.source === "swimming" && source.metrics.length > 0
+                );
+                const showSourceHeader = !(
+                  singleSourceSwimming &&
+                  source.source === "swimming" &&
+                  source.metrics.length > 0
+                );
+                const primaryDetails = getPrimarySourceDetails(source);
+                const primaryMetrics = getPrimarySourceMetrics(source);
+                return (
+                  <>
+                    {showSourceHeader ? (
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                            {source.label}
+                          </h3>
+                          {showSourceSummary ? (
+                            <p className={cx("mt-2", mutedTextClass)}>{source.summary}</p>
+                          ) : null}
+                        </div>
+                        <span
+                          className={cx(
+                            "rounded-[var(--fs-radius-control)] px-2.5 py-1 text-xs font-semibold ring-1",
+                            getStatusClass(source.status)
+                          )}
+                        >
+                          {getStatusLabel(source.status)}
+                        </span>
+                      </div>
+                    ) : null}
 
-              {renderSourceDetails(source)}
-
-              {source.metrics.length > 0 ? (
-                <div className="mt-4">{source.metrics.slice(0, 3).map(renderMetricSummary)}</div>
-              ) : (
-                <p className="mt-4 text-sm leading-6 text-[color:var(--fs-color-muted)]">
-                  {source.supportLabel}
-                </p>
-              )}
+                    {source.source === "swimming" && primaryMetrics.length > 0 ? (
+                      renderSwimmingSummary(source, model, { flushTop: !showSourceHeader })
+                    ) : primaryMetrics.length > 0 ? (
+                      <div className="mt-4">
+                        {renderSourceDetails(source, primaryDetails, { showSupport: false })}
+                        {primaryMetrics
+                          .slice(0, 3)
+                          .map((metric) => renderMetricSummary(metric, model))}
+                      </div>
+                    ) : (
+                      <>
+                        {renderSourceDetails(source, primaryDetails, { showSupport: false })}
+                        <p className="mt-4 text-sm leading-6 text-[color:var(--fs-color-muted)]">
+                          {source.supportLabel}
+                        </p>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </article>
           ))}
         </div>
@@ -555,7 +764,7 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
       <section className={cardClass} data-testid="calendar-period-details">
         <details>
           <summary className="cursor-pointer text-sm font-semibold text-[color:var(--fs-color-ink-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2">
-            Detailed numbers
+            {comparisonDetailsSummaryLabel}
           </summary>
           <div className="mt-5 space-y-6">
             {model.sourceComparisons.map((source) => (
@@ -563,30 +772,74 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
                 key={source.source}
                 className="border-t border-[color:var(--fs-border-soft)] pt-5 first:border-t-0 first:pt-0"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
-                    {source.label}
-                  </h3>
-                  <span
-                    className={cx(
-                      "rounded-[var(--fs-radius-control)] px-2.5 py-1 text-xs font-semibold ring-1",
-                      getStatusClass(source.status)
-                    )}
-                  >
-                    {getStatusLabel(source.status)}
-                  </span>
-                </div>
+                {!singleSourceSwimming ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-base font-semibold text-[color:var(--fs-color-ink-strong)]">
+                      {source.label}
+                    </h3>
+                    <span
+                      className={cx(
+                        "rounded-[var(--fs-radius-control)] px-2.5 py-1 text-xs font-semibold ring-1",
+                        getStatusClass(source.status)
+                      )}
+                    >
+                      {getStatusLabel(source.status)}
+                    </span>
+                  </div>
+                ) : null}
 
-                {source.metrics.length > 0 ? (
+                {renderSourceDetails(source, getDetailsSourceDetails(source))}
+
+                {source.source !== "swimming" && source.metrics.length > 0 ? (
                   <div className="mt-4">
-                    <table className="w-full table-fixed text-left text-xs sm:text-sm">
+                    <div className="space-y-3 sm:hidden">
+                      {source.metrics.map((metric) => (
+                        <div
+                          key={metric.id}
+                          className="rounded-[var(--fs-radius-control)] border border-[color:var(--fs-border-soft)] p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-semibold break-words text-[color:var(--fs-color-ink-strong)]">
+                              {metric.label}
+                            </p>
+                            <p
+                              className={cx(
+                                "text-sm font-semibold whitespace-nowrap",
+                                getDeltaClass(metric.tone)
+                              )}
+                            >
+                              {metric.deltaLabel}
+                            </p>
+                          </div>
+                          <dl className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                            <div className="min-w-0">
+                              <dt className="font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
+                                Selected
+                              </dt>
+                              <dd className="mt-1 break-words text-[color:var(--fs-color-ink)]">
+                                {metric.currentLabel}
+                              </dd>
+                            </div>
+                            <div className="min-w-0">
+                              <dt className="font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
+                                Compare
+                              </dt>
+                              <dd className="mt-1 break-words text-[color:var(--fs-color-muted)]">
+                                {metric.comparisonLabel}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
+                      ))}
+                    </div>
+                    <table className="hidden w-full table-fixed text-left text-sm sm:table">
                       <thead className="text-xs font-semibold tracking-wide text-[color:var(--fs-color-muted)] uppercase">
                         <tr>
                           <th scope="col" className="w-[34%] py-2 pr-2 sm:pr-3">
                             Metric
                           </th>
                           <th scope="col" className="w-[21%] px-2 py-2 sm:px-3">
-                            Current
+                            Selected
                           </th>
                           <th scope="col" className="w-[21%] px-2 py-2 sm:px-3">
                             Compare
@@ -626,9 +879,11 @@ export default function CalendarPeriodComparisonHub({ model }: Props) {
                   </div>
                 ) : null}
 
-                <p className="mt-4 text-xs leading-relaxed text-[color:var(--fs-color-muted)]">
-                  {source.supportLabel}
-                </p>
+                {source.source !== "swimming" ? (
+                  <p className="mt-4 text-xs leading-relaxed text-[color:var(--fs-color-muted)]">
+                    {source.supportLabel}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>

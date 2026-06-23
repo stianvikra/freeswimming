@@ -281,9 +281,9 @@
 
 - `drylandSessions[].legacyFocusText` is read-only legacy export data. Dryland authoring no longer exposes or writes Focus cue, but authenticated exports preserve historical values when present.
 - `trainingActivityEvents` contains private canonical activity-history foundation rows and compatibility aliases only. It never includes raw provider files, OAuth tokens, raw provider payloads, cookies, IP addresses, User-Agent strings, or full provider responses.
-- Generic training activity rows are not Calendar completion truth, Stats Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth unless a later slice explicitly maps the row and its source/sport/status. Unknown, unmapped, unsupported, duplicate, orphaned, and schema-drift rows stay out of swim Stats and completion totals.
+- Generic training activity rows are not Calendar completion truth, Perfect Day truth, analytics KPI truth, or automated replanning truth unless a later slice explicitly maps the row and its source/sport/status. Calendar Trends Swimming counts only trusted manual swimming activity-history rows through this explicit mapping; unknown, unmapped, unsupported, duplicate, orphaned, schema-drift, provider-evidence-only, non-swim, and needs-review rows stay out of swim Trends and completion totals.
 - `providerConnections`, `providerActivityEvidence`, and `providerImportRuns` contain private provider evidence summaries only. They never include OAuth tokens, provider secrets, raw provider payloads, raw FIT/GPX/TCX files, cookies, IP addresses, User-Agent strings, or full provider response bodies.
-- Provider activity evidence is received evidence only. It is not Calendar completion truth, Stats Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth until a later reconciliation slice explicitly maps it.
+- Provider activity evidence is received evidence only. It is not Calendar completion truth, Trends Swimming truth, Perfect Day truth, analytics KPI truth, or automated replanning truth until a later reconciliation slice explicitly maps it.
 
 - Failure:
 
@@ -1074,7 +1074,7 @@ environment allowlist role from a profile-backed role.
 - The stored `planned_snapshot.workout` includes read-only planned workout summary, `previewSections`, and the source workout draft when it can be summarized, so Review Actual can show the planned step/repeat structure without mutating the source workout.
 - The manual event may also store `actual_session_snapshot`, initialized from the planned/source workout. This is the corrected performed-session truth and is separate from the planned snapshot.
 - `completed_activity_events.source_kind = manual` is the only source kind in this contract. Garmin send/import/reconciliation must not write through this route.
-- The generic `training_activity_events` foundation may read existing planned swim actuals through a compatibility adapter, but this route does not write generic rows, non-swim activities, provider evidence, or Stats mapping.
+- The generic `training_activity_events` foundation may read existing planned swim actuals through a compatibility adapter, but this route does not write generic rows, non-swim activities, provider evidence, or Trends mapping.
 - Legacy `outcome = completed` rows are read as `completed_as_planned`. New writes use the expanded outcome contract.
 - Unknown future completion source/outcome values fail closed to review and must not count as completed until explicitly mapped.
 
@@ -1133,7 +1133,7 @@ environment allowlist role from a profile-backed role.
 - When `actualSessionDraft` is provided, the route validates it with the canonical swim-session draft persistence rules, stores it in `completed_activity_events.actual_session_snapshot`, and derives actual distance, duration, environment, pool length, and pool unit from that draft.
 - Summary measured fields remain accepted for backward-compatible correction calls, but Review Actual V1 should send the actual session draft so the performed workout can be corrected at step/repeat granularity.
 - The `actualSessionDraft` payload is the full canonical `SessionDraft` shape used by the swim-session builder; abbreviated drafts with missing required fields or empty `steps` are rejected.
-- Does not mutate the planned instance, source workout, source program, future provider evidence, or Stats mapping.
+- Does not mutate the planned instance, source workout, source program, future provider evidence, or Trends mapping.
 - Supported outcomes are `completed_as_planned`, `completed_different`, `partial`, `completed_on_another_day`, `cancelled_as_actual`, and `needs_review`.
 - `completedOn` is the actual date and remains the compatibility date field for Calendar reads.
 - Stale writes are guarded by `expectedActualUpdatedAt`.

@@ -2,6 +2,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isDrylandSchemaMissing } from "@/lib/dryland/schema";
 import { isHabitsSchemaMissing } from "@/lib/habits/schema";
 import {
+  COMPLETED_ACTIVITY_EVENT_SELECT,
+  isCompletedActivityEventSchemaMissing,
+  type CompletedActivityEventRow,
+} from "@/lib/my-library/completed-activity-events";
+import {
+  buildTrainingActivityViewFromCompletedSwimEvent,
+  buildTrainingActivityViewFromEventRow,
+  isTrainingActivityEventSchemaMissing,
+  isTrainingActivityHistoryTrusted,
+  TRAINING_ACTIVITY_EVENT_SELECT,
+  type TrainingActivityEventRow,
+  type TrainingActivityHistoryView,
+} from "@/lib/my-library/training-activity-events";
+import {
   HABIT_CHECK_IN_SELECT,
   HABIT_DEFINITION_SELECT,
   HABIT_MOTIVATION_RESET_SELECT,
@@ -143,17 +157,21 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${formatMetricNumber(safeCount)} ${safeCount === 1 ? singular : plural}`;
 }
 
+function formatDistanceM(value: number): string {
+  return `${formatMetricNumber(value)} m`;
+}
+
 function formatSignedDelta(
   current: number,
   comparison: number,
   unit: string,
-  options: { higherIsBetter?: boolean; suffix?: string } = {}
+  options: { higherIsBetter?: boolean; suffix?: string; pluralUnit?: string } = {}
 ): { label: string; tone: CalendarMetricTone } {
   const delta = roundMetricNumber(current - comparison);
   const higherIsBetter = options.higherIsBetter !== false;
   if (delta === 0) return { label: "No change", tone: "neutral" };
   const absDelta = Math.abs(delta);
-  const suffix = options.suffix ?? ` ${absDelta === 1 ? unit : `${unit}s`}`;
+  const suffix = options.suffix ?? ` ${absDelta === 1 ? unit : (options.pluralUnit ?? `${unit}s`)}`;
   const isPositive = higherIsBetter ? delta > 0 : delta < 0;
   return {
     label: `${delta > 0 ? "+" : "-"}${formatMetricNumber(absDelta)}${suffix}`,
@@ -176,16 +194,76 @@ function buildNumericMetric(input: {
   current: number;
   comparison: number;
   unit: string;
+  pluralUnit?: string;
   higherIsBetter?: boolean;
 }): MyLibraryCalendarComparisonMetric {
   const delta = formatSignedDelta(input.current, input.comparison, input.unit, {
     higherIsBetter: input.higherIsBetter,
+    pluralUnit: input.pluralUnit,
   });
   return {
     id: input.id,
     label: input.label,
-    currentLabel: pluralize(input.current, input.unit),
-    comparisonLabel: pluralize(input.comparison, input.unit),
+    currentLabel: pluralize(input.current, input.unit, input.pluralUnit),
+    comparisonLabel: pluralize(input.comparison, input.unit, input.pluralUnit),
+    deltaLabel: delta.label,
+    tone: delta.tone,
+  };
+}
+
+function buildDistanceMetric(input: {
+  id: string;
+  label: string;
+  current: number;
+  comparison: number;
+}): MyLibraryCalendarComparisonMetric {
+  const delta = formatSignedDelta(input.current, input.comparison, "m", {
+    suffix: " m",
+  });
+  return {
+    id: input.id,
+    label: input.label,
+    currentLabel: formatDistanceM(input.current),
+    comparisonLabel: formatDistanceM(input.comparison),
+    deltaLabel: delta.label,
+    tone: delta.tone,
+  };
+}
+
+function buildCompletedSwimsMetric(input: {
+  current: number;
+  comparison: number;
+}): MyLibraryCalendarComparisonMetric {
+  const metric = buildNumericMetric({
+    id: "swim_activities",
+    label: "Completed swims",
+    current: input.current,
+    comparison: input.comparison,
+    unit: "completed swim",
+    pluralUnit: "completed swims",
+  });
+  const delta = formatSignedDelta(input.current, input.comparison, "completed swim", {
+    suffix: "",
+  });
+  return {
+    ...metric,
+    deltaLabel: delta.label,
+    tone: delta.tone,
+  };
+}
+
+function buildSwimmingMinutesMetric(input: {
+  current: number;
+  comparison: number;
+}): MyLibraryCalendarComparisonMetric {
+  const delta = formatSignedDelta(input.current, input.comparison, "min", {
+    suffix: " min",
+  });
+  return {
+    id: "swim_minutes",
+    label: "Swimming minutes",
+    currentLabel: `${formatMetricNumber(input.current)} min`,
+    comparisonLabel: `${formatMetricNumber(input.comparison)} min`,
     deltaLabel: delta.label,
     tone: delta.tone,
   };
@@ -461,7 +539,7 @@ export function buildDrylandCalendarComparisonSource({
     label: "Dryland",
     status: hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `${pluralize(current.completedSessions, "completed session")} logged in the current range.`
+      ? `${pluralize(current.completedSessions, "completed session")} logged in the selected range.`
       : "No completed dryland sessions in either compared range.",
     supportLabel:
       "Dryland currently compares completed saved sessions and training minutes. Strength sets/reps/load and stretching hold time need a separate mapping before they are counted.",
@@ -521,7 +599,7 @@ export function buildMicroSessionsCalendarComparisonSource({
     label: "Micro Sessions",
     status: hasData ? "mapped" : "no_data",
     summary: hasData
-      ? `${pluralize(current.completedUnits, "completed micro block")} in the current range.`
+      ? `${pluralize(current.completedUnits, "completed micro block")} in the selected range.`
       : "No completed or skipped Micro Session micro blocks in either compared range.",
     supportLabel:
       "Micro Sessions counts completed and skipped micro blocks from saved micro-plan history. Queued future blocks are not counted.",
@@ -543,6 +621,177 @@ export function buildMicroSessionsCalendarComparisonSource({
       }),
     ],
   };
+}
+
+const SWIMMING_COUNTABLE_OUTCOMES = new Set<TrainingActivityHistoryView["outcome"]>([
+  "completed_as_planned",
+  "completed_different",
+  "completed_on_another_day",
+  "partial",
+]);
+
+function isTrendEligibleSwimActivity(view: TrainingActivityHistoryView): boolean {
+  return (
+    isTrainingActivityHistoryTrusted(view) &&
+    view.sourceKind === "manual" &&
+    view.canonicalSport === "swimming"
+  );
+}
+
+function isCountableSwimActivity(view: TrainingActivityHistoryView): boolean {
+  return isTrendEligibleSwimActivity(view) && SWIMMING_COUNTABLE_OUTCOMES.has(view.outcome);
+}
+
+function normalizeMetricValue(value: number | null): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function buildSwimmingRangeStats(
+  activities: TrainingActivityHistoryView[],
+  range: MyLibraryCalendarPeriodRange
+) {
+  const rowsInRange = activities.filter((activity) =>
+    isDateInRange(activity.activityLocalDate, range)
+  );
+  const trustedSwimRows = rowsInRange.filter(isTrendEligibleSwimActivity);
+  const countableRows = trustedSwimRows.filter(isCountableSwimActivity);
+  const completedAsPlanned = trustedSwimRows.filter(
+    (activity) => activity.outcome === "completed_as_planned"
+  ).length;
+  const changed = trustedSwimRows.filter(
+    (activity) =>
+      activity.outcome === "completed_different" || activity.outcome === "completed_on_another_day"
+  ).length;
+  const partial = trustedSwimRows.filter((activity) => activity.outcome === "partial").length;
+  const cancelled = trustedSwimRows.filter(
+    (activity) => activity.outcome === "cancelled_as_actual"
+  ).length;
+
+  const outcomeParts = [
+    completedAsPlanned > 0 ? `${completedAsPlanned} completed as planned` : null,
+    changed > 0 ? `${changed} changed completion` : null,
+    partial > 0 ? `${partial} partial` : null,
+    cancelled > 0 ? `${cancelled} cancelled` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return {
+    trustedRows: trustedSwimRows.length,
+    swimActivities: countableRows.length,
+    distanceM: countableRows.reduce(
+      (total, activity) => total + normalizeMetricValue(activity.distanceM),
+      0
+    ),
+    minutes: countableRows.reduce(
+      (total, activity) => total + Math.round(normalizeMetricValue(activity.durationSeconds) / 60),
+      0
+    ),
+    outcomeMix: outcomeParts.length > 0 ? outcomeParts.join(" / ") : "No completed swim completion",
+    excludedRows: rowsInRange.length - trustedSwimRows.length,
+    excludedProviderReviewRows: rowsInRange.filter(
+      (activity) =>
+        !trustedSwimRows.includes(activity) &&
+        (activity.sourceKind === "provider_evidence" || activity.mappingStatus === "needs_review")
+    ).length,
+  };
+}
+
+function formatExcludedSwimRows(input: {
+  excludedRows: number;
+  providerReviewRows: number;
+}): string {
+  if (input.excludedRows === 0) return "0 items";
+  if (input.excludedRows === input.providerReviewRows) {
+    return pluralize(input.providerReviewRows, "provider/review item");
+  }
+  if (input.providerReviewRows > 0) {
+    const otherRows = input.excludedRows - input.providerReviewRows;
+    return `${pluralize(input.providerReviewRows, "provider/review item")} + ${pluralize(
+      otherRows,
+      "other item"
+    )}`;
+  }
+  return pluralize(input.excludedRows, "item");
+}
+
+export function buildSwimmingCalendarComparisonSource({
+  activities,
+  window,
+}: {
+  activities: TrainingActivityHistoryView[];
+  window: MyLibraryCalendarComparisonWindow;
+}): MyLibraryCalendarSourceComparison {
+  const current = buildSwimmingRangeStats(activities, window.current);
+  const comparison = buildSwimmingRangeStats(activities, window.comparison);
+  const hasTrustedData = current.trustedRows + comparison.trustedRows > 0;
+
+  return {
+    source: "swimming",
+    label: "Swimming",
+    status: hasTrustedData ? "mapped" : "no_data",
+    summary: hasTrustedData
+      ? `${pluralize(current.swimActivities, "completed swim")} in the selected range.`
+      : "No trusted manual swim actuals in either compared range.",
+    supportLabel:
+      "Swimming counts manual swim actuals that are safe to include. Provider, non-swim, and needs-review entries stay out until explicitly mapped.",
+    details: [
+      {
+        id: "trusted_swim_rows",
+        label: "Counted swims",
+        value: pluralize(current.swimActivities, "completed swim"),
+        supportLabel: "Manual Swimming entries included in this comparison.",
+      },
+      {
+        id: "swim_outcome_mix",
+        label: "Session completion",
+        value: current.outcomeMix,
+        supportLabel: "Partial swims count completed work; cancelled sessions add no totals.",
+      },
+      {
+        id: "excluded_swim_rows",
+        label: "Excluded sessions",
+        value: formatExcludedSwimRows({
+          excludedRows: current.excludedRows,
+          providerReviewRows: current.excludedProviderReviewRows,
+        }),
+        supportLabel: "Provider/review or unsupported sessions stay out until mapped.",
+      },
+    ],
+    metrics: hasTrustedData
+      ? [
+          buildCompletedSwimsMetric({
+            current: current.swimActivities,
+            comparison: comparison.swimActivities,
+          }),
+          buildDistanceMetric({
+            id: "swim_distance_m",
+            label: "Distance",
+            current: current.distanceM,
+            comparison: comparison.distanceM,
+          }),
+          buildSwimmingMinutesMetric({
+            current: current.minutes,
+            comparison: comparison.minutes,
+          }),
+        ]
+      : [],
+  };
+}
+
+function combineTrainingActivityViews(input: {
+  trainingRows: TrainingActivityEventRow[];
+  completedRows: CompletedActivityEventRow[];
+}): TrainingActivityHistoryView[] {
+  const trainingViews = input.trainingRows.map(buildTrainingActivityViewFromEventRow);
+  const completedEventIdsWithCanonicalRows = new Set(
+    trainingViews
+      .map((view) => view.completedActivityEventId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0)
+  );
+  const completedViews = input.completedRows
+    .filter((row) => !completedEventIdsWithCanonicalRows.has(row.id))
+    .map(buildTrainingActivityViewFromCompletedSwimEvent);
+
+  return [...trainingViews, ...completedViews];
 }
 
 function isJsonObject(value: Json): value is { [key: string]: Json | undefined } {
@@ -579,6 +828,7 @@ function buildSourceComparisons(input: {
   habits: MyLibraryCalendarSourceComparison | null;
   dryland: MyLibraryCalendarSourceComparison | null;
   microSessions: MyLibraryCalendarSourceComparison | null;
+  swimming: MyLibraryCalendarSourceComparison | null;
 }) {
   const mapped: Record<CalendarSourceCardSource, MyLibraryCalendarSourceComparison> = {
     habits:
@@ -593,10 +843,12 @@ function buildSourceComparisons(input: {
         "micro_sessions",
         "Micro Sessions data was not requested for this comparison."
       ),
-    swimming: buildUnmappedSource(
-      "swimming",
-      "Swimming will be included after completed swim activity events are mapped into Stats."
-    ),
+    swimming:
+      input.swimming ??
+      buildUnmappedSource(
+        "swimming",
+        "Swimming will be included after trusted swim activity history is mapped into Trends."
+      ),
     unmapped: buildUnmappedSource(
       "unmapped",
       "The requested source is not mapped to the My Library calendar contract."
@@ -655,50 +907,74 @@ export async function loadMyLibraryCalendarComparison(
   const loadHabits = shouldLoadSource(options.selectedSource, "habits");
   const loadDryland = shouldLoadSource(options.selectedSource, "dryland");
   const loadMicroSessions = shouldLoadSource(options.selectedSource, "micro_sessions");
+  const loadSwimming = shouldLoadSource(options.selectedSource, "swimming");
 
-  const [habitResult, checkInResult, resetResult, drylandResult, microPlanResult] =
-    await Promise.all([
-      loadHabits
-        ? supabase
-            .from("habit_definitions")
-            .select(HABIT_DEFINITION_SELECT)
-            .eq("user_id", userId)
-            .order("sort_order", { ascending: true })
-            .order("updated_at", { ascending: false })
-        : Promise.resolve({ data: null, error: null }),
-      loadHabits
-        ? supabase
-            .from("habit_check_ins")
-            .select(HABIT_CHECK_IN_SELECT)
-            .eq("user_id", userId)
-            .gte("check_in_date", rangeStart)
-            .lte("check_in_date", rangeEnd)
-        : Promise.resolve({ data: null, error: null }),
-      loadHabits
-        ? supabase
-            .from("habit_motivation_resets")
-            .select(HABIT_MOTIVATION_RESET_SELECT)
-            .eq("user_id", userId)
-            .gte("effective_date", rangeStart)
-            .lte("effective_date", rangeEnd)
-        : Promise.resolve({ data: null, error: null }),
-      loadDryland
-        ? supabase
-            .from("dryland_sessions")
-            .select("status, completed_at, actual_duration_seconds")
-            .eq("user_id", userId)
-            .gte("completed_at", dateToIsoStart(rangeStart))
-            .lte("completed_at", dateToIsoEnd(rangeEnd))
-        : Promise.resolve({ data: null, error: null }),
-      loadMicroSessions
-        ? supabase
-            .from("dryland_micro_plans")
-            .select("blocks, week_starts_at, week_ends_at")
-            .eq("user_id", userId)
-            .lte("week_starts_at", rangeEnd)
-            .gte("week_ends_at", rangeStart)
-        : Promise.resolve({ data: null, error: null }),
-    ]);
+  const [
+    habitResult,
+    checkInResult,
+    resetResult,
+    drylandResult,
+    microPlanResult,
+    trainingActivityResult,
+    completedActivityResult,
+  ] = await Promise.all([
+    loadHabits
+      ? supabase
+          .from("habit_definitions")
+          .select(HABIT_DEFINITION_SELECT)
+          .eq("user_id", userId)
+          .order("sort_order", { ascending: true })
+          .order("updated_at", { ascending: false })
+      : Promise.resolve({ data: null, error: null }),
+    loadHabits
+      ? supabase
+          .from("habit_check_ins")
+          .select(HABIT_CHECK_IN_SELECT)
+          .eq("user_id", userId)
+          .gte("check_in_date", rangeStart)
+          .lte("check_in_date", rangeEnd)
+      : Promise.resolve({ data: null, error: null }),
+    loadHabits
+      ? supabase
+          .from("habit_motivation_resets")
+          .select(HABIT_MOTIVATION_RESET_SELECT)
+          .eq("user_id", userId)
+          .gte("effective_date", rangeStart)
+          .lte("effective_date", rangeEnd)
+      : Promise.resolve({ data: null, error: null }),
+    loadDryland
+      ? supabase
+          .from("dryland_sessions")
+          .select("status, completed_at, actual_duration_seconds")
+          .eq("user_id", userId)
+          .gte("completed_at", dateToIsoStart(rangeStart))
+          .lte("completed_at", dateToIsoEnd(rangeEnd))
+      : Promise.resolve({ data: null, error: null }),
+    loadMicroSessions
+      ? supabase
+          .from("dryland_micro_plans")
+          .select("blocks, week_starts_at, week_ends_at")
+          .eq("user_id", userId)
+          .lte("week_starts_at", rangeEnd)
+          .gte("week_ends_at", rangeStart)
+      : Promise.resolve({ data: null, error: null }),
+    loadSwimming
+      ? supabase
+          .from("training_activity_events")
+          .select(TRAINING_ACTIVITY_EVENT_SELECT)
+          .eq("user_id", userId)
+          .gte("activity_local_date", rangeStart)
+          .lte("activity_local_date", rangeEnd)
+      : Promise.resolve({ data: null, error: null }),
+    loadSwimming
+      ? supabase
+          .from("completed_activity_events")
+          .select(COMPLETED_ACTIVITY_EVENT_SELECT)
+          .eq("user_id", userId)
+          .gte("completed_on", rangeStart)
+          .lte("completed_on", rangeEnd)
+      : Promise.resolve({ data: null, error: null }),
+  ]);
 
   let habits: MyLibraryCalendarSourceComparison | null = null;
   if (loadHabits) {
@@ -812,6 +1088,45 @@ export async function loadMyLibraryCalendarComparison(
     }
   }
 
+  let swimming: MyLibraryCalendarSourceComparison | null = null;
+  if (loadSwimming) {
+    if (
+      isTrainingActivityEventSchemaMissing(trainingActivityResult.error) ||
+      isCompletedActivityEventSchemaMissing(completedActivityResult.error)
+    ) {
+      swimming = {
+        source: "swimming",
+        label: "Swimming",
+        status: "syncing",
+        summary: "Swimming activity history is still syncing in this environment.",
+        supportLabel:
+          "No swim activity rows were counted because the activity schema is not ready.",
+        metrics: [],
+      };
+    } else if (trainingActivityResult.error || completedActivityResult.error) {
+      console.error("[MyLibraryCalendar] Could not load Swimming comparison", {
+        trainingActivityError: trainingActivityResult.error,
+        completedActivityError: completedActivityResult.error,
+      });
+      swimming = {
+        source: "swimming",
+        label: "Swimming",
+        status: "error",
+        summary: "Could not load Swimming comparison right now.",
+        supportLabel: "Retry later; no swim activity rows were counted in this response.",
+        metrics: [],
+      };
+    } else {
+      swimming = buildSwimmingCalendarComparisonSource({
+        activities: combineTrainingActivityViews({
+          trainingRows: (trainingActivityResult.data ?? []) as TrainingActivityEventRow[],
+          completedRows: (completedActivityResult.data ?? []) as CompletedActivityEventRow[],
+        }),
+        window,
+      });
+    }
+  }
+
   return {
     selectedSource: options.selectedSource,
     selectedPeriod: options.selectedPeriod,
@@ -823,6 +1138,7 @@ export async function loadMyLibraryCalendarComparison(
       habits,
       dryland,
       microSessions,
+      swimming,
     }),
   };
 }
