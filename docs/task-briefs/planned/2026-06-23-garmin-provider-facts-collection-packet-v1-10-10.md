@@ -22,10 +22,10 @@
 ## Brief Audit Record
 
 - `last_audited`: `2026-06-23`
-- `base`: `main@8d3b77df`
+- `base`: `main@eef21c28`
 - `audit_status`: `ready`
-- `decision`: Use this planned packet as the next owner/provider evidence collection artifact before any Garmin OAuth, Activity API import, Training API send, FIT parsing, raw-file storage, Health API context, AI feature view, or reconciliation runtime.
-- `reason`: PR `#1225` and closeout PR `#1226` closed the prerequisites intake but left live Garmin/provider work blocked until app-specific provider facts and owner decisions exist. Public Garmin docs and local FreeSwimming contracts are enough to define the collection packet, but not enough to implement runtime.
+- `decision`: Use this planned packet as the paused owner/provider evidence collection artifact before any Garmin OAuth, Activity API import, Training API send, FIT parsing, raw-file storage, Health API context, AI feature view, or reconciliation runtime.
+- `reason`: PR `#1225` and closeout PR `#1226` closed the prerequisites intake, PR `#1227` added this facts packet, and the owner paused Garmin contact until they are ready. Public Garmin docs and local FreeSwimming contracts are enough to define the collection packet, but not enough to implement runtime.
 - `must_refresh_before_execution_if`: Refresh if Garmin official docs, Garmin partner/application status, API access terms, approved API families, OAuth scopes, sample payloads, FIT SDK requirements, brand guidelines, provider schemas, source/duplicate policies, retention decisions, AI/model processor rules, privacy/cookie copy, `training_activity_events`, `provider_activity_evidence`, export/delete routes, scorecard categories, or verification lanes change.
 
 ## Goal
@@ -38,7 +38,63 @@ Codex skal lage et arbeidsark for fakta, ikke Garmin-kode. Vi samler hva offentl
 
 ## Current Status
 
-This packet is ready to fill, but Garmin/provider runtime remains blocked.
+This packet is paused at owner request. It is ready to resume when the owner wants to contact Garmin, but Garmin/provider runtime remains blocked.
+
+## Paused / Resume State
+
+Paused on `2026-06-23`.
+
+Reason for pause:
+
+- Owner wants to wait before contacting Garmin.
+- No Garmin runtime should be started while this remains paused.
+
+Resume trigger:
+
+- Owner explicitly says to resume Garmin contact or provider facts collection.
+
+First manual resume action:
+
+1. Open Garmin Developer Contact form: https://www.garmin.com/en-US/forms/developercontactus/
+2. In the developer program dropdown, choose `Garmin Connect Developer Program`.
+3. Fill in owner/company contact fields manually.
+4. Paste this message into the form message field:
+
+```text
+Hello Garmin Developer Program team,
+
+I am the founder of FreeSwimming, a swimming-first coaching platform in early development.
+
+I would like to understand whether FreeSwimming is eligible for Garmin Connect Developer Program evaluation access. My first goal is to test with my own Garmin account only, before any production or multi-user rollout.
+
+Our long-term product goal is to understand the broadest useful training and wellness context Garmin can make available, so FreeSwimming can give better swim coaching recommendations. At the same time, we want to implement this with data minimization: only request, store, and use data categories that Garmin permits and that have a clear user benefit.
+
+Use cases I am evaluating:
+- importing my own completed swim activities into FreeSwimming
+- understanding whether activity details and FIT files are available for pool swim activities
+- later sending/exporting structured swim workouts or training plans to Garmin, if supported
+- understanding whether wellness/recovery context is available and permitted
+- understanding consent, attribution, retention, delete/disconnect, commercial/licensing, and AI/derived-insight rules
+
+Could you advise:
+- which Garmin APIs and scopes are appropriate for these use cases,
+- whether evaluation access with my own Garmin account is possible,
+- where the relevant API documentation and sample payloads are available,
+- what rules apply for importing, exporting/sending, storing, displaying, deleting, and deriving insights from Garmin data,
+- and what the correct next step is?
+
+I am not requesting production access yet. I want to confirm the correct path and constraints before building anything.
+
+Best regards,
+Stian Vikra / FreeSwimming
+```
+
+When Garmin replies:
+
+- Do not paste secrets, credentials, tokens, raw payloads, raw FIT/GPX/TCX files, personal health data, or full portal screenshots into the repo.
+- Summarize the response into the packet rows below as `missing_provider`, `owner_decision_needed`, `confirmed_public`, or `confirmed_local`.
+- If Garmin provides samples, store raw artifacts outside the repo and record only a redacted field inventory here.
+- Select exactly one future runtime child only after the relevant packet rows are resolved; otherwise keep runtime blocked.
 
 Confirmed from public official sources on `2026-06-23`:
 
@@ -473,3 +529,4 @@ Canonical recovery order:
 ## Checkpoint Log
 
 - `2026-06-23 | planned | created from clean synced main@8d3b77df after PR #1225 and repo-managed closeout PR #1226 merged; public Garmin docs and local FreeSwimming contracts were refreshed enough to create the facts packet, but Garmin runtime remains blocked until owner/provider facts are collected | next: owner/provider evidence collection, then select exactly one bounded runtime child or keep Garmin/provider runtime blocked`
+- `2026-06-23 | paused | refreshed from clean synced main@eef21c28 after owner asked to pause Garmin contact; added the exact Garmin Developer Contact resume path, dropdown choice, safe evaluation message, and response-handling rules; no Garmin contact, runtime, OAuth, import, FIT parsing, AI, UI, migrations, or provider samples were added | next: wait until owner explicitly resumes Garmin contact`
