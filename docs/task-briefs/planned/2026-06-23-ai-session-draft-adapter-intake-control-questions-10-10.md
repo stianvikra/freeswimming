@@ -49,6 +49,29 @@ Recommended V1:
 
 Do not start with multi-week or multi-month AI plans. Competition peaking, taper, progression, recovery weeks, and calendar placement belong in later program children after one-session generation is safe.
 
+### Recommended Execution Split
+
+Recommended first implementation slice if this brief is resumed:
+
+1. Build foundation contracts only:
+   - typed `AiSessionDraftIntake`;
+   - source flags for imported/manual/unknown/not-applicable inputs;
+   - goal intent and control-question normalization;
+   - FreeSwimming drill-catalog adapter with stable allowed IDs;
+   - conservative fallback rules for missing current-level/load data;
+   - negative-path tests for unknown goals, source kinds, drill IDs, and unsafe load assumptions.
+2. Do not add live OpenAI runtime in the first slice.
+3. Do not add API keys, OpenAI SDK/package changes, billing assumptions, prompt logging, UI redesign, database tables, Garmin/provider input, history-derived load, program generation, taper planning, or auto-save in the first slice.
+4. After the foundation slice passes, decide separately whether the next child should add:
+   - server-only OpenAI adapter/config and strict schema;
+   - control-question UI;
+   - golden-output/eval hardening;
+   - or no AI runtime yet.
+
+Rationale: the foundation slice creates the safe data boundary that a later model call can consume. It has high value even if live OpenAI runtime stays parked, because it clarifies what FreeSwimming knows, what the user must answer, and which drills/values must be rejected before any generated session can be trusted.
+
+Parking decision: it is acceptable to park this AI track after recording the foundation-first split. When resumed, start from the foundation contracts rather than live model runtime unless the owner explicitly approves the larger runtime slice.
+
 ## Official OpenAI Source Baseline
 
 Checked from official OpenAI documentation on `2026-06-23`:
@@ -556,6 +579,7 @@ Surfaces to check: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbo
 ## Scope
 
 - Create the implementation-ready AI single-session child brief.
+- Recommend a smaller foundation-first execution slice before live OpenAI runtime.
 - Define data collected by import/manual/unknown source.
 - Define user control questions and multiple-choice import behavior.
 - Define goal modes: competition/form peak, CSS, specific distance, continuous crawl, technique, general fitness.
@@ -587,8 +611,9 @@ Surfaces to check: `app/`, `components/`, `lib/`, `tests/`, `docs/`, `docs/runbo
 5. Brief requires a FreeSwimming-known drill catalog default and rejects unknown generated drill names/IDs.
 6. Brief standardizes prompt layers, schema use, validator feedback, and `store: false`.
 7. Brief keeps output to one provisional session draft and blocks program/taper/runtime overreach.
-8. Brief includes scorecard mapping, app stack gate, radar findings, domain granularity, data placement, identity, forward compatibility, Help/Guide impact, route/support sweep, and validation.
-9. Changed briefs pass docs-only validation.
+8. Brief records that the recommended first implementation slice is foundation contracts only, without live OpenAI runtime.
+9. Brief includes scorecard mapping, app stack gate, radar findings, domain granularity, data placement, identity, forward compatibility, Help/Guide impact, route/support sweep, and validation.
+10. Changed briefs pass docs-only validation.
 
 ## Validation
 
@@ -650,3 +675,4 @@ Canonical recovery order:
 
 - `2026-06-23 | planned | created after owner clarified that 10/10 AI session generation must collect goal/current-state/load/drill data, offer import/manual/not-sure control-question choices, standardize prompting, use FreeSwimming-known drills first, and keep GPT runtime blocked until a bounded single-session child is explicitly executed | next: validate docs-only brief, open PR, then wait for owner approval before runtime implementation`
 - `2026-06-23 | prerequisite audit done | linked docs/task-briefs/done/2026-06-23-ai-session-draft-app-data-readiness-audit-v1-10-10.md after owner requested an app/data readiness audit before runtime; downstream implementation must read that audit result first and keep Garmin/provider/history data deferred unless a later child explicitly unblocks it | next: wait for owner approval before AI adapter runtime execution`
+- `2026-06-23 | foundation-first split recorded | owner asked whether this should be done now or parked; recommended first implementation slice is contracts/source flags/control-question normalization/drill-catalog adapter/tests only, with live OpenAI runtime, UI, migrations, Garmin/provider, history-derived load, program/taper, and auto-save still out of scope | next: AI track can be parked safely; if resumed, start with foundation contracts unless owner explicitly approves live runtime`
