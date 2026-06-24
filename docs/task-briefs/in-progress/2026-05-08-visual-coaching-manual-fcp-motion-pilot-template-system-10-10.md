@@ -3,18 +3,18 @@
 ## Metadata
 
 - `id`: `2026-05-08-visual-coaching-manual-fcp-motion-pilot-template-system-10-10`
-- `status`: `planned`
+- `status`: `in-progress`
 - `owner`: `stianvikra`
 - `created`: `2026-05-08`
-- `updated`: `2026-06-23`
+- `updated`: `2026-06-24`
 
 ## Brief Audit Record
 
-- `last_audited`: `2026-06-23`
-- `base`: `main@907c6696`
-- `audit_status`: `ready_for_manual_pilot_guidance`
-- `decision`: Use this brief as the next visual-coaching execution path after the blocked generated asset-pack attempt, but execute it as an owner-guided manual FCP/Motion pilot rather than automated asset generation.
-- `reason`: The production system already records that generated PNG/composition assets failed the visual/readability/FCP-editability gate. The next useful step is one small manual template family on real swim footage, with matched light-footage and dark-footage variants and exported evidence before scaling.
+- `last_audited`: `2026-06-24`
+- `base`: `main@2a24c56a`
+- `audit_status`: `in_progress_manual_asset_style_guide`
+- `decision`: Use this brief as the next visual-coaching execution path after the blocked generated asset-pack attempt, but first create a precise video asset style guide from the current app design system before more FCP/Motion asset work.
+- `reason`: The manual FCP test proved the label direction but also showed that FCP generator primitives are too imprecise for 10/10 reusable asset construction. The useful next step is a stable style guide that translates the current app font, palette, brand assets, and overlay rules into a Motion/ChatGPT-ready asset brief.
 - `must_refresh_before_execution_if`: Refresh if AGENTS.md, scorecard categories, verification lanes, Final Cut Pro/Motion behavior, Phase 1 visual-coaching docs, brand assets, output artifact rules, route labels, Help/Guide, runbooks, or support surfaces change.
 
 ## Goal
@@ -36,6 +36,7 @@ Fremoverkompatibilitet: pilotfamilien skal bevise en gjenbrukbar visuell grammat
 - Parent: [Visual Coaching Production System Parent](/Users/stianvikra/freeswimming/docs/task-briefs/planned/2026-05-08-visual-coaching-production-system-parent-10-10.md)
 - Phase 1 source: [Visual Coaching Phase 1](/Users/stianvikra/freeswimming/docs/task-briefs/done/2026-05-08-visual-coaching-phase-1-brand-overlay-language-and-production-architecture-10-10.md)
 - Blocked generated-pack attempt: [FCP-Ready Asset Pack And Template System](/Users/stianvikra/freeswimming/docs/task-briefs/blocked/2026-05-08-visual-coaching-fcp-ready-asset-pack-and-template-system-10-10.md)
+- Manual pilot asset guide: [Manual Pilot Asset Style Guide](/Users/stianvikra/freeswimming/docs/video-production/visual-coaching-system/manual-pilot-asset-style-guide.md)
 
 ## Scope Summary
 
@@ -244,3 +245,4 @@ N/A because this slice changes internal video-production workflow only and no us
 
 - `2026-05-08 | planned | created after generated asset-pack visual gate failed; next source of truth should be a manually built FCP/Motion pilot on realistic swim frames | next: owner and assistant build one FCP/Motion pilot step by step`
 - `2026-06-23 | contrast-variant pilot updated | owner clarified that the pilot should create identical light-footage and dark-footage variants for each asset, then assemble a short validation film and export stills before scaling; brief now requires matched contrast variants, validation-film evidence, and full-resolution still handoff | next: when owner explicitly starts this video slice, guide one manual FCP/Motion step at a time`
+- `2026-06-24 | in-progress | moved brief to in-progress on branch docs/video-asset-guide and created a current-app-design audit path for a manual video asset style guide; FCP manual label test reached a provisional 8.5/10 direction but FCP primitive editing was judged too imprecise for final reusable assets | next: finish docs-only style guide validation, then use the guide for Motion/ChatGPT asset production before renewed FCP placement/export evidence`
