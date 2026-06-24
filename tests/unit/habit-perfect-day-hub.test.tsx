@@ -1277,7 +1277,7 @@ describe("HabitPerfectDayHub", () => {
     );
 
     const controls = screen.getByTestId("habits-calendar-controls-summary");
-    expect(screen.getByText("Week 23, 2026 · 0/7 perfect days")).toBeVisible();
+    expect(screen.getByText("Week 23, 2026 · Daily habits 0/5")).toBeVisible();
     expect(within(controls).getByRole("link", { name: "Previous week" })).toHaveAttribute(
       "href",
       "/my-library/habits?date=2026-05-29"
@@ -1325,7 +1325,7 @@ describe("HabitPerfectDayHub", () => {
     await waitFor(() => {
       const controls = screen.getByTestId("habits-calendar-controls-summary");
       expect(screen.getByText("May 3, 2026")).toBeVisible();
-      expect(screen.getByText("History")).toBeVisible();
+      expect(screen.getAllByText("History").length).toBeGreaterThan(0);
       expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sun · May 3");
       expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
         "This day: 0/0 · Sun · May 3"
@@ -1391,7 +1391,16 @@ describe("HabitPerfectDayHub", () => {
       />
     );
 
-    expect(screen.getByText("History")).toBeVisible();
+    expect(screen.getAllByText("History").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("habits-mobile-date-pill")).toHaveTextContent("History");
+    expect(screen.getByTestId("habits-mobile-date-pill")).toHaveTextContent("May 9");
+    expect(screen.getByTestId("habits-mobile-date-pill").querySelector("a")).toBeNull();
+    const historyFallbackScroll = vi.fn();
+    screen.getByTestId("habit-active-list").scrollIntoView = historyFallbackScroll;
+    fireEvent.click(screen.getByRole("button", { name: "History, May 9." }));
+    expect(historyFallbackScroll).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "start", behavior: "smooth" })
+    );
     expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("Sat · May 9");
     expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
       "This day: 0/1 · Sat · May 9"
@@ -1496,6 +1505,25 @@ describe("HabitPerfectDayHub", () => {
     });
   });
 
+  it("keeps server-reviewed absence dates out of the next review prompt", () => {
+    const snapshot = {
+      ...buildCatchUpRecoverySnapshot(),
+      absenceReviewAcknowledgedDates: [
+        "2026-05-05",
+        "2026-05-06",
+        "2026-05-07",
+        "2026-05-08",
+        "2026-05-09",
+      ],
+    };
+
+    render(
+      <HabitPerfectDayHub initialSnapshot={snapshot} todayDate="2026-05-10" userId="user-1" />
+    );
+
+    expect(screen.queryByTestId("habits-catch-up-assistant")).toBeNull();
+  });
+
   it("excludes the current day from the absence review list", () => {
     render(
       <HabitPerfectDayHub
@@ -1516,6 +1544,17 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("checks the selected review date without writing habit history and moves to the next date", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: {
+          ...buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" }),
+          absenceReviewAcknowledgedDates: ["2026-05-05"],
+        },
+      }),
+    } as Response);
+
     render(
       <HabitPerfectDayHub
         initialSnapshot={buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" })}
@@ -1525,6 +1564,19 @@ describe("HabitPerfectDayHub", () => {
     );
 
     const panel = screen.getByTestId("habits-selected-absence-review");
+    const reviewScroll = vi.fn();
+    panel.scrollIntoView = reviewScroll;
+    fireEvent.click(screen.getByRole("button", { name: "History, May 5. Jump to review list." }));
+    expect(reviewScroll).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "start", behavior: "smooth" })
+    );
+    expect(within(panel).getByRole("heading", { name: "Review in progress" })).toBeVisible();
+    expect(within(panel).getByText("0 of 5 checked")).toBeVisible();
+    expect(within(panel).getByText("5 days left")).toBeVisible();
+    expect(within(panel).getByRole("link", { name: "Today" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-10"
+    );
     expect(within(panel).queryByRole("heading", { name: "Check this day" })).toBeNull();
     expect(within(panel).queryByRole("heading", { name: "May 5, 2026" })).toBeNull();
     expect(within(panel).queryByText("Use the habit controls above, then continue.")).toBeNull();
@@ -1542,10 +1594,22 @@ describe("HabitPerfectDayHub", () => {
 
     fireEvent.click(within(panel).getByRole("button", { name: "Done with this day" }));
 
-    expect(fetch).not.toHaveBeenCalled();
-    expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
-      "Checked"
-    );
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/absence-review",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05"],
+      selectedDate: "2026-05-05",
+      action: "mark",
+    });
+    await waitFor(() => {
+      expect(within(panel).getByTestId("habits-absence-review-date-2026-05-05")).toHaveTextContent(
+        "Checked"
+      );
+    });
     expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-06");
     expect(analyticsState.sendClientAnalyticsEvent).toHaveBeenCalledWith(
       "habit_absence_review_day_marked",
@@ -1557,8 +1621,9 @@ describe("HabitPerfectDayHub", () => {
     );
     expect(
       JSON.parse(
-        window.localStorage.getItem("freeswimming:habits:v1:absence-review:user-1:2026-05-10") ??
-          "{}"
+        window.localStorage.getItem(
+          "freeswimming:habits:v1:absence-review:user-1:reviewed-dates"
+        ) ?? "{}"
       )
     ).toMatchObject({
       version: 1,
@@ -1567,6 +1632,22 @@ describe("HabitPerfectDayHub", () => {
   });
 
   it("closes review from the last unchecked date without writing habit history", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: {
+          ...buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-09" }),
+          absenceReviewAcknowledgedDates: [
+            "2026-05-05",
+            "2026-05-06",
+            "2026-05-07",
+            "2026-05-08",
+            "2026-05-09",
+          ],
+        },
+      }),
+    } as Response);
     window.localStorage.setItem(
       "freeswimming:habits:v1:absence-review:user-1:2026-05-10",
       JSON.stringify({
@@ -1589,18 +1670,36 @@ describe("HabitPerfectDayHub", () => {
         "Checked"
       );
     });
+    expect(within(panel).getByRole("heading", { name: "Review in progress" })).toBeVisible();
+    expect(within(panel).getByText("4 of 5 checked")).toBeVisible();
+    expect(within(panel).getByText("1 day left")).toBeVisible();
+    expect(within(panel).getByRole("link", { name: "Today" })).toHaveAttribute(
+      "href",
+      "/my-library/habits?date=2026-05-10"
+    );
     expect(within(panel).queryByRole("button", { name: "Done with this day" })).toBeNull();
 
     const closeButton = within(panel).getByRole("button", { name: "Close review" });
     expect(closeButton).toBeVisible();
     fireEvent.click(closeButton);
 
-    expect(fetch).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/absence-review",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"],
+      selectedDate: "2026-05-09",
+      action: "finish",
+    });
     expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-10");
     expect(
       JSON.parse(
-        window.localStorage.getItem("freeswimming:habits:v1:absence-review:user-1:2026-05-10") ??
-          "{}"
+        window.localStorage.getItem(
+          "freeswimming:habits:v1:absence-review:user-1:reviewed-dates"
+        ) ?? "{}"
       )
     ).toMatchObject({
       version: 1,
@@ -1614,6 +1713,62 @@ describe("HabitPerfectDayHub", () => {
         reviewDateCount: 5,
       })
     );
+  });
+
+  it("shows review complete with a direct Back to Today action", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        snapshot: {
+          ...buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" }),
+          absenceReviewAcknowledgedDates: [
+            "2026-05-05",
+            "2026-05-06",
+            "2026-05-07",
+            "2026-05-08",
+            "2026-05-09",
+          ],
+        },
+      }),
+    } as Response);
+
+    render(
+      <HabitPerfectDayHub
+        initialSnapshot={{
+          ...buildCatchUpRecoverySnapshot({ selectedDate: "2026-05-05" }),
+          absenceReviewAcknowledgedDates: [
+            "2026-05-05",
+            "2026-05-06",
+            "2026-05-07",
+            "2026-05-08",
+            "2026-05-09",
+          ],
+        }}
+        todayDate="2026-05-10"
+        userId="user-1"
+      />
+    );
+
+    const panel = screen.getByTestId("habits-selected-absence-review");
+    expect(within(panel).getByRole("heading", { name: "Review complete" })).toBeVisible();
+    expect(within(panel).getByText("5 of 5 checked")).toBeVisible();
+    expect(within(panel).getAllByText("Review complete").length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Back to Today" }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/my-library/habits/absence-review",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      dates: ["2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09"],
+      selectedDate: "2026-05-05",
+      action: "finish",
+    });
+    expect(navigationState.push).toHaveBeenCalledWith("/my-library/habits?date=2026-05-10");
   });
 
   it("uses My Library token fields and choices in the Add habit form", () => {
@@ -2676,7 +2831,7 @@ describe("HabitPerfectDayHub", () => {
   it("summarizes Today, Week, and Month status without implying every habit is daily", () => {
     render(<HabitPerfectDayHub initialSnapshot={buildPeriodStatusSnapshot()} />);
 
-    expect(screen.getAllByText("Today: 1/1 · Week: 1/1 · Month: 0/1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Today: 1/1 · Week: 2/2 · Month: 0/2").length).toBeGreaterThan(0);
     expect(screen.queryByText("1/1 on target")).toBeNull();
   });
 
@@ -3139,6 +3294,14 @@ describe("HabitPerfectDayHub", () => {
 
     expect(screen.getByTestId("habit-perfect-day-summary")).toHaveClass("hidden");
     expect(screen.getByTestId("habit-active-list")).toBeVisible();
+    expect(screen.getByTestId("habits-mobile-date-pill")).toHaveTextContent("Today");
+    expect(screen.getByTestId("habits-mobile-date-pill")).toHaveTextContent("May 10");
+    const todayScroll = vi.fn();
+    screen.getByTestId("habit-active-list").scrollIntoView = todayScroll;
+    fireEvent.click(screen.getByRole("button", { name: "Today, May 10. Back to top." }));
+    expect(todayScroll).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "start", behavior: "smooth" })
+    );
     expect(screen.getByTestId("habits-selected-date-context")).toHaveTextContent("May 10");
     expect(screen.getByTestId("habits-selected-date-context")).not.toHaveTextContent("Today ·");
     expect(screen.getByTestId("habits-selected-date-context").parentElement).toHaveTextContent(
@@ -3156,7 +3319,7 @@ describe("HabitPerfectDayHub", () => {
       "aria-label",
       "Habits calendar Week 19, 2026 May 4 - May 10"
     );
-    expect(screen.queryByText("Week 19, 2026 · May 4 - May 10 · 1/7 perfect days")).toBeNull();
+    expect(screen.getAllByText("Week 19, 2026 · Daily habits 1/7").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Hide Weekly Overview" })).toHaveAttribute(
       "aria-expanded",
       "true"

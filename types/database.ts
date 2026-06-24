@@ -1162,6 +1162,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      habit_absence_review_acknowledgements: {
+        Row: {
+          created_at: string;
+          id: string;
+          review_date: string;
+          review_scope: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          review_date: string;
+          review_scope?: string;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          review_date?: string;
+          review_scope?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "habit_absence_review_acknowledgements_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       habit_check_ins: {
         Row: {
           check_in_date: string;

@@ -80,6 +80,7 @@ type ApiResponse = {
   ok?: boolean;
   error?: string;
   snapshot?: HabitSnapshot;
+  reviewedDates?: string[];
 };
 
 type HabitDraft = {
@@ -635,13 +636,22 @@ function getHabitPeriodStatusFragment(
   );
   if (periodItems.length === 0) return null;
 
-  const satisfiedCount = periodItems.filter((item) => item.cadenceProgress.isTargetMet).length;
-  return `${label}: ${satisfiedCount}/${periodItems.length}`;
+  const satisfiedCount = periodItems.reduce(
+    (total, item) =>
+      total + Math.min(item.cadenceProgress.completedCount, item.cadenceProgress.targetCount),
+    0
+  );
+  const targetCount = periodItems.reduce(
+    (total, item) => total + item.cadenceProgress.targetCount,
+    0
+  );
+  return `${label}: ${satisfiedCount}/${targetCount}`;
 }
 
 function getHabitsStatusLabel(snapshot: HabitSnapshot, dayLabel = "Today") {
+  const dailyCounts = getHabitDayDailyCounts(snapshot.daySummary);
   const fragments = [
-    `${dayLabel}: ${snapshot.daySummary.satisfiedPerfectDayItemCount}/${snapshot.daySummary.perfectDayItemCount}`,
+    `${dayLabel}: ${dailyCounts.completed}/${dailyCounts.total}`,
     getHabitPeriodStatusFragment(snapshot.daySummary.items, "weekly", "Week"),
     getHabitPeriodStatusFragment(snapshot.daySummary.items, "monthly", "Month"),
   ].filter((fragment): fragment is string => Boolean(fragment));
@@ -957,6 +967,74 @@ function getAbsenceReviewHabitCountLabel(entryCount: number) {
 function getAbsenceReviewProgressLabel(rows: AbsenceReviewDate[]) {
   const reviewedCount = rows.filter((row) => row.reviewed).length;
   return `${reviewedCount} of ${rows.length} checked`;
+}
+
+function getAbsenceReviewRemainingLabel(rows: AbsenceReviewDate[]) {
+  const remainingCount = rows.filter((row) => !row.reviewed).length;
+  if (remainingCount === 0) return "Review complete";
+  return `${remainingCount} ${remainingCount === 1 ? "day" : "days"} left`;
+}
+
+function getHabitDayTargetCountLabel(day: HabitDaySummary) {
+  const counts = getHabitDayDailyCounts(day);
+  if (counts.total === 0) return "No habits";
+  return `${counts.completed}/${counts.total} habits`;
+}
+
+function getHabitDayDailyCounts(day: HabitDaySummary) {
+  const items = day.items.filter(
+    (item) =>
+      item.habit.cadencePeriod === "daily" &&
+      item.habit.isPerfectDayItem &&
+      item.isScheduledForDate &&
+      item.checkIn?.status !== "skipped"
+  );
+  return {
+    completed: items.filter((item) => item.evaluation.isSatisfied).length,
+    total: items.length,
+  };
+}
+
+function getHabitDayWeeklyItems(day: HabitDaySummary) {
+  return day.items.filter(
+    (item) =>
+      item.habit.cadencePeriod === "weekly" &&
+      item.habit.isPerfectDayItem &&
+      item.habit.startDate <= item.cadenceProgress.periodEnd
+  );
+}
+
+function getHabitDayWeeklyCompletedOnDateCount(day: HabitDaySummary) {
+  return getHabitDayWeeklyItems(day).filter(
+    (item) => item.checkIn !== null && item.evaluation.isSatisfied
+  ).length;
+}
+
+function getHabitWeekCountSummary(days: HabitDaySummary[], todayDate: string) {
+  const countedDays = days.filter((day) => day.date <= todayDate);
+  const daily = countedDays.reduce(
+    (totals, day) => {
+      const counts = getHabitDayDailyCounts(day);
+      return {
+        completed: totals.completed + counts.completed,
+        total: totals.total + counts.total,
+      };
+    },
+    { completed: 0, total: 0 }
+  );
+  const latestDay = [...countedDays].reverse()[0] ?? null;
+  const weeklyItems = latestDay ? getHabitDayWeeklyItems(latestDay) : [];
+  const weekly = weeklyItems.reduce(
+    (totals, item) => ({
+      completed:
+        totals.completed +
+        Math.min(item.cadenceProgress.completedCount, item.cadenceProgress.targetCount),
+      total: totals.total + item.cadenceProgress.targetCount,
+    }),
+    { completed: 0, total: 0 }
+  );
+
+  return { daily, weekly };
 }
 
 function getNextUnreviewedAbsenceDate(
@@ -1288,7 +1366,11 @@ function getTimerStorageUserKey(userId: string | undefined) {
   return encodeURIComponent(normalized || "current-user");
 }
 
-function getAbsenceReviewStorageKey(userId: string | undefined, todayDate: string) {
+function getAbsenceReviewStorageKey(userId: string | undefined) {
+  return `${HABIT_ABSENCE_REVIEW_STORAGE_PREFIX}:${getTimerStorageUserKey(userId)}:reviewed-dates`;
+}
+
+function getLegacyAbsenceReviewStorageKey(userId: string | undefined, todayDate: string) {
   return `${HABIT_ABSENCE_REVIEW_STORAGE_PREFIX}:${getTimerStorageUserKey(userId)}:${todayDate}`;
 }
 
@@ -1296,31 +1378,37 @@ function isIsoDateString(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function parseAbsenceReviewDates(raw: string | null) {
+  if (!raw) return [];
+
+  const parsed = JSON.parse(raw) as { version?: unknown; reviewedDates?: unknown } | null;
+  if (
+    !parsed ||
+    parsed.version !== HABIT_ABSENCE_REVIEW_STORAGE_VERSION ||
+    !Array.isArray(parsed.reviewedDates)
+  ) {
+    return [];
+  }
+  return [...new Set(parsed.reviewedDates.filter(isIsoDateString))];
+}
+
 function readAbsenceReviewDates(userId: string | undefined, todayDate: string) {
   if (typeof window === "undefined") return [];
 
   try {
-    const raw = window.localStorage.getItem(getAbsenceReviewStorageKey(userId, todayDate));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as { version?: unknown; reviewedDates?: unknown } | null;
-    if (
-      !parsed ||
-      parsed.version !== HABIT_ABSENCE_REVIEW_STORAGE_VERSION ||
-      !Array.isArray(parsed.reviewedDates)
-    ) {
-      return [];
-    }
-    return [...new Set(parsed.reviewedDates.filter(isIsoDateString))];
+    const current = parseAbsenceReviewDates(
+      window.localStorage.getItem(getAbsenceReviewStorageKey(userId))
+    );
+    if (current.length > 0) return current;
+    return parseAbsenceReviewDates(
+      window.localStorage.getItem(getLegacyAbsenceReviewStorageKey(userId, todayDate))
+    );
   } catch {
     return [];
   }
 }
 
-function writeAbsenceReviewDates(
-  userId: string | undefined,
-  todayDate: string,
-  reviewedDates: string[]
-) {
+function writeAbsenceReviewDates(userId: string | undefined, reviewedDates: string[]) {
   if (typeof window === "undefined") return false;
 
   try {
@@ -1328,7 +1416,7 @@ function writeAbsenceReviewDates(
       left.localeCompare(right)
     );
     window.localStorage.setItem(
-      getAbsenceReviewStorageKey(userId, todayDate),
+      getAbsenceReviewStorageKey(userId),
       JSON.stringify({
         version: HABIT_ABSENCE_REVIEW_STORAGE_VERSION,
         reviewedDates: uniqueDates,
@@ -1338,6 +1426,25 @@ function writeAbsenceReviewDates(
   } catch {
     return false;
   }
+}
+
+function normalizeAbsenceReviewDates(dates: unknown) {
+  if (!Array.isArray(dates)) return [];
+  return [...new Set(dates.filter(isIsoDateString))].sort((left, right) =>
+    left.localeCompare(right)
+  );
+}
+
+function getReviewedAbsenceDatesForSnapshot(
+  snapshot: HabitSnapshot,
+  userId: string | undefined,
+  todayDate: string
+) {
+  if (snapshot.absenceReviewAcknowledgedDates !== undefined) {
+    return normalizeAbsenceReviewDates(snapshot.absenceReviewAcknowledgedDates);
+  }
+
+  return readAbsenceReviewDates(userId, todayDate);
 }
 
 function getTimerStorageKey(userId: string | undefined, date: string) {
@@ -1493,7 +1600,9 @@ export default function HabitPerfectDayHub({
   const [motivationRange, setMotivationRange] = useState<HabitMotivationRange>("month");
   const [openMotivationPanel, setOpenMotivationPanel] = useState<MotivationPanel | null>(null);
   const [confirmResetStatsHabitId, setConfirmResetStatsHabitId] = useState<string | null>(null);
-  const [reviewedAbsenceDates, setReviewedAbsenceDates] = useState<string[]>([]);
+  const [reviewedAbsenceDates, setReviewedAbsenceDates] = useState<string[]>(() =>
+    getReviewedAbsenceDatesForSnapshot(initialSnapshot, userId, todayDate)
+  );
   const [confirmEndHabitId, setConfirmEndHabitId] = useState<string | null>(null);
   const [confirmRestoreHabitId, setConfirmRestoreHabitId] = useState<string | null>(null);
   const [recentlyCreatedHabitId, setRecentlyCreatedHabitId] = useState<string | null>(null);
@@ -1520,6 +1629,7 @@ export default function HabitPerfectDayHub({
   const summarySectionRef = useRef<HTMLElement | null>(null);
   const habitsSectionRef = useRef<HTMLElement | null>(null);
   const motivationSectionRef = useRef<HTMLElement | null>(null);
+  const selectedAbsenceReviewSectionRef = useRef<HTMLElement | null>(null);
   const addHabitSectionRef = useRef<HTMLElement | null>(null);
   const addHabitNameInputRef = useRef<HTMLInputElement | null>(null);
   const habitCardRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -1566,6 +1676,7 @@ export default function HabitPerfectDayHub({
     period: "week",
     selectedDate: snapshot.selectedDate,
   });
+  const habitWeekCountSummary = getHabitWeekCountSummary(snapshot.weekSummary.days, safeTodayDate);
 
   useEffect(() => {
     setSoundEnabled(readHabitSoundPreference());
@@ -1603,8 +1714,8 @@ export default function HabitPerfectDayHub({
   }, [initialSnapshot]);
 
   useEffect(() => {
-    setReviewedAbsenceDates(readAbsenceReviewDates(userId, safeTodayDate));
-  }, [safeTodayDate, userId]);
+    setReviewedAbsenceDates(getReviewedAbsenceDatesForSnapshot(snapshot, userId, safeTodayDate));
+  }, [safeTodayDate, snapshot, userId]);
 
   useEffect(() => {
     setCheckInInputs(buildInputState(snapshot));
@@ -1889,6 +2000,24 @@ export default function HabitPerfectDayHub({
     }
 
     summarySectionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }
+
+  function scrollToHabitsTop() {
+    habitsSectionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }
+
+  function scrollToSelectedAbsenceReview() {
+    const target = selectedAbsenceReviewSectionRef.current ?? habitsSectionRef.current;
+    target?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }
+
+  function handleMobileDatePillClick() {
+    if (isSelectedToday) {
+      scrollToHabitsTop();
+      return;
+    }
+
+    scrollToSelectedAbsenceReview();
   }
 
   function closeAddHabitForm() {
@@ -2526,49 +2655,82 @@ export default function HabitPerfectDayHub({
     }
   }
 
-  function updateReviewedAbsenceDates(updater: (current: string[]) => string[]) {
-    setReviewedAbsenceDates((current) => {
-      const activeDates = new Set(catchUpDates);
-      const next = [...new Set(updater(current).filter((date) => activeDates.has(date)))].sort(
-        (left, right) => left.localeCompare(right)
-      );
-      writeAbsenceReviewDates(userId, safeTodayDate, next);
-      return next;
-    });
+  function getNextReviewedAbsenceDates(updater: (current: string[]) => string[]) {
+    const activeDates = new Set(catchUpDates);
+    return [...new Set(updater(reviewedAbsenceDates).filter((date) => activeDates.has(date)))].sort(
+      (left, right) => left.localeCompare(right)
+    );
   }
 
-  function markAbsenceReviewDate(date: string, nextDate: string | null = null) {
-    updateReviewedAbsenceDates((current) => [...current, date]);
-    void sendClientAnalyticsEvent("habit_absence_review_day_marked", {
-      selectedDate: snapshot.selectedDate,
-      reviewDate: date,
-      reviewMode: "date_first",
+  async function saveReviewedAbsenceDates(nextDates: string[], action: "mark" | "finish") {
+    const response = await fetch("/api/my-library/habits/absence-review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        dates: nextDates,
+        selectedDate: snapshot.selectedDate,
+        action,
+      }),
     });
-    setNotice(`${getLongDateLabel(date)} checked. No habit history was changed.`);
-    setError(null);
+    const nextSnapshot = await applyResponse(response, "Could not save that review right now.");
+    const savedDates = getReviewedAbsenceDatesForSnapshot(nextSnapshot, userId, safeTodayDate);
+    setReviewedAbsenceDates(savedDates);
+    writeAbsenceReviewDates(userId, savedDates);
+    return nextSnapshot;
+  }
 
-    if (nextDate) {
-      const nextHref = buildMyLibraryCalendarHref({
-        path: "/my-library/habits",
-        selectedDate: nextDate,
-        view: calendarViewParam,
+  async function markAbsenceReviewDate(date: string, nextDate: string | null = null) {
+    if (pendingKey !== null) return;
+
+    const nextDates = getNextReviewedAbsenceDates((current) => [...current, date]);
+    setPendingKey(`absence-review-${date}`);
+    try {
+      await saveReviewedAbsenceDates(nextDates, "mark");
+      void sendClientAnalyticsEvent("habit_absence_review_day_marked", {
+        selectedDate: snapshot.selectedDate,
+        reviewDate: date,
+        reviewMode: "date_first",
       });
-      navigateToCalendarHref(nextHref, nextDate);
+      setNotice(`${getLongDateLabel(date)} checked. No habit history was changed.`);
+      setError(null);
+
+      if (nextDate) {
+        const nextHref = buildMyLibraryCalendarHref({
+          path: "/my-library/habits",
+          selectedDate: nextDate,
+          view: calendarViewParam,
+        });
+        navigateToCalendarHref(nextHref, nextDate);
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save that review right now.");
+    } finally {
+      setPendingKey(null);
     }
   }
 
-  function finishAbsenceReview() {
-    updateReviewedAbsenceDates(() => catchUpDates);
-    void sendClientAnalyticsEvent("habit_absence_review_finished", {
-      selectedDate: snapshot.selectedDate,
-      reviewMode: "date_first",
-      reviewDateCount: catchUpDates.length,
-    });
-    setNotice("Review closed. No habit history was changed.");
-    setError(null);
+  async function finishAbsenceReview() {
+    if (pendingKey !== null) return;
 
-    if (!isSelectedToday) {
-      navigateToCalendarHref(todayWindowHref, safeTodayDate);
+    const nextDates = getNextReviewedAbsenceDates(() => catchUpDates);
+    setPendingKey("absence-review-finish");
+    try {
+      await saveReviewedAbsenceDates(nextDates, "finish");
+      void sendClientAnalyticsEvent("habit_absence_review_finished", {
+        selectedDate: snapshot.selectedDate,
+        reviewMode: "date_first",
+        reviewDateCount: catchUpDates.length,
+      });
+      setNotice("Review closed. No habit history was changed.");
+      setError(null);
+
+      if (!isSelectedToday) {
+        navigateToCalendarHref(todayWindowHref, safeTodayDate);
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not save that review right now.");
+    } finally {
+      setPendingKey(null);
     }
   }
 
@@ -2662,6 +2824,8 @@ export default function HabitPerfectDayHub({
   function renderSelectedAbsenceReviewPanel() {
     if (!shouldShowSelectedAbsenceReview || !selectedAbsenceReviewRow) return null;
 
+    const progressLabel = getAbsenceReviewProgressLabel(absenceReviewRows);
+    const remainingLabel = getAbsenceReviewRemainingLabel(absenceReviewRows);
     const nextHref =
       nextAbsenceReviewDate === null
         ? null
@@ -2677,13 +2841,51 @@ export default function HabitPerfectDayHub({
     const allReviewed = absenceReviewRows.every((row) => row.reviewed);
     const isLastUncheckedDate =
       !selectedAbsenceReviewRow.reviewed && nextDateAfterChecking === null;
+    const isReviewPending = pendingKey?.startsWith("absence-review-") ?? false;
 
     return (
       <section
         aria-label="Review days"
         data-testid="habits-selected-absence-review"
+        ref={selectedAbsenceReviewSectionRef}
         className="mt-4 rounded-[var(--fs-radius-card)] border border-amber-200 bg-amber-50/60 p-4"
       >
+        <div className="mb-4 flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className={habitLabelClass}>Review days</p>
+            <h3 className="mt-1 text-base font-bold text-amber-950">
+              {allReviewed ? "Review complete" : "Review in progress"}
+            </h3>
+            <p className="mt-1 text-sm font-medium text-amber-900">{progressLabel}</p>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <span className={allReviewed ? habitSuccessChipClass : habitWarningChipClass}>
+              {remainingLabel}
+            </span>
+            {allReviewed ? (
+              <button
+                type="button"
+                onClick={finishAbsenceReview}
+                disabled={isReviewPending}
+                className={habitMobilePrimaryActionClass}
+              >
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                {isReviewPending ? "Saving..." : "Back to Today"}
+              </button>
+            ) : (
+              <Link
+                href={todayWindowHref}
+                onClick={(event) => handleCalendarLinkClick(event, todayWindowHref, safeTodayDate)}
+                aria-busy={pendingSelectedDate === safeTodayDate ? "true" : undefined}
+                className={habitMobilePrimaryActionClass}
+              >
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                Today
+              </Link>
+            )}
+          </div>
+        </div>
+
         {renderAbsenceReviewDateList(absenceReviewRows)}
 
         <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
@@ -2695,10 +2897,11 @@ export default function HabitPerfectDayHub({
             <button
               type="button"
               onClick={finishAbsenceReview}
+              disabled={isReviewPending}
               className={habitMobilePrimaryActionClass}
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              Close review
+              {isReviewPending ? "Saving..." : "Close review"}
             </button>
           ) : (
             <button
@@ -2706,10 +2909,11 @@ export default function HabitPerfectDayHub({
               onClick={() =>
                 markAbsenceReviewDate(selectedAbsenceReviewRow.date, nextDateAfterChecking)
               }
+              disabled={isReviewPending}
               className={habitMobilePrimaryActionClass}
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              Done with this day
+              {isReviewPending ? "Saving..." : "Done with this day"}
             </button>
           )}
           {selectedAbsenceReviewRow.reviewed && nextHref && nextAbsenceReviewDate ? (
@@ -2721,16 +2925,6 @@ export default function HabitPerfectDayHub({
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
               Next date
             </Link>
-          ) : null}
-          {allReviewed ? (
-            <button
-              type="button"
-              onClick={finishAbsenceReview}
-              className={habitMobilePrimaryActionClass}
-            >
-              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              Close review
-            </button>
           ) : null}
         </div>
       </section>
@@ -3062,11 +3256,24 @@ export default function HabitPerfectDayHub({
             selectedDate: day.date,
             view: calendarViewParam,
           });
-          const dayLabel = `${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${
-            day.completionPercent
-          }% complete${isSelected ? ", selected" : ""}${isPending ? ", loading" : ""}${
+          const dailyCounts = getHabitDayDailyCounts(day);
+          const dailyCompletionPercent =
+            dailyCounts.total > 0
+              ? Math.round((dailyCounts.completed / dailyCounts.total) * 100)
+              : 0;
+          const weeklyCompletedOnDateCount = getHabitDayWeeklyCompletedOnDateCount(day);
+          const dayCountLabel = getHabitDayTargetCountLabel(day);
+          const weeklyDayLabel =
+            weeklyCompletedOnDateCount > 0
+              ? `, ${weeklyCompletedOnDateCount} weekly habit${
+                  weeklyCompletedOnDateCount === 1 ? "" : "s"
+                } completed`
+              : "";
+          const dayLabel = `${getWeekdayLabel(day.date)} ${getLongDateLabel(day.date)} ${dayCountLabel}${
+            isSelected ? ", selected" : ""
+          }${isPending ? ", loading" : ""}${
             didFailLoad ? ", could not load" : ""
-          }${isToday ? ", today" : ""}`;
+          }${isToday ? ", today" : ""}${weeklyDayLabel}`;
           const dayClassName = cx(
             "min-w-0 rounded-[var(--fs-radius-card)] p-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2",
             isPending
@@ -3090,12 +3297,15 @@ export default function HabitPerfectDayHub({
               <div className="mt-1 flex h-14 items-end rounded-[var(--fs-radius-card)] border border-[color:var(--fs-border-soft)] bg-white/70 p-1 sm:h-20">
                 <div
                   className="w-full rounded-[var(--fs-radius-control)] bg-[color:var(--fs-color-brand-600)]"
-                  style={{ height: `${Math.max(6, day.completionPercent)}%` }}
-                  aria-label={`${getWeekdayLabel(day.date)} ${day.completionPercent}% complete`}
+                  style={{ height: `${Math.max(6, dailyCompletionPercent)}%` }}
+                  aria-label={`${getWeekdayLabel(day.date)} ${dayCountLabel}`}
                 />
               </div>
               <p className="mt-1 text-center text-[10px] text-slate-500 sm:text-[11px]">
-                {day.completionPercent}%
+                {dailyCounts.total > 0 ? `${dailyCounts.completed}/${dailyCounts.total}` : "0/0"}
+              </p>
+              <p className="min-h-3 text-center text-[9px] font-semibold text-emerald-700 sm:text-[10px]">
+                {weeklyCompletedOnDateCount > 0 ? `${weeklyCompletedOnDateCount} weekly` : null}
               </p>
             </>
           );
@@ -3190,6 +3400,56 @@ export default function HabitPerfectDayHub({
     );
   }
 
+  function renderMobileDatePill() {
+    const pillLabel = isSelectedToday ? "Today" : "History";
+    const pillDateLabel = getLongDateLabel(snapshot.selectedDate);
+    const PillIcon = isSelectedToday ? CalendarDays : RotateCcw;
+    const pillStateClass = isSelectedToday
+      ? "border-blue-600 bg-blue-600 text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)] hover:bg-blue-700 focus-visible:ring-blue-700"
+      : "border-amber-300 bg-amber-50 text-amber-950 shadow-[0_12px_28px_rgba(180,83,9,0.14)] hover:bg-amber-100 focus-visible:ring-amber-600";
+    const pillIconClass = isSelectedToday
+      ? "bg-white/20 text-white"
+      : "bg-amber-100 text-amber-700";
+    const pillDateClass = isSelectedToday ? "text-blue-100" : "text-amber-700";
+    return (
+      <div
+        data-testid="habits-mobile-date-pill"
+        className="sticky top-0 z-20 -mx-4 mt-3 mb-4 flex justify-end border-y border-slate-200/70 bg-white/95 px-4 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur sm:hidden"
+      >
+        <button
+          type="button"
+          onClick={handleMobileDatePillClick}
+          aria-current={isSelectedToday ? "date" : undefined}
+          aria-label={
+            isSelectedToday
+              ? `Today, ${pillDateLabel}. Back to top.`
+              : shouldShowSelectedAbsenceReview
+                ? `History, ${pillDateLabel}. Jump to review list.`
+                : `History, ${pillDateLabel}.`
+          }
+          className={cx(
+            "inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            pillStateClass
+          )}
+        >
+          <span
+            className={cx(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+              pillIconClass
+            )}
+            aria-hidden="true"
+          >
+            <PillIcon className="h-3.5 w-3.5" />
+          </span>
+          <span>{pillLabel}</span>
+          <span className={cx("truncate text-xs font-semibold", pillDateClass)}>
+            {pillDateLabel}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   function renderWeeklyOverviewCard(testId: string, controlsTestId: string) {
     return (
       <div className={cx("mt-5", habitNestedMutedCardClass)}>
@@ -3197,7 +3457,13 @@ export default function HabitPerfectDayHub({
           <div>
             <p className={habitLabelClass}>Weekly Overview</p>
             <p className="mt-1 text-sm text-slate-600">
-              {weekLabel} · {snapshot.weekSummary.perfectDayCount}/7 perfect days
+              {weekLabel}
+              {habitWeekCountSummary.daily.total > 0
+                ? ` · Daily habits ${habitWeekCountSummary.daily.completed}/${habitWeekCountSummary.daily.total}`
+                : ""}
+              {habitWeekCountSummary.weekly.total > 0
+                ? ` · Weekly habits ${habitWeekCountSummary.weekly.completed}/${habitWeekCountSummary.weekly.total}`
+                : ""}
             </p>
           </div>
           {isHistoricalDate ? <span className={habitWarningChipClass}>History</span> : null}
@@ -3732,21 +3998,21 @@ export default function HabitPerfectDayHub({
 
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className={habitNestedMutedCardClass}>
-            <p className={habitLabelClass}>7-day perfect days</p>
+            <p className={habitLabelClass}>Daily habits</p>
             <p className="mt-1 text-xl font-bold text-slate-900">
-              {snapshot.weekSummary.perfectDayCount}/7
+              {habitWeekCountSummary.daily.completed}/{habitWeekCountSummary.daily.total}
+            </p>
+          </div>
+          <div className={habitNestedMutedCardClass}>
+            <p className={habitLabelClass}>Weekly habits</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">
+              {habitWeekCountSummary.weekly.completed}/{habitWeekCountSummary.weekly.total}
             </p>
           </div>
           <div className={habitNestedMutedCardClass}>
             <p className={habitLabelClass}>7-day minutes</p>
             <p className="mt-1 text-xl font-bold text-slate-900">
               {snapshot.weekSummary.totalDurationMinutes}
-            </p>
-          </div>
-          <div className={habitNestedMutedCardClass}>
-            <p className={habitLabelClass}>7-day count</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {snapshot.weekSummary.totalCount}
             </p>
           </div>
         </div>
@@ -3808,6 +4074,8 @@ export default function HabitPerfectDayHub({
             {online === false ? <p className={habitWarningChipClass}>Offline</p> : null}
           </div>
         </div>
+
+        {renderMobileDatePill()}
 
         {soundNotice ? (
           <p role="status" className="mt-3 text-sm font-medium text-slate-600">

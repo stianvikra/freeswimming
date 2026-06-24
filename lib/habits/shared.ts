@@ -106,6 +106,8 @@ export type HabitDefinitionInsert = Database["public"]["Tables"]["habit_definiti
 export type HabitDefinitionUpdate = Database["public"]["Tables"]["habit_definitions"]["Update"];
 export type HabitCheckInRow = Database["public"]["Tables"]["habit_check_ins"]["Row"];
 export type HabitCheckInInsert = Database["public"]["Tables"]["habit_check_ins"]["Insert"];
+export type HabitAbsenceReviewAcknowledgementRow =
+  Database["public"]["Tables"]["habit_absence_review_acknowledgements"]["Row"];
 export type HabitMotivationResetRow =
   Database["public"]["Tables"]["habit_motivation_resets"]["Row"];
 export type HabitMotivationResetInsert =
@@ -286,12 +288,14 @@ export type HabitMotivationRangeSummaries = Partial<
 export type HabitSnapshot = {
   schemaReady: boolean;
   resetEventsReady?: boolean;
+  absenceReviewAcknowledgementsReady?: boolean;
   loadError: string | null;
   selectedDate: string;
   activeHabits: HabitDefinitionView[];
   archivedHabits: HabitDefinitionView[];
   daySummary: HabitDaySummary;
   weekSummary: HabitWeekSummary;
+  absenceReviewAcknowledgedDates?: string[];
   motivationSummary?: HabitMotivationSummary;
   motivationSummaries?: HabitMotivationRangeSummaries;
 };

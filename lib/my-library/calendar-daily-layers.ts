@@ -39,6 +39,20 @@ export type MyLibraryCalendarDailyLayerMetric = {
   tone?: MyLibraryCalendarDailyLayerTone;
 };
 
+export type MyLibraryCalendarDailyLayerStats = {
+  dailyHabitCompletedCount?: number;
+  dailyHabitTotalCount?: number;
+  weeklyHabitCompletedOnDateCount?: number;
+  weeklyHabitCompletedCount?: number;
+  weeklyHabitTotalCount?: number;
+  monthlyHabitCompletedOnDateCount?: number;
+  microCompletedUnitCount?: number;
+  microSkippedUnitCount?: number;
+  microExerciseKeys?: string[];
+  microRepsTotal?: number;
+  microLoadKgTotal?: number;
+};
+
 export type MyLibraryCalendarDailyLayer = {
   source: MyLibraryCalendarDailyLayerSource;
   label: string;
@@ -49,6 +63,7 @@ export type MyLibraryCalendarDailyLayer = {
   supportLabel: string;
   href: string;
   metrics: MyLibraryCalendarDailyLayerMetric[];
+  stats?: MyLibraryCalendarDailyLayerStats;
 };
 
 export type MyLibraryCalendarDailyLayersByDate = Record<string, MyLibraryCalendarDailyLayer[]>;
@@ -91,6 +106,14 @@ const SOURCE_HREFS: Record<MyLibraryCalendarDailyLayerSource, string> = {
 
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 function getDateKeyFromIso(value: string | null): string | null {
@@ -182,8 +205,86 @@ function getHabitVisibleItems(items: HabitDayItem[]): HabitDayItem[] {
   );
 }
 
-function isHabitItemSatisfied(item: HabitDayItem): boolean {
-  return item.evaluation.isSatisfied || item.cadenceProgress.isTargetMet;
+function getDailyHabitItems(items: HabitDayItem[]) {
+  return items.filter(
+    (item) =>
+      item.habit.cadencePeriod === "daily" &&
+      item.habit.isPerfectDayItem &&
+      item.isScheduledForDate &&
+      item.checkIn?.status !== "skipped"
+  );
+}
+
+function getWeeklyHabitItems(items: HabitDayItem[]) {
+  return items.filter(
+    (item) =>
+      item.habit.cadencePeriod === "weekly" &&
+      item.habit.isPerfectDayItem &&
+      item.habit.startDate <= item.cadenceProgress.periodEnd
+  );
+}
+
+function getWeeklyHabitCompletedOnDateCount(items: HabitDayItem[]) {
+  return items.filter((item) => item.checkIn !== null && item.evaluation.isSatisfied).length;
+}
+
+function getMonthlyHabitItems(items: HabitDayItem[]) {
+  return items.filter(
+    (item) =>
+      item.habit.cadencePeriod === "monthly" &&
+      item.habit.isPerfectDayItem &&
+      item.habit.startDate <= item.cadenceProgress.periodEnd
+  );
+}
+
+function getHabitLayerCompactLabel(input: {
+  dailyCompletedCount: number;
+  dailyTotalCount: number;
+  weeklyCompletedOnDateCount: number;
+  monthlyCompletedOnDateCount: number;
+  hasReview: boolean;
+}) {
+  if (input.dailyTotalCount > 0) {
+    return `${input.dailyCompletedCount}/${input.dailyTotalCount} habits`;
+  }
+
+  if (input.weeklyCompletedOnDateCount > 0) {
+    return pluralize(input.weeklyCompletedOnDateCount, "weekly habit");
+  }
+
+  if (input.monthlyCompletedOnDateCount > 0) {
+    return pluralize(input.monthlyCompletedOnDateCount, "monthly habit");
+  }
+
+  if (input.hasReview) return "Habits review needed";
+  return "No habits";
+}
+
+function getHabitLayerSummary(input: {
+  dailyCompletedCount: number;
+  dailyTotalCount: number;
+  weeklyCompletedOnDateCount: number;
+  monthlyCompletedOnDateCount: number;
+  hasReview: boolean;
+  hasVisibleItems: boolean;
+}) {
+  const lines: string[] = [];
+  if (input.dailyTotalCount > 0) {
+    lines.push(
+      `${input.dailyCompletedCount}/${input.dailyTotalCount} daily habits on track for this day.`
+    );
+  }
+  if (input.weeklyCompletedOnDateCount > 0) {
+    lines.push(`${pluralize(input.weeklyCompletedOnDateCount, "weekly habit")} completed today.`);
+  }
+  if (input.monthlyCompletedOnDateCount > 0) {
+    lines.push(`${pluralize(input.monthlyCompletedOnDateCount, "monthly habit")} completed today.`);
+  }
+  if (lines.length > 0) return lines.join(" ");
+  if (input.hasReview) return "Some Habits need review before Calendar can count them.";
+  if (input.hasVisibleItems)
+    return "Weekly and monthly Habits are counted in the week or period totals.";
+  return "No due, done, rest, or slip Habit signals on this date.";
 }
 
 function buildHabitsLayer(input: {
@@ -240,13 +341,29 @@ function buildHabitsLayer(input: {
   const dayCheckIns = state.checkIns.filter((checkIn) => checkIn.checkInDate <= input.date);
   const daySummary = buildHabitDaySummary(state.habits, dayCheckIns, input.date);
   const visibleItems = getHabitVisibleItems(daySummary.items);
-  const satisfiedCount = visibleItems.filter(isHabitItemSatisfied).length;
-  const dueCount = visibleItems.filter((item) => item.priorityGroup.startsWith("due_")).length;
+  const dailyHabitItems = getDailyHabitItems(daySummary.items);
+  const weeklyHabitItems = getWeeklyHabitItems(daySummary.items);
+  const dailyHabitTotalCount = dailyHabitItems.length;
+  const dailyHabitCompletedCount = dailyHabitItems.filter(
+    (item) => item.evaluation.isSatisfied
+  ).length;
+  const weeklyHabitCompletedOnDateCount = getWeeklyHabitCompletedOnDateCount(weeklyHabitItems);
+  const monthlyHabitItems = getMonthlyHabitItems(daySummary.items);
+  const monthlyHabitCompletedOnDateCount = getWeeklyHabitCompletedOnDateCount(monthlyHabitItems);
+  const weeklyHabitTotalCount = weeklyHabitItems.reduce(
+    (total, item) => total + item.cadenceProgress.targetCount,
+    0
+  );
+  const weeklyHabitCompletedCount = weeklyHabitItems.reduce(
+    (total, item) =>
+      total + Math.min(item.cadenceProgress.completedCount, item.cadenceProgress.targetCount),
+    0
+  );
+  const dueDailyCount = dailyHabitItems.filter((item) => !item.evaluation.isSatisfied).length;
   const restCount = visibleItems.filter((item) => item.checkIn?.status === "skipped").length;
   const slipCount = visibleItems.filter(
     (item) => item.habit.habitMode === "quit" && item.checkIn?.valueBoolean === false
   ).length;
-  const periodCount = visibleItems.filter((item) => item.priorityGroup === "done_period").length;
   const resetCount = state.resetEvents.filter(
     (reset) =>
       reset.effectiveDate === input.date &&
@@ -254,18 +371,22 @@ function buildHabitsLayer(input: {
       reset.status === "active"
   ).length;
   const hasReview = state.unsupported.count > 0;
+  const hasUserVisibleSignal =
+    dailyHabitTotalCount > 0 ||
+    weeklyHabitCompletedOnDateCount > 0 ||
+    monthlyHabitCompletedOnDateCount > 0 ||
+    restCount > 0 ||
+    slipCount > 0 ||
+    resetCount > 0;
   const status: MyLibraryCalendarDailyLayerStatus =
-    hasReview && visibleItems.length === 0
-      ? "review"
-      : visibleItems.length > 0
-        ? "mapped"
-        : "no_data";
-  const compactLabel =
-    visibleItems.length > 0
-      ? `${satisfiedCount}/${visibleItems.length} habits`
-      : hasReview
-        ? "Habits review needed"
-        : "No habits";
+    hasReview && !hasUserVisibleSignal ? "review" : hasUserVisibleSignal ? "mapped" : "no_data";
+  const compactLabel = getHabitLayerCompactLabel({
+    dailyCompletedCount: dailyHabitCompletedCount,
+    dailyTotalCount: dailyHabitTotalCount,
+    weeklyCompletedOnDateCount: weeklyHabitCompletedOnDateCount,
+    monthlyCompletedOnDateCount: monthlyHabitCompletedOnDateCount,
+    hasReview,
+  });
   const reviewSupport =
     state.unsupported.count > 0
       ? ` ${pluralize(
@@ -273,47 +394,95 @@ function buildHabitsLayer(input: {
           "Habit"
         )} need a Calendar cadence mapping before they count.`
       : "";
+  const metrics: MyLibraryCalendarDailyLayerMetric[] = [
+    {
+      id: "habit_daily",
+      label: "Daily habits",
+      value: `${dailyHabitCompletedCount}/${dailyHabitTotalCount}`,
+    },
+    {
+      id: "habit_due",
+      label: "Due",
+      value: pluralize(dueDailyCount, "habit"),
+    },
+    ...(weeklyHabitCompletedOnDateCount > 0
+      ? [
+          {
+            id: "habit_weekly_completed_today",
+            label: "Weekly done",
+            value: pluralize(weeklyHabitCompletedOnDateCount, "habit"),
+            tone: "positive" as const,
+          },
+        ]
+      : []),
+    ...(weeklyHabitTotalCount > 0
+      ? [
+          {
+            id: "habit_weekly_total",
+            label: "Weekly total",
+            value: `${weeklyHabitCompletedCount}/${weeklyHabitTotalCount}`,
+          },
+        ]
+      : []),
+    ...(monthlyHabitCompletedOnDateCount > 0
+      ? [
+          {
+            id: "habit_monthly_completed_today",
+            label: "Monthly done",
+            value: pluralize(monthlyHabitCompletedOnDateCount, "habit"),
+            tone: "positive" as const,
+          },
+        ]
+      : []),
+    { id: "habit_rest", label: "Rest", value: pluralize(restCount, "day"), tone: "muted" },
+    { id: "habit_slips", label: "Slips", value: pluralize(slipCount, "slip"), tone: "warning" },
+    ...(resetCount > 0
+      ? [
+          {
+            id: "habit_resets",
+            label: "Reset markers",
+            value: pluralize(resetCount, "marker"),
+            tone: "muted" as const,
+          },
+        ]
+      : []),
+    ...(state.unsupported.count > 0
+      ? [
+          {
+            id: "habit_review",
+            label: "Needs mapping",
+            value: pluralize(state.unsupported.count, "habit"),
+            tone: "warning" as const,
+          },
+        ]
+      : []),
+  ];
 
   return {
     source: "habits",
     label: "Habits",
     status,
-    tone: status === "review" ? "warning" : visibleItems.length > 0 ? "neutral" : "muted",
+    tone: status === "review" ? "warning" : hasUserVisibleSignal ? "neutral" : "muted",
     compactLabel,
-    summary:
-      visibleItems.length > 0
-        ? `${satisfiedCount}/${visibleItems.length} Habit signals on target.`
-        : hasReview
-          ? "Some Habits need review before Calendar can count them."
-          : "No due, done, rest, or slip Habit signals on this date.",
-    supportLabel: `Daily, weekly, and monthly Habits use the existing Habits day summary. Reset markers are shown separately and never count as completions.${reviewSupport}`,
+    summary: getHabitLayerSummary({
+      dailyCompletedCount: dailyHabitCompletedCount,
+      dailyTotalCount: dailyHabitTotalCount,
+      weeklyCompletedOnDateCount: weeklyHabitCompletedOnDateCount,
+      monthlyCompletedOnDateCount: monthlyHabitCompletedOnDateCount,
+      hasReview,
+      hasVisibleItems: visibleItems.length > 0,
+    }),
+    supportLabel: `Daily Habits are counted on the date. Weekly Habits are credited on the completion date and summarized in the week total; unfinished weekly Habits do not make Sunday look like a failed daily Habit.${reviewSupport}`,
     href: `${SOURCE_HREFS.habits}?date=${input.date}`,
-    metrics: [
-      { id: "habit_due", label: "Due", value: pluralize(dueCount, "habit") },
-      { id: "habit_done_period", label: "Period done", value: pluralize(periodCount, "habit") },
-      { id: "habit_rest", label: "Rest", value: pluralize(restCount, "day"), tone: "muted" },
-      { id: "habit_slips", label: "Slips", value: pluralize(slipCount, "slip"), tone: "warning" },
-      ...(resetCount > 0
-        ? [
-            {
-              id: "habit_resets",
-              label: "Reset markers",
-              value: pluralize(resetCount, "marker"),
-              tone: "muted" as const,
-            },
-          ]
-        : []),
-      ...(state.unsupported.count > 0
-        ? [
-            {
-              id: "habit_review",
-              label: "Needs mapping",
-              value: pluralize(state.unsupported.count, "habit"),
-              tone: "warning" as const,
-            },
-          ]
-        : []),
-    ],
+    metrics,
+    stats: {
+      dailyHabitCompletedCount,
+      dailyHabitTotalCount,
+      weeklyHabitCompletedOnDateCount,
+      weeklyHabitCompletedCount,
+      weeklyHabitTotalCount,
+      monthlyHabitCompletedOnDateCount,
+    },
   };
 }
 
@@ -322,6 +491,9 @@ function getMicroBlocksForDate(plans: MyLibraryCalendarMicroPlanLayerEvent[], da
   let skippedCount = 0;
   let unknownCount = 0;
   let invalidPlanCount = 0;
+  let repsTotal = 0;
+  let loadKgTotal = 0;
+  const exerciseKeys = new Set<string>();
 
   for (const plan of plans) {
     if (!Array.isArray(plan.blocks)) {
@@ -343,6 +515,21 @@ function getMicroBlocksForDate(plans: MyLibraryCalendarMicroPlanLayerEvent[], da
 
       if (status === "completed" && getDateKeyFromIso(String(block.completedAt ?? "")) === date) {
         completedCount += 1;
+        const exerciseKey =
+          typeof block.sourceExerciseId === "string" && block.sourceExerciseId.trim().length > 0
+            ? block.sourceExerciseId.trim()
+            : typeof block.title === "string" && block.title.trim().length > 0
+              ? block.title.trim()
+              : null;
+        if (exerciseKey) exerciseKeys.add(exerciseKey);
+
+        const targetValue = isPositiveFiniteNumber(block.targetValue) ? block.targetValue : 0;
+        if (block.targetType === "reps") {
+          repsTotal += targetValue;
+          if (targetValue > 0 && isPositiveFiniteNumber(block.loadKg)) {
+            loadKgTotal += targetValue * block.loadKg;
+          }
+        }
       }
       if (status === "skipped" && getDateKeyFromIso(String(block.skippedAt ?? "")) === date) {
         skippedCount += 1;
@@ -350,7 +537,16 @@ function getMicroBlocksForDate(plans: MyLibraryCalendarMicroPlanLayerEvent[], da
     }
   }
 
-  return { completedCount, skippedCount, unknownCount, invalidPlanCount };
+  return {
+    completedCount,
+    skippedCount,
+    unknownCount,
+    invalidPlanCount,
+    exerciseKeys: Array.from(exerciseKeys).sort(),
+    exerciseCount: exerciseKeys.size,
+    repsTotal,
+    loadKgTotal: Math.round(loadKgTotal * 10) / 10,
+  };
 }
 
 function buildMicroSessionsLayer(input: {
@@ -412,15 +608,20 @@ function buildMicroSessionsLayer(input: {
         ? "Micro review needed"
         : "No micro",
     summary: hasActivity
-      ? `${pluralize(stats.completedCount, "completed micro unit")} and ${pluralize(
-          stats.skippedCount,
-          "skipped unit"
-        )}.`
+      ? [
+          `${pluralize(stats.completedCount, "completed micro unit")}`,
+          stats.exerciseCount > 0 ? pluralize(stats.exerciseCount, "exercise") : null,
+          stats.repsTotal > 0 ? `${formatNumber(stats.repsTotal)} reps` : null,
+          stats.loadKgTotal > 0 ? `${formatNumber(stats.loadKgTotal)} kg lifted` : null,
+          stats.skippedCount > 0 ? `${pluralize(stats.skippedCount, "skipped unit")}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
       : hasReview
         ? "Some Micro Session blocks need review before Calendar can count them."
         : "No completed or skipped Micro Session units on this date.",
     supportLabel:
-      "Micro Sessions counts only completed and skipped units by their saved timestamps. Queued, open, unfinished, unknown, and paused habit-link credit states are not counted.",
+      "Micro Sessions are counted as their own source. Habit credit from a linked weekly Habit is shown in Habits separately and does not make micro units part of the Habit count.",
     href: SOURCE_HREFS.micro_sessions,
     metrics: [
       {
@@ -429,6 +630,15 @@ function buildMicroSessionsLayer(input: {
         value: pluralize(stats.completedCount, "unit"),
         tone: "positive",
       },
+      ...(stats.exerciseCount > 0
+        ? [{ id: "micro_exercises", label: "Exercises", value: String(stats.exerciseCount) }]
+        : []),
+      ...(stats.repsTotal > 0
+        ? [{ id: "micro_reps", label: "Reps", value: formatNumber(stats.repsTotal) }]
+        : []),
+      ...(stats.loadKgTotal > 0
+        ? [{ id: "micro_load", label: "Load", value: `${formatNumber(stats.loadKgTotal)} kg` }]
+        : []),
       {
         id: "micro_skipped",
         label: "Skipped",
@@ -446,6 +656,13 @@ function buildMicroSessionsLayer(input: {
           ]
         : []),
     ],
+    stats: {
+      microCompletedUnitCount: stats.completedCount,
+      microSkippedUnitCount: stats.skippedCount,
+      microExerciseKeys: stats.exerciseKeys,
+      microRepsTotal: stats.repsTotal,
+      microLoadKgTotal: stats.loadKgTotal,
+    },
   };
 }
 

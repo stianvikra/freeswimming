@@ -15,6 +15,7 @@ import {
   getHabitMotivationRangeStartDate,
   HABIT_MOTIVATION_RANGE_VALUES,
   normalizeHabitDate,
+  type HabitAbsenceReviewAcknowledgementRow,
   type HabitCheckInRow,
   type HabitDefinitionRow,
   type HabitMicroSessionLinkStatus,
@@ -89,6 +90,16 @@ export const HABIT_MOTIVATION_RESET_SELECT = `
   effective_date,
   created_by,
   created_at
+`;
+
+export const HABIT_ABSENCE_REVIEW_SELECT = `
+  id,
+  user_id,
+  review_scope,
+  review_date,
+  status,
+  created_at,
+  updated_at
 `;
 
 const HABIT_MICRO_SESSION_LINK_SELECT = `
@@ -264,6 +275,7 @@ function buildUnavailableSnapshot(selectedDate: string): HabitSnapshot {
   return {
     schemaReady: false,
     resetEventsReady: false,
+    absenceReviewAcknowledgementsReady: false,
     loadError: null,
     selectedDate,
     activeHabits: [],
@@ -299,6 +311,7 @@ export async function loadHabitSnapshot(
     const motivationSummaries = buildHabitMotivationSummaries([], [], selectedDate);
     return {
       schemaReady: true,
+      absenceReviewAcknowledgementsReady: false,
       loadError: "Could not load your habits right now.",
       selectedDate,
       activeHabits: [],
@@ -340,6 +353,7 @@ export async function loadHabitSnapshot(
     console.error("[Habits] Could not load habit check-ins", checkInResult.error);
     return {
       schemaReady: true,
+      absenceReviewAcknowledgementsReady: false,
       loadError: "Could not load today's habit check-ins right now.",
       selectedDate,
       activeHabits,
@@ -367,6 +381,35 @@ export async function loadHabitSnapshot(
     console.error("[Habits] Could not load habit motivation resets", resetResult.error);
   }
 
+  const absenceReviewStart = getWeekStartDate(selectedDate);
+  const absenceReviewEnd = getHabitCheckInEndDate(selectedDate);
+  const absenceReviewResult = await supabase
+    .from("habit_absence_review_acknowledgements")
+    .select(HABIT_ABSENCE_REVIEW_SELECT)
+    .eq("user_id", userId)
+    .eq("review_scope", "weekly_absence_review")
+    .eq("status", "reviewed")
+    .gte("review_date", absenceReviewStart)
+    .lte("review_date", absenceReviewEnd);
+  const absenceReviewAcknowledgementsReady = !isHabitsSchemaMissing(absenceReviewResult.error);
+  const absenceReviewAcknowledgedDates =
+    absenceReviewAcknowledgementsReady && !absenceReviewResult.error
+      ? [
+          ...new Set(
+            ((absenceReviewResult.data ?? []) as HabitAbsenceReviewAcknowledgementRow[]).map(
+              (row) => row.review_date
+            )
+          ),
+        ].sort((left, right) => left.localeCompare(right))
+      : undefined;
+
+  if (absenceReviewResult.error && absenceReviewAcknowledgementsReady) {
+    console.error(
+      "[Habits] Could not load habit absence review acknowledgements",
+      absenceReviewResult.error
+    );
+  }
+
   const motivationSummary = buildHabitMotivationSummary(habits, checkIns, selectedDate, {
     resetEvents,
   });
@@ -380,12 +423,14 @@ export async function loadHabitSnapshot(
   return {
     schemaReady: true,
     resetEventsReady,
+    absenceReviewAcknowledgementsReady,
     loadError: null,
     selectedDate,
     activeHabits,
     archivedHabits,
     daySummary: buildHabitDaySummary(activeHabits, checkIns, selectedDate),
     weekSummary: buildHabitWeekSummary(activeHabits, checkIns, selectedDate),
+    absenceReviewAcknowledgedDates,
     motivationSummary,
     motivationSummaries,
   };

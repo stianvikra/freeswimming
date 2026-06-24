@@ -15,6 +15,7 @@ vi.mock("@/lib/habits/server", () => ({
   HABIT_DEFINITION_SELECT: "habit definition select",
   HABIT_CHECK_IN_SELECT: "habit check-in select",
   HABIT_MOTIVATION_RESET_SELECT: "habit motivation reset select",
+  HABIT_ABSENCE_REVIEW_SELECT: "habit absence review select",
   loadHabitSnapshot: loadHabitSnapshotMock,
 }));
 
@@ -23,6 +24,7 @@ vi.mock("@/lib/analytics/events", () => ({
 }));
 
 import { POST as postHabitCheckIn } from "@/app/api/my-library/habits/check-ins/route";
+import { POST as postHabitAbsenceReview } from "@/app/api/my-library/habits/absence-review/route";
 import { POST as postHabitResetStats } from "@/app/api/my-library/habits/[habitId]/reset-stats/route";
 import { PATCH as patchHabit } from "@/app/api/my-library/habits/[habitId]/route";
 import { POST as postHabit } from "@/app/api/my-library/habits/route";
@@ -88,6 +90,107 @@ describe("habits routes", () => {
     );
 
     expect(response.status).toBe(401);
+  });
+
+  it("saves absence review acknowledgements without writing habit check-ins", async () => {
+    const select = vi.fn().mockResolvedValue({ data: [], error: null });
+    const upsert = vi.fn(() => ({ select }));
+    const from = vi.fn((table: string) =>
+      table === "habit_absence_review_acknowledgements" ? { upsert } : {}
+    );
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitAbsenceReview(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/absence-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dates: ["2026-05-06", "2026-05-05"],
+          selectedDate: "2026-05-10",
+          action: "finish",
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; reviewedDates: string[] };
+
+    expect(response.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.reviewedDates).toEqual(["2026-05-05", "2026-05-06"]);
+    expect(from).toHaveBeenCalledWith("habit_absence_review_acknowledgements");
+    expect(from).not.toHaveBeenCalledWith("habit_check_ins");
+    expect(upsert).toHaveBeenCalledWith(
+      [
+        {
+          user_id: "user-1",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-05-05",
+          status: "reviewed",
+        },
+        {
+          user_id: "user-1",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-05-06",
+          status: "reviewed",
+        },
+      ],
+      { onConflict: "user_id,review_scope,review_date" }
+    );
+    expect(select).toHaveBeenCalledWith("habit absence review select");
+    expect(loadHabitSnapshotMock).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-05-10");
+    expect(trackAnalyticsEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "habit_absence_review_acknowledged",
+        channel: "server",
+        userId: "user-1",
+        payload: expect.objectContaining({
+          selectedDate: "2026-05-10",
+          reviewDateCount: 2,
+          reviewAction: "finish",
+        }),
+      })
+    );
+  });
+
+  it("rejects future habit check-ins before database writes", async () => {
+    const from = vi.fn();
+
+    createRouteHandlerSupabaseClientMock.mockResolvedValue({
+      supabase: {
+        auth: {
+          getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+        },
+        from,
+      },
+      applySupabaseCookies: applyResponseCookiesIdentity,
+    });
+
+    const response = await postHabitCheckIn(
+      new Request("http://127.0.0.1:3000/api/my-library/habits/check-ins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          habitId: "11111111-1111-4111-8111-111111111111",
+          checkInDate: "2999-01-01",
+          valueBoolean: true,
+        }),
+      })
+    );
+    const payload = (await response.json()) as { ok: boolean; error: string };
+
+    expect(response.status).toBe(400);
+    expect(payload.ok).toBe(false);
+    expect(payload.error).toBe("Choose today or a past date for habit check-ins.");
+    expect(from).not.toHaveBeenCalled();
+    expect(loadHabitSnapshotMock).not.toHaveBeenCalled();
   });
 
   it("creates an owner-scoped litres habit definition", async () => {

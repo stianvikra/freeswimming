@@ -83,6 +83,16 @@ export async function POST(request: Request) {
     body.selectedDate,
     new Date(`${checkInDate}T00:00:00.000Z`)
   );
+  const todayDate = normalizeHabitDate(undefined);
+  if (checkInDate > todayDate) {
+    return applySupabaseCookies(
+      noStoreJson(
+        { ok: false, error: "Choose today or a past date for habit check-ins." },
+        { status: 400 }
+      )
+    );
+  }
+
   const actionSource = getHabitMutationActionSource(body.actionSource);
   const habitResult = await supabase
     .from("habit_definitions")

@@ -1335,10 +1335,30 @@ accept `isPerfectDayItem`.
 
 - `checkInDate` is the habit history date being written.
 - `selectedDate` is optional and controls which snapshot the route returns after the write; historical corrections can write a past `checkInDate` while returning the caller's selected snapshot.
+- Future `checkInDate` values are rejected with `400`; client-side disabled future dates are defense-in-depth only.
 - `actionSource` is optional and still accepts legacy/diagnostic values such as `catch_up`; the current absence review UI does not use it because `Done with this day` / `Close review` write no habit history. Unknown values are treated as normal Habits writes.
 - `status: "skipped"` stores an intentional `Rest day`; it is not counted as done or missed.
 - Quit slips are explicit `valueBoolean: false` writes for `habit_mode = quit`; no slip or miss row is written automatically at day change.
 - Timed source updates use `timerSeconds` and/or `manualMinutes` and cannot be mixed with legacy `valueNumeric`.
+
+### Absence Review Acknowledgement
+
+`POST /api/my-library/habits/absence-review`
+
+```json
+{
+  "dates": ["2026-06-08", "2026-06-09"],
+  "selectedDate": "2026-06-14",
+  "action": "finish"
+}
+```
+
+- Auth: signed-in user session required.
+- `dates` must be a non-empty list of ISO dates, maximum 31 values, and every date must be today or earlier.
+- The route upserts owner-scoped `habit_absence_review_acknowledgements` rows with `review_scope = "weekly_absence_review"` and `status = "reviewed"`.
+- Acknowledging review dates never creates, updates, or deletes `habit_check_ins`; it only closes the review prompt for those dates.
+- The response returns a refreshed Habits snapshot whose `absenceReviewAcknowledgedDates` list is the server-canonical source for whether reviewed dates should show again.
+- Server analytics use `habit_absence_review_acknowledged` with only `selectedDate`, `reviewDateCount`, and `reviewAction`.
 
 ### Reset Stats Request
 
