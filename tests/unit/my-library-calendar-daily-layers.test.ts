@@ -171,23 +171,41 @@ describe("my library calendar daily layers", () => {
 
     expect(monthlyAnyCompletionLayer).toMatchObject({
       status: "mapped",
-      compactLabel: "1/3 habits",
+      compactLabel: "0/1 habits",
     });
+    expect(monthlyAnyCompletionLayer?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "habit_monthly_completed_today", value: "1 habit" }),
+      ])
+    );
     expect(weeklyAnyCompletionLayer).toMatchObject({
       status: "mapped",
-      compactLabel: "1/2 habits",
+      compactLabel: "0/1 habits",
     });
+    expect(weeklyAnyCompletionLayer?.metrics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "habit_weekly_completed_today", value: "1 habit" }),
+      ])
+    );
     expect(habitLayer).toMatchObject({
       status: "mapped",
-      compactLabel: "1/2 habits",
+      compactLabel: "1/1 habits",
+      summary: "1/1 daily habits on track for this day.",
     });
     expect(habitLayer?.metrics).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "habit_due", value: "1 habit" }),
-        expect.objectContaining({ id: "habit_done_period", value: "0 habits" }),
+        expect.objectContaining({ id: "habit_daily", value: "1/1" }),
+        expect.objectContaining({ id: "habit_due", value: "0 habits" }),
+        expect.objectContaining({ id: "habit_weekly_total", value: "2/3" }),
         expect.objectContaining({ id: "habit_resets", value: "1 marker" }),
       ])
     );
+    expect(habitLayer?.stats).toMatchObject({
+      dailyHabitCompletedCount: 1,
+      dailyHabitTotalCount: 1,
+      weeklyHabitCompletedCount: 2,
+      weeklyHabitTotalCount: 3,
+    });
     expect(sources).toEqual(["habits", "micro_sessions"]);
   });
 
@@ -264,6 +282,11 @@ describe("my library calendar daily layers", () => {
                 status: "completed",
                 completedAt: "2026-06-10T07:00:00.000Z",
                 skippedAt: null,
+                sourceExerciseId: "exercise-1",
+                title: "Split squat",
+                targetType: "reps",
+                targetValue: 12,
+                loadKg: 20,
               },
               {
                 id: "skipped",
@@ -298,10 +321,19 @@ describe("my library calendar daily layers", () => {
     expect(microLayer?.metrics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "micro_completed", value: "1 unit" }),
+        expect.objectContaining({ id: "micro_exercises", value: "1" }),
+        expect.objectContaining({ id: "micro_reps", value: "12" }),
+        expect.objectContaining({ id: "micro_load", value: "240 kg" }),
         expect.objectContaining({ id: "micro_skipped", value: "1 unit" }),
         expect.objectContaining({ id: "micro_review", value: "1 unit" }),
       ])
     );
+    expect(microLayer?.stats).toMatchObject({
+      microCompletedUnitCount: 1,
+      microExerciseKeys: ["exercise-1"],
+      microRepsTotal: 12,
+      microLoadKgTotal: 240,
+    });
 
     const reviewOnlyLayers = buildMyLibraryCalendarDailyLayers({
       dateKeys: ["2026-06-10"],

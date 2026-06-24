@@ -458,7 +458,7 @@ export function buildHabitsCalendarComparisonSource({
       },
       {
         id: "habit_on_target_slots",
-        label: "On-target habits",
+        label: "Habits on track",
         currentLabel: `${current.satisfiedHabitSlots}/${current.scheduledHabitSlots}`,
         comparisonLabel: `${comparison.satisfiedHabitSlots}/${comparison.scheduledHabitSlots}`,
         deltaLabel: formatSignedDelta(

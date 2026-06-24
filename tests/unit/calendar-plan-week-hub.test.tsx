@@ -313,15 +313,38 @@ describe("CalendarPlanWeekHub", () => {
                 source: "habits",
                 label: "Habits",
                 compactLabel: "3/4 habits",
-                summary: "3/4 Habit signals on target.",
-                metrics: [{ id: "due", label: "Due", value: "1 habit" }],
+                summary: "3/4 daily habits on track for this day.",
+                metrics: [
+                  { id: "habit_daily", label: "Daily habits", value: "3/4" },
+                  { id: "due", label: "Due", value: "1 habit" },
+                  { id: "habit_weekly_total", label: "Weekly total", value: "1/2" },
+                ],
+                stats: {
+                  dailyHabitCompletedCount: 3,
+                  dailyHabitTotalCount: 4,
+                  weeklyHabitCompletedCount: 1,
+                  weeklyHabitTotalCount: 2,
+                },
               }),
               buildDailyLayer({
                 source: "micro_sessions",
                 label: "Micro Sessions",
                 compactLabel: "2 micro units",
                 href: "/my-library/dryland",
-                summary: "2 completed micro units and 0 skipped units.",
+                summary: "2 completed micro units · 1 exercise · 24 reps · 480 kg lifted",
+                metrics: [
+                  { id: "micro_completed", label: "Completed", value: "2 units" },
+                  { id: "micro_exercises", label: "Exercises", value: "1" },
+                  { id: "micro_reps", label: "Reps", value: "24" },
+                  { id: "micro_load", label: "Load", value: "480 kg" },
+                ],
+                stats: {
+                  microCompletedUnitCount: 2,
+                  microSkippedUnitCount: 0,
+                  microExerciseKeys: ["split-squat"],
+                  microRepsTotal: 24,
+                  microLoadKgTotal: 480,
+                },
               }),
             ],
           },
@@ -331,15 +354,23 @@ describe("CalendarPlanWeekHub", () => {
 
     const selectedCell = screen.getByTestId("calendar-plan-month-day-2026-06-22");
     expect(within(selectedCell).getByText("3/4 habits")).toBeVisible();
-    expect(within(selectedCell).queryByText(/perfect/i)).not.toBeInTheDocument();
     expect(within(selectedCell).getByText("2 micro units")).toBeVisible();
     expect(selectedCell).toHaveAccessibleName(/3\/4 habits/);
-    expect(selectedCell).not.toHaveAccessibleName(/perfect/i);
+
+    const weekTotal = screen.getByTestId("calendar-plan-month-week-total-2026-06-22");
+    expect(within(weekTotal).getByText("Daily habits")).toBeVisible();
+    expect(within(weekTotal).getByText("Weekly habits")).toBeVisible();
+    expect(within(weekTotal).getByText("Micro units")).toBeVisible();
+    expect(within(weekTotal).getByText("Exercises")).toBeVisible();
+    expect(within(weekTotal).getByText("Reps")).toBeVisible();
+    expect(within(weekTotal).getByText("Load")).toBeVisible();
 
     const selectedDay = screen.getByTestId("calendar-plan-selected-day-2026-06-22");
     expect(within(selectedDay).getByText("Whole-day signals")).toBeVisible();
     expect(within(selectedDay).getByTestId("calendar-daily-layer-habits")).toBeVisible();
-    expect(within(selectedDay).getByText("3/4 Habit signals on target.")).toBeVisible();
+    expect(within(selectedDay).getByText("3/4 daily habits on track for this day.")).toBeVisible();
+    expect(within(selectedDay).getByText("Daily habits")).toBeVisible();
+    expect(within(selectedDay).getByText("Weekly total")).toBeVisible();
     expect(within(selectedDay).getByText("Due")).toBeVisible();
     expect(within(selectedDay).getByText("1 habit")).toBeVisible();
     expect(within(selectedDay).getAllByRole("link", { name: "Open source" })[0]).toHaveAttribute(

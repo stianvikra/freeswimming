@@ -61,6 +61,9 @@ const WEEK_TOTAL_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 const WEEKDAY_SHORT_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEK_TOTAL_NUMBER_FORMATTER = new Intl.NumberFormat("en-GB", {
+  maximumFractionDigits: 1,
+});
 
 function formatPlanDateLabel(dateKey: string) {
   return DATE_LABEL_FORMATTER.format(new Date(`${dateKey}T00:00:00.000Z`));
@@ -84,6 +87,18 @@ function formatReviewCount(count: number) {
 
 function formatLayerCount(count: number) {
   return `${count} daily layer${count === 1 ? "" : "s"}`;
+}
+
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatWeekMetricRatio(completed: number, total: number) {
+  return `${completed}/${total}`;
+}
+
+function formatWeekLoadKg(value: number) {
+  return `${WEEK_TOTAL_NUMBER_FORMATTER.format(value)} kg`;
 }
 
 function getActualOutcomeLabel(outcome: string) {
@@ -276,8 +291,17 @@ function getWeekSessions(days: MyLibraryCalendarPlanDay[]) {
   return days.flatMap((day) => day.sessions);
 }
 
+function getLatestHabitWeekStats(days: MyLibraryCalendarPlanDay[]) {
+  return [...days]
+    .reverse()
+    .map((day) => day.dailyLayers.find((layer) => layer.source === "habits")?.stats)
+    .find((stats) => stats && typeof stats.weeklyHabitTotalCount === "number");
+}
+
 function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
   const sessions = getWeekSessions(days);
+  const microExerciseKeys = new Set<string>();
+  const latestHabitWeekStats = getLatestHabitWeekStats(days);
   const distanceMeters = sessions.reduce<number | null>((total, session) => {
     const distance = session.workout?.totalDistanceM;
     return typeof distance === "number" ? (total ?? 0) + distance : total;
@@ -294,6 +318,43 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     (session) =>
       session.completion.selection === "manual_actual" && session.completion.isDoneOutcome
   ).length;
+  const dailyHabitTotals = days.reduce(
+    (totals, day) => {
+      const stats = day.dailyLayers.find((layer) => layer.source === "habits")?.stats;
+      return {
+        completed:
+          totals.completed +
+          (typeof stats?.dailyHabitCompletedCount === "number"
+            ? stats.dailyHabitCompletedCount
+            : 0),
+        total:
+          totals.total +
+          (typeof stats?.dailyHabitTotalCount === "number" ? stats.dailyHabitTotalCount : 0),
+      };
+    },
+    { completed: 0, total: 0 }
+  );
+  const microTotals = days.reduce(
+    (totals, day) => {
+      const stats = day.dailyLayers.find((layer) => layer.source === "micro_sessions")?.stats;
+      for (const key of stats?.microExerciseKeys ?? []) {
+        microExerciseKeys.add(key);
+      }
+      return {
+        completedUnits:
+          totals.completedUnits +
+          (typeof stats?.microCompletedUnitCount === "number" ? stats.microCompletedUnitCount : 0),
+        skippedUnits:
+          totals.skippedUnits +
+          (typeof stats?.microSkippedUnitCount === "number" ? stats.microSkippedUnitCount : 0),
+        reps: totals.reps + (typeof stats?.microRepsTotal === "number" ? stats.microRepsTotal : 0),
+        loadKg:
+          totals.loadKg +
+          (typeof stats?.microLoadKgTotal === "number" ? stats.microLoadKgTotal : 0),
+      };
+    },
+    { completedUnits: 0, skippedUnits: 0, reps: 0, loadKg: 0 }
+  );
 
   return {
     sessionCount: sessions.length,
@@ -302,6 +363,15 @@ function getWeekTotals(days: MyLibraryCalendarPlanDay[]) {
     reviewCount,
     actualCount,
     doneCount,
+    dailyHabitCompletedCount: dailyHabitTotals.completed,
+    dailyHabitTotalCount: dailyHabitTotals.total,
+    weeklyHabitCompletedCount: latestHabitWeekStats?.weeklyHabitCompletedCount ?? 0,
+    weeklyHabitTotalCount: latestHabitWeekStats?.weeklyHabitTotalCount ?? 0,
+    microCompletedUnitCount: microTotals.completedUnits,
+    microSkippedUnitCount: microTotals.skippedUnits,
+    microExerciseCount: microExerciseKeys.size,
+    microRepsTotal: microTotals.reps,
+    microLoadKgTotal: Math.round(microTotals.loadKg * 10) / 10,
   };
 }
 
@@ -773,7 +843,7 @@ function DailyLayerRows({
                 {layer.supportLabel}
               </p>
               {layer.metrics.length > 0 ? (
-                <dl className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <dl className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-4">
                   {layer.metrics.map((metric) => (
                     <div key={metric.id}>
                       <dt className="text-[10px] font-semibold text-[color:var(--fs-color-muted)] uppercase">
@@ -805,23 +875,41 @@ function DailyLayerRows({
 function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] }) {
   const totals = getWeekTotals(days);
   const weekStartDate = days[0]?.date ?? "unknown";
+  const hasHabitTotals = totals.dailyHabitTotalCount > 0 || totals.weeklyHabitTotalCount > 0;
+  const hasMicroTotals = totals.microCompletedUnitCount > 0 || totals.microSkippedUnitCount > 0;
+  const ariaParts = [
+    `Week total ${getWeekTotalRangeLabel(days)}`,
+    formatCompactSessionCount(totals.sessionCount),
+    formatDistanceTotal(totals.distanceMeters),
+    formatDurationTotal(totals.durationMinutes),
+    `${totals.actualCount} actual recorded`,
+    totals.dailyHabitTotalCount > 0
+      ? `Daily habits ${formatWeekMetricRatio(
+          totals.dailyHabitCompletedCount,
+          totals.dailyHabitTotalCount
+        )}`
+      : null,
+    totals.weeklyHabitTotalCount > 0
+      ? `Weekly habits ${formatWeekMetricRatio(
+          totals.weeklyHabitCompletedCount,
+          totals.weeklyHabitTotalCount
+        )}`
+      : null,
+    hasMicroTotals ? pluralize(totals.microCompletedUnitCount, "micro unit") : null,
+  ].filter(Boolean);
 
   return (
     <div
       data-testid={`calendar-plan-month-week-total-${weekStartDate}`}
       className="flex min-h-[10.75rem] flex-col border-l-[3px] border-[color:var(--fs-color-brand-500)] bg-blue-50/70 p-3 text-left"
-      aria-label={`Week total ${getWeekTotalRangeLabel(days)}, ${formatCompactSessionCount(
-        totals.sessionCount
-      )}, ${formatDistanceTotal(totals.distanceMeters)}, ${formatDurationTotal(
-        totals.durationMinutes
-      )}, ${totals.actualCount} actual recorded`}
+      aria-label={ariaParts.join(", ")}
     >
       <p className="text-[11px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
         Week total
       </p>
       <p className="mt-1 text-xs font-semibold text-slate-600">{getWeekTotalRangeLabel(days)}</p>
       {totals.sessionCount > 0 ? (
-        <dl className="mt-3 space-y-2">
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
           <div>
             <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
               Sessions
@@ -858,8 +946,78 @@ function MonthWeekTotalCell({ days }: { days: MyLibraryCalendarPlanMonthDay[] })
           ) : null}
         </dl>
       ) : (
-        <p className="mt-3 text-sm leading-5 text-[color:var(--fs-color-muted)]">No sessions</p>
+        <p className="mt-3 text-sm leading-5 text-[color:var(--fs-color-muted)]">
+          No swim sessions
+        </p>
       )}
+      {hasHabitTotals ? (
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-blue-100 pt-3">
+          {totals.dailyHabitTotalCount > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Daily habits
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">
+                {formatWeekMetricRatio(
+                  totals.dailyHabitCompletedCount,
+                  totals.dailyHabitTotalCount
+                )}
+              </dd>
+            </div>
+          ) : null}
+          {totals.weeklyHabitTotalCount > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Weekly habits
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">
+                {formatWeekMetricRatio(
+                  totals.weeklyHabitCompletedCount,
+                  totals.weeklyHabitTotalCount
+                )}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
+      {hasMicroTotals ? (
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-blue-100 pt-3">
+          <div>
+            <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+              Micro units
+            </dt>
+            <dd className="text-sm font-semibold text-slate-950">
+              {totals.microCompletedUnitCount}
+            </dd>
+          </div>
+          {totals.microExerciseCount > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Exercises
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">{totals.microExerciseCount}</dd>
+            </div>
+          ) : null}
+          {totals.microRepsTotal > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Reps
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">{totals.microRepsTotal}</dd>
+            </div>
+          ) : null}
+          {totals.microLoadKgTotal > 0 ? (
+            <div>
+              <dt className="text-[10px] font-semibold text-[color:var(--fs-color-brand-700)] uppercase">
+                Load
+              </dt>
+              <dd className="text-sm font-semibold text-slate-950">
+                {formatWeekLoadKg(totals.microLoadKgTotal)}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
       {totals.reviewCount > 0 ? (
         <p className="mt-auto pt-3 text-[11px] leading-4 font-semibold text-amber-800">
           {formatReviewCount(totals.reviewCount)} needs review.

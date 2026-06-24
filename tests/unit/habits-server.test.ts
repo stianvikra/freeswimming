@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadHabitSnapshot } from "@/lib/habits/server";
 import type {
+  HabitAbsenceReviewAcknowledgementRow,
   HabitCheckInRow,
   HabitDefinitionRow,
   HabitMotivationResetRow,
@@ -72,7 +73,8 @@ function buildSupabaseMock(
   microSessionLinks: Array<
     Pick<MicroSessionHabitLinkRow, "habit_id" | "dryland_micro_plan_id" | "status" | "updated_at">
   > = [],
-  microPlans: Array<Pick<DrylandMicroPlanRow, "id" | "blocks">> = []
+  microPlans: Array<Pick<DrylandMicroPlanRow, "id" | "blocks">> = [],
+  absenceReviewAcknowledgements: HabitAbsenceReviewAcknowledgementRow[] = []
 ) {
   const definitionQuery: {
     select: ReturnType<typeof vi.fn>;
@@ -118,6 +120,22 @@ function buildSupabaseMock(
   resetQuery.eq.mockReturnValue(resetQuery);
   resetQuery.lte.mockResolvedValue({ data: resetEvents, error: null });
 
+  const absenceReviewQuery: {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    gte: ReturnType<typeof vi.fn>;
+    lte: ReturnType<typeof vi.fn>;
+  } = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    gte: vi.fn(),
+    lte: vi.fn(),
+  };
+  absenceReviewQuery.select.mockReturnValue(absenceReviewQuery);
+  absenceReviewQuery.eq.mockReturnValue(absenceReviewQuery);
+  absenceReviewQuery.gte.mockReturnValue(absenceReviewQuery);
+  absenceReviewQuery.lte.mockResolvedValue({ data: absenceReviewAcknowledgements, error: null });
+
   const microLinkQuery: {
     select: ReturnType<typeof vi.fn>;
     eq: ReturnType<typeof vi.fn>;
@@ -154,11 +172,12 @@ function buildSupabaseMock(
       if (table === "dryland_micro_plans") return microPlanQuery;
       if (table === "habit_check_ins") return checkInQuery;
       if (table === "habit_motivation_resets") return resetQuery;
+      if (table === "habit_absence_review_acknowledgements") return absenceReviewQuery;
       throw new Error(`Unexpected table ${table}`);
     }),
   };
 
-  return { supabase, checkInQuery, resetQuery, microLinkQuery, microPlanQuery };
+  return { supabase, checkInQuery, resetQuery, microLinkQuery, microPlanQuery, absenceReviewQuery };
 }
 
 describe("habits server loader", () => {
@@ -367,5 +386,36 @@ describe("habits server loader", () => {
       "2026-05-31",
     ]);
     expect(snapshot.weekSummary.days.at(-1)?.completionPercent).toBe(100);
+  });
+
+  it("loads server-canonical absence review acknowledgements for the visible week", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-05T12:00:00.000Z"));
+    const habit = buildHabitRow({ start_date: "2026-05-04" });
+    const { supabase, absenceReviewQuery } = buildSupabaseMock(
+      [habit],
+      [],
+      [],
+      [],
+      [],
+      [
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          user_id: "user-1",
+          review_scope: "weekly_absence_review",
+          review_date: "2026-05-05",
+          status: "reviewed",
+          created_at: "2026-05-10T09:00:00.000Z",
+          updated_at: "2026-05-10T09:00:00.000Z",
+        },
+      ]
+    );
+
+    const snapshot = await loadHabitSnapshot(supabase as never, "user-1", "2026-05-10");
+
+    expect(absenceReviewQuery.gte).toHaveBeenCalledWith("review_date", "2026-05-04");
+    expect(absenceReviewQuery.lte).toHaveBeenCalledWith("review_date", "2026-05-10");
+    expect(snapshot.absenceReviewAcknowledgementsReady).toBe(true);
+    expect(snapshot.absenceReviewAcknowledgedDates).toEqual(["2026-05-05"]);
   });
 });
