@@ -10,7 +10,7 @@ Generated assets must not be treated as production-ready until a real FCP/Motion
 
 ## Status
 
-- Phase: `Phase 1 complete; manual FCP/Motion pilot pending`
+- Phase: `Phase 1 complete; manual video asset guide added; manual FCP/Motion pilot in progress`
 - Scope: production docs and pilot planning
 - Runtime impact: none
 - Asset impact: no generated asset pack is approved; final overlays/templates must be proven in FCP/Motion first
@@ -25,9 +25,11 @@ Use the existing FreeSwimming brand system. Do not create a new brand or sub-bra
 - Brand pack: `public/logos/brand/`
 - Typography: `Manrope`
 - Core palette:
-  - blue: `#2856D7`
-  - ink: `#101828`
-  - slate: `#475467`
+  - current video accent blue: `#2563EB`
+  - brand/logo blue: `#2856D7`
+  - ink: `#0F172A`
+  - ink strong: `#020617`
+  - slate: `#475569`
   - white: `#FFFFFF`
 
 ## Required Formats
@@ -45,6 +47,7 @@ All formats use one FreeSwimming visual language. They must not become separate 
 ## Document Map
 
 - `brand-extension.md`: video use of existing FreeSwimming brand assets.
+- `manual-pilot-asset-style-guide.md`: app-design audit and 10/10 manual pilot asset specification.
 - `format-and-channel-matrix.md`: 16:9, 9:16, and 1:1 rules.
 - `overlay-language.md`: overlay components, hierarchy, sizing, and anti-patterns.
 - `lesson-blueprints.md`: course lesson and social cutdown structure.
