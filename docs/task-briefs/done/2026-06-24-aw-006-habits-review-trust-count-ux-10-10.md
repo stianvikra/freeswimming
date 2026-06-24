@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-24-aw-006-habits-review-trust-count-ux-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-24`
 - `updated`: `2026-06-24`
@@ -460,3 +460,34 @@ Required if execution changes visible UI.
 - `2026-06-24 | visual-state-correction | upgraded the mobile sticky date pill to distinct visual states: blue active Today and amber History, both right-aligned with icons; captured updated after/reference artifacts in output/habits-review-trust-count-ux-2026-06-24-183651 and removed the capture-only route after screenshots | next: wait for owner screenshot approval or concrete visual corrections before running npm run verify:pre-pr`
 - `2026-06-24 | interaction-correction | changed the mobile sticky Today pill into a scroll-to-top control, changed the History pill into a jump-to-review control, added review progress plus blue Today/Back to Today actions inside the review list, updated focused tests/docs, and captured owner-preapproved after/reference artifacts in output/habits-review-trust-count-ux-2026-06-24-185741; removed the capture-only route after screenshots | next: run pre-PR gate, push, open/update PR, monitor CI, then run pre-merge and merge if green`
 - `2026-06-24 | pre-pr-pass | applied the additive Supabase migration to linked remote, reran npm run verify:pre-pr, and the full lane passed: quality gates, lint, typecheck, 1731 unit tests, build, perf budgets, and 111/111 runnable e2e tests with 567 expected skips; perf budget trend reported 11 consecutive weekly green runs and recommends tightening one stretch target next, but this Habits PR intentionally records that as a follow-up decision instead of widening runtime scope | next: commit, push, open/update PR, monitor CI, run pre-merge, then merge if green`
+- `2026-06-24 | done | PR #1235 merged as squash commit c01af7ff after npm run gate:pre-merge passed, GitHub CI was green, and owner had pre-approved the screenshot handoff; repo-managed docs-only closeout moved this brief to done and returned active selection to the parent intake | next: run post-merge preflight on main after closeout merge and assess chat handoff before selecting Child X/Y/Z or performance ratchet work`
+
+## Completion Record
+
+- `completed`: `2026-06-24`
+- `merged_pr`: `#1235`
+- `squash_commit`: `c01af7ff`
+- `result`: Closed AW-006 Child W by making Habits review acknowledgement durable, making Habits/Calendar count language count-first and source-specific, protecting check-in writes from future dates, and clarifying Micro Session and swim-session week totals.
+- `validation`: `npm run typecheck`; targeted Vitest for Habits routes/domain/components and Calendar daily layers; route/label/support sweep; `git diff --check`; `npm run lint:briefs:all`; `npm run verify:pre-pr`; GitHub CI for PR #1235; `npm run gate:pre-merge`.
+- `screenshot_artifacts`: `output/habits-review-trust-count-ux-2026-06-24-185741`
+- `10/10 claim`: yes - all critical target categories reached `5/5`; supporting performance/scalability/analytics stayed bounded at `4/5` with the stretch-target ratchet recorded as a separate follow-up.
+
+| Category                                      | Achieved Score | Evidence                                                                                                                                      | Gaps / Notes                                                |
+| --------------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Server-canonical absence-review acknowledgement, count-first Habits/Calendar labels, docs/user-flow updates, PR #1235.                        | None.                                                       |
+| UX flow clarity                               | `5/5`          | Today/History sticky actions, review progress states, count-first Weekly Overview and Calendar labels, screenshot artifacts.                  | None.                                                       |
+| Visual design quality                         | `5/5`          | Owner-preapproved screenshot artifacts in `output/habits-review-trust-count-ux-2026-06-24-185741`.                                            | No product-rendering files changed after the final capture. |
+| Business logic correctness and data integrity | `5/5`          | Migration, route/domain tests, future-date rejection tests, absence-review upsert tests, Calendar count tests.                                | None.                                                       |
+| Accessibility (a11y)                          | `5/5`          | Testing Library assertions, semantic status/action copy, visible Today/History state differentiation, screenshot review.                      | None.                                                       |
+| Accessibility                                 | `5/5`          | Alias row for lifecycle lint; same evidence as `Accessibility (a11y)`.                                                                        | None.                                                       |
+| Data placement and sync boundaries            | `5/5`          | Server-canonical acknowledgement table/API, owner-scoped writes, derived view-model labels, docs/API contract updates.                        | None.                                                       |
+| Caching and invalidation strategy             | `5/5`          | Refreshed Habits snapshot after successful acknowledgement/check-in writes and tests for refreshed route behavior.                            | None.                                                       |
+| Reliability and failure handling              | `5/5`          | Negative-path route tests for auth, validation, invalid status/date, future date, and Supabase write failure behavior.                        | None.                                                       |
+| Security and authz                            | `5/5`          | Protected routes stay authenticated, owner-scoped, input-validated, and fail closed.                                                          | None.                                                       |
+| Privacy and compliance                        | `5/5`          | Review persistence stores minimal owner/date/scope/status metadata; analytics event remains non-PII.                                          | None.                                                       |
+| Content governance                            | `5/5`          | `docs/api-contracts.md`, `docs/user-flow-map.md`, support runbook, parent brief, and done brief updated.                                      | None.                                                       |
+| Incident response and support operations      | `5/5`          | Support docs now explain durable review acknowledgement, Calendar count wording, and future-date rejection.                                   | None.                                                       |
+| i18n operational readiness                    | `5/5`          | Short source-specific labels with typed denominator mapping and mobile/desktop screenshot review.                                             | None.                                                       |
+| Stack-fit and dependency discipline           | `5/5`          | Reused existing Habits helpers, Calendar daily-layer adapters, API route patterns, Tailwind/UI primitives, and test stack; no new dependency. | None.                                                       |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, `npm run verify:pre-pr`, GitHub CI, and `npm run gate:pre-merge` passed.                                                     | None.                                                       |
+| DevOps and rollback readiness                 | `5/5`          | Additive Supabase migration applied to linked remote; revert restores prior labels/guards without destructive cleanup.                        | None.                                                       |
