@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-25-habits-review-fatigue-count-prefill-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-25`
 - `updated`: `2026-06-25`
@@ -58,6 +58,7 @@ Critical target categories for a `10/10` claim:
 | Business logic correctness and data integrity | `target`     | "Real habit action" is deterministic; no check-in/review acknowledgement is created automatically; count-prefill does not save until the user submits.       | unit/component tests + code review                    | `5/5`                   |
 | Admin editor ergonomics                       | `N/A`        | N/A because this changes private user Habits behavior, not admin editing surfaces or publish workflows.                                                      | explicit admin scope rationale                        | `N/A`                   |
 | Accessibility (a11y)                          | `target`     | Changed labels/buttons/inputs keep accessible names, keyboard focus, and non-color-only status meaning.                                                      | Testing Library assertions + screenshot/manual review | `5/5`                   |
+| Accessibility                                 | `target`     | Alias row for closeout-lint compatibility; same threshold and evidence as canonical `Accessibility (a11y)`.                                                  | Testing Library assertions + screenshot/manual review | `5/5`                   |
 | Performance (CWV + payloads)                  | `supporting` | Supporting only: no dependency, polling, broad history query, or route payload increase beyond existing Habits client logic.                                 | dependency diff + gate evidence                       | `4/5`                   |
 | Data placement and sync boundaries            | `target`     | Check-ins and review acknowledgements remain server-canonical; prefill is local transient UI state only.                                                     | data contract + tests                                 | `5/5`                   |
 | Caching and invalidation strategy             | `target`     | Existing Habits write refresh path remains unchanged; the review candidate filter derives from the loaded snapshot.                                          | code review + component tests                         | `5/5`                   |
@@ -346,3 +347,32 @@ Automation-first, except screenshot approval stop. Assistant owns implementation
 - `2026-06-25 | viewing-chip-finalized` - renamed the mobile historical chip and Weekly Overview historical badge to `Viewing`, removed the date-chip icon, right-aligned the mobile date chip, regenerated final after/reference artifacts in `output/habits-review-fatigue-2026-06-25-090741`, and removed the temporary screenshot harness | next: owner screenshot approval before `npm run verify:pre-pr`.
 - `2026-06-25 | sticky-floating-chip-finalized` - changed the mobile date chip to a compact sticky/floating control with zero layout height, kept it inside the Habits surface rather than global fixed overlay, captured scrolled sticky evidence in `output/habits-review-fatigue-2026-06-25-095021`, and removed the temporary screenshot harness | next: owner screenshot approval before `npm run verify:pre-pr`.
 - `2026-06-25 | screenshot-approved-and-pre-pr-green` - owner approved the final screenshot handoff and approved merge on good tests; `npm run verify:pre-pr` passed the full lane (`lint`, `typecheck`, unit, build, perf budgets, and Playwright with 111 passed / 567 skipped locally). Perf budgets reported `tighten` after 11 consecutive weekly green runs with 15.4% margin; decision for this Habits PR is to defer actual budget tightening to the planned performance-ratchet maintenance slice so this runtime/UI change stays scoped | next: commit, push, open PR, monitor CI, then run `npm run verify:pre-merge`.
+
+## Completion Record
+
+- `completed`: `2026-06-25`
+- `merged_pr`: `#1237`
+- `squash_commit`: `e469a4b5`
+- `result`: Habits now treats review as a recovery aid for zero-action missed days instead of a daily bookkeeping queue for partial-use days, while count habits prefill the target value as an editable local suggestion before `Save`.
+- `validation`: targeted Habits Vitest, `npm run typecheck`, `npm run lint`, `npm run lint:briefs:all`, `git diff --check`, owner-approved screenshot handoff, `npm run verify:pre-pr`, CI for PR `#1237`, and `npm run verify:pre-merge`.
+- `screenshot_artifacts`: `output/habits-review-fatigue-2026-06-25-095021`
+- `perf_budget_decision`: `npm run verify:pre-pr` and `npm run verify:pre-merge` both reported `tighten` after 11 consecutive weekly green runs with 15.4% margin; actual budget tightening is deferred to the planned performance-ratchet maintenance slice to keep this Habits PR scoped.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                                      | Achieved Score | Evidence                                                                                                         | Gaps / Notes                                  |
+| --------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Product goals and IA                          | `5/5`          | Partial-use days with recorded actions are suppressed from prominent review; zero-action missed days still show. | None.                                         |
+| UX flow clarity                               | `5/5`          | Review copy, full-width `Start review` / `Dismiss`, and editable count target prefill shipped with screenshots.  | None.                                         |
+| Visual design quality                         | `5/5`          | Owner-approved final mobile/desktop artifacts at `output/habits-review-fatigue-2026-06-25-095021`.               | No rendering files changed after screenshot.  |
+| Business logic correctness and data integrity | `5/5`          | Unit/component tests cover zero-action review, partial-use suppression, editable prefill, and no auto-save.      | None.                                         |
+| Accessibility (a11y)                          | `5/5`          | Existing accessible labels/buttons preserved; Testing Library assertions and full gates passed.                  | None.                                         |
+| Accessibility                                 | `5/5`          | Same evidence as `Accessibility (a11y)` for closeout-lint alias compatibility.                                   | None.                                         |
+| Data placement and sync boundaries            | `5/5`          | Check-ins/review acknowledgements remain server-canonical; prefill stays local transient state.                  | None.                                         |
+| Caching and invalidation strategy             | `5/5`          | Existing Habits refresh path unchanged; review filtering derives from loaded snapshot.                           | None.                                         |
+| Reliability and failure handling              | `5/5`          | Failed writes keep existing error behavior; no new persisted data or migration.                                  | None.                                         |
+| Content governance                            | `5/5`          | API/user-flow/support docs and parent intake were updated for review and count-prefill semantics.                | None.                                         |
+| Incident response and support operations      | `5/5`          | Support runbook explains partial-use days, zero-action review, and unsaved count-prefill behavior.               | None.                                         |
+| i18n operational readiness                    | `5/5`          | New copy is concise and not title/unit-specific; `Today` / `Viewing` use shared date format.                     | None.                                         |
+| Stack-fit and dependency discipline           | `5/5`          | Reused `HabitPerfectDayHub` and existing Habits contracts; no dependency or schema changes.                      | None.                                         |
+| Testing and QA automation                     | `5/5`          | Targeted Vitest, full local gates, CI, and `verify:pre-merge` passed.                                            | Local dev-auth-dependent E2E remains skipped. |
+| DevOps and rollback readiness                 | `5/5`          | Single reversible runtime/docs/test commit; revert restores old review-candidate and empty-input behavior.       | None.                                         |
