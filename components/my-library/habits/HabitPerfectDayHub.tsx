@@ -297,9 +297,17 @@ function getInputValue(item: HabitDayItem) {
     item.habit.habitType === "avoidance"
   ) {
     if (item.habit.habitMode === "timed") return String(item.checkIn?.manualMinutes ?? 0);
-    return item.checkIn?.valueNumeric === null || item.checkIn?.valueNumeric === undefined
-      ? ""
-      : String(item.checkIn.valueNumeric);
+    if (item.checkIn?.valueNumeric !== null && item.checkIn?.valueNumeric !== undefined) {
+      return String(item.checkIn.valueNumeric);
+    }
+    if (
+      item.habit.habitType === "count" &&
+      typeof item.habit.targetValueNumeric === "number" &&
+      Number.isFinite(item.habit.targetValueNumeric)
+    ) {
+      return formatSteppedNumber(Math.max(0, item.habit.targetValueNumeric), 1);
+    }
+    return "";
   }
 
   return "";
@@ -905,6 +913,10 @@ function getCatchUpCandidateItems(day: HabitDaySummary) {
   return day.items.filter(isCatchUpCandidateItem);
 }
 
+function hasRecordedHabitAction(day: HabitDaySummary) {
+  return day.items.some((item) => item.checkIn !== null);
+}
+
 function hasCatchUpRecoveryHistory(snapshot: HabitSnapshot, todayDate: string) {
   const lastTrackedDate =
     snapshot.motivationSummaries?.all?.lastTrackedDate ??
@@ -921,7 +933,9 @@ function getCatchUpEntries(snapshot: HabitSnapshot, todayDate: string): CatchUpE
   if (!hasCatchUpRecoveryHistory(snapshot, todayDate)) return [];
 
   return snapshot.weekSummary.days
-    .filter((day) => day.date < todayDate && day.perfectDayItemCount > 0)
+    .filter(
+      (day) => day.date < todayDate && day.perfectDayItemCount > 0 && !hasRecordedHabitAction(day)
+    )
     .flatMap((day) =>
       getCatchUpCandidateItems(day).map((item) => ({
         date: day.date,
@@ -2737,6 +2751,16 @@ export default function HabitPerfectDayHub({
   function renderCatchUpAssistant() {
     if (!shouldShowCatchUpAssistant) return null;
 
+    const firstUnreviewedRow = unreviewedAbsenceRows[0] ?? null;
+    const firstUnreviewedHref = firstUnreviewedRow
+      ? buildMyLibraryCalendarHref({
+          path: "/my-library/habits",
+          selectedDate: firstUnreviewedRow.date,
+          view: calendarViewParam,
+        })
+      : null;
+    const isReviewPending = pendingKey?.startsWith("absence-review-") ?? false;
+
     return (
       <section
         aria-labelledby="habits-catch-up-title"
@@ -2750,8 +2774,8 @@ export default function HabitPerfectDayHub({
               {getAbsenceReviewTitle(catchUpDateCount)}
             </h3>
             <p className="mt-1 text-sm leading-6 text-amber-900">
-              Nothing was marked failed automatically. Open each date, edit what happened, then mark
-              the day checked.
+              These days have no recorded habit action. Open each date, edit what happened, then
+              mark the day checked.
             </p>
           </div>
           <span className={habitWarningChipClass}>
@@ -2760,6 +2784,30 @@ export default function HabitPerfectDayHub({
         </div>
 
         <div className="mt-4">{renderAbsenceReviewDateList(absenceReviewRows)}</div>
+
+        {firstUnreviewedRow && firstUnreviewedHref ? (
+          <div className="mt-4 grid gap-2" data-testid="habits-absence-review-actions">
+            <Link
+              href={firstUnreviewedHref}
+              onClick={(event) =>
+                handleCalendarLinkClick(event, firstUnreviewedHref, firstUnreviewedRow.date)
+              }
+              className={cx(habitMobilePrimaryActionClass, "w-full")}
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+              Start review
+            </Link>
+            <button
+              type="button"
+              onClick={finishAbsenceReview}
+              disabled={isReviewPending}
+              className={cx(habitMobileSecondaryActionClass, "w-full")}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+              {isReviewPending ? "Saving..." : "Dismiss"}
+            </button>
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -3401,20 +3449,16 @@ export default function HabitPerfectDayHub({
   }
 
   function renderMobileDatePill() {
-    const pillLabel = isSelectedToday ? "Today" : "History";
+    const pillLabel = isSelectedToday ? "Today" : "Viewing";
     const pillDateLabel = getLongDateLabel(snapshot.selectedDate);
-    const PillIcon = isSelectedToday ? CalendarDays : RotateCcw;
     const pillStateClass = isSelectedToday
-      ? "border-blue-600 bg-blue-600 text-white shadow-[0_12px_28px_rgba(37,99,235,0.22)] hover:bg-blue-700 focus-visible:ring-blue-700"
-      : "border-amber-300 bg-amber-50 text-amber-950 shadow-[0_12px_28px_rgba(180,83,9,0.14)] hover:bg-amber-100 focus-visible:ring-amber-600";
-    const pillIconClass = isSelectedToday
-      ? "bg-white/20 text-white"
-      : "bg-amber-100 text-amber-700";
-    const pillDateClass = isSelectedToday ? "text-blue-100" : "text-amber-700";
+      ? "border-[color:var(--fs-border-brand)] bg-white/95 text-[color:var(--fs-color-brand-800)] hover:bg-[color:var(--fs-color-brand-50)] focus-visible:ring-blue-700"
+      : "border-amber-200 bg-white/95 text-amber-900 hover:bg-amber-50/80 focus-visible:ring-amber-600";
+    const pillDateClass = isSelectedToday ? "text-[color:var(--fs-color-muted)]" : "text-amber-700";
     return (
       <div
         data-testid="habits-mobile-date-pill"
-        className="sticky top-0 z-20 -mx-4 mt-3 mb-4 flex justify-end border-y border-slate-200/70 bg-white/95 px-4 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur sm:hidden"
+        className="pointer-events-none sticky top-[calc(env(safe-area-inset-top)+4rem)] z-30 flex h-0 justify-end sm:hidden"
       >
         <button
           type="button"
@@ -3424,24 +3468,18 @@ export default function HabitPerfectDayHub({
             isSelectedToday
               ? `Today, ${pillDateLabel}. Back to top.`
               : shouldShowSelectedAbsenceReview
-                ? `History, ${pillDateLabel}. Jump to review list.`
-                : `History, ${pillDateLabel}.`
+                ? `Viewing, ${pillDateLabel}. Jump to review list.`
+                : `Viewing, ${pillDateLabel}.`
           }
           className={cx(
-            "inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            "pointer-events-auto inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-[var(--fs-radius-control)] border px-2.5 py-1 text-xs font-semibold shadow-[0_8px_18px_rgba(15,23,42,0.12)] backdrop-blur transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
             pillStateClass
           )}
         >
-          <span
-            className={cx(
-              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-              pillIconClass
-            )}
-            aria-hidden="true"
-          >
-            <PillIcon className="h-3.5 w-3.5" />
-          </span>
           <span>{pillLabel}</span>
+          <span className={cx("text-xs font-semibold", pillDateClass)} aria-hidden="true">
+            ·
+          </span>
           <span className={cx("truncate text-xs font-semibold", pillDateClass)}>
             {pillDateLabel}
           </span>
@@ -3466,7 +3504,7 @@ export default function HabitPerfectDayHub({
                 : ""}
             </p>
           </div>
-          {isHistoricalDate ? <span className={habitWarningChipClass}>History</span> : null}
+          {isHistoricalDate ? <span className={habitWarningChipClass}>Viewing</span> : null}
         </div>
         {renderWeekOverview(testId)}
         <div className="mt-4">{renderCalendarControls(controlsTestId)}</div>
@@ -3475,15 +3513,16 @@ export default function HabitPerfectDayHub({
   }
 
   function getCountHabitStatus(item: HabitDayItem) {
-    const todayValue = item.checkIn?.valueNumeric ?? 0;
+    const selectedDayLabel = isSelectedToday ? "Today" : "This day";
+    const selectedDayValue = item.checkIn?.valueNumeric ?? 0;
     const target = item.habit.targetValueNumeric;
-    const todayLabel = formatCountValue(todayValue, item.habit.targetUnit);
+    const selectedDayValueLabel = formatCountValue(selectedDayValue, item.habit.targetUnit);
     if (typeof target === "number" && target > 0) {
-      return `Today: ${todayLabel} · ${getCountTargetPrefix(
+      return `${selectedDayLabel}: ${selectedDayValueLabel} · ${getCountTargetPrefix(
         item.habit.targetOperator
       )}: ${formatCountValue(target, item.habit.targetUnit)}`;
     }
-    return `Today: ${todayLabel}`;
+    return `${selectedDayLabel}: ${selectedDayValueLabel}`;
   }
 
   function renderMotivationMetric(

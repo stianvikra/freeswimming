@@ -1336,7 +1336,8 @@ accept `isPerfectDayItem`.
 - `checkInDate` is the habit history date being written.
 - `selectedDate` is optional and controls which snapshot the route returns after the write; historical corrections can write a past `checkInDate` while returning the caller's selected snapshot.
 - Future `checkInDate` values are rejected with `400`; client-side disabled future dates are defense-in-depth only.
-- `actionSource` is optional and still accepts legacy/diagnostic values such as `catch_up`; the current absence review UI does not use it because `Done with this day` / `Close review` write no habit history. Unknown values are treated as normal Habits writes.
+- Habits UI may prefill count/numeric entry fields from the habit target value, but no value is persisted until this check-in route is submitted.
+- `actionSource` is optional and still accepts legacy/diagnostic values such as `catch_up`; the current absence review UI does not use it because `Done with this day`, `Close review`, and Today-card `Dismiss` write no habit history. Unknown values are treated as normal Habits writes.
 - `status: "skipped"` stores an intentional `Rest day`; it is not counted as done or missed.
 - Quit slips are explicit `valueBoolean: false` writes for `habit_mode = quit`; no slip or miss row is written automatically at day change.
 - Timed source updates use `timerSeconds` and/or `manualMinutes` and cannot be mixed with legacy `valueNumeric`.
@@ -1356,6 +1357,8 @@ accept `isPerfectDayItem`.
 - Auth: signed-in user session required.
 - `dates` must be a non-empty list of ISO dates, maximum 31 values, and every date must be today or earlier.
 - The route upserts owner-scoped `habit_absence_review_acknowledgements` rows with `review_scope = "weekly_absence_review"` and `status = "reviewed"`.
+- The prominent Habits absence review UI is reserved for past dates with due unresolved habits and no recorded habit action; partial-use days stay in history but do not become the daily review queue.
+- On Today, `Start review` navigates to the first unchecked review date, while `Dismiss` acknowledges all visible review dates and hides the prompt without editing habit history.
 - Acknowledging review dates never creates, updates, or deletes `habit_check_ins`; it only closes the review prompt for those dates.
 - The response returns a refreshed Habits snapshot whose `absenceReviewAcknowledgedDates` list is the server-canonical source for whether reviewed dates should show again.
 - Server analytics use `habit_absence_review_acknowledged` with only `selectedDate`, `reviewDateCount`, and `reviewAction`.
@@ -1373,9 +1376,9 @@ accept `isPerfectDayItem`.
 ```
 
 - Reset stats creates a server-canonical `habit_motivation_resets` boundary for one active habit and never deletes `habit_check_ins`.
-- Catch-up all-habit recovery calls this route once per active habit so Motivation can restart from Today while complete history remains available in Calendar Comparison.
+- Habits absence review does not call this route; `Reset habit stats` remains a per-habit Details action.
 - Source-backed Micro Session Habits still receive Habit credit only from the Micro Session owner-scoped source path; Habits does not expose manual `Mark done` for those linked rows.
-- Catch-up client analytics use `habit_catch_up_assistant_shown`, `habit_catch_up_day_reviewed`, `habit_catch_up_day_left_missed`, `habit_catch_up_reset_started`, and `habit_catch_up_reset_cancelled`; the prompt summary includes habit/day counts, each habit card shows a compact next-day cleanup flow, and only one missed day is actionable at a time. Saved done/rest/slip/reset writes continue through the existing server events with `actionSource: "catch_up"` when recovery initiated them.
+- Current absence-review client analytics use date-first events such as `habit_catch_up_assistant_shown`, `habit_absence_review_day_marked`, and `habit_absence_review_finished`; review acknowledgements never write habit history.
 
 ## `GET|POST /api/progress/guide`
 
