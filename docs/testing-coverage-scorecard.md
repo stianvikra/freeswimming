@@ -46,8 +46,8 @@ Principle:
 
 - Keep baseline budget gate stable and continue weekly ratchet decisions toward stretch targets.
 - Ensure trend reporting stays visible in CI/nightly artifacts.
-- Current ratchet: JS transfer default tightened from `390kb` to `380kb` on `2026-06-19`.
-- Latest maintenance audit decision: `2026-06-19` `tighten` after trend output reported `10` weekly green runs and `17.8%` worst margin.
+- Current ratchet: CSS transfer default tightened from `160kb` to `150kb` on `2026-06-25`.
+- Latest maintenance audit decision: `2026-06-25` `tighten` after trend output reported `11` weekly green runs and `15.4%` worst margin; JS transfer held at `380kb` because another `10kb` JS step would not preserve the `15%` practical headroom rule.
 - tracked in:
   - `docs/task-briefs/done/2026-02-19-performance-budgets-and-security-negative-path-hardening.md`
 

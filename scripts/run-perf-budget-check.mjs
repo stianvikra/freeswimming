@@ -51,7 +51,7 @@ const BUDGETS = {
   cls: Number(process.env.PERF_BUDGET_CLS ?? 0.1),
   tbtMs: Number(process.env.PERF_BUDGET_TBT_MS ?? 200),
   jsTransferKb: Number(process.env.PERF_BUDGET_JS_TRANSFER_KB ?? 380),
-  cssTransferKb: Number(process.env.PERF_BUDGET_CSS_TRANSFER_KB ?? 160),
+  cssTransferKb: Number(process.env.PERF_BUDGET_CSS_TRANSFER_KB ?? 150),
   requestCount: Number(process.env.PERF_BUDGET_REQUEST_COUNT ?? 130),
 };
 

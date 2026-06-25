@@ -25,7 +25,7 @@ Run repeatable performance checks for core routes in both public mode and passwo
 | CLS           | `0.10`            |
 | TBT           | `200ms`           |
 | JS transfer   | `380kb`           |
-| CSS transfer  | `160kb`           |
+| CSS transfer  | `150kb`           |
 | Request count | `130`             |
 
 ## Profiles
@@ -105,8 +105,9 @@ Automation note:
   - `PERF_BUDGET_TIGHTEN_MIN_WEEKLY_GREENS` (default `2`)
   - `PERF_BUDGET_TIGHTEN_MIN_MARGIN_PCT` (default `15`)
 - If recommendation is `tighten`, raise one stretch budget step and record the decision in the active brief checkpoint/PR summary.
-- Latest ratchet decision: `2026-06-19`, `tighten`, JS transfer default `390kb` -> `380kb`.
-- Previous ratchet decision: `2026-05-14`, `tighten`, JS transfer default `400kb` -> `390kb`.
+- Latest ratchet decision: `2026-06-25`, `tighten`, CSS transfer default `160kb` -> `150kb`.
+- Previous ratchet decision: `2026-06-19`, `tighten`, JS transfer default `390kb` -> `380kb`.
+- Earlier ratchet decision: `2026-05-14`, `tighten`, JS transfer default `400kb` -> `390kb`.
 - Earlier ratchet decision: `2026-05-04`, `tighten`, JS transfer default `425kb` -> `400kb`.
 - Previous audit decision: `2026-04-29`, `hold`, because trend output still recommended `tighten` from carry-forward green history but two new weekly green cycles had not yet accumulated after the `2026-04-26` ratchet.
 
