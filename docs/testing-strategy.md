@@ -132,11 +132,12 @@ Useful commands:
   - assistant must explicitly ask owner whether to tighten budgets toward stretch targets.
 - Tighten one step at a time to avoid flaky regressions.
 - Record each tighten/hold/revert decision in the relevant brief or PR summary.
-- Current ratchet baseline: JS transfer default budget tightened from `390kb` to `380kb` on `2026-06-19`; wait for two new weekly green runs before another step.
+- Current ratchet baseline: CSS transfer default budget tightened from `160kb` to `150kb` on `2026-06-25`; wait for two new weekly green runs before another step.
 - Previous audit decision: on `2026-04-29`, `npm run test:perf:trend` still recommended `tighten` (`3` weekly green runs, `25.2%` worst margin), but the decision was `hold` because the `2026-04-26` ratchet was too recent.
 - Previous tighten decision: on `2026-05-04`, `npm run test:perf:trend` recommended `tighten` (`4` weekly green runs, `25.1%` worst margin), so JS transfer default moved from `425kb` to `400kb` in the dedicated performance-governance slice.
 - Previous tighten decision: on `2026-05-14`, `npm run test:perf:trend` recommended `tighten` (`5` weekly green runs, `19.6%` worst margin), so JS transfer default moved from `400kb` to `390kb` with a conservative `10kb` step.
-- Latest audit decision: on `2026-06-19`, `npm run test:perf:trend` recommended `tighten` (`10` weekly green runs, `17.8%` worst margin), so JS transfer default moved from `390kb` to `380kb` with another conservative `10kb` step.
+- Previous tighten decision: on `2026-06-19`, `npm run test:perf:trend` recommended `tighten` (`10` weekly green runs, `17.8%` worst margin), so JS transfer default moved from `390kb` to `380kb` with another conservative `10kb` step.
+- Latest audit decision: on `2026-06-25`, `npm run test:perf:trend` recommended `tighten` (`11` weekly green runs, `15.4%` worst margin). JS transfer was too close for another `10kb` step while preserving `15%` headroom, so CSS transfer default moved from `160kb` to `150kb`.
 
 ## Accessibility
 

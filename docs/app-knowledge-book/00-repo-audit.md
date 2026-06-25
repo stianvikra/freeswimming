@@ -343,8 +343,8 @@ Performance evidence:
 - CI/nightly references: `.github/workflows/ci.yml`, `.github/workflows/nightly-e2e.yml`.
 - Current route baseline in `docs/testing-strategy.md`: core performance routes include `/`,
   `/plans`, `/course`, and `/my-library`.
-- Current ratchet note in `docs/testing-strategy.md`: JS transfer default budget was tightened to
-  `390kb` on `2026-05-14`.
+- Current ratchet note in `docs/testing-strategy.md`: CSS transfer default budget was tightened to
+  `150kb` on `2026-06-25`.
 
 Caching evidence:
 
