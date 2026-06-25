@@ -3,7 +3,7 @@
 ## Metadata
 
 - `id`: `2026-06-19-next-performance-budget-ratchet-maintenance-10-10`
-- `status`: `in-progress`
+- `status`: `done`
 - `owner`: `stianvikra`
 - `created`: `2026-06-19`
 - `updated`: `2026-06-25`
@@ -13,7 +13,7 @@
 
 - `last_audited`: `2026-06-25`
 - `base`: `main@06388db8`
-- `audit_status`: `executing`
+- `audit_status`: `completed`
 - `decision`: `tighten`; implement one conservative CSS-transfer ratchet from `160kb` to `150kb`.
 - `reason`: Fresh post-`2026-06-19` evidence exists: `npm run test:perf:trend` reports `11` consecutive weekly green public runs, latest PASS at `623a896a798a`, and `15.4%` worst margin. JS transfer is the tightest metric, so another `10kb` JS step would not preserve the `15%` practical headroom rule; CSS transfer has enough margin for one `10kb` step.
 - `must_refresh_before_execution_if`: `scripts/run-perf-budget-check.mjs`, performance budget defaults, core route matrix, `docs/runbooks/pagespeed-lighthouse-gated-governance.md`, `docs/runbooks/maintenance-cadence.md`, or `docs/testing-strategy.md` change before this brief is picked up.
@@ -57,6 +57,7 @@ Critical target categories for a `10/10` claim in this brief:
 | Admin editor ergonomics                       | `N/A`        | N/A because no admin editing surfaces, CRUD flows, publish controls, or operator task flows change.                                                                                | explicit admin scope rationale                                                          | `N/A`                   |
 | Accessibility (a11y)                          | `N/A`        | N/A because no rendered UI or accessibility semantics change.                                                                                                                      | explicit non-UI scope rationale                                                         | `N/A`                   |
 | Performance (CWV + payloads)                  | `target`     | `npm run test:perf:trend` reports at least two post-`2026-06-19` weekly green runs, CSS transfer tightens one `10kb` step, and `npm run test:perf:budgets` passes on current HEAD. | `npm run test:perf:trend`, `npm run test:perf:budgets`, and current SHA-bound artifacts | `5/5`                   |
+| Performance                                   | `target`     | Alias for the canonical `Performance (CWV + payloads)` target so closeout lint can bind the critical-category shorthand to the same evidence.                                      | same as `Performance (CWV + payloads)`                                                  | `5/5`                   |
 | Data placement and sync boundaries            | `N/A`        | N/A because no product state, persistence, sync, retention, cache ownership, or local/server data boundary changes.                                                                | explicit stateless governance-slice rationale                                           | `N/A`                   |
 | Caching and invalidation strategy             | `N/A`        | N/A because no route cache mode, revalidation trigger, data freshness behavior, CDN behavior, or browser cache policy changes.                                                     | explicit cache scope rationale                                                          | `N/A`                   |
 | Reliability and failure handling              | `target`     | The decision fails safe: hold JS at `380kb`, tighten only CSS, and revert CSS to `160kb` if fresh budget runs fail twice or CI shows repeated CSS budget regression.               | decision log + targeted perf evidence                                                   | `5/5`                   |
@@ -304,3 +305,25 @@ Documentation required for `revert`:
 - `2026-06-25 | in-progress` - owner approved execution after `11` green weekly runs; branch `chore/performance-budget-ratchet-2026-06-25` created from clean `main@06388db8`; `npm run test:perf:trend` reported latest public PASS at `623a896a798a`, `weekly-green-runs=11`, worst margin `15.4%`, recommendation `tighten`; decision: tighten CSS transfer default `160kb` -> `150kb` because JS is too tight for another `10kb` step while preserving the `15%` headroom rule | next: run targeted perf budget, brief lint, full pre-PR gate, then PR flow.
 - `2026-06-25 | targeted validation` - `npm run test:perf:budgets` PASS with CSS transfer default `150kb`; route medians: `/` `113.7kb`, `/plans` `106.8kb`, `/course` `115.6kb`, `/my-library` `106.8kb`; post-step worst CSS margin is `/course` at `22.9%`, while total worst margin remains JS at `15.4%`; `npm run lint:briefs:all` PASS and `git diff --check` PASS | next: run `npm run verify:pre-pr`.
 - `2026-06-25 | pre-pr gate` - first `npm run verify:pre-pr` attempt failed early because quality-gate evidence needed explicit route/label/support sweep identifiers; added the sweep, then `npm run lint:quality-gates` PASS and reran `npm run verify:pre-pr` full public lane PASS (`artifacts/test-runs/20260625-122546/verify.log`): lint/quality/admin/env/PR-body checks PASS, ESLint had existing `output/` warnings only, typecheck PASS, Vitest `260` files / `1735` tests PASS, build PASS, perf budgets PASS with CSS `150kb`, Playwright `111 passed / 567 skipped` | next: commit, push, open PR, monitor CI, then run `npm run verify:pre-merge`.
+- `2026-06-25 | merged` - PR `#1239` merged as squash commit `6b4ea8dd`; CI PASS, merge state `CLEAN`, and local `npm run verify:pre-merge` PASS with full lane reuse for current HEAD | next: docs-only closeout.
+
+## Completion Record
+
+- `completed`: `2026-06-25`
+- `merged_pr`: `#1239`
+- `squash_commit`: `6b4ea8dd`
+- `result`: Closed Next Performance Budget Ratchet Maintenance by tightening the default CSS transfer budget from `160kb` to `150kb` after `11` consecutive weekly green public runs, while leaving JS at `380kb` because its latest margin was already the tightest.
+- `validation`: `npm run test:perf:trend` reported `weekly-green-runs=11` and recommendation `tighten`; `npm run test:perf:budgets` PASS with CSS `150kb`; `npm run verify:pre-pr` PASS full public lane; PR `#1239` CI PASS; `npm run verify:pre-merge` PASS.
+- `10/10 claim`: yes - all critical target categories reached `5/5`.
+
+| Category                            | Achieved Score | Evidence                                                                                                                                                         | Gaps / Notes |
+| ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| Product goals and IA                | `5/5`          | One maintenance outcome shipped in PR `#1239`: CSS transfer default `160kb` -> `150kb`, with no product IA change.                                               | None.        |
+| Performance (CWV + payloads)        | `5/5`          | `npm run test:perf:trend` showed `11` weekly green runs; `npm run test:perf:budgets` PASS with CSS `150kb`; post-step worst CSS margin was `/course` at `22.9%`. | None.        |
+| Performance                         | `5/5`          | Alias row for the critical-category parser; same evidence as `Performance (CWV + payloads)`.                                                                     | None.        |
+| Reliability and failure handling    | `5/5`          | Decision held JS at `380kb`, tightened only CSS, and kept the documented one-step rollback path to `160kb` if repeated CSS budget regressions appear.            | None.        |
+| Content governance                  | `5/5`          | Active brief checkpoint, PR summary, and canonical performance docs record the `2026-06-25` `tighten` decision and new CSS default.                              | None.        |
+| Stack-fit and dependency discipline | `5/5`          | Reused existing Next/Playwright performance-budget script and runbooks; no new dependency, provider, or measurement system.                                      | None.        |
+| Testing and QA automation           | `5/5`          | `npm run lint:briefs:all`, `npm run verify:pre-pr`, PR `#1239` CI, and `npm run verify:pre-merge` all passed.                                                    | None.        |
+| Scalability and cost efficiency     | `5/5`          | The stricter CSS threshold catches payload growth earlier while preserving more than `15%` practical CSS headroom on current public core-route measurements.     | None.        |
+| DevOps and rollback readiness       | `5/5`          | The shipped diff is a single reversible threshold step plus docs, with no migration, deployment choreography, or cleanup burden.                                 | None.        |
