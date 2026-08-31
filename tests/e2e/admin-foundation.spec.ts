@@ -664,10 +664,16 @@ test.describe("admin foundation", () => {
       await expect(qrPanel).toBeVisible();
       await qrPanel.getByTestId("admin-context-qr-toggle").click();
       const qrCreateForm = qrPanel.getByTestId("admin-context-qr-create-form");
-      await expect(qrCreateForm.getByLabel("Slug")).toHaveValue(/--workspace-lesson(?:-2)?$/);
-      await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
-        /\/course\?lesson=/
+      const workspaceLessonRuntimeId = await qrCreateForm.getByLabel("Slug").inputValue();
+      expect(workspaceLessonRuntimeId).toMatch(
+        new RegExp(`^${slug}-lesson-module(?:-\\d+)?--${workspaceLessonSlug}(?:-\\d+)?$`)
       );
+      const workspaceLessonDestination = new URL(
+        await qrCreateForm.getByLabel("Destination URL (https)").inputValue(),
+        page.url()
+      );
+      expect(workspaceLessonDestination.pathname).toBe("/course");
+      expect(workspaceLessonDestination.searchParams.get("lesson")).toBe(workspaceLessonRuntimeId);
 
       await courseWorkspaceTab.click();
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
