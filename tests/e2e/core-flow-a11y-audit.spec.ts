@@ -67,6 +67,18 @@ async function openRoute(page: Page, route: CoreRoute) {
   await expect(page.getByRole("heading", { name: route.heading, level: 1 })).toBeVisible({
     timeout: 20_000,
   });
+
+  if (route.href === "/en/course") {
+    await expect(page).toHaveURL(/\/en\/course\/[^/?]+\/[^/?]+(?:\?.*)?$/, {
+      timeout: 20_000,
+    });
+    await expect(page.getByTestId("course-page")).toHaveAttribute(
+      "data-has-resolved-requested-lesson",
+      "true",
+      { timeout: 20_000 }
+    );
+    await waitForRouteToSettle(page);
+  }
 }
 
 async function waitForMenuToggleToHydrate(page: Page) {

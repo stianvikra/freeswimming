@@ -51,16 +51,44 @@ function canonicalizeIndexedGuideRuntimeId(value: string, prefix: "S" | "D"): st
   return null;
 }
 
+function isLegacySlugTokenCharacter(characterCode: number): boolean {
+  return (
+    characterCode === 45 ||
+    (characterCode >= 48 && characterCode <= 57) ||
+    (characterCode >= 65 && characterCode <= 90) ||
+    (characterCode >= 97 && characterCode <= 122)
+  );
+}
+
+function inferIndexedGuideRuntimeIdFromSlug(
+  slug: string,
+  marker: "-session-" | "-drill-",
+  prefix: "S" | "D"
+): string | null {
+  let trailingTokenStart = slug.length;
+  while (
+    trailingTokenStart > 0 &&
+    isLegacySlugTokenCharacter(slug.charCodeAt(trailingTokenStart - 1))
+  ) {
+    trailingTokenStart -= 1;
+  }
+
+  const trailingToken = slug.slice(trailingTokenStart);
+  const markerIndex = trailingToken.toLowerCase().indexOf(marker);
+  if (markerIndex < 0) return null;
+
+  return canonicalizeIndexedGuideRuntimeId(
+    trailingToken.slice(markerIndex + marker.length),
+    prefix
+  );
+}
+
 function inferGuideSessionIdFromSlug(slug: string): string | null {
-  const match = slug.match(/-session-([a-z0-9-]+)$/i);
-  if (!match?.[1]) return null;
-  return canonicalizeIndexedGuideRuntimeId(match[1], "S");
+  return inferIndexedGuideRuntimeIdFromSlug(slug, "-session-", "S");
 }
 
 function inferGuideDrillIdFromSlug(slug: string): string | null {
-  const match = slug.match(/-drill-([a-z0-9-]+)$/i);
-  if (!match?.[1]) return null;
-  return canonicalizeIndexedGuideRuntimeId(match[1], "D");
+  return inferIndexedGuideRuntimeIdFromSlug(slug, "-drill-", "D");
 }
 
 function nextIndexedGuideRuntimeId(prefix: "S" | "D", maxNumber: number): string {

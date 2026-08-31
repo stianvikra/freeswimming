@@ -291,10 +291,18 @@ async function exerciseFoundationNavigation(page: Page) {
   );
 
   await openTabWithFallback(tabCommerce, "Commerce", "commerce");
-  await expect(page.getByRole("heading", { name: "Commerce" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-commerce-manager-header")
+      .getByRole("heading", { name: "Product catalog", exact: true })
+  ).toBeVisible();
 
   await openTabWithFallback(tabOperations, "Operations", "operations");
-  await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-operations-manager-header")
+      .getByRole("heading", { name: "Runtime controls", exact: true })
+  ).toBeVisible();
 
   await openTabWithFallback(tabAnalytics, "Analytics", "analytics");
   await expect(page.getByRole("heading", { name: "Read-only insight dashboard" })).toBeVisible();
@@ -318,7 +326,11 @@ async function exerciseFoundationNavigation(page: Page) {
   await expect(page.getByRole("heading", { name: "Help/Guide" })).toBeVisible();
 
   await openTabWithFallback(tabContent, "Content", "content");
-  await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
+  await expect(
+    page
+      .getByTestId("admin-content-manager-header")
+      .getByRole("heading", { name: "Content", exact: true })
+  ).toBeVisible();
   const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
   const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
   await expect(courseWorkspaceTab).toBeVisible();
@@ -409,7 +421,11 @@ test.describe("admin foundation", () => {
       const activeSectionLabel = page.getByTestId("admin-active-section-label");
       await expect(activeSectionLabel).toHaveText("Content");
       const courseWorkspaceTab = page.getByTestId("admin-content-view-tab-course-workspace");
-      await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
+      await expect(
+        page
+          .getByTestId("admin-content-manager-header")
+          .getByRole("heading", { name: "Content", exact: true })
+      ).toBeVisible();
       const allContentTab = page.getByTestId("admin-content-view-tab-all-content");
       await expect(allContentTab).toBeVisible();
       await allContentTab.click();
@@ -536,6 +552,12 @@ test.describe("admin foundation", () => {
       await allContentTab.click();
       await expect(allContentTab).toHaveAttribute("aria-pressed", "true");
       await expect(page.getByTestId("admin-course-list-visibility-toggle")).toBeVisible();
+      const mirrorDetailsToggle = page.getByTestId("admin-mirror-summary");
+      if ((await mirrorDetailsToggle.getAttribute("aria-expanded")) !== "true") {
+        await mirrorDetailsToggle.click();
+      }
+      await expect(mirrorDetailsToggle).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByTestId("admin-mirror-details")).toBeVisible();
       await expect(mirrorLessonCard).toBeVisible();
       await mirrorLessonCard.click();
       await expect(listTypeFilter).toHaveValue("course_lesson");
@@ -575,11 +597,6 @@ test.describe("admin foundation", () => {
           `Module workspace does not contain fixture module ${lessonFixtureModule.title}.`
         );
       }
-      const fixtureModuleLabel = await workspaceModuleSelect.evaluate((node, moduleId) => {
-        const selectElement = node as HTMLSelectElement;
-        const option = [...selectElement.options].find((entry) => entry.value === moduleId);
-        return option?.textContent?.trim() ?? "";
-      }, lessonFixtureModule.id);
       const overviewModuleRow = lessonWorkspace
         .getByTestId("admin-course-module-status-row")
         .filter({ hasText: lessonFixtureModule.title })
@@ -624,9 +641,11 @@ test.describe("admin foundation", () => {
         .getByLabel("Summary")
         .fill("Created from module-scoped workspace context.");
       await workspaceCreateForm.getByRole("button", { name: "Create lesson" }).click();
-      await expect(
-        page.getByText("Lesson created in selected module. Opening editor.")
-      ).toBeVisible();
+      const lessonCreatedNotice = page.getByTestId("admin-content-action-notice-state");
+      await expect(lessonCreatedNotice).toHaveText(
+        "Lesson created in selected module. Opening editor."
+      );
+      await expect(lessonCreatedNotice).toHaveAttribute("role", "status");
       await expect(listTypeFilter).toHaveValue("course_lesson");
       const workspaceCreatedItem = page
         .getByTestId("admin-content-item")
@@ -640,16 +659,22 @@ test.describe("admin foundation", () => {
       await expect(qrPanel).toBeVisible();
       await qrPanel.getByTestId("admin-context-qr-toggle").click();
       const qrCreateForm = qrPanel.getByTestId("admin-context-qr-create-form");
-      await expect(qrCreateForm.getByLabel("Slug")).toHaveValue(/--workspace-lesson(?:-2)?$/);
-      await expect(qrCreateForm.getByLabel("Destination URL (https)")).toHaveValue(
-        /\/course\?lesson=/
+      const workspaceLessonRuntimeId = await qrCreateForm.getByLabel("Slug").inputValue();
+      expect(workspaceLessonRuntimeId).toMatch(
+        new RegExp(`^${slug}-lesson-module(?:-\\d+)?--${workspaceLessonSlug}(?:-\\d+)?$`)
       );
+      const workspaceLessonDestination = new URL(
+        await qrCreateForm.getByLabel("Destination URL (https)").inputValue(),
+        page.url()
+      );
+      expect(workspaceLessonDestination.pathname).toBe("/course");
+      expect(workspaceLessonDestination.searchParams.get("lesson")).toBe(workspaceLessonRuntimeId);
 
       await courseWorkspaceTab.click();
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
-        fixtureModuleLabel
+        lessonFixtureModule.title
       );
 
       const workspaceLessonRow = lessonWorkspace
@@ -676,7 +701,7 @@ test.describe("admin foundation", () => {
       );
       await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
       await expect(listTypeFilter).toHaveValue("course_lesson");
-      await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
+      await expect(focusModeBanner).toContainText(lessonFixtureModule.title);
 
       const fixtureLessonItem = page
         .getByTestId("admin-content-item")
@@ -692,12 +717,12 @@ test.describe("admin foundation", () => {
       await expect(courseWorkspaceTab).toHaveAttribute("aria-pressed", "true");
       await expect(workspaceModuleSelect).toHaveValue(fixtureModuleValue);
       await expect(page.getByTestId("admin-course-workspace-current-scope")).toContainText(
-        fixtureModuleLabel
+        lessonFixtureModule.title
       );
 
       await workspaceLessonRow.getByRole("button", { name: "Edit lesson" }).click();
       await expect(listTypeFilter).toHaveValue("course_lesson");
-      await expect(focusModeBanner).toContainText(`Focus mode: ${fixtureModuleLabel}`);
+      await expect(focusModeBanner).toContainText(lessonFixtureModule.title);
       await expect(fixtureLessonEditForm).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Lesson editor")).toBeVisible();
       await expect(fixtureLessonEditForm.getByText("Video / estimated time")).toBeVisible();
@@ -705,7 +730,9 @@ test.describe("admin foundation", () => {
       await expect(fixtureLessonEditForm.getByText("Technical fallback fields")).toBeVisible();
       await fixtureLessonEditForm.getByText("Technical fallback fields").click();
       await expect(fixtureLessonEditForm.getByText("Lesson runtime ID")).toBeVisible();
-      await expect(fixtureLessonEditForm.getByText(lessonFixtureRuntimeId)).toBeVisible();
+      await expect(
+        fixtureLessonEditForm.getByText(lessonFixtureRuntimeId, { exact: true })
+      ).toBeVisible();
       const cuesVisibilityToggle = fixtureLessonEditForm.getByLabel(
         "Show What good looks and feels like on lesson page"
       );
@@ -764,7 +791,7 @@ test.describe("admin foundation", () => {
         .getByLabel("Pass criteria (one per line)")
         .fill(checkpointCriteriaText);
       await fixtureLessonEditForm
-        .getByRole("textbox", { name: "Next step" })
+        .getByRole("textbox", { name: "Next step", exact: true })
         .fill(`Repeat drill quality x3 ${unique}`);
       await fixtureLessonEditForm.getByRole("button", { name: "Save changes" }).click();
       await expect(page.getByText("Content item updated.")).toBeVisible();
@@ -784,9 +811,9 @@ test.describe("admin foundation", () => {
         savedLessonEditForm.getByLabel("Extra help start lesson number in module (optional)")
       ).toHaveValue(supportStartLessonInModule);
       await expect(savedLessonEditForm.getByLabel("Lesson type")).toHaveValue("swim");
-      await expect(savedLessonEditForm.getByRole("textbox", { name: "Next step" })).toHaveValue(
-        `Repeat drill quality x3 ${unique}`
-      );
+      await expect(
+        savedLessonEditForm.getByRole("textbox", { name: "Next step", exact: true })
+      ).toHaveValue(`Repeat drill quality x3 ${unique}`);
       await expect(savedLessonEditForm.getByLabel("Pass criteria (one per line)")).toHaveValue(
         checkpointCriteriaText
       );
@@ -831,7 +858,22 @@ test.describe("admin foundation", () => {
       await expect(createdItem).toContainText(editedTitle);
       await expect(createdItem).toContainText("/" + editedSlug);
       await expect(createdItem).toContainText("E2E QA");
-      await expect(createdItem).toContainText("Order: 5");
+      await expect(page.getByTestId("admin-content-action-notice-state")).toHaveText(
+        "Content item updated and course order normalized."
+      );
+      const visibleModuleRows = page.getByTestId("admin-content-item");
+      const normalizedModuleOrders = await visibleModuleRows.evaluateAll((rows) =>
+        rows
+          .map((row) => {
+            const match = row.textContent?.match(/Order:\s*(\d+)/);
+            return match ? Number.parseInt(match[1], 10) : null;
+          })
+          .filter((value): value is number => value !== null)
+      );
+      expect(normalizedModuleOrders).toHaveLength(await visibleModuleRows.count());
+      expect([...normalizedModuleOrders].sort((left, right) => left - right)).toEqual(
+        Array.from({ length: normalizedModuleOrders.length }, (_, index) => index)
+      );
 
       await createdItem.getByRole("button", { name: "Edit" }).click();
       const editFormDirty = createdItem.getByTestId("admin-content-edit-form");

@@ -2517,8 +2517,8 @@ export default function AdminContentManager() {
         ...INITIAL_WORKSPACE_LESSON_CREATE_FORM,
         parentId: workspaceLessonCreateState.parentId,
       });
-      setActionNotice("Lesson created in selected module. Opening editor.");
       focusLessonEdit(payload.item);
+      setActionNotice("Lesson created in selected module. Opening editor.");
     } catch {
       setWorkspaceLessonCreateError("Could not create lesson.");
     } finally {
@@ -2678,6 +2678,11 @@ export default function AdminContentManager() {
     const validationError = validateEditForm(item, editFormState);
     if (validationError) {
       setEditError(validationError);
+      return;
+    }
+
+    if (!isEditDirty) {
+      setActionNotice("No changes to save.");
       return;
     }
 
